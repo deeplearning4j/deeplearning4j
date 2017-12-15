@@ -101,7 +101,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
-            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, startTime, null,
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, startTime, startTime,
                             null, candidate.getFlatParameters(), null);
 
             //Create network

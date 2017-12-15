@@ -93,7 +93,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                 log.warn( "Execution failed for task {}", candidate.getIndex(), e );
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
-                                null, null, candidate.getFlatParameters(), stackTrace);
+                        startTime, null, candidate.getFlatParameters(), stackTrace);
                 return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
             }
 
@@ -101,7 +101,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
-            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
                     startTime, null, null, candidate.getFlatParameters(), null);
 
             //Create network
