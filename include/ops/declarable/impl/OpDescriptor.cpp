@@ -34,8 +34,19 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
+        bool OpDescriptor::operator==(const OpDescriptor& other) const {
+            if (_hash == -1 && other._hash == -1)
+                return this->_opNum == other._opNum;
+            else
+                return this->_hash == other._hash;
+        }
+
         OpDescriptor::OpDescriptor(int numInputs, int numOutputs, std::string opName, bool allowsInplace) : OpDescriptor::OpDescriptor(numInputs, numOutputs, opName.c_str(), allowsInplace) {
             //
+        }
+
+        void OpDescriptor::setHash(Nd4jIndex hash) {
+            _hash = hash;
         }
 
         // default constructor

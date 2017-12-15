@@ -8,8 +8,8 @@
 #include "op_boilerplate.h"
 
 #define ACTIVATIONS \
-        (0, nd4j::activations::Identity) ,\
-        (1, nd4j::activations::ReLU)
+        (0, simdOps::Identity) ,\
+        (1, simdOps::ReLU)
 
 #define NATIVE_LAYERS \
         (0, nd4j::layers::DenseLayer)
@@ -55,7 +55,8 @@
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 
-BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
+//BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
+BUILD_TRACKER(TRANSFORM, ACTIVATIONS)
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams) , ACTIVATIONS);
 

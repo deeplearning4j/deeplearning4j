@@ -24,7 +24,12 @@
 
 
 namespace nd4j {
+    struct _loader {
+        _loader();
+    };
+
     namespace ops {
+
         // test ops, do not touch
         DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
         DECLARE_OP(noop, -1, -1, true);

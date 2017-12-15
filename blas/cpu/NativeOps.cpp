@@ -3362,6 +3362,10 @@ void NativeOps::deleteVariablesSetDouble(Nd4jPointer pointer) {
     deleteVariablesSetT<double>(pointer);
 }
 
+const char* NativeOps::getAllOperations() {
+    return nd4j::OpTracker::getInstance()->exportOperations();
+}
+
 
 template void flattenGeneric<float16>(Nd4jPointer*, int, char, float16*, int*, float16*, int*);
 template void flattenGeneric<float>(Nd4jPointer*, int, char, float*, int*, float*, int*);

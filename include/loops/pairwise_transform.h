@@ -426,11 +426,4 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
     }
 }
 
-#ifdef __CUDACC__
-
-
-
-#endif
-
-
 #endif /* PAIRWISE_TRANSFORM_H_ */

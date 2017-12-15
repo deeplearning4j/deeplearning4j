@@ -25,9 +25,9 @@ namespace nd4j {
 
         DECLARE_CONFIGURABLE_OP(scatter_update, 2, 1, true, 0, -1); 
 
-        DECLARE_OP(floor, 1, 1, true);
+        DECLARE_OP(Floor, 1, 1, true);
 
-        DECLARE_OP(log1p, 2, 1, true);
+        DECLARE_OP(Log1p, 2, 1, true);
 
         DECLARE_CONFIGURABLE_OP(reverse, 1, 1, true, 0, -2);
 

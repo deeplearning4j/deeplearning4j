@@ -49,6 +49,8 @@
 #ifndef OP_BOILERPLATE_HH
 #define OP_BOILERPLATE_HH
 
+#include <helpers/OpTracker.h>
+
 #define ELEMENT_THRESHOLD nd4j::Environment::getInstance()->elementwiseThreshold()
 #define TAD_THRESHOLD nd4j::Environment::getInstance()->tadThreshold()
 
@@ -289,6 +291,107 @@
 #define CL1_97(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_96(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 #define CL1_98(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_97(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 #define CL1_99(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR, ...) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)EVAL(CL1_98(WHAT, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+
+
+#define TR_1(WHAT, TYPE, OPNUM_PAIR) WHAT(TYPE, OPNUM_PAIR)
+#define TR_2(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_1(WHAT, TYPE, __VA_ARGS__))
+#define TR_3(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_2(WHAT, TYPE, __VA_ARGS__))
+#define TR_4(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_3(WHAT, TYPE, __VA_ARGS__))
+#define TR_5(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_4(WHAT, TYPE, __VA_ARGS__))
+#define TR_6(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_5(WHAT, TYPE, __VA_ARGS__))
+#define TR_7(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_6(WHAT, TYPE, __VA_ARGS__))
+#define TR_8(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_7(WHAT, TYPE, __VA_ARGS__))
+#define TR_9(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_8(WHAT, TYPE, __VA_ARGS__))
+#define TR_10(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_9(WHAT, TYPE, __VA_ARGS__))
+#define TR_11(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_10(WHAT, TYPE, __VA_ARGS__))
+#define TR_12(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_11(WHAT, TYPE, __VA_ARGS__))
+#define TR_13(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_12(WHAT, TYPE, __VA_ARGS__))
+#define TR_14(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_13(WHAT, TYPE, __VA_ARGS__))
+#define TR_15(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_14(WHAT, TYPE, __VA_ARGS__))
+#define TR_16(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_15(WHAT, TYPE, __VA_ARGS__))
+#define TR_17(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_16(WHAT, TYPE, __VA_ARGS__))
+#define TR_18(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_17(WHAT, TYPE, __VA_ARGS__))
+#define TR_19(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_18(WHAT, TYPE, __VA_ARGS__))
+#define TR_20(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_19(WHAT, TYPE, __VA_ARGS__))
+#define TR_21(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_20(WHAT, TYPE, __VA_ARGS__))
+#define TR_22(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_21(WHAT, TYPE, __VA_ARGS__))
+#define TR_23(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_22(WHAT, TYPE, __VA_ARGS__))
+#define TR_24(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_23(WHAT, TYPE, __VA_ARGS__))
+#define TR_25(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_24(WHAT, TYPE, __VA_ARGS__))
+#define TR_26(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_25(WHAT, TYPE, __VA_ARGS__))
+#define TR_27(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_26(WHAT, TYPE, __VA_ARGS__))
+#define TR_28(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_27(WHAT, TYPE, __VA_ARGS__))
+#define TR_29(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_28(WHAT, TYPE, __VA_ARGS__))
+#define TR_30(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_29(WHAT, TYPE, __VA_ARGS__))
+#define TR_31(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_30(WHAT, TYPE, __VA_ARGS__))
+#define TR_32(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_31(WHAT, TYPE, __VA_ARGS__))
+#define TR_33(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_32(WHAT, TYPE, __VA_ARGS__))
+#define TR_34(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_33(WHAT, TYPE, __VA_ARGS__))
+#define TR_35(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_34(WHAT, TYPE, __VA_ARGS__))
+#define TR_36(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_35(WHAT, TYPE, __VA_ARGS__))
+#define TR_37(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_36(WHAT, TYPE, __VA_ARGS__))
+#define TR_38(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_37(WHAT, TYPE, __VA_ARGS__))
+#define TR_39(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_38(WHAT, TYPE, __VA_ARGS__))
+#define TR_40(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_39(WHAT, TYPE, __VA_ARGS__))
+#define TR_41(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_40(WHAT, TYPE, __VA_ARGS__))
+#define TR_42(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_41(WHAT, TYPE, __VA_ARGS__))
+#define TR_43(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_42(WHAT, TYPE, __VA_ARGS__))
+#define TR_44(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_43(WHAT, TYPE, __VA_ARGS__))
+#define TR_45(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_44(WHAT, TYPE, __VA_ARGS__))
+#define TR_46(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_45(WHAT, TYPE, __VA_ARGS__))
+#define TR_47(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_46(WHAT, TYPE, __VA_ARGS__))
+#define TR_48(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_47(WHAT, TYPE, __VA_ARGS__))
+#define TR_49(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_48(WHAT, TYPE, __VA_ARGS__))
+#define TR_50(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_49(WHAT, TYPE, __VA_ARGS__))
+#define TR_51(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_50(WHAT, TYPE, __VA_ARGS__))
+#define TR_52(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_51(WHAT, TYPE, __VA_ARGS__))
+#define TR_53(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_52(WHAT, TYPE, __VA_ARGS__))
+#define TR_54(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_53(WHAT, TYPE, __VA_ARGS__))
+#define TR_55(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_54(WHAT, TYPE, __VA_ARGS__))
+#define TR_56(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_55(WHAT, TYPE, __VA_ARGS__))
+#define TR_57(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_56(WHAT, TYPE, __VA_ARGS__))
+#define TR_58(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_57(WHAT, TYPE, __VA_ARGS__))
+#define TR_59(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_58(WHAT, TYPE, __VA_ARGS__))
+#define TR_60(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_59(WHAT, TYPE, __VA_ARGS__))
+#define TR_61(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_60(WHAT, TYPE, __VA_ARGS__))
+#define TR_62(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_61(WHAT, TYPE, __VA_ARGS__))
+#define TR_63(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_62(WHAT, TYPE, __VA_ARGS__))
+#define TR_64(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_63(WHAT, TYPE, __VA_ARGS__))
+#define TR_65(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_64(WHAT, TYPE, __VA_ARGS__))
+#define TR_66(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_65(WHAT, TYPE, __VA_ARGS__))
+#define TR_67(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_66(WHAT, TYPE, __VA_ARGS__))
+#define TR_68(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_67(WHAT, TYPE, __VA_ARGS__))
+#define TR_69(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_68(WHAT, TYPE, __VA_ARGS__))
+#define TR_70(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_69(WHAT, TYPE, __VA_ARGS__))
+#define TR_71(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_70(WHAT, TYPE, __VA_ARGS__))
+#define TR_72(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_71(WHAT, TYPE, __VA_ARGS__))
+#define TR_73(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_72(WHAT, TYPE, __VA_ARGS__))
+#define TR_74(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_73(WHAT, TYPE, __VA_ARGS__))
+#define TR_75(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_74(WHAT, TYPE, __VA_ARGS__))
+#define TR_76(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_75(WHAT, TYPE, __VA_ARGS__))
+#define TR_77(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_76(WHAT, TYPE, __VA_ARGS__))
+#define TR_78(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_77(WHAT, TYPE, __VA_ARGS__))
+#define TR_79(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_78(WHAT, TYPE, __VA_ARGS__))
+#define TR_80(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_79(WHAT, TYPE, __VA_ARGS__))
+#define TR_81(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_80(WHAT, TYPE, __VA_ARGS__))
+#define TR_82(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_81(WHAT, TYPE, __VA_ARGS__))
+#define TR_83(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_82(WHAT, TYPE, __VA_ARGS__))
+#define TR_84(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_83(WHAT, TYPE, __VA_ARGS__))
+#define TR_85(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_84(WHAT, TYPE, __VA_ARGS__))
+#define TR_86(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_85(WHAT, TYPE, __VA_ARGS__))
+#define TR_87(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_86(WHAT, TYPE, __VA_ARGS__))
+#define TR_88(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_87(WHAT, TYPE, __VA_ARGS__))
+#define TR_89(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_88(WHAT, TYPE, __VA_ARGS__))
+#define TR_90(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_89(WHAT, TYPE, __VA_ARGS__))
+#define TR_91(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_90(WHAT, TYPE, __VA_ARGS__))
+#define TR_92(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_91(WHAT, TYPE, __VA_ARGS__))
+#define TR_93(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_92(WHAT, TYPE, __VA_ARGS__))
+#define TR_94(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_93(WHAT, TYPE, __VA_ARGS__))
+#define TR_95(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_94(WHAT, TYPE, __VA_ARGS__))
+#define TR_96(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_95(WHAT, TYPE, __VA_ARGS__))
+#define TR_97(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_96(WHAT, TYPE, __VA_ARGS__))
+#define TR_98(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_97(WHAT, TYPE, __VA_ARGS__))
+#define TR_99(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_98(WHAT, TYPE, __VA_ARGS__))
 
 
 #define FZ_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
@@ -836,10 +939,12 @@
 #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) case NUM_A: {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;} break;
 
 #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
+#define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance()->storeOperation(TYPE, #TYPE_A, NUM_A);
 
 #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
 
 #define _EXPAND_PACKED_CALL_1(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_1(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
+#define _EXPAND_PACKED_CALL_T(TYPE, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_T(TYPE, UNPAREN(OPNUM_PAIR)))
 
 #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
 #define _EXPAND_KERNEL_SIMPLE(NAME, KERNEL, TYPE, INPUTZ, PARAMZ, NUM_A, TYPE_A) extern "C" __global__ void ARGMIX3(NAME, NUM_A, TYPE)INPUTZ {KERNEL<TYPE, TYPE_A<TYPE>>PARAMZ ;};
@@ -852,6 +957,7 @@
 //////////////////////////////
 
 #define GET_MACROS_1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
+#define GET_MACROS_T(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 
 #define  GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 #define GET_MACROS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
@@ -866,6 +972,7 @@
 #define FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROE(__VA_ARGS__, FX_70, FX_69, FX_68, FX_67, FX_66, FX_65, FX_64, FX_63, FX_62, FX_61, FX_60, FX_59, FX_58, FX_57, FX_56, FX_55, FX_54, FX_53, FX_52, FX_51, FX_50, FX_49, FX_48, FX_47, FX_46, FX_45, FX_44, FX_43, FX_42, FX_41, FX_40, FX_39, FX_38, FX_37, FX_36, FX_35, FX_34, FX_33, FX_32, FX_31, FX_30, FX_29, FX_28, FX_27, FX_26, FX_25, FX_24, FX_23, FX_22, FX_21, FX_20, FX_19, FX_18, FX_17, FX_16, FX_15, FX_14, FX_13, FX_12, FX_11, FX_10, FX_9, FX_8, FX_7, FX_6, FX_5, FX_4, FX_3, FX_2, FX_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
 
 #define FOR_EACH_CALL_1(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS_1(__VA_ARGS__,  CL1_99, CL1_98, CL1_97, CL1_96, CL1_95, CL1_94, CL1_93, CL1_92, CL1_91, CL1_90, CL1_89, CL1_88, CL1_87, CL1_86, CL1_85, CL1_84, CL1_83, CL1_82, CL1_81, CL1_80, CL1_79, CL1_78, CL1_77, CL1_76, CL1_75, CL1_74, CL1_73, CL1_72, CL1_71, CL1_70, CL1_69, CL1_68, CL1_67, CL1_66, CL1_65, CL1_64, CL1_63, CL1_62, CL1_61, CL1_60, CL1_59, CL1_58, CL1_57, CL1_56, CL1_55, CL1_54, CL1_53, CL1_52, CL1_51, CL1_50, CL1_49, CL1_48, CL1_47, CL1_46, CL1_45, CL1_44, CL1_43, CL1_42, CL1_41, CL1_40, CL1_39, CL1_38, CL1_37, CL1_36, CL1_35, CL1_34, CL1_33, CL1_32, CL1_31, CL1_30, CL1_29, CL1_28, CL1_27, CL1_26, CL1_25, CL1_24, CL1_23, CL1_22, CL1_21, CL1_20, CL1_19, CL1_18, CL1_17, CL1_16, CL1_15, CL1_14, CL1_13, CL1_12, CL1_11, CL1_10, CL1_9, CL1_8, CL1_7, CL1_6, CL1_5, CL1_4, CL1_3, CL1_2, CL1_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
+#define FOR_EACH_TRACKER(WHAT, TYPE, ...) EXPAND(GET_MACROS_T(__VA_ARGS__,  TR_99, TR_98, TR_97, TR_96, TR_95, TR_94, TR_93, TR_92, TR_91, TR_90, TR_89, TR_88, TR_87, TR_86, TR_85, TR_84, TR_83, TR_82, TR_81, TR_80, TR_79, TR_78, TR_77, TR_76, TR_75, TR_74, TR_73, TR_72, TR_71, TR_70, TR_69, TR_68, TR_67, TR_66, TR_65, TR_64, TR_63, TR_62, TR_61, TR_60, TR_59, TR_58, TR_57, TR_56, TR_55, TR_54, TR_53, TR_52, TR_51, TR_50, TR_49, TR_48, TR_47, TR_46, TR_45, TR_44, TR_43, TR_42, TR_41, TR_40, TR_39, TR_38, TR_37, TR_36, TR_35, TR_34, TR_33, TR_32, TR_31, TR_30, TR_29, TR_28, TR_27, TR_26, TR_25, TR_24, TR_23, TR_22, TR_21, TR_20, TR_19, TR_18, TR_17, TR_16, TR_15, TR_14, TR_13, TR_12, TR_11, TR_10, TR_9, TR_8, TR_7, TR_6, TR_5, TR_4, TR_3, TR_2, TR_1)(WHAT, TYPE, __VA_ARGS__))
 
 #define FOR_EACH_Z(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FZ_99, FZ_98, FZ_97, FZ_96, FZ_95, FZ_94, FZ_93, FZ_92, FZ_91, FZ_90, FZ_89, FZ_88, FZ_87, FZ_86, FZ_85, FZ_84, FZ_83, FZ_82, FZ_81, FZ_80, FZ_79, FZ_78, FZ_77, FZ_76, FZ_75, FZ_74, FZ_73, FZ_72, FZ_71, FZ_70, FZ_69, FZ_68, FZ_67, FZ_66, FZ_65, FZ_64, FZ_63, FZ_62, FZ_61, FZ_60, FZ_59, FZ_58, FZ_57, FZ_56, FZ_55, FZ_54, FZ_53, FZ_52, FZ_51, FZ_50, FZ_49, FZ_48, FZ_47, FZ_46, FZ_45, FZ_44, FZ_43, FZ_42, FZ_41, FZ_40, FZ_39, FZ_38, FZ_37, FZ_36, FZ_35, FZ_34, FZ_33, FZ_32, FZ_31, FZ_30, FZ_29, FZ_28, FZ_27, FZ_26, FZ_25, FZ_24, FZ_23, FZ_22, FZ_21, FZ_20, FZ_19, FZ_18, FZ_17, FZ_16, FZ_15, FZ_14, FZ_13, FZ_12, FZ_11, FZ_10, FZ_9, FZ_8, FZ_7, FZ_6, FZ_5, FZ_4, FZ_3, FZ_2, FZ_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
 #define FOR_EACH_S(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FS_99, FS_98, FS_97, FS_96, FS_95, FS_94, FS_93, FS_92, FS_91, FS_90, FS_89, FS_88, FS_87, FS_86, FS_85, FS_84, FS_83, FS_82, FS_81, FS_80, FS_79, FS_78, FS_77, FS_76, FS_75, FS_74, FS_73, FS_72, FS_71, FS_70, FS_69, FS_68, FS_67, FS_66, FS_65, FS_64, FS_63, FS_62, FS_61, FS_60, FS_59, FS_58, FS_57, FS_56, FS_55, FS_54, FS_53, FS_52, FS_51, FS_50, FS_49, FS_48, FS_47, FS_46, FS_45, FS_44, FS_43, FS_42, FS_41, FS_40, FS_39, FS_38, FS_37, FS_36, FS_35, FS_34, FS_33, FS_32, FS_31, FS_30, FS_29, FS_28, FS_27, FS_26, FS_25, FS_24, FS_23, FS_22, FS_21, FS_20, FS_19, FS_18, FS_17, FS_16, FS_15, FS_14, FS_13, FS_12, FS_11, FS_10, FS_9, FS_8, FS_7, FS_6, FS_5, FS_4, FS_3, FS_2, FS_1)(WHAT, NAME, KERNEL, TYPE, INPUTZ, PARAMZ, __VA_ARGS__))
@@ -880,6 +987,7 @@
 #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 
 #define _EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_CALL_1(CALL_1, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+#define _EXEC_TRACKER(TYPE, ...) EVAL(FOR_EACH_TRACKER(CALL_T, TYPE, __VA_ARGS__))
 
 #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
 #define _EXEC_META_M(WHAT, NAME, SIGNATURE, OPCLASS, LIST_A, ...) EVAL(FOR_EACH_M(ALPHA, NAME, SIGNATURE, OPCLASS, OPS_A(LIST_A), __VA_ARGS__))
@@ -915,6 +1023,7 @@
 #define DISPATCH_KERNEL_INTERNAL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, ...) EXPAND(_EXEC_KERNEL_X(_EXPAND_PACKED_KERNEL_CALL, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_B, __VA_ARGS__))
 
 #define BUILD_CALL_1(NAME, TYPE, SIGNATURE, OPS) EVAL(_EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, OPS))
+#define BUILD_TRACKER(TYPE, OPS) EVAL(_EXEC_TRACKER(TYPE, OPS))
 
 #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
 #define PARAMS(...) __VA_ARGS__
@@ -929,6 +1038,7 @@
 #define PHI(A, B, C) EXPAND(DISPATCH_FACTORY(A, C, UNPAREN(B)))
 
 #define CALL_1(A, B, C, D) EXPAND(_EXPAND_PACKED_CALL_1(A, B, C, D))
+#define CALL_T(A, B) EXPAND(_EXPAND_PACKED_CALL_T(A, B))
 
 
 
@@ -972,6 +1082,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \
@@ -1012,6 +1123,7 @@ struct __registratorDouble_##NAME {\
                                                                 __registratorFloat_##NAME() { \
                                                                     OpName *ptr = new OpName(); \
                                                                     OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+                                                                    OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
                                                                 } \
                                                             }; \
                                                             template <typename OpName>  \
@@ -1052,6 +1164,7 @@ struct __registratorDouble_##NAME {\
                                     __registratorFloat_##NAME() {\
                                         OpName *ptr = new OpName(); \
                                         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+                                        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
                                     }\
                                 };\
                                 template <typename OpName>  \
@@ -1100,6 +1213,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \
@@ -1201,6 +1315,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \
@@ -1256,6 +1371,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \
@@ -1297,6 +1413,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \
@@ -1340,6 +1457,7 @@ struct __registratorFloat_##NAME {\
     __registratorFloat_##NAME() {\
         OpName *ptr = new OpName(); \
         OpRegistrator::getInstance()->registerOperationFloat(ptr); \
+        OpTracker::getInstance()->storeOperation(OpType_CUSTOM, *ptr->getOpDescriptor());\
     }\
 };\
 template <typename OpName>  \

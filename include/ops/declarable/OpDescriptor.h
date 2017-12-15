@@ -26,7 +26,7 @@ namespace nd4j {
             std::string _opName;
 
             // hash is used for ops lookup in OpRegistrator
-            Nd4jIndex _hash;
+            Nd4jIndex _hash = -1;
 
             // minimal required/expected number of inputs/outpus for this given op
             int _numInputs = 1;
@@ -84,6 +84,8 @@ namespace nd4j {
             // constructor for logical ops (while, scope, etc)
             OpDescriptor(const char * opName, bool isLogic);
 
+            bool operator==(const OpDescriptor& other) const;
+
             // default destructor
             ~OpDescriptor();
 
@@ -116,6 +118,8 @@ namespace nd4j {
 
             // this method allows to set specifc opNum
             void setOpNum(int opNum);
+
+            void setHash(Nd4jIndex hash);
 
             void setInputType(InputType type);
             InputType inputType();
