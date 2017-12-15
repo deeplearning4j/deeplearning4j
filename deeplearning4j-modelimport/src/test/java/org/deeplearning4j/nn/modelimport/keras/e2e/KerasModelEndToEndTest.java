@@ -227,6 +227,13 @@ public class KerasModelEndToEndTest {
         importModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
     }
 
+    /**
+     * DGA classifier test
+     */
+    @Test
+    public void importDgaClassifier() throws Exception {
+        importModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
+    }
 
     void importModelH5Test(String modelPath) throws Exception {
         ClassPathResource modelResource =
