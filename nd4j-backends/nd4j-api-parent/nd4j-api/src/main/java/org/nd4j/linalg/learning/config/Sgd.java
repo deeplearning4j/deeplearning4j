@@ -67,6 +67,17 @@ public class Sgd implements IUpdater {
         return learningRate;
     }
 
+    @Override
+    public boolean hasLearningRate() {
+        return true;
+    }
+
+    @Override
+    public void setLrAndSchedule(double lr, ISchedule lrSchedule) {
+        this.learningRate = lr;
+        this.learningRateSchedule = lrSchedule;
+    }
+
     //Partial builder implementation to give public no-arg constructor
     public static class Builder {
         public Builder(){ }

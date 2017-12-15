@@ -6,6 +6,7 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaDeltaUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.Arrays;
 
@@ -57,6 +58,16 @@ public class AdaDelta implements IUpdater {
     @Override
     public double getLearningRate(int iteration, int epoch) {
         return Double.NaN;  //No LR for  this updater
+    }
+
+    @Override
+    public boolean hasLearningRate() {
+        return true;
+    }
+
+    @Override
+    public void setLrAndSchedule(double lr, ISchedule lrSchedule) {
+        throw new UnsupportedOperationException("Cannot set learning rate or LR schedule: AdaDelta does not have a learning rate");
     }
 
     //Partial builder implementation to give public no-arg constructor

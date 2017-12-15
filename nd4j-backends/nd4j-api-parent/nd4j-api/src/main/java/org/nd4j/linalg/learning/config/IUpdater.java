@@ -2,6 +2,7 @@ package org.nd4j.linalg.learning.config;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -55,5 +56,19 @@ public interface IUpdater extends Serializable, Cloneable {
      * @return          Learning rate, or Double.NaN if no learning rate is applicable for this updater
      */
     double getLearningRate(int iteration, int epoch);
+
+    /**
+     * @return True if the updater has a learning rate hyperparameter, false otherwise
+     */
+    boolean hasLearningRate();
+
+    /**
+     * Set the learning rate and schedule. Note: may throw an exception if {@link #hasLearningRate()} returns false.
+     * @param lr         Learning rate to set (typically not used if LR schedule is non-null)
+     * @param lrSchedule Learning rate schedule to set (may be null)
+     */
+    void setLrAndSchedule(double lr, ISchedule lrSchedule);
+
+
 
 }

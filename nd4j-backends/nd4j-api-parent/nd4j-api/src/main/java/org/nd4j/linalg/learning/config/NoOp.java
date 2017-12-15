@@ -4,6 +4,7 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.NoOpUpdater;
+import org.nd4j.linalg.schedule.ISchedule;
 
 /**
  * NoOp updater: gradient updater that makes no changes to the gradient
@@ -33,5 +34,15 @@ public class NoOp implements IUpdater {
     @Override
     public double getLearningRate(int iteration, int epoch) {
         return Double.NaN;  //No LR
+    }
+
+    @Override
+    public boolean hasLearningRate() {
+        return false;
+    }
+
+    @Override
+    public void setLrAndSchedule(double lr, ISchedule lrSchedule) {
+        throw new UnsupportedOperationException("Cannot set LR/schedule for NoOp updater");
     }
 }
