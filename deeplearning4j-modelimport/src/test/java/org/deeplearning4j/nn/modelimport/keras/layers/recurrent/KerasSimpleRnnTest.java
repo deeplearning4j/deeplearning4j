@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
@@ -45,7 +46,7 @@ public class KerasSimpleRnnTest {
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int N_OUT = 13;
 
-
+    private Boolean[] returnSequences = new Boolean[]{true, false};
     private Integer keras1 = 1;
     private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
@@ -53,11 +54,13 @@ public class KerasSimpleRnnTest {
 
     @Test
     public void testSimpleRnnLayer() throws Exception {
-        buildSimpleRnnLayer(conf1, keras1);
-        buildSimpleRnnLayer(conf2, keras2);
+        for (Boolean rs : returnSequences) {
+            buildSimpleRnnLayer(conf1, keras1, rs);
+            buildSimpleRnnLayer(conf2, keras2, rs);
+        }
     }
 
-    void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
         boolean unroll = true;
 
         KerasSimpleRnn simpleRnn = new KerasSimpleRnn(kerasVersion);
@@ -81,7 +84,7 @@ public class KerasSimpleRnnTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
-        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
+        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), rs);
 
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
@@ -90,7 +93,9 @@ public class KerasSimpleRnnTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        SimpleRnn layer = new KerasSimpleRnn(layerConfig).getSimpleRnnLayer();
+
+        SimpleRnn layer = rs ? (SimpleRnn) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() :
+                (SimpleRnn) ((LastTimeStep) new  KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
         assertEquals(ACTIVATION, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
