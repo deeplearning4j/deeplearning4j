@@ -2879,6 +2879,33 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public void forgetGraph(long id) {
         nativeOps.unregisterGraph(null, id);
     }
+
+    /**
+     * This method allows to set desired number of elements per thread, for performance optimization purposes.
+     * I.e. if array contains 2048 elements, and threshold is set to 1024, 2 threads will be used for given op execution.
+     * <p>
+     * Default value: 1024
+     *
+     * @param threshold
+     */
+    @Override
+    public void setElementsThreshold(int threshold) {
+        nativeOps.setElementThreshold(threshold);
+    }
+
+    /**
+     * This method allows to set desired number of sub-arrays per thread, for performance optimization purposes.
+     * I.e. if matrix has shape of 64 x 128, and threshold is set to 8, each thread will be processing 8 sub-arrays (sure, if you have 8 core cpu).
+     * If your cpu has, say, 4, cores, only 4 threads will be spawned, and each will process 16 sub-arrays
+     * <p>
+     * Default value: 8
+     *
+     * @param threshold
+     */
+    @Override
+    public void setTadThreshold(int threshold) {
+        nativeOps.setTADThreshold(threshold);
+    }
 }
 
 
