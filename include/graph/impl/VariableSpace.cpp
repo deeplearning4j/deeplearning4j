@@ -342,6 +342,33 @@ namespace nd4j {
         }
 
         template <typename T>
+        VariableSpace<T>& VariableSpace<T>::operator=(const VariableSpace<T>& other) {
+            if (this == &other) return *this;
+
+            for (auto const& x : other._paired) {
+                std::pair<int, int> pair(x.first.first, x.first.second);
+
+                Variable<T>* clonedVar = x.second->clone();
+
+                if (pair.second == 0) {
+                    if (pair.first < 0)
+                        this->_variables[pair.first] = clonedVar;
+                    else
+                        this->_temporary[pair.first] = clonedVar;
+                }
+
+                if (clonedVar->getName() != nullptr && clonedVar->getName()->length() > 0)
+                    this->_symbolic[*(clonedVar->getName())] = clonedVar;
+
+                this->_paired[pair] = clonedVar;
+
+                this->_handles->push_back(clonedVar);
+            }
+
+            return *this;
+        }
+
+        template <typename T>
         void VariableSpace<T>::setRNG(nd4j::random::RandomBuffer* rng) {
             _rng = rng;
         }

@@ -59,6 +59,8 @@ namespace nd4j {
             VariableSpace();
             ~VariableSpace();
 
+            virtual VariableSpace<T>& operator=(const VariableSpace<T>& other);
+
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable<T>*>* getPlaceholders();
             virtual nd4j::random::RandomBuffer* getRNG();

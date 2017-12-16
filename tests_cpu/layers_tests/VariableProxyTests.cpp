@@ -132,3 +132,26 @@ TEST_F(VariableProxyTests, Test_Cast_1) {
     ASSERT_TRUE(y == z1);
     ASSERT_TRUE(x == z0);
 }
+
+
+TEST_F(VariableProxyTests, Test_Clone_1) {
+    auto x = new NDArray<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto y = new NDArray<float>('c', {2, 2}, {4, 2, 3, 1});
+    VariableSpace<float> ref;
+
+    ref.putVariable(118, x);
+
+    VariableProxy<float> proxy(&ref);
+
+    proxy.putVariable(119, y);
+
+    ASSERT_TRUE(proxy.hasVariable(118));
+    ASSERT_TRUE(proxy.hasVariable(119));
+
+    auto clone = proxy.clone();
+
+    ASSERT_TRUE(clone->hasVariable(118));
+    ASSERT_TRUE(clone->hasVariable(119));
+
+    delete clone;
+}

@@ -205,9 +205,20 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::VariableSpace<T>* VariableProxy<T>::clone() {
-            nd4j_printf("Clone ins't supported for VariableProxy yet\n","");
-            throw "Can't clone proxy yet";
+            auto clone = new VariableProxy(_backed);
+            clone->_current = _current;
+
+            return clone;
         }
+
+        template <typename T>
+        VariableSpace<T>& VariableProxy<T>::operator=(const VariableSpace<T>& other) {
+            if (this == &other) return *this;
+
+            _current = other;
+
+            return *this;
+        }  
 
         template class ND4J_EXPORT VariableProxy<float>;
         template class ND4J_EXPORT VariableProxy<float16>;
