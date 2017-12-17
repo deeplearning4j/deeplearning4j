@@ -2,7 +2,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -23,22 +22,22 @@ public class Constant extends BaseTransformOp {
     protected Constant(SameDiff sameDiff,
                        SDVariable i_v,
                        int[] shape,
-                       boolean inPlace,int vertexId) {
+                       boolean inPlace) {
         super();
-        sameDiff.putShapeForVertexId(vertexId,shape);
+        sameDiff.putShapeForVarName(i_v.getVarName(),shape);
+        this.xVertexId = i_v.getVarName();
+        this.zVertexId = i_v.getVarName();
         this.inPlace = inPlace;
         this.sameDiff = sameDiff;
 
-        if(sameDiff.graph().getVertex(vertexId) == null) {
-            sameDiff.graph().addVertex(new NDArrayVertex(sameDiff,vertexId,0,i_v));
-        }
+
 
     }
 
     public Constant(SameDiff sameDiff,
                     SDVariable i_v,
-                    int[] shape,int vertexId) {
-        this(sameDiff,i_v,shape,false,vertexId);
+                    int[] shape) {
+        this(sameDiff,i_v,shape,false);
     }
     @Override
     public boolean isConstant() {
@@ -56,8 +55,8 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public DifferentialFunction dup() {
-        Constant ret = new Constant(sameDiff, sameDiff.getVariableForVertexId(outputVariables()[0].getVertexId())
-                ,sameDiff.getShapeForVertexId(outputVariables()[0].getVertexId()),outputVariables()[0].getVertexId());
+        Constant ret = new Constant(sameDiff, sameDiff.getVariable(outputVariables()[0].getVarName())
+                ,sameDiff.getShapeForVarName(outputVariables()[0].getVarName()));
         Constant differentialFunction = ret;
         return differentialFunction;
     }
@@ -81,7 +80,7 @@ public class Constant extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-      throw new NoOpNameFoundException("No tensorflow opName found for " + calculateOutputShape());
+      throw new NoOpNameFoundException("No tensorflow opName found for " + opName());
     }
 
 }

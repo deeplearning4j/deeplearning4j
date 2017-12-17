@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -52,8 +53,8 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     protected long numProcessed;
     protected Object[] extraArgs;
     protected boolean passThrough;
-    @Getter
-    protected int xVertexId,yVertexId,zVertexId;
+    @Getter @Setter
+    protected String xVertexId,yVertexId,zVertexId;
     // cached instance, for dataType checks
     protected DataBuffer extraArgz;
 
@@ -152,6 +153,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 return extraArgz;
             }
         }
+
         return null;
     }
 
@@ -205,13 +207,13 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public void setZ(INDArray z) {
         if (z == null) {
-            SDVariable getResult = sameDiff.getVariableForVertexId(zVertexId);
+            SDVariable getResult = sameDiff.getVariable(zVertexId);
             if (getResult != null) {
                 if (getResult.getArr() != null)
                     this.z = getResult.getArr();
-                else if(sameDiff.getShapeForVertexId(getResult.getVertexId()) != null) {
-                    val shape = sameDiff.getShapeForVertexId(getResult.getVertexId());
-                    sameDiff.putArrayForVertexId(getResult.getVertexId(),getResult.getWeightInitScheme().create(shape));
+                else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
+                    val shape = sameDiff.getShapeForVarName(getResult.getVarName());
+                    sameDiff.putArrayForVarName(getResult.getVarName(),getResult.getWeightInitScheme().create(shape));
                 }
                 else
                     throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
@@ -285,9 +287,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public INDArray x() {
         if(x == null) {
             if(sameDiff != null) {
-                this.x = sameDiff.getArrForVertexId(args()[0].getVertexId());
+                this.x = sameDiff.getArrForVarName(args()[0].getVarName());
                 if(x == null) {
-                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[0].getVertexId() + " and op type " + opName() + " and shape " + Arrays.toString(args()[0].getShape()));
+                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[0].getVarName() + " and op type " + opName() + " and shape " + Arrays.toString(args()[0].getShape()));
                 }
             }
         }
@@ -298,9 +300,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public INDArray y() {
         if(y == null) {
             if(sameDiff != null && args().length > 1) {
-                this.y = sameDiff.getArrForVertexId(args()[1].getVertexId());
+                this.y = sameDiff.getArrForVarName(args()[1].getVarName());
                 if(y == null) {
-                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[1].getVertexId() + " and op type " + opName());
+                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[1].getVarName() + " and op type " + opName());
                 }
             }
         }
@@ -312,7 +314,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public INDArray z() {
         if(z == null) {
             if(sameDiff != null) {
-                this.z = sameDiff.getArrForVertexId(getZVertexId());
+                this.z = sameDiff.getArrForVarName(getZVertexId());
             }
         }
 
@@ -321,7 +323,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public SDVariable[] outputVariables() {
-        return new SDVariable[] {sameDiff.getVariableForVertexId(zVertexId)};
+        return new SDVariable[] {sameDiff.getVariable(zVertexId)};
     }
 
     @Override

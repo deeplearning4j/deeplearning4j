@@ -37,18 +37,13 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            int[] dimension) {
         super(sameDiff, inPlace, new Object[]{i_v2});
         if (i_v1 != null && i_v2 != null) {
-            sameDiff.addArgsFor(new SDVariable[]{i_v1, i_v2}, this);
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
             val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + i_v2.getVarName() ,Shape.getBroadcastDimensions(i_v1.getShape(), i_v2.getShape()));
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
-            sameDiff.putShapeForVertexId(outputVariables()[0].getVertexId(), Shape.getBroadcastDimensions(i_v1.getShape(), i_v2.getShape()));
-            this.xVertexId = i_v1.getVertexId();
-            this.yVertexId = i_v2.getVertexId();
-            this.zVertexId = var.getVertexId();
+
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -68,19 +63,12 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff, extraArgs);
         this.dimension = dimension;
         if (i_v1 != null && i_v2 != null) {
-            sameDiff.addArgsFor(new SDVariable[]{i_v1, i_v2}, this);
-
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
             val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + i_v2.getVarName() ,
                     Shape.getBroadcastDimensions(i_v1.getShape(), i_v2.getShape()));
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
-            this.xVertexId = i_v1.getVertexId();
-            this.yVertexId = i_v2.getVertexId();
-            this.zVertexId = var.getVertexId();
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
 
 
         } else {
@@ -104,14 +92,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff, inPlace, extraArgs);
         this.dimension = dimension;
         if (i_v != null) {
-            sameDiff.addArgsFor(new SDVariable[]{i_v}, this);
             f().validateDifferentialFunctionsameDiff(i_v);
-            sameDiff.putShapeForVertexId(outputVariables()[0].getVertexId(), shape);
             val var = sameDiff.var(i_v.getVarName() + "-" + opName() ,
-                   i_v.getShape(),i_v.depth()  + 1);
-            this.xVertexId = i_v.getVertexId();
-            this.zVertexId = var.getVertexId();
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
+                    i_v.getShape());
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -172,7 +155,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                 this.dimension = new int[]{1};
             } else if(Shape.isColumnVectorShape(rarg().getShape()))
                 this.dimension = new int[]{0};
-            else if (args().length > 1 && larg() != null && rarg() != null && larg().getShape() != null && rarg().getShape() != null && !sameDiff.isPlaceHolder(larg().getVertexId()) && !sameDiff.isPlaceHolder(rarg().getVertexId()))
+            else if (args().length > 1 && larg() != null && rarg() != null && larg().getShape() != null && rarg().getShape() != null && !sameDiff.isPlaceHolder(larg().getVarName()) && !sameDiff.isPlaceHolder(rarg().getVarName()))
                 this.dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
         }
 

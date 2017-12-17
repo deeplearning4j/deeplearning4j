@@ -23,7 +23,6 @@ public class Col2Im extends DynamicCustomOp {
         super(null,inputArrays,outputs);
         if(sameDiff != null) {
             this.sameDiff = sameDiff;
-            sameDiff.addArgsFor(inputFunctions, this);
         }
 
 

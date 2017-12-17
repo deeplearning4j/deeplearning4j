@@ -361,7 +361,7 @@ public interface OpExecutioner {
 
     void registerGraph(long id, Pointer graph);
 
-    Map<Integer, INDArray> executeGraph(long id, Map<Integer, INDArray> map);
+    Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map);
 
     void forgetGraph(long id);
 

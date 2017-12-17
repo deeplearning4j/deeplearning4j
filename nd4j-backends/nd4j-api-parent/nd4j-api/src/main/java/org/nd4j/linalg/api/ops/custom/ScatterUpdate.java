@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -189,5 +190,20 @@ public class ScatterUpdate implements CustomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
+
+    @Override
+    public CustomOpDescriptor getDescriptor() {
+        return op.getDescriptor();
+    }
+
+    @Override
+    public void assertValidForExecution() {
+
+    }
+
+    @Override
+    public void populateInputsAndOutputsFromSameDiff() {
+
     }
 }

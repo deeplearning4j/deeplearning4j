@@ -91,7 +91,7 @@ public class OldEqualTo extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "eq";
+        return "oldeq";
     }
 
     @Override

@@ -81,7 +81,7 @@ public class DifferentialFunctionFactory   {
 
     public Constant val(SDVariable iX) {
         return new Constant(sameDiff(), iX,
-                iX.getShape(),sameDiff().graph().nextVertexId());
+                iX.getShape());
     }
 
 
@@ -91,7 +91,6 @@ public class DifferentialFunctionFactory   {
                 .shape(iX.getShape())
                 .varName(iName)
                 .sameDiff(sameDiff())
-                .vertexId(sameDiff().graph().nextVertexId())
                 .build().outputVariables()[0];
     }
 

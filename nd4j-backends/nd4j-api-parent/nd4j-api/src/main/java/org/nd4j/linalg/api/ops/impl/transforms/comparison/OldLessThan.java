@@ -88,7 +88,7 @@ public class OldLessThan extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "lt";
+        return "oldlt";
     }
 
     @Override

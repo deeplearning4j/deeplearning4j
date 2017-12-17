@@ -83,7 +83,7 @@ public class OldFModOp extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "fmod";
+        return "oldfmod";
     }
 
     @Override

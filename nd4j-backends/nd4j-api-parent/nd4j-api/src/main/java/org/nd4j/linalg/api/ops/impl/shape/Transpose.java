@@ -76,7 +76,7 @@ public class Transpose extends DynamicCustomOp {
         if(permuteDims == null) {
             val args = args();
             if(args().length > 1) {
-                val permuteArrayOp = sameDiff.getArrForVertexId(args[1].getVertexId());
+                val permuteArrayOp = sameDiff.getArrForVarName(args[1].getVarName());
                 if(permuteArrayOp != null) {
                     this.permuteDims = permuteArrayOp.data().asInt();
                     if(ArrayUtil.prod(permuteDims) == 0 || permuteDims.length < args[0].getShape().length) {
@@ -124,22 +124,24 @@ public class Transpose extends DynamicCustomOp {
         }
 
         val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value",permuteDimsNode,graph);
-        val outputVertexId = outputVariables()[0].getVertexId();
         if(permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
-            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
-            sameDiff.putShapeForVertexId(outputVertexId,permutedShape);
             for(int i = 0; i < permuteDims.length; i++) {
                 addIArgument(permuteDims[i]);
             }
         }
 
+        //handle once properly mapped
+        if(arg().getShape() == null) {
+           return;
+        }
 
-        INDArray arr = sameDiff.getArrForVertexId(arg().getVertexId());
+
+        INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
         if(arr == null) {
-            val  arrVar = sameDiff.getVariableForVertexId(arg().getVertexId());
+            val  arrVar = sameDiff.getVariable(arg().getVarName());
             arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
-            sameDiff.putArrayForVertexId(arg().getVertexId(),arr);
+            sameDiff.putArrayForVarName(arg().getVarName(),arr);
         }
 
         addInputArgument(arr);

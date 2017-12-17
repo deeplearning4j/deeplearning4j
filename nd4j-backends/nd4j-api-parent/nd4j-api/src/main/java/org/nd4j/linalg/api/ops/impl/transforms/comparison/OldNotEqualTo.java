@@ -68,7 +68,7 @@ public class OldNotEqualTo extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "neq";
+        return "old_neq";
     }
 
     @Override
@@ -78,7 +78,7 @@ public class OldNotEqualTo extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "logical_not";
+       throw new NoOpNameFoundException("No op name found");
     }
 
 

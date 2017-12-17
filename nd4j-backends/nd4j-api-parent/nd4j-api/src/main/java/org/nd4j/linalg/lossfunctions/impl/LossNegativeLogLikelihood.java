@@ -25,6 +25,10 @@ public class LossNegativeLogLikelihood extends LossMCXENT {
         return toString();
     }
 
+    @Override
+    public String opName() {
+        return "lossnegativeloglikelihood";
+    }
 
     @Override
     public String toString() {

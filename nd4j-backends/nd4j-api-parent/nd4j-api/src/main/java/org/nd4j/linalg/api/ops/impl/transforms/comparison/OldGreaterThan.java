@@ -88,7 +88,7 @@ public class OldGreaterThan extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "gt";
+        return "oldgt";
     }
 
     @Override
@@ -98,7 +98,7 @@ public class OldGreaterThan extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Greater";
+        throw new NoOpNameFoundException("No tensorflow name found");
     }
 
 

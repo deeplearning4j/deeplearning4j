@@ -122,7 +122,7 @@ public class Reshape extends DynamicCustomOp {
         super.initWithArrays(arrayMap);
         if(numIArguments() == 0) {
             if(args().length > 1) {
-                val arr = sameDiff.getArrForVertexId(args()[1].getVertexId());
+                val arr = sameDiff.getArrForVarName(args()[1].getVarName());
                 if(arr == null) {
                     throw new ND4JIllegalStateException("Unable to infer shape for reshape. No array found for getting shape data from!");
                 }

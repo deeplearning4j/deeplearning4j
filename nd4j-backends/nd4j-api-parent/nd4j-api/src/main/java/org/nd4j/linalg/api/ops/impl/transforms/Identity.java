@@ -20,9 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,41 +30,8 @@ import java.util.UUID;
  *
  * @author Adam Gibson
  */
-public class Identity extends BaseTransformOp {
-    public Identity(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
+public class Identity extends BaseDynamicTransformOp {
 
-    public Identity(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public Identity(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public Identity() {}
-
-    public Identity(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public Identity(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public Identity(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public Identity(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public int opNum() {
-        return 27;
-    }
 
     @Override
     public String opName() {
@@ -76,7 +40,7 @@ public class Identity extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        return "constant";
+        return "Constant";
     }
 
     @Override
@@ -84,6 +48,10 @@ public class Identity extends BaseTransformOp {
         return "Identity";
     }
 
+    @Override
+    public String[] tensorflowNames() {
+        return new String[] {"Identity","NoOp"};
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

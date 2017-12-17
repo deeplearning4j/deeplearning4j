@@ -11,7 +11,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 public class IntArrayKeySet implements Set<int[]> {
-    private Set<IntArrayKeyMap.IntArray> set = new TreeSet<>();
+    private Set<IntArrayKeyMap.IntArray> set = new LinkedHashSet<>();
     @Override
     public int size() {
         return set.size();

@@ -42,10 +42,8 @@ public abstract class ShapeOp extends BaseOp {
 
         if (i_v != null) {
             f().validateDifferentialFunctionsameDiff(i_v);
-            val vertexId = outputVariables()[0].getVertexId();
-            sameDiff.putShapeForVertexId(vertexId,shape);
-            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
-            sameDiff.addOutgoingFor(new int[]{vertexId},this);
+            val vertexId = outputVariables()[0].getVarName();
+            sameDiff.putShapeForVarName(vertexId,shape);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -69,8 +67,8 @@ public abstract class ShapeOp extends BaseOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
-        val vertexId = outputVariables()[0].getVertexId();
-        ret.add(sameDiff.getShapeForVertexId(vertexId));
+        val vertexId = outputVariables()[0].getVarName();
+        ret.add(sameDiff.getShapeForVarName(vertexId));
         return ret;
     }
 
@@ -78,11 +76,11 @@ public abstract class ShapeOp extends BaseOp {
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
         val shapeOutput = calculateOutputShape();
-        val vertexId = outputVariables()[0].getVertexId();
-        if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVertexId(vertexId))
-            sameDiff.updateShapeForVertexId(vertexId,shapeOutput.get(0));
+        val vertexId = outputVariables()[0].getVarName();
+        if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVarName(vertexId))
+            sameDiff.updateShapeForVarName(vertexId,shapeOutput.get(0));
         else if(!shapeOutput.isEmpty())
-            sameDiff.putShapeForVertexId(vertexId,shapeOutput.get(0));
+            sameDiff.putShapeForVarName(vertexId,shapeOutput.get(0));
 
     }
 

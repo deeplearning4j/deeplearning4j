@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Simple pair implementation
@@ -21,6 +22,14 @@ public class Pair<K, V> implements Serializable {
 
     protected K key;
     protected V value;
+
+    @Override
+    public String toString() {
+        return "Pair{" +
+                "key=" + (key instanceof int[] ? Arrays.toString((int[]) key) : key) +
+                ", value=" + (value instanceof int[] ? Arrays.toString((int[]) value) : value) +
+                '}';
+    }
 
     public K getLeft() {
         return key;

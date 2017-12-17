@@ -906,7 +906,7 @@ public class Transforms {
      * @return
      */
     public static INDArray identity(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Identity(ndArray, ndArray.dup()) : new Identity(ndArray));
+        return exec(dup ? new OldIdentity(ndArray, ndArray.dup()) : new OldIdentity(ndArray));
     }
 
 

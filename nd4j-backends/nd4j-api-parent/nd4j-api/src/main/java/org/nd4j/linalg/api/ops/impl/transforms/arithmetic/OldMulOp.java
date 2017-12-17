@@ -71,7 +71,7 @@ public class OldMulOp extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "mul";
+        return "oldmul";
     }
 
 

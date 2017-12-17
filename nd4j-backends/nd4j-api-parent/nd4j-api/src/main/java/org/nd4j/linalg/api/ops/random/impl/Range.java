@@ -29,7 +29,7 @@ public class Range extends DynamicCustomOp {
     private Double delta;
     //used for initWithArrays when there are place holder
     //values that need to be resolved
-    private int fromVertexId,toVertexId,deltaVertexId;
+    private String fromVertexId,toVertexId,deltaVertexId;
     public Range() {
         // no-op
     }
@@ -81,23 +81,23 @@ public class Range extends DynamicCustomOp {
         val start = TFGraphMapper.getInstance().getNDArrayFromTensor("value",startNode,graph);
         val end = TFGraphMapper.getInstance().getNDArrayFromTensor("value",endNode,graph);
         val delta = TFGraphMapper.getInstance().getNDArrayFromTensor("value",deltaNode,graph);
-        val outputVars = outputVariables();
         if(start != null && end != null && delta != null) {
+            val outputVars = outputVariables();
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
-            val outputVertexId = outputVariables()[0].getVertexId();
-            if(sameDiff.getArrForVertexId(outputVertexId) == null) {
+            val outputVertexId = outputVariables()[0].getVarName();
+            if(sameDiff.getArrForVarName(outputVertexId) == null) {
                 val arr = Nd4j.create(outputVars[0].getShape());
-                sameDiff.putArrayForVertexId(outputVertexId, arr);
+                sameDiff.putArrayForVarName(outputVertexId, arr);
                 addOutputArgument(arr);
             }
         }
 
-        this.fromVertexId = sameDiff.getVariable(startNode.getName()).getVertexId();
-        this.toVertexId = sameDiff.getVariable(endNode.getName()).getVertexId();
-        this.deltaVertexId = sameDiff.getVariable(deltaNode.getName()).getVertexId();
+        this.fromVertexId = sameDiff.getVariable(startNode.getName()).getVarName();
+        this.toVertexId = sameDiff.getVariable(endNode.getName()).getVarName();
+        this.deltaVertexId = sameDiff.getVariable(deltaNode.getName()).getVarName();
 
     }
 
@@ -113,9 +113,9 @@ public class Range extends DynamicCustomOp {
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
-        val start = sameDiff.getVariableForVertexId(fromVertexId).getArr();
-        val end = sameDiff.getVariableForVertexId(toVertexId).getArr();
-        val delta = sameDiff.getVariableForVertexId(deltaVertexId).getArr();
+        val start = sameDiff.getVariable(fromVertexId).getArr();
+        val end = sameDiff.getVariable(toVertexId).getArr();
+        val delta = sameDiff.getVariable(deltaVertexId).getArr();
         val outputVars = outputVariables();
 
         if(start != null && end != null && delta != null) {
@@ -123,9 +123,9 @@ public class Range extends DynamicCustomOp {
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
-            if(sameDiff.getArrForVertexId(outputVars[0].getVertexId()) == null) {
+            if(sameDiff.getArrForVarName(outputVars[0].getVarName()) == null) {
                 val arr = Nd4j.create(outputVars[0].getShape());
-                sameDiff.putArrayForVertexId(outputVars[0].getVertexId(), arr);
+                sameDiff.putArrayForVarName(outputVars[0].getVarName(), arr);
                 addOutputArgument(arr);
             }
 

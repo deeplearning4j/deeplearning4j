@@ -87,7 +87,7 @@ public class OldGreaterThanOrEqual extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "gte";
+        return "oldgte";
     }
 
     @Override

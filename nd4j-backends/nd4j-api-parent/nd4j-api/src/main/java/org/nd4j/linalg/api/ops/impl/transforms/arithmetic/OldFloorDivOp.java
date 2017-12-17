@@ -71,7 +71,7 @@ public class OldFloorDivOp extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "floordiv";
+        return "oldfloordiv";
     }
 
 

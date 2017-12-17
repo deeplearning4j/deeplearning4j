@@ -53,6 +53,9 @@ public class DifferentialFunctionClassHolder {
             try {
                 DifferentialFunction node = clazz.newInstance();
                 val name = node.opName();
+                if(name == null)
+                    continue;
+
                 if(name.endsWith("_bp")) {
                     log.warn("Skipping derivative " + name);
                 }
@@ -74,8 +77,12 @@ public class DifferentialFunctionClassHolder {
                         log.trace("Skipping op " + name + " for onnx.");
                     }
                 }
-            } catch (Exception e) {
+            } catch (NoOpNameFoundException e) {
                 log.trace("Skipping function  " + clazz);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } catch (InstantiationException e) {
+                throw new RuntimeException(e);
             }
         }
 

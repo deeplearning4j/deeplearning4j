@@ -20,7 +20,7 @@ public class NDArrayVertex extends Vertex<SDVariable>  {
 
     public NDArrayVertex(SameDiff sameDiff, int idx, int depth, int[] shape) {
         this(sameDiff,idx,depth,SDVariable.builder()
-        .sameDiff(sameDiff).shape(shape).vertexId(idx).build());
+        .sameDiff(sameDiff).shape(shape).build());
     }
 
     /**

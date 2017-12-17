@@ -21,72 +21,74 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 /**
- * Hard tanh elementwise function
+ * Identity function
  *
  * @author Adam Gibson
  */
-public class HardTanh extends BaseTransformOp {
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class OldIdentity extends BaseTransformOp {
+    public OldIdentity(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public OldIdentity(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public HardTanh(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public OldIdentity(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public HardTanh() {}
+    public OldIdentity() {}
 
-    public HardTanh(INDArray x, INDArray z) {
+    public OldIdentity(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public HardTanh(INDArray x, INDArray z, long n) {
+    public OldIdentity(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public HardTanh(INDArray x, INDArray y, INDArray z, long n) {
+    public OldIdentity(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public HardTanh(INDArray x) {
+    public OldIdentity(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 19;
+        return 27;
     }
 
     @Override
     public String opName() {
-        return "hardtanh";
+        return "old_identity";
     }
-
 
     @Override
     public String onnxName() {
-        return "HardTanh";
+        throw new NoOpNameFoundException("This op does not work with onnx.");
     }
 
     @Override
     public String tensorflowName() {
-        return "HardTanh";
+        throw new NoOpNameFoundException("This op does not work with tensorflow.");
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().hardTanhDerivative(this.sameDiff.getVariable(outputVariables()[0].getVarName()));
-        return Collections.singletonList(ret);
+        return Collections.singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
     }
+
 }

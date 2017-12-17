@@ -56,7 +56,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.Nd4jBlas;
 import org.nd4j.nativeblas.Nd4jCuda;
 
 import java.util.*;
@@ -2748,7 +2747,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public Map<Integer, INDArray>  executeGraph(long id, Map<Integer, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
 
         this.commit();
 

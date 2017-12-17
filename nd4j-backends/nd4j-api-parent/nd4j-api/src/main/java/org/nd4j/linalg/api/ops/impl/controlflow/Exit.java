@@ -1,8 +1,14 @@
 package org.nd4j.linalg.api.ops.impl.controlflow;
 
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
+
+import java.util.Map;
 
 /**
  * From the onnx docs:
@@ -35,6 +41,13 @@ import org.nd4j.linalg.api.ops.Op;
 
  */
 public class Exit extends DynamicCustomOp {
+
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
     @Override
     public String opName() {
         return "exit";

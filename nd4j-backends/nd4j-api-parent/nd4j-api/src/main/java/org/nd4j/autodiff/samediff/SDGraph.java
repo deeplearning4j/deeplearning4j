@@ -105,20 +105,6 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
 
 
 
-    /**
-     * Get the input vertices
-     * @return
-     */
-    public List<SDVariable> getInputs() {
-        List<SDVariable> ret = new ArrayList<>();
-        List<SDVariable> outVars = sameDiff.variables();
-        for (SDVariable entry : outVars) {
-            if(numInputsFor(entry.getVertexId()) < 1)
-                ret.add(entry);
-        }
-
-        return ret;
-    }
 
     /**
      * Get the number of inputs for a particular vertex id
@@ -308,10 +294,10 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
                 }
                 else {
                     for(int i = 0; i < edge1.getFrom().length; i++) {
-                         val singleEntry = new int[] {edge1.getFrom()[i]};
-                         if(!ArrayUtil.listOfIntsContains(vertices,singleEntry)) {
-                             vertices.add(singleEntry);
-                         }
+                        val singleEntry = new int[] {edge1.getFrom()[i]};
+                        if(!ArrayUtil.listOfIntsContains(vertices,singleEntry)) {
+                            vertices.add(singleEntry);
+                        }
                     }
                 }
 
@@ -386,19 +372,22 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
                 Set<int[]> outVertices = new IntArrayKeySet();
                 Set<int[]> currInputs = new IntArrayKeySet();
                 for (Edge<DifferentialFunction> edge : edges) {
-                    outVertices.add(edge.getTo());
+                    for(int vertex : edge.getTo())
+                        outVertices.add(new int[]{vertex});
                     Set<int[]> outputSetForInputIdx = outputEdges.get(i);
                     if (outputSetForInputIdx == null) {
                         outputSetForInputIdx = new IntArrayKeySet();
                         outputEdges.put(i, outputSetForInputIdx);
                     }
 
-                    outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
+                    for(int vertex : edge.getTo())
+                        outputSetForInputIdx.add(new int[]{vertex}); //input vertex outputs to the current vertex
                 }
 
                 if( getIncomingEdges().get(i) != null) {
                     for (Edge<DifferentialFunction> edge : getIncomingEdges().get(i)) {
-                        currInputs.add(edge.getFrom());
+                        for(int vertex : edge.getFrom())
+                            currInputs.add(new int[]{vertex});
 
                     }
 
@@ -436,7 +425,7 @@ public class SDGraph extends Graph<SDVariable,DifferentialFunction> {
                 Set<int[]> set = entry.getValue();
                 if (set == null)
                     continue;
-                if (!set.isEmpty() && set.iterator().next().length < 2)
+                if (!set.isEmpty() )
                     throw new IllegalStateException("Graph has cycles");
             }
 

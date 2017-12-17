@@ -212,7 +212,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         if(fromList == null) {
             fromList = new LinkedHashSet<>();
-            edges.put(edge.getFrom(),fromList);
+            for(int i : edge.getFrom())
+                edges.put(new int[]{i},fromList);
         }
 
         addEdgeHelper(edge, fromList);
@@ -227,7 +228,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         Set<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
         if(incomingList == null) {
             incomingList = new LinkedHashSet<>();
-            incomingEdges.put(edge.getTo(),incomingList);
+            for(int i : edge.getTo())
+                incomingEdges.put(new int[]{i},incomingList);
         }
 
         addEdgeHelper(edge, incomingList);
@@ -240,7 +242,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         Set<Edge<E>> toList = edges.get(edge.getTo());
         if(toList == null) {
             toList = new LinkedHashSet<>();
-            edges.put(edge.getTo(),toList);
+            for(int i : edge.getTo())
+                edges.put(new int[]{i},toList);
         }
 
         addEdgeHelper(edge, toList);

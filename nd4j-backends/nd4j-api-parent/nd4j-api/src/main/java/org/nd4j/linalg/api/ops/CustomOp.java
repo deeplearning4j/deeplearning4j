@@ -83,4 +83,23 @@ public interface CustomOp {
      * @return
      */
     List<int[]> calculateOutputShape();
+
+    /**
+     * Get the custom op descriptor if one is available.
+     * @return
+     */
+    CustomOpDescriptor getDescriptor();
+
+    /**
+     * Asserts a valid state for execution,
+     * otherwise throws an {@link org.nd4j.linalg.exception.ND4JIllegalStateException}
+     */
+    void assertValidForExecution();
+
+    /**
+     * Attempt to populate inputs and outputs from samediff.
+     * This method will not attempt to fill in integer or double aruguments.
+     */
+    void populateInputsAndOutputsFromSameDiff();
+
 }

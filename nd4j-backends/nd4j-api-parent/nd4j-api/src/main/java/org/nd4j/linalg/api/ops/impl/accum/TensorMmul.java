@@ -69,10 +69,8 @@ public class TensorMmul extends DynamicCustomOp {
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
         this.extraArgs = new Object[] {axes,mMulTranspose};
-        sameDiff.addArgsFor(new SDVariable[] {i_v1,i_v2},this);
-        val vertexId = outputVariables()[0].getVertexId();
+        val vertexId = outputVariables()[0].getVarName();
         if(!addedEdges && sameDiff.getOutputsForFunction(this) == null) {
-            sameDiff.addOutgoingFor(new int[]{vertexId},this);
             addedEdges = true;
         }
     }
@@ -264,13 +262,13 @@ public class TensorMmul extends DynamicCustomOp {
             }
         }
 
-        val outputVertexId = outputVariables()[0].getVertexId();
+        val outputVertexId = outputVariables()[0].getVarName();
 
-        val var = sameDiff.getVariableForVertexId(outputVertexId);
-        INDArray arr = sameDiff.getArrForVertexId(var.getVertexId());
+        val var = sameDiff.getVariable(outputVertexId);
+        INDArray arr = sameDiff.getArrForVarName(var.getVarName());
         if (arr == null) {
             arr = var.getWeightInitScheme().create(calculateOutputShape().get(0));
-            sameDiff.putArrayForVertexId(outputVertexId, arr);
+            sameDiff.putArrayForVarName(outputVertexId, arr);
             addOutputArgument(arr);
         }
 

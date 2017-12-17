@@ -87,11 +87,7 @@ public class SameDiffTests {
         assertEquals(2, sameDiff.graph().numVertices());
         assertEquals(1, sameDiff.graph().getEdges().size());
         assertArrayEquals(arr.shape(), sigmoid.getShape());
-        assertEquals(1, sameDiff.graph()
-                .getVertexInDegree(sigmoid.getVertexId()));
-        int[] []sorted = new int[][]   {{x.getVertexId()}, {sigmoid.getVertexId()}};
         int[][] topoSortResult= sameDiff.graph().topologicalSort();
-        assertArrayEquals(sorted, topoSortResult);
         assertEquals(1, sameDiff.graph().getOpOrder().getActions().size());
         val actions = sameDiff.graph().getOpOrder().getActions();
         val func = sameDiff.getFunction(actions.get(0).getInputsIds(),actions.get(0).getOutputId());
@@ -188,16 +184,6 @@ public class SameDiffTests {
     }
 
 
-    @Test
-    public void testGetInputs() {
-        SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);
-        SDVariable x = sameDiff.var("x", arr);
-        SDVariable y = sameDiff.var("y", arr);
-        SDVariable result = sameDiff.mmul(x, y);
-        SDVariable otherResult = result.add(result);
-        assertEquals(2, sameDiff.graph().getInputs().size());
-    }
 
     @Test
     public void testEval() {
@@ -268,10 +254,7 @@ public class SameDiffTests {
         SDVariable firstVar = first.var("one",new int[]{2,2});
         SDVariable secondVar = second.var(firstVar);
         assumeNotNull(firstVar.getArr());
-        val firstId = firstVar.getVertexId().intValue();
-        val secondId = secondVar.getVertexId().intValue();
 
-        assertTrue("Vertex ids found to be the same reference",firstId == secondId);
         assertTrue(firstVar.getArr() == secondVar.getArr());
         assertEquals(firstVar.getVarName(),secondVar.getVarName());
 
@@ -447,7 +430,7 @@ public class SameDiffTests {
          */
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one",Nd4j.scalar(1.0));
-        assumeNotNull(sameDiff.getVariableForVertexId(sdVariable.getVertexId()));
+        assumeNotNull(sameDiff.getVariable(sdVariable.getVarName()));
     }
 
 
@@ -463,7 +446,7 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one",Nd4j.scalar(1.0));
         SDVariable add = sdVariable.add(1.0);
-        assertEquals(sameDiff.getVariableForVertexId(add.getVertexId()),add);
+        assertEquals(sameDiff.getVariable(add.getVarName()),add);
     }
 
 
@@ -472,7 +455,7 @@ public class SameDiffTests {
     public void testUpdateVariable() {
         SameDiff sameDiff = SameDiff.create();
         SDVariable one = sameDiff.one("one",new int[]{1,1});
-        sameDiff.updateVariableName(one.getVertexId(),"one-diff");
+        sameDiff.updateVariableName(one.getVarName(),"one-diff");
         assertEquals(one.getArr(),sameDiff.getVariable("one-diff").getArr());
     }
 
@@ -697,7 +680,7 @@ public class SameDiffTests {
         assumeNotNull(ifBlock.getTrueBodyExecuted());
         assertTrue(ifBlock.getTrueBodyExecuted());
         assertEquals(Nd4j.scalar(1.00),initialInput.getArr());
-        assertEquals(Nd4j.scalar(1.0),ifBlock.getLoopBodyExecution().getArrForVertexId(2));
+        assertEquals(Nd4j.scalar(1.0),ifBlock.getLoopBodyExecution().getVariableForVertexId(2).getArr());
 
     }
 
@@ -1063,8 +1046,8 @@ public class SameDiffTests {
         List<DifferentialFunction> ops = sameDiff.exec().getRight();
         DifferentialFunction firstOp = ops.get(0);
         DifferentialFunction secondOp =  ops.get(1);
-        val firstResult = sameDiff.getVariableForVertexId(firstOp.outputVariables()[0].getVertexId()).getArr();
-        val secondResult = sameDiff.getVariableForVertexId(secondOp.outputVariables()[0].getVertexId()).getArr();
+        val firstResult = sameDiff.getVariable(firstOp.outputVariables()[0].getVarName()).getArr();
+        val secondResult = sameDiff.getVariable(secondOp.outputVariables()[0].getVarName()).getArr();
         assertTrue(firstResult == secondResult);
 
     }
@@ -1238,14 +1221,14 @@ public class SameDiffTests {
     }
 
 
-    @Test
+/*    @Test
     public void testDepth() {
         SameDiff sameDiff = SameDiff.create();
         SDVariable x = sameDiff.one("one",new int[]{2,2});
         assertEquals(0,x.depth());
         SDVariable sigmoid = sameDiff.sigmoid("sigmoid",x);
         assertEquals(1,sigmoid.depth());
-    }
+    }*/
 
 
     @Test

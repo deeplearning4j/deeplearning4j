@@ -3,7 +3,6 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,13 +30,7 @@ public class Conv3D extends DynamicCustomOp {
     public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
         super(null,sameDiff, inputFunctions, false);
         setSameDiff(sameDiff);
-        if(inputFunctions != null) {
-            val ids = new int[inputFunctions.length];
-            for(int i = 0; i < ids.length; i++) {
-                ids[i] = inputFunctions[i].getVertexId();
-            }
-            sameDiff.addArgsFor(ids, this);
-        }
+
         if(inputs != null)
             addInputArgument(inputs);
         if(outputs != null)

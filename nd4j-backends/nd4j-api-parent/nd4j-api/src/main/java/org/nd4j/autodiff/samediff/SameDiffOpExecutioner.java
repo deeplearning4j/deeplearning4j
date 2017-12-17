@@ -508,7 +508,7 @@ public class SameDiffOpExecutioner implements OpExecutioner,OpProfiler.OpProfile
     }
 
     @Override
-    public Map<Integer, INDArray> executeGraph(long id, Map<Integer, INDArray> map) {
+    public Map<String, INDArray> executeGraph(long id, Map<String, INDArray> map) {
         return backendExecutioner.executeGraph(id, map);
     }
 

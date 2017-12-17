@@ -58,14 +58,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
-            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions),i_v.depth() + 1);
-            sameDiff.addOutgoingFor(new int[]{var2.getVertexId()},this);
-            this.xVertexId = i_v.getVertexId();
-            this.zVertexId = var2.getVertexId();
+            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
+
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -79,16 +76,16 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
-            sameDiff.addArgsFor(new SDVariable[] {i_v,i_v2},this);
             this.dimensions = dimensions;
-            sameDiff.putShapeForVertexId(zVertexId,Shape.getReducedShape(i_v.getShape(),dimensions));
+            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
+            sameDiff.putShapeForVarName(var2.getVarName(),Shape.getReducedShape(i_v.getShape(),dimensions));
+            this.xVertexId = i_v.getVarName();
+            this.yVertexId = i_v2.getVarName();
+            this.zVertexId = var2.getVarName();
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.keepDims = keepDims;
-            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions),Math.max(i_v.depth(),i_v2.depth()) + 1);
-            sameDiff.addOutgoingFor(new int[]{var2.getVertexId()},this);
-            this.xVertexId = i_v.getVertexId();
-            this.zVertexId = var2.getVertexId();
+
 
 
 

@@ -79,11 +79,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = scalar;
         if (i_v != null) {
-            val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",i_v.getShape(),i_v.depth() + 1);
-            sameDiff.addArgsFor(new SDVariable[] {i_v},this);
-            sameDiff.addOutgoingFor(new int[]{var.getVertexId()},this);
-            this.xVertexId = i_v.getVertexId();
-            this.zVertexId = var.getVertexId();
+            val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",i_v.getShape());
+             this.xVertexId = i_v.getVarName();
+            this.zVertexId = var.getVarName();
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -102,7 +100,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public SDVariable[] outputVariables() {
-        return new SDVariable[] {sameDiff.getVariableForVertexId(sameDiff.graph().getToFor(new int[]{arg().getVertexId()})[0])};
+        return new SDVariable[] {sameDiff.getVariable(zVertexId)};
     }
 
     @Override

@@ -42,6 +42,10 @@ import java.util.Map;
 public class ExpandDims extends DynamicCustomOp {
     private int axis;
 
+
+    public ExpandDims() {
+    }
+
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
         this.axis = axis;

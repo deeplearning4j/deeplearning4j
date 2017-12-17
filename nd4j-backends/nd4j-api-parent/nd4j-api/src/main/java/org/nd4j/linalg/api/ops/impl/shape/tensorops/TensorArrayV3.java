@@ -1,45 +1,20 @@
-package org.nd4j.linalg.api.ops.impl.shape;
+package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
 import lombok.val;
-import onnx.OnnxProto3;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.List;
 import java.util.Map;
 
-public class TensorArrayV3 extends DynamicCustomOp {
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for " + opName());
-    }
+public class TensorArrayV3 extends  BaseTensorOp {
 
     @Override
     public String tensorflowName() {
         return "TensorArrayV3";
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Differentiation not supported yet.");
-
-    }
-
-    @Override
-    public String toString() {
-        return opName();
-    }
-
-    @Override
-    public String opName() {
-        return "tensorarrayv3";
     }
 
     @Override
@@ -63,11 +38,17 @@ public class TensorArrayV3 extends DynamicCustomOp {
 
     }
 
+
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-
+    public String toString() {
+        return opName();
     }
+
+    @Override
+    public String opName() {
+        return "tensorarrayv3";
+    }
+
 
     @Override
     public Op.Type opType() {

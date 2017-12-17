@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -86,7 +85,7 @@ public class Cube extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow opName found for " + calculateOutputShape());
+        throw new NoOpNameFoundException("No tensorflow opName found for " + opName());
     }
 
 

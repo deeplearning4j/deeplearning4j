@@ -60,7 +60,6 @@ public class Linear extends BaseModule {
         this.weightInitScheme = weightInitScheme;
         this.biasWeightInitScheme = biasWeightInitScheme;
 
-        sameDiff.addArgsFor(new int[]{nIn,nOut},this);
         this.nIn = nIn;
         this.nOut = nOut;
 

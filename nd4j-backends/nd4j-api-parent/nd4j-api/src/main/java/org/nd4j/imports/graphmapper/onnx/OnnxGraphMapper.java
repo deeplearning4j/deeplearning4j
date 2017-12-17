@@ -7,7 +7,6 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
@@ -95,19 +94,6 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
 
-    @Override
-    public Map<String, Integer> verticesForGraph(OnnxProto3.GraphProto graph, SameDiff sameDiff) {
-        //map the names of the nodes while accumulating the vertex ids
-        //for each variable
-        val variablesForGraph = variablesForGraph(graph);
-        val indexMap = new HashMap<String,Integer>();
-        for(val entry : variablesForGraph.entrySet()) {
-            val var = sameDiff.var(entry.getKey(),getNDArrayFromTensor(entry.getKey(), entry.getValue(), graph));
-            indexMap.put(entry.getKey(),var.getVertexId());
-        }
-
-        return indexMap;
-    }
 
     /**
      *
@@ -121,9 +107,9 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(OnnxProto3.GraphProto graph, Map<String, Integer> nodeNameToVertexId) {
+    public Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(OnnxProto3.GraphProto graph) {
         val ret = new HashMap<String, Pair<int[], int[]>>(graph.getNodeCount());
-        for(int nodeIdx = 0; nodeIdx < graph.getNodeCount(); nodeIdx++) {
+     /*   for(int nodeIdx = 0; nodeIdx < graph.getNodeCount(); nodeIdx++) {
             val node = graph.getNode(nodeIdx);
             val name = node.getName().isEmpty() ? String.valueOf(nodeIdx) : node.getName();
             val inputs = new int[node.getInputCount()];
@@ -137,7 +123,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             }
 
             ret.put(name,Pair.of(inputs,outputs));
-        }
+        }*/
 
         return ret;
     }
@@ -235,8 +221,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             val indices = importState.getVertexIdMap().get(name);
             val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode, newInstance);
             newInstance.setSameDiff(importState.getSameDiff());
-            importState.getSameDiff().addArgsFor(indices.getRight(),newInstance);
-            /**
+              /**
              * Need to f
              */
             if(!Arrays.equals(indices.getLeft(),indices.getRight())) {

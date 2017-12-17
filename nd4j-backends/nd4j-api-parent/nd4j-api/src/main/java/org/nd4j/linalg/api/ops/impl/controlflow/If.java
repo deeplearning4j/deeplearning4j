@@ -11,6 +11,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
@@ -65,18 +66,10 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = ifStatement.falseBody;
         this.trueBodyExecuted = ifStatement.trueBodyExecuted;
         this.dummyResult = ifStatement.dummyResult;
-        sameDiff.addArgsFor(ifStatement.inputVars,this);
         this.inputVars = ifStatement.inputVars;
-        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),sameDiff.graph().nextVertexId(),0);
-        sameDiff.putShapeForVertexId(dummyResult.getVertexId(),new int[]{1,1});
+        this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
+        sameDiff.putShapeForVarName(dummyResult.getVarName(),new int[]{1,1});
 
-        int[] inputEdges = new int[inputVars.length];
-
-        for(int i = 0; i < inputEdges.length; i++) {
-            inputEdges[i] = inputVars[i].getVertexId();
-        }
-
-        sameDiff.addOutgoingFor(new SDVariable[] {dummyResult},this);
 
 
 
@@ -98,8 +91,7 @@ public class If extends DifferentialFunction implements CustomOp {
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
-        sameDiff.addArgsFor(inputVars,this);
-        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'),parent.graph().nextVertexId(),0);
+        this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
 
 
 
@@ -123,7 +115,6 @@ public class If extends DifferentialFunction implements CustomOp {
         parent.putSubFunction("predicate-eval-body-" + UUID.randomUUID().toString(),sameDiff);
         //get a reference to the actual loop body
         this.loopBodyExecution = parent.getFunction(trueBodyName);
-        parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
     }
 
 
@@ -292,6 +283,21 @@ public class If extends DifferentialFunction implements CustomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         return Arrays.asList(new int[]{1,1});
+    }
+
+    @Override
+    public CustomOpDescriptor getDescriptor() {
+        return null;
+    }
+
+    @Override
+    public void assertValidForExecution() {
+
+    }
+
+    @Override
+    public void populateInputsAndOutputsFromSameDiff() {
+
     }
 
     @Override

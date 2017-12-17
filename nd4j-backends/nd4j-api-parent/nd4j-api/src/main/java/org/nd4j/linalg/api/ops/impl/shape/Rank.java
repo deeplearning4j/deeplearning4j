@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Reshape function
+ * Rank function
  *
  * @author Adam Gibson
  */
@@ -56,25 +56,25 @@ public class Rank extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
         val input = initWith.getVariable(name);
-        val outputVertex = outputVariables()[0].getVertexId();
-        if(!initWith.isPlaceHolder(input.getVertexId()) && initWith.shapeAlreadyExistsForVertexId(outputVertex)) {
-            val inputShape = initWith.getShapeForVertexId(input.getVertexId());
+        val outputVertex = outputVariables()[0].getVarName();
+        if(!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {
+            val inputShape = initWith.getShapeForVarName(input.getVarName());
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
-            initWith.putArrayForVertexId(thisResultId,resultLength);
+            initWith.putArrayForVarName(thisResultId,resultLength);
         }
     }
 
     @Override
     public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
         super.initWithArrays(arrayMap);
-        val outputVertex = outputVariables()[0].getVertexId();
-        val arr = sameDiff.getArrForVertexId(outputVertex);
+        val outputVertex = outputVariables()[0].getVarName();
+        val arr = sameDiff.getArrForVarName(outputVertex);
         if(arr == null) {
-            val inputShape = sameDiff.getShapeForVertexId(arg().getVertexId());
+            val inputShape = sameDiff.getShapeForVarName(arg().getVarName());
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
-            sameDiff.putArrayForVertexId(thisResultId,resultLength);
+            sameDiff.putArrayForVarName(thisResultId,resultLength);
 
         }
     }

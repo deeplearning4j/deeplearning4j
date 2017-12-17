@@ -71,7 +71,7 @@ public class OldDivOp extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "div";
+        return "olddiv";
     }
 
     @Override

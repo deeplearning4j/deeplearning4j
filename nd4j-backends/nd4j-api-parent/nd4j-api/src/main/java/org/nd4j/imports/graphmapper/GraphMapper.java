@@ -60,14 +60,6 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      */
     void dumpBinaryProtoAsText(InputStream inputFile,File outputFile);
 
-    /**
-     * Get the vertices for a given graph
-     * based on the name
-     * @param graph the graph
-     * @param sameDiff
-     * @return
-     */
-    Map<String,Integer> verticesForGraph(GRAPH_TYPE graph, SameDiff sameDiff);
 
     /**
      * Get the mapped op name
@@ -98,10 +90,9 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     /**
      *
      * @param graph
-     * @param nodeNameToVertexId
      * @return
      */
-    Map<String,Pair<int[],int[]>> inputsAndOutputsForGraph(GRAPH_TYPE graph, Map<String, Integer> nodeNameToVertexId);
+    Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(GRAPH_TYPE graph);
 
     /**
      * Get the variables for the given graph
@@ -109,6 +100,7 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
      * @return a map of variable name to tensor
      */
     Map<String,TENSOR_TYPE> variablesForGraph(GRAPH_TYPE graphType);
+
 
     /**
      *

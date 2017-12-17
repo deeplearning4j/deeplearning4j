@@ -61,9 +61,12 @@ import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossMixtureDensity extends DifferentialFunction implements ILossFunction {
 
-    private final int mMixtures;
-    private final int mLabelWidth;
+    private  int mMixtures;
+    private  int mLabelWidth;
     private static final double SQRT_TWO_PI = Math.sqrt(2 * Math.PI);
+
+    public LossMixtureDensity() {
+    }
 
     /**
      * This method constructs a mixture density cost function
