@@ -667,6 +667,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * When doing truncated backpropagation through time (tBPTT): how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttLength length > 0
+         */
+        public GraphBuilder tBPTTLength(int tbpttLength){
+            tBPTTForwardLength(tbpttLength);
+            return tBPTTBackwardLength(tbpttLength);
+        }
+
+        /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName   Name/label of the layer to add

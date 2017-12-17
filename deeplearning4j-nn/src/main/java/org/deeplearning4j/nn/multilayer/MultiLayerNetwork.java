@@ -41,6 +41,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.deeplearning4j.nn.layers.recurrent.RnnLossLayer;
+import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -1446,7 +1448,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         int timeSeriesLength = input.size(2);
         int nSubsets = timeSeriesLength / fwdLen;
         if (timeSeriesLength % fwdLen != 0)
-            nSubsets++; //Example: 100 fwdLen with timeSeriesLength=100 -> want 2 subsets (1 of size 100, 1 of size 20)
+            nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
 
         rnnClearPreviousState();
 
@@ -1470,26 +1472,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     if (endTimeIdx > timeSeriesLength)
                         endTimeIdx = timeSeriesLength;
 
-                    INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, input, labels,
+                            featuresMaskArray, labelsMaskArray);
 
-                    setInput(inputSubset);
-                    setLabels(labelSubset);
-
-                    INDArray featuresMaskSubset = null;
-                    INDArray labelsMaskSubset = null;
-                    if (featuresMaskArray != null) {
-                        featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
-                                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                    if (labelsMaskArray != null) {
-                        labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
-                                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                    if (featuresMaskSubset != null || labelsMaskSubset != null)
-                        setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
+                    setInput(subsets[0]);
+                    setLabels(subsets[1]);
+                    setLayerMaskArrays(subsets[2], subsets[3]);
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -1513,6 +1501,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         rnnClearPreviousState();
         if (featuresMaskArray != null || labelsMaskArray != null)
             clearLayerMaskArrays();
+    }
+
+    private INDArray[] getSubsetsForTbptt(int startTimeIdx, int endTimeIdx, INDArray input, INDArray labels,
+                                          INDArray fMask, INDArray lMask ){
+        INDArray[] out = new INDArray[4];
+        out[0] = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+        out[1] = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+
+        if (fMask != null) {
+            out[2] = fMask.get(NDArrayIndex.all(),
+                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+        }
+        if (lMask != null) {
+            out[3] = lMask.get(NDArrayIndex.all(),
+                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+        }
+
+        return out;
     }
 
     public void updateRnnStateWithTBPTTState() {
@@ -2919,29 +2927,72 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                                                         workspaceConfigurationExternal, workspaceExternal);
 
+        //First: let's determine if we should do 'split feed forward' for long time series
+        //The idea: RNN 20k time steps. Train using TBPTT length 100 -> 200 segments of length 100. If we naively
+        // just use .output(INDArray) here, then our memory requirements are 200x larger than if we did the same
+        // evaluation in segments...
+        //Only do this if TBPTT is enabled - if not, it means we can train without TBPTT and hence should be able
+        // to test without splitting also
+        boolean useRnnSegments = (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT);
+
         while (iter.hasNext()) {
             DataSet next = iter.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
 
+            MemoryWorkspace workspaceT =
+                    layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                            : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                            workspaceConfigurationTBPTT, workspaceTBPTT);
+
             try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
                 INDArray features = next.getFeatures();
                 INDArray labels = next.getLabels();
+                INDArray fMask = next.getFeaturesMaskArray();
                 INDArray lMask = next.getLabelsMaskArray();
 
-                INDArray out;
-                if (next.hasMaskArrays()) {
-                    INDArray fMask = next.getFeaturesMaskArray();
-                    out = this.silentOutput(features, false, fMask, lMask);
-                } else {
-                    out = this.silentOutput(features, false);
-                }
 
-                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                    for (T evaluation : evaluations)
-                        evaluation.eval(labels, out, lMask);
+
+                if(!useRnnSegments){
+                    //Standard/non-RNN case:
+                    INDArray out;
+                    if (next.hasMaskArrays()) {
+                        out = this.silentOutput(features, false, fMask, lMask);
+                    } else {
+                        out = this.silentOutput(features, false);
+                    }
+
+                    try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                        for (T evaluation : evaluations)
+                            evaluation.eval(labels, out, lMask);
+                    }
+                } else {
+                    rnnClearPreviousState();
+
+
+                    //Get subset of features and labels:
+                    int fwdLen = layerWiseConfigurations.getTbpttFwdLength();
+                    int tsLength = features.size(2);
+                    int nSubsets = tsLength / fwdLen;
+                    if (tsLength % fwdLen != 0)
+                        nSubsets++; //Example: 100 fwdLen with timeSeriesLength=120 -> want 2 subsets (1 of size 100, 1 of size 20)
+                    for (int i = 0; i < nSubsets; i++) {
+                        int startTimeIdx = i * fwdLen;
+                        int endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
+                        INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, features, labels, fMask, lMask);
+
+                        try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+                            setLayerMaskArrays(subsets[2], subsets[3]);
+
+                            INDArray outSub = rnnTimeStep(subsets[0]);
+                            try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                                for (T evaluation : evaluations)
+                                    evaluation.eval(subsets[1], outSub, subsets[3]);
+                            }
+                        }
+                    }
                 }
             }
 
@@ -3168,7 +3219,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File)}.
+     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File, boolean)}.
      * Note that this saves the updater (i.e., the state array for momentum/Adam/rmsprop etc), which is desirable
      * if further training will be undertaken.
      *
@@ -3181,7 +3232,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File)}.
+     * Save the MultiLayerNetwork to a file. Restore using {@link #load(File, boolean)}.
      *
      * @param f File to save the network to
      * @param saveUpdater If true: save the updater (i.e., the state array for momentum/Adam/rmsprop etc), which should
