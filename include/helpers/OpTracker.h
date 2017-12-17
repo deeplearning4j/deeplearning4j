@@ -11,12 +11,13 @@
 #include <pointercast.h>
 #include <graph/generated/utils_generated.h>
 #include <ops/declarable/OpDescriptor.h>
+#include <dll.h>
 
 using namespace nd4j::ops;
 using namespace nd4j::graph;
 
 namespace nd4j {
-    class OpTracker {
+    class ND4J_EXPORT OpTracker {
     private:
         static OpTracker* _INSTANCE;        
 

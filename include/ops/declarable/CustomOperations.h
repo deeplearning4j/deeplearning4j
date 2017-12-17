@@ -21,10 +21,11 @@
 #include <ops/declarable/headers/loss.h>
 #include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/headers/third_party.h>
+#include <dll.h>
 
 
 namespace nd4j {
-    struct _loader {
+    struct ND4J_EXPORT _loader {
         _loader();
     };
 
