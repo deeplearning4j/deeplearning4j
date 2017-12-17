@@ -2756,18 +2756,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ptrIndices = new IntPointer(map.size());
 
         int cnt = 0;
-        val keySet = map.keySet();
+        val keySet = new ArrayList<String>(map.keySet());
         for (val key: keySet) {
             val array = map.get(key);
 
             ptrBuffers.put(cnt, AtomicAllocator.getInstance().getHostPointer(array));
             ptrShapes.put(cnt, AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()));
-            ptrIndices.put(cnt, key);
+            ptrIndices.put(cnt, cnt);
 
             cnt++;
         }
 
-        val newMap = new LinkedHashMap<Integer, INDArray>();
+        val newMap = new LinkedHashMap<String, INDArray>();
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             val result = (Nd4jCuda.FloatVariablesSet) nativeOps.executeStoredGraphFloat(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
@@ -2798,7 +2798,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(nodeId, array);
+                newMap.put(keySet.get(nodeId), array);
             }
             nativeOps.deleteVariablesSetFloat(result);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
@@ -2831,7 +2831,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(nodeId, array);
+                newMap.put(keySet.get(nodeId), array);
             }
 
             nativeOps.deleteVariablesSetDouble(result);
@@ -2865,7 +2865,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
                 AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-                newMap.put(nodeId, array);
+                newMap.put(keySet.get(nodeId), array);
             }
 
             nativeOps.deleteVariablesSetHalf(result);

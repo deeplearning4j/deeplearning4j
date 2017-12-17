@@ -8114,6 +8114,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public FloatVariableSpace() { super((Pointer)null); allocate(); }
             private native void allocate();
 
+            public native @ByRef @Name("operator =") FloatVariableSpace put(@Const @ByRef FloatVariableSpace other);
+
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getPlaceholders();
             public native RandomBuffer getRNG();
@@ -8177,6 +8179,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public HalfVariableSpace() { super((Pointer)null); allocate(); }
             private native void allocate();
 
+            public native @ByRef @Name("operator =") HalfVariableSpace put(@Const @ByRef HalfVariableSpace other);
+
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getPlaceholders();
             public native RandomBuffer getRNG();
@@ -8239,6 +8243,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
             public DoubleVariableSpace() { super((Pointer)null); allocate(); }
             private native void allocate();
+
+            public native @ByRef @Name("operator =") DoubleVariableSpace put(@Const @ByRef DoubleVariableSpace other);
 
             public native int numberOfPlaceholders();
             public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getPlaceholders();
@@ -14078,6 +14084,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/loss.h>
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
+// #include <dll.h>
     @Namespace("nd4j") public static class _loader extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
