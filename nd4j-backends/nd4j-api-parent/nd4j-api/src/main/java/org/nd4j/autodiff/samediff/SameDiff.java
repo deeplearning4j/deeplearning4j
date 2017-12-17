@@ -3420,7 +3420,7 @@ public class SameDiff {
      * @param function
      */
     public void defineFunction(String function,SameDiffFunctionDefinition functionDefinition) {
-        defineFunction(function,functionDefinition, new HashMap<>());
+        defineFunction(function,functionDefinition, new HashMap<String,INDArray>());
     }
 
     /**
@@ -3870,7 +3870,7 @@ public class SameDiff {
         }
 
         if(!resolvedVariables)
-            resolveVariablesWith(Collections.emptyMap());
+            resolveVariablesWith(Collections.<String,INDArray>emptyMap());
 
         List<DifferentialFunction> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();

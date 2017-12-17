@@ -81,26 +81,27 @@ public class IntArrayKeyMap<V> implements Map<int[],V> {
     public Set<Entry<int[], V>> entrySet() {
         Set<Map.Entry<IntArray,V>> intArrays = map.entrySet();
         Set<Entry<int[], V>> ret = new LinkedHashSet<>();
-        for(Map.Entry<IntArray,V> intArray : intArrays)
-            ret.add(new Map.Entry<int[],V>() {
+        for(Map.Entry<IntArray,V> intArray : intArrays) {
+            final Map.Entry<IntArray,V> intArray2 = intArray;
+            ret.add(new Map.Entry<int[], V>() {
                 @Override
                 public int[] getKey() {
-                    return intArray.getKey().backingArray;
+                    return intArray2.getKey().backingArray;
                 }
 
                 @Override
                 public V getValue() {
-                    return intArray.getValue();
+                    return intArray2.getValue();
                 }
 
                 @Override
                 public V setValue(V v) {
-                    return intArray.setValue(v);
+                    return intArray2.setValue(v);
                 }
             });
+        }
         return ret;
     }
-
 
 
     public static class IntArray implements Comparable<IntArray> {
