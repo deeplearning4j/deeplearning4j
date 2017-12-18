@@ -14,8 +14,6 @@
 namespace nd4j {
 
     template<typename T> class ND4J_EXPORT NDArray;
-    // template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
-    // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
     ND4J_EXPORT NDArray<float> operator-(const float, const NDArray<float>&);
     ND4J_EXPORT NDArray<float16> operator-(const float16, const NDArray<float16>&);
     ND4J_EXPORT NDArray<double> operator-(const double, const NDArray<double>&);
@@ -27,539 +25,970 @@ namespace nd4j {
 
     template<typename T>
     class NDArray {
+    
     protected:
+       /**
+       *  if true then array doesn't own buffer and simply points to another's buffer
+       */                  
         bool _isView = false;
 
-        T    *_buffer = nullptr;                          // pointer on flattened data array in memory
-        int  *_shapeInfo = nullptr;                       // contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, c-like or fortan-like order, element-wise-stride
+        /**
+        *  pointer on flattened data array in memory
+        */  
+        T *_buffer = nullptr;                          
 
+        /**
+        *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, element-wise-stride, c-like or fortan-like order
+        */  
+        int *_shapeInfo = nullptr;                       
+
+        /**
+        *  pointer on externally allocated memory where _buffer and _shapeInfo are stored
+        */  
         nd4j::memory::Workspace* _workspace = nullptr;
-
+        
+        /**
+        *  alternative buffers for special computational devices (like GPUs for CUDA)
+        */  
         T* _bufferD = nullptr;
         int* _shapeInfoD = nullptr;
 
+        /**
+        *  indicates whether user allocates memory for _buffer/_shapeInfo by himself, in opposite case the memory must be allocated from outside
+        */  
+        bool _isShapeAlloc = false;                    
+        bool _isBuffAlloc = false; 						
 
-        bool _isShapeAlloc = false;                    // indicates whether user allocates memory for _shapeInfo by himself, in opposite case the memory must be allocated from outside
-        bool _isBuffAlloc = false; 						// indicates whether user allocates memory for _buffer by himself, in opposite case the memory must be allocated from outside
-
+        /**
+        *  type of array elements
+        */  
         DataType _dataType = DataType_FLOAT;
 
-    public:
+    public:        
+        
+        /**
+        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        */
+        NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
+        
+        /**
+        *  copy constructor
+        */
+        NDArray(const NDArray<T>& other);
+
+        /**
+        *  constructor, create empty array stored at given workspace
+        */
+        NDArray(nd4j::memory::Workspace* workspace);
+
+        /**
+        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
+        */
+        NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
+        */ 
+        NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        */
+        NDArray(const NDArray<T> *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
+				
+        /**
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        */
+		NDArray(const int* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  this constructor creates new array using shape information contained in vector argument    
+        */
+        NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        */
+        NDArray(const char order, const std::vector<int> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        */
+        NDArray(T *buffer, const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        * assignment operator
+        */
+        NDArray<T>& operator=(const NDArray<T>& other);
+
+        /**
+        *   operators for memory allocation and deletion
+        */ 
         void* operator new(size_t i);
         void operator delete(void* p);
 
-		// forbid assignment operator
-		NDArray<T>& operator=(const NDArray<T>& other);
-        
-        // accessing operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-        FORCEINLINE T operator()(const Nd4jIndex i) const;
-
-        // modifying operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-        FORCEINLINE T& operator()(const Nd4jIndex i);
-
-        // accessing operator for 2D array, i - row, j - column
-        FORCEINLINE T operator()(const int i, const int j) const;        
-
-        // modifying operator for 2D array, i - row, j - column
-        FORCEINLINE T& operator()(const int i, const int j);
-
-        // accessing operator for 3D array
-        FORCEINLINE T operator()(const int i, const int j, const int k) const;        
-
-        // modifying operator for 3D array
-        FORCEINLINE T& operator()(const int i, const int j, const int k);
-
-        // default constructor, do not allocate memory, memory for array is passed from outside 
-        NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
-
-        //constructor, create empty array with at workspace
-        NDArray(nd4j::memory::Workspace* workspace);
-
-        // this constructor creates 2D NDArray, memory for array is allocated in constructor
-        NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
-        NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
-        NDArray(const NDArray<T> *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
-		
-		// copy constructor
-        NDArray(const NDArray<T>& other);
-
-		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-		NDArray(const int* shapeInfo, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
-
-        // this constructor creates new array using shape information contained in initializer_list/vector argument
-        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
-        NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
-
-        NDArray(const char order, const std::vector<int> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
-
-        NDArray(T *buffer, const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
-
-        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        /**
+        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        */
         void replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting = true);
  
-        NDArray<T>* repeat(int dimension, const std::vector<int>& reps) const;
+        /**
+        *  create a new array by replicating current array by repeats times along given dimension
+        *  dimension - dimension along which to repeat elements
+        *  repeats - number of repetitions
+        */        
+        NDArray<T>* repeat(int dimension, const std::vector<int>& repeats) const;
 
+        /**
+        *  fill target array by repeating current array 
+        *  dimension - dimension along which to repeat elements        
+        */
         void repeat(int dimension, NDArray<T>& target) const;
 
+        /**
+        *  return _dataType;
+        */
         DataType dataType() const;
 
+        /**
+        *  creates array which is view of this array
+        */
         NDArray<T>* getView();
 
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
         NDArray<T> *subarray(IndicesList& indices) const;
-
         NDArray<T> *subarray(IndicesList& indices, std::vector<int>& strides) const;
-
         NDArray<T>* subarray(const std::initializer_list<NDIndex*>& idx) const;
-
         NDArray<T>* subarray(const Intervals& idx) const;
 
+        /**
+        *  cast array elements to given dtype
+        */ 
         NDArray<T>* cast(DataType dtype);
-
         void cast(NDArray<T>* target, DataType dtype);
 
+        /**
+        *   returns _workspace
+        */
         nd4j::memory::Workspace* getWorkspace() const {
             return _workspace;
         }
 
-        T* getBuffer();
+        /**
+        *   returns _buffer
+        */
+        T* getBuffer();        
         T* buffer();
 
-
-        T* specialBuffer();
-        int* specialShapeInfo();
-        void setSpecialBuffers(T * buffer, int *shape);
-
-
+        /**
+        *   returns _shapeInfo
+        */
         int* shapeInfo();
         int* getShapeInfo() const;
 
-        void setShapeInfo(int *shapeInfo) {
-            if(_isShapeAlloc && _workspace == nullptr)
-                delete []_shapeInfo;
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
+        T* specialBuffer();
 
-            _shapeInfo = shapeInfo;
-            _isShapeAlloc = false;
-        }
+        /**
+        *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
+        */
+        int* specialShapeInfo();
 
-        void setBuffer(T* buffer) {
-            if(_isBuffAlloc && _workspace == nullptr)
-                delete []_buffer;
+        /**
+        *  set values for _bufferD and _shapeInfoD
+        */
+        void setSpecialBuffers(T * buffer, int *shape);
 
-            _buffer = buffer;
-            _isBuffAlloc = false;
-        }
-
-        void triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
-            _isBuffAlloc = bufferAllocated;
-            _isShapeAlloc = shapeAllocated;
-        }
-
-        int sizeAt(int dim) const;
-
-        // This method returns order of this NDArray
-        char ordering() const {
-            return shape::order(_shapeInfo);
-        }
-
-        bool isView() {
-            return _isView;
-        }
-
-        // This method returns shape portion of shapeInfo
-        int *shapeOf() const {
-            return shape::shapeOf(_shapeInfo);
-        }
-
-        // This method returns strides portion of shapeInfo
-        int *stridesOf() const {
-            return shape::stride(_shapeInfo);
-        }
-
-        // This method returns rank of this NDArray
-        int rankOf() const {
-            return shape::rank(_shapeInfo);
-        }
-
-        // This method returns length of this NDArray
-        Nd4jIndex lengthOf() const {
-            return shape::length(_shapeInfo);
-        }
-
+        /**
+        *  permutes (in-place) the dimensions in array according to "dimensions" array
+        */
         bool permutei(const std::initializer_list<int>& dimensions);
         bool permutei(const std::vector<int>& dimensions);
         bool permutei(const int* dimensions, const int rank);
 
+        /**
+        *  permutes the dimensions in array according to "dimensions" array
+        */
 		NDArray<T>* permute(const std::initializer_list<int>& dimensions) const;
         NDArray<T>* permute(const std::vector<int>& dimensions) const;
         NDArray<T>* permute(const int* dimensions, const int rank) const;
 
+        /**
+        *  permutes the dimensions in target according to "dimensions" array
+        */
         void permute(const int* dimensions, const int rank, NDArray<T>& target) const;
         void permute(const std::vector<int>& dimensions, NDArray<T>& target) const;
 
-        // This method returns number of rows in this NDArray
-        int rows() const {
-            return shapeOf()[0];
-        }
-
-        // This method returns number of columns in this NDArray
-        int columns() const {
-            return shapeOf()[1];
-        }
-
-        // This method returns sizeof(T) for this NDArray
-        int sizeOfT() const {
-            return sizeof(T);
-        }
-
+        /**
+        *  check whether array is contiguous in memory
+        */ 
         bool isContiguous();
 
-        // print information about array shape
+        /**
+        *  prints information about array shape
+        *  msg - message to print out 
+        */ 
         void printShapeInfo(const char * msg = nullptr) const;
 
+        /**
+        *  prints buffer elements
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         void printBuffer(const char* msg = nullptr, int limit = -1);
 
+        /**
+        *  prints buffer elements, takes into account offset between elements (element-wise-stride)
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         void printIndexedBuffer(const char* msg = nullptr, int limit = -1);
 
-        // This method assigns values of given NDArray to this one, wrt order
+        /**
+        *  this method assigns values of given array to this one
+        */ 
         void assign(const NDArray<T> *other);
 
-        // This method assigns given value to all elements in this NDArray
+        /**
+        *  this method assigns given value to all elements in array
+        */ 
         void assign(const T value);
 
-        // This method returns new copy of this NDArray, optionally in different order
+        /**
+        *  returns new copy of this array, optionally in different order
+        */
         NDArray<T> *dup(const char newOrder = 'a');
 
-        // Returns true if these two NDArrays have same shape
+        /** 
+        *  returns sum of all elements of array
+        */
+        T sumNumber() const;
+
+        /**
+        *  returns mean number of array
+        */ 
+        T meanNumber() const;
+
+        /**
+        *  calculates sum along dimension(s) in this array and save it to created reduced array
+        *  dimensions - array of dimensions to calculate sum over
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+        NDArray<T> *sum(const std::initializer_list<int> &dimensions, const bool keepDims = false) const;
+
+		/**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */ 
+        template<typename OpName>
+        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false) const;
+		template<typename OpName>
+        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
+        template<typename OpName>
+        NDArray<T> reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false) const;
+
+        /**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
+        *  target - where to save result of reducing
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        *  extras - extra parameters
+        */ 
+        template<typename OpName>
+        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false, T *extras = nullptr) const;
+
+        /**
+        *  return variance of array elements set
+        *  biasCorrected -  if true bias correction will be applied
+        */ 
+        template<typename OpName>
+        T varianceNumber(bool biasCorrected = true);
+
+        /**
+        *  apply scalar operation to array 
+        *  extraParams - extra parameters for operation
+        */  
+        template<typename OpName>
+        T reduceNumber(T *extraParams = nullptr);
+
+        /**
+        *  returns element index which corresponds to some condition imposed by operation
+        *  extraParams - extra parameters for operation
+        */ 
+        template<typename OpName>
+        Nd4jIndex indexReduceNumber(T *extraParams = nullptr);
+
+        /**
+        *  returns index of max element in a given array (optionally: along given dimension(s))
+        *  dimensions - optional vector with dimensions
+        */          
+        Nd4jIndex argMax(std::initializer_list<int> dimensions = {});
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyTransform(T *extraParams = nullptr);
+
+        /**
+        *  apply OpName transformation to array and store result in target
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyTransform(NDArray<T> *target, T *extraParams = nullptr);
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+        template<typename OpName>
+        NDArray<T> transform(T *extraParams = nullptr);
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
+        *  other - second array necessary for pairwise operation
+        *  extraParams - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyPairwiseTransform(NDArray<T> *other, T *extraParams);
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
+        *  other - second array necessary for pairwise operation
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
+
+        /**
+        *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
+        *  tad - array to broadcast
+        *  dimensions -  array with dimensions to broadcast along
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */               
+        template<typename OpName>
+        void applyBroadcast(std::initializer_list<int> dimensions, const NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
+        template <typename OpName>
+        void applyBroadcast(std::vector<int> &dimensions, const NDArray<T> *tad, NDArray<T> *target = nullptr, T *extraArgs = nullptr);
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  extraParams - extra parameters for operation
+        */                       
+        template <typename OpName>
+        NDArray<T> applyTrueBroadcast(const NDArray<T>& other, T *extraArgs = nullptr) const;
+        template <typename OpName>
+        NDArray<T>* applyTrueBroadcast(const NDArray<T>* other, T *extraArgs = nullptr) const;
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  target - where to store result
+        *  checkTargetShape - if true check whether target shape is suitable for broadcasting
+        *  extraParams - extra parameters for operation
+        */                       
+        template <typename OpName>
+        void applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */ 
+        template<typename OpName>
+        void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input array which is simple scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */ 
+        template<typename OpName>
+        void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
+
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
+#ifndef __JAVACPP_HACK__
+        void applyLambda(const std::function<T(T)>& func, NDArray<T>* target = nullptr);
+
+        /** 
+        *  apply pairwise operation "func" to an array
+        *  other - input array
+        *  func - what pairwise operation to apply
+        *  target - where to store result
+        */ 
+        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+#endif
+
+        /**
+        *  apply OpName random operation to array 
+        *  buffer - pointer on RandomBuffer
+        *  y - optional input array
+        *  z - optional input array
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y = nullptr, NDArray<T>* z = nullptr, T* extraArgs = nullptr);
+
+        /**
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        */
+        NDArray<T> *transpose() const;
+
+        /**
+        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  target - where to store result
+        */ 
+        void transpose(NDArray<T>& target) const;
+
+        /**
+        *  apply in-place transpose operation to this array, so this array becomes transposed 
+        */ 
+        void transposei();
+
+        /**
+        *  return array pointing on certain range of this array
+        *  index - the number of array to be returned among set of possible arrays 
+        *  dimensions - array of dimensions to point on
+        */
+        NDArray<T>* tensorAlongDimension(int index, const std::initializer_list<int>& dimensions) const;
+        NDArray<T>* tensorAlongDimension(int index, const std::vector<int>& dimensions) const;
+
+        /**
+        *  returns the number of arrays pointing on specified dimension(s)
+        *  dimensions - array of dimensions to point on
+        */
+        Nd4jIndex tensorsAlongDimension(const std::initializer_list<int> dimensions) const ;
+        Nd4jIndex tensorsAlongDimension(const std::vector<int>& dimensions) const ;
+
+        /**
+        *  returns true if elements of two arrays are equal to within given epsilon value
+        *  other - input array to compare
+        *  eps - epsilon, this value defines the precision of elements comparison
+        */
+        bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
+        
+        /**
+        *  add given row vector to all rows of this array
+        *  row - row vector to add
+        */
+        void addiRowVector(const NDArray<T> *row);
+
+        /**
+        *  add given row vector to all rows of this array, store result in target
+        *  row - row vector to add
+        *  target - where to store result
+        */
+        void addRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+
+        /**
+        *  subtract given row vector from all rows of this array, store result in target
+        *  row - row vector to subtract
+        *  target - where to store result
+        */
+        void subRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+        
+        /**
+        *  multiply all rows of this array on given row vector, store result in target
+        *  row - row vector to multiply on
+        *  target - where to store result
+        */
+        void mulRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+
+        /**
+        *  divide all rows of this array on given row vector, store result in target
+        *  row - row vector to divide on
+        *  target - where to store result
+        */
+        void divRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+        
+        /**
+        *  add given column vector to all columns of this array, store result in target
+        *  column - column vector to add
+        *  target - where to store result
+        */
+        void addColumnVector(const NDArray<T> *column, NDArray<T>* target) const;
+
+        /**
+        *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
+        *  column - column vector to add
+        */
+		void addiColumnVector(const NDArray<T> *column);
+
+        /**
+        *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
+        *  column - column vector to multiply on
+        */
+		void muliColumnVector(const NDArray<T> *column);
+
+        /**
+        *  returns number of bytes used by _buffer & _shapeInfo
+        */
+        Nd4jIndex memoryFootprint();        
+        
+        /**
+        *  these methods suited for FlatBuffers use
+        */
+        std::vector<T> getBufferAsVector();
+        std::vector<int> getShapeAsVector();
+        std::vector<int> getShapeInfoAsVector();
+				
+        /**
+        *  set new order and shape in case of suitable array length (in-place operation)
+        *  order - order to set
+        *  shape - shape to set
+        */
+		bool reshapei(const char order, const std::initializer_list<int>& shape);		
+		bool reshapei(const char order, const std::vector<int>& shape);
+	
+        /**
+        *  creates new array with corresponding order and shape, new array will point on _buffer of this array
+        *  order - order to set
+        *  shape - shape to set
+        */
+		NDArray<T>* reshape(const char order, const std::vector<int>& shape);
+		
+        /**
+        *  calculate strides and set given order
+        *  order - order to set
+        */
+		void updateStrides(const char order);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        */
+		void tilei(const std::vector<int>& repeats);
+
+        /**
+        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  repeats - contains numbers of repetitions
+        */
+		NDArray<T> tile(const std::vector<int>& repeats) const;
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        *  target - where to store result
+        */
+        void tile(const std::vector<int>& repeats, NDArray<T>& target) const;
+        
+        /**
+        *  returns an array which is result of broadcasting of this and other arrays 
+        *  other - input array
+        */
+		NDArray<T>*  broadcast(const NDArray<T>& other);
+		
+        /**
+        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
+        *  arg - 0 -> row, 1 -> column
+        */
+		bool hasOrthonormalBasis(const int arg); 
+				
+        /**
+        *  check whether array is identity matrix
+        */
+		bool isIdentityMatrix(); 
+		
+        /**
+        *  check whether array is unitary matrix
+        */
+		bool isUnitary(); 
+                        
+        /**
+        *  reduces dimensions in this array relying on index operation OpName
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        NDArray<T>* applyIndexReduce(const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+
+        /**
+        *  reduces dimensions in array relying on index operation OpName
+        *  target - where to store result
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        void applyIndexReduce(const NDArray<T>* target, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        NDArray<T>* applyReduce3(const NDArray<T>* other, const T* extraParams = nullptr) const;
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        NDArray<T>* applyAllReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+                
+        /**
+        *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+        template<typename OpName>
+        NDArray<T>* applyReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
+
+
+        /**
+        *  returns variance along given dimensions
+        *  biasCorrected -  if true bias correction will be applied
+        *  dimensions - vector of dimensions to calculate variance along
+        */
+        template<typename OpName>
+        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const;
+        template<typename OpName>
+        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
+
+        /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays  to point on
+        */
+        NDArray<T> operator()(const Intervals& idx)  const;
+
+        /**
+        *  addition operator: array + other
+        *  other - input array to add
+        */
+        NDArray<T> operator+(const NDArray<T>& other) const;
+
+        /**
+        *  addition operator: array + scalar
+        *  scalar - input scalar to add
+        */
+        NDArray<T> operator+(const T scalar) const;
+
+        /**
+        *  friend functions which implement addition operator: scalar + array
+        *  scalar - input scalar to add
+        */
+        friend NDArray<float> nd4j::operator+(const float scalar, const NDArray<float>& arr);
+        friend NDArray<float16> nd4j::operator+(const float16 scalar, const NDArray<float16>& arr);
+        friend NDArray<double> nd4j::operator+(const double scalar, const NDArray<double>& arr);
+        
+        /**
+        *  addition unary operator array += other
+        *  other - input array to add
+        */
+        void operator+=(const NDArray<T>& other);
+        
+        /**
+        *  subtraction operator: array - other
+        *  other - input array to subtract
+        */
+        NDArray<T> operator-(const NDArray<T>& other) const;
+        
+        /**
+        *  subtraction operator: array - scalar
+        *  scalar - input scalar to subtract
+        */
+        NDArray<T> operator-(const T& scalar) const;        
+
+        /**
+        *  negative operator, it changes sign of all array elements on opposite
+        */
+        NDArray<T> operator-() const;
+
+        /**
+        *  friend functions which implement subtraction operator: scalar - array
+        *  scalar - input scalar to subtract
+        */
+        friend NDArray<float> nd4j::operator-(const float scalar, const NDArray<float>& arr);
+        friend NDArray<float16> nd4j::operator-(const float16 scalar, const NDArray<float16>& arr);
+        friend NDArray<double> nd4j::operator-(const double scalar, const NDArray<double>& arr);
+
+        /**
+        *  pairwise multiplication operator: array * other
+        *  other - input array to multiply on
+        */
+        NDArray<T> operator*(const NDArray<T>& other) const;        
+    
+        /**
+        *  multiplication operator: array * scalar
+        *  scalar - input scalar to multiply on
+        */
+        NDArray<T> operator*(const T scalar) const;
+        
+        /**
+        *  pairwise multiplication unary operator array *= other
+        *  other - input array to multiply on
+        */
+        void operator*=(const NDArray<T>& other);
+
+        /**
+        *  multiplication unary operator array *= scalar
+        *  scalar - input scalar to multiply on
+        */
+        void operator*=(const T scalar);
+
+        /**
+        *  pairwise division operator: array / other
+        *  other - input array to divide on
+        */
+        NDArray<T> operator/(const NDArray<T>& other) const;        
+
+        /**
+        *  pairwise division unary operator: array /= other
+        *  other - input array to divide on
+        */
+        void operator/=(const NDArray<T>& other);
+
+        /**
+        *  division unary operator: array /= scalar
+        *  scalar - input scalar to divide on
+        */
+        void operator/=(const T scalar);
+
+        /**
+        *  friend function which implements mathematical multiplication of two arrays
+        *  left - input array
+        *  right - input array
+        */
+        friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
+
+        /**
+        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  other - input array to assign elements from
+        *  idx - intervals of indexes which define the sub-array
+        */ 
+        void assign(const NDArray<T>& other, const Intervals& idx);
+
+        /**
+        *  return vector containing _buffer as flat binary array
+        */
+        std::vector<int8_t> asByteVector();
+
+        // default destructor
+        ~NDArray(); 
+
+        /**
+        *  set _shapeInfo
+        */
+        FORCEINLINE void setShapeInfo(int *shapeInfo);
+
+        /**
+        *  set _buffer
+        */
+        FORCEINLINE void setBuffer(T* buffer);
+
+        /**
+        *  set _isBuffAlloc and _isShapeAlloc
+        */
+        FORCEINLINE void triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated);
+        
+        /**
+        *  returns the value of "dim" dimension 
+        */ 
+        int sizeAt(int dim) const;
+
+        /**        
+        *  returns order of array
+        */
+        FORCEINLINE char ordering() const;
+
+        /**
+        *  return _isView
+        */ 
+        FORCEINLINE bool isView();
+
+        /**
+        *  returns shape portion of shapeInfo
+        */
+        FORCEINLINE int *shapeOf() const;
+        
+        /**
+        *  returns strides portion of shapeInfo
+        */
+        FORCEINLINE int* stridesOf() const;
+
+        /**
+        *  returns rank of array
+        */
+        FORCEINLINE int rankOf() const;        
+
+        /** 
+        *  returns length of array
+        */
+        FORCEINLINE Nd4jIndex lengthOf() const;        
+
+        /**
+        *  returns number of rows in array
+        */
+        FORCEINLINE int rows() const;
+
+        /**
+        *  returns number of columns in array
+        */ 
+        FORCEINLINE int columns() const;
+
+        /**
+        *  returns size of array elements type
+        */ 
+        FORCEINLINE int sizeOfT() const;
+
+        /**
+        *  returns element-wise-stride
+        */ 
+        FORCEINLINE int ews() const;
+
+        // returns true if arrays have same shape
         FORCEINLINE bool isSameShape(const NDArray<T> *other) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<int>& shape) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<Nd4jIndex>& shape) const;
         FORCEINLINE bool isSameShape(const std::vector<int>& shape) const;
         FORCEINLINE bool isSameShape(const std::vector<Nd4jIndex >& shape) const;
 
-		// Returns true if these two NDArrays have same shape
+        /**
+        *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
+        */
         FORCEINLINE bool isSameShapeStrict(const NDArray<T> *other) const;
 
-        // This method returns sum of all elements of this NDArray
-        T sumNumber() const;
+        /**
+        *  returns true if buffer && shapeInfo were defined (non nullptr)
+        */
+        FORCEINLINE bool nonNull() const;
 
-        // This method returns mean number of this NDArray
-        T meanNumber() const;
-
-        int ews();
-
-        // method calculates sum along dimension(s) in this array and save it reduced array
-        NDArray<T> *sum(const std::initializer_list<int> &dimensions, const bool keepDims = false) const;
-
-		// method reduces array by excluding its shapes along axes present in dimensions vector
-        template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false) const;
-		
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-        template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-        template<typename OpName>
-        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false, T *extras = nullptr) const;
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-        template<typename OpName>
-        NDArray<T> reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false) const;
-
-        template<typename OpName>
-        T varianceNumber(bool biasCorrected = true);
-
-        // 
-        template<typename OpName>
-        T reduceNumber(T *extraParams = nullptr);
-
-        template<typename OpName>
-        Nd4jIndex indexReduceNumber(T *extraParams = nullptr);
-
-        Nd4jIndex argMax(std::initializer_list<int> dimensions = {});
-
-        // perform array transformation
-        template<typename OpName>
-        void applyTransform(T *extraParams = nullptr);
-
-        // perform array transformation
-        template<typename OpName>
-        void applyTransform(NDArray<T> *target, T *extraParams = nullptr);
-
-        // perform array transformation
-        template<typename OpName>
-        NDArray<T> transform(T *extraParams = nullptr);
-
-        // perform pairwise transformation
-        template<typename OpName>
-        void applyPairwiseTransform(NDArray<T> *other, T *extraParams);
-
-        // perform pairwise transformation
-        template<typename OpName>
-        void applyPairwiseTransform(NDArray<T> *other, NDArray<T> *target, T *extraParams);
-
-        template<typename OpName>
-        void applyBroadcast(std::initializer_list<int> dimensions, const NDArray<T>* tad, NDArray<T>* target = nullptr, T* extraArgs = nullptr);
-
-        template <typename OpName>
-        void applyBroadcast(std::vector<int> &dimensions, const NDArray<T> *tad, NDArray<T> *target = nullptr, T *extraArgs = nullptr);
-        
-        template <typename OpName>
-        NDArray<T> applyTrueBroadcast(const NDArray<T>& other, T *extraArgs = nullptr) const;
-
-        template <typename OpName>
-        NDArray<T>* applyTrueBroadcast(const NDArray<T>* other, T *extraArgs = nullptr) const;
-
-        template <typename OpName>
-        void applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target, const bool checkTargetShape = true, T *extraArgs = nullptr) const;
-
-        template<typename OpName>
-        void applyScalar(T scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
-
-        template<typename OpName>
-        void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
-
-#ifndef __JAVACPP_HACK__
-        void applyLambda(const std::function<T(T)>& func, NDArray<T>* target = nullptr);
-
-        void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
-#endif
-
-        template<typename OpName>
-        void applyRandom(nd4j::random::RandomBuffer *buffer, NDArray<T>* y = nullptr, NDArray<T>* z = nullptr, T* extraArgs = nullptr);
-
-        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
-        NDArray<T> *transpose() const;
-
-        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
-        void transpose(NDArray<T>& target) const;
-
-        // This method applies in-place transpose to this array, so this array becomes transposed 
-        void transposei();
-
-        NDArray<T>* tensorAlongDimension(int index, const std::initializer_list<int>& dimensions) const;
-
-        NDArray<T>* tensorAlongDimension(int index, const std::vector<int>& dimensions) const;
-
-        // this method returns number of tensors along specified dimension(s)
-        Nd4jIndex tensorsAlongDimension(const std::initializer_list<int> dimensions) const ;
-        Nd4jIndex tensorsAlongDimension(const std::vector<int>& dimensions) const ;
-
-        // This method returns true if buffer && shapeInfo were defined
-        bool nonNull() const {
-            return this->_buffer != nullptr && this->_shapeInfo != nullptr;
-        }
-
-        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-        bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
-
-        // Return value from linear buffer
+        /** 
+        *  returns array element with given index from linear buffer
+        *  i - element index in array
+        */
         FORCEINLINE T getScalar(const Nd4jIndex i) const;
-        
-        FORCEINLINE T getIndexedScalar(const Nd4jIndex i) const;
 
-        // Returns value from 2D matrix by coordinates/indexes         
+        /** 
+        *  returns array element with given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        */
+        FORCEINLINE T getIndexedScalar(const Nd4jIndex i) const;
+        
+        /** 
+        *  returns element with given indexes from 2D array 
+        *  i - number of row 
+        *  j - number of column
+        */
         FORCEINLINE T getScalar(const int i, const int j) const;
 
-        // returns value from 3D tensor by coordinates        
+        /** 
+        *  returns element with given indexes from 3D array 
+        *  i - height
+        *  j - width
+        *  k - depth
+        */
         FORCEINLINE T getScalar(const int i, const int j, const int k) const;        
         
+        /** 
+        *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         FORCEINLINE void putIndexedScalar(const Nd4jIndex i, const T value);        
 
-        // This method sets value in linear buffer to position i        
+        /** 
+        *  assigns given scalar to array element by given index, regards array buffer as linear
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         FORCEINLINE void putScalar(const Nd4jIndex i, const T value);        
 
-        // This method sets value in 2D matrix to position i, j         
+        /** 
+        *  assigns given scalar to 2D array element by given indexes
+        *  i - number of row
+        *  j - number of row
+        *  value - scalar value to assign
+        */
         FORCEINLINE void putScalar(const int i, const int j, const T value);        
 
-        // This method sets value in 3D matrix to position i,j,k        
+        /** 
+        *  assigns given scalar to 3D array element by given indexes
+        *  i - height
+        *  j - width
+        *  k - depth
+        *  value - scalar value to assign
+        */
         FORCEINLINE void putScalar(const int i, const int j, const int k, const T value);
-        
-        // This method adds given row to all rows in this NDArray, that is this array becomes affected
-        void addiRowVector(const NDArray<T> *row);
 
-        void addRowVector(const NDArray<T> *row, NDArray<T>* target) const;
-        
-        void subRowVector(const NDArray<T> *row, NDArray<T>* target) const;
-        
-        void mulRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+        /**
+        *  returns true if array is 2D
+        */
+        FORCEINLINE bool isMatrix() const;
 
-        void divRowVector(const NDArray<T> *row, NDArray<T>* target) const;
+        /**
+        *  returns true if array is vector
+        */
+        FORCEINLINE bool isVector() const;
 
-        void addColumnVector(const NDArray<T> *column, NDArray<T>* target) const;
+        /**
+        *  returns true if array is column vector
+        */
+        FORCEINLINE bool isColumnVector() const;
 
-		// This method adds given column to all columns in this NDArray, that is this array becomes affected
-		void addiColumnVector(const NDArray<T> *column);
+        /**
+        *  returns true if array is row vector
+        */
+        FORCEINLINE bool isRowVector() const;
 
-		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
-		void muliColumnVector(const NDArray<T> *column);
+        /**
+        *  returns true if array is scalar
+        */
+        FORCEINLINE bool isScalar() const;
 
-        // this method returns number of bytes used by buffer & shapeInfo
-        Nd4jIndex memoryFootprint();
+        /**
+        *  inline accessing operator for matrix, i - absolute index        
+        */
+        FORCEINLINE T operator()(const Nd4jIndex i) const;
 
-        // this method returns true if this ndarray is 2d
-        bool isMatrix() {
-            return shape::isMatrix(this->_shapeInfo);
-        }
+        /**
+        *  inline modifying operator for matrix, i - absolute index        
+        */
+        FORCEINLINE T& operator()(const Nd4jIndex i);
 
-        // this method returns true if this ndarray is vector
-        bool isVector() const {
-            return !isScalar() && shape::isVector(this->_shapeInfo);
-        }
+        /**
+        *  inline accessing operator for 2D array, i - row, j - column
+        */
+        FORCEINLINE T operator()(const int i, const int j) const;        
 
-        // this method returns true if this ndarray is column vector
-        bool isColumnVector() const {
-            return !isScalar() && shape::isColumnVector(this->_shapeInfo);
-        }
+        /**
+        *  inline modifying operator for 2D array, i - row, j - column
+        */
+        FORCEINLINE T& operator()(const int i, const int j);
 
-        // this method returns true if this ndarray is row vector
-        bool isRowVector() const {
-            return !isScalar() && shape::isRowVector(this->_shapeInfo);
-        }
+        /**
+        *  inline accessing operator for 3D array, i - height, j - width, k - depth
+        */
+        FORCEINLINE T operator()(const int i, const int j, const int k) const;        
 
-        // this method returns true if this ndarray is scalar
-        bool isScalar() const {
-            return this->lengthOf() == 1;
-        }
+        /**
+        *  inline modifying operator for 3D array, i - height, j - width, k - depth
+        */ 
+        FORCEINLINE T& operator()(const int i, const int j, const int k);
 
-        // these methods suited for FlatBuffers use.
-        std::vector<T> getBufferAsVector();
-
-        std::vector<int> getShapeAsVector();
-        std::vector<int> getShapeInfoAsVector();
-		
-		// set new order and shape in case of suitable array length 
-		bool reshapei(const char order, const std::initializer_list<int>& shape);
-	
-		// set new order and shape in case of suitable array length 
-		bool reshapei(const char order, const std::vector<int>& shape);
-	
-		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-		NDArray<T>* reshape(const char order, const std::vector<int>& shape);
-		
-		// calculate strides 
-		void updateStrides(const char order);
-
-		// change an array by repeating it the number of times given by reps.
-		void tilei(const std::vector<int>& reps);
-
-		// tile an array by repeating it the number of times given by reps.
-		NDArray<T> tile(const std::vector<int>& reps) const;
-
-        // tile an array by repeating it the number of times given by reps.
-        void tile(const std::vector<int>& reps, NDArray<T>& target) const;
-        
-		// return array which is broadcasted from this and argument array  
-		NDArray<T>*  broadcast(const NDArray<T>& other);
-		
-		// check whether array's rows (arg=0) or columns create orthogonal basis
-		bool hasOrthonormalBasis(const int arg); 
-		
-		// check whether array is identity matrix
-		bool isIdentityMatrix(); 
-
-		// check whether array is unitary matrix
-		bool isUnitary(); 
-                
-        // reduce dimensions in this array relying on index operations
-        template<typename OpName>
-        NDArray<T>* applyIndexReduce(const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
-
-        template<typename OpName>
-        void applyIndexReduce(const NDArray<T>* target, const std::vector<int>& dimensions, const T *extraParams = nullptr) const;
-
-        // apply reduce3 operations to this and other array, return result in new output array
-        template<typename OpName>
-        NDArray<T>* applyReduce3(const NDArray<T>* other, const T* extraParams = nullptr) const;
-
-        // apply reduce3 (execAll) operations to this and other array, return result in new output array
-        template<typename OpName>
-        NDArray<T>* applyAllReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
-        
-        // apply reduce3 (exec) operations to this and other array, return result in new output array
-        template<typename OpName>
-        NDArray<T>* applyReduce3(const NDArray<T>* other, const std::vector<int>& dimensions, const T* extraParams = nullptr) const;
-
-        template<typename OpName>
-        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::vector<int>& dimensions) const;
-
-        template<typename OpName>
-        NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
-
-        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
-        NDArray<T> operator()(const Intervals& idx)  const;
-
-        // addition operator array + array
-        NDArray<T> operator+(const NDArray<T>& other) const;
-
-        // addition operator array + scalar
-        NDArray<T> operator+(const T scalar) const;
-
-        // addition operator scalar + array
-        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
-        // subtraction operator scalar - array
-        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
-
-        // addition operator scalar + array
-        friend NDArray<float> nd4j::operator+(const float scalar, const NDArray<float>& arr);
-        friend NDArray<float16> nd4j::operator+(const float16 scalar, const NDArray<float16>& arr);
-        friend NDArray<double> nd4j::operator+(const double scalar, const NDArray<double>& arr);
-
-        // subtraction operator scalar - array
-        friend NDArray<float> nd4j::operator-(const float scalar, const NDArray<float>& arr);
-        friend NDArray<float16> nd4j::operator-(const float16 scalar, const NDArray<float16>& arr);
-        friend NDArray<double> nd4j::operator-(const double scalar, const NDArray<double>& arr);
-
-        // addition operator array1 += array2    
-        void operator+=(const NDArray<T>& other);
-
-        // subtraction operator array - array
-        NDArray<T> operator-(const NDArray<T>& other) const;
-
-        // subtraction operator array - scalar
-        NDArray<T> operator-(const T& scalar) const;        
-
-        // negative operator, it makes all array elements = -elements
-        NDArray<T> operator-() const;
-
-        // multiplication operator array1*array2
-        NDArray<T> operator*(const NDArray<T>& other) const;        
-    
-        // multiplication operator array*scalar
-        NDArray<T> operator*(const T scalar) const;
-
-        // multiplication operator array1 *= array2
-        void operator*=(const NDArray<T>& other);
-
-        // multiplication operator array*scalar
-        void operator*=(const T scalar);
-
-        // division operator array1/array2
-        NDArray<T> operator/(const NDArray<T>& other) const;        
-
-        // division operator array1 /= array2
-        void operator/=(const NDArray<T>& other);
-
-        // division operator array /= scalar
-        void operator/=(const T scalar);
-
-        // mathematical multiplication of two arrays
-        friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
-
-        void assign(const NDArray<T>& other, const Intervals& idx);
-
-        std::vector<int8_t> asByteVector();
-
-        // default destructor
-        ~NDArray(); 
 
     };
+
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -567,11 +996,146 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 
 
-    template<typename T>
-    FORCEINLINE int NDArray<T>::ews(){
-        return shape::elementWiseStride(_shapeInfo);
-    }
 //////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE void NDArray<T>::setShapeInfo(int *shapeInfo) {
+    if(_isShapeAlloc && _workspace == nullptr)
+        delete []_shapeInfo;
+
+    _shapeInfo = shapeInfo;
+    _isShapeAlloc = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE void NDArray<T>::setBuffer(T* buffer) {
+    if(_isBuffAlloc && _workspace == nullptr)
+        delete []_buffer;
+ 
+    _buffer = buffer;
+    _isBuffAlloc = false;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE void NDArray<T>::triggerAllocationFlag(bool bufferAllocated, bool shapeAllocated) {
+  
+    _isBuffAlloc = bufferAllocated;
+    _isShapeAlloc = shapeAllocated;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE char NDArray<T>::ordering() const {
+
+    return shape::order(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isView() {
+
+    return _isView;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int* NDArray<T>::shapeOf() const {
+    
+    return shape::shapeOf(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int* NDArray<T>::stridesOf() const {
+    
+    return shape::stride(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int NDArray<T>::rankOf() const {
+
+    return shape::rank(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE Nd4jIndex NDArray<T>::lengthOf() const {
+    
+    return shape::length(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int NDArray<T>::rows() const {
+    
+    return shapeOf()[0];
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int NDArray<T>::columns() const {
+
+    return shapeOf()[1];
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int NDArray<T>::sizeOfT() const {
+    
+    return sizeof(T);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE int NDArray<T>::ews() const {
+
+    return shape::elementWiseStride(_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::nonNull() const {
+    
+    return this->_buffer != nullptr && this->_shapeInfo != nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isMatrix() const {
+
+    return shape::isMatrix(this->_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isVector() const {
+            
+    return !isScalar() && shape::isVector(this->_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isColumnVector() const {
+   
+    return !isScalar() && shape::isColumnVector(this->_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isRowVector() const {
+
+    return !isScalar() && shape::isRowVector(this->_shapeInfo);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+FORCEINLINE bool NDArray<T>::isScalar() const {
+    
+    return this->lengthOf() == 1;
+}
+
 // accessing operator for matrix, i - absolute index
 template<typename T>
 FORCEINLINE T NDArray<T>::operator()(const Nd4jIndex i) const { 
@@ -677,8 +1241,9 @@ FORCEINLINE T NDArray<T>::getScalar(const Nd4jIndex i) const
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-FORCEINLINE T NDArray<T>::getIndexedScalar(const Nd4jIndex i) const
-{ return (*this)(i); }
+FORCEINLINE T NDArray<T>::getIndexedScalar(const Nd4jIndex i) const { 
+    return (*this)(i); 
+}
 
 //////////////////////////////////////////////////////////////////////////
 // Returns value from 2D matrix by coordinates/indexes         

@@ -356,46 +356,6 @@ template <typename T>
 }
 
 ////////////////////////////////////////////////////////////////////////
-// this constructor creates new array using rank information contained in initializer_list argument
-/*
-template <typename T>
-    NDArray<T>::NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace) {
-    
-    int rank = (int) shape.size();
-
-    if (rank > MAX_RANK)
-        throw std::invalid_argument("Rank of NDArray can't exceed 32");
-
-    std::unique_ptr<int> shapeOf(new int[rank]);
-    int cnt = 0;
-
-    for (auto& item: shape)
-        shapeOf.get()[cnt++] = item;
-
-    _workspace = workspace;
-    if (workspace == nullptr) {
-        if (order == 'f')
-            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf.get());
-        else
-            _shapeInfo = shape::shapeBuffer(rank, shapeOf.get());
-
-        _buffer =  new T[shape::length(_shapeInfo)];
-    } else {
-        std::unique_ptr<int> shapeInfo( order == 'f' ? shape::shapeBufferFortran(rank, shapeOf.get()) : shape::shapeBuffer(rank, shapeOf.get()));
-
-        _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-        memcpy(_shapeInfo, shapeInfo.get(), shape::shapeInfoByteLength(rank));
-
-        _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
-    }
-
-    memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
-    
-    _isBuffAlloc = true; 
-    _isShapeAlloc = true;
-}
-    */
-
     template<typename T>
     T* NDArray<T>::getBuffer() {
         return _buffer;
@@ -406,6 +366,18 @@ template <typename T>
         return _buffer;
     }
 
+////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    int* NDArray<T>::getShapeInfo() const{
+        return _shapeInfo;
+    }
+
+    template<typename T>
+    int* NDArray<T>::shapeInfo() {
+        return _shapeInfo;
+    }
+
+////////////////////////////////////////////////////////////////////////
     template<typename T>
     T* NDArray<T>::specialBuffer() {
         if (_bufferD == nullptr)
@@ -415,6 +387,7 @@ template <typename T>
         return _bufferD;
     }
 
+////////////////////////////////////////////////////////////////////////
     template<typename T>
     int* NDArray<T>::specialShapeInfo() {
         if (_shapeInfoD == nullptr)
@@ -425,21 +398,11 @@ template <typename T>
         return _shapeInfoD;
     }
 
+////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray<T>::setSpecialBuffers(T * buffer, int *shape) {
         _bufferD = buffer;
         _shapeInfoD = shape;
-    }
-
-
-    template<typename T>
-    int* NDArray<T>::getShapeInfo() const{
-        return _shapeInfo;
-    }
-
-    template<typename T>
-    int* NDArray<T>::shapeInfo() {
-        return _shapeInfo;
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2075,7 +2038,7 @@ bool NDArray<T>::isUnitary() {
     template<typename T>
     NDArray<T>* NDArray<T>::subarray(const std::initializer_list<NDIndex*>& idx) const {
         if (idx.size() != this->rankOf())
-            throw "Number of indices should match";
+            throw "NDArray::subarray: number of indices should match the array rank";
 
         int *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), int);
@@ -2116,7 +2079,7 @@ bool NDArray<T>::isUnitary() {
     NDArray<T>* NDArray<T>::subarray(const Intervals& idx) const {
 
         if (idx.size() != this->rankOf())
-            throw "NDArray::subarray: number of indices should match with rank of array!";
+            throw "NDArray::subarray: number of indices should match the rank of array!";
 
         int *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(this->rankOf()), int);
