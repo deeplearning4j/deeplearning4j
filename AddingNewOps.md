@@ -64,7 +64,6 @@ However, there are some minor difference between various CustomOp declarations:
 - **DECLARE_CUSTOM_OP**(string, int, int, bool, int, int): these operations return NDArray with custom shape, that usually depends on input and arguments.
 - **DECLARE_BOOLEAN_OP**(string, int, bool): these operations take some NDArrays and return scalar, where 0 is **False**, and other values are treated as **True**.
 
-
 Let's take a look at example CustomOp:
 
 ```c++
@@ -119,6 +118,24 @@ So, at the moment of op execution, we assume that we will either have output arr
 
 You can also see number of macros used, we'll cover those later as well. Beyond that - op execution logic is fairly simple & linear:
 Each new op implements protected member function `DeclarableOp<T>::validateAndExecute(Block<T>& block)`, and this method is eventually called either from GraphExecutioner, or via direct call, like `DeclarableOp<T>::execute(Block<T>& block)`.
+
+Important part of op declaration is input/output description for the op. I.e. as shown above: `CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1)`.
+This declaration means: 
+- Op name: `tear`
+- Op expects at least 1 NDArray as input
+- Op returns unknown positive number of NDArrays as output
+- Op can't be run in-place, so under any circumstances original NDArray will stay intact
+- Op doesn't expect any T (aka floating point) arguments
+- Op expects unknown positive number of integer arguments. In case of this op it's dimensions to split input NDArray.
+
+Here's another example: `DECLARE_CUSTOM_OP(permute, 1, 1, true, 0, -2);`
+This declaration means:
+- Op name: `permute`
+- Op expects at least 1 NDArray as input
+- Op returns 1 NDArray as output
+- Op can be run in-place if needed (it means: input == output, and input is modified and returned as output)
+- Op doesn't expect any T arguments
+- Op expects unknown number of integer arguments OR no integer arguments at all.
 
 ## c++11 syntactic sugar
 
