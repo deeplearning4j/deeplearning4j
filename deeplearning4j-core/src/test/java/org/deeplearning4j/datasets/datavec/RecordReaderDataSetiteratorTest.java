@@ -89,31 +89,42 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void testRecordReaderMultiRegression() throws Exception {
 
-        RecordReader csv = new CSVRecordReader();
-        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+        for(boolean builder : new boolean[]{false, true}) {
 
-        int batchSize = 3;
-        int labelIdxFrom = 3;
-        int labelIdxTo = 4;
+            RecordReader csv = new CSVRecordReader();
+            csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
-        DataSetIterator iter = new RecordReaderDataSetIterator(csv, batchSize, labelIdxFrom, labelIdxTo, true);
-        DataSet ds = iter.next();
+            int batchSize = 3;
+            int labelIdxFrom = 3;
+            int labelIdxTo = 4;
 
-        INDArray f = ds.getFeatureMatrix();
-        INDArray l = ds.getLabels();
-        assertArrayEquals(new int[] {3, 3}, f.shape());
-        assertArrayEquals(new int[] {3, 2}, l.shape());
+            DataSetIterator iter;
 
-        //Check values:
-        double[][] fExpD = new double[][] {{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
+            if(builder){
+                iter = new RecordReaderDataSetIterator.Builder(csv, batchSize)
+                        .regression(labelIdxFrom, labelIdxTo)
+                        .build();
+            } else {
+                iter = new RecordReaderDataSetIterator(csv, batchSize, labelIdxFrom, labelIdxTo, true);
+            }
+            DataSet ds = iter.next();
 
-        double[][] lExpD = new double[][] {{0.2, 0}, {0.2, 0}, {0.2, 0}};
+            INDArray f = ds.getFeatureMatrix();
+            INDArray l = ds.getLabels();
+            assertArrayEquals(new int[]{3, 3}, f.shape());
+            assertArrayEquals(new int[]{3, 2}, l.shape());
 
-        INDArray fExp = Nd4j.create(fExpD);
-        INDArray lExp = Nd4j.create(lExpD);
+            //Check values:
+            double[][] fExpD = new double[][]{{5.1, 3.5, 1.4}, {4.9, 3.0, 1.4}, {4.7, 3.2, 1.3}};
 
-        assertEquals(fExp, f);
-        assertEquals(lExp, l);
+            double[][] lExpD = new double[][]{{0.2, 0}, {0.2, 0}, {0.2, 0}};
+
+            INDArray fExp = Nd4j.create(fExpD);
+            INDArray lExp = Nd4j.create(lExpD);
+
+            assertEquals(fExp, f);
+            assertEquals(lExp, l);
+        }
 
     }
 
@@ -1252,32 +1263,42 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void testReadingFromStream() throws Exception {
-        int batchSize = 1;
-        int labelIndex = 4;
-        int numClasses = 3;
-        InputStream dataFile = new ClassPathResource("iris.txt").getInputStream();
-        RecordReader recordReader = new CSVRecordReader(0, ',');
-        recordReader.initialize(new InputStreamInputSplit(dataFile));
 
-        assertTrue(recordReader.hasNext());
-        assertFalse(recordReader.resetSupported());
+        for(boolean b : new boolean[]{false, true}) {
+            int batchSize = 1;
+            int labelIndex = 4;
+            int numClasses = 3;
+            InputStream dataFile = new ClassPathResource("iris.txt").getInputStream();
+            RecordReader recordReader = new CSVRecordReader(0, ',');
+            recordReader.initialize(new InputStreamInputSplit(dataFile));
 
-        DataSetIterator iterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses);
-        assertFalse(iterator.resetSupported());
+            assertTrue(recordReader.hasNext());
+            assertFalse(recordReader.resetSupported());
 
-        int count = 0;
-        while(iterator.hasNext()){
-            assertNotNull(iterator.next());
-            count++;
-        }
+            DataSetIterator iterator;
+            if(b){
+                iterator = new RecordReaderDataSetIterator.Builder(recordReader, batchSize)
+                        .classification(labelIndex, numClasses)
+                        .build();
+            } else {
+                iterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses);
+            }
+            assertFalse(iterator.resetSupported());
 
-        assertEquals(150, count);
+            int count = 0;
+            while (iterator.hasNext()) {
+                assertNotNull(iterator.next());
+                count++;
+            }
 
-        try{
-            iterator.reset();
-            fail("Expected exception");
-        } catch (Exception e){
-            //expected
+            assertEquals(150, count);
+
+            try {
+                iterator.reset();
+                fail("Expected exception");
+            } catch (Exception e) {
+                //expected
+            }
         }
     }
 }
