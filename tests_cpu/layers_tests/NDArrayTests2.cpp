@@ -66,3 +66,30 @@ TEST_F(NDArrayTest2, Test_IndexReduce_1) {
 
     ASSERT_EQ(2, idx);
 }
+
+TEST_F(NDArrayTest2, Test_AllReduce3_1) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 3, 1, 2, 3});
+    NDArray<float> y('c', {2, 3}, {2, 3, 4, 2, 3, 4});
+    NDArray<float> exp('c', {2, 2}, {1.73205, 1.73205, 1.73205, 1.73205});
+
+    auto z = x.template applyAllReduce3<simdOps::EuclideanDistance<float>>(&y, {1}, nullptr);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
+
+
+TEST_F(NDArrayTest2, Test_AllReduce3_2) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 3, 2, 3, 4 });
+    NDArray<float> y('c', {2, 3}, {1, 2, 3, 2, 3, 4});
+    NDArray<float> exp('c', {2, 2}, {0., 1.73205, 1.73205, 0.});
+
+    auto z = x.template applyAllReduce3<simdOps::EuclideanDistance<float>>(&y, {1}, nullptr);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete z;
+}
