@@ -9,7 +9,6 @@ import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
-import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
@@ -25,7 +24,6 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -72,10 +70,6 @@ public class TensorFlowImportTest {
         assertNotNull(graph);
 
         assertEquals(2, graph.variableMap().size());
-        assertEquals(1, graph.graph().getOpOrder().getActions().size());
-
-        List<OpExecAction> actions = graph.graph().getOpOrder().getActions();
-        assertEquals(1, actions.size());
 
         SDVariable var0 = graph.variableMap().get("zeros");
         SDVariable var1 = graph.variableMap().get("ones");
@@ -111,7 +105,6 @@ public class TensorFlowImportTest {
     @Test
     public void testImportIris() throws Exception  {
         SameDiff graph = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/train_iris.pb").getInputStream());
-        assertTrue(graph.graph().numVertices() > 0);
         assertNotNull(graph);
 
     }

@@ -28,7 +28,6 @@ public class OnnxGraphMapperTests {
            }
 
            val sameDiff = onnxGraphMapper.importGraph(graphProto);
-           assertEquals(3,sameDiff.graph().numVertices());
        }
 
     }

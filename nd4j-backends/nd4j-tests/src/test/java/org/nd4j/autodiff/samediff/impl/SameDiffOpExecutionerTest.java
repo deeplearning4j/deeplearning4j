@@ -7,8 +7,6 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-
 public class SameDiffOpExecutionerTest {
 
     @Test
@@ -17,7 +15,6 @@ public class SameDiffOpExecutionerTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
         Nd4j.getExecutioner().exec(new Sigmoid(Nd4j.scalar(1.0)));
         SameDiff sameDiff = sameDiffOpExecutioner.getSameDiff();
-        assertEquals(2,sameDiff.graph().numVertices());
 
     }
 

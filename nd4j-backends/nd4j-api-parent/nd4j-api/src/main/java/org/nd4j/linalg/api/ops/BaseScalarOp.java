@@ -19,13 +19,12 @@
 
 package org.nd4j.linalg.api.ops;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,25 +36,20 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
-    @Getter
-    @Setter
-    protected Number num;
-    public int[] opDimension;
-
 
     public BaseScalarOp() {}
 
     public BaseScalarOp(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n);
-        this.num = num;
+        this.scalarValue = num;
 
         init(x, y, z, n);
     }
 
     public BaseScalarOp(INDArray x, Number num) {
         super(x);
-        this.num = num;
-         init(x, y, z, n);
+        this.scalarValue = num;
+        init(x, y, z, n);
 
     }
 
@@ -72,16 +66,19 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     }
 
     public BaseScalarOp(SameDiff sameDiff,
-                           SDVariable i_v,
-                           Number scalar,
-                           boolean inPlace,
-                           Object[] extraArgs) {
+                        SDVariable i_v,
+                        Number scalar,
+                        boolean inPlace,
+                        Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = scalar;
         if (i_v != null) {
             val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",i_v.getShape());
-             this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.getVarName();
             this.zVertexId = var.getVarName();
+            sameDiff.addArgsFor(new String[]{xVertexId},this);
+            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
+            this.n = ArrayUtil.prod(i_v.getShape());
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -91,9 +88,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
 
     public BaseScalarOp(SameDiff sameDiff,
-                           SDVariable i_v,
-                           Number scalar,
-                           Object[] extraArgs) {
+                        SDVariable i_v,
+                        Number scalar,
+                        Object[] extraArgs) {
         this(sameDiff,i_v,scalar,false,extraArgs);
     }
 
@@ -117,23 +114,23 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public void setScalar(Number scalar) {
-        this.num = scalar;
+        this.scalarValue = scalar;
     }
 
-      @Override
+    @Override
     public Number scalar() {
-        return num;
+        return scalarValue;
     }
 
 
     @Override
     public int[] getDimension() {
-        return opDimension;
+        return dimensions;
     }
 
     @Override
     public void setDimension(int... dimension) {
-        this.opDimension = dimension;
+        this.dimensions = dimension;
     }
 
 

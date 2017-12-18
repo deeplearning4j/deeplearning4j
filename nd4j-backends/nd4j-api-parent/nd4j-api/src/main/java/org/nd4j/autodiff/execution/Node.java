@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.opstate.OpExecAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +23,5 @@ public class Node {
     private List<Integer> input = new ArrayList<>();
     private List<Integer> output = new ArrayList<>();
     private List<Integer> unresolved = new ArrayList<>();
-    private OpExecAction opExecAction;
     private int[] originalOutput;
 }

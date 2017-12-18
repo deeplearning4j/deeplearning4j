@@ -6,7 +6,6 @@ import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 public class OnnxImportTest {
 
@@ -16,7 +15,6 @@ public class OnnxImportTest {
          *
          */
         val importGraph = OnnxGraphMapper.getInstance().importGraph(new ClassPathResource("onnx_graphs/embedding_only.onnx").getFile());
-        assertEquals(3,importGraph.graph().numVertices());
         val embeddingMatrix = importGraph.getVariable("2");
         assertArrayEquals(new int[] {100,300},embeddingMatrix.getShape());
        /* val onlyOp = importGraph.getFunctionForVertexId(importGraph.getVariable("3").getVertexId());

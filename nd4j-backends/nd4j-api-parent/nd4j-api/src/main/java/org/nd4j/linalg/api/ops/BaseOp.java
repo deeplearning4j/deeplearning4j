@@ -315,6 +315,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if(z == null) {
             if(sameDiff != null) {
                 this.z = sameDiff.getArrForVarName(getZVertexId());
+                if(this.z == null) {
+                    val var = sameDiff.getVariable(getZVertexId());
+                    if(var.getShape() != null)
+                        this. z = var.storeAndAllocateNewArray();
+                }
             }
         }
 

@@ -256,14 +256,16 @@ public abstract class DifferentialFunction {
             SDVariable grad = var.getGradient();
             if(grad != null) {
                 SDVariable ret = f().addi(var, grad);
-                sameDiff.updateVariableName(ret.getVarName(),var.getVarName() + "-grad");
-                sameDiff.setGradientForVariableName(var.getVarName(),sameDiff.getVariable(ret.getVarName()));
+                sameDiff.setGradientForVariableName(var.getVarName(),ret);
                 sameDiff.setForwardVariableForVarName(ret.getVarName(),var);
+                sameDiff.updateVariableNameAndReference(ret,var.getVarName() + "-grad");
             }
             else {
                 SDVariable gradVar = vals.get(i);
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
                 sameDiff.setForwardVariableForVarName(gradVar.getVarName(),var);
+                sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
+
             }
         }
 

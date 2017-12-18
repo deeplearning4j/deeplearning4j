@@ -400,30 +400,29 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                     return;
 
 
+                val from = indices.getFirst();
+                val to = indices.getSecond();
 
-                val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode,newInstance);
-                diff.graph().addEdge(opStateEdge);
                 diff.addArgsFor(args,newInstance);
 
+
+                val varsList = new ArrayList<SDVariable>(diff.variables());
                 //make sure variables are properly mapped
                 if(diff.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getName())) == null)
                     diff.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'));
 
                 newInstance.setSameDiff(importState.getSameDiff());
                 importState.getSameDiff().putFunctionForId(newInstance.getInstanceId(),newInstance);
-                val outgoingArgs = new SDVariable[opStateEdge.getTo().length];
-                for(int i = 0; i < opStateEdge.getTo().length; i++) {
-                    outgoingArgs[i] = diff.getVariableForVertexId(opStateEdge.getTo()[i]);
+                val outgoingArgs = new SDVariable[to.length];
+                for(int i = 0; i < to.length; i++) {
+                    outgoingArgs[i] = varsList.get(to[i]);
                     if(outgoingArgs[i] == null) {
-                        throw new ND4JIllegalStateException("Invalid variable for index: " + opStateEdge.getTo()[i]);
+                        throw new ND4JIllegalStateException("Invalid variable for index: " + to[i]);
                     }
                 }
 
                 diff.addOutgoingFor(outgoingArgs,newInstance);
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                //ensure functions are mapped for execution
-                diff.mapInputAndOutput(indices.getFirst(),indices.getSecond(),newInstance);
-
 
 
             } catch (Exception e) {

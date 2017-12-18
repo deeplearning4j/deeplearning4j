@@ -1,9 +1,8 @@
 package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.samediff.SDGraph;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,12 +30,12 @@ public class GradCheckUtil {
      * @return
      */
     public static boolean checkGradients(
-                                         SDVariable function,
-                                         SDVariable wrt,
-                                         double epsilon,
-                                         double maxRelError,
-                                         boolean print,
-                                         Map<String,INDArray> inputParameters) {
+            SDVariable function,
+            SDVariable wrt,
+            double epsilon,
+            double maxRelError,
+            boolean print,
+            Map<String,INDArray> inputParameters) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -62,11 +61,7 @@ public class GradCheckUtil {
 
         SameDiff sameDiff = function.getSameDiff();
         //get just the subgraph for the graph
-        SDGraph gradGraph = new SDGraph();
-        sameDiff.graph().setGraphApply(gradGraph);
-        //set the graph back to normal
-        sameDiff.graph().setGraphApply(null);
-        SameDiff opExec = SameDiff.create(sameDiff, sameDiff.graph());
+        SameDiff opExec = SameDiff.create(sameDiff);
 
         INDArray[] eval = opExec.eval(inputParameters);
         int totalNFailures = 0;

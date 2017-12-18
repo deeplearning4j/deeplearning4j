@@ -110,19 +110,11 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
 
             } else {
-                int[] original = intermediate.get(var.id()).getOriginalOutput();
                 //log.info("Original id: {}; out: {}; out2: {}", original, sd.getVertexIdxToInfo().get(original), graph.getVariableForVertex(original));
-                if (sd.variableMap().get(sd.graph().getVariableForVertex(original[0]).getVarName()) != null) {
-                    sd.associateArrayWithVariable(val,sd.variableMap().get(sd.graph().getVariableForVertex(original[0]).getVarName()));
+                if (sd.variableMap().get(var.name()) != null) {
+                    sd.associateArrayWithVariable(val,sd.getVariable(var.name()));
                 } else {
-                    SDVariable variable = SDVariable.builder()
-                            .varName(sd.graph().getVariableForVertex(original[0]).getVarName())
-                            .shape(val.shape())
-                            .sameDiff(sd)
-                            .build();
-
-                    sd.associateArrayWithVariable(val,variable);
-                    sd.addVariable(variable);
+                    sd.var("",val);
                 }
             }
         }

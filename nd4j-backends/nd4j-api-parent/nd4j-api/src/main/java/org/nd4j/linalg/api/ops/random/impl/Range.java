@@ -117,13 +117,18 @@ public class Range extends DynamicCustomOp {
         val end = sameDiff.getVariable(toVertexId).getArr();
         val delta = sameDiff.getVariable(deltaVertexId).getArr();
         val outputVars = outputVariables();
-
+        if(outputVariables() == null)
+            throw new ND4JIllegalStateException("Output variables should not be null.");
         if(start != null && end != null && delta != null) {
             this.from = start.getDouble(0);
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
             if(sameDiff.getArrForVarName(outputVars[0].getVarName()) == null) {
+                if(outputVars[0].getShape() == null) {
+                    val calcShape = calculateOutputShape();
+                    sameDiff.putShapeForVarName(outputVars[0].getVarName(),calcShape.get(0));
+                }
                 val arr = Nd4j.create(outputVars[0].getShape());
                 sameDiff.putArrayForVarName(outputVars[0].getVarName(), arr);
                 addOutputArgument(arr);

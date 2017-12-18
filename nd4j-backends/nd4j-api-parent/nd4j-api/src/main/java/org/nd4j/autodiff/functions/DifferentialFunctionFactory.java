@@ -58,10 +58,6 @@ public class DifferentialFunctionFactory   {
     }
 
     public SameDiff sameDiff() {
-        if(sameDiff.graph().getGraphApply() != null) {
-            return sameDiff.graph().getGraphApply().getSameDiff();
-        }
-
         return sameDiff;
     }
 
@@ -210,11 +206,6 @@ public class DifferentialFunctionFactory   {
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
         return new GradientBackwardsMarker(sameDiff(),iX,sameDiff.scalar(iX.getVarName() + "-pairgrad" ,1.0)).outputVariables()[0];
     }
-
-
-
-
-
 
     public SDVariable abs(SDVariable iX) {
         return new Abs(sameDiff(),iX,null).outputVariables()[0];

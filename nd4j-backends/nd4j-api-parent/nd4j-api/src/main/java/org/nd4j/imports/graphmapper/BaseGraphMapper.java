@@ -6,8 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.opstate.EdgeId;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
+
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -29,21 +28,6 @@ import java.util.Map;
 @Slf4j
 public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> implements GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
-    /**
-     *
-     * @param inputIds the input ids for the node
-     *                  (based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}
-     * @param outputIds the output ids for the node
-     *                  {based on the vertex ids in a {@link org.nd4j.autodiff.graph.Graph}}
-     * @param node the node to create the edge from
-     * @param toMap
-     * @return
-     */
-    @Override
-    public EdgeId getOpStateEdge(int[] inputIds, int[] outputIds, NODE_TYPE node, DifferentialFunction toMap) {
-        EdgeId edgeId = new EdgeId(inputIds,outputIds, toMap,true);
-        return edgeId;
-    }
 
 
     @Override
@@ -197,9 +181,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
         }
 
-        //disable bootstrapping due to import
-        diff.disableBootStrap();
-
         //setup vertex ids for  names
 
 
@@ -207,12 +188,6 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         val inputsAndOutputs = inputsAndOutputsForGraph(tfGraph);
         importState.setVertexIdMap(inputsAndOutputs);
 
-        int count = 1;
-        for(val nodeName : variablesForGraph.keySet()) {
-            diff.setVertexIdForVariable(count,diff.getVariable(nodeName));
-            diff.graph().addVertex(new NDArrayVertex(diff,count,0,diff.getVariable(nodeName)));
-            count++;
-        }
 
 
         val tfNodesList = getNodeList(tfGraph);

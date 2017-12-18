@@ -15,18 +15,15 @@
  */
 package org.nd4j.nativeblas;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Scanner;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
-import org.bytedeco.javacpp.tools.BuildEnabled;
-import org.bytedeco.javacpp.tools.Info;
-import org.bytedeco.javacpp.tools.InfoMap;
-import org.bytedeco.javacpp.tools.InfoMapper;
-import org.bytedeco.javacpp.tools.Logger;
+import org.bytedeco.javacpp.tools.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
 
 /**
  *

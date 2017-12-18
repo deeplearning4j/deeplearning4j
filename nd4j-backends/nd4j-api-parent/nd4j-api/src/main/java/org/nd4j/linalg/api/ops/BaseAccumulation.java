@@ -62,7 +62,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
             val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
-
+            this.xVertexId = i_v.getVarName();
+            this.zVertexId = var2.getVarName();
+            sameDiff.addArgsFor(new String[]{xVertexId},this);
+            sameDiff.addOutgoingFor(new SDVariable[]{var2},this);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -78,13 +81,16 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         if (i_v != null) {
             this.dimensions = dimensions;
             val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
-            sameDiff.putShapeForVarName(var2.getVarName(),Shape.getReducedShape(i_v.getShape(),dimensions));
+            if(sameDiff.getShapeForVarName(var2.getVarName()) == null)
+                sameDiff.putShapeForVarName(var2.getVarName(),Shape.getReducedShape(i_v.getShape(),dimensions));
             this.xVertexId = i_v.getVarName();
             this.yVertexId = i_v2.getVarName();
             this.zVertexId = var2.getVarName();
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.keepDims = keepDims;
+            sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
+            sameDiff.addOutgoingFor(new SDVariable[]{var2},this);
 
 
 

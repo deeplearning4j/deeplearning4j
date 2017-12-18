@@ -371,10 +371,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if(numOutputArguments() != descriptor.getNumOutputs())
             throw new ND4JIllegalStateException("Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
 
-        if(numIArguments() != descriptor.getNumIArgs())
+        //< 0 means dynamic size
+        if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
             throw new ND4JIllegalStateException("Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
 
-        if(numTArguments() != descriptor.getNumTArgs())
+        if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
             throw new ND4JIllegalStateException("Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
 
     }
@@ -465,11 +466,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             DynamicCustomOp ret =  super.build();
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
+            sameDiff.putFunctionForId(ret.getInstanceId(),ret);
             if(outputs.isEmpty() && !outputShapes.isEmpty()) {
                 for (int i = 0; i < outputShapes.size(); i++) {
                     outputs.add(sameDiff.var(sameDiff.generateVariableName(
                             "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
-                            false,ret.args()),outputShapes.get(i)));
+                            false),outputShapes.get(i)));
                 }
 
             }

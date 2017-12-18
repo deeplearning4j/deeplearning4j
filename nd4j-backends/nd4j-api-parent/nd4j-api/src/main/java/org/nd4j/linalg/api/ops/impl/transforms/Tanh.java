@@ -94,7 +94,6 @@ public class Tanh extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().tanhDerivative(arg(), i_v.get(0));
-
         return Collections.singletonList(ret);
     }
 }

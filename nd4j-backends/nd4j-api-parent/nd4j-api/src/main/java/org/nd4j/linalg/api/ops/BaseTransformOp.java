@@ -68,6 +68,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
             this.zVertexId = var.getVarName();
+            sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
+            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
+
 
 
         } else {
@@ -121,7 +124,10 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",shape);
             this.xVertexId = i_v.getVarName();
             this.zVertexId = var.getVarName();
-            sameDiff.putShapeForVarName(var.getVarName(),shape);
+            if(sameDiff.getShapeForVarName(var.getVarName()) == null)
+                sameDiff.putShapeForVarName(var.getVarName(),shape);
+            sameDiff.addArgsFor(new SDVariable[]{i_v},this);
+            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
         } else {
             throw new IllegalArgumentException("Input must not null variable.");
         }

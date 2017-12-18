@@ -21,7 +21,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -219,14 +218,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
             val indices = importState.getVertexIdMap().get(name);
-            val opStateEdge = getOpStateEdge(indices.getFirst(),indices.getSecond(),tfNode, newInstance);
             newInstance.setSameDiff(importState.getSameDiff());
-              /**
-             * Need to f
-             */
-            if(!Arrays.equals(indices.getLeft(),indices.getRight())) {
-                diff.graph().addEdge(opStateEdge);
-            }
 
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
 
