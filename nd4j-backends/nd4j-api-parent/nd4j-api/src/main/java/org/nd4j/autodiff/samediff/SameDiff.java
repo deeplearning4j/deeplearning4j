@@ -3743,6 +3743,8 @@ public class SameDiff {
         resolveVariablesWith(inputs);
         //resolve the place holders
         for(DifferentialFunction function : functionInstancesById.values()) {
+            //ensure output variables are calculated
+            function.outputVariables();
             function.initWithArrays(inputs);
         }
 

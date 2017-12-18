@@ -66,8 +66,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
      * @param iArguments the input int arguments
      */
     public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
-        inputArguments = new ArrayList<>(Arrays.asList(inputs));
-        outputArguments = new ArrayList<>(Arrays.asList(outputs));
+        if(inputs != null)
+            inputArguments = new ArrayList<>(Arrays.asList(inputs));
+        if(outputs != null)
+            outputArguments = new ArrayList<>(Arrays.asList(outputs));
         this.opName = opName;
         this.tArguments = tArguments;
         this.iArguments = iArguments;
@@ -557,11 +559,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         //ensure there's no redundant calls
         isArrayInit = true;
-        for(int i = 0; i < args.length; i++) {
-            args[i].initWithArrays(arrayMap,extraArgs);
-        }
-
-
         for(int i = 0; i < args().length; i++) {
             val var = sameDiff.getVariable(args()[i].getVarName());
             val func = args[i];

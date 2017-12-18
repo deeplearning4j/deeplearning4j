@@ -89,6 +89,12 @@ public class Range extends DynamicCustomOp {
             addTArgument(this.from,this.to,this.delta);
             val outputVertexId = outputVariables()[0].getVarName();
             if(sameDiff.getArrForVarName(outputVertexId) == null) {
+                if(outputVars[0].getShape() == null) {
+                    val calcShape = calculateOutputShape();
+                    sameDiff.putShapeForVarName(outputVars[0].getVarName(),calcShape.get(0));
+                }
+
+
                 val arr = Nd4j.create(outputVars[0].getShape());
                 sameDiff.putArrayForVarName(outputVertexId, arr);
                 addOutputArgument(arr);
@@ -129,6 +135,7 @@ public class Range extends DynamicCustomOp {
                     val calcShape = calculateOutputShape();
                     sameDiff.putShapeForVarName(outputVars[0].getVarName(),calcShape.get(0));
                 }
+
                 val arr = Nd4j.create(outputVars[0].getShape());
                 sameDiff.putArrayForVarName(outputVars[0].getVarName(), arr);
                 addOutputArgument(arr);
