@@ -3,6 +3,7 @@ package org.deeplearning4j.optimize.listeners.checkpoint;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -12,7 +13,7 @@ import java.util.Arrays;
  */
 @AllArgsConstructor
 @Data
-public class Checkpoint {
+public class Checkpoint implements Serializable {
 
     private int checkpointNum;
     private long timestamp;
