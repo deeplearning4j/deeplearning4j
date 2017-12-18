@@ -194,6 +194,9 @@ public class KerasLstm extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
+        if (!returnSequences) {
+            return this.layer.getOutputType(-1, preProcessor.getOutputType(inputType[0]));
+        }
         if (preProcessor != null)
             return  preProcessor.getOutputType(inputType[0]);
         else
