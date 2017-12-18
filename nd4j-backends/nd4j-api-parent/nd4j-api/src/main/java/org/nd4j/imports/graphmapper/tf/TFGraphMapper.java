@@ -415,7 +415,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 importState.getSameDiff().putFunctionForId(newInstance.getInstanceId(),newInstance);
                 val outgoingArgs = new SDVariable[to.length];
                 for(int i = 0; i < to.length; i++) {
-                    outgoingArgs[i] = varsList.get(to[i]);
+                    outgoingArgs[i] = varsList.get(to[i] - 1);
                     if(outgoingArgs[i] == null) {
                         throw new ND4JIllegalStateException("Invalid variable for index: " + to[i]);
                     }
