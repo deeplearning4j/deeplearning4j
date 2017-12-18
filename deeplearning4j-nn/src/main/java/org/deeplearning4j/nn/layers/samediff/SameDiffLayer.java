@@ -14,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
@@ -121,6 +122,12 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
         int[] inputShape = input.shape().clone();
         inputShape[0] = -1;
         SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);     //TODO WHAT ABOUT VARIABLE SIZES?
-        layerConf().defineLayer(sameDiff, inputVar, p);
+        Map<String,int[]> paramShapes = layerConf().paramShapes();
+        Map<String,SDVariable> params = new LinkedHashMap<>();
+        for(String s : layerConf().paramKeys()){
+            int[] ps = paramShapes.get(s);
+            params.put(s, sameDiff.var(s, ps));
+        }
+        layerConf().defineLayer(sameDiff, inputVar, params);
     }
 }
