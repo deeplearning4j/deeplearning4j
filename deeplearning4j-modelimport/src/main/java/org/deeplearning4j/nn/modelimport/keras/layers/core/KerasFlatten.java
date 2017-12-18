@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 
 import java.util.Map;
@@ -85,7 +86,10 @@ public class KerasFlatten extends KerasLayer {
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
-            preprocessor = new RnnToFeedForwardPreProcessor();
+            InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType[0];
+            int[] inputShape = new int[]{it.getSize(), it.getTimeSeriesLength()};
+            int[] targetShape = new int[]{it.getSize() * it.getTimeSeriesLength()};
+            preprocessor = new ReshapePreprocessor(inputShape, targetShape);
         }
         return preprocessor;
     }
