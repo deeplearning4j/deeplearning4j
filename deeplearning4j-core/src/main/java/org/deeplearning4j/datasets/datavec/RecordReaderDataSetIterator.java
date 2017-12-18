@@ -59,8 +59,8 @@ import java.util.List;
  *
  *  DataSetIterator iter = new RecordReaderDataSetIterator.Builder(rr, 32)
  *       //Label index (first arg): Always value 1 when using ImageRecordReader. For CSV etc: use index of the column
- *       //  that contains the label (should be an integer value, 0 to nClasses-1 inclusive). Column indexes start at 0
- *       //Number of classes (second arg): number of label classes (i.e., 10 for MNIST - 10 digits)
+ *       //  that contains the label (should contain an integer value, 0 to nClasses-1 inclusive). Column indexes start
+ *       // at 0. Number of classes (second arg): number of label classes (i.e., 10 for MNIST - 10 digits)
  *       .classification(1, nClasses)
  *       .preProcessor(new ImagePreProcessingScaler())      //For normalization of image values 0-255 to 0-1
  *       .build()
