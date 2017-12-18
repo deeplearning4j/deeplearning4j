@@ -88,4 +88,6 @@ public interface Accumulation extends Op {
      */
     float zeroHalf();
 
+    boolean isComplexAccumulation();
+
 }

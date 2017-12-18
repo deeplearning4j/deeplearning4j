@@ -87,10 +87,12 @@ public class HammingDistance extends BaseAccumulation {
 
     public HammingDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
+        this.isComplex = allDistances;
     }
 
     public HammingDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
+        this.isComplex = allDistances;
     }
 
      @Override

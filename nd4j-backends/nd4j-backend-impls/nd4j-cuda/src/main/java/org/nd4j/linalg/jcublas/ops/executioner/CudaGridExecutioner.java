@@ -617,12 +617,18 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
-            if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
-                ret = Nd4j.zeros(retShape);
-            } else {
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            }
+            if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
 
+                ret = Nd4j.create(xT, yT);
+            } else {
+                if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
+                    ret = Nd4j.zeros(retShape);
+                } else {
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+                }
+            }
 
             op.setZ(ret);
         } else {

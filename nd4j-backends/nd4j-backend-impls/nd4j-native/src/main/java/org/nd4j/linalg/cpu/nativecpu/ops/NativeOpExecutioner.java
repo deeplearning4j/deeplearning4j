@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCpu;
@@ -288,15 +289,31 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          */
         INDArray ret;
         if (op.z() == null || op.z() == op.x()) {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else
-                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+            if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
 
+                ret = Nd4j.create(xT, yT);
+            } else {
+                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+                else
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
 
+            }
             op.setZ(ret);
         } else {
             // compare length
+            if (!op.isComplexAccumulation() && op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+            else if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
+
+                if (op.z().lengthLong() != xT * yT)
+                    throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
+            }
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.z().assign(op.zeroDouble());
             } else {
@@ -332,6 +349,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
+        if (op.isComplexAccumulation()) {
+            yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+            if (op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().tensorAlongDimension(0, dimension).lengthLong())
+                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension");
+        }
 
 
         /**
@@ -371,7 +394,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             //pairwise reduction like similarity of two arrays
             else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    loop.execReduce3AllDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length,
+                            (IntPointer) tadBuffers.getFirst().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+                            (IntPointer) yTadBuffers.getFirst().addressPointer(),
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
+                    );
+                } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
                             (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
@@ -425,7 +462,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    loop.execReduce3AllFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length,
+                            (IntPointer) tadBuffers.getFirst().addressPointer(),
+                            new LongPointerWrapper(tadBuffers.getSecond().addressPointer()),
+                            (IntPointer) yTadBuffers.getFirst().addressPointer(),
+                            new LongPointerWrapper(yTadBuffers.getSecond().addressPointer())
+                    );
+                } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
                             (FloatPointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),

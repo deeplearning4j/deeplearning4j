@@ -21,13 +21,21 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_Conditional.class,
         float_Return.class,
         float_expose.class,
-        float_set_seed.class,
-        float_get_seed.class,
-        float_randomuniform.class,
-        float_toggle_bits.class,
-        float_matmul.class,
-        float_tensormmul.class,
-        float_axpy.class,
+        float_softmax.class,
+        float_softmax_bp.class,
+        float_lrn.class,
+        float_batchnorm.class,
+        float_apply_sgd.class,
+        float_hinge_loss.class,
+        float_huber_loss.class,
+        float_log_loss.class,
+        float_mean_pairwssqerr_loss.class,
+        float_mean_sqerr_loss.class,
+        float_sigm_cross_entropy_loss.class,
+        float_softmax_cross_entropy_loss.class,
+        float_absolute_difference_loss.class,
+        float_cosine_distance_loss.class,
+        float_firas_sparse.class,
         float_maximum.class,
         float_minimum.class,
         float_add.class,
@@ -42,38 +50,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_floordiv.class,
         float_realdiv.class,
         float_assign.class,
-        float_firas_sparse.class,
-        float_hinge_loss.class,
-        float_huber_loss.class,
-        float_log_loss.class,
-        float_mean_pairwssqerr_loss.class,
-        float_mean_sqerr_loss.class,
-        float_sigm_cross_entropy_loss.class,
-        float_softmax_cross_entropy_loss.class,
-        float_absolute_difference_loss.class,
-        float_cosine_distance_loss.class,
-        float_to_double.class,
-        float_to_float16.class,
-        float_to_float32.class,
-        float_to_int32.class,
-        float_to_int64.class,
-        float_to_uint32.class,
-        float_to_uint64.class,
-        float_cast.class,
-        float_lt_scalar.class,
-        float_gt_scalar.class,
-        float_lte_scalar.class,
-        float_gte_scalar.class,
-        float_eq_scalar.class,
-        float_neq_scalar.class,
-        float_equals.class,
-        float_not_equals.class,
-        float_less_equal.class,
-        float_greater_equal.class,
-        float_less.class,
-        float_greater.class,
-        float_Where.class,
-        float_select.class,
         float_sigmoid.class,
         float_sigmoid_bp.class,
         float_softsign.class,
@@ -104,35 +80,40 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_identity_bp.class,
         float_crelu.class,
         float_crelu_bp.class,
-        float_conv1d.class,
-        float_conv1d_bp.class,
-        float_conv2d.class,
-        float_conv2d_bp.class,
-        float_sconv2d.class,
-        float_sconv2d_bp.class,
-        float_deconv2d.class,
-        float_deconv2d_bp.class,
-        float_maxpool2d.class,
-        float_maxpool2d_bp.class,
-        float_avgpool2d.class,
-        float_avgpool2d_bp.class,
-        float_pnormpool2d.class,
-        float_pnormpool2d_bp.class,
-        float_maxpool3d.class,
-        float_maxpool3d_bp.class,
-        float_avgpool3d.class,
-        float_avgpool3d_bp.class,
-        float_fullconv3d.class,
-        float_fullconv3d_bp.class,
-        float_fullconv3d_grad.class,
-        float_pooling2d.class,
-        float_im2col.class,
-        float_col2im.class,
-        float_upsampling2d.class,
-        float_upsampling2d_bp.class,
-        float_conv3d.class,
-        float_conv3d_bp.class,
-        float_ismax.class,
+        float_lt_scalar.class,
+        float_gt_scalar.class,
+        float_lte_scalar.class,
+        float_gte_scalar.class,
+        float_eq_scalar.class,
+        float_neq_scalar.class,
+        float_equals.class,
+        float_not_equals.class,
+        float_less_equal.class,
+        float_greater_equal.class,
+        float_less.class,
+        float_greater.class,
+        float_Where.class,
+        float_select.class,
+        float_permute.class,
+        float_reshapeas.class,
+        float_transpose.class,
+        float_shape_of.class,
+        float_shapes_of.class,
+        float_squeeze.class,
+        float_expand_dims.class,
+        float_reshape.class,
+        float_matmul.class,
+        float_tensormmul.class,
+        float_axpy.class,
+        float_toggle_bits.class,
+        float_to_double.class,
+        float_to_float16.class,
+        float_to_float32.class,
+        float_to_int32.class,
+        float_to_int64.class,
+        float_to_uint32.class,
+        float_to_uint64.class,
+        float_cast.class,
         float_sru.class,
         float_sru_logic.class,
         float_sru_bi.class,
@@ -142,14 +123,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_lstmCell.class,
         float_sruCell.class,
         float_gruCell.class,
-        float_permute.class,
-        float_reshapeas.class,
-        float_transpose.class,
-        float_shape_of.class,
-        float_shapes_of.class,
-        float_squeeze.class,
-        float_expand_dims.class,
-        float_reshape.class,
         float_write_list.class,
         float_stack_list.class,
         float_read_list.class,
@@ -160,11 +133,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_split_list.class,
         float_gather_list.class,
         float_clone_list.class,
-        float_softmax.class,
-        float_softmax_bp.class,
-        float_lrn.class,
-        float_batchnorm.class,
-        float_apply_sgd.class,
         float_argmax.class,
         float_argmin.class,
         float_norm.class,
@@ -198,6 +166,38 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_square.class,
         float_zeta.class,
         float_polygamma.class,
+        float_conv1d.class,
+        float_conv1d_bp.class,
+        float_conv2d.class,
+        float_conv2d_bp.class,
+        float_sconv2d.class,
+        float_sconv2d_bp.class,
+        float_deconv2d.class,
+        float_deconv2d_bp.class,
+        float_maxpool2d.class,
+        float_maxpool2d_bp.class,
+        float_avgpool2d.class,
+        float_avgpool2d_bp.class,
+        float_pnormpool2d.class,
+        float_pnormpool2d_bp.class,
+        float_maxpool3d.class,
+        float_maxpool3d_bp.class,
+        float_avgpool3d.class,
+        float_avgpool3d_bp.class,
+        float_fullconv3d.class,
+        float_fullconv3d_bp.class,
+        float_fullconv3d_grad.class,
+        float_pooling2d.class,
+        float_im2col.class,
+        float_col2im.class,
+        float_upsampling2d.class,
+        float_upsampling2d_bp.class,
+        float_conv3d.class,
+        float_conv3d_bp.class,
+        float_ismax.class,
+        float_set_seed.class,
+        float_get_seed.class,
+        float_randomuniform.class,
         float_clipbyvalue.class,
         float_clipbynorm.class,
         float_clipbyavgnorm.class,
@@ -230,13 +230,21 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_Conditional.class,
         half_Return.class,
         half_expose.class,
-        half_set_seed.class,
-        half_get_seed.class,
-        half_randomuniform.class,
-        half_toggle_bits.class,
-        half_matmul.class,
-        half_tensormmul.class,
-        half_axpy.class,
+        half_softmax.class,
+        half_softmax_bp.class,
+        half_lrn.class,
+        half_batchnorm.class,
+        half_apply_sgd.class,
+        half_hinge_loss.class,
+        half_huber_loss.class,
+        half_log_loss.class,
+        half_mean_pairwssqerr_loss.class,
+        half_mean_sqerr_loss.class,
+        half_sigm_cross_entropy_loss.class,
+        half_softmax_cross_entropy_loss.class,
+        half_absolute_difference_loss.class,
+        half_cosine_distance_loss.class,
+        half_firas_sparse.class,
         half_maximum.class,
         half_minimum.class,
         half_add.class,
@@ -251,38 +259,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_floordiv.class,
         half_realdiv.class,
         half_assign.class,
-        half_firas_sparse.class,
-        half_hinge_loss.class,
-        half_huber_loss.class,
-        half_log_loss.class,
-        half_mean_pairwssqerr_loss.class,
-        half_mean_sqerr_loss.class,
-        half_sigm_cross_entropy_loss.class,
-        half_softmax_cross_entropy_loss.class,
-        half_absolute_difference_loss.class,
-        half_cosine_distance_loss.class,
-        half_to_double.class,
-        half_to_float16.class,
-        half_to_float32.class,
-        half_to_int32.class,
-        half_to_int64.class,
-        half_to_uint32.class,
-        half_to_uint64.class,
-        half_cast.class,
-        half_lt_scalar.class,
-        half_gt_scalar.class,
-        half_lte_scalar.class,
-        half_gte_scalar.class,
-        half_eq_scalar.class,
-        half_neq_scalar.class,
-        half_equals.class,
-        half_not_equals.class,
-        half_less_equal.class,
-        half_greater_equal.class,
-        half_less.class,
-        half_greater.class,
-        half_Where.class,
-        half_select.class,
         half_sigmoid.class,
         half_sigmoid_bp.class,
         half_softsign.class,
@@ -313,35 +289,40 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_identity_bp.class,
         half_crelu.class,
         half_crelu_bp.class,
-        half_conv1d.class,
-        half_conv1d_bp.class,
-        half_conv2d.class,
-        half_conv2d_bp.class,
-        half_sconv2d.class,
-        half_sconv2d_bp.class,
-        half_deconv2d.class,
-        half_deconv2d_bp.class,
-        half_maxpool2d.class,
-        half_maxpool2d_bp.class,
-        half_avgpool2d.class,
-        half_avgpool2d_bp.class,
-        half_pnormpool2d.class,
-        half_pnormpool2d_bp.class,
-        half_maxpool3d.class,
-        half_maxpool3d_bp.class,
-        half_avgpool3d.class,
-        half_avgpool3d_bp.class,
-        half_fullconv3d.class,
-        half_fullconv3d_bp.class,
-        half_fullconv3d_grad.class,
-        half_pooling2d.class,
-        half_im2col.class,
-        half_col2im.class,
-        half_upsampling2d.class,
-        half_upsampling2d_bp.class,
-        half_conv3d.class,
-        half_conv3d_bp.class,
-        half_ismax.class,
+        half_lt_scalar.class,
+        half_gt_scalar.class,
+        half_lte_scalar.class,
+        half_gte_scalar.class,
+        half_eq_scalar.class,
+        half_neq_scalar.class,
+        half_equals.class,
+        half_not_equals.class,
+        half_less_equal.class,
+        half_greater_equal.class,
+        half_less.class,
+        half_greater.class,
+        half_Where.class,
+        half_select.class,
+        half_permute.class,
+        half_reshapeas.class,
+        half_transpose.class,
+        half_shape_of.class,
+        half_shapes_of.class,
+        half_squeeze.class,
+        half_expand_dims.class,
+        half_reshape.class,
+        half_matmul.class,
+        half_tensormmul.class,
+        half_axpy.class,
+        half_toggle_bits.class,
+        half_to_double.class,
+        half_to_float16.class,
+        half_to_float32.class,
+        half_to_int32.class,
+        half_to_int64.class,
+        half_to_uint32.class,
+        half_to_uint64.class,
+        half_cast.class,
         half_sru.class,
         half_sru_logic.class,
         half_sru_bi.class,
@@ -351,14 +332,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_lstmCell.class,
         half_sruCell.class,
         half_gruCell.class,
-        half_permute.class,
-        half_reshapeas.class,
-        half_transpose.class,
-        half_shape_of.class,
-        half_shapes_of.class,
-        half_squeeze.class,
-        half_expand_dims.class,
-        half_reshape.class,
         half_write_list.class,
         half_stack_list.class,
         half_read_list.class,
@@ -369,11 +342,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_split_list.class,
         half_gather_list.class,
         half_clone_list.class,
-        half_softmax.class,
-        half_softmax_bp.class,
-        half_lrn.class,
-        half_batchnorm.class,
-        half_apply_sgd.class,
         half_argmax.class,
         half_argmin.class,
         half_norm.class,
@@ -407,6 +375,38 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_square.class,
         half_zeta.class,
         half_polygamma.class,
+        half_conv1d.class,
+        half_conv1d_bp.class,
+        half_conv2d.class,
+        half_conv2d_bp.class,
+        half_sconv2d.class,
+        half_sconv2d_bp.class,
+        half_deconv2d.class,
+        half_deconv2d_bp.class,
+        half_maxpool2d.class,
+        half_maxpool2d_bp.class,
+        half_avgpool2d.class,
+        half_avgpool2d_bp.class,
+        half_pnormpool2d.class,
+        half_pnormpool2d_bp.class,
+        half_maxpool3d.class,
+        half_maxpool3d_bp.class,
+        half_avgpool3d.class,
+        half_avgpool3d_bp.class,
+        half_fullconv3d.class,
+        half_fullconv3d_bp.class,
+        half_fullconv3d_grad.class,
+        half_pooling2d.class,
+        half_im2col.class,
+        half_col2im.class,
+        half_upsampling2d.class,
+        half_upsampling2d_bp.class,
+        half_conv3d.class,
+        half_conv3d_bp.class,
+        half_ismax.class,
+        half_set_seed.class,
+        half_get_seed.class,
+        half_randomuniform.class,
         half_clipbyvalue.class,
         half_clipbynorm.class,
         half_clipbyavgnorm.class,
@@ -439,13 +439,21 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_Conditional.class,
         double_Return.class,
         double_expose.class,
-        double_set_seed.class,
-        double_get_seed.class,
-        double_randomuniform.class,
-        double_toggle_bits.class,
-        double_matmul.class,
-        double_tensormmul.class,
-        double_axpy.class,
+        double_softmax.class,
+        double_softmax_bp.class,
+        double_lrn.class,
+        double_batchnorm.class,
+        double_apply_sgd.class,
+        double_hinge_loss.class,
+        double_huber_loss.class,
+        double_log_loss.class,
+        double_mean_pairwssqerr_loss.class,
+        double_mean_sqerr_loss.class,
+        double_sigm_cross_entropy_loss.class,
+        double_softmax_cross_entropy_loss.class,
+        double_absolute_difference_loss.class,
+        double_cosine_distance_loss.class,
+        double_firas_sparse.class,
         double_maximum.class,
         double_minimum.class,
         double_add.class,
@@ -460,38 +468,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_floordiv.class,
         double_realdiv.class,
         double_assign.class,
-        double_firas_sparse.class,
-        double_hinge_loss.class,
-        double_huber_loss.class,
-        double_log_loss.class,
-        double_mean_pairwssqerr_loss.class,
-        double_mean_sqerr_loss.class,
-        double_sigm_cross_entropy_loss.class,
-        double_softmax_cross_entropy_loss.class,
-        double_absolute_difference_loss.class,
-        double_cosine_distance_loss.class,
-        double_to_double.class,
-        double_to_float16.class,
-        double_to_float32.class,
-        double_to_int32.class,
-        double_to_int64.class,
-        double_to_uint32.class,
-        double_to_uint64.class,
-        double_cast.class,
-        double_lt_scalar.class,
-        double_gt_scalar.class,
-        double_lte_scalar.class,
-        double_gte_scalar.class,
-        double_eq_scalar.class,
-        double_neq_scalar.class,
-        double_equals.class,
-        double_not_equals.class,
-        double_less_equal.class,
-        double_greater_equal.class,
-        double_less.class,
-        double_greater.class,
-        double_Where.class,
-        double_select.class,
         double_sigmoid.class,
         double_sigmoid_bp.class,
         double_softsign.class,
@@ -522,35 +498,40 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_identity_bp.class,
         double_crelu.class,
         double_crelu_bp.class,
-        double_conv1d.class,
-        double_conv1d_bp.class,
-        double_conv2d.class,
-        double_conv2d_bp.class,
-        double_sconv2d.class,
-        double_sconv2d_bp.class,
-        double_deconv2d.class,
-        double_deconv2d_bp.class,
-        double_maxpool2d.class,
-        double_maxpool2d_bp.class,
-        double_avgpool2d.class,
-        double_avgpool2d_bp.class,
-        double_pnormpool2d.class,
-        double_pnormpool2d_bp.class,
-        double_maxpool3d.class,
-        double_maxpool3d_bp.class,
-        double_avgpool3d.class,
-        double_avgpool3d_bp.class,
-        double_fullconv3d.class,
-        double_fullconv3d_bp.class,
-        double_fullconv3d_grad.class,
-        double_pooling2d.class,
-        double_im2col.class,
-        double_col2im.class,
-        double_upsampling2d.class,
-        double_upsampling2d_bp.class,
-        double_conv3d.class,
-        double_conv3d_bp.class,
-        double_ismax.class,
+        double_lt_scalar.class,
+        double_gt_scalar.class,
+        double_lte_scalar.class,
+        double_gte_scalar.class,
+        double_eq_scalar.class,
+        double_neq_scalar.class,
+        double_equals.class,
+        double_not_equals.class,
+        double_less_equal.class,
+        double_greater_equal.class,
+        double_less.class,
+        double_greater.class,
+        double_Where.class,
+        double_select.class,
+        double_permute.class,
+        double_reshapeas.class,
+        double_transpose.class,
+        double_shape_of.class,
+        double_shapes_of.class,
+        double_squeeze.class,
+        double_expand_dims.class,
+        double_reshape.class,
+        double_matmul.class,
+        double_tensormmul.class,
+        double_axpy.class,
+        double_toggle_bits.class,
+        double_to_double.class,
+        double_to_float16.class,
+        double_to_float32.class,
+        double_to_int32.class,
+        double_to_int64.class,
+        double_to_uint32.class,
+        double_to_uint64.class,
+        double_cast.class,
         double_sru.class,
         double_sru_logic.class,
         double_sru_bi.class,
@@ -560,14 +541,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_lstmCell.class,
         double_sruCell.class,
         double_gruCell.class,
-        double_permute.class,
-        double_reshapeas.class,
-        double_transpose.class,
-        double_shape_of.class,
-        double_shapes_of.class,
-        double_squeeze.class,
-        double_expand_dims.class,
-        double_reshape.class,
         double_write_list.class,
         double_stack_list.class,
         double_read_list.class,
@@ -578,11 +551,6 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_split_list.class,
         double_gather_list.class,
         double_clone_list.class,
-        double_softmax.class,
-        double_softmax_bp.class,
-        double_lrn.class,
-        double_batchnorm.class,
-        double_apply_sgd.class,
         double_argmax.class,
         double_argmin.class,
         double_norm.class,
@@ -616,6 +584,38 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_square.class,
         double_zeta.class,
         double_polygamma.class,
+        double_conv1d.class,
+        double_conv1d_bp.class,
+        double_conv2d.class,
+        double_conv2d_bp.class,
+        double_sconv2d.class,
+        double_sconv2d_bp.class,
+        double_deconv2d.class,
+        double_deconv2d_bp.class,
+        double_maxpool2d.class,
+        double_maxpool2d_bp.class,
+        double_avgpool2d.class,
+        double_avgpool2d_bp.class,
+        double_pnormpool2d.class,
+        double_pnormpool2d_bp.class,
+        double_maxpool3d.class,
+        double_maxpool3d_bp.class,
+        double_avgpool3d.class,
+        double_avgpool3d_bp.class,
+        double_fullconv3d.class,
+        double_fullconv3d_bp.class,
+        double_fullconv3d_grad.class,
+        double_pooling2d.class,
+        double_im2col.class,
+        double_col2im.class,
+        double_upsampling2d.class,
+        double_upsampling2d_bp.class,
+        double_conv3d.class,
+        double_conv3d_bp.class,
+        double_ismax.class,
+        double_set_seed.class,
+        double_get_seed.class,
+        double_randomuniform.class,
         double_clipbyvalue.class,
         double_clipbynorm.class,
         double_clipbyavgnorm.class,
@@ -6112,8 +6112,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <indexing/IndicesList.h>
 // #include <graph/Intervals.h>
 // #include <array/DataType.h>
-    // template<typename T> NDArray<T> operator+(const T, const NDArray<T>&);
-    // template<typename T> NDArray<T> operator-(const T, const NDArray<T>&);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") FloatNDArray subtract(float arg0, @Const @ByRef FloatNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short arg0, @Const @ByRef HalfNDArray arg1);
     @Namespace("nd4j") public static native @ByVal @Name("operator -") DoubleNDArray subtract(double arg0, @Const @ByRef DoubleNDArray arg1);
@@ -6132,31 +6130,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public FloatNDArray position(long position) {
             return (FloatNDArray)super.position(position);
         }
-    
-        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
-        public native @Name("operator delete") void _delete(Pointer p);
-
-		// forbid assignment operator
-		public native @ByRef @Name("operator =") FloatNDArray put(@Const @ByRef FloatNDArray other);
+            
         
-        // accessing operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-
-        // modifying operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-        public native @ByRef @Name("operator ()") FloatPointer apply(@Cast("const Nd4jIndex") long i);
-
-        // accessing operator for 2D array, i - row, j - column        
-
-        // modifying operator for 2D array, i - row, j - column
-        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j);
-
-        // accessing operator for 3D array        
-
-        // modifying operator for 3D array
-        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j, int k);
-
-        // default constructor, do not allocate memory, memory for array is passed from outside 
+        /**
+        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        */
         public FloatNDArray(FloatPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(FloatPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public FloatNDArray() { super((Pointer)null); allocate(); }
@@ -6165,32 +6143,44 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(FloatBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public FloatNDArray(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        
+        /**
+        *  copy constructor
+        */
+        public FloatNDArray(@Const @ByRef FloatNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef FloatNDArray other);
 
-        //constructor, create empty array with at workspace
+        /**
+        *  constructor, create empty array stored at given workspace
+        */
         public FloatNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
         private native void allocate(Workspace workspace);
 
-        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        /**
+        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
+        */
         public FloatNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
         private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
         public FloatNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
         private native void allocate(int rows, int columns, char order);
 
-        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        /**
+        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
+        */ 
         public FloatNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
         public FloatNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order);
 
-        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        /**
+        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        */
         public FloatNDArray(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
         private native void allocate(@Const FloatNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public FloatNDArray(@Const FloatNDArray other) { super((Pointer)null); allocate(other); }
-        private native void allocate(@Const FloatNDArray other);
-		
-		// copy constructor
-
-		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+				
+        /**
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        */
 		public FloatNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
 		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
 		public FloatNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
@@ -6204,8 +6194,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public FloatNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Const int[] shapeInfo);
 
-        // this constructor creates new array using shape information contained in initializer_list/vector argument
-        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        /**
+        *  this constructor creates new array using shape information contained in vector argument    
+        */
         public FloatNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public FloatNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -6219,6 +6210,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public FloatNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(char order, @StdVector int[] shape);
 
+        /**
+        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        */
         public FloatNDArray(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/);
         public FloatNDArray(char order, @StdVector IntPointer shape, @StdVector FloatPointer data) { super((Pointer)null); allocate(order, shape, data); }
@@ -6232,6 +6226,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public FloatNDArray(char order, @StdVector int[] shape, @StdVector float[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @StdVector int[] shape, @StdVector float[] data);
 
+        /**
+        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        */
         public FloatNDArray(FloatPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
         private native void allocate(FloatPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public FloatNDArray(FloatPointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
@@ -6245,7 +6242,20 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public FloatNDArray(float[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
         private native void allocate(float[] buffer, char order, @StdVector int[] shape);
 
-        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        /**
+        * assignment operator
+        */
+        public native @ByRef @Name("operator =") FloatNDArray put(@Const @ByRef FloatNDArray other);
+
+        /**
+        *   operators for memory allocation and deletion
+        */ 
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+        /**
+        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        */
         public native void replacePointers(FloatPointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(FloatPointer buffer, IntPointer shapeInfo);
         public native void replacePointers(FloatBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
@@ -6253,78 +6263,93 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void replacePointers(float[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(float[] buffer, int[] shapeInfo);
  
-        public native FloatNDArray repeat(int dimension, @StdVector IntPointer reps);
-        public native FloatNDArray repeat(int dimension, @StdVector IntBuffer reps);
-        public native FloatNDArray repeat(int dimension, @StdVector int[] reps);
+        /**
+        *  create a new array by replicating current array by repeats times along given dimension
+        *  dimension - dimension along which to repeat elements
+        *  repeats - number of repetitions
+        */        
+        public native FloatNDArray repeat(int dimension, @StdVector IntPointer repeats);
+        public native FloatNDArray repeat(int dimension, @StdVector IntBuffer repeats);
+        public native FloatNDArray repeat(int dimension, @StdVector int[] repeats);
 
+        /**
+        *  fill target array by repeating current array 
+        *  dimension - dimension along which to repeat elements        
+        */
         public native void repeat(int dimension, @ByRef FloatNDArray target);
 
+        /**
+        *  return _dataType;
+        */
         public native @Cast("nd4j::DataType") int dataType();
 
+        /**
+        *  creates array which is view of this array
+        */
         public native FloatNDArray getView();
 
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
         public native FloatNDArray subarray(@ByRef IndicesList indices);
-
         public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
         public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
         public native FloatNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
-
         public native FloatNDArray subarray(@Const @ByRef Intervals idx);
 
+        /**
+        *  cast array elements to given dtype
+        */ 
         public native FloatNDArray cast(@Cast("nd4j::DataType") int dtype);
-
         public native void cast(FloatNDArray target, @Cast("nd4j::DataType") int dtype);
 
+        /**
+        *   returns _workspace
+        */
         public native Workspace getWorkspace();
 
-        public native FloatPointer getBuffer();
+        /**
+        *   returns _buffer
+        */
+        public native FloatPointer getBuffer();        
         public native FloatPointer buffer();
 
+        /**
+        *   returns _shapeInfo
+        */
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
 
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
         public native FloatPointer specialBuffer();
+
+        /**
+        *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
+        */
         public native IntPointer specialShapeInfo();
+
+        /**
+        *  set values for _bufferD and _shapeInfoD
+        */
         public native void setSpecialBuffers(FloatPointer buffer, IntPointer shape);
         public native void setSpecialBuffers(FloatBuffer buffer, IntBuffer shape);
         public native void setSpecialBuffers(float[] buffer, int[] shape);
 
-
-        public native IntPointer shapeInfo();
-        public native IntPointer getShapeInfo();
-
-        public native void setShapeInfo(IntPointer shapeInfo);
-        public native void setShapeInfo(IntBuffer shapeInfo);
-        public native void setShapeInfo(int[] shapeInfo);
-
-        public native void setBuffer(FloatPointer buffer);
-        public native void setBuffer(FloatBuffer buffer);
-        public native void setBuffer(float[] buffer);
-
-        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
-
-        public native int sizeAt(int dim);
-
-        // This method returns order of this NDArray
-        public native char ordering();
-
-        public native @Cast("bool") boolean isView();
-
-        // This method returns shape portion of shapeInfo
-        public native IntPointer shapeOf();
-
-        // This method returns strides portion of shapeInfo
-        public native IntPointer stridesOf();
-
-        // This method returns rank of this NDArray
-        public native int rankOf();
-
-        // This method returns length of this NDArray
-        public native @Cast("Nd4jIndex") long lengthOf();
+        /**
+        *  permutes (in-place) the dimensions in array according to "dimensions" array
+        */
         public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
         public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+
+        /**
+        *  permutes the dimensions in array according to "dimensions" array
+        */
         public native FloatNDArray permute(@StdVector IntPointer dimensions);
         public native FloatNDArray permute(@StdVector IntBuffer dimensions);
         public native FloatNDArray permute(@StdVector int[] dimensions);
@@ -6332,6 +6357,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray permute(@Const IntBuffer dimensions, int rank);
         public native FloatNDArray permute(@Const int[] dimensions, int rank);
 
+        /**
+        *  permutes the dimensions in target according to "dimensions" array
+        */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef FloatNDArray target);
         public native void permute(@Const IntBuffer dimensions, int rank, @ByRef FloatNDArray target);
         public native void permute(@Const int[] dimensions, int rank, @ByRef FloatNDArray target);
@@ -6339,41 +6367,597 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void permute(@StdVector IntBuffer dimensions, @ByRef FloatNDArray target);
         public native void permute(@StdVector int[] dimensions, @ByRef FloatNDArray target);
 
-        // This method returns number of rows in this NDArray
-        public native int rows();
-
-        // This method returns number of columns in this NDArray
-        public native int columns();
-
-        // This method returns sizeof(T) for this NDArray
-        public native int sizeOfT();
-
+        /**
+        *  check whether array is contiguous in memory
+        */ 
         public native @Cast("bool") boolean isContiguous();
 
-        // print information about array shape
+        /**
+        *  prints information about array shape
+        *  msg - message to print out 
+        */ 
         public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
         public native void printShapeInfo();
         public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
 
+        /**
+        *  prints buffer elements
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
+        /**
+        *  prints buffer elements, takes into account offset between elements (element-wise-stride)
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printIndexedBuffer();
         public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
-        // This method assigns values of given NDArray to this one, wrt order
+        /**
+        *  this method assigns values of given array to this one
+        */ 
         public native void assign(@Const FloatNDArray other);
 
-        // This method assigns given value to all elements in this NDArray
+        /**
+        *  this method assigns given value to all elements in array
+        */ 
         public native void assign(float value);
 
-        // This method returns new copy of this NDArray, optionally in different order
+        /**
+        *  returns new copy of this array, optionally in different order
+        */
         public native FloatNDArray dup(char newOrder/*='a'*/);
         public native FloatNDArray dup();
 
-        // Returns true if these two NDArrays have same shape
+        /** 
+        *  returns sum of all elements of array
+        */
+        public native float sumNumber();
+
+        /**
+        *  returns mean number of array
+        */ 
+        public native float meanNumber();
+
+        /**
+        *  calculates sum along dimension(s) in this array and save it to created reduced array
+        *  dimensions - array of dimensions to calculate sum over
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+		/**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+        /**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
+        *  target - where to save result of reducing
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        *  extras - extra parameters
+        */
+
+        /**
+        *  return variance of array elements set
+        *  biasCorrected -  if true bias correction will be applied
+        */
+
+        /**
+        *  apply scalar operation to array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns element index which corresponds to some condition imposed by operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns index of max element in a given array (optionally: along given dimension(s))
+        *  dimensions - optional vector with dimensions
+        */          
+        public native @Cast("Nd4jIndex") long argMax();
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation to array and store result in target
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
+        *  other - second array necessary for pairwise operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
+        *  other - second array necessary for pairwise operation
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
+        *  tad - array to broadcast
+        *  dimensions -  array with dimensions to broadcast along
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  target - where to store result
+        *  checkTargetShape - if true check whether target shape is suitable for broadcasting
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input array which is simple scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        /**
+        *  apply OpName random operation to array 
+        *  buffer - pointer on RandomBuffer
+        *  y - optional input array
+        *  z - optional input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        */
+        public native FloatNDArray transpose();
+
+        /**
+        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  target - where to store result
+        */ 
+        public native void transpose(@ByRef FloatNDArray target);
+
+        /**
+        *  apply in-place transpose operation to this array, so this array becomes transposed 
+        */ 
+        public native void transposei();
+
+        /**
+        *  return array pointing on certain range of this array
+        *  index - the number of array to be returned among set of possible arrays 
+        *  dimensions - array of dimensions to point on
+        */
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native FloatNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        /**
+        *  returns the number of arrays pointing on specified dimension(s)
+        *  dimensions - array of dimensions to point on
+        */
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        /**
+        *  returns true if elements of two arrays are equal to within given epsilon value
+        *  other - input array to compare
+        *  eps - epsilon, this value defines the precision of elements comparison
+        */
+        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other, float eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other);
+        
+        /**
+        *  add given row vector to all rows of this array
+        *  row - row vector to add
+        */
+        public native void addiRowVector(@Const FloatNDArray row);
+
+        /**
+        *  add given row vector to all rows of this array, store result in target
+        *  row - row vector to add
+        *  target - where to store result
+        */
+        public native void addRowVector(@Const FloatNDArray row, FloatNDArray target);
+
+        /**
+        *  subtract given row vector from all rows of this array, store result in target
+        *  row - row vector to subtract
+        *  target - where to store result
+        */
+        public native void subRowVector(@Const FloatNDArray row, FloatNDArray target);
+        
+        /**
+        *  multiply all rows of this array on given row vector, store result in target
+        *  row - row vector to multiply on
+        *  target - where to store result
+        */
+        public native void mulRowVector(@Const FloatNDArray row, FloatNDArray target);
+
+        /**
+        *  divide all rows of this array on given row vector, store result in target
+        *  row - row vector to divide on
+        *  target - where to store result
+        */
+        public native void divRowVector(@Const FloatNDArray row, FloatNDArray target);
+        
+        /**
+        *  add given column vector to all columns of this array, store result in target
+        *  column - column vector to add
+        *  target - where to store result
+        */
+        public native void addColumnVector(@Const FloatNDArray column, FloatNDArray target);
+
+        /**
+        *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
+        *  column - column vector to add
+        */
+		public native void addiColumnVector(@Const FloatNDArray column);
+
+        /**
+        *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
+        *  column - column vector to multiply on
+        */
+		public native void muliColumnVector(@Const FloatNDArray column);
+
+        /**
+        *  returns number of bytes used by _buffer & _shapeInfo
+        */
+        public native @Cast("Nd4jIndex") long memoryFootprint();        
+        
+        /**
+        *  these methods suited for FlatBuffers use
+        */
+        public native @StdVector FloatPointer getBufferAsVector();
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+				
+        /**
+        *  set new order and shape in case of suitable array length (in-place operation)
+        *  order - order to set
+        *  shape - shape to set
+        */		
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+        /**
+        *  creates new array with corresponding order and shape, new array will point on _buffer of this array
+        *  order - order to set
+        *  shape - shape to set
+        */
+		public native FloatNDArray reshape(char order, @StdVector IntPointer shape);
+		public native FloatNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native FloatNDArray reshape(char order, @StdVector int[] shape);
+		
+        /**
+        *  calculate strides and set given order
+        *  order - order to set
+        */
+		public native void updateStrides(char order);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        */
+		public native void tilei(@StdVector IntPointer repeats);
+		public native void tilei(@StdVector IntBuffer repeats);
+		public native void tilei(@StdVector int[] repeats);
+
+        /**
+        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  repeats - contains numbers of repetitions
+        */
+		public native @ByVal FloatNDArray tile(@StdVector IntPointer repeats);
+		public native @ByVal FloatNDArray tile(@StdVector IntBuffer repeats);
+		public native @ByVal FloatNDArray tile(@StdVector int[] repeats);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        *  target - where to store result
+        */
+        public native void tile(@StdVector IntPointer repeats, @ByRef FloatNDArray target);
+        public native void tile(@StdVector IntBuffer repeats, @ByRef FloatNDArray target);
+        public native void tile(@StdVector int[] repeats, @ByRef FloatNDArray target);
+        
+        /**
+        *  returns an array which is result of broadcasting of this and other arrays 
+        *  other - input array
+        */
+		public native FloatNDArray broadcast(@Const @ByRef FloatNDArray other);
+		
+        /**
+        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
+        *  arg - 0 -> row, 1 -> column
+        */
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+				
+        /**
+        *  check whether array is identity matrix
+        */
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+		
+        /**
+        *  check whether array is unitary matrix
+        */
+		public native @Cast("bool") boolean isUnitary(); 
+                        
+        /**
+        *  reduces dimensions in this array relying on index operation OpName
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  reduces dimensions in array relying on index operation OpName
+        *  target - where to store result
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+                
+        /**
+        *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+
+        /**
+        *  returns variance along given dimensions
+        *  biasCorrected -  if true bias correction will be applied
+        *  dimensions - vector of dimensions to calculate variance along
+        */
+
+        /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays  to point on
+        */
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
+
+        /**
+        *  addition operator: array + other
+        *  other - input array to add
+        */
+        public native @ByVal @Name("operator +") FloatNDArray add(@Const @ByRef FloatNDArray other);
+
+        /**
+        *  addition operator: array + scalar
+        *  scalar - input scalar to add
+        */
+        public native @ByVal @Name("operator +") FloatNDArray add(float scalar);
+
+        /**
+        *  friend functions which implement addition operator: scalar + array
+        *  scalar - input scalar to add
+        */
+        
+        
+        
+        
+        /**
+        *  addition unary operator array += other
+        *  other - input array to add
+        */
+        public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
+        
+        /**
+        *  subtraction operator: array - other
+        *  other - input array to subtract
+        */
+        public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
+        
+        /**
+        *  subtraction operator: array - scalar
+        *  scalar - input scalar to subtract
+        */
+        public native @ByVal @Name("operator -") FloatNDArray subtract(float scalar);        
+
+        /**
+        *  negative operator, it changes sign of all array elements on opposite
+        */
+        public native @ByVal @Name("operator -") FloatNDArray subtract();
+
+        /**
+        *  friend functions which implement subtraction operator: scalar - array
+        *  scalar - input scalar to subtract
+        */
+        
+        
+        
+
+        /**
+        *  pairwise multiplication operator: array * other
+        *  other - input array to multiply on
+        */
+        public native @ByVal @Name("operator *") FloatNDArray multiply(@Const @ByRef FloatNDArray other);        
+    
+        /**
+        *  multiplication operator: array * scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @ByVal @Name("operator *") FloatNDArray multiply(float scalar);
+        
+        /**
+        *  pairwise multiplication unary operator array *= other
+        *  other - input array to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef FloatNDArray other);
+
+        /**
+        *  multiplication unary operator array *= scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(float scalar);
+
+        /**
+        *  pairwise division operator: array / other
+        *  other - input array to divide on
+        */
+        public native @ByVal @Name("operator /") FloatNDArray divide(@Const @ByRef FloatNDArray other);        
+
+        /**
+        *  pairwise division unary operator: array /= other
+        *  other - input array to divide on
+        */
+        public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
+
+        /**
+        *  division unary operator: array /= scalar
+        *  scalar - input scalar to divide on
+        */
+        public native @Name("operator /=") void dividePut(float scalar);
+
+        /**
+        *  friend function which implements mathematical multiplication of two arrays
+        *  left - input array
+        *  right - input array
+        */
+        
+
+        /**
+        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  other - input array to assign elements from
+        *  idx - intervals of indexes which define the sub-array
+        */ 
+        public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
+
+        /**
+        *  return vector containing _buffer as flat binary array
+        */
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+        /**
+        *  set _shapeInfo
+        */
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        /**
+        *  set _buffer
+        */
+        public native void setBuffer(FloatPointer buffer);
+        public native void setBuffer(FloatBuffer buffer);
+        public native void setBuffer(float[] buffer);
+
+        /**
+        *  set _isBuffAlloc and _isShapeAlloc
+        */
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+        
+        /**
+        *  returns the value of "dim" dimension 
+        */ 
+        public native int sizeAt(int dim);
+
+        /**        
+        *  returns order of array
+        */
+        public native char ordering();
+
+        /**
+        *  return _isView
+        */ 
+        public native @Cast("bool") boolean isView();
+
+        /**
+        *  returns shape portion of shapeInfo
+        */
+        public native IntPointer shapeOf();
+        
+        /**
+        *  returns strides portion of shapeInfo
+        */
+        public native IntPointer stridesOf();
+
+        /**
+        *  returns rank of array
+        */
+        public native int rankOf();        
+
+        /** 
+        *  returns length of array
+        */
+        public native @Cast("Nd4jIndex") long lengthOf();        
+
+        /**
+        *  returns number of rows in array
+        */
+        public native int rows();
+
+        /**
+        *  returns number of columns in array
+        */ 
+        public native int columns();
+
+        /**
+        *  returns size of array elements type
+        */ 
+        public native int sizeOfT();
+
+        /**
+        *  returns element-wise-stride
+        */ 
+        public native int ews();
+
+        // returns true if arrays have same shape
         public native @Cast("bool") boolean isSameShape(@Const FloatNDArray other);
         public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
         public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
@@ -6382,249 +6966,126 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
 
-		// Returns true if these two NDArrays have same shape
+        /**
+        *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
+        */
         public native @Cast("bool") boolean isSameShapeStrict(@Const FloatNDArray other);
 
-        // This method returns sum of all elements of this NDArray
-        public native float sumNumber();
-
-        // This method returns mean number of this NDArray
-        public native float meanNumber();
-
-        public native int ews();
-
-        // method calculates sum along dimension(s) in this array and save it reduced array
-
-		// method reduces array by excluding its shapes along axes present in dimensions vector
-		
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // 
-
-        public native @Cast("Nd4jIndex") long argMax();
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform pairwise transformation
-
-        // perform pairwise transformation
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
-        public native FloatNDArray transpose();
-
-        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
-        public native void transpose(@ByRef FloatNDArray target);
-
-        // This method applies in-place transpose to this array, so this array becomes transposed 
-        public native void transposei();
-
-        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
-        public native FloatNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
-        public native FloatNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
-
-        // this method returns number of tensors along specified dimension(s)
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
-
-        // This method returns true if buffer && shapeInfo were defined
+        /**
+        *  returns true if buffer && shapeInfo were defined (non nullptr)
+        */
         public native @Cast("bool") boolean nonNull();
 
-        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other, float eps/*=(T) 1e-5f*/);
-        public native @Cast("bool") boolean equalsTo(@Const FloatNDArray other);
-
-        // Return value from linear buffer
+        /** 
+        *  returns array element with given index from linear buffer
+        *  i - element index in array
+        */
         public native float getScalar(@Cast("const Nd4jIndex") long i);
-        
-        public native float getIndexedScalar(@Cast("const Nd4jIndex") long i);
 
-        // Returns value from 2D matrix by coordinates/indexes         
+        /** 
+        *  returns array element with given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        */
+        public native float getIndexedScalar(@Cast("const Nd4jIndex") long i);
+        
+        /** 
+        *  returns element with given indexes from 2D array 
+        *  i - number of row 
+        *  j - number of column
+        */
         public native float getScalar(int i, int j);
 
-        // returns value from 3D tensor by coordinates        
+        /** 
+        *  returns element with given indexes from 3D array 
+        *  i - height
+        *  j - width
+        *  k - depth
+        */
         public native float getScalar(int i, int j, int k);        
         
+        /** 
+        *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, float value);        
 
-        // This method sets value in linear buffer to position i        
+        /** 
+        *  assigns given scalar to array element by given index, regards array buffer as linear
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putScalar(@Cast("const Nd4jIndex") long i, float value);        
 
-        // This method sets value in 2D matrix to position i, j         
+        /** 
+        *  assigns given scalar to 2D array element by given indexes
+        *  i - number of row
+        *  j - number of row
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, float value);        
 
-        // This method sets value in 3D matrix to position i,j,k        
+        /** 
+        *  assigns given scalar to 3D array element by given indexes
+        *  i - height
+        *  j - width
+        *  k - depth
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, int k, float value);
-        
-        // This method adds given row to all rows in this NDArray, that is this array becomes affected
-        public native void addiRowVector(@Const FloatNDArray row);
 
-        public native void addRowVector(@Const FloatNDArray row, FloatNDArray target);
-        
-        public native void subRowVector(@Const FloatNDArray row, FloatNDArray target);
-        
-        public native void mulRowVector(@Const FloatNDArray row, FloatNDArray target);
-
-        public native void divRowVector(@Const FloatNDArray row, FloatNDArray target);
-
-        public native void addColumnVector(@Const FloatNDArray column, FloatNDArray target);
-
-		// This method adds given column to all columns in this NDArray, that is this array becomes affected
-		public native void addiColumnVector(@Const FloatNDArray column);
-
-		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
-		public native void muliColumnVector(@Const FloatNDArray column);
-
-        // this method returns number of bytes used by buffer & shapeInfo
-        public native @Cast("Nd4jIndex") long memoryFootprint();
-
-        // this method returns true if this ndarray is 2d
+        /**
+        *  returns true if array is 2D
+        */
         public native @Cast("bool") boolean isMatrix();
 
-        // this method returns true if this ndarray is vector
+        /**
+        *  returns true if array is vector
+        */
         public native @Cast("bool") boolean isVector();
 
-        // this method returns true if this ndarray is column vector
+        /**
+        *  returns true if array is column vector
+        */
         public native @Cast("bool") boolean isColumnVector();
 
-        // this method returns true if this ndarray is row vector
+        /**
+        *  returns true if array is row vector
+        */
         public native @Cast("bool") boolean isRowVector();
 
-        // this method returns true if this ndarray is scalar
+        /**
+        *  returns true if array is scalar
+        */
         public native @Cast("bool") boolean isScalar();
 
-        // these methods suited for FlatBuffers use.
-        public native @StdVector FloatPointer getBufferAsVector();
+        /**
+        *  inline accessing operator for matrix, i - absolute index        
+        */
 
-        public native @StdVector IntPointer getShapeAsVector();
-        public native @StdVector IntPointer getShapeInfoAsVector();
-		
-		// set new order and shape in case of suitable array length 
-	
-		// set new order and shape in case of suitable array length 
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
-	
-		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-		public native FloatNDArray reshape(char order, @StdVector IntPointer shape);
-		public native FloatNDArray reshape(char order, @StdVector IntBuffer shape);
-		public native FloatNDArray reshape(char order, @StdVector int[] shape);
-		
-		// calculate strides 
-		public native void updateStrides(char order);
+        /**
+        *  inline modifying operator for matrix, i - absolute index        
+        */
+        public native @ByRef @Name("operator ()") FloatPointer apply(@Cast("const Nd4jIndex") long i);
 
-		// change an array by repeating it the number of times given by reps.
-		public native void tilei(@StdVector IntPointer reps);
-		public native void tilei(@StdVector IntBuffer reps);
-		public native void tilei(@StdVector int[] reps);
+        /**
+        *  inline accessing operator for 2D array, i - row, j - column
+        */        
 
-		// tile an array by repeating it the number of times given by reps.
-		public native @ByVal FloatNDArray tile(@StdVector IntPointer reps);
-		public native @ByVal FloatNDArray tile(@StdVector IntBuffer reps);
-		public native @ByVal FloatNDArray tile(@StdVector int[] reps);
+        /**
+        *  inline modifying operator for 2D array, i - row, j - column
+        */
+        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j);
 
-        // tile an array by repeating it the number of times given by reps.
-        public native void tile(@StdVector IntPointer reps, @ByRef FloatNDArray target);
-        public native void tile(@StdVector IntBuffer reps, @ByRef FloatNDArray target);
-        public native void tile(@StdVector int[] reps, @ByRef FloatNDArray target);
-        
-		// return array which is broadcasted from this and argument array  
-		public native FloatNDArray broadcast(@Const @ByRef FloatNDArray other);
-		
-		// check whether array's rows (arg=0) or columns create orthogonal basis
-		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
-		
-		// check whether array is identity matrix
-		public native @Cast("bool") boolean isIdentityMatrix(); 
+        /**
+        *  inline accessing operator for 3D array, i - height, j - width, k - depth
+        */        
 
-		// check whether array is unitary matrix
-		public native @Cast("bool") boolean isUnitary(); 
-                
-        // reduce dimensions in this array relying on index operations
+        /**
+        *  inline modifying operator for 3D array, i - height, j - width, k - depth
+        */ 
+        public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j, int k);
 
-        // apply reduce3 operations to this and other array, return result in new output array
-
-        // apply reduce3 (execAll) operations to this and other array, return result in new output array
-        
-        // apply reduce3 (exec) operations to this and other array, return result in new output array
-
-        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
-        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
-
-        // addition operator array + array
-        public native @ByVal @Name("operator +") FloatNDArray add(@Const @ByRef FloatNDArray other);
-
-        // addition operator array + scalar
-        public native @ByVal @Name("operator +") FloatNDArray add(float scalar);
-
-        // addition operator scalar + array
-        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
-        // subtraction operator scalar - array
-        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
-
-        // addition operator scalar + array
-        
-        
-        
-
-        // subtraction operator scalar - array
-        
-        
-        
-
-        // addition operator array1 += array2    
-        public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
-
-        // subtraction operator array - array
-        public native @ByVal @Name("operator -") FloatNDArray subtract(@Const @ByRef FloatNDArray other);
-
-        // subtraction operator array - scalar
-        public native @ByVal @Name("operator -") FloatNDArray subtract(float scalar);        
-
-        // negative operator, it makes all array elements = -elements
-        public native @ByVal @Name("operator -") FloatNDArray subtract();
-
-        // multiplication operator array1*array2
-        public native @ByVal @Name("operator *") FloatNDArray multiply(@Const @ByRef FloatNDArray other);        
-    
-        // multiplication operator array*scalar
-        public native @ByVal @Name("operator *") FloatNDArray multiply(float scalar);
-
-        // multiplication operator array1 *= array2
-        public native @Name("operator *=") void multiplyPut(@Const @ByRef FloatNDArray other);
-
-        // multiplication operator array*scalar
-        public native @Name("operator *=") void multiplyPut(float scalar);
-
-        // division operator array1/array2
-        public native @ByVal @Name("operator /") FloatNDArray divide(@Const @ByRef FloatNDArray other);        
-
-        // division operator array1 /= array2
-        public native @Name("operator /=") void dividePut(@Const @ByRef FloatNDArray other);
-
-        // division operator array /= scalar
-        public native @Name("operator /=") void dividePut(float scalar);
-
-        // mathematical multiplication of two arrays
-        
-
-        public native void assign(@Const @ByRef FloatNDArray other, @Const @ByRef Intervals idx);
-
-        public native @StdVector BytePointer asByteVector();
-
-        // default destructor 
 
     }
 
@@ -6639,31 +7100,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public HalfNDArray position(long position) {
             return (HalfNDArray)super.position(position);
         }
-    
-        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
-        public native @Name("operator delete") void _delete(Pointer p);
-
-		// forbid assignment operator
-		public native @ByRef @Name("operator =") HalfNDArray put(@Const @ByRef HalfNDArray other);
+            
         
-        // accessing operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-
-        // modifying operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(@Cast("const Nd4jIndex") long i);
-
-        // accessing operator for 2D array, i - row, j - column        
-
-        // modifying operator for 2D array, i - row, j - column
-        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j);
-
-        // accessing operator for 3D array        
-
-        // modifying operator for 3D array
-        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j, int k);
-
-        // default constructor, do not allocate memory, memory for array is passed from outside 
+        /**
+        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        */
         public HalfNDArray(@Cast("float16*") ShortPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(@Cast("float16*") ShortPointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public HalfNDArray() { super((Pointer)null); allocate(); }
@@ -6672,32 +7113,44 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(@Cast("float16*") ShortBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public HalfNDArray(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        
+        /**
+        *  copy constructor
+        */
+        public HalfNDArray(@Const @ByRef HalfNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef HalfNDArray other);
 
-        //constructor, create empty array with at workspace
+        /**
+        *  constructor, create empty array stored at given workspace
+        */
         public HalfNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
         private native void allocate(Workspace workspace);
 
-        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        /**
+        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
+        */
         public HalfNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
         private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
         public HalfNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
         private native void allocate(int rows, int columns, char order);
 
-        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        /**
+        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
+        */ 
         public HalfNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
         public HalfNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order);
 
-        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        /**
+        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        */
         public HalfNDArray(@Const HalfNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
         private native void allocate(@Const HalfNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public HalfNDArray(@Const HalfNDArray other) { super((Pointer)null); allocate(other); }
-        private native void allocate(@Const HalfNDArray other);
-		
-		// copy constructor
-
-		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+				
+        /**
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        */
 		public HalfNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
 		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
 		public HalfNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
@@ -6711,8 +7164,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public HalfNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Const int[] shapeInfo);
 
-        // this constructor creates new array using shape information contained in initializer_list/vector argument
-        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        /**
+        *  this constructor creates new array using shape information contained in vector argument    
+        */
         public HalfNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public HalfNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -6726,6 +7180,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public HalfNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(char order, @StdVector int[] shape);
 
+        /**
+        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        */
         public HalfNDArray(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/);
         public HalfNDArray(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data) { super((Pointer)null); allocate(order, shape, data); }
@@ -6739,6 +7196,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public HalfNDArray(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @StdVector int[] shape, @Cast("float16*") @StdVector short[] data);
 
+        /**
+        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        */
         public HalfNDArray(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
         private native void allocate(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public HalfNDArray(@Cast("float16*") ShortPointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
@@ -6752,7 +7212,20 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public HalfNDArray(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
         private native void allocate(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape);
 
-        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        /**
+        * assignment operator
+        */
+        public native @ByRef @Name("operator =") HalfNDArray put(@Const @ByRef HalfNDArray other);
+
+        /**
+        *   operators for memory allocation and deletion
+        */ 
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+        /**
+        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        */
         public native void replacePointers(@Cast("float16*") ShortPointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(@Cast("float16*") ShortPointer buffer, IntPointer shapeInfo);
         public native void replacePointers(@Cast("float16*") ShortBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
@@ -6760,78 +7233,93 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void replacePointers(@Cast("float16*") short[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(@Cast("float16*") short[] buffer, int[] shapeInfo);
  
-        public native HalfNDArray repeat(int dimension, @StdVector IntPointer reps);
-        public native HalfNDArray repeat(int dimension, @StdVector IntBuffer reps);
-        public native HalfNDArray repeat(int dimension, @StdVector int[] reps);
+        /**
+        *  create a new array by replicating current array by repeats times along given dimension
+        *  dimension - dimension along which to repeat elements
+        *  repeats - number of repetitions
+        */        
+        public native HalfNDArray repeat(int dimension, @StdVector IntPointer repeats);
+        public native HalfNDArray repeat(int dimension, @StdVector IntBuffer repeats);
+        public native HalfNDArray repeat(int dimension, @StdVector int[] repeats);
 
+        /**
+        *  fill target array by repeating current array 
+        *  dimension - dimension along which to repeat elements        
+        */
         public native void repeat(int dimension, @ByRef HalfNDArray target);
 
+        /**
+        *  return _dataType;
+        */
         public native @Cast("nd4j::DataType") int dataType();
 
+        /**
+        *  creates array which is view of this array
+        */
         public native HalfNDArray getView();
 
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
         public native HalfNDArray subarray(@ByRef IndicesList indices);
-
         public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
         public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
         public native HalfNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
-
         public native HalfNDArray subarray(@Const @ByRef Intervals idx);
 
+        /**
+        *  cast array elements to given dtype
+        */ 
         public native HalfNDArray cast(@Cast("nd4j::DataType") int dtype);
-
         public native void cast(HalfNDArray target, @Cast("nd4j::DataType") int dtype);
 
+        /**
+        *   returns _workspace
+        */
         public native Workspace getWorkspace();
 
-        public native @Cast("float16*") ShortPointer getBuffer();
+        /**
+        *   returns _buffer
+        */
+        public native @Cast("float16*") ShortPointer getBuffer();        
         public native @Cast("float16*") ShortPointer buffer();
 
+        /**
+        *   returns _shapeInfo
+        */
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
 
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
         public native @Cast("float16*") ShortPointer specialBuffer();
+
+        /**
+        *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
+        */
         public native IntPointer specialShapeInfo();
+
+        /**
+        *  set values for _bufferD and _shapeInfoD
+        */
         public native void setSpecialBuffers(@Cast("float16*") ShortPointer buffer, IntPointer shape);
         public native void setSpecialBuffers(@Cast("float16*") ShortBuffer buffer, IntBuffer shape);
         public native void setSpecialBuffers(@Cast("float16*") short[] buffer, int[] shape);
 
-
-        public native IntPointer shapeInfo();
-        public native IntPointer getShapeInfo();
-
-        public native void setShapeInfo(IntPointer shapeInfo);
-        public native void setShapeInfo(IntBuffer shapeInfo);
-        public native void setShapeInfo(int[] shapeInfo);
-
-        public native void setBuffer(@Cast("float16*") ShortPointer buffer);
-        public native void setBuffer(@Cast("float16*") ShortBuffer buffer);
-        public native void setBuffer(@Cast("float16*") short[] buffer);
-
-        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
-
-        public native int sizeAt(int dim);
-
-        // This method returns order of this NDArray
-        public native char ordering();
-
-        public native @Cast("bool") boolean isView();
-
-        // This method returns shape portion of shapeInfo
-        public native IntPointer shapeOf();
-
-        // This method returns strides portion of shapeInfo
-        public native IntPointer stridesOf();
-
-        // This method returns rank of this NDArray
-        public native int rankOf();
-
-        // This method returns length of this NDArray
-        public native @Cast("Nd4jIndex") long lengthOf();
+        /**
+        *  permutes (in-place) the dimensions in array according to "dimensions" array
+        */
         public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
         public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+
+        /**
+        *  permutes the dimensions in array according to "dimensions" array
+        */
         public native HalfNDArray permute(@StdVector IntPointer dimensions);
         public native HalfNDArray permute(@StdVector IntBuffer dimensions);
         public native HalfNDArray permute(@StdVector int[] dimensions);
@@ -6839,6 +7327,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray permute(@Const IntBuffer dimensions, int rank);
         public native HalfNDArray permute(@Const int[] dimensions, int rank);
 
+        /**
+        *  permutes the dimensions in target according to "dimensions" array
+        */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef HalfNDArray target);
         public native void permute(@Const IntBuffer dimensions, int rank, @ByRef HalfNDArray target);
         public native void permute(@Const int[] dimensions, int rank, @ByRef HalfNDArray target);
@@ -6846,41 +7337,597 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void permute(@StdVector IntBuffer dimensions, @ByRef HalfNDArray target);
         public native void permute(@StdVector int[] dimensions, @ByRef HalfNDArray target);
 
-        // This method returns number of rows in this NDArray
-        public native int rows();
-
-        // This method returns number of columns in this NDArray
-        public native int columns();
-
-        // This method returns sizeof(T) for this NDArray
-        public native int sizeOfT();
-
+        /**
+        *  check whether array is contiguous in memory
+        */ 
         public native @Cast("bool") boolean isContiguous();
 
-        // print information about array shape
+        /**
+        *  prints information about array shape
+        *  msg - message to print out 
+        */ 
         public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
         public native void printShapeInfo();
         public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
 
+        /**
+        *  prints buffer elements
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
+        /**
+        *  prints buffer elements, takes into account offset between elements (element-wise-stride)
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printIndexedBuffer();
         public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
-        // This method assigns values of given NDArray to this one, wrt order
+        /**
+        *  this method assigns values of given array to this one
+        */ 
         public native void assign(@Const HalfNDArray other);
 
-        // This method assigns given value to all elements in this NDArray
+        /**
+        *  this method assigns given value to all elements in array
+        */ 
         public native void assign(@Cast("const float16") short value);
 
-        // This method returns new copy of this NDArray, optionally in different order
+        /**
+        *  returns new copy of this array, optionally in different order
+        */
         public native HalfNDArray dup(char newOrder/*='a'*/);
         public native HalfNDArray dup();
 
-        // Returns true if these two NDArrays have same shape
+        /** 
+        *  returns sum of all elements of array
+        */
+        public native @Cast("float16") short sumNumber();
+
+        /**
+        *  returns mean number of array
+        */ 
+        public native @Cast("float16") short meanNumber();
+
+        /**
+        *  calculates sum along dimension(s) in this array and save it to created reduced array
+        *  dimensions - array of dimensions to calculate sum over
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+		/**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+        /**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
+        *  target - where to save result of reducing
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        *  extras - extra parameters
+        */
+
+        /**
+        *  return variance of array elements set
+        *  biasCorrected -  if true bias correction will be applied
+        */
+
+        /**
+        *  apply scalar operation to array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns element index which corresponds to some condition imposed by operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns index of max element in a given array (optionally: along given dimension(s))
+        *  dimensions - optional vector with dimensions
+        */          
+        public native @Cast("Nd4jIndex") long argMax();
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation to array and store result in target
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
+        *  other - second array necessary for pairwise operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
+        *  other - second array necessary for pairwise operation
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
+        *  tad - array to broadcast
+        *  dimensions -  array with dimensions to broadcast along
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  target - where to store result
+        *  checkTargetShape - if true check whether target shape is suitable for broadcasting
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input array which is simple scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        /**
+        *  apply OpName random operation to array 
+        *  buffer - pointer on RandomBuffer
+        *  y - optional input array
+        *  z - optional input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        */
+        public native HalfNDArray transpose();
+
+        /**
+        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  target - where to store result
+        */ 
+        public native void transpose(@ByRef HalfNDArray target);
+
+        /**
+        *  apply in-place transpose operation to this array, so this array becomes transposed 
+        */ 
+        public native void transposei();
+
+        /**
+        *  return array pointing on certain range of this array
+        *  index - the number of array to be returned among set of possible arrays 
+        *  dimensions - array of dimensions to point on
+        */
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native HalfNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        /**
+        *  returns the number of arrays pointing on specified dimension(s)
+        *  dimensions - array of dimensions to point on
+        */
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        /**
+        *  returns true if elements of two arrays are equal to within given epsilon value
+        *  other - input array to compare
+        *  eps - epsilon, this value defines the precision of elements comparison
+        */
+        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other, @Cast("float16") short eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other);
+        
+        /**
+        *  add given row vector to all rows of this array
+        *  row - row vector to add
+        */
+        public native void addiRowVector(@Const HalfNDArray row);
+
+        /**
+        *  add given row vector to all rows of this array, store result in target
+        *  row - row vector to add
+        *  target - where to store result
+        */
+        public native void addRowVector(@Const HalfNDArray row, HalfNDArray target);
+
+        /**
+        *  subtract given row vector from all rows of this array, store result in target
+        *  row - row vector to subtract
+        *  target - where to store result
+        */
+        public native void subRowVector(@Const HalfNDArray row, HalfNDArray target);
+        
+        /**
+        *  multiply all rows of this array on given row vector, store result in target
+        *  row - row vector to multiply on
+        *  target - where to store result
+        */
+        public native void mulRowVector(@Const HalfNDArray row, HalfNDArray target);
+
+        /**
+        *  divide all rows of this array on given row vector, store result in target
+        *  row - row vector to divide on
+        *  target - where to store result
+        */
+        public native void divRowVector(@Const HalfNDArray row, HalfNDArray target);
+        
+        /**
+        *  add given column vector to all columns of this array, store result in target
+        *  column - column vector to add
+        *  target - where to store result
+        */
+        public native void addColumnVector(@Const HalfNDArray column, HalfNDArray target);
+
+        /**
+        *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
+        *  column - column vector to add
+        */
+		public native void addiColumnVector(@Const HalfNDArray column);
+
+        /**
+        *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
+        *  column - column vector to multiply on
+        */
+		public native void muliColumnVector(@Const HalfNDArray column);
+
+        /**
+        *  returns number of bytes used by _buffer & _shapeInfo
+        */
+        public native @Cast("Nd4jIndex") long memoryFootprint();        
+        
+        /**
+        *  these methods suited for FlatBuffers use
+        */
+        public native @Cast("float16*") @StdVector ShortPointer getBufferAsVector();
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+				
+        /**
+        *  set new order and shape in case of suitable array length (in-place operation)
+        *  order - order to set
+        *  shape - shape to set
+        */		
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+        /**
+        *  creates new array with corresponding order and shape, new array will point on _buffer of this array
+        *  order - order to set
+        *  shape - shape to set
+        */
+		public native HalfNDArray reshape(char order, @StdVector IntPointer shape);
+		public native HalfNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native HalfNDArray reshape(char order, @StdVector int[] shape);
+		
+        /**
+        *  calculate strides and set given order
+        *  order - order to set
+        */
+		public native void updateStrides(char order);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        */
+		public native void tilei(@StdVector IntPointer repeats);
+		public native void tilei(@StdVector IntBuffer repeats);
+		public native void tilei(@StdVector int[] repeats);
+
+        /**
+        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  repeats - contains numbers of repetitions
+        */
+		public native @ByVal HalfNDArray tile(@StdVector IntPointer repeats);
+		public native @ByVal HalfNDArray tile(@StdVector IntBuffer repeats);
+		public native @ByVal HalfNDArray tile(@StdVector int[] repeats);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        *  target - where to store result
+        */
+        public native void tile(@StdVector IntPointer repeats, @ByRef HalfNDArray target);
+        public native void tile(@StdVector IntBuffer repeats, @ByRef HalfNDArray target);
+        public native void tile(@StdVector int[] repeats, @ByRef HalfNDArray target);
+        
+        /**
+        *  returns an array which is result of broadcasting of this and other arrays 
+        *  other - input array
+        */
+		public native HalfNDArray broadcast(@Const @ByRef HalfNDArray other);
+		
+        /**
+        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
+        *  arg - 0 -> row, 1 -> column
+        */
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+				
+        /**
+        *  check whether array is identity matrix
+        */
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+		
+        /**
+        *  check whether array is unitary matrix
+        */
+		public native @Cast("bool") boolean isUnitary(); 
+                        
+        /**
+        *  reduces dimensions in this array relying on index operation OpName
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  reduces dimensions in array relying on index operation OpName
+        *  target - where to store result
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+                
+        /**
+        *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+
+        /**
+        *  returns variance along given dimensions
+        *  biasCorrected -  if true bias correction will be applied
+        *  dimensions - vector of dimensions to calculate variance along
+        */
+
+        /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays  to point on
+        */
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
+
+        /**
+        *  addition operator: array + other
+        *  other - input array to add
+        */
+        public native @ByVal @Name("operator +") HalfNDArray add(@Const @ByRef HalfNDArray other);
+
+        /**
+        *  addition operator: array + scalar
+        *  scalar - input scalar to add
+        */
+        public native @ByVal @Name("operator +") HalfNDArray add(@Cast("const float16") short scalar);
+
+        /**
+        *  friend functions which implement addition operator: scalar + array
+        *  scalar - input scalar to add
+        */
+        
+        
+        
+        
+        /**
+        *  addition unary operator array += other
+        *  other - input array to add
+        */
+        public native @Name("operator +=") void addPut(@Const @ByRef HalfNDArray other);
+        
+        /**
+        *  subtraction operator: array - other
+        *  other - input array to subtract
+        */
+        public native @ByVal @Name("operator -") HalfNDArray subtract(@Const @ByRef HalfNDArray other);
+        
+        /**
+        *  subtraction operator: array - scalar
+        *  scalar - input scalar to subtract
+        */
+        public native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short scalar);        
+
+        /**
+        *  negative operator, it changes sign of all array elements on opposite
+        */
+        public native @ByVal @Name("operator -") HalfNDArray subtract();
+
+        /**
+        *  friend functions which implement subtraction operator: scalar - array
+        *  scalar - input scalar to subtract
+        */
+        
+        
+        
+
+        /**
+        *  pairwise multiplication operator: array * other
+        *  other - input array to multiply on
+        */
+        public native @ByVal @Name("operator *") HalfNDArray multiply(@Const @ByRef HalfNDArray other);        
+    
+        /**
+        *  multiplication operator: array * scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @ByVal @Name("operator *") HalfNDArray multiply(@Cast("const float16") short scalar);
+        
+        /**
+        *  pairwise multiplication unary operator array *= other
+        *  other - input array to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef HalfNDArray other);
+
+        /**
+        *  multiplication unary operator array *= scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(@Cast("const float16") short scalar);
+
+        /**
+        *  pairwise division operator: array / other
+        *  other - input array to divide on
+        */
+        public native @ByVal @Name("operator /") HalfNDArray divide(@Const @ByRef HalfNDArray other);        
+
+        /**
+        *  pairwise division unary operator: array /= other
+        *  other - input array to divide on
+        */
+        public native @Name("operator /=") void dividePut(@Const @ByRef HalfNDArray other);
+
+        /**
+        *  division unary operator: array /= scalar
+        *  scalar - input scalar to divide on
+        */
+        public native @Name("operator /=") void dividePut(@Cast("const float16") short scalar);
+
+        /**
+        *  friend function which implements mathematical multiplication of two arrays
+        *  left - input array
+        *  right - input array
+        */
+        
+
+        /**
+        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  other - input array to assign elements from
+        *  idx - intervals of indexes which define the sub-array
+        */ 
+        public native void assign(@Const @ByRef HalfNDArray other, @Const @ByRef Intervals idx);
+
+        /**
+        *  return vector containing _buffer as flat binary array
+        */
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+        /**
+        *  set _shapeInfo
+        */
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        /**
+        *  set _buffer
+        */
+        public native void setBuffer(@Cast("float16*") ShortPointer buffer);
+        public native void setBuffer(@Cast("float16*") ShortBuffer buffer);
+        public native void setBuffer(@Cast("float16*") short[] buffer);
+
+        /**
+        *  set _isBuffAlloc and _isShapeAlloc
+        */
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+        
+        /**
+        *  returns the value of "dim" dimension 
+        */ 
+        public native int sizeAt(int dim);
+
+        /**        
+        *  returns order of array
+        */
+        public native char ordering();
+
+        /**
+        *  return _isView
+        */ 
+        public native @Cast("bool") boolean isView();
+
+        /**
+        *  returns shape portion of shapeInfo
+        */
+        public native IntPointer shapeOf();
+        
+        /**
+        *  returns strides portion of shapeInfo
+        */
+        public native IntPointer stridesOf();
+
+        /**
+        *  returns rank of array
+        */
+        public native int rankOf();        
+
+        /** 
+        *  returns length of array
+        */
+        public native @Cast("Nd4jIndex") long lengthOf();        
+
+        /**
+        *  returns number of rows in array
+        */
+        public native int rows();
+
+        /**
+        *  returns number of columns in array
+        */ 
+        public native int columns();
+
+        /**
+        *  returns size of array elements type
+        */ 
+        public native int sizeOfT();
+
+        /**
+        *  returns element-wise-stride
+        */ 
+        public native int ews();
+
+        // returns true if arrays have same shape
         public native @Cast("bool") boolean isSameShape(@Const HalfNDArray other);
         public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
         public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
@@ -6889,249 +7936,126 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
 
-		// Returns true if these two NDArrays have same shape
+        /**
+        *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
+        */
         public native @Cast("bool") boolean isSameShapeStrict(@Const HalfNDArray other);
 
-        // This method returns sum of all elements of this NDArray
-        public native @Cast("float16") short sumNumber();
-
-        // This method returns mean number of this NDArray
-        public native @Cast("float16") short meanNumber();
-
-        public native int ews();
-
-        // method calculates sum along dimension(s) in this array and save it reduced array
-
-		// method reduces array by excluding its shapes along axes present in dimensions vector
-		
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // 
-
-        public native @Cast("Nd4jIndex") long argMax();
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform pairwise transformation
-
-        // perform pairwise transformation
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
-        public native HalfNDArray transpose();
-
-        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
-        public native void transpose(@ByRef HalfNDArray target);
-
-        // This method applies in-place transpose to this array, so this array becomes transposed 
-        public native void transposei();
-
-        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
-        public native HalfNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
-        public native HalfNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
-
-        // this method returns number of tensors along specified dimension(s)
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
-
-        // This method returns true if buffer && shapeInfo were defined
+        /**
+        *  returns true if buffer && shapeInfo were defined (non nullptr)
+        */
         public native @Cast("bool") boolean nonNull();
 
-        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other, @Cast("float16") short eps/*=(T) 1e-5f*/);
-        public native @Cast("bool") boolean equalsTo(@Const HalfNDArray other);
-
-        // Return value from linear buffer
+        /** 
+        *  returns array element with given index from linear buffer
+        *  i - element index in array
+        */
         public native @Cast("float16") short getScalar(@Cast("const Nd4jIndex") long i);
-        
-        public native @Cast("float16") short getIndexedScalar(@Cast("const Nd4jIndex") long i);
 
-        // Returns value from 2D matrix by coordinates/indexes         
+        /** 
+        *  returns array element with given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        */
+        public native @Cast("float16") short getIndexedScalar(@Cast("const Nd4jIndex") long i);
+        
+        /** 
+        *  returns element with given indexes from 2D array 
+        *  i - number of row 
+        *  j - number of column
+        */
         public native @Cast("float16") short getScalar(int i, int j);
 
-        // returns value from 3D tensor by coordinates        
+        /** 
+        *  returns element with given indexes from 3D array 
+        *  i - height
+        *  j - width
+        *  k - depth
+        */
         public native @Cast("float16") short getScalar(int i, int j, int k);        
         
+        /** 
+        *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, @Cast("const float16") short value);        
 
-        // This method sets value in linear buffer to position i        
+        /** 
+        *  assigns given scalar to array element by given index, regards array buffer as linear
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putScalar(@Cast("const Nd4jIndex") long i, @Cast("const float16") short value);        
 
-        // This method sets value in 2D matrix to position i, j         
+        /** 
+        *  assigns given scalar to 2D array element by given indexes
+        *  i - number of row
+        *  j - number of row
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, @Cast("const float16") short value);        
 
-        // This method sets value in 3D matrix to position i,j,k        
+        /** 
+        *  assigns given scalar to 3D array element by given indexes
+        *  i - height
+        *  j - width
+        *  k - depth
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, int k, @Cast("const float16") short value);
-        
-        // This method adds given row to all rows in this NDArray, that is this array becomes affected
-        public native void addiRowVector(@Const HalfNDArray row);
 
-        public native void addRowVector(@Const HalfNDArray row, HalfNDArray target);
-        
-        public native void subRowVector(@Const HalfNDArray row, HalfNDArray target);
-        
-        public native void mulRowVector(@Const HalfNDArray row, HalfNDArray target);
-
-        public native void divRowVector(@Const HalfNDArray row, HalfNDArray target);
-
-        public native void addColumnVector(@Const HalfNDArray column, HalfNDArray target);
-
-		// This method adds given column to all columns in this NDArray, that is this array becomes affected
-		public native void addiColumnVector(@Const HalfNDArray column);
-
-		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
-		public native void muliColumnVector(@Const HalfNDArray column);
-
-        // this method returns number of bytes used by buffer & shapeInfo
-        public native @Cast("Nd4jIndex") long memoryFootprint();
-
-        // this method returns true if this ndarray is 2d
+        /**
+        *  returns true if array is 2D
+        */
         public native @Cast("bool") boolean isMatrix();
 
-        // this method returns true if this ndarray is vector
+        /**
+        *  returns true if array is vector
+        */
         public native @Cast("bool") boolean isVector();
 
-        // this method returns true if this ndarray is column vector
+        /**
+        *  returns true if array is column vector
+        */
         public native @Cast("bool") boolean isColumnVector();
 
-        // this method returns true if this ndarray is row vector
+        /**
+        *  returns true if array is row vector
+        */
         public native @Cast("bool") boolean isRowVector();
 
-        // this method returns true if this ndarray is scalar
+        /**
+        *  returns true if array is scalar
+        */
         public native @Cast("bool") boolean isScalar();
 
-        // these methods suited for FlatBuffers use.
-        public native @Cast("float16*") @StdVector ShortPointer getBufferAsVector();
+        /**
+        *  inline accessing operator for matrix, i - absolute index        
+        */
 
-        public native @StdVector IntPointer getShapeAsVector();
-        public native @StdVector IntPointer getShapeInfoAsVector();
-		
-		// set new order and shape in case of suitable array length 
-	
-		// set new order and shape in case of suitable array length 
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
-	
-		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-		public native HalfNDArray reshape(char order, @StdVector IntPointer shape);
-		public native HalfNDArray reshape(char order, @StdVector IntBuffer shape);
-		public native HalfNDArray reshape(char order, @StdVector int[] shape);
-		
-		// calculate strides 
-		public native void updateStrides(char order);
+        /**
+        *  inline modifying operator for matrix, i - absolute index        
+        */
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(@Cast("const Nd4jIndex") long i);
 
-		// change an array by repeating it the number of times given by reps.
-		public native void tilei(@StdVector IntPointer reps);
-		public native void tilei(@StdVector IntBuffer reps);
-		public native void tilei(@StdVector int[] reps);
+        /**
+        *  inline accessing operator for 2D array, i - row, j - column
+        */        
 
-		// tile an array by repeating it the number of times given by reps.
-		public native @ByVal HalfNDArray tile(@StdVector IntPointer reps);
-		public native @ByVal HalfNDArray tile(@StdVector IntBuffer reps);
-		public native @ByVal HalfNDArray tile(@StdVector int[] reps);
+        /**
+        *  inline modifying operator for 2D array, i - row, j - column
+        */
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j);
 
-        // tile an array by repeating it the number of times given by reps.
-        public native void tile(@StdVector IntPointer reps, @ByRef HalfNDArray target);
-        public native void tile(@StdVector IntBuffer reps, @ByRef HalfNDArray target);
-        public native void tile(@StdVector int[] reps, @ByRef HalfNDArray target);
-        
-		// return array which is broadcasted from this and argument array  
-		public native HalfNDArray broadcast(@Const @ByRef HalfNDArray other);
-		
-		// check whether array's rows (arg=0) or columns create orthogonal basis
-		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
-		
-		// check whether array is identity matrix
-		public native @Cast("bool") boolean isIdentityMatrix(); 
+        /**
+        *  inline accessing operator for 3D array, i - height, j - width, k - depth
+        */        
 
-		// check whether array is unitary matrix
-		public native @Cast("bool") boolean isUnitary(); 
-                
-        // reduce dimensions in this array relying on index operations
+        /**
+        *  inline modifying operator for 3D array, i - height, j - width, k - depth
+        */ 
+        public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j, int k);
 
-        // apply reduce3 operations to this and other array, return result in new output array
-
-        // apply reduce3 (execAll) operations to this and other array, return result in new output array
-        
-        // apply reduce3 (exec) operations to this and other array, return result in new output array
-
-        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
-        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
-
-        // addition operator array + array
-        public native @ByVal @Name("operator +") HalfNDArray add(@Const @ByRef HalfNDArray other);
-
-        // addition operator array + scalar
-        public native @ByVal @Name("operator +") HalfNDArray add(@Cast("const float16") short scalar);
-
-        // addition operator scalar + array
-        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
-        // subtraction operator scalar - array
-        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
-
-        // addition operator scalar + array
-        
-        
-        
-
-        // subtraction operator scalar - array
-        
-        
-        
-
-        // addition operator array1 += array2    
-        public native @Name("operator +=") void addPut(@Const @ByRef HalfNDArray other);
-
-        // subtraction operator array - array
-        public native @ByVal @Name("operator -") HalfNDArray subtract(@Const @ByRef HalfNDArray other);
-
-        // subtraction operator array - scalar
-        public native @ByVal @Name("operator -") HalfNDArray subtract(@Cast("const float16") short scalar);        
-
-        // negative operator, it makes all array elements = -elements
-        public native @ByVal @Name("operator -") HalfNDArray subtract();
-
-        // multiplication operator array1*array2
-        public native @ByVal @Name("operator *") HalfNDArray multiply(@Const @ByRef HalfNDArray other);        
-    
-        // multiplication operator array*scalar
-        public native @ByVal @Name("operator *") HalfNDArray multiply(@Cast("const float16") short scalar);
-
-        // multiplication operator array1 *= array2
-        public native @Name("operator *=") void multiplyPut(@Const @ByRef HalfNDArray other);
-
-        // multiplication operator array*scalar
-        public native @Name("operator *=") void multiplyPut(@Cast("const float16") short scalar);
-
-        // division operator array1/array2
-        public native @ByVal @Name("operator /") HalfNDArray divide(@Const @ByRef HalfNDArray other);        
-
-        // division operator array1 /= array2
-        public native @Name("operator /=") void dividePut(@Const @ByRef HalfNDArray other);
-
-        // division operator array /= scalar
-        public native @Name("operator /=") void dividePut(@Cast("const float16") short scalar);
-
-        // mathematical multiplication of two arrays
-        
-
-        public native void assign(@Const @ByRef HalfNDArray other, @Const @ByRef Intervals idx);
-
-        public native @StdVector BytePointer asByteVector();
-
-        // default destructor 
 
     }
 
@@ -7146,31 +8070,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         @Override public DoubleNDArray position(long position) {
             return (DoubleNDArray)super.position(position);
         }
-    
-        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
-        public native @Name("operator delete") void _delete(Pointer p);
-
-		// forbid assignment operator
-		public native @ByRef @Name("operator =") DoubleNDArray put(@Const @ByRef DoubleNDArray other);
+            
         
-        // accessing operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-
-        // modifying operator for matrix, i - absolute index
-        // be careful this method doesn't check the boundaries of array
-        public native @ByRef @Name("operator ()") DoublePointer apply(@Cast("const Nd4jIndex") long i);
-
-        // accessing operator for 2D array, i - row, j - column        
-
-        // modifying operator for 2D array, i - row, j - column
-        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j);
-
-        // accessing operator for 3D array        
-
-        // modifying operator for 3D array
-        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j, int k);
-
-        // default constructor, do not allocate memory, memory for array is passed from outside 
+        /**
+        *  default constructor, do not allocate memory, memory for array is passed from outside 
+        */
         public DoubleNDArray(DoublePointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(DoublePointer buffer/*=nullptr*/, IntPointer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public DoubleNDArray() { super((Pointer)null); allocate(); }
@@ -7179,32 +8083,44 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(DoubleBuffer buffer/*=nullptr*/, IntBuffer shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
+        
+        /**
+        *  copy constructor
+        */
+        public DoubleNDArray(@Const @ByRef DoubleNDArray other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef DoubleNDArray other);
 
-        //constructor, create empty array with at workspace
+        /**
+        *  constructor, create empty array stored at given workspace
+        */
         public DoubleNDArray(Workspace workspace) { super((Pointer)null); allocate(workspace); }
         private native void allocate(Workspace workspace);
 
-        // this constructor creates 2D NDArray, memory for array is allocated in constructor
+        /**
+        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
+        */
         public DoubleNDArray(int rows, int columns, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(rows, columns, order, workspace); }
         private native void allocate(int rows, int columns, char order, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(int rows, int columns, char order) { super((Pointer)null); allocate(rows, columns, order); }
         private native void allocate(int rows, int columns, char order);
 
-        // this constructor creates NDArray as single row (dimension is 1xlength), memory for array is allocated in constructor 
+        /**
+        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
+        */ 
         public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(length, order, workspace); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(@Cast("const Nd4jIndex") long length, char order) { super((Pointer)null); allocate(length, order); }
         private native void allocate(@Cast("const Nd4jIndex") long length, char order);
 
-        // this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        /**
+        *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
+        */
         public DoubleNDArray(@Const DoubleNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(other, copyStrides, workspace); }
         private native void allocate(@Const DoubleNDArray other, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
-        public DoubleNDArray(@Const DoubleNDArray other) { super((Pointer)null); allocate(other); }
-        private native void allocate(@Const DoubleNDArray other);
-		
-		// copy constructor
-
-		// constructor new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
+				
+        /**
+		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently 
+        */
 		public DoubleNDArray(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, workspace); }
 		private native void allocate(@Const IntPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, Workspace workspace/*=nullptr*/);
 		public DoubleNDArray(@Const IntPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
@@ -7218,8 +8134,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 		public DoubleNDArray(@Const int[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Const int[] shapeInfo);
 
-        // this constructor creates new array using shape information contained in initializer_list/vector argument
-        //NDArray(const char order, const std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
+        /**
+        *  this constructor creates new array using shape information contained in vector argument    
+        */
         public DoubleNDArray(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(order, shape); }
@@ -7233,6 +8150,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public DoubleNDArray(char order, @StdVector int[] shape) { super((Pointer)null); allocate(order, shape); }
         private native void allocate(char order, @StdVector int[] shape);
 
+        /**
+        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        */
         public DoubleNDArray(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(char order, @StdVector IntPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
@@ -7246,6 +8166,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public DoubleNDArray(char order, @StdVector int[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
         private native void allocate(char order, @StdVector int[] shape, @StdVector double[] data);
 
+        /**
+        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        */
         public DoubleNDArray(DoublePointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, order, shape, workspace); }
         private native void allocate(DoublePointer buffer, char order, @StdVector IntPointer shape, Workspace workspace/*=nullptr*/);
         public DoubleNDArray(DoublePointer buffer, char order, @StdVector IntPointer shape) { super((Pointer)null); allocate(buffer, order, shape); }
@@ -7259,7 +8182,20 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public DoubleNDArray(double[] buffer, char order, @StdVector int[] shape) { super((Pointer)null); allocate(buffer, order, shape); }
         private native void allocate(double[] buffer, char order, @StdVector int[] shape);
 
-        // This method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        /**
+        * assignment operator
+        */
+        public native @ByRef @Name("operator =") DoubleNDArray put(@Const @ByRef DoubleNDArray other);
+
+        /**
+        *   operators for memory allocation and deletion
+        */ 
+        public native @Name("operator new") Pointer _new(@Cast("size_t") long i);
+        public native @Name("operator delete") void _delete(Pointer p);
+
+        /**
+        *  method replaces existing buffer/shapeinfo, AND releases original pointers (if releaseExisting TRUE)
+        */
         public native void replacePointers(DoublePointer buffer, IntPointer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(DoublePointer buffer, IntPointer shapeInfo);
         public native void replacePointers(DoubleBuffer buffer, IntBuffer shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
@@ -7267,78 +8203,93 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void replacePointers(double[] buffer, int[] shapeInfo, @Cast("const bool") boolean releaseExisting/*=true*/);
         public native void replacePointers(double[] buffer, int[] shapeInfo);
  
-        public native DoubleNDArray repeat(int dimension, @StdVector IntPointer reps);
-        public native DoubleNDArray repeat(int dimension, @StdVector IntBuffer reps);
-        public native DoubleNDArray repeat(int dimension, @StdVector int[] reps);
+        /**
+        *  create a new array by replicating current array by repeats times along given dimension
+        *  dimension - dimension along which to repeat elements
+        *  repeats - number of repetitions
+        */        
+        public native DoubleNDArray repeat(int dimension, @StdVector IntPointer repeats);
+        public native DoubleNDArray repeat(int dimension, @StdVector IntBuffer repeats);
+        public native DoubleNDArray repeat(int dimension, @StdVector int[] repeats);
 
+        /**
+        *  fill target array by repeating current array 
+        *  dimension - dimension along which to repeat elements        
+        */
         public native void repeat(int dimension, @ByRef DoubleNDArray target);
 
+        /**
+        *  return _dataType;
+        */
         public native @Cast("nd4j::DataType") int dataType();
 
+        /**
+        *  creates array which is view of this array
+        */
         public native DoubleNDArray getView();
 
+        /**
+        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
+        */
         public native DoubleNDArray subarray(@ByRef IndicesList indices);
-
         public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector IntPointer strides);
         public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector IntBuffer strides);
         public native DoubleNDArray subarray(@ByRef IndicesList indices, @StdVector int[] strides);
-
         public native DoubleNDArray subarray(@Const @ByRef Intervals idx);
 
+        /**
+        *  cast array elements to given dtype
+        */ 
         public native DoubleNDArray cast(@Cast("nd4j::DataType") int dtype);
-
         public native void cast(DoubleNDArray target, @Cast("nd4j::DataType") int dtype);
 
+        /**
+        *   returns _workspace
+        */
         public native Workspace getWorkspace();
 
-        public native DoublePointer getBuffer();
+        /**
+        *   returns _buffer
+        */
+        public native DoublePointer getBuffer();        
         public native DoublePointer buffer();
 
+        /**
+        *   returns _shapeInfo
+        */
+        public native IntPointer shapeInfo();
+        public native IntPointer getShapeInfo();
 
+        /**
+        *  if _bufferD==nullptr return _buffer, else return _bufferD
+        */
         public native DoublePointer specialBuffer();
+
+        /**
+        *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
+        */
         public native IntPointer specialShapeInfo();
+
+        /**
+        *  set values for _bufferD and _shapeInfoD
+        */
         public native void setSpecialBuffers(DoublePointer buffer, IntPointer shape);
         public native void setSpecialBuffers(DoubleBuffer buffer, IntBuffer shape);
         public native void setSpecialBuffers(double[] buffer, int[] shape);
 
-
-        public native IntPointer shapeInfo();
-        public native IntPointer getShapeInfo();
-
-        public native void setShapeInfo(IntPointer shapeInfo);
-        public native void setShapeInfo(IntBuffer shapeInfo);
-        public native void setShapeInfo(int[] shapeInfo);
-
-        public native void setBuffer(DoublePointer buffer);
-        public native void setBuffer(DoubleBuffer buffer);
-        public native void setBuffer(double[] buffer);
-
-        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
-
-        public native int sizeAt(int dim);
-
-        // This method returns order of this NDArray
-        public native char ordering();
-
-        public native @Cast("bool") boolean isView();
-
-        // This method returns shape portion of shapeInfo
-        public native IntPointer shapeOf();
-
-        // This method returns strides portion of shapeInfo
-        public native IntPointer stridesOf();
-
-        // This method returns rank of this NDArray
-        public native int rankOf();
-
-        // This method returns length of this NDArray
-        public native @Cast("Nd4jIndex") long lengthOf();
+        /**
+        *  permutes (in-place) the dimensions in array according to "dimensions" array
+        */
         public native @Cast("bool") boolean permutei(@StdVector IntPointer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector IntBuffer dimensions);
         public native @Cast("bool") boolean permutei(@StdVector int[] dimensions);
         public native @Cast("bool") boolean permutei(@Const IntPointer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const IntBuffer dimensions, int rank);
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
+
+        /**
+        *  permutes the dimensions in array according to "dimensions" array
+        */
         public native DoubleNDArray permute(@StdVector IntPointer dimensions);
         public native DoubleNDArray permute(@StdVector IntBuffer dimensions);
         public native DoubleNDArray permute(@StdVector int[] dimensions);
@@ -7346,6 +8297,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray permute(@Const IntBuffer dimensions, int rank);
         public native DoubleNDArray permute(@Const int[] dimensions, int rank);
 
+        /**
+        *  permutes the dimensions in target according to "dimensions" array
+        */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef DoubleNDArray target);
         public native void permute(@Const IntBuffer dimensions, int rank, @ByRef DoubleNDArray target);
         public native void permute(@Const int[] dimensions, int rank, @ByRef DoubleNDArray target);
@@ -7353,41 +8307,597 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native void permute(@StdVector IntBuffer dimensions, @ByRef DoubleNDArray target);
         public native void permute(@StdVector int[] dimensions, @ByRef DoubleNDArray target);
 
-        // This method returns number of rows in this NDArray
-        public native int rows();
-
-        // This method returns number of columns in this NDArray
-        public native int columns();
-
-        // This method returns sizeof(T) for this NDArray
-        public native int sizeOfT();
-
+        /**
+        *  check whether array is contiguous in memory
+        */ 
         public native @Cast("bool") boolean isContiguous();
 
-        // print information about array shape
+        /**
+        *  prints information about array shape
+        *  msg - message to print out 
+        */ 
         public native void printShapeInfo(@Cast("char*") String msg/*=nullptr*/);
         public native void printShapeInfo();
         public native void printShapeInfo(@Cast("char*") BytePointer msg/*=nullptr*/);
 
+        /**
+        *  prints buffer elements
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
+        /**
+        *  prints buffer elements, takes into account offset between elements (element-wise-stride)
+        *  msg - message to print out 
+        *  limit - number of array elements to print out
+        */ 
         public native void printIndexedBuffer(@Cast("char*") String msg/*=nullptr*/, int limit/*=-1*/);
         public native void printIndexedBuffer();
         public native void printIndexedBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, int limit/*=-1*/);
 
-        // This method assigns values of given NDArray to this one, wrt order
+        /**
+        *  this method assigns values of given array to this one
+        */ 
         public native void assign(@Const DoubleNDArray other);
 
-        // This method assigns given value to all elements in this NDArray
+        /**
+        *  this method assigns given value to all elements in array
+        */ 
         public native void assign(double value);
 
-        // This method returns new copy of this NDArray, optionally in different order
+        /**
+        *  returns new copy of this array, optionally in different order
+        */
         public native DoubleNDArray dup(char newOrder/*='a'*/);
         public native DoubleNDArray dup();
 
-        // Returns true if these two NDArrays have same shape
+        /** 
+        *  returns sum of all elements of array
+        */
+        public native double sumNumber();
+
+        /**
+        *  returns mean number of array
+        */ 
+        public native double meanNumber();
+
+        /**
+        *  calculates sum along dimension(s) in this array and save it to created reduced array
+        *  dimensions - array of dimensions to calculate sum over
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+		/**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        */
+
+        /**
+        *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
+        *  target - where to save result of reducing
+        *  dimensions - array of dimensions to reduce along
+        *  keepDims - if true then put unities in place of reduced dimensions
+        *  extras - extra parameters
+        */
+
+        /**
+        *  return variance of array elements set
+        *  biasCorrected -  if true bias correction will be applied
+        */
+
+        /**
+        *  apply scalar operation to array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns element index which corresponds to some condition imposed by operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  returns index of max element in a given array (optionally: along given dimension(s))
+        *  dimensions - optional vector with dimensions
+        */          
+        public native @Cast("Nd4jIndex") long argMax();
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation to array and store result in target
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply OpName transformation directly to array
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in this array
+        *  other - second array necessary for pairwise operation
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply pairwise OpName transformation based on "this" and "other" arras elements, store result in target array
+        *  other - second array necessary for pairwise operation
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
+        *  tad - array to broadcast
+        *  dimensions -  array with dimensions to broadcast along
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  extraParams - extra parameters for operation
+        */
+
+        /**
+        *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
+        *  other - input array 
+        *  target - where to store result
+        *  checkTargetShape - if true check whether target shape is suitable for broadcasting
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply a scalar operation to an array
+        *  scalar - input array which is simple scalar
+        *  target - where to store result
+        *  extraParams - extra parameters for operation
+        */
+
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
+// #ifndef __JAVACPP_HACK__
+// #endif
+
+        /**
+        *  apply OpName random operation to array 
+        *  buffer - pointer on RandomBuffer
+        *  y - optional input array
+        *  z - optional input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *   apply transpose operation to the copy of this array, that is this array remains unaffected 
+        */
+        public native DoubleNDArray transpose();
+
+        /**
+        *  perform transpose operation and store result in target, this array remains unaffected 
+        *  target - where to store result
+        */ 
+        public native void transpose(@ByRef DoubleNDArray target);
+
+        /**
+        *  apply in-place transpose operation to this array, so this array becomes transposed 
+        */ 
+        public native void transposei();
+
+        /**
+        *  return array pointing on certain range of this array
+        *  index - the number of array to be returned among set of possible arrays 
+        *  dimensions - array of dimensions to point on
+        */
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
+        public native DoubleNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
+
+        /**
+        *  returns the number of arrays pointing on specified dimension(s)
+        *  dimensions - array of dimensions to point on
+        */
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
+
+        /**
+        *  returns true if elements of two arrays are equal to within given epsilon value
+        *  other - input array to compare
+        *  eps - epsilon, this value defines the precision of elements comparison
+        */
+        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other, double eps/*=(T) 1e-5f*/);
+        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other);
+        
+        /**
+        *  add given row vector to all rows of this array
+        *  row - row vector to add
+        */
+        public native void addiRowVector(@Const DoubleNDArray row);
+
+        /**
+        *  add given row vector to all rows of this array, store result in target
+        *  row - row vector to add
+        *  target - where to store result
+        */
+        public native void addRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+
+        /**
+        *  subtract given row vector from all rows of this array, store result in target
+        *  row - row vector to subtract
+        *  target - where to store result
+        */
+        public native void subRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+        
+        /**
+        *  multiply all rows of this array on given row vector, store result in target
+        *  row - row vector to multiply on
+        *  target - where to store result
+        */
+        public native void mulRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+
+        /**
+        *  divide all rows of this array on given row vector, store result in target
+        *  row - row vector to divide on
+        *  target - where to store result
+        */
+        public native void divRowVector(@Const DoubleNDArray row, DoubleNDArray target);
+        
+        /**
+        *  add given column vector to all columns of this array, store result in target
+        *  column - column vector to add
+        *  target - where to store result
+        */
+        public native void addColumnVector(@Const DoubleNDArray column, DoubleNDArray target);
+
+        /**
+        *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
+        *  column - column vector to add
+        */
+		public native void addiColumnVector(@Const DoubleNDArray column);
+
+        /**
+        *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
+        *  column - column vector to multiply on
+        */
+		public native void muliColumnVector(@Const DoubleNDArray column);
+
+        /**
+        *  returns number of bytes used by _buffer & _shapeInfo
+        */
+        public native @Cast("Nd4jIndex") long memoryFootprint();        
+        
+        /**
+        *  these methods suited for FlatBuffers use
+        */
+        public native @StdVector DoublePointer getBufferAsVector();
+        public native @StdVector IntPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeInfoAsVector();
+				
+        /**
+        *  set new order and shape in case of suitable array length (in-place operation)
+        *  order - order to set
+        *  shape - shape to set
+        */		
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+	
+        /**
+        *  creates new array with corresponding order and shape, new array will point on _buffer of this array
+        *  order - order to set
+        *  shape - shape to set
+        */
+		public native DoubleNDArray reshape(char order, @StdVector IntPointer shape);
+		public native DoubleNDArray reshape(char order, @StdVector IntBuffer shape);
+		public native DoubleNDArray reshape(char order, @StdVector int[] shape);
+		
+        /**
+        *  calculate strides and set given order
+        *  order - order to set
+        */
+		public native void updateStrides(char order);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        */
+		public native void tilei(@StdVector IntPointer repeats);
+		public native void tilei(@StdVector IntBuffer repeats);
+		public native void tilei(@StdVector int[] repeats);
+
+        /**
+        *  returns new array which is created by by repeating of this array the number of times given by reps 
+        *  repeats - contains numbers of repetitions
+        */
+		public native @ByVal DoubleNDArray tile(@StdVector IntPointer repeats);
+		public native @ByVal DoubleNDArray tile(@StdVector IntBuffer repeats);
+		public native @ByVal DoubleNDArray tile(@StdVector int[] repeats);
+
+        /**
+        *  change an array by repeating it the number of times given by reps (in-place operation)
+        *  repeats - contains numbers of repetitions
+        *  target - where to store result
+        */
+        public native void tile(@StdVector IntPointer repeats, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector IntBuffer repeats, @ByRef DoubleNDArray target);
+        public native void tile(@StdVector int[] repeats, @ByRef DoubleNDArray target);
+        
+        /**
+        *  returns an array which is result of broadcasting of this and other arrays 
+        *  other - input array
+        */
+		public native DoubleNDArray broadcast(@Const @ByRef DoubleNDArray other);
+		
+        /**
+        *  check whether array's rows (arg=0) or columns (arg=1) create orthogonal basis
+        *  arg - 0 -> row, 1 -> column
+        */
+		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
+				
+        /**
+        *  check whether array is identity matrix
+        */
+		public native @Cast("bool") boolean isIdentityMatrix(); 
+		
+        /**
+        *  check whether array is unitary matrix
+        */
+		public native @Cast("bool") boolean isUnitary(); 
+                        
+        /**
+        *  reduces dimensions in this array relying on index operation OpName
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  reduces dimensions in array relying on index operation OpName
+        *  target - where to store result
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  extraArgs - extra parameters for operation
+        */
+
+        /**
+        *  apply reduce3 operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+                
+        /**
+        *  apply reduce3 (exec) operation OpName to this and other array, return result in new output array
+        *  other - input array
+        *  dimensions - vector of dimensions to reduce along
+        *  extraArgs - extra parameters for operation
+        */
+
+
+        /**
+        *  returns variance along given dimensions
+        *  biasCorrected -  if true bias correction will be applied
+        *  dimensions - vector of dimensions to calculate variance along
+        */
+
+        /**
+        *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
+        *  idx - intervals of indexes which define the sub-arrays  to point on
+        */
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
+
+        /**
+        *  addition operator: array + other
+        *  other - input array to add
+        */
+        public native @ByVal @Name("operator +") DoubleNDArray add(@Const @ByRef DoubleNDArray other);
+
+        /**
+        *  addition operator: array + scalar
+        *  scalar - input scalar to add
+        */
+        public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
+
+        /**
+        *  friend functions which implement addition operator: scalar + array
+        *  scalar - input scalar to add
+        */
+        
+        
+        
+        
+        /**
+        *  addition unary operator array += other
+        *  other - input array to add
+        */
+        public native @Name("operator +=") void addPut(@Const @ByRef DoubleNDArray other);
+        
+        /**
+        *  subtraction operator: array - other
+        *  other - input array to subtract
+        */
+        public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
+        
+        /**
+        *  subtraction operator: array - scalar
+        *  scalar - input scalar to subtract
+        */
+        public native @ByVal @Name("operator -") DoubleNDArray subtract(double scalar);        
+
+        /**
+        *  negative operator, it changes sign of all array elements on opposite
+        */
+        public native @ByVal @Name("operator -") DoubleNDArray subtract();
+
+        /**
+        *  friend functions which implement subtraction operator: scalar - array
+        *  scalar - input scalar to subtract
+        */
+        
+        
+        
+
+        /**
+        *  pairwise multiplication operator: array * other
+        *  other - input array to multiply on
+        */
+        public native @ByVal @Name("operator *") DoubleNDArray multiply(@Const @ByRef DoubleNDArray other);        
+    
+        /**
+        *  multiplication operator: array * scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @ByVal @Name("operator *") DoubleNDArray multiply(double scalar);
+        
+        /**
+        *  pairwise multiplication unary operator array *= other
+        *  other - input array to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(@Const @ByRef DoubleNDArray other);
+
+        /**
+        *  multiplication unary operator array *= scalar
+        *  scalar - input scalar to multiply on
+        */
+        public native @Name("operator *=") void multiplyPut(double scalar);
+
+        /**
+        *  pairwise division operator: array / other
+        *  other - input array to divide on
+        */
+        public native @ByVal @Name("operator /") DoubleNDArray divide(@Const @ByRef DoubleNDArray other);        
+
+        /**
+        *  pairwise division unary operator: array /= other
+        *  other - input array to divide on
+        */
+        public native @Name("operator /=") void dividePut(@Const @ByRef DoubleNDArray other);
+
+        /**
+        *  division unary operator: array /= scalar
+        *  scalar - input scalar to divide on
+        */
+        public native @Name("operator /=") void dividePut(double scalar);
+
+        /**
+        *  friend function which implements mathematical multiplication of two arrays
+        *  left - input array
+        *  right - input array
+        */
+        
+
+        /**
+        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  other - input array to assign elements from
+        *  idx - intervals of indexes which define the sub-array
+        */ 
+        public native void assign(@Const @ByRef DoubleNDArray other, @Const @ByRef Intervals idx);
+
+        /**
+        *  return vector containing _buffer as flat binary array
+        */
+        public native @StdVector BytePointer asByteVector();
+
+        // default destructor 
+
+        /**
+        *  set _shapeInfo
+        */
+        public native void setShapeInfo(IntPointer shapeInfo);
+        public native void setShapeInfo(IntBuffer shapeInfo);
+        public native void setShapeInfo(int[] shapeInfo);
+
+        /**
+        *  set _buffer
+        */
+        public native void setBuffer(DoublePointer buffer);
+        public native void setBuffer(DoubleBuffer buffer);
+        public native void setBuffer(double[] buffer);
+
+        /**
+        *  set _isBuffAlloc and _isShapeAlloc
+        */
+        public native void triggerAllocationFlag(@Cast("bool") boolean bufferAllocated, @Cast("bool") boolean shapeAllocated);
+        
+        /**
+        *  returns the value of "dim" dimension 
+        */ 
+        public native int sizeAt(int dim);
+
+        /**        
+        *  returns order of array
+        */
+        public native char ordering();
+
+        /**
+        *  return _isView
+        */ 
+        public native @Cast("bool") boolean isView();
+
+        /**
+        *  returns shape portion of shapeInfo
+        */
+        public native IntPointer shapeOf();
+        
+        /**
+        *  returns strides portion of shapeInfo
+        */
+        public native IntPointer stridesOf();
+
+        /**
+        *  returns rank of array
+        */
+        public native int rankOf();        
+
+        /** 
+        *  returns length of array
+        */
+        public native @Cast("Nd4jIndex") long lengthOf();        
+
+        /**
+        *  returns number of rows in array
+        */
+        public native int rows();
+
+        /**
+        *  returns number of columns in array
+        */ 
+        public native int columns();
+
+        /**
+        *  returns size of array elements type
+        */ 
+        public native int sizeOfT();
+
+        /**
+        *  returns element-wise-stride
+        */ 
+        public native int ews();
+
+        // returns true if arrays have same shape
         public native @Cast("bool") boolean isSameShape(@Const DoubleNDArray other);
         public native @Cast("bool") boolean isSameShape(@StdVector IntPointer shape);
         public native @Cast("bool") boolean isSameShape(@StdVector IntBuffer shape);
@@ -7396,251 +8906,130 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector LongBuffer shape);
         public native @Cast("bool") boolean isSameShape(@Cast("Nd4jIndex*") @StdVector long[] shape);
 
-		// Returns true if these two NDArrays have same shape
+        /**
+        *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
+        */
         public native @Cast("bool") boolean isSameShapeStrict(@Const DoubleNDArray other);
 
-        // This method returns sum of all elements of this NDArray
-        public native double sumNumber();
-
-        // This method returns mean number of this NDArray
-        public native double meanNumber();
-
-        public native int ews();
-
-        // method calculates sum along dimension(s) in this array and save it reduced array
-
-		// method reduces array by excluding its shapes along axes present in dimensions vector
-		
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // method reduces array by excluding its shapes along axes present in dimensions vector
-
-        // 
-
-        public native @Cast("Nd4jIndex") long argMax();
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform array transformation
-
-        // perform pairwise transformation
-
-        // perform pairwise transformation
-
-// #ifndef __JAVACPP_HACK__
-// #endif
-
-        // method makes copy of this array and applies to the copy the transpose operation, that is this array remains unaffected 
-        public native DoubleNDArray transpose();
-
-        // method performs transpose operation based on this array and store result in target, this array remains unaffected 
-        public native void transpose(@ByRef DoubleNDArray target);
-
-        // This method applies in-place transpose to this array, so this array becomes transposed 
-        public native void transposei();
-
-        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntPointer dimensions);
-        public native DoubleNDArray tensorAlongDimension(int index, @StdVector IntBuffer dimensions);
-        public native DoubleNDArray tensorAlongDimension(int index, @StdVector int[] dimensions);
-
-        // this method returns number of tensors along specified dimension(s)
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntPointer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector IntBuffer dimensions);
-        public native @Cast("Nd4jIndex") long tensorsAlongDimension(@StdVector int[] dimensions);
-
-        // This method returns true if buffer && shapeInfo were defined
+        /**
+        *  returns true if buffer && shapeInfo were defined (non nullptr)
+        */
         public native @Cast("bool") boolean nonNull();
 
-        // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
-        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other, double eps/*=(T) 1e-5f*/);
-        public native @Cast("bool") boolean equalsTo(@Const DoubleNDArray other);
-
-        // Return value from linear buffer
+        /** 
+        *  returns array element with given index from linear buffer
+        *  i - element index in array
+        */
         public native double getScalar(@Cast("const Nd4jIndex") long i);
-        
-        public native double getIndexedScalar(@Cast("const Nd4jIndex") long i);
 
-        // Returns value from 2D matrix by coordinates/indexes         
+        /** 
+        *  returns array element with given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        */
+        public native double getIndexedScalar(@Cast("const Nd4jIndex") long i);
+        
+        /** 
+        *  returns element with given indexes from 2D array 
+        *  i - number of row 
+        *  j - number of column
+        */
         public native double getScalar(int i, int j);
 
-        // returns value from 3D tensor by coordinates        
+        /** 
+        *  returns element with given indexes from 3D array 
+        *  i - height
+        *  j - width
+        *  k - depth
+        */
         public native double getScalar(int i, int j, int k);        
         
+        /** 
+        *  assigns given scalar to array element by given index, takes into account offset between elements (element-wise-stride)
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putIndexedScalar(@Cast("const Nd4jIndex") long i, double value);        
 
-        // This method sets value in linear buffer to position i        
+        /** 
+        *  assigns given scalar to array element by given index, regards array buffer as linear
+        *  i - element index in array
+        *  value - scalar value to assign
+        */
         public native void putScalar(@Cast("const Nd4jIndex") long i, double value);        
 
-        // This method sets value in 2D matrix to position i, j         
+        /** 
+        *  assigns given scalar to 2D array element by given indexes
+        *  i - number of row
+        *  j - number of row
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, double value);        
 
-        // This method sets value in 3D matrix to position i,j,k        
+        /** 
+        *  assigns given scalar to 3D array element by given indexes
+        *  i - height
+        *  j - width
+        *  k - depth
+        *  value - scalar value to assign
+        */
         public native void putScalar(int i, int j, int k, double value);
-        
-        // This method adds given row to all rows in this NDArray, that is this array becomes affected
-        public native void addiRowVector(@Const DoubleNDArray row);
 
-        public native void addRowVector(@Const DoubleNDArray row, DoubleNDArray target);
-        
-        public native void subRowVector(@Const DoubleNDArray row, DoubleNDArray target);
-        
-        public native void mulRowVector(@Const DoubleNDArray row, DoubleNDArray target);
-
-        public native void divRowVector(@Const DoubleNDArray row, DoubleNDArray target);
-
-        public native void addColumnVector(@Const DoubleNDArray column, DoubleNDArray target);
-
-		// This method adds given column to all columns in this NDArray, that is this array becomes affected
-		public native void addiColumnVector(@Const DoubleNDArray column);
-
-		// This method multiplies given column by all columns in this NDArray, that is this array becomes affected
-		public native void muliColumnVector(@Const DoubleNDArray column);
-
-        // this method returns number of bytes used by buffer & shapeInfo
-        public native @Cast("Nd4jIndex") long memoryFootprint();
-
-        // this method returns true if this ndarray is 2d
+        /**
+        *  returns true if array is 2D
+        */
         public native @Cast("bool") boolean isMatrix();
 
-        // this method returns true if this ndarray is vector
+        /**
+        *  returns true if array is vector
+        */
         public native @Cast("bool") boolean isVector();
 
-        // this method returns true if this ndarray is column vector
+        /**
+        *  returns true if array is column vector
+        */
         public native @Cast("bool") boolean isColumnVector();
 
-        // this method returns true if this ndarray is row vector
+        /**
+        *  returns true if array is row vector
+        */
         public native @Cast("bool") boolean isRowVector();
 
-        // this method returns true if this ndarray is scalar
+        /**
+        *  returns true if array is scalar
+        */
         public native @Cast("bool") boolean isScalar();
 
-        // these methods suited for FlatBuffers use.
-        public native @StdVector DoublePointer getBufferAsVector();
+        /**
+        *  inline accessing operator for matrix, i - absolute index        
+        */
 
-        public native @StdVector IntPointer getShapeAsVector();
-        public native @StdVector IntPointer getShapeInfoAsVector();
-		
-		// set new order and shape in case of suitable array length 
-	
-		// set new order and shape in case of suitable array length 
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
-	
-		// create new array with corresponding order and shape, new array will point to the same _buffer as this array
-		public native DoubleNDArray reshape(char order, @StdVector IntPointer shape);
-		public native DoubleNDArray reshape(char order, @StdVector IntBuffer shape);
-		public native DoubleNDArray reshape(char order, @StdVector int[] shape);
-		
-		// calculate strides 
-		public native void updateStrides(char order);
+        /**
+        *  inline modifying operator for matrix, i - absolute index        
+        */
+        public native @ByRef @Name("operator ()") DoublePointer apply(@Cast("const Nd4jIndex") long i);
 
-		// change an array by repeating it the number of times given by reps.
-		public native void tilei(@StdVector IntPointer reps);
-		public native void tilei(@StdVector IntBuffer reps);
-		public native void tilei(@StdVector int[] reps);
+        /**
+        *  inline accessing operator for 2D array, i - row, j - column
+        */        
 
-		// tile an array by repeating it the number of times given by reps.
-		public native @ByVal DoubleNDArray tile(@StdVector IntPointer reps);
-		public native @ByVal DoubleNDArray tile(@StdVector IntBuffer reps);
-		public native @ByVal DoubleNDArray tile(@StdVector int[] reps);
+        /**
+        *  inline modifying operator for 2D array, i - row, j - column
+        */
+        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j);
 
-        // tile an array by repeating it the number of times given by reps.
-        public native void tile(@StdVector IntPointer reps, @ByRef DoubleNDArray target);
-        public native void tile(@StdVector IntBuffer reps, @ByRef DoubleNDArray target);
-        public native void tile(@StdVector int[] reps, @ByRef DoubleNDArray target);
-        
-		// return array which is broadcasted from this and argument array  
-		public native DoubleNDArray broadcast(@Const @ByRef DoubleNDArray other);
-		
-		// check whether array's rows (arg=0) or columns create orthogonal basis
-		public native @Cast("bool") boolean hasOrthonormalBasis(int arg); 
-		
-		// check whether array is identity matrix
-		public native @Cast("bool") boolean isIdentityMatrix(); 
+        /**
+        *  inline accessing operator for 3D array, i - height, j - width, k - depth
+        */        
 
-		// check whether array is unitary matrix
-		public native @Cast("bool") boolean isUnitary(); 
-                
-        // reduce dimensions in this array relying on index operations
+        /**
+        *  inline modifying operator for 3D array, i - height, j - width, k - depth
+        */ 
+        public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j, int k);
 
-        // apply reduce3 operations to this and other array, return result in new output array
-
-        // apply reduce3 (execAll) operations to this and other array, return result in new output array
-        
-        // apply reduce3 (exec) operations to this and other array, return result in new output array
-
-        // operator returns sub-array with buffer pointing at this->_buffer with certain offset
-        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
-
-        // addition operator array + array
-        public native @ByVal @Name("operator +") DoubleNDArray add(@Const @ByRef DoubleNDArray other);
-
-        // addition operator array + scalar
-        public native @ByVal @Name("operator +") DoubleNDArray add(double scalar);
-
-        // addition operator scalar + array
-        // friend NDArray<T> nd4j::operator+<>(const T scalar, const NDArray<T>& arr);    
-        // subtraction operator scalar - array
-        // friend NDArray<T> nd4j::operator-<>(const T scalar, const NDArray<T>& arr);    
-
-        // addition operator scalar + array
-        
-        
-        
-
-        // subtraction operator scalar - array
-        
-        
-        
-
-        // addition operator array1 += array2    
-        public native @Name("operator +=") void addPut(@Const @ByRef DoubleNDArray other);
-
-        // subtraction operator array - array
-        public native @ByVal @Name("operator -") DoubleNDArray subtract(@Const @ByRef DoubleNDArray other);
-
-        // subtraction operator array - scalar
-        public native @ByVal @Name("operator -") DoubleNDArray subtract(double scalar);        
-
-        // negative operator, it makes all array elements = -elements
-        public native @ByVal @Name("operator -") DoubleNDArray subtract();
-
-        // multiplication operator array1*array2
-        public native @ByVal @Name("operator *") DoubleNDArray multiply(@Const @ByRef DoubleNDArray other);        
-    
-        // multiplication operator array*scalar
-        public native @ByVal @Name("operator *") DoubleNDArray multiply(double scalar);
-
-        // multiplication operator array1 *= array2
-        public native @Name("operator *=") void multiplyPut(@Const @ByRef DoubleNDArray other);
-
-        // multiplication operator array*scalar
-        public native @Name("operator *=") void multiplyPut(double scalar);
-
-        // division operator array1/array2
-        public native @ByVal @Name("operator /") DoubleNDArray divide(@Const @ByRef DoubleNDArray other);        
-
-        // division operator array1 /= array2
-        public native @Name("operator /=") void dividePut(@Const @ByRef DoubleNDArray other);
-
-        // division operator array /= scalar
-        public native @Name("operator /=") void dividePut(double scalar);
-
-        // mathematical multiplication of two arrays
-        
-
-        public native void assign(@Const @ByRef DoubleNDArray other, @Const @ByRef Intervals idx);
-
-        public native @StdVector BytePointer asByteVector();
-
-        // default destructor 
 
     }
+
+
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -7648,8 +9037,63 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
 
 
-    
 //////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
 // accessing operator for matrix, i - absolute index
 
 

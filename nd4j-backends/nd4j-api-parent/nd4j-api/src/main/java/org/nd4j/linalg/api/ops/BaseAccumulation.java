@@ -50,7 +50,7 @@ import java.util.UUID;
 @Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
-
+    protected boolean isComplex = false;
     protected boolean keepDims;
 
     public BaseAccumulation(SameDiff sameDiff,
@@ -121,6 +121,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation() {}
 
+    @Override
+    public boolean isComplexAccumulation() {
+        return isComplex;
+    }
 
 
 

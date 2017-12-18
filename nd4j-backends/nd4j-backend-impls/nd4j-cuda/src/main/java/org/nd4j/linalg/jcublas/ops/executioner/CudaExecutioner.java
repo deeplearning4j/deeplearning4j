@@ -54,6 +54,7 @@ import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCuda;
@@ -261,6 +262,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.y() != null) {
             if ((dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )||op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
+                if (!op.isComplexAccumulation() && op.x().lengthLong() != op.y().lengthLong())
+                    throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
+
+
                 Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
                 yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
@@ -308,7 +313,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    nativeOps.execReduce3AllDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
+                            (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
+                            (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
+                            (DoublePointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            (IntPointer) dimensionPointer, dimension.length,
+                            (IntPointer) devTadShapeInfo,
+                            new LongPointerWrapper(devTadOffsets),
+                            (IntPointer) yDevTadShapeInfo,
+                            new LongPointerWrapper(yDevTadOffsets));
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                } else if (ret.isScalar()) {
                     double res = nativeOps.execReduce3ScalarDouble(xShapeInfoHostPointer, op.opNum(),
                             (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
                             (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
@@ -373,7 +392,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    nativeOps.execReduce3AllFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
+                            (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
+                            (FloatPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
+                            (FloatPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            (IntPointer) dimensionPointer, dimension.length,
+                            (IntPointer) devTadShapeInfo,
+                            new LongPointerWrapper(devTadOffsets),
+                            (IntPointer) yDevTadShapeInfo,
+                            new LongPointerWrapper(yDevTadOffsets));
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                } else if (ret.isScalar()) {
                     float res = nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer, op.opNum(),
                             (FloatPointer) x, (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
                             (FloatPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
@@ -438,7 +471,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 }
             } else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    nativeOps.execReduce3AllHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
+                            (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
+                            (ShortPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),context),
+                            (ShortPointer) AtomicAllocator.getInstance().getPointer(op.z(), context),
+                            (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
+                            (IntPointer) dimensionPointer, dimension.length,
+                            (IntPointer) devTadShapeInfo,
+                            new LongPointerWrapper(devTadOffsets),
+                            (IntPointer) yDevTadShapeInfo,
+                            new LongPointerWrapper(yDevTadOffsets));
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                } else if (ret.isScalar()) {
                     float res = nativeOps.execReduce3ScalarHalf(xShapeInfoHostPointer, op.opNum(),
                             (ShortPointer) x, (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
                             (ShortPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
@@ -528,17 +575,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         INDArray ret = null;
         if (op.z() == null || op.z() == op.x()) {
-            if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
-                ret = Nd4j.zeros(retShape);
-            } else {
-                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-                else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-                else if (op.x().data().dataType() == DataBuffer.Type.HALF)
-                    ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
-            }
+            if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
 
+                ret = Nd4j.create(xT, yT);
+            } else {
+                if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
+                    ret = Nd4j.zeros(retShape);
+                } else {
+                    if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                        ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+                    else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                        ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+                    else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                        ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
+                }
+            }
             op.setZ(ret);
         } else {
             // compare length

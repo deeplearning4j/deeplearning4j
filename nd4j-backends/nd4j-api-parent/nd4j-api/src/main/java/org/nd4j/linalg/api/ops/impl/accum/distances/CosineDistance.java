@@ -90,10 +90,12 @@ public class CosineDistance extends BaseAccumulation {
 
     public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
+        this.isComplex = allDistances;
     }
 
     public CosineDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
+        this.isComplex = allDistances;
     }
 
 

@@ -293,12 +293,11 @@ public class OperationProfilerTests {
 
         INDArray array;
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS119")) {
             array = Nd4j.create(10);
 
             assertTrue(array.isAttached());
         }
-
 
         array.add(1.0);
     }
@@ -310,7 +309,7 @@ public class OperationProfilerTests {
 
         INDArray array;
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
             array = Nd4j.create(10);
             assertTrue(array.isAttached());
 
@@ -318,7 +317,7 @@ public class OperationProfilerTests {
         }
 
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS120")) {
             assertEquals(2, workspace.getGenerationId());
 
             array.add(1.0);
@@ -334,14 +333,14 @@ public class OperationProfilerTests {
 
         INDArray array;
 
-        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS121")) {
             array = Nd4j.create(10);
             assertTrue(array.isAttached());
 
             assertEquals(1, workspace.getGenerationId());
 
 
-            try (MemoryWorkspace workspaceInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS2")) {
+            try (MemoryWorkspace workspaceInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS122")) {
                 array.add(1.0);
             }
         }
