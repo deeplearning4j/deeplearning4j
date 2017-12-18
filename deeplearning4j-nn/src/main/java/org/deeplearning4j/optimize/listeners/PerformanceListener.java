@@ -9,6 +9,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -19,10 +21,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PerformanceListener implements IterationListener {
     private final int frequency;
     private static final Logger logger = LoggerFactory.getLogger(PerformanceListener.class);
-    private ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
-    private ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
-    private ThreadLocal<Long> lastTime = new ThreadLocal<>();
-    private ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
+    private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
+    private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
+    private transient ThreadLocal<Long> lastTime = new ThreadLocal<>();
+    private transient ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
 
     private boolean reportScore;
     private boolean reportSample = true;
@@ -119,6 +121,15 @@ public class PerformanceListener implements IterationListener {
         }
 
         lastTime.set(System.currentTimeMillis());
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        //Custom deserializer, as transient ThreadLocal fields won't be initialized...
+        in.defaultReadObject();
+        samplesPerSec = new ThreadLocal<>();
+        batchesPerSec = new ThreadLocal<>();
+        lastTime = new ThreadLocal<>();
+        iterationCount = new ThreadLocal<>();
     }
 
     public static class Builder {

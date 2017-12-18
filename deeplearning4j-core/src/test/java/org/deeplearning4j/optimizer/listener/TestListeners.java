@@ -2,20 +2,36 @@ package org.deeplearning4j.optimizer.listener;
 
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.listeners.ComposableIterationListener;
+import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.listeners.TimeIterationListener;
+import org.deeplearning4j.optimize.listeners.checkpoint.CheckpointListener;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -26,7 +42,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 01/01/2017.
  */
-public class TestListenerSetting {
+public class TestListeners {
+
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
     public void testSettingListenersUnsupervised() {
@@ -131,6 +150,54 @@ public class TestListenerSetting {
 
         @Override
         public void iterationDone(Model model, int iteration, int epoch) {}
+    }
+
+
+
+
+
+    @Test
+    public void testListenerSerialization() throws Exception {
+        //Note: not all listeners are (or should be) serializable. But some should be - for Spark etc
+
+        List<IterationListener> listeners = new ArrayList<>();
+        listeners.add(new ScoreIterationListener());
+        listeners.add(new PerformanceListener(1));
+        listeners.add(new TimeIterationListener(10000));
+        listeners.add(new ComposableIterationListener(new ScoreIterationListener(), new PerformanceListener(1)));
+        listeners.add(new CheckpointListener.Builder(tempDir.newFolder()).keepAll().saveEveryNIterations(3).build());   //Doesn't usually need to be serialized, but no reason it can't be...
+
+
+        DataSetIterator iter = new IrisDataSetIterator(10, 150);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new OutputLayer.Builder().nIn(4).nOut(3)
+                        .activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+        net.setListeners(listeners);
+
+        net.fit(iter);
+
+        List<IterationListener> listeners2 = new ArrayList<>();
+        for(IterationListener il : listeners){
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(il);
+            byte[] bytes = baos.toByteArray();
+
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+            IterationListener il2 = (IterationListener) ois.readObject();
+
+            listeners2.add(il2);
+        }
+
+        net.setListeners(listeners2);
+        net.fit(iter);
     }
 
 }
