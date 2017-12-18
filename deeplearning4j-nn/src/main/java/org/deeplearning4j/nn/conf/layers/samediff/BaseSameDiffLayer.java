@@ -6,14 +6,18 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 public abstract class BaseSameDiffLayer extends Layer {
 
@@ -38,17 +42,6 @@ public abstract class BaseSameDiffLayer extends Layer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        return null;
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return SameDiffParamInitializer.getInstance();
-    }
-
-    @Override
     public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
     @Override
@@ -60,6 +53,27 @@ public abstract class BaseSameDiffLayer extends Layer {
     public abstract List<String> weightKeys();
 
     public abstract List<String> biasKeys();
+
+    public abstract void defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,INDArray> paramTable);
+
+    //==================================================================================================================
+
+    @Override
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        SameDiffLayer ret = new SameDiffLayer(conf);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public ParamInitializer initializer() {
+        return SameDiffParamInitializer.getInstance();
+    }
 
     @Override
     public double getL1ByParam(String paramName) {
