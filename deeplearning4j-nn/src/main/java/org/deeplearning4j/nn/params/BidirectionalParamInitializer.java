@@ -77,13 +77,13 @@ public class BidirectionalParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public boolean isWeightParam(String key) {
-        return weightKeys(layer).contains(key);
+    public boolean isWeightParam(Layer layer, String key) {
+        return weightKeys(this.layer).contains(key);
     }
 
     @Override
-    public boolean isBiasParam(String key) {
-        return biasKeys(layer).contains(key);
+    public boolean isBiasParam(Layer layer, String key) {
+        return biasKeys(this.layer).contains(key);
     }
 
     @Override

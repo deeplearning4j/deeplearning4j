@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
@@ -1081,6 +1082,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 copyConfigToLayer(b.getBwd().getLayerName(), b.getBwd());
             }
 
+            if(layer instanceof BaseWrapperLayer){
+                BaseWrapperLayer bwr = (BaseWrapperLayer)layer;
+                configureLayer(bwr.getUnderlying());
+            }
+
             if (layer instanceof ConvolutionLayer) {
                 ConvolutionLayer cl = (ConvolutionLayer) layer;
                 if (cl.getConvolutionMode() == null) {
@@ -1139,6 +1145,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
                     bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            }
+
+            if (layer instanceof ActivationLayer){
+                ActivationLayer al = (ActivationLayer)layer;
+                if(al.getActivationFn() == null)
+                    al.setActivationFn(activationFn);
             }
         }
     }

@@ -179,34 +179,22 @@ public class KerasModel {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.layersOrdered = new ArrayList<>();
         this.layers = new HashMap<>();
-        DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
             Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
             // Append major keras version and backend to each layer config.
             layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
-            if (this.kerasBackend != null) {
+            if (kerasMajorVersion == 2 && this.kerasBackend != null)
                 layerConfigMap.put(config.getFieldBackend(), this.kerasBackend);
-            }
 
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
                     kerasLayerConf, customLayers);
-            if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE)
-                dimOrder = layer.getDimOrder();
             this.layersOrdered.add(layer);
             this.layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLstm)
                 this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLstm) layer).getUnroll();
             if (layer instanceof KerasSimpleRnn)
                 this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasSimpleRnn) layer).getUnroll();
-        }
-
-        for (KerasLayer layer : this.layersOrdered) {
-            if (layer.getDimOrder() == DimOrder.NONE)
-                layer.setDimOrder(dimOrder);
-            else if (layer.getDimOrder() != dimOrder)
-                throw new UnsupportedKerasConfigurationException("Keras layer " + layer.getLayerName()
-                        + " has conflicting dim_ordering " + layer.getDimOrder() + " (vs. dimOrder)");
         }
     }
 

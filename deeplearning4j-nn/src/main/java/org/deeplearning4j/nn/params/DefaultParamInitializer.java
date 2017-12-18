@@ -84,12 +84,12 @@ public class DefaultParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public boolean isWeightParam(String key) {
+    public boolean isWeightParam(Layer layer, String key) {
         return WEIGHT_KEY.equals(key);
     }
 
     @Override
-    public boolean isBiasParam(String key) {
+    public boolean isBiasParam(Layer layer, String key) {
         return BIAS_KEY.equals(key);
     }
 

@@ -256,8 +256,8 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                         stateMap.get(STATE_KEY_PREV_MEMCELL), false);
         INDArray outAct = fwdPass.fwdPassOutput;
         //Store last time step of output activations and memory cell state for later use:
-        stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
-        stateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+        stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.detach());
+        stateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.detach());
 
         return outAct;
     }

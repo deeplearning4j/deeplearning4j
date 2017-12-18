@@ -262,6 +262,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @throws IllegalStateException if configuration is not valid
      */
     public void validate() {
+        validate(false);
+    }
+
+    /**
+     * Check the configuration, make sure it is valid
+     *
+     * @param allowDisconnected If true: don't throw an exception on vertices that are 'disconnected'. A disconnected
+     *                          vertex is one that is not an output, and doesn't connect to any other vertices. i.e.,
+     *                          it's output activations don't go anywhere
+     * @throws IllegalStateException if configuration is not valid
+     */
+    public void validate(boolean allowDisconnected){
+
         if (networkInputs == null || networkInputs.size() < 1) {
             throw new IllegalStateException(
                             "Invalid configuration: network has no inputs. Use .addInputs(String...) to label (and give an ordering to) the network inputs");
@@ -298,6 +311,29 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if (!vertices.containsKey(s)) {
                 throw new IllegalStateException(
                                 "Invalid configuration: Output name \"" + s + "\" is not a valid vertex");
+            }
+        }
+
+        //Check that there aren't any disconnected vertices
+        if(!allowDisconnected){
+            //A vertex is considered disconnected if it is (a) not an output vertex, and (b) isn't used an as input
+            // to another layer
+
+            Set<String> seenAsInput = new HashSet<>();
+            seenAsInput.addAll(networkOutputs);
+            for(Map.Entry<String,List<String>> e : vertexInputs.entrySet()){
+                seenAsInput.addAll(e.getValue());
+            }
+
+            Set<String> disconnected = new HashSet<>();
+            disconnected.addAll(networkInputs);
+            disconnected.addAll(vertices.keySet());
+            disconnected.removeAll(seenAsInput);
+            if(disconnected.size() > 0){
+                throw new IllegalStateException("Invalid configuration: disconnected vertices found - " + disconnected
+                        + ". Disconnected vertices are those that do not connect to either another vertex, and are also"
+                        + " not a network output. To disable this error (i.e., allow network configurations with" +
+                        " disconnected vertices) use GraphBuilder.allowDisconnected(true)");
             }
         }
 
@@ -530,6 +566,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
+        protected boolean allowDisconnected = false;
+
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
         }
@@ -626,6 +664,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         public GraphBuilder tBPTTBackwardLength(int backwardLength) {
             this.tbpttBackLength = backwardLength;
             return this;
+        }
+
+        /**
+         * When doing truncated backpropagation through time (tBPTT): how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttLength length > 0
+         */
+        public GraphBuilder tBPTTLength(int tbpttLength){
+            tBPTTForwardLength(tbpttLength);
+            return tBPTTBackwardLength(tbpttLength);
         }
 
         /**
@@ -805,6 +855,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Used only during validation after building.<br>
+         * If true: don't throw an exception on configurations containing vertices that are 'disconnected'. A disconnected
+         * vertex is one that is not an output, and doesn't connect to any other vertices. i.e., it's output activations
+         * don't go anywhere. Most users can (and should) leave this as the default value of false.
+         *
+         * @param allowDisconnected Whether to allow disconnected vertices, during validation
+         */
+        public GraphBuilder allowDisconnected(boolean allowDisconnected){
+            this.allowDisconnected = allowDisconnected;
+            return this;
+        }
+
+        /**
          * Create the ComputationGraphConfiguration from the Builder pattern
          */
         public ComputationGraphConfiguration build() {
@@ -852,7 +915,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             }
 
-            conf.validate(); //throws exception for invalid configuration
+            conf.validate(allowDisconnected); //throws exception for invalid configuration
 
             //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
             if (!networkInputTypes.isEmpty()) {

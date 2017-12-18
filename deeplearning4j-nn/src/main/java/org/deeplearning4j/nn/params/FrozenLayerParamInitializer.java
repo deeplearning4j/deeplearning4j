@@ -51,12 +51,12 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
     }
 
     @Override
-    public boolean isWeightParam(String key) {
+    public boolean isWeightParam(Layer layer, String key) {
         return false;
     }
 
     @Override
-    public boolean isBiasParam(String key) {
+    public boolean isBiasParam(Layer layer, String key) {
         return false;
     }
 

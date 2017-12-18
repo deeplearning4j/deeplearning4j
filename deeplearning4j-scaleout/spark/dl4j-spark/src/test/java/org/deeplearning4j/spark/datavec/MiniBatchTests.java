@@ -23,7 +23,6 @@ import org.apache.spark.api.java.function.Function;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
-import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;

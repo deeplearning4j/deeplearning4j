@@ -7,6 +7,8 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -38,6 +40,7 @@ public class KerasSimpleRnn extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 3;
     protected boolean unroll = false;
+    protected boolean returnSequences;
 
     /**
      * Pass-through constructor from KerasLayer
@@ -84,11 +87,8 @@ public class KerasSimpleRnn extends KerasLayer {
         Distribution recurrentDistribution = recurrentInit.getSecond();
 
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        Boolean returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
-        if (!returnSequences) {
-            throw new UnsupportedKerasConfigurationException("Keras setting 'return_sequences = False' is not properly supported," +
-                    "DL4J's SimpleRnn layer returns sequences by default");
-        }
+        this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
+
         if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
@@ -122,7 +122,10 @@ public class KerasSimpleRnn extends KerasLayer {
             builder.constrainInputWeights(weightConstraint);
         if (recurrentConstraint != null)
             builder.constrainRecurrent(recurrentConstraint);
-        this.layer = builder.build();
+        if (this.returnSequences)
+            this.layer = builder.build();
+        else
+            this.layer = new LastTimeStep(builder.build());
     }
 
     /**
@@ -130,8 +133,8 @@ public class KerasSimpleRnn extends KerasLayer {
      *
      * @return SimpleRnn Layer
      */
-    public SimpleRnn getSimpleRnnLayer() {
-        return (SimpleRnn) this.layer;
+    public Layer getSimpleRnnLayer() {
+        return this.layer;
     }
 
     /**

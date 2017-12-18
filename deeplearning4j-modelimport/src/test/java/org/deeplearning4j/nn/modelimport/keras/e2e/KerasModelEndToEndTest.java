@@ -183,27 +183,26 @@ public class KerasModelEndToEndTest {
     /**
      * Simple LSTM test
      */
-//   TODO: need return_sequences == false for this.
-//    @Test
-//    public void importSimpleLstmTfKeras1() throws Exception {
-//        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_model.h5";
-//        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_inputs_and_outputs.h5";
-//        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
-//    }
-//
-//    @Test
-//    public void importSimpleLstmThKeras1() throws Exception {
-//        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_model.h5";
-//        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_inputs_and_outputs.h5";
-//        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
-//    }
-//
-//    @Test
-//    public void importSimpleLstmTfKeras2() throws Exception {
-//        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_model.h5";
-//        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_inputs_and_outputs.h5";
-//        importEndModelTest(modelPath, inputsOutputPath, true, false, true);
-//    }
+    @Test
+    public void importSimpleLstmTfKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, false, false);
+    }
+
+    @Test
+    public void importSimpleLstmThKeras1() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, false, false);
+    }
+
+    @Test
+    public void importSimpleLstmTfKeras2() throws Exception {
+        String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_model.h5";
+        String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(modelPath, inputsOutputPath, true, false, false);
+    }
 
     /**
      * CNN without bias test
