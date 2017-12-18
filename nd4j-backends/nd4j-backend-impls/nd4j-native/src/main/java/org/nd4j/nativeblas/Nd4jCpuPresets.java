@@ -17,6 +17,7 @@ package org.nd4j.nativeblas;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Scanner;
 import org.bytedeco.javacpp.annotation.Platform;
@@ -63,9 +64,40 @@ import org.bytedeco.javacpp.tools.Logger;
                                               "ops/declarable/BooleanOp.h",
                                               "ops/declarable/LogicOp.h",
                                               "ops/declarable/OpRegistrator.h",
-                                              "ops/declarable/CustomOperations.h"},
-                                compiler = "cpp11", extensions = "-avx512",
-                                library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
+                                              "ops/declarable/CustomOperations.h",
+                                              "ops/declarable/headers/activations.h",
+                                              "ops/declarable/headers/boolean.h",
+                                              "ops/declarable/headers/broadcastable.h",
+                                              "ops/declarable/headers/convo.h",
+                                              "ops/declarable/headers/list.h",
+                                              "ops/declarable/headers/recurrent.h",
+                                              "ops/declarable/headers/transforms.h",
+                                              "ops/declarable/headers/parity_ops.h",
+                                              "ops/declarable/headers/shape.h",
+                                              "ops/declarable/headers/random.h",
+                                              "ops/declarable/headers/nn.h",
+                                              "ops/declarable/headers/blas.h",
+                                              "ops/declarable/headers/bitwise.h",
+                                              "ops/declarable/headers/loss.h",
+                                              "ops/declarable/headers/datatypes.h",
+                                              "ops/declarable/headers/third_party.h"},
+                                   exclude = {"ops/declarable/headers/activations.h",
+                                              "ops/declarable/headers/boolean.h",
+                                              "ops/declarable/headers/broadcastable.h",
+                                              "ops/declarable/headers/convo.h",
+                                              "ops/declarable/headers/list.h",
+                                              "ops/declarable/headers/recurrent.h",
+                                              "ops/declarable/headers/transforms.h",
+                                              "ops/declarable/headers/parity_ops.h",
+                                              "ops/declarable/headers/shape.h",
+                                              "ops/declarable/headers/random.h",
+                                              "ops/declarable/headers/nn.h",
+                                              "ops/declarable/headers/blas.h",
+                                              "ops/declarable/headers/bitwise.h",
+                                              "ops/declarable/headers/loss.h",
+                                              "ops/declarable/headers/datatypes.h",
+                                              "ops/declarable/headers/third_party.h"},
+                                compiler = "cpp11", library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",
@@ -73,7 +105,8 @@ import org.bytedeco.javacpp.tools.Logger;
                 @Platform(value = "windows", preload = {"libiomp5md#libiomp5md", "mkl_avx#mkl_avx", "mkl_avx2#mkl_avx2",
                                 "mkl_avx512#mkl_avx512", "mkl_avx512_mic#mkl_avx512_mic", "mkl_def#mkl_def",
                                 "mkl_mc#mkl_mc", "mkl_mc3#mkl_mc3", "mkl_core#mkl_core", "mkl_intel_lp64#mkl_intel_lp64",
-                                "mkl_intel_thread#mkl_intel_thread", "mkl_rt#mkl_rt", "libnd4jcpu"}) })
+                                "mkl_intel_thread#mkl_intel_thread", "mkl_rt#mkl_rt", "libnd4jcpu"}),
+                @Platform(extension = "-avx512") })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     private Logger logger;
@@ -138,7 +171,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                    .put(new Info(t + "<double>").pointerTypes("Double" + s));
         }
 
-        // pick up custom operations automatically from CustomOperations.h in libnd4j
+        // pick up custom operations automatically from CustomOperations.h and headers in libnd4j
         String separator = properties.getProperty("platform.path.separator");
         String[] includePaths = properties.getProperty("platform.includepath").split(separator);
         File file = null;
@@ -148,28 +181,33 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 break;
             }
         }
+        ArrayList<File> files = new ArrayList<File>();
         ArrayList<String> opTemplates = new ArrayList<String>();
-        try (Scanner scanner = new Scanner(file)) {
-            while (scanner.hasNextLine()) {
-                String line = scanner.nextLine().trim();
-                if (line.startsWith("DECLARE_")) {
-                    try {
-                        int start = line.indexOf('(') + 1;
-                        int end = line.indexOf(',');
-                        if (end < start) {
-                            end = line.indexOf(')');
+        files.add(file);
+        files.addAll(Arrays.asList(new File(file.getParent(), "headers").listFiles()));
+        for (File f : files) {
+            try (Scanner scanner = new Scanner(f)) {
+                while (scanner.hasNextLine()) {
+                    String line = scanner.nextLine().trim();
+                    if (line.startsWith("DECLARE_")) {
+                        try {
+                            int start = line.indexOf('(') + 1;
+                            int end = line.indexOf(',');
+                            if (end < start) {
+                                end = line.indexOf(')');
+                            }
+                            String name = line.substring(start, end).trim();
+                            opTemplates.add(name);
+                        } catch(Exception e) {
+                            throw new RuntimeException("Could not parse line from CustomOperations.h and headers: \"" + line + "\"", e);
                         }
-                        String name = line.substring(start, end).trim();
-                        opTemplates.add(name);
-                    } catch(Exception e) {
-                        throw new RuntimeException("Could not parse line from CustomOperations.h: \"" + line + "\"", e);
                     }
                 }
+            } catch (IOException e) {
+                throw new RuntimeException("Could not parse CustomOperations.h and headers", e);
             }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not parse CustomOperations.h", e);
         }
-        logger.info("Ops found in CustomOperations.h: " + opTemplates);
+        logger.info("Ops found in CustomOperations.h and headers: " + opTemplates);
         String floatOps = "", halfOps = "", doubleOps = "";
         for (String t : opTemplates) {
             String s = "nd4j::ops::" + t;
