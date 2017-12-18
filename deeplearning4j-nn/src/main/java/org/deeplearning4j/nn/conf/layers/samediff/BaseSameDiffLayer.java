@@ -54,7 +54,9 @@ public abstract class BaseSameDiffLayer extends Layer {
 
     public abstract List<String> biasKeys();
 
-    public abstract void defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,INDArray> paramTable);
+    public abstract Map<String,int[]> paramShapes();
+
+    public abstract void defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
 
     //==================================================================================================================
 
