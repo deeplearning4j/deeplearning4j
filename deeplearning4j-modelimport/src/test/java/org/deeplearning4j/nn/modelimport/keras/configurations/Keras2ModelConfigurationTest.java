@@ -39,6 +39,11 @@ public class Keras2ModelConfigurationTest {
     ClassLoader classLoader = getClass().getClassLoader();
 
     @Test
+    public void dgaClassifierTfConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/keras2_dga_classifier_tf_config.json");
+    }
+
+    @Test
     public void convPooling1dTfConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/keras2_conv1d_pooling1d_tf_config.json");
     }
