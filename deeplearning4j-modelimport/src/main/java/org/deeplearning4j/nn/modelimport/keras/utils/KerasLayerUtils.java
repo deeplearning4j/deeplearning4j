@@ -356,7 +356,7 @@ public class KerasLayerUtils {
                                                       KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        KerasLayer.DimOrder dimOrder = KerasLayer.DimOrder.TENSORFLOW;
+        KerasLayer.DimOrder dimOrder = KerasLayer.DimOrder.NONE;
         if (layerConfig.containsKey(conf.getLAYER_FIELD_BACKEND())) {
             String backend = (String) layerConfig.get(conf.getLAYER_FIELD_BACKEND());
             if (backend.equals("tensorflow") || backend.equals("cntk")) {

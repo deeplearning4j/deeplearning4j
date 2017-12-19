@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
@@ -229,6 +231,7 @@ public class KerasModelEndToEndTest {
     /**
      * DGA classifier test
      */
+    //   TODO: need to fix issue #4433 (3D output for Embedding layers) for this to work.
     @Test
     public void importDgaClassifier() throws Exception {
         importModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
@@ -240,8 +243,10 @@ public class KerasModelEndToEndTest {
                         KerasModelEndToEndTest.class.getClassLoader());
         File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        MultiLayerNetwork model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false);
+        KerasSequentialModel model = builder.buildSequential();
+        model.getMultiLayerNetwork();
     }
 
 

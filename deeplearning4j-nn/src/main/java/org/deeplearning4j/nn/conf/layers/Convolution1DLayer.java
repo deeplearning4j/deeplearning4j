@@ -64,7 +64,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
-
+        
         return InputType.recurrent(nOut);
     }
 
