@@ -19,6 +19,8 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
@@ -38,6 +40,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     private int[] inputShape;
     private int[] targetShape;
     private boolean hasMiniBatchDimension = false;
+    private int miniBatchSize;
 
     public ReshapePreprocessor(int[] inputShape, int[] targetShape) {
         this.inputShape = inputShape;
@@ -73,6 +76,12 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             targetShape = prependMiniBatchSize(targetShape, miniBatchSize);
             inputShape = prependMiniBatchSize(inputShape, miniBatchSize);
             this.hasMiniBatchDimension = true;
+            this.miniBatchSize = miniBatchSize;
+        }
+        if (this.miniBatchSize != miniBatchSize) {
+            targetShape = prependMiniBatchSize(ArrayUtils.subarray(targetShape, 1, targetShape.length), miniBatchSize);
+            inputShape = prependMiniBatchSize(ArrayUtils.subarray(inputShape, 1, targetShape.length), miniBatchSize);
+            this.miniBatchSize = miniBatchSize;
         }
         if (prod(input.shape()) == prod((targetShape))) {
             return input.reshape(this.targetShape);
