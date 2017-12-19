@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
@@ -99,9 +100,19 @@ public class KerasLSTMTest {
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
-        LSTM layer = rs ? (LSTM) new KerasLstm(layerConfig).getLSTMLayer() :
-                (LSTM) ((LastTimeStep) new KerasLstm(layerConfig).getLSTMLayer()).getUnderlying();
-
+        LSTM layer;
+        LastTimeStep lts;
+        KerasLstm kerasLstm = new KerasLstm(layerConfig);
+        if (rs) {
+            InputType outputType = kerasLstm.getOutputType(InputType.recurrent(1337));
+            assertEquals(outputType, InputType.recurrent(N_OUT));
+            layer = (LSTM) kerasLstm.getLSTMLayer();
+        } else {
+            lts = (LastTimeStep) kerasLstm.getLSTMLayer();
+            InputType outputType = kerasLstm.getOutputType(InputType.feedForward(1337));
+            assertEquals(outputType, InputType.feedForward(N_OUT));
+            layer = (LSTM) lts.getUnderlying();
+        }
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());
@@ -110,7 +121,6 @@ public class KerasLSTMTest {
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
-
 
     }
 }

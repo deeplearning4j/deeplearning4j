@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -194,8 +193,13 @@ public class KerasLstm extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
-        if (preProcessor != null)
-            return  preProcessor.getOutputType(inputType[0]);
+        if (preProcessor != null) {
+            if (returnSequences) {
+                return  preProcessor.getOutputType(inputType[0]);
+            } else {
+                return this.getLSTMLayer().getOutputType(-1, preProcessor.getOutputType(inputType[0]));
+            }
+        }
         else
             return this.getLSTMLayer().getOutputType(-1, inputType[0]);
 
