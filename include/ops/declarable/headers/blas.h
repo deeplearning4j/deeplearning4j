@@ -32,8 +32,22 @@ namespace nd4j {
         /**
          * This op is simple implementation of BLAS AXPY method.
          * Math is: y += a * x;
-         * 
          */
         DECLARE_CONFIGURABLE_OP(axpy, 2, 1, false, -2, 0);
+
+        /**
+         * This operation implements batched matrix multiplication
+         * Expected arguments:
+         * alpha: vector of T
+         * beta: vector of T
+         * ...: A, B matrices sequentially. i.e: AAAAABBBBB
+         * 
+         * Integer arguments:
+         * transA, transB, M, N, K, ldA, ldB, ldC - usual BLAS gemm arguments
+         * batchCount - number of operations in this batch
+         * 
+         * PLEASE NOTE: M, N, K, ldA, ldB, ldC should be equal for all matrices within batch.
+         */
+        DECLARE_CUSTOM_OP(batched_gemm, -1, -1, false, 0, 9);
     }
 }

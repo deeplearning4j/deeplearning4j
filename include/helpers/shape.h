@@ -111,6 +111,11 @@ __host__ __device__
 #endif
     ND4J_EXPORT int sizeAt(int *shape, int dim);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    template <typename T>
+    ND4J_EXPORT void fill(T* buffer, T value, Nd4jIndex length);
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -2253,6 +2258,18 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         }
         return index;
     }
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+template <typename T>
+ INLINEDEF void fill(T* buffer, T value, Nd4jIndex length) {
+
+#pragma omp simd
+     for (int e = 0; e < length; e++)
+        buffer[e] = value;
+ }
 
 /**
  * Convert a linear index to

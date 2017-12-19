@@ -121,5 +121,13 @@ namespace nd4j {
         return this->cblasDgemm;
     }
 
+    CblasSgemmBatch BlasHelper::sgemmBatched() {
+        return this->cblasSgemmBatch;
+    }
+
+    CblasDgemmBatch BlasHelper::dgemmBatched() {
+        return this->cblasDgemmBatch;
+    }
+
     BlasHelper* BlasHelper::_instance = 0;
 }

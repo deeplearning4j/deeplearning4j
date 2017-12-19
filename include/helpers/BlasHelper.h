@@ -292,6 +292,9 @@ namespace nd4j {
 
         CblasSgemm sgemm();
         CblasDgemm dgemm();
+
+        CblasSgemmBatch sgemmBatched();
+        CblasDgemmBatch dgemmBatched();
     };
 }
 

@@ -474,6 +474,203 @@ TEST_F(DeclarableOpsTests3, Test_Range_9) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<double> y('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 3, 3, 3, 3, 3, 3, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+//        exp->printIndexedBuffer("e");
+//        z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<double> y('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 3, 3, 3, 3, 3, 3, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+        //exp->printIndexedBuffer("e");
+        //z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<double> y('f', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 111, 3, 3, 3, 3, 3, 3, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+//        exp->printIndexedBuffer("e");
+//        z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_4) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    NDArray<double> y('f', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 5, 4, 3, 5, 3, 5, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+        //exp->printIndexedBuffer("e");
+        //z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_5) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+    NDArray<double> y('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 5, 4, 3, 3, 4, 5, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+        //exp->printIndexedBuffer("e");
+        //z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_6) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('f', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    NDArray<double> y('f', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {111, 111, 2, 3, 5, 2, 5, 2, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+        //exp->printIndexedBuffer("e");
+        //z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
+    NDArray<double> a('c', {1, 3}, {1, 1, 1});
+    NDArray<double> b('c', {1, 3}, {0, 0, 0});
+    NDArray<double> x('c', {2, 5}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+    NDArray<double> y('c', {5, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15});
+
+    auto exp = NDArrayFactory<double>::mmulHelper(&x, &y);
+
+    nd4j::ops::batched_gemm<double> op;
+    auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++) {
+        auto z = result->at(e);
+
+        //exp->printIndexedBuffer("e");
+        //z->printIndexedBuffer("z");
+
+        ASSERT_TRUE(exp->isSameShape(z));
+        ASSERT_TRUE(exp->equalsTo(z));
+    }
+
+    delete exp;
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
     NDArray<float> x('c', {1, 3}, {2, 2, 2});
     NDArray<float> y('c', {1, 3}, {4, 6, 8});
