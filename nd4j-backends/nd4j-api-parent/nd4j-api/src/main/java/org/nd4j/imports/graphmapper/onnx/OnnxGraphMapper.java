@@ -15,7 +15,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
@@ -105,27 +104,6 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
 
-    @Override
-    public Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(OnnxProto3.GraphProto graph) {
-        val ret = new HashMap<String, Pair<int[], int[]>>(graph.getNodeCount());
-     /*   for(int nodeIdx = 0; nodeIdx < graph.getNodeCount(); nodeIdx++) {
-            val node = graph.getNode(nodeIdx);
-            val name = node.getName().isEmpty() ? String.valueOf(nodeIdx) : node.getName();
-            val inputs = new int[node.getInputCount()];
-            val outputs = new int[node.getOutputCount()];
-            for(int i = 0; i < inputs.length; i++) {
-                inputs[i] = nodeNameToVertexId.get(node.getInput(i));
-            }
-
-            for(int i = 0; i < outputs.length; i++) {
-                outputs[i] = nodeNameToVertexId.get(node.getInput(i));
-            }
-
-            ret.put(name,Pair.of(inputs,outputs));
-        }*/
-
-        return ret;
-    }
 
     @Override
     public Map<String,onnx.OnnxProto3.TypeProto.TensorTypeProto> variablesForGraph(OnnxProto3.GraphProto graphProto) {
@@ -165,6 +143,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         }
 
         return ret;
+    }
+
+    @Override
+    public String translateToSameDiffName(String name, OnnxProto3.NodeProto node) {
+        return null;
     }
 
 
@@ -210,14 +193,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         try {
             val newInstance = differentialFunction.getClass().newInstance();
             val args = new SDVariable[tfNode.getInputCount()];
-            for(int i = 0; i < tfNode.getInputCount(); i++) {
-                val  initialVertexId = importState.getVertexIdMap().get(name);
-                args[i] = diff.getVariable(name);
-            }
 
-
-
-            val indices = importState.getVertexIdMap().get(name);
             newInstance.setSameDiff(importState.getSameDiff());
 
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());

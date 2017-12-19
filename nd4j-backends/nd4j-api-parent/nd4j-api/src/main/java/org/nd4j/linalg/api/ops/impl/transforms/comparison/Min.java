@@ -46,7 +46,7 @@ public class Min extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "min_transform";
+        return "minimum";
     }
 
     @Override

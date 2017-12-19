@@ -45,7 +45,7 @@ public class Max extends BaseDynamicTransformOp {
 
   @Override
     public String opName() {
-        return "max_transform";
+        return "maximum";
     }
 
     @Override

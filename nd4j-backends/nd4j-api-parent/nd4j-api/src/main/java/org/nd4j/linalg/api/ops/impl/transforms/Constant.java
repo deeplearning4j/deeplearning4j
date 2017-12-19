@@ -26,7 +26,6 @@ public class Constant extends BaseTransformOp {
         super();
         sameDiff.putShapeForVarName(i_v.getVarName(),shape);
         this.xVertexId = i_v.getVarName();
-        this.zVertexId = i_v.getVarName();
         this.inPlace = inPlace;
         this.sameDiff = sameDiff;
 

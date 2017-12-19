@@ -135,12 +135,22 @@ public abstract class DifferentialFunction {
 
 
     /**
+     * Return the output variables for this differential function.
+     * Note that this op *may* dynamically generate variable outputs.
+     * @return
+     */
+    public  SDVariable[] outputVariables() {
+        return outputVariables(opName());
+    }
+
+
+
+
+    /**
      * Return the output functions for this differential function.
      * @return
      */
-    public abstract SDVariable[] outputVariables();
-
-
+    public abstract SDVariable[] outputVariables(String baseName);
 
 
 

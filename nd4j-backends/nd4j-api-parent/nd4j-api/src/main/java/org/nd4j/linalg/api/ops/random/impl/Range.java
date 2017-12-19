@@ -96,14 +96,18 @@ public class Range extends DynamicCustomOp {
 
 
                 val arr = Nd4j.create(outputVars[0].getShape());
-                sameDiff.putArrayForVarName(outputVertexId, arr);
+                initWith.putArrayForVarName(outputVertexId, arr);
                 addOutputArgument(arr);
             }
         }
 
-        this.fromVertexId = sameDiff.getVariable(startNode.getName()).getVarName();
-        this.toVertexId = sameDiff.getVariable(endNode.getName()).getVarName();
-        this.deltaVertexId = sameDiff.getVariable(deltaNode.getName()).getVarName();
+        val fromVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(startNode.getName()));
+        val toVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(endNode.getName()));
+        val deltaVar =  initWith.getVariable(TFGraphMapper.getInstance().getNodeName(deltaNode.getName()));
+
+        this.fromVertexId = fromVar.getVarName();
+        this.toVertexId = toVar.getVarName();
+        this.deltaVertexId = deltaVar.getVarName();
 
     }
 
@@ -130,16 +134,33 @@ public class Range extends DynamicCustomOp {
             this.to = end.getDouble(0);
             this.delta = delta.getDouble(0);
             addTArgument(this.from,this.to,this.delta);
-            if(sameDiff.getArrForVarName(outputVars[0].getVarName()) == null) {
-                if(outputVars[0].getShape() == null) {
-                    val calcShape = calculateOutputShape();
-                    sameDiff.putShapeForVarName(outputVars[0].getVarName(),calcShape.get(0));
-                }
+            val calcShape = calculateOutputShape();
+            /**
+             * Possibly need to specify shape for each input variable with respect
+             * to input variable? (Example: you have 2 inputs and 1 output, what is the
+             * output shape for the second input given a function?
+             *
+             * That *seems* like it should be the same shape, but it's also obviously op
+             * and vertex id dependent.
+             *
+             * The main problem here is the Range op but this seems like a larger problem
+             * that should be investigated.
+             *
+             *
+             */
 
-                val arr = Nd4j.create(outputVars[0].getShape());
-                sameDiff.putArrayForVarName(outputVars[0].getVarName(), arr);
-                addOutputArgument(arr);
+            for(int i = 0; i < outputVars.length; i++) {
+                if(sameDiff.getArrForVarName(outputVars[i].getVarName()) == null) {
+                    if(outputVars[i].getShape() == null) {
+                        sameDiff.putShapeForVarName(outputVars[i].getVarName(),calcShape.get(0));
+                    }
+
+                    val arr = Nd4j.create(outputVars[i].getShape());
+                    sameDiff.putArrayForVarName(outputVars[i].getVarName(), arr);
+                    addOutputArgument(arr);
+                }
             }
+
 
         }
         else {
@@ -158,6 +179,7 @@ public class Range extends DynamicCustomOp {
     public List<int[]> calculateOutputShape() {
         val iArgs = iArgs();
         val tArgs = tArgs();
+        val inputArgs = inputArguments();
         int cnt = 0;
 
         if (iArgs.length > 0) {
@@ -185,6 +207,27 @@ public class Range extends DynamicCustomOp {
             double start = tArgs[0];
             double stop = tArgs[1];
             double step = tArgs[2];
+
+            double e = start;
+            if (start > stop) {
+                while (e > stop) {
+                    cnt++;
+                    e = step > 0.0 ? e - step : e + step;
+                }
+            } else {
+                while (e < stop) {
+                    cnt++;
+                    e += step;
+                }
+            }
+
+            return Arrays.asList(new int[]{1,cnt});
+        }
+
+        else if(inputArgs.length > 0) {
+            double start = inputArgs[0].getDouble(0);
+            double stop = inputArgs[1].getDouble(0);
+            double step = inputArgs[2].getDouble(0);
 
             double e = start;
             if (start > stop) {

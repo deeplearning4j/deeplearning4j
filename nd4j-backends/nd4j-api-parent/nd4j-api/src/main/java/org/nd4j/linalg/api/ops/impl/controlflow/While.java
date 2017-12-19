@@ -143,6 +143,11 @@ public class While extends DifferentialFunction implements CustomOp {
     }
 
     @Override
+    public SDVariable[] outputVariables(String baseName) {
+        return new SDVariable[0];
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         List<SDVariable> ret = new ArrayList<>();
         ret.addAll(Arrays.asList(new WhileDerivative(this).outputVariables()));

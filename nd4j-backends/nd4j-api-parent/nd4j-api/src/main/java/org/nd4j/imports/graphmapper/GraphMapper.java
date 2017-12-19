@@ -6,7 +6,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;
@@ -74,18 +73,19 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
 
     /**
-     *
-     * @param graph
-     * @return
-     */
-    Map<String, Pair<int[], int[]>> inputsAndOutputsForGraph(GRAPH_TYPE graph);
-
-    /**
      * Get the variables for the given graph
      * @param graphType the graph to get the variables for
      * @return a map of variable name to tensor
      */
     Map<String,TENSOR_TYPE> variablesForGraph(GRAPH_TYPE graphType);
+
+    /**
+     *
+     * @param name
+     * @param node
+     * @return
+     */
+    String translateToSameDiffName(String name, NODE_TYPE node);
 
 
     /**

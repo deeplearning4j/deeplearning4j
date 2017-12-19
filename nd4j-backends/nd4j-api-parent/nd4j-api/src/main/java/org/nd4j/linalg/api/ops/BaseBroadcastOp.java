@@ -2,7 +2,6 @@ package org.nd4j.linalg.api.ops;
 
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -42,8 +41,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
-            val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + i_v2.getVarName() ,Shape.getBroadcastDimensions(i_v1.getShape(), i_v2.getShape()));
-
+            sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -67,9 +65,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             f().validateDifferentialFunctionsameDiff(i_v2);
 
             this.sameDiff = sameDiff;
-            val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + i_v2.getVarName() ,
-                    Shape.getBroadcastDimensions(i_v1.getShape(), i_v2.getShape()));
-
+            sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
 
         } else {
             throw new IllegalArgumentException("Input not null variables.");
@@ -93,8 +89,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         this.dimension = dimension;
         if (i_v != null) {
             f().validateDifferentialFunctionsameDiff(i_v);
-            val var = sameDiff.var(i_v.getVarName() + "-" + opName() ,
-                    i_v.getShape());
+            sameDiff.addArgsFor(new SDVariable[]{i_v},this);
+
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");

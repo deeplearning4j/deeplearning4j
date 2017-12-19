@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,11 +72,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = scalar;
         if (i_v != null) {
-            val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",i_v.getShape());
             this.xVertexId = i_v.getVarName();
-            this.zVertexId = var.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
             this.n = ArrayUtil.prod(i_v.getShape());
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {

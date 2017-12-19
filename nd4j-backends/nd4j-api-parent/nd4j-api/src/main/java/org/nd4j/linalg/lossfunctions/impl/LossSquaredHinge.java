@@ -135,6 +135,11 @@ public class LossSquaredHinge extends DifferentialFunction implements ILossFunct
     }
 
     @Override
+    public SDVariable[] outputVariables(String baseName) {
+        return new SDVariable[0];
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

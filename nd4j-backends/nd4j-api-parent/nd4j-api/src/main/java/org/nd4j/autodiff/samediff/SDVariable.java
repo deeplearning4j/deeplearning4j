@@ -80,6 +80,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return new SDVariable[0];
     }
 
+    @Override
+    public SDVariable[] outputVariables(String baseName) {
+        return new SDVariable[0];
+    }
+
 
     @Override
     public boolean isVariable() {
@@ -145,11 +150,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                     getScalarValue().doubleValue());
             sameDiff.associateArrayWithVariable(arr,this);
         }
-        else if(getShape() == null)
+        else if(sameDiff.getShapeForVarName(getVarName()) == null)
             return null;
 
         else {
-            INDArray newAlloc = getWeightInitScheme().create(getShape());
+            INDArray newAlloc = getWeightInitScheme().create(sameDiff.getShapeForVarName(getVarName()));
             sameDiff.associateArrayWithVariable(newAlloc,this);
 
         }
@@ -197,7 +202,14 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return
      */
     public int[] getShape() {
-        return sameDiff.getShapeForVarName(getVarName());
+        int[] initialShape =  sameDiff.getShapeForVarName(getVarName());
+        if(initialShape == null) {
+            val arr = getArr();
+            if(arr != null)
+                return arr.shape();
+        }
+
+        return initialShape;
     }
 
 

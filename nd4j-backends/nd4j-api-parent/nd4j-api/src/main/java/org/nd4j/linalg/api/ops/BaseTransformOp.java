@@ -57,20 +57,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
-            int[] retShape = null;
-            if(ArrayUtil.prod(i_v1.getShape()) > ArrayUtil.prod(i_v2.getShape()))
-                retShape = i_v1.getShape();
-            else if(ArrayUtil.prod(i_v1.getShape()) > ArrayUtil.prod(i_v2.getShape()))
-                retShape = i_v2.getShape();
-            else
-                retShape = i_v1.getShape();
-            val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + "-output",retShape);
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
-            this.zVertexId = var.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
-
+            if(i_v1.getShape() != null)
+                this.n = ArrayUtil.prod(i_v1.getShape());
 
 
         } else {
@@ -94,11 +85,12 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
-            val var = sameDiff.var(i_v1.getVarName() + "-" + opName() + "-" + "-output",i_v1.getShape());
-            sameDiff.putShapeForVarName(var.getVarName(),i_v1.getShape());
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
-            this.zVertexId = var.getVarName();
+            sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
+            if(i_v1.getShape() != null)
+                this.n = ArrayUtil.prod(i_v1.getShape());
+
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -121,13 +113,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
         if (i_v != null) {
             f().validateDifferentialFunctionsameDiff(i_v);
-            val var = sameDiff.var(i_v.getVarName() + "-" + opName() + "-" + "-output",shape);
             this.xVertexId = i_v.getVarName();
-            this.zVertexId = var.getVarName();
-            if(sameDiff.getShapeForVarName(var.getVarName()) == null)
-                sameDiff.putShapeForVarName(var.getVarName(),shape);
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
-            sameDiff.addOutgoingFor(new SDVariable[]{var},this);
+            if(i_v.getShape() != null)
+                this.n = ArrayUtil.prod(i_v.getShape());
+
         } else {
             throw new IllegalArgumentException("Input must not null variable.");
         }
@@ -266,6 +256,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         if(arr == null)
             throw new ND4JIllegalStateException("Array must not be null for argument!");
         ret.add(arr.shape());
+        this.n = arr.length();
         return ret;
     }
 

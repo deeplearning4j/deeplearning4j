@@ -72,8 +72,10 @@ public class SameDiff {
     private Map<String,String[]> incomingArgsReverse;
     private Map<String,String[]> ougoingArgsReverse;
     private boolean shouldBootStrap = true;
-
-
+    private Set<String> importedVarName;
+    //map a function's instance id to a base name, used for propagating variable names
+    //for output during import
+    private Map<String,String> baseNameForFunctionInstanceId;
 
     private DifferentialFunctionFactory functionFactory;
     private Map<String,SDVariable> variableMap;
@@ -460,12 +462,6 @@ public class SameDiff {
      * @return the shape for the given vertex if if any.
      */
     public int[] getShapeForVarName(String varName) {
-        //first check that the shape doesn't already exists.
-        //if it does, remove it
-        if(variableNameToArr.containsKey(varName) && variableNameToShape.containsKey(varName)) {
-            variableNameToShape.remove(varName);
-        }
-
         if(variableNameToArr.containsKey(varName)) {
             return variableNameToArr.get(varName).shape();
         }
@@ -692,10 +688,54 @@ public class SameDiff {
         placeHolderFunctions = new LinkedHashSet<>();
         functionsArgsFor = new LinkedHashMap<>();
         functionOutputFor = new LinkedHashMap<>();
+        baseNameForFunctionInstanceId = new LinkedHashMap<>();
+        importedVarName = new LinkedHashSet<>();
 
     }
 
+    /**
+     * Returns true if the variable name is imported
+     * @param variableName the imported variable name
+     * @return true if the name is imported, false otherwise
+     */
+    public boolean isImportVariable(String variableName) {
+        return importedVarName.contains(variableName);
+    }
 
+    /**
+     * Marks a variable name as imported.
+     * This is used in conjunction with model
+     * import to ensure immutability
+     * when referencing graph variables
+     * mapped from an external source.
+     * @param varName the var name to add.
+     */
+    public void addVarNameForImport(String varName) {
+        importedVarName.add(varName);
+    }
+
+    /**
+     * Sets a base name for the function id.
+     * This is used for when calling {@link #generateOutputVariableForOp(DifferentialFunction,String)}
+     * for ensuring original names for model import map to current samediff names
+     * when names are generated.
+     * @param baseName the base name to add
+     * @param function the function to declare a base name for.
+     */
+    public void setBaseNameForFunctionInstanceId(String baseName,DifferentialFunction function) {
+        baseNameForFunctionInstanceId.put(function.getInstanceId(),baseName);
+    }
+
+    /**
+     * Returns the base name for the given function
+     * if any (may return null)
+     * @param function the function to get the base name for
+     * @return the base name for the given function (if any) based
+     * on the function's instance id.
+     */
+    public String getBaseNameForFunction(DifferentialFunction function) {
+        return baseNameForFunctionInstanceId.get(function.getInstanceId());
+    }
 
 
     /**
@@ -1312,7 +1352,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gte(SDVariable iX, double iy) {
-        return gte(generateVariableName("gte",false,iX),iX,iy);
+        return gte(null,iX,iy);
 
     }
 
@@ -1322,7 +1362,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lte(SDVariable iX, double iy) {
-        return lte(generateVariableName("lte",false,iX),iX,iy);
+        return lte(null,iX,iy);
 
     }
 
@@ -1335,7 +1375,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gt(SDVariable iX, double iy) {
-        return lt(generateVariableName("gt",false,iX),iX,iy);
+        return lt(null,iX,iy);
 
     }
 
@@ -1345,7 +1385,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lt(SDVariable iX, double iy) {
-        return lt(generateVariableName("lt",false,iX),iX,iy);
+        return lt(null,iX,iy);
 
     }
 
@@ -1357,7 +1397,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable neq(SDVariable iX, double iy) {
-        return neq(generateVariableName("neq",false,iX),iX,iy);
+        return neq(null,iX,iy);
     }
 
     /**
@@ -1366,7 +1406,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable eq(SDVariable iX, double iy) {
-        return eq(generateVariableName("eq",false,iX),iX,iy);
+        return eq(null,iX,iy);
     }
 
 
@@ -1381,7 +1421,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gte(SDVariable iX, SDVariable iy) {
-        return gte(generateVariableName("gte",false,iX,iy),iX,iy);
+        return gte(null,iX,iy);
 
     }
 
@@ -1391,7 +1431,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lte(SDVariable iX, SDVariable iy) {
-        return lte(generateVariableName("lte",false,iX,iy),iX,iy);
+        return lte(null,iX,iy);
 
     }
 
@@ -1404,7 +1444,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gt(SDVariable iX, SDVariable iy) {
-        return lt(generateVariableName("gt",false,iX,iy),iX,iy);
+        return lt(null,iX,iy);
 
     }
 
@@ -1414,7 +1454,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lt(SDVariable iX, SDVariable iy) {
-        return lt(generateVariableName("lt",false,iX,iy),iX,iy);
+        return lt(null,iX,iy);
 
     }
 
@@ -1426,7 +1466,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable neq(SDVariable iX, SDVariable iy) {
-        return neq(generateVariableName("neq",false,iX,iy),iX,iy);
+        return neq(null,iX,iy);
     }
 
     /**
@@ -1435,7 +1475,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable eq(SDVariable iX, SDVariable iy) {
-        return eq(generateVariableName("eq",false,iX,iy),iX,iy);
+        return eq(null,iX,iy);
     }
 
     /**
@@ -1444,7 +1484,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable or(SDVariable iX, SDVariable iy) {
-        return or(generateVariableName("or",false,iX,iy),iX,iy);
+        return or(null,iX,iy);
     }
 
     /**
@@ -1453,7 +1493,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable neg(SDVariable iX) {
-        return neg(generateVariableName("neg",false,iX),iX);
+        return neg(null,iX);
     }
 
 
@@ -1463,7 +1503,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cos(SDVariable iX) {
-        return cos(generateVariableName("cos",false,iX),iX);
+        return cos(null,iX);
     }
 
     /**
@@ -1472,7 +1512,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sin(SDVariable iX) {
-        return sin(generateVariableName("sin",false,iX),iX);
+        return sin(null,iX);
     }
 
     /**
@@ -1481,7 +1521,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable tan(SDVariable iX) {
-        return tan(generateVariableName("tan",false,iX),iX);
+        return tan(null,iX);
     }
 
     /**
@@ -1490,7 +1530,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable acos(SDVariable iX) {
-        return acos(generateVariableName("acos",false,iX),iX);
+        return acos(null,iX);
     }
 
     /**
@@ -1500,7 +1540,7 @@ public class SameDiff {
      */
 
     public SDVariable asin(SDVariable iX) {
-        return asin(generateVariableName("asin",false,iX),iX);
+        return asin(null,iX);
     }
 
     /**
@@ -1509,7 +1549,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable atan(SDVariable iX) {
-        return atan(generateVariableName("atan",false,iX),iX);
+        return atan(null,iX);
     }
 
     /**
@@ -1518,7 +1558,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cosh(SDVariable iX) {
-        return cosh(generateVariableName("cosh",false,iX),iX);
+        return cosh(null,iX);
     }
 
     /**
@@ -1527,7 +1567,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sinh(SDVariable iX) {
-        return sinh(generateVariableName("sinh",false,iX),iX);
+        return sinh(null,iX);
     }
 
     /**
@@ -1536,7 +1576,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable tanh(SDVariable iX) {
-        return tanh(generateVariableName("tanh",false,iX),iX);
+        return tanh(null,iX);
     }
 
     /**
@@ -1545,7 +1585,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable acosh(SDVariable iX) {
-        return acosh(generateVariableName("acosh",false,iX),iX);
+        return acosh(null,iX);
     }
 
     /**
@@ -1554,7 +1594,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable asinh(SDVariable iX) {
-        return asin(generateVariableName("asin",false,iX),iX);
+        return asin(null,iX);
     }
 
     /**
@@ -1563,7 +1603,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable atanh(SDVariable iX) {
-        return atanh(generateVariableName("atanh",false,iX),iX);
+        return atanh(null,iX);
     }
 
     /**
@@ -1572,7 +1612,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable exp(SDVariable iX) {
-        return exp(generateVariableName("exp",false,iX),iX);
+        return exp(null,iX);
     }
 
     /**
@@ -1581,7 +1621,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable log(SDVariable iX) {
-        return log(generateVariableName("log",false,iX),iX);
+        return log(null,iX);
     }
 
     /**
@@ -1591,7 +1631,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable pow(SDVariable iX,double value) {
-        return pow(generateVariableName("pow",false,iX),iX,value);
+        return pow(null,iX,value);
     }
 
     /**
@@ -1600,7 +1640,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sqrt(SDVariable iX) {
-        return sqrt(generateVariableName("sqrt",false,iX),iX);
+        return sqrt(null,iX);
     }
 
     /**
@@ -1609,7 +1649,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable square(SDVariable iX) {
-        return square(generateVariableName("square",false,iX),iX);
+        return square(null,iX);
     }
 
     /**
@@ -1618,7 +1658,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable floor(SDVariable iX) {
-        return floor(generateVariableName("floor",false,iX),iX);
+        return floor(null,iX);
     }
 
     /**
@@ -1627,7 +1667,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable relu(SDVariable iX,double cutoff) {
-        return relu(generateVariableName("relu",false,iX),iX,cutoff);
+        return relu(null,iX,cutoff);
     }
 
     /**
@@ -1636,7 +1676,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softmax(SDVariable iX) {
-        return softmax(generateVariableName("softmax",false,iX),iX);
+        return softmax(null,iX);
     }
 
     /**
@@ -1657,7 +1697,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable hardTanh(SDVariable iX) {
-        return hardTanh(generateVariableName("hardTanh",false,iX),iX);
+        return hardTanh(null,iX);
     }
 
     /**
@@ -1666,7 +1706,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable hardTanhDerivative(SDVariable iX) {
-        return hardTanhDerivative(generateVariableName("hardTanhDerivative",false,iX),iX);
+        return hardTanhDerivative(null,iX);
     }
 
     /**
@@ -1675,7 +1715,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sigmoid(SDVariable iX) {
-        return sigmoid(generateVariableName("sigmoid",false,iX),iX);
+        return sigmoid(null,iX);
     }
 
 
@@ -1685,7 +1725,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sigmoidDerivative(SDVariable iX,SDVariable wrt) {
-        return sigmoidDerivative(generateVariableName("sigmoidDerivative",false,iX),iX,wrt);
+        return sigmoidDerivative(null,iX,wrt);
     }
 
     /**
@@ -1694,7 +1734,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable sign(SDVariable iX) {
-        return sign(generateVariableName("sign",false,iX),iX);
+        return sign(null,iX);
     }
 
     /**
@@ -1703,7 +1743,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softsign(SDVariable iX) {
-        return softsign(generateVariableName("softsign",false,iX),iX);
+        return softsign(null,iX);
     }
 
     /**
@@ -1712,7 +1752,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softsignDerivative(SDVariable iX) {
-        return softsignDerivative(generateVariableName("softsignDerivative",false,iX),iX);
+        return softsignDerivative(null,iX);
     }
 
     /**
@@ -1721,7 +1761,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable softplus(SDVariable iX) {
-        return softplus(generateVariableName("softplus",false,iX),iX);
+        return softplus(null,iX);
     }
 
     /**
@@ -1730,7 +1770,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable elu(SDVariable iX) {
-        return elu(generateVariableName("elu",false,iX),iX);
+        return elu(null,iX);
     }
 
     /**
@@ -1739,7 +1779,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable eluDerivative(SDVariable iX) {
-        return eluDerivative(generateVariableName("eluDerivative",false,iX),iX);
+        return eluDerivative(null,iX);
     }
 
     /**
@@ -1749,7 +1789,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable leakyRelu(SDVariable iX, double cutoff) {
-        return leakyRelu(generateVariableName("leakyRelu",false,iX),iX,cutoff);
+        return leakyRelu(null,iX,cutoff);
     }
 
     /**
@@ -1758,7 +1798,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable mean(SDVariable iX) {
-        return mean(generateVariableName("mean",false,iX),iX);
+        return mean(null,iX);
     }
 
     /**
@@ -1771,7 +1811,7 @@ public class SameDiff {
     public SDVariable standardDeviation(SDVariable iX,
                                         boolean biasCorrected,
                                         int...dimensions) {
-        return standardDeviation(generateVariableName("std",false,iX),iX,biasCorrected,dimensions);
+        return standardDeviation(null,iX,biasCorrected,dimensions);
     }
 
     /**
@@ -1784,7 +1824,7 @@ public class SameDiff {
     public SDVariable variance(SDVariable iX,
                                boolean biasCorrected,
                                int...dimensions) {
-        return variance(generateVariableName("variance",false,iX),iX,biasCorrected,dimensions);
+        return variance(null,iX,biasCorrected,dimensions);
     }
 
     /**
@@ -1795,7 +1835,7 @@ public class SameDiff {
      */
     public SDVariable sum(SDVariable iX,
                           int...dimensions) {
-        return sum(generateVariableName("sum",false,iX),iX,dimensions);
+        return sum(null,iX,dimensions);
     }
 
     /**
@@ -1806,7 +1846,7 @@ public class SameDiff {
      */
     public SDVariable prod(SDVariable iX,
                            int...dimensions) {
-        return prod(generateVariableName("prod",false,iX),iX,dimensions);
+        return prod(null,iX,dimensions);
     }
 
 
@@ -1817,7 +1857,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable max(SDVariable iX, int...dimensions) {
-        return max(generateVariableName("max",false,iX),iX,dimensions);
+        return max(null,iX,dimensions);
 
     }
 
@@ -1830,7 +1870,7 @@ public class SameDiff {
      */
     public SDVariable min(SDVariable iX,
                           int...dimensions) {
-        return min(generateVariableName("min",false,iX),iX,dimensions);
+        return min(null,iX,dimensions);
     }
 
 
@@ -1842,7 +1882,7 @@ public class SameDiff {
      */
     public SDVariable reshape(SDVariable iX,
                               int...shape) {
-        return reshape(generateVariableName("reshape",false,iX),iX,shape);
+        return reshape(null,iX,shape);
     }
 
     /**
@@ -1851,7 +1891,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable transpose(SDVariable iX) {
-        return transpose(generateVariableName("transpose",false,iX),iX);
+        return transpose(null,iX);
     }
 
 
@@ -1862,7 +1902,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable rollAxis(SDVariable x, int axis) {
-        return rollAxis(generateVariableName("rollAxis",false,x),x,axis);
+        return rollAxis(null,x,axis);
     }
 
     /**
@@ -1872,7 +1912,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable mmul(SDVariable x, SDVariable y) {
-        return mmul(generateVariableName("mmul",false,x,y),x,y);
+        return mmul(null,x,y);
     }
 
     /**
@@ -1885,7 +1925,7 @@ public class SameDiff {
     public SDVariable tensorMmul(SDVariable x,
                                  SDVariable y,
                                  int[][] dimensions) {
-        return tensorMmul(generateVariableName("tensorMmul",false,x,y),x,y,dimensions);
+        return tensorMmul(null,x,y,dimensions);
     }
 
 
@@ -1941,7 +1981,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossCosineSimilarity(generateVariableName("lossCosineSimilarity",false,iX),iX,i_y,dimensions);
+        return lossCosineSimilarity(null,iX,i_y,dimensions);
     }
 
     /**
@@ -2036,7 +2076,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMSLE(generateVariableName("lossMLE",false,iX),iX,i_y,dimensions);
+        return lossMSLE(null,iX,i_y,dimensions);
 
     }
 
@@ -3052,6 +3092,55 @@ public class SameDiff {
 
 
 
+    /**
+     * Generate the variables based on the given input op
+     * and return the output variable names.
+     * @param function the function to generate the output
+     *                 variable names for
+     * @return the set of names generated for each output of the function.
+     */
+    public SDVariable[] generateOutputVariableForOp(DifferentialFunction function,String baseName) {
+        //xyz ops only have 1 output
+        val outputShape = function.calculateOutputShape();
+        SDVariable[] ret = new SDVariable[outputShape.size()];
+        //if there is already a base name defined, use that
+        if(baseName == null || baseName.isEmpty()   && getBaseNameForFunction(function) != null)
+            baseName = getBaseNameForFunction(function);
+
+
+        for(int i = 0; i < ret.length; i++) {
+            val shape = outputShape.get(i);
+            SDVariable checkGet = getVariable(baseName);
+            if(checkGet == null) {
+                checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape);
+            }
+            else if(!importedVarName.contains(baseName)) {
+                //need to find a new name
+                int count = 1;
+                while((checkGet = getVariable(baseName + "_" + count   + (i > 0 ? ":" +  i : ""))) != null) {
+                }
+            }
+
+            else
+                putShapeForVarName(checkGet.getVarName(),shape);
+            ret[i] = checkGet;
+        }
+
+
+        return ret;
+    }
+
+    /**
+     * Generate the variables based on the given input op
+     * and return the output variable names.
+     * @param function the function to generate the output
+     *                 variable names for
+     * @return the set of names generated for each output of the function.
+     */
+    public SDVariable[] generateOutputVariableForOp(DifferentialFunction function) {
+        return generateOutputVariableForOp(function,function.opName());
+    }
+
 
     /**
      *
@@ -3636,21 +3725,26 @@ public class SameDiff {
 
         }
 
+        //extra init after we know aray shape
+     /*   for(val func : functionInstancesById.values()) {
+            func.initWithArrays(arrays);
+        }*/
+/*
+
         //propagate variable names, sometimes shapes depend on  variables
         //that have place holders
         for(val func : placeHolderFunctions) {
+            getFunctionById(func).outputVariables();
             val calcOutputShape = getFunctionById(func).calculateOutputShape();
             val outputs = getOutputVariablesForFunction(getFunctionById(func));
             for(int i = 0; i < calcOutputShape.size(); i++) {
-                putShapeForVarName(outputs[i].getVarName(),calcOutputShape.get(i));
-                outputs[i].storeAndAllocateNewArray();
+                if(getShapeForVarName(outputs[i].getVarName()) == null)
+                    putShapeForVarName(outputs[i].getVarName(),calcOutputShape.get(i));
+                if(getArrForVarName(outputs[i].getVarName()) == null)
+                    outputs[i].storeAndAllocateNewArray();
             }
         }
-
-
-
-        // bootstrapGraph();
-
+*/
 
 
 
@@ -3741,18 +3835,6 @@ public class SameDiff {
      */
     public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> execWithPlaceHolder(Map<String,INDArray> inputs) {
         resolveVariablesWith(inputs);
-        //resolve the place holders
-        for(DifferentialFunction function : functionInstancesById.values()) {
-            //ensure output variables are calculated
-            function.outputVariables();
-            function.initWithArrays(inputs);
-        }
-
-
-        for(val entry : inputs.entrySet()) {
-            associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
-        }
-
         return exec();
     }
 
@@ -3777,12 +3859,21 @@ public class SameDiff {
      * Updates the variable name
      * property on the passed in variable,
      * the reference in samediff,
-     * and returns the variable
+     * and returns the variable.
+     *
+     * Note that if null for the new variable is passed in,
+     * it will just return the original input variable.
+     *
      * @param varToUpdate the variable to update
      * @param newVarName the new variable name
      * @return the passed in variable
      */
     public SDVariable updateVariableNameAndReference(SDVariable varToUpdate,String newVarName) {
+        if(newVarName == null) {
+            return varToUpdate;
+        }
+
+
         val oldVarName = varToUpdate.getVarName();
         varToUpdate.setVarName(newVarName);
         updateVariableName(oldVarName,newVarName);
@@ -3816,8 +3907,7 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
-            //debug
-            printFunction(differentialFunction);
+
             if(differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
                 if(!onBackward) {
@@ -3959,6 +4049,9 @@ public class SameDiff {
                 ops.add(differentialFunction);
             }
 
+
+            //debug
+            printFunction(differentialFunction);
         }
 
         return new Pair<>(opMap,ops);

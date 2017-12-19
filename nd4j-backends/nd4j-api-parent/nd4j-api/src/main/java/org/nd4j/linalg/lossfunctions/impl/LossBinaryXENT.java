@@ -252,6 +252,11 @@ public class LossBinaryXENT extends DifferentialFunction implements ILossFunctio
     }
 
     @Override
+    public SDVariable[] outputVariables(String baseName) {
+        return new SDVariable[0];
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

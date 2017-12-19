@@ -289,7 +289,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if(sameDiff != null) {
                 this.x = sameDiff.getArrForVarName(args()[0].getVarName());
                 if(x == null) {
-                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[0].getVarName() + " and op type " + opName() + " and shape " + Arrays.toString(args()[0].getShape()));
+                    x = args()[0].storeAndAllocateNewArray();
                 }
             }
         }
@@ -302,7 +302,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             if(sameDiff != null && args().length > 1) {
                 this.y = sameDiff.getArrForVarName(args()[1].getVarName());
                 if(y == null) {
-                    throw new ND4JIllegalStateException("No input found for vertex id " + args()[1].getVarName() + " and op type " + opName());
+                    y = args()[1].storeAndAllocateNewArray();
                 }
             }
         }
@@ -314,9 +314,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public INDArray z() {
         if(z == null) {
             if(sameDiff != null) {
-                this.z = sameDiff.getArrForVarName(getZVertexId());
+                this.z = outputVariables()[0].getArr();
                 if(this.z == null) {
-                    val var = sameDiff.getVariable(getZVertexId());
+                    val var = outputVariables()[0];
                     if(var.getShape() != null)
                         this. z = var.storeAndAllocateNewArray();
                 }
@@ -327,9 +327,30 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[] {sameDiff.getVariable(zVertexId)};
+    public SDVariable[] outputVariables(String baseName) {
+        if(zVertexId == null)  {
+            val outputNames = sameDiff.getOutputsForFunction(this);
+            //no need to dynamically create if already exists
+            if(outputNames != null) {
+                zVertexId = sameDiff.getVariable(outputNames[0]).getVarName();
+
+
+                return new SDVariable[]{sameDiff.getVariable(outputNames[0])};
+            }
+
+
+            val newVars = sameDiff.generateOutputVariableForOp(this,null);
+
+            val arr = newVars[0].storeAndAllocateNewArray();
+            z = arr;
+            if(sameDiff.getOutputsForFunction(this) == null)
+                sameDiff.addOutgoingFor(newVars,this);
+            return newVars;
+        }
+
+        return new SDVariable[]{sameDiff.getVariable(zVertexId)};
     }
+
 
     @Override
     public long n() {

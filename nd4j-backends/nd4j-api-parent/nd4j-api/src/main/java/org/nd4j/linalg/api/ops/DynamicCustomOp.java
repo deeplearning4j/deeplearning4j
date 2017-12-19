@@ -139,22 +139,56 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
                 return outputVariables;
             }
+
+
+            val newVars = sameDiff.generateOutputVariableForOp(this,null);
+
+            for(int i = 0; i < newVars.length; i++) {
+                val arr = newVars[i].storeAndAllocateNewArray();
+                addOutputArgument(arr);
+            }
+
+            outputVariables = newVars;
+            if(sameDiff.getOutputsForFunction(this) == null)
+                sameDiff.addOutgoingFor(outputVariables,this);
+            return newVars;
+
+
+        }
+
+        return outputVariables;
+    }
+
+    @Override
+    public SDVariable[] outputVariables(String baseName) {
+        if(this.outputVariables == null) {
+            val outputNames = sameDiff.getOutputsForFunction(this);
+            //no need to dynamically create if already exists
+            if(outputNames != null) {
+                outputVariables = new SDVariable[outputNames.length];
+                for(int i = 0; i < outputVariables.length; i++) {
+                    outputVariables[i] = sameDiff.getVariable(outputNames[i]);
+                }
+
+                return outputVariables;
+            }
+
+
             val shapes = calculateOutputShape();
             if(shapes.isEmpty())
                 throw new ND4JIllegalStateException("Unable to find to vertex id output functions for vertex ");
             else {
-                val newVars = new SDVariable[shapes.size()];
+                val newVars = sameDiff.generateOutputVariableForOp(this,baseName);
 
-                for(int i = 0; i < shapes.size(); i++) {
-                    val var = sameDiff.var("output-" + opName() + UUID.randomUUID().toString(),shapes.get(i));
-                    newVars[i] = var;
-                    val arr = var.storeAndAllocateNewArray();
+                for(int i = 0; i < newVars.length; i++) {
+                    val arr = newVars[i].storeAndAllocateNewArray();
                     addOutputArgument(arr);
                 }
 
                 outputVariables = newVars;
                 if(sameDiff.getOutputsForFunction(this) == null)
                     sameDiff.addOutgoingFor(outputVariables,this);
+
                 return newVars;
             }
 
@@ -369,24 +403,31 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void assertValidForExecution() {
         val descriptor = getDescriptor();
-        if(numInputArguments() != descriptor.getNumInputs())
-            throw new ND4JIllegalStateException("Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
+        if(descriptor == null)
+            throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 
-        if(numOutputArguments() != descriptor.getNumOutputs())
-            throw new ND4JIllegalStateException("Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
+
+        if(descriptor.getNumInputs() > 0 && numInputArguments() != descriptor.getNumInputs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
+
+        if(descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
 
         //< 0 means dynamic size
         if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
-            throw new ND4JIllegalStateException("Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
 
         if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
-            throw new ND4JIllegalStateException("Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
 
     }
 
     @Override
     public void populateInputsAndOutputsFromSameDiff() {
         val descriptor = getDescriptor();
+        if(descriptor == null)
+            throw new ND4JIllegalStateException("No op found for " + opName());
+
         if(numInputArguments() != descriptor.getNumInputs()) {
             //clear just in case
             val args = args();
