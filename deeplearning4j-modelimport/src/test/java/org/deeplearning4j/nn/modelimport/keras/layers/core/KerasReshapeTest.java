@@ -21,10 +21,16 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
+import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,24 +56,45 @@ public class KerasReshapeTest {
         buildLReshapeLayer(conf2, keras2);
     }
 
+    @Test
+    public void testReshapeDynamicMinibatch() throws Exception {
+        testDynamicMinibatches(conf1, keras1);
+        testDynamicMinibatches(conf2, keras2);
+    }
+
     private void buildLReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<>();
-        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
-        Map<String, Object> config = new HashMap<>();
         int[] targetShape = new int[]{10, 5};
         List<Integer> targetShapeList = new ArrayList<>();
         targetShapeList.add(targetShape[0]);
         targetShapeList.add(targetShape[1]);
+        ReshapePreprocessor preProcessor = getReshapePreProcesser(conf, kerasVersion, targetShapeList);
+        assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
+        assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
+    }
+
+    private ReshapePreprocessor getReshapePreProcesser(KerasLayerConfiguration conf, Integer kerasVersion,
+            List<Integer> targetShapeList)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
+        Map<String, Object> config = new HashMap<>();
         String LAYER_FIELD_TARGET_SHAPE = "target_shape";
         config.put(LAYER_FIELD_TARGET_SHAPE, targetShapeList);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
         ReshapePreprocessor preProcessor =
                 (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
-        assertEquals(preProcessor.getTargetShape()[0], targetShape[0]);
-        assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
+        return preProcessor;
+    }
+
+    private void testDynamicMinibatches(KerasLayerConfiguration conf, Integer kerasVersion) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        List<Integer> targetShape = Arrays.asList(20);
+        ReshapePreprocessor preproceser = getReshapePreProcesser(conf, kerasVersion, targetShape);
+        INDArray r1 = preproceser.preProcess(Nd4j.zeros(10, 20), 10);
+        INDArray r2 = preproceser.preProcess(Nd4j.zeros(5, 20), 5);
+        Assert.assertArrayEquals(r2.shape(), new int[] {5, 20});
+        Assert.assertArrayEquals(r1.shape(), new int[] {10, 20});
     }
 }
