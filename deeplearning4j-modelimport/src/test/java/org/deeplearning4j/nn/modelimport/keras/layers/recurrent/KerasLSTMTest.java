@@ -101,12 +101,16 @@ public class KerasLSTMTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
         LSTM layer;
-        LastTimeStep lts = null;
+        LastTimeStep lts;
+        KerasLstm kerasLstm = new KerasLstm(layerConfig);
         if (rs) {
-            layer =(LSTM) new KerasLstm(layerConfig).getLSTMLayer();
-        }
-        else {
-            lts = (LastTimeStep) new KerasLstm(layerConfig).getLSTMLayer();
+            InputType outputType = kerasLstm.getOutputType(InputType.recurrent(1337));
+            assertEquals(outputType, InputType.recurrent(N_OUT));
+            layer = (LSTM) kerasLstm.getLSTMLayer();
+        } else {
+            lts = (LastTimeStep) kerasLstm.getLSTMLayer();
+            InputType outputType = kerasLstm.getOutputType(InputType.feedForward(1337));
+            assertEquals(outputType, InputType.feedForward(N_OUT));
             layer = (LSTM) lts.getUnderlying();
         }
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
@@ -117,9 +121,6 @@ public class KerasLSTMTest {
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
-        if (!rs) {
-            assertEquals(lts.getOutputType(-1, InputType.recurrent(N_OUT)), InputType.feedForward(N_OUT));
-        }
 
     }
 }
