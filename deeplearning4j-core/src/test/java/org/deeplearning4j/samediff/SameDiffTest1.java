@@ -1,13 +1,13 @@
 package org.deeplearning4j.samediff;
 
 import org.junit.Test;
-import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,8 +26,8 @@ public class SameDiffTest1 {
         SDVariable z = mmul.add("z", bias);
         SDVariable out = sd.sigmoid("out", z);
 
-        SDGraph g = sd.graph();
-        System.out.println(g);
+//        SDGraph g = sd.graph();
+//        System.out.println(g);
 
         System.out.println(out);
 
@@ -63,8 +63,8 @@ public class SameDiffTest1 {
         SDVariable z = mmul.add("z", bias);
         SDVariable out = sd.sigmoid("out", z);
 
-        SDGraph g = sd.graph();
-        System.out.println(g);
+//        SDGraph g = sd.graph();
+//        System.out.println(g);
 
         System.out.println(out);
 
@@ -140,6 +140,11 @@ public class SameDiffTest1 {
 
         INDArray outArr = out.eval();
 
+        INDArray exp = iInput.mmul(iWeights).addiRowVector(iBias);
+
         System.out.println(outArr);
+        System.out.println(Arrays.toString(outArr.dup().data().asFloat()));
+        System.out.println("Expected:");
+        System.out.println(exp);
     }
 }
