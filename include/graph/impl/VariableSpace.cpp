@@ -105,8 +105,8 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T> * nd4j::graph::VariableSpace<T>::getVariable(std::pair<int, int>& pair) {
-            if (pair.first == 0)
-                throw "0 requested";
+//            if (pair.first == 0)
+//                throw "0 requested";
 
             //nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
 
@@ -118,6 +118,8 @@ namespace nd4j {
                 if (hasVariable(pair.first) && pair.second == 0)
                     return getVariable(pair.first);
             }
+
+            nd4j_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
 
             return nullptr;
         }
