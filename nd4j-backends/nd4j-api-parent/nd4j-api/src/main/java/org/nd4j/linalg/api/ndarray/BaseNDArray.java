@@ -3090,14 +3090,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } else {
                 //gemm doesn't support strides so vectors and views
                 //don't work
-                if(isView()) {
-                    return dup(ordering()).mmuli(other,gemmResultArr);
-                }
-
-                if (other.isView()) {
-                    return mmuli(other.dup(other.ordering()), gemmResultArr);
-                }
-
                 Nd4j.getBlasWrapper().level3().gemm(ordering(),
                         BlasBufferUtil.getCharForTranspose(other),
                         BlasBufferUtil.getCharForTranspose(gemmResultArr),

@@ -127,18 +127,16 @@ public @Data class GemmParams {
 
     private INDArray copyIfNeccessary(INDArray arr) {
         //See also: Shape.toMmulCompatible - want same conditions here and there
-        if (arr.isMatrix()) {
-            //Check if matrix values are contiguous in memory. If not: dup
-            //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
-            //Contiguous for f if: stride[0] == 1 and stride[1] == shape[0]
-            if (!Nd4j.allowsSpecifyOrdering() && arr.ordering() == 'c'
-                            && (arr.stride(0) != arr.size(1) || arr.stride(1) != 1))
-                return arr.dup();
-            else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0)))
-                return arr.dup();
-            else if (arr.elementWiseStride() < 0)
-                return arr.dup();
-        }
+        //Check if matrix values are contiguous in memory. If not: dup
+        //Contiguous for c if: stride[0] == shape[1] and stride[1] = 1
+        //Contiguous for f if: stride[0] == 1 and stride[1] == shape[0]
+        if (!Nd4j.allowsSpecifyOrdering() && arr.ordering() == 'c'
+                && (arr.stride(0) != arr.size(1) || arr.stride(1) != 1))
+            return arr.dup();
+        else if (arr.ordering() == 'f' && (arr.stride(0) != 1 || arr.stride(1) != arr.size(0)))
+            return arr.dup();
+        else if (arr.elementWiseStride() < 0)
+            return arr.dup();
         return arr;
     }
 }
