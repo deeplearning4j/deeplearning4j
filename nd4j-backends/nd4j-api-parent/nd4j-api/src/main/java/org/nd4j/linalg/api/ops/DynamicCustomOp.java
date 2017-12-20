@@ -446,23 +446,46 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if(descriptor == null)
             throw new ND4JIllegalStateException("No op found for " + opName());
 
-        if(numInputArguments() != descriptor.getNumInputs()) {
-            //clear just in case
-            val args = args();
-            inputArguments.clear();
-            for(val arg : args) {
-                inputArguments.add(arg.getArr());
+
+        if(isInplaceCall()) {
+            if(numInputArguments() != descriptor.getNumInputs()) {
+                //clear just in case
+                val args = args();
+                inputArguments.clear();
+                for(val arg : args) {
+                    inputArguments.add(arg.getArr());
+                }
+            }
+
+            if(numOutputArguments() != descriptor.getNumOutputs()) {
+                //clear just in case
+                val arg = args()[0];
+                outputArguments.clear();
+                outputArguments.add(arg.getArr());
+
             }
         }
 
-        if(numOutputArguments() != descriptor.getNumOutputs()) {
-            //clear just in case
-            val outputVars =  outputVariables();
-            outputArguments.clear();
-            for(val arg : outputVars) {
-                outputArguments.add(arg.getArr());
+        else {
+            if(numInputArguments() != descriptor.getNumInputs()) {
+                //clear just in case
+                val args = args();
+                inputArguments.clear();
+                for(val arg : args) {
+                    inputArguments.add(arg.getArr());
+                }
+            }
+
+            if(numOutputArguments() != descriptor.getNumOutputs()) {
+                //clear just in case
+                val outputVars =  outputVariables();
+                outputArguments.clear();
+                for(val arg : outputVars) {
+                    outputArguments.add(arg.getArr());
+                }
             }
         }
+
     }
 
 

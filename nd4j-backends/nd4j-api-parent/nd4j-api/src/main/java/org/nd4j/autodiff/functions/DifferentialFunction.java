@@ -262,7 +262,7 @@ public abstract class DifferentialFunction {
             SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
-              f().addi(var, grad);
+                SDVariable gradVar =  f().addi(grad, vals.get(i));
 
             }
             else {

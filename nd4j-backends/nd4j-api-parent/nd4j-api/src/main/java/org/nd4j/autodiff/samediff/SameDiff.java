@@ -3163,8 +3163,18 @@ public class SameDiff {
             else if(!importedVarName.contains(baseName)) {
                 //need to find a new name
                 int count = 1;
-                while((checkGet = getVariable(baseName + "_" + count   + (i > 0 ? ":" +  i : ""))) != null) {
+                String name = baseName + "_" + count   + (i > 0 ? ":" +  i : "");
+                while(getVariable(name) != null) {
+                    count++;
+                    name = baseName + "_" + count   + (i > 0 ? ":" +  i : "");
                 }
+
+                if(getVariable(name) != null) {
+                    throw new ND4JIllegalStateException("Converged on already generated variable!");
+                }
+
+
+                checkGet = var(name,shape);
             }
 
             else if(shape != null)
@@ -3562,7 +3572,6 @@ public class SameDiff {
                     allFunctions = new ArrayList<DifferentialFunction>(sameDiff.functionInstancesById.values());
                     Collections.reverse(allFunctions);
 
-                    Set<String> seen = new LinkedHashSet<>();
 
                     for(DifferentialFunction action : allFunctions) {
                         if(action instanceof GradientBackwardsMarker) {
@@ -3589,30 +3598,7 @@ public class SameDiff {
                             grads.add(grad);
                         }
 
-
-                        List<SDVariable> backwardResult = currFunction.diff(grads);
-                        //clear out all the variables
-                        List<SDVariable> functionVars = debugMode ? new ArrayList<SDVariable>(2) : null;
-
-                        val currFunctionArgs = currFunction.args();
-
-                        for(int i = 0; i < currFunctionArgs.length; i++) {
-                            val x = currFunctionArgs[i];
-                            if(!seen.contains(x.getVarName())) {
-                                seen.add(x.getVarName());
-
-                                if (isDebugMode()) {
-                                    SDVariable[] add = x.outputVariables();
-                                    for(val sdVar : add)
-                                        if (sdVar.gradient() != null) {
-                                            sameDiff.addVariable(sdVar.gradient());
-                                            functionVars.add(sdVar);
-                                        }
-                                }
-                            }
-
-                        }
-
+                        currFunction.diff(grads);
 
 
                     }
