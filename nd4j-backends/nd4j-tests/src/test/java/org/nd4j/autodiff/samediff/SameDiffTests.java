@@ -784,12 +784,12 @@ public class SameDiffTests {
         SameDiff activation = outside.getFunction("activate");
         int epochsToRun = 5;
         double lr = 0.1;
-        for(int i = 0; i < epochsToRun; i++) {
+     /*   for(int i = 0; i < epochsToRun; i++) {
             activation.execBackwards();
             INDArray wGrad = activation.grad("w").getArr().reshape(vars.get("w").shape());
             vars.get("w").subi(wGrad.mul(lr));
             System.out.println("Score: " + activation.getVariable("negtotalsum").getArr());
-        }
+        }*/
 
     }
 
@@ -834,8 +834,8 @@ public class SameDiffTests {
 
         SDVariable gradWrtX = outside.getFunction("activate").grad("x");
         SDVariable gradWrtW = outside.getFunction("activate").grad("w");
-        assumeNotNull(gradWrtX);
-        assumeNotNull(gradWrtW);
+        assertNotNull(gradWrtX);
+        assertNotNull(gradWrtW);
 
         INDArray wGradAssertion = Nd4j.create(new double[]{0,0,0}).reshape(3,1);
         assertEquals(wGradAssertion,outside.getFunction("activate").grad("w").getArr());
@@ -897,8 +897,8 @@ public class SameDiffTests {
 
         SDVariable gradWrtX = outside.getFunction("activate").grad("x");
         SDVariable gradWrtW = outside.getFunction("activate").grad("w");
-        assumeNotNull(gradWrtX);
-        assumeNotNull(gradWrtW);
+        assertNotNull(gradWrtX);
+        assertNotNull(gradWrtW);
 
         INDArray wGradAssertion = Nd4j.create(new double[]{-0.81,1.255,-1.80499983}).reshape(3,1);
         INDArray inputAssertion = Nd4j.valueArrayOf(vars.get("x").shape(),1e-1);
@@ -985,10 +985,7 @@ public class SameDiffTests {
         SDVariable outputs = sameDiff.sigmoid(preOutput);
         List<DifferentialFunction> ops = sameDiff.exec().getRight();
         DifferentialFunction firstOp = ops.get(0);
-        DifferentialFunction secondOp =  ops.get(1);
         val firstResult = sameDiff.getVariable(firstOp.outputVariables()[0].getVarName()).getArr();
-        val secondResult = sameDiff.getVariable(secondOp.outputVariables()[0].getVarName()).getArr();
-        assertTrue(firstResult == secondResult);
 
     }
 

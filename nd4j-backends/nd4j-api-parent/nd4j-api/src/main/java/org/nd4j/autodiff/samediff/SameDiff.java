@@ -444,6 +444,9 @@ public class SameDiff {
      * @throws {@link ND4JIllegalStateException} when the array already exists.
      */
     public void putArrayForVarName(String varName, INDArray arr) {
+        if(varName == null)
+            throw new ND4JIllegalStateException("No null names allowed!");
+
         if(variableNameToArr.containsKey(varName)) {
             throw new ND4JIllegalStateException("Array for " + varName + " already exists!");
         }
@@ -3102,11 +3105,17 @@ public class SameDiff {
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function,String baseName) {
         //xyz ops only have 1 output
         val outputShape = function.calculateOutputShape();
+        if(outputShape == null || outputShape.isEmpty())
+            throw new ND4JIllegalStateException("No shapes found for output variables!");
+
+
         SDVariable[] ret = new SDVariable[outputShape.size()];
         //if there is already a base name defined, use that
         if(baseName == null || baseName.isEmpty()   && getBaseNameForFunction(function) != null)
             baseName = getBaseNameForFunction(function);
 
+        if(baseName == null)
+            baseName = function.opName();
 
         for(int i = 0; i < ret.length; i++) {
             val shape = outputShape.get(i);
@@ -3123,6 +3132,12 @@ public class SameDiff {
 
             else
                 putShapeForVarName(checkGet.getVarName(),shape);
+
+            if(checkGet == null) {
+                checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape);
+            }
+
+
             ret[i] = checkGet;
         }
 
@@ -3873,6 +3888,9 @@ public class SameDiff {
             return varToUpdate;
         }
 
+        if(varToUpdate == null) {
+            throw new ND4JIllegalStateException("No variable found for updating!");
+        }
 
         val oldVarName = varToUpdate.getVarName();
         varToUpdate.setVarName(newVarName);

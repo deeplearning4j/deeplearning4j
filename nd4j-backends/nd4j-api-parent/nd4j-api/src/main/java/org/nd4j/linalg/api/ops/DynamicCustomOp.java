@@ -103,6 +103,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         this.opName = opName;
         iArguments = new ArrayList<>();
         tArguments = new ArrayList<>();
+        this.inplaceCall = inPlace;
     }
 
     protected DynamicCustomOp(String opName) {
@@ -144,7 +145,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             val newVars = sameDiff.generateOutputVariableForOp(this,null);
 
             for(int i = 0; i < newVars.length; i++) {
-                val arr = newVars[i].storeAndAllocateNewArray();
+                val arr = sameDiff.getArrForVarName(newVars[i].getVarName()) == null ? newVars[i].storeAndAllocateNewArray() : newVars[i].getArr();
                 addOutputArgument(arr);
             }
 

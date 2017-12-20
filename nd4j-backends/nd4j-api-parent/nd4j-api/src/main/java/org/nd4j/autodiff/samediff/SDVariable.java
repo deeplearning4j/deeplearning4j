@@ -118,6 +118,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public INDArray storeAndAllocateNewArray() {
         val shape = sameDiff.getShapeForVarName(getVarName());
+        if(varName == null)
+            throw new ND4JIllegalStateException("Unable to store array for null variable name!");
+
         if(shape == null) {
             throw new ND4JIllegalStateException("Unable to allocate new array. No shape found for variable " + varName);
         }

@@ -11,7 +11,7 @@ import org.tensorflow.framework.NodeDef;
 import java.util.Map;
 
 /**
- * Stack op conversion
+ * Unstack op conversion
  *
  * @author raver119@gmail.com
  */
@@ -50,8 +50,7 @@ public class Unstack extends DynamicCustomOp {
         int axis = (int) attrAxis.getI();
         this.axis = axis;
         addIArgument(axis);
-        if(num > 0)
-            addIArgument(this.num);
+
     }
 
     @Override

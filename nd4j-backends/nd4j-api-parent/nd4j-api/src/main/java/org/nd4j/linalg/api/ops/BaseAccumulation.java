@@ -38,7 +38,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Base class for accumulation, initiates the initial entry
@@ -50,8 +49,9 @@ import java.util.UUID;
 @Slf4j
 public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
-    protected boolean isComplex = false;
     protected boolean keepDims;
+    protected boolean isComplex = false;
+
 
     public BaseAccumulation(SameDiff sameDiff,
                             SDVariable i_v,
@@ -61,11 +61,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
-            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
             this.xVertexId = i_v.getVarName();
-            this.zVertexId = var2.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            sameDiff.addOutgoingFor(new SDVariable[]{var2},this);
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -80,20 +77,12 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
             this.dimensions = dimensions;
-            val var2 = sameDiff.var(i_v.getVarName() + "-" + opName() + "-output-" + UUID.randomUUID().toString(),Shape.getReducedShape(i_v.getShape(),dimensions));
-            if(sameDiff.getShapeForVarName(var2.getVarName()) == null)
-                sameDiff.putShapeForVarName(var2.getVarName(),Shape.getReducedShape(i_v.getShape(),dimensions));
             this.xVertexId = i_v.getVarName();
             this.yVertexId = i_v2.getVarName();
-            this.zVertexId = var2.getVarName();
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.keepDims = keepDims;
             sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
-            sameDiff.addOutgoingFor(new SDVariable[]{var2},this);
-
-
-
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -121,10 +110,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation() {}
 
-    @Override
-    public boolean isComplexAccumulation() {
-        return isComplex;
-    }
 
 
 
@@ -293,5 +278,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public Type opType() {
         return Type.REDUCE;
+    }
+
+    @Override
+    public boolean isComplexAccumulation() {
+        return isComplex;
     }
 }

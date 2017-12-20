@@ -262,16 +262,14 @@ public abstract class DifferentialFunction {
             SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
-                SDVariable ret = f().addi(var, grad);
-                sameDiff.setGradientForVariableName(var.getVarName(),ret);
-                sameDiff.setForwardVariableForVarName(ret.getVarName(),var);
-                sameDiff.updateVariableNameAndReference(ret,var.getVarName() + "-grad");
+              f().addi(var, grad);
+
             }
             else {
                 SDVariable gradVar = vals.get(i);
+                sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
                 sameDiff.setForwardVariableForVarName(gradVar.getVarName(),var);
-                sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
 
             }
         }
