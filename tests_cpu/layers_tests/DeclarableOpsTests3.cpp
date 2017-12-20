@@ -671,6 +671,43 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_1) {
+    NDArray<double> x('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    NDArray<double> y('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    NDArray<double> exp('f', {4, 4}, {38.0, 44.0, 50.0, 56.0, 83.0, 98.0, 113.0, 128.0, 128.0, 152.0, 176.0, 200.0, 173.0, 206.0, 239.0, 272.0});
+
+    nd4j::ops::matmul<double> op;
+    auto result = op.execute({&x, &y}, {}, {1, 1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_2) {
+    NDArray<double> x('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    NDArray<double> y('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8 , 9, 10, 11, 12});
+    NDArray<double> exp('f', {3, 3}, {70.0, 158.0, 246.0, 80.0, 184.0, 288.0, 90.0, 210.0, 330.0});
+
+    nd4j::ops::matmul<double> op;
+    auto result = op.execute({&x, &y}, {}, {0, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
     NDArray<float> x('c', {1, 3}, {2, 2, 2});
     NDArray<float> y('c', {1, 3}, {4, 6, 8});

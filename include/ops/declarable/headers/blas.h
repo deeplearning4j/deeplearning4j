@@ -14,8 +14,16 @@ namespace nd4j {
          * vector x vector = BLAS dot
          * vector x scalar = element-wise mul
          * scalar x vector = element-wise mul
+         *
+         * Optional T arguments:
+         * 0: alpha (where applicable)
+         * 1: beta (where applicable)
+         *
+         * Optional Integer arguments:
+         * 0: transA (where applicable)
+         * 1: transB (where applicable)
          */
-        DECLARE_CUSTOM_OP(matmul, 2, 1, false, -2, 0);
+        DECLARE_CUSTOM_OP(matmul, 2, 1, false, -2, -2);
 
         /**
          * tensorMmul/tensorDot operation
