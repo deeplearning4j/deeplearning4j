@@ -24,6 +24,10 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
     protected SameDiff sameDiff;
     protected String outputKey;
 
+    protected INDArray params;
+    protected INDArray gradients;
+    protected Map<String,INDArray> paramTable;
+
 
     public SameDiffLayer(NeuralNetConfiguration conf){
         super(conf);
@@ -113,6 +117,65 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
         }
 
         return l1Sum;
+    }
+
+    /**Returns the parameters of the neural network as a flattened row vector
+     * @return the parameters of the neural network
+     */
+    @Override
+    public INDArray params() {
+        return params;
+    }
+
+    @Override
+    public INDArray getParam(String param) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void setParam(String key, INDArray val) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void setParams(INDArray params) {
+        if (params != null) {
+            throw new UnsupportedOperationException("Not supported");
+        }
+    }
+
+    protected void setParams(INDArray params, char order) {
+        throw new UnsupportedOperationException("Not supported");
+    }
+
+    @Override
+    public void setParamsViewArray(INDArray params) {
+        this.params = params;
+    }
+
+    @Override
+    public INDArray getGradientsViewArray() {
+        return params;
+    }
+
+    @Override
+    public void setBackpropGradientsViewArray(INDArray gradients) {
+        this.gradients = gradients;
+    }
+
+    @Override
+    public void setParamTable(Map<String, INDArray> paramTable) {
+        this.paramTable = paramTable;
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable() {
+        return paramTable(false);
+    }
+
+    @Override
+    public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
+        return paramTable;
     }
 
     protected void doInit(){

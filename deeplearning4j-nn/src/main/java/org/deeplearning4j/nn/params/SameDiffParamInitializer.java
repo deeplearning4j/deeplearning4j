@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.params;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -15,6 +16,7 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+@Slf4j
 public class SameDiffParamInitializer implements ParamInitializer {
 
     private static final SameDiffParamInitializer INSTANCE = new SameDiffParamInitializer();
@@ -73,7 +75,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
         Map<String,INDArray> out = subsetAndReshape(sd.paramKeys(), sd.paramShapes(), paramsView);
         if(initializeParams){
             //TODO
-            throw new RuntimeException("Parameter initialization not yet implemented");
+            log.warn("***** SameDiffParamInitializer: Parameter initialization not yet implemented *****");
         }
         return out;
     }
