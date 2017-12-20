@@ -66,7 +66,6 @@ public class TensorMmul extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
-        this.extraArgs = new Object[] {axes,mMulTranspose};
         if(!addedEdges && sameDiff.getOutputsForFunction(this) == null) {
             addedEdges = true;
         }

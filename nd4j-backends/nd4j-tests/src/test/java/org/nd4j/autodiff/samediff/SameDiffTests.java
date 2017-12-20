@@ -1101,6 +1101,8 @@ public class SameDiffTests {
         },inputs);
 
         List<DifferentialFunction> ops = sameDiff.getFunction("mmulGradient").execBackwards().getRight();
+        String print = sameDiff.asFlatPrint();
+
 
         assumeNotNull(sameDiff.getFunction("mmulGradient").getFunction("grad"));
         assumeNotNull(sameDiff.getFunction("mmulGradient").grad("x"));

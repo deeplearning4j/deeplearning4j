@@ -6,6 +6,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -731,6 +732,11 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         val result = sameDiff.f().addi(this,sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(result,varName);
 
+    }
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.RETURN;
     }
 
     /**

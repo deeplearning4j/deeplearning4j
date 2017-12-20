@@ -4185,7 +4185,7 @@ public class SameDiff {
 
     protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder,List<SDVariable> variables) {
         val hash = getOpNum(node.opName(), node.opType());
-        log.info("Exporting node: [{}:<{}>; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
+        //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         float[] extras = node.getExtraArgs() != null ? new float[node.getExtraArgs().length] : new float[0];
         for (int e = 0; e < extras.length; e++) {
@@ -4290,11 +4290,24 @@ public class SameDiff {
         // we're dumping scopes now
         for (val scope: sameDiffFunctionInstances.entrySet()) {
             flatNodes.add(asFlatNode(scope.getKey(),scope.getValue(), bufferBuilder));
-
+            val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
             // converting all ops from node
             for (val node: scope.getValue().variables()) {
-                flatNodes.add(asFlatNode(node, bufferBuilder,variableList));
+                val arr = node.getArr();
+
+                int name = bufferBuilder.createString(node.getVarName());
+                int array = arr.toFlatArray(bufferBuilder);
+                int id = IntPair.createIntPair(bufferBuilder, idx++, 0);
+
+                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
+                flatVariables.add(flatVariable);
             }
+
+            //add functions
+            for(val func : scope.getValue().functionInstancesById.values()) {
+                flatNodes.add(asFlatNode(func,bufferBuilder,currVarList));
+            }
+
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
