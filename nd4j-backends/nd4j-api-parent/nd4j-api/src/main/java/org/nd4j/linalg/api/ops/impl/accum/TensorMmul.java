@@ -62,6 +62,7 @@ public class TensorMmul extends DynamicCustomOp {
                       SDVariable i_v2,
                       int[][] dimensions,
                       MMulTranspose mMulTranspose) {
+        super(null, sameDiff, new SDVariable[]{i_v1,i_v2});
         this.sameDiff = sameDiff;
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
@@ -69,9 +70,6 @@ public class TensorMmul extends DynamicCustomOp {
         if(!addedEdges && sameDiff.getOutputsForFunction(this) == null) {
             addedEdges = true;
         }
-
-        sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-
     }
 
     @Override

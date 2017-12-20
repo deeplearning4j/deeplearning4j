@@ -1361,5 +1361,35 @@ public class SameDiffTests {
         assertEquals(28,output.getDouble(0),1e-1);
     }
 
+
+    @Test
+    public void testDenseLayerForwardPass() {
+        Nd4j.getRandom().setSeed(12345);
+
+        SameDiff sd = SameDiff.create();
+
+        INDArray iInput = Nd4j.rand(3,4);
+        INDArray iWeights = Nd4j.rand(4,5);
+        INDArray iBias = Nd4j.rand(1,5);
+
+        SDVariable input = sd.var("input", iInput);
+        SDVariable weights = sd.var("weights", iWeights);
+        SDVariable bias = sd.var("bias", iBias);
+
+        SDVariable mmul = sd.mmul("mmul", input, weights);
+        SDVariable z = mmul.add("z", bias);
+        SDVariable out = sd.sigmoid("out", z);
+
+        INDArray expMmul = iInput.mmul(iWeights);
+        INDArray expZ = expMmul.addRowVector(iBias);
+        INDArray expOut = Transforms.sigmoid(expZ, true);
+
+        sd.exec();
+
+        assertEquals(expMmul, mmul.getArr());
+        assertEquals(expZ, z.getArr());
+        assertEquals(expOut, out.getArr());
+    }
+
 }
 
