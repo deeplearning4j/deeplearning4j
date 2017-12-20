@@ -5539,6 +5539,25 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testGemmStrides() {
+        // 4x5 matrix from arange(20)
+        final INDArray X = Nd4j.arange(20).reshape(4,5);
+        for (int i=0; i<5; i++){
+            // Get i-th column vector
+            final INDArray xi = X.get(NDArrayIndex.all(), NDArrayIndex.point(i));
+            // Build outer product
+            val trans = xi.transpose();
+            final INDArray outerProduct = xi.mmul(trans);
+            // Build outer product from duplicated column vectors
+            final INDArray outerProductDuped = xi.dup().mmul(xi.transpose().dup());
+            // Matrices should equal
+            //final boolean eq = outerProduct.equalsWithEps(outerProductDuped, 1e-5);
+            //assertTrue(eq);
+            assertEquals(outerProductDuped, outerProduct);
+        }
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testReshapeFailure() {
         val a = Nd4j.linspace(1, 4, 4).reshape(2,2);

@@ -10688,7 +10688,6 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int sizeAt(IntBuffer shape, int dim);
     @Namespace("shape") public static native int sizeAt(int[] shape, int dim);
 
-
 // #ifdef __CUDACC__
 // #endif
     @Namespace("shape") public static native void traceNew(int id);
