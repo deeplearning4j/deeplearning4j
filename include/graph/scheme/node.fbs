@@ -4,14 +4,14 @@ include "utils.fbs";
 namespace nd4j.graph;
 
 
-
+// this structure describes single operation within graph
 table FlatNode {
     id:int; // unique id for this node
     name:string; // literal id of this node (optional)
-    opType:OpType;
-    opNum:long;
+    opType:OpType; // type of this op
+    opNum:long; // for custom ops that's field for hash, for all other (legacy XYZ ops) that's actually opNum (as defined in legacy_ops.h)
     input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
-    inputPaired:[IntPair]; //
+    inputPaired:[IntPair]; //list of input variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     dataType:DataType; // to be removed
     output:[int]; // ID's of connected nodes for this node
     extraParams:[float]; // extra params for this op (if any)
