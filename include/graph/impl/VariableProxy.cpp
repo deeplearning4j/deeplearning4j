@@ -13,6 +13,12 @@ namespace nd4j {
                 _backed = new VariableSpace<T>();
 
             _backed = ref;
+            _current = new VariableSpace<T>();
+        }
+
+        template <typename T>
+        VariableProxy<T>::~VariableProxy() {
+            delete _current;
         }
 
         template <typename T>
@@ -27,12 +33,12 @@ namespace nd4j {
 
         template <typename T>
         nd4j::random::RandomBuffer* VariableProxy<T>::getRNG() {
-            return _current.getRNG();
+            return _current->getRNG();
         }
 
         template <typename T>
         void VariableProxy<T>::setRNG(nd4j::random::RandomBuffer* rng) {
-            _current.setRNG(rng);
+            _current->setRNG(rng);
         }
         
         template <typename T>
@@ -52,28 +58,28 @@ namespace nd4j {
 
         template <typename T>
         bool VariableProxy<T>::hasVariable(int id) {
-            return _current.hasVariable(id) || _backed->hasVariable(id);
+            return _current->hasVariable(id) || _backed->hasVariable(id);
         }
         
         template <typename T>
         bool VariableProxy<T>::hasVariable(int id, int idx) {
-            return _current.hasVariable(id, idx) || _backed->hasVariable(id, idx);
+            return _current->hasVariable(id, idx) || _backed->hasVariable(id, idx);
         }
         
         template <typename T>
         bool VariableProxy<T>::hasVariable(std::pair<int,int>& pair) {
-            return _current.hasVariable(pair) || _backed->hasVariable(pair);
+            return _current->hasVariable(pair) || _backed->hasVariable(pair);
         }
 
         template <typename T>
         bool VariableProxy<T>::hasVariable(std::string *symbol) {
-            return _current.hasVariable(symbol) || _backed->hasVariable(symbol);
+            return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
         }
 
         template <typename T>
         nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(int id) {
-            if (_current.hasVariable(id))
-                return _current.getVariable(id);
+            if (_current->hasVariable(id))
+                return _current->getVariable(id);
             
             if (_backed->hasVariable(id))
                 return _backed->getVariable(id);
@@ -84,8 +90,8 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(int id, int idx) {
-            if (_current.hasVariable(id, idx))
-                return _current.getVariable(id, idx);
+            if (_current->hasVariable(id, idx))
+                return _current->getVariable(id, idx);
             
             if (_backed->hasVariable(id, idx))
                 return _backed->getVariable(id, idx);
@@ -96,8 +102,8 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(std::pair<int,int>& pair) {
-            if (_current.hasVariable(pair))
-                return _current.getVariable(pair);
+            if (_current->hasVariable(pair))
+                return _current->getVariable(pair);
             
             if (_backed->hasVariable(pair))
                 return _backed->getVariable(pair);
@@ -108,8 +114,8 @@ namespace nd4j {
 
         template <typename T>
         nd4j::graph::Variable<T> *VariableProxy<T>::getVariable(std::string *symbol) {
-            if (_current.hasVariable(symbol))
-                return _current.getVariable(symbol);
+            if (_current->hasVariable(symbol))
+                return _current->getVariable(symbol);
             
             if (_backed->hasVariable(symbol))
                 return _backed->getVariable(symbol);
@@ -120,93 +126,95 @@ namespace nd4j {
 
         template <typename T>
         void VariableProxy<T>::putVariable(std::pair<int,int>& pair, NDArray<T> *array) {
-            _current.putVariable(pair, array);
+            _current->putVariable(pair, array);
         }
 
         template <typename T>
         void VariableProxy<T>::putVariable(std::pair<int,int>& pair, Variable<T> *variable) {
-            _current.putVariable(pair, variable);
+            _current->putVariable(pair, variable);
         }
 
         template <typename T>
         void VariableProxy<T>::putVariable(int id, Variable<T> *variable) {
-            _current.putVariable(id, variable);
+            _current->putVariable(id, variable);
         }
 
         template <typename T>
         void VariableProxy<T>::putVariable(int id, NDArray<T> *array) {
-            _current.putVariable(id, array);
+            _current->putVariable(id, array);
         }
 
         template <typename T>
         void VariableProxy<T>::putVariable(int id, int idx, NDArray<T> *array) {
-            _current.putVariable(id, idx, array);
+            _current->putVariable(id, idx, array);
         }
 
         template <typename T>
         void VariableProxy<T>::putVariable(int id, int idx, Variable<T> *array) {
-            _current.putVariable(id, idx, array);
+            _current->putVariable(id, idx, array);
         }
 
         template <typename T>
         void VariableProxy<T>::trackList(nd4j::NDArrayList<T>* list) {
-            _current.trackList(list);
+            _current->trackList(list);
         }
 
         template <typename T>
         nd4j::graph::Stash<T>* VariableProxy<T>::getStash() {
-            return _current.getStash();
+            return _current->getStash();
         }
 
         template <typename T>
         void VariableProxy<T>::setFlowPath(FlowPath* timers) {
-            _current.setFlowPath(timers);
+            _current->setFlowPath(timers);
         }
 
         template <typename T>
         FlowPath* VariableProxy<T>::flowPath() {
-            return _current.flowPath();
+            return _current->flowPath();
         }
 
         template <typename T>
         void VariableProxy<T>::putOutputVariable(Variable<T> *variable) {
-            _current.putOutputVariable(variable);
+            _current->putOutputVariable(variable);
         }
 
         template <typename T>
         Nd4jIndex VariableProxy<T>::externalMemory() {
-            return _backed->externalMemory() + _current.externalMemory();
+            return _backed->externalMemory() + _current->externalMemory();
         }
 
         template <typename T>
         Nd4jIndex VariableProxy<T>::internalMemory() {
-            return _backed->internalMemory() + _current.internalMemory();
+            return _backed->internalMemory() + _current->internalMemory();
         }
 
         template <typename T>
         Nd4jIndex VariableProxy<T>::totalMemory() {
-            return _backed->totalMemory() + _current.totalMemory();
+            return _backed->totalMemory() + _current->totalMemory();
         }
 
         template <typename T>
         int VariableProxy<T>::externalEntries() {
-            return _backed->externalEntries() + _current.externalEntries();
+            return _backed->externalEntries() + _current->externalEntries();
         }
 
         template <typename T>
         int VariableProxy<T>::internalEntries() {
-            return _backed->internalEntries() + _current.internalEntries();
+            return _backed->internalEntries() + _current->internalEntries();
         }
 
         template <typename T>
         int VariableProxy<T>::totalEntries() {
-            return _backed->totalEntries() + _current.totalEntries();
+            return _backed->totalEntries() + _current->totalEntries();
         }
 
         template <typename T>
         nd4j::graph::VariableSpace<T>* VariableProxy<T>::clone() {
             auto clone = new VariableProxy(_backed);
-            clone->_current = _current;
+
+            delete clone->_current;
+            clone->_current = _current->clone();
 
             return clone;
         }
@@ -215,7 +223,7 @@ namespace nd4j {
         VariableSpace<T>& VariableProxy<T>::operator=(const VariableSpace<T>& other) {
             if (this == &other) return *this;
 
-            _current = other;
+            nd4j_printf("VariableProxy = not implemented\n","");
 
             return *this;
         }  

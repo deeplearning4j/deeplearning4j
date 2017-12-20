@@ -57,7 +57,7 @@ namespace nd4j {
 
         public:
             VariableSpace();
-            ~VariableSpace();
+            virtual ~VariableSpace();
 
             virtual VariableSpace<T>& operator=(const VariableSpace<T>& other);
 

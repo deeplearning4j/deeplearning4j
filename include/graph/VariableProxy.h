@@ -9,11 +9,11 @@ namespace nd4j {
         template <typename T>
         class VariableProxy: public VariableSpace<T> {
         protected:
-            VariableSpace<T>* _backed;
-            VariableSpace<T> _current;
+            VariableSpace<T>* _backed = nullptr;
+            VariableSpace<T>* _current = nullptr;
         public:
-            VariableProxy(VariableSpace<T>* reference);
-            ~VariableProxy() = default;
+            explicit VariableProxy(VariableSpace<T>* reference);
+            ~VariableProxy();
 
             virtual VariableSpace<T>& operator=(const VariableSpace<T>& other);
 
