@@ -22,6 +22,8 @@ namespace nd4j {
                     CBLAS_TRANSPOSE *_tA, *_tB;
                     int *_M, *_N, *_K, *_ldA, *_ldB, *_ldC, *_size;
                     // mkl requires mnk etc as arrays, cuda doesn't
+                    ALLOCATE(_tA, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+                    ALLOCATE(_tB, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
                     ALLOCATE(_M, arr->getWorkspace(), batchSize, int);
                     ALLOCATE(_N, arr->getWorkspace(), batchSize, int);
                     ALLOCATE(_K, arr->getWorkspace(), batchSize, int);
