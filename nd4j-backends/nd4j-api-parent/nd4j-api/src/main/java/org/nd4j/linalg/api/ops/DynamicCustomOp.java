@@ -144,6 +144,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
             val newVars = sameDiff.generateOutputVariableForOp(this,null);
+            if(isInplaceCall()) {
+                if(args().length == 1) {
+                   val arr = args()[0].getArr();
+                   if(arr != null) {
+                       sameDiff.putArrayForVarName(newVars[0].getVarName(),arr);
+                       addOutputArgument(arr);
+                   }
+                }
+
+                return newVars;
+            }
+
 
             for(int i = 0; i < newVars.length; i++) {
                 val arr = Shape.isPlaceholderShape(newVars[i].getShape()) ? null : sameDiff.getArrForVarName(newVars[i].getVarName()) == null ? newVars[i].getShape() != null ? newVars[i].storeAndAllocateNewArray() : newVars[i].getArr() : null;

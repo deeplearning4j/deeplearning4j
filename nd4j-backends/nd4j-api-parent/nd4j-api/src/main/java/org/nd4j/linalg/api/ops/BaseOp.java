@@ -338,6 +338,20 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 return new SDVariable[]{sameDiff.getVariable(outputNames[0])};
             }
 
+            if(isInPlace()) {
+                val newVars = sameDiff.generateOutputVariableForOp(this,null);
+                val inputArr = x();
+                //in place op
+                if(inputArr == null) {
+                    return newVars;
+                }
+
+                sameDiff.putArrayForVarName(newVars[0].getVarName(),inputArr);
+                z = inputArr;
+                if(sameDiff.getOutputsForFunction(this) == null)
+                    sameDiff.addOutgoingFor(newVars,this);
+                return newVars;
+            }
 
             val newVars = sameDiff.generateOutputVariableForOp(this,null);
 

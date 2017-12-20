@@ -535,7 +535,7 @@ public class SameDiffTests {
 
 
         //1 input plus 2 outputs
-        assertEquals(3,functionDef.variables().size());
+        assertEquals(4,functionDef.variables().size());
 
 
 

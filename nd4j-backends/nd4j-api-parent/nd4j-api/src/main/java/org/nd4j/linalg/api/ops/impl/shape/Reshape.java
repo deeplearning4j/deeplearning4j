@@ -51,6 +51,7 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v,int[] shape) {
         super(null,sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
+        addIArgument('f');
         addIArgument(shape);
     }
 
@@ -80,6 +81,8 @@ public class Reshape extends DynamicCustomOp {
             val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",shapeNodeInGraph,graph);
             if(arr != null) {
                 this.shape = arr.data().asInt();
+                //all TF is c
+                addIArgument('c');
                 addIArgument(this.shape);
             }
         }
@@ -107,9 +110,12 @@ public class Reshape extends DynamicCustomOp {
 
             }
 
-            if(this.shape != null)
-                addIArgument(this.shape);
+            //all TF is c
 
+            if(this.shape != null) {
+                addIArgument('c');
+                addIArgument(this.shape);
+            }
 
         }
 
@@ -128,11 +134,14 @@ public class Reshape extends DynamicCustomOp {
                 }
 
                 this.shape = arr.data().asInt();
+                addIArgument('c');
                 addIArgument(this.shape);
 
             }
-            else if(this.shape != null)
+            else if(this.shape != null) {
+                addIArgument('c');
                 addIArgument(this.shape);
+            }
             else
                 throw new ND4JIllegalStateException("Unable to map shape for reshape. No shape found!");
         }
@@ -150,14 +159,7 @@ public class Reshape extends DynamicCustomOp {
         return Arrays.asList(shape);
     }
 
-    @Override
-    public void addInputArgument(INDArray... arg) {
-        if(numInputArguments() > 1) {
-            throw new ND4JIllegalStateException("Unable to add more input. Reshape should only have 1.");
-        }
 
-        super.addInputArgument(arg);
-    }
 
     @Override
     public String opName() {
