@@ -1594,7 +1594,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<int[]>();
         if(op.numInputArguments() < 1) {
-            throw new ND4JIllegalStateException("No inputs found for op " + op);
+           return Collections.emptyList();
         }
 
 

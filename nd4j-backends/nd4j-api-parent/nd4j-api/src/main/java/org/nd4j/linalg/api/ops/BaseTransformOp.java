@@ -29,6 +29,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -257,7 +258,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
         val arr = sameDiff.getArrForVarName(arg().getVarName());
         if(arr == null)
-            throw new ND4JIllegalStateException("Array must not be null for argument!");
+            return Collections.emptyList();
         ret.add(arr.shape());
         this.n = arr.length();
         return ret;

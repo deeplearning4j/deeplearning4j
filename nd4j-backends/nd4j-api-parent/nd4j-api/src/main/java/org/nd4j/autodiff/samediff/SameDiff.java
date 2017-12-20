@@ -3104,18 +3104,55 @@ public class SameDiff {
      */
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function,String baseName) {
         //xyz ops only have 1 output
-        val outputShape = function.calculateOutputShape();
-        if(outputShape == null || outputShape.isEmpty())
-            throw new ND4JIllegalStateException("No shapes found for output variables!");
-
-
-        SDVariable[] ret = new SDVariable[outputShape.size()];
         //if there is already a base name defined, use that
         if(baseName == null || baseName.isEmpty()   && getBaseNameForFunction(function) != null)
             baseName = getBaseNameForFunction(function);
 
         if(baseName == null)
             baseName = function.opName();
+
+
+        val outputShape = function.calculateOutputShape();
+        if(outputShape == null || outputShape.isEmpty()) {
+            if(function instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) function;
+                val descriptor = customOp.getDescriptor();
+                //can't guess number of outputs, variable
+                if(descriptor.getNumOutputs() <= 0) {
+                    return new SDVariable[0];
+                }
+                else {
+                    SDVariable[] ret = new SDVariable[descriptor.getNumOutputs()];
+                    //dynamic shapes
+                    for(int i = 0; i < ret.length; i++) {
+                        SDVariable checkGet = getVariable(baseName);
+                        if(checkGet == null) {
+                            checkGet = var(baseName + (i > 0 ? ":" +  i : ""),null,new ZeroInitScheme('f'));
+                        }
+                        else if(!importedVarName.contains(baseName)) {
+                            //need to find a new name
+                            int count = 1;
+                            while((checkGet = getVariable(baseName + "_" + count   + (i > 0 ? ":" +  i : ""))) != null) {
+                            }
+                        }
+
+
+                        if(checkGet == null) {
+                            checkGet = var(baseName + (i > 0 ? ":" +  i : ""),null,new ZeroInitScheme('f'));
+                        }
+
+
+                        ret[i] = checkGet;
+                    }
+
+                    return ret;
+
+                }
+            }
+        }
+
+
+        SDVariable[] ret = new SDVariable[outputShape.size()];
 
         for(int i = 0; i < ret.length; i++) {
             val shape = outputShape.get(i);
@@ -3130,7 +3167,7 @@ public class SameDiff {
                 }
             }
 
-            else
+            else if(shape != null)
                 putShapeForVarName(checkGet.getVarName(),shape);
 
             if(checkGet == null) {
@@ -4187,7 +4224,11 @@ public class SameDiff {
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, node.getDimensions() != null ? node.getDimensions() : new int[]{});
-        int fname = bufferBuilder.createString(outputVertexId == null  || outputVertexId[0] == null ? "none" : outputVertexId[0].getVarName());
+        int fname = bufferBuilder.createString(
+                outputVertexId == null  ||
+                        outputVertexId.length < 1 ||
+                        outputVertexId[0] == null ? "" :
+                        outputVertexId[0].getVarName());
         int scopeName = bufferBuilder.createString("");
 
         if (node.opType() == null)
@@ -4195,7 +4236,8 @@ public class SameDiff {
 
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
-                variables.indexOf(outputVertexId[0]),
+                outputVertexId.length < 1 ||
+                        outputVertexId[0] == null ? -1 : variables.indexOf(outputVertexId[0]),
                 fname,
                 getFlatOpType(node.opType()),
                 hash,

@@ -36,10 +36,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.nd4j.linalg.util.ArrayUtil.*;
 
@@ -82,6 +79,9 @@ public class TensorMmul extends DynamicCustomOp {
         List<int[]> ret = new ArrayList<>(1);
         int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
         int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+        if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
+            return Collections.emptyList();
+
         if(aShape != null && bShape != null) {
             val shape =  this instanceof Mmul ? Shape.getMatrixMultiplyShape(
                     aShape,bShape)

@@ -55,6 +55,25 @@ public class Shape {
 
 
     /**
+     * Returns true if any shape has a -1
+     * or a null or empty array is passed in
+     * @param shape the input shape to validate
+     * @return true if the shape is null,empty, or contains a -1 element
+     */
+    public static boolean isPlaceholderShape(int[] shape) {
+        if(shape == null || shape.length < 1)
+            return true;
+        else {
+            for(int i = 0; i < shape.length; i++) {
+                if(shape[i] < 0)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Compute the broadcast rules according to:
      * https://docs.scipy.org/doc/numpy-1.10.1/user/basics.broadcasting.html
      *

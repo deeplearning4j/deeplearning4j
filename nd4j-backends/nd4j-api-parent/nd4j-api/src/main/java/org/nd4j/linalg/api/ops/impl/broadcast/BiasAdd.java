@@ -4,13 +4,13 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +35,7 @@ public class BiasAdd extends DynamicCustomOp {
         val args = args();
         for(int i = 0; i < args.length; i++)
             if(args[i].getShape() == null)
-                throw new ND4JIllegalStateException("No  shape found for arg " + i + " !");
+                return Collections.emptyList();
         val firstShape = ArrayUtil.prod(args[0].getShape());
         val secondShape = ArrayUtil.prod(args[1].getShape());
 

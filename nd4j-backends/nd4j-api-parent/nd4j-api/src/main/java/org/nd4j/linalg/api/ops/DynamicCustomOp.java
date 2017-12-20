@@ -13,6 +13,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -145,8 +146,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             val newVars = sameDiff.generateOutputVariableForOp(this,null);
 
             for(int i = 0; i < newVars.length; i++) {
-                val arr = sameDiff.getArrForVarName(newVars[i].getVarName()) == null ? newVars[i].storeAndAllocateNewArray() : newVars[i].getArr();
-                addOutputArgument(arr);
+                val arr = Shape.isPlaceholderShape(newVars[i].getShape()) ? null : sameDiff.getArrForVarName(newVars[i].getVarName()) == null ? newVars[i].getShape() != null ? newVars[i].storeAndAllocateNewArray() : newVars[i].getArr() : null;
+                if(arr != null)
+                    addOutputArgument(arr);
             }
 
             outputVariables = newVars;

@@ -5,10 +5,10 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
@@ -27,13 +27,18 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         val args = args();
+        if(args.length < 2) {
+            return Arrays.asList(args[0].getShape());
+        }
+
         val firstArgShape = args[0].getShape();
         val secondArgShape = args[1].getShape();
         if(args[0].getShape() == null) {
-            throw new ND4JIllegalStateException("No shape found for variable " + args[0].getVarName());
+            return Collections.emptyList();
         }
+
         if(args[1].getShape() == null) {
-            throw new ND4JIllegalStateException("No shape found for variable " + args[0].getVarName());
+            return Collections.emptyList();
         }
 
 

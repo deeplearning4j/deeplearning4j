@@ -15,6 +15,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -246,7 +247,7 @@ public class Range extends DynamicCustomOp {
         }
 
 
-        throw new ND4JIllegalStateException("Unable to compute shape. No arguments found!");
+       return Collections.emptyList();
 
     }
 
