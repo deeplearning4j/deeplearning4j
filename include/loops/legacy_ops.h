@@ -209,7 +209,8 @@
         (21, simdOps::All), \
         (22, simdOps::CountNonZero), \
         (23, simdOps::NormFrobenius), \
-        (24, simdOps::NormP)
+        (24, simdOps::NormP), \
+        (25, simdOps::SquaredNorm)
 
 
 

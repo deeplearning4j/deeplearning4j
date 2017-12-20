@@ -2285,7 +2285,7 @@ TEST_F(NDArrayTest, Operator_Divide_Test_7)
     ASSERT_TRUE(expected.equalsTo(&result));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_Lambda_1) {
     NDArray<float> x('c', {1, 5}, {1, 2, 3, 4, 5});
     NDArray<float> exp('c', {1, 5}, {4, 5, 6, 7, 8});
@@ -2299,7 +2299,7 @@ TEST_F(NDArrayTest, Test_Lambda_1) {
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_Lambda_2) {
     NDArray<float> x('c', {1, 5}, {1, 2, 1, 2, 1});
     NDArray<float> y('c', {1, 5}, {1, 2, 1, 2, 1});
@@ -2314,7 +2314,7 @@ TEST_F(NDArrayTest, Test_Lambda_2) {
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, Test_Lambda_3) {
     NDArray<double> x('c', {1, 5}, {1, 2, 1, 2, 1});
     NDArray<double> y('c', {1, 5}, {1, 2, 1, 2, 1});
@@ -2328,5 +2328,4 @@ TEST_F(NDArrayTest, Test_Lambda_3) {
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
-
 

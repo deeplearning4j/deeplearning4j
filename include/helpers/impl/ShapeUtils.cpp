@@ -16,48 +16,53 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for transposition of two input arrays 
 template<typename T>
-std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, std::vector<int>& axes_0, std::vector<int>& axes_1, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt) {
+std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const int* aShapeInfo, const int* bShapeInfo, std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt) {
 
-    int axe0_size = (int) axes_0.size();
-    int axe1_size = (int) axes_1.size();                 
-    if(axe0_size != axe1_size)
+    int axeAsize = (int) axesA.size();
+    int axeBsize = (int) axesB.size();                 
+    int aRank = aShapeInfo[0];
+    int bRank = bShapeInfo[0];
+
+    if(axeAsize != axeBsize)
         throw "ShapeUtils::evalShapeForTensorDot method: the numbers of a axes and b axes to make dot product along must have identical values !";
-    if(axe0_size > a->rankOf() || axe1_size > b->rankOf())
+    if(axeAsize > aRank || axeBsize > bRank)
         throw "ShapeUtils::evalShapeForTensorDot method: the length of vector of a or b axes is larger than array rank !";
-    // validating axes
-    for (int i = 0; i < axe1_size; i++) {
-        if (a->sizeAt(axes_0[i]) != b->sizeAt(axes_1[i]))
+    
+    // axes validation
+    for (int i = 0; i < axeBsize; i++) {        
+        if (axesA[i] < 0)
+            axesA[i] += aRank;
+        if (axesB[i] < 0)
+            axesB[i] += bRank;
+        if (aShapeInfo[axesA[i] + 1] != bShapeInfo[axesB[i] + 1])
             throw "ShapeUtils::evalShapeForTensorDot method: the dimensions at given axes for both input arrays must be the same !";
-        if (axes_0[i] < 0)
-            axes_0[i] += a->rankOf();
-        if (axes_1[i] < 0)
-            axes_1[i] += b->rankOf();
     }
-    // check whether axes_0 and axes_1 contain on;y unique numbers
-    std::set<T> uniqueElems(axes_0.begin(), axes_0.end());
-    if((int)uniqueElems.size() != axe0_size)
+    
+    // check whether axesA and axesB contain only unique numbers
+    std::set<T> uniqueElems(axesA.begin(), axesA.end());
+    if((int)uniqueElems.size() != axeAsize)
         throw "ShapeUtils::evalShapeForTensorDot method: the vector of a axes contains duplicates !";
     uniqueElems.clear();
-    uniqueElems = std::set<T>(axes_1.begin(), axes_1.end());
-    if((int)uniqueElems.size() != axe1_size)
+    uniqueElems = std::set<T>(axesB.begin(), axesB.end());
+    if((int)uniqueElems.size() != axeBsize)
         throw "ShapeUtils::evalShapeForTensorDot method: the vector of b axes contains duplicates !";
 
     std::vector<int> list_A, list_B;
-    for (int i = 0; i < a->rankOf(); i++)
-        if (std::find(axes_0.begin(), axes_0.end(), i) == axes_0.end())
+    for (int i = 0; i < aRank; i++)
+        if (std::find(axesA.begin(), axesA.end(), i) == axesA.end())
             list_A.emplace_back(i);
-    for (int i = 0; i < b->rankOf(); i++)
-        if (std::find(axes_1.begin(), axes_1.end(), i) == axes_1.end())
+    for (int i = 0; i < bRank; i++)
+        if (std::find(axesB.begin(), axesB.end(), i) == axesB.end())
             list_B.emplace_back(i);
     
     permutAt = list_A;
-    permutAt.insert(permutAt.end(), axes_0.begin(), axes_0.end());
-    permutBt = axes_1;
+    permutAt.insert(permutAt.end(), axesA.begin(), axesA.end());
+    permutBt = axesB;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
     
     int n2 = 1;   
-    for (int i = 0; i < axe0_size; i++)
-        n2 *= a->sizeAt(axes_0[i]);
+    for (int i = 0; i < axeAsize; i++)
+        n2 *= aShapeInfo[axesA[i] + 1];
     shapeAt = {-1, n2};
 
     std::vector<int> oldShapeA;
@@ -66,12 +71,12 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
     } else {
         oldShapeA.resize(list_A.size());
         for (int i = 0; i < (int) oldShapeA.size(); i++)
-            oldShapeA[i] = a->sizeAt(list_A[i]);
+            oldShapeA[i] = aShapeInfo[list_A[i] + 1];
     }
     
     int n3 = 1;
-    for (int i = 0; i < axe1_size; i++)
-        n3 *= b->sizeAt(axes_1[i]);
+    for (int i = 0; i < axeBsize; i++)
+        n3 *= bShapeInfo[axesB[i] + 1];
     shapeBt = {n3, -1};
     
     std::vector<int> oldShapeB;
@@ -80,7 +85,7 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
     } else {
         oldShapeB.resize(list_B.size()); 
         for (int i = 0; i < (int) oldShapeB.size(); i++)
-            oldShapeB[i] = b->sizeAt(list_B[i]);
+            oldShapeB[i] = bShapeInfo[list_B[i] + 1];
     }
     
     std::vector<int> aPlusB(oldShapeA);
@@ -89,11 +94,19 @@ std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const nd4j::NDArray<T>* a,
     return aPlusB;
 }
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<int> ShapeUtils<T>::evalShapeForTensorDot(const NDArray<T>* a,   const NDArray<T>* b,   std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt) {
 
-    template<typename T>
-    int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims) {
-        return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), keepDims, arr.getWorkspace());
-    }
+    return evalShapeForTensorDot(a->getShapeInfo(), b->getShapeInfo(), axesA, axesB, permutAt, permutBt, shapeAt, shapeBt);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+int* ShapeUtils<T>::evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims) {
+
+    return evalReduceShapeInfo(order, dimensions, arr.getShapeInfo(), keepDims, arr.getWorkspace());
+}
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate resulting shape after reduce operation

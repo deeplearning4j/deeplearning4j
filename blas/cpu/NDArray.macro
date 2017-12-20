@@ -24,9 +24,9 @@ BUILD_CALL_1(template void nd4j::NDArray<double>::applyScalar, double, (double s
 
 
 
-BUILD_CALL_1(template float16 nd4j::NDArray<float16>::reduceNumber, float16, (float16 *extraParams), REDUCE_OPS)
-BUILD_CALL_1(template float nd4j::NDArray<float>::reduceNumber, float, (float *extraParams), REDUCE_OPS)
-BUILD_CALL_1(template double nd4j::NDArray<double>::reduceNumber, double, (double *extraParams), REDUCE_OPS)
+BUILD_CALL_1(template float16 nd4j::NDArray<float16>::reduceNumber, float16, (float16 *extraParams) const, REDUCE_OPS)
+BUILD_CALL_1(template float nd4j::NDArray<float>::reduceNumber, float, (float *extraParams) const, REDUCE_OPS)
+BUILD_CALL_1(template double nd4j::NDArray<double>::reduceNumber, double, (double *extraParams) const, REDUCE_OPS)
 
 BUILD_CALL_1(template Nd4jIndex nd4j::NDArray<float16>::indexReduceNumber, float16, (float16 *extraParams), INDEX_REDUCE_OPS)
 BUILD_CALL_1(template Nd4jIndex nd4j::NDArray<float>::indexReduceNumber, float, (float *extraParams), INDEX_REDUCE_OPS)

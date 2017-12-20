@@ -438,6 +438,15 @@ template<typename T>
     return *this;
 }
 
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+NDArray<T>& NDArray<T>::operator=(const T scalar) {
+
+    this->assign(scalar);
+    return *this;
+}
+
+
 template <typename T>
 void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseExisting ) {
     this->_buffer = buffer;
@@ -787,7 +796,7 @@ template <typename T>
 //
     template<typename T>
     template<typename OpName>
-    T NDArray<T>::reduceNumber(T *extraParams) {
+    T NDArray<T>::reduceNumber(T *extraParams) const {
         return functions::reduce::ReduceFunction<T>::template execScalar<OpName>(_buffer, _shapeInfo, extraParams);
     }
 
@@ -2334,14 +2343,17 @@ bool NDArray<T>::isUnitary() {
         int *stridesOf = shape::stride(newShape);
 
         Nd4jIndex offset = 0;
+        int first, last;
         for (int d = 0; d < idx.size(); ++d) {
             // building new shape first
             if (!idx[d].empty()) {
                 if (idx[d].size() != 2)
                     throw "NDArray::operator(Intervals): the interval must contain only two numbers {first, last} !";
-                shapeOf[d] = idx[d][1] - idx[d][0];
+                first = idx[d][0] >= 0 ? idx[d][0] : idx[d][0] + this->sizeAt(d) + 1;
+                last  = idx[d][1] >= 0 ? idx[d][1] : idx[d][1] + this->sizeAt(d) + 1;
+                shapeOf[d] = last - first;
                 // for offset we're taking only the first index
-                offset += idx[d][0] * stridesOf[d];
+                offset += first * stridesOf[d];
             }
         }
         NDArray<T> result(this->_buffer + offset, newShape, this->_workspace);
@@ -2530,6 +2542,20 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     }
 
     ////////////////////////////////////////////////////////////////////////
+    // division operator array / scalar
+    template<typename T>
+    NDArray<T> NDArray<T>::operator/(const T scalar) const {
+
+        if(scalar == (T)0.)
+            throw "NDArray::operator/ (division operator) : division by zero !";
+        
+        NDArray<T> result(this->_shapeInfo, this->_workspace);
+        functions::scalar::ScalarTransform<T>::template transform<simdOps::Divide<T>>(this->_buffer, this->_shapeInfo, result._buffer, result._shapeInfo, scalar, nullptr);
+
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // division operator array1 /= array2
     template<typename T>
     void NDArray<T>::operator/=(const NDArray<T>& other) {    
@@ -2574,6 +2600,36 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     }
 
     ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray<T>::setIdentity() {
+
+        this->assign((T)0.);
+
+        int  rank    = rankOf();
+        int* shape   = shapeOf();
+        int* strides = stridesOf();
+        int  minDim  = 100000000;
+        int* indices = new int[rank];        
+        Nd4jIndex offset;
+        
+        for(int i = 0; i < rank; ++i) 
+            if(minDim > shape[i])
+                minDim = shape[i];
+
+#pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
+        for(int i = 0; i < minDim; ++i) {            
+            
+            for(int j = 0; j < rank; ++j) 
+                indices[j] = i;
+
+            offset = shape::getOffset(0, shape, strides, indices, rank);
+            _buffer[offset] = (T)1.;
+        }
+
+        delete []indices;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
     // default destructor
     template<typename T>
 
@@ -2589,9 +2645,9 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
 
 
-    template class ND4J_EXPORT NDArray<float>;
-    template class ND4J_EXPORT NDArray<float16>;
-    template class ND4J_EXPORT NDArray<double>;
+template class ND4J_EXPORT NDArray<float>;
+template class ND4J_EXPORT NDArray<float16>;
+template class ND4J_EXPORT NDArray<double>;
 
 
 #ifndef __CLION_IDE__

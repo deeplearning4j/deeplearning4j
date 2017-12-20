@@ -2,8 +2,6 @@
 // Created by Yurii Shyrma on 12.12.2017
 //
 
-
-#include <DataTypeUtils.h>
 #include<ops/declarable/helpers/zeta.h>
 
 namespace nd4j {
