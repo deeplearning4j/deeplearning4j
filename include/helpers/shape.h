@@ -111,10 +111,10 @@ __host__ __device__
 #endif
     ND4J_EXPORT int sizeAt(int *shape, int dim);
 
+    template <typename T>
 #ifdef __CUDACC__
     __host__ __device__
 #endif
-    template <typename T>
     ND4J_EXPORT void fill(T* buffer, T value, Nd4jIndex length);
 
 #ifdef __CUDACC__
@@ -2260,10 +2260,10 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     }
 
 
-#ifdef __CUDACC__
-    __host__ __device__
-#endif
 template <typename T>
+#ifdef __CUDACC__
+__host__ __device__
+#endif
  INLINEDEF void fill(T* buffer, T value, Nd4jIndex length) {
 
 #pragma omp simd
