@@ -78,6 +78,11 @@ public class SameDiffParamInitializer implements ParamInitializer {
             //TODO
             log.warn("***** SameDiffParamInitializer: Parameter initialization not yet implemented *****");
         }
+
+        for(String s : sd.paramKeys()){
+            conf.addVariable(s);
+        }
+
         return out;
     }
 
