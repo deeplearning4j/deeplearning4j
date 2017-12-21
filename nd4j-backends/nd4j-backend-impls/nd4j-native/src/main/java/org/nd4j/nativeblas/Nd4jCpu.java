@@ -11248,6 +11248,7 @@ public static final long MAX_UINT = MAX_UINT();
 // #include "../helpers/logger.h"
 // #include "../pointercast.h"
 // #include "../cnpy/cnpy.h"
+// #include <op_boilerplate.h>
 
 public static final int MAX_DIMENSION = 0x7fffffff;
 public static final int MAX_NUM_THREADS =  1024;
@@ -11682,6 +11683,17 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native IntPointer computeResultShape(IntPointer originalShapeBuffer,IntPointer dimension,int dimensionLength);
     @Namespace("shape") public static native IntBuffer computeResultShape(IntBuffer originalShapeBuffer,IntBuffer dimension,int dimensionLength);
     @Namespace("shape") public static native int[] computeResultShape(int[] originalShapeBuffer,int[] dimension,int dimensionLength);
+
+    /**
+     * This method does inplace transpose of given shapeBuffer
+     *
+     * @param shapeBuffer
+     */
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native void transposeInplace(IntPointer shapeBuffer);
+    @Namespace("shape") public static native void transposeInplace(IntBuffer shapeBuffer);
+    @Namespace("shape") public static native void transposeInplace(int[] shapeBuffer);
 
 
 /**
@@ -13698,6 +13710,11 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifdef __CUDACC__
 // #endif
 
+
+
+// #ifdef __CUDACC__
+// #endif
+
 /**
  * Tad index for linear
  * @param linearIndex
@@ -15351,6 +15368,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                     else
 //                                         shape::shapeBufferFortran(shape::rank(SRC), shape::shapeOf(SRC), TGT);
 
+
+
 // #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 // #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
@@ -15374,6 +15393,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 // #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
 
+
+// #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);
+//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__
