@@ -3732,7 +3732,7 @@ public class SameDiff {
         }
 
 
-        if(placeHolderOriginalShapes.containsKey(variableName)) {
+        if(placeHolderOriginalShapes.containsKey(variableName) && !Arrays.equals(placeHolderOriginalShapes.get(variableName),shape)) {
             throw new ND4JIllegalStateException("Unable to add a new shape for vertex id " + variableName);
         }
 
