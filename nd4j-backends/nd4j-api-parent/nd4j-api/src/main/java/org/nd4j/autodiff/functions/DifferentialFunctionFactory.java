@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Method;
@@ -102,6 +103,9 @@ public class DifferentialFunctionFactory   {
 
 
     public SDVariable tile(SDVariable iX, int[] repeat) {
+        if(repeat == null) {
+            throw new ND4JIllegalStateException("Repeat must not be null!");
+        }
         return new Tile(sameDiff(),iX,repeat).outputVariables()[0];
     }
 
@@ -394,9 +398,6 @@ public class DifferentialFunctionFactory   {
         return new HardTanhDerivative(sameDiff(),iX,null).outputVariables()[0];
 
     }
-
-
-
 
 
     public SDVariable sigmoid(SDVariable iX) {

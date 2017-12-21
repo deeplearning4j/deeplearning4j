@@ -1161,7 +1161,6 @@ public class SameDiff {
                     }
                 }))
                 .build();
-        addVariable(ret);
         variableMap.put(arr.getVarName(),ret);
         return ret;
 
@@ -1210,6 +1209,7 @@ public class SameDiff {
             ret.setScalarValue(arr.getDouble(0));
 
         addVariable(ret);
+        putShapeForVarName(name,arr.shape());
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
         reverseArrayLookup.put(arr, ret);
@@ -3094,6 +3094,32 @@ public class SameDiff {
     }
 
 
+    /**
+     * Generate a new variable name
+     * based on the uniqueness
+     * of thebase name and arg index
+     * @param baseName the base name to use (use function.opName() where function is a {@link DifferentialFunction}
+     * @param argIndex the arg index
+     * @return the new generated name
+     */
+    public String generateNewVarName(String  baseName,int argIndex) {
+        //need to find a new name
+        int count = 1;
+        String name = baseName + "_" + count   + (argIndex > 0 ? ":" + argIndex : "");
+        while(getVariable(name) != null) {
+            count++;
+            name = baseName + "_" + count   + (argIndex > 0 ? ":" + argIndex : "");
+        }
+
+        if(getVariable(name) != null) {
+            throw new ND4JIllegalStateException("Converged on already generated variable!");
+        }
+
+
+        return name;
+    }
+
+
 
     /**
      * Generate the variables based on the given input op
@@ -3127,18 +3153,18 @@ public class SameDiff {
                     for(int i = 0; i < ret.length; i++) {
                         SDVariable checkGet = getVariable(baseName);
                         if(checkGet == null) {
-                            checkGet = var(baseName + (i > 0 ? ":" +  i : ""),null,new ZeroInitScheme('f'));
+                            checkGet = var(generateNewVarName(baseName,i),null,new ZeroInitScheme('f'));
                         }
                         else if(!importedVarName.contains(baseName)) {
                             //need to find a new name
-                            int count = 1;
-                            while((checkGet = getVariable(baseName + "_" + count   + (i > 0 ? ":" +  i : ""))) != null) {
-                            }
+                            String newName  = generateNewVarName(baseName,i);
+                            checkGet = getVariable(newName);
                         }
 
 
                         if(checkGet == null) {
-                            checkGet = var(baseName + (i > 0 ? ":" +  i : ""),null,new ZeroInitScheme('f'));
+                            String newName  = generateNewVarName(baseName,i);
+                            checkGet = var(newName,null,new ZeroInitScheme('f'));
                         }
 
 
@@ -3149,7 +3175,32 @@ public class SameDiff {
 
                 }
             }
+
+            //this is for unresolved shapes, we know xyz is always 1 outputu
+            else if(function instanceof BaseOp && outputShape.isEmpty()) {
+                SDVariable[] ret = new SDVariable[1];
+                SDVariable checkGet = getVariable(baseName);
+                if(checkGet == null) {
+                    checkGet = var(baseName ,null,new ZeroInitScheme('f'));
+                }
+                else if(!importedVarName.contains(baseName)) {
+                    //need to find a new name
+                    String newName  = generateNewVarName(baseName,0);
+                    checkGet = var(newName,null,new ZeroInitScheme('f'));
+                }
+
+
+                if(checkGet == null) {
+                    checkGet = var(baseName,null,new ZeroInitScheme('f'));
+                }
+
+                ret[0] = checkGet;
+                return ret;
+
+            }
         }
+
+
 
 
         SDVariable[] ret = new SDVariable[outputShape.size()];
@@ -3267,6 +3318,7 @@ public class SameDiff {
      *  @return
      */
     public INDArray execAndEndResult() {
+        resolveVariablesWith(Collections.<String, INDArray>emptyMap());
         List<DifferentialFunction> exec = exec().getRight();
         val output =  exec.get(exec.size() - 1).outputVariables()[0];
         return output.getArr();
@@ -3732,8 +3784,6 @@ public class SameDiff {
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String,INDArray> arrays) {
-        Preconditions.checkState(arrays.size() == placeHolderVarNames.size(),"Not all variables specified. " + arrays.size() + " variables were specified, but needed " + placeHolderVarNames.size());
-
         for(val arrayEntry : arrays.entrySet()) {
             val varForName = getVariable(arrayEntry.getKey());
             if(varForName == null) {
@@ -3926,10 +3976,6 @@ public class SameDiff {
      * @return
      */
     public Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> exec() {
-        if(!allPlaceHolderVariablesResolved()) {
-            throw new ND4JIllegalStateException("Undefined variables found.");
-        }
-
         if(!resolvedVariables)
             resolveVariablesWith(new LinkedHashMap<String, INDArray>());
 

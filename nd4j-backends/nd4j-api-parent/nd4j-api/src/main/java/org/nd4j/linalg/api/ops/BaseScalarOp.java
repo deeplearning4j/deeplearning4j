@@ -20,10 +20,10 @@
 package org.nd4j.linalg.api.ops;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,7 +74,6 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (i_v != null) {
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            this.n = ArrayUtil.prod(i_v.getShape());
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -90,6 +89,30 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this(sameDiff,i_v,scalar,false,extraArgs);
     }
 
+
+
+    @Override
+    public INDArray z() {
+        if(z == null) {
+            if(sameDiff != null) {
+                this.z = outputVariables()[0].getArr();
+                if(this.z == null) {
+                    val var = outputVariables()[0];
+                    if(var.getShape() != null)
+                        this. z = var.storeAndAllocateNewArray();
+                    else {
+                        val argsShape = args()[0].getShape();
+                        if(argsShape != null) {
+                            sameDiff.putShapeForVarName(var.getVarName(),argsShape);
+                            this. z = var.storeAndAllocateNewArray();
+                        }
+                    }
+                }
+            }
+        }
+
+        return z;
+    }
 
 
     @Override

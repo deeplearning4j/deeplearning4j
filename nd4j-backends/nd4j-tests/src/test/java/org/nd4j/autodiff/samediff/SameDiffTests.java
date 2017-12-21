@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -26,6 +27,7 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * Created by agibsonccc on 4/11/17.
  */
+@Slf4j
 public class SameDiffTests {
     static {
         Nd4j.create(1);
@@ -161,22 +163,6 @@ public class SameDiffTests {
 
     }
 
-
-    @Test
-    public void testDefineFunctionVariableReferences() {
-        SameDiff sameDiff = SameDiff.create();
-        SDVariable varOne = sameDiff.var("one",Nd4j.ones(2));
-        String funcName = "func1";
-        SameDiff func = sameDiff.defineFunction(funcName, new SameDiff.SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                return variableInputs;
-            }
-        },new SDVariable[]{varOne});
-
-        assertEquals(varOne.getVarName(),func.getVariable(varOne.getVarName()).getVarName());
-        assertTrue(varOne.getArr() == func.getVariable(varOne.getVarName()).getArr());
-    }
 
 
 
@@ -756,6 +742,59 @@ public class SameDiffTests {
         sameDiff.exec();
         assertEquals(assertion,test.getArr());
     }
+
+
+    @Test
+    public void testNegativeOneShape() {
+        val sd = SameDiff.create();
+        val var = sd.var("test",new int[] {-1,3});
+        assertNull(var.getShape());
+        assertTrue(var.isPlaceHolder());
+    }
+
+    @Test
+    public void testShapeResolutionMinus1(){
+        int nIn = 3;
+        int nOut = 4;
+
+        int minibatch = 3;
+
+        for(boolean useMinus1 : new boolean[]{false, true}) {
+            log.info("Starting: {}", (useMinus1 ? "minibatch -1" : "minibatch 3"));
+
+            int[] inShape;
+            if(useMinus1){
+                inShape = new int[]{-1, nIn};
+            } else {
+                inShape = new int[]{minibatch, nIn};
+            }
+            int[] wShape = new int[]{nIn, nOut};
+            int[] bShape = new int[]{1, nOut};
+
+            SameDiff sd = SameDiff.create();
+            SDVariable layerInput = sd.var("in", inShape);
+            SDVariable weights = sd.var("W", wShape);
+            SDVariable bias = sd.var("b", bShape);
+
+            SDVariable mmul = sd.mmul("mmul", layerInput, weights);
+            SDVariable z = mmul.add("z", bias);
+            SDVariable out = sd.sigmoid("out", z);
+
+            Map<String, INDArray> m = new HashMap<>();
+            INDArray in = Nd4j.rand(new int[]{minibatch, nIn});
+            INDArray w = Nd4j.rand(wShape);
+            INDArray b = Nd4j.rand(bShape);
+
+            sd.associateArrayWithVariable(in, sd.getVariable("in"));
+            sd.associateArrayWithVariable(w, sd.getVariable("W"));
+            sd.associateArrayWithVariable(b, sd.getVariable("b"));
+
+            INDArray outArr = sd.execAndEndResult();
+
+            assertArrayEquals(new int[]{minibatch, nOut}, outArr.shape());
+        }
+    }
+
 
     @Test
     public void testRunLogisticRegression() {

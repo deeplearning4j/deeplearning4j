@@ -30,6 +30,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -53,13 +54,16 @@ public class Tile extends DynamicCustomOp {
     public List<int[]> calculateOutputShape() {
         val inputShape = args()[0].getShape();
         val shape = ArrayUtil.copy(inputShape);
+        if(axis == null || inputShape == null)
+            return Collections.emptyList();
+
         if(axis.length == inputShape.length){
             for(int i = 0; i < axis.length; i++) {
                 shape[i] = inputShape[i] * axis[i];
             }
         }
 
-       else if(org.nd4j.linalg.api.shape.Shape.isVector(shape)) {
+        else if(org.nd4j.linalg.api.shape.Shape.isVector(shape)) {
             if(inputShape[0] == 1) {
                 inputShape[1] *= axis[0];
             }
@@ -68,7 +72,7 @@ public class Tile extends DynamicCustomOp {
             }
         }
         else if(axis.length == 1) {
-             shape[shape.length - 1] = axis[0];
+            shape[shape.length - 1] = axis[0];
         }
 
 

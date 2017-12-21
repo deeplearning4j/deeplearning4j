@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -288,7 +289,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if(x == null) {
             if(sameDiff != null) {
                 this.x = sameDiff.getArrForVarName(args()[0].getVarName());
-                if(x == null) {
+                if(x == null && args()[0].getShape() != null) {
                     x = args()[0].storeAndAllocateNewArray();
                 }
             }
@@ -301,7 +302,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if(y == null) {
             if(sameDiff != null && args().length > 1) {
                 this.y = sameDiff.getArrForVarName(args()[1].getVarName());
-                if(y == null) {
+                if(y == null && args()[1].getShape() != null) {
                     y = args()[1].storeAndAllocateNewArray();
                 }
             }
@@ -355,7 +356,25 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
             val newVars = sameDiff.generateOutputVariableForOp(this,null);
 
-            val arr = newVars == null || newVars.length < 1 ? null : newVars[0].getArr() == null ? newVars[0].storeAndAllocateNewArray() : newVars[0].getArr();
+            INDArray arr = null;
+            if(newVars == null || newVars.length < 1 || newVars[0].getShape() == null) {
+                arr = null;
+            }
+            else if(newVars[0].getArr() == null) {
+                arr = newVars[0].storeAndAllocateNewArray();
+            }
+            else
+                arr = newVars[0].getArr();
+
+            if(arr == null) {
+                val shapes = calculateOutputShape();
+                if(shapes != null && !shapes.isEmpty()) {
+                    sameDiff.putShapeForVarName(newVars[0].getVarName(),shapes.get(0));
+                    arr = newVars[0].storeAndAllocateNewArray();
+                }
+            }
+
+
             z = arr;
             if(sameDiff.getOutputsForFunction(this) == null)
                 sameDiff.addOutgoingFor(newVars,this);
@@ -368,6 +387,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public long n() {
+        if(n == 0) {
+            if(arg() != null)
+                this.n = ArrayUtil.prod(arg().getShape());
+
+        }
         return n;
     }
 

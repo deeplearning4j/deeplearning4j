@@ -7,7 +7,6 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -57,19 +56,40 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                        SameDiff sameDiff,
                        int[] shape,
                        WeightInitScheme weightInitScheme) {
-        if(shape != null && shape.length >= 2)
-            sameDiff.putShapeForVarName(varName,Shape.resolveNegativeShapeIfNeccessary(new int[shape.length],shape));
-        this.varName = varName;
+          this.varName = varName;
         this.weightInitScheme = weightInitScheme;
 
         if(weightInitScheme == null) {
             this.weightInitScheme = new ZeroInitScheme('f');
         }
 
+        if(shape == null) {
+            sameDiff.addAsPlaceHolder(varName);
+        }
+
+        else {
+            for(int i = 0; i < shape.length; i++) {
+                if(shape[i] < 0) {
+                    sameDiff.addAsPlaceHolder(varName);
+                    sameDiff.setOriginalPlaceHolderShape(varName,shape);
+                    break;
+                }
+            }
+        }
+
         this.sameDiff = sameDiff;
 
 
     }
+
+    /**
+     * Returns true if this variable is a place holder
+     * @return
+     */
+    public boolean isPlaceHolder() {
+        return sameDiff.isPlaceHolder(varName);
+    }
+
 
     @Override
     public String opName() {
@@ -119,6 +139,9 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public INDArray storeAndAllocateNewArray() {
         val shape = sameDiff.getShapeForVarName(getVarName());
+        if(getArr() != null && Arrays.equals(getArr().shape(),shape))
+            return getArr();
+
         if(varName == null)
             throw new ND4JIllegalStateException("Unable to store array for null variable name!");
 
@@ -802,13 +825,13 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
 
     private void assertShapeEquals(SDVariable variable) {
-        val shape = sameDiff.getShapeForVarName(getVarName());
-        if(shape == null)
+       /* val shape = sameDiff.getShapeForVarName(getVarName());
+        if(shape == null && !variable.isPlaceHolder())
             throw new ND4JIllegalStateException("Shape not found for variable " + getVarName());
 
         if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1 && Shape.broadcastOutputShape(shape,variable.getShape()) == null) {
             throw new IllegalArgumentException("Input shape must be the same as this shape " + Arrays.toString(shape) + " and shape was " + Arrays.toString(variable.getShape()));
-        }
+        }*/
     }
 
 
