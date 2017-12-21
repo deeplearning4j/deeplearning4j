@@ -143,7 +143,7 @@ public class SameDiff {
         variableMap.remove(oldVarNameRef.getVarName());
         val oldVarName = varName;
         variableMap.put(withName,oldVarNameRef);
-  
+
 
         for(val reverseValues : ougoingArgsReverse.entrySet()) {
             for(int i = 0; i < reverseValues.getValue().length; i++) {
@@ -424,6 +424,9 @@ public class SameDiff {
         val vars = new SDVariable[inputs.length];
         for(int i = 0; i < inputs.length; i++) {
             vars[i] = getVariable(inputs[i]);
+            if(vars[i] == null) {
+                throw new ND4JIllegalStateException("Found null variable at index " + i);
+            }
         }
 
         return vars;
@@ -881,9 +884,11 @@ public class SameDiff {
      */
     public void addArgsFor(SDVariable[] variables, DifferentialFunction function) {
         String[] varNames = new String[variables.length];
-        for(int i = 0; i < varNames.length; i++)
+        for(int i = 0; i < varNames.length; i++) {
+            if(variables[i] == null)
+                throw new ND4JIllegalStateException("Found null variable at index " + i);
             varNames[i] = variables[i].getVarName();
-
+        }
         addArgsFor(varNames,function);
     }
 
@@ -1222,7 +1227,8 @@ public class SameDiff {
             ret.setScalarValue(arr.getDouble(0));
 
         addVariable(ret);
-        putShapeForVarName(name,arr.shape());
+        if(getShapeForVarName(name) == null)
+            putShapeForVarName(name,arr.shape());
         //ensure there is a reference to the array in the integer index
         //this is used later for op creation
         reverseArrayLookup.put(arr, ret);
@@ -3970,7 +3976,7 @@ public class SameDiff {
      * @return the passed in variable
      */
     public SDVariable updateVariableNameAndReference(SDVariable varToUpdate,String newVarName) {
-        if(newVarName == null) {
+        if(newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
             return varToUpdate;
         }
 

@@ -28,16 +28,20 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
     public List<int[]> calculateOutputShape() {
         val args = args();
         if(args.length < 2) {
+            if(args[0] == null || args[0].getShape() == null) {
+                return Collections.emptyList();
+            }
+
             return Arrays.asList(args[0].getShape());
         }
 
         val firstArgShape = args[0].getShape();
         val secondArgShape = args[1].getShape();
-        if(args[0].getShape() == null) {
+        if(args[0] == null || args[0].getShape() == null) {
             return Collections.emptyList();
         }
 
-        if(args[1].getShape() == null) {
+        if(args[1] == null || args[1].getShape() == null) {
             return Collections.emptyList();
         }
 

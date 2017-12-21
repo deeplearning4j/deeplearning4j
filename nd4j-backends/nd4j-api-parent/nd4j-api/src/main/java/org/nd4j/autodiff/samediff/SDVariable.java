@@ -68,13 +68,18 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         }
 
         else {
+            boolean foundPlaceHolder = false;
             for(int i = 0; i < shape.length; i++) {
                 if(shape[i] < 0) {
                     sameDiff.addAsPlaceHolder(varName);
                     sameDiff.setOriginalPlaceHolderShape(varName,shape);
+                    foundPlaceHolder = true;
                     break;
                 }
             }
+
+            if(!foundPlaceHolder)
+                sameDiff.putShapeForVarName(varName,shape);
         }
 
         this.sameDiff = sameDiff;
