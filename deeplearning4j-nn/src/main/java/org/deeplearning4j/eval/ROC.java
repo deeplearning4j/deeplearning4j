@@ -650,6 +650,9 @@ public class ROC extends BaseEvaluation<ROC> {
         this.countActualNegative += other.countActualNegative;
         this.auc = null;
         this.auprc = null;
+        this.rocCurve = null;
+        this.prCurve = null;
+
 
         if (isExact) {
             if (other.exampleCount == 0) {

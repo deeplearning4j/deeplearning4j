@@ -237,6 +237,18 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     }
 
     /**
+     * Calculate the AUCPR - Area Under Curve - Precision Recall<br>
+     * Utilizes trapezoidal integration internally
+     *
+     * @param outputNum Output number to calculate AUCPR for
+     * @return AUCPR
+     */
+    public double calculateAUCPR(int outputNum) {
+        assertIndex(outputNum);
+        return underlying[outputNum].calculateAUCPR();
+    }
+
+    /**
      * Set the label names, for printing via {@link #stats()}
      */
     public void setLabelNames(List<String> labels) {
