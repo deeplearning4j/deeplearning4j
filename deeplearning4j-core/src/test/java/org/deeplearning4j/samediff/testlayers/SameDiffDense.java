@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 
 import java.util.*;
@@ -21,12 +22,14 @@ public class SameDiffDense extends BaseSameDiffLayer {
 
     private int nIn;
     private int nOut;
+    private Activation activation;
 
     protected SameDiffDense(Builder builder) {
         super(builder);
 
         nIn = builder.nIn;
         nOut = builder.nOut;
+        activation = builder.activation;
 
         paramShapes = new HashMap<>();
         paramShapes.put(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
@@ -72,7 +75,8 @@ public class SameDiffDense extends BaseSameDiffLayer {
 
         SDVariable mmul = sd.mmul("mmul", layerInput, weights);
         SDVariable z = mmul.add("z", bias);
-        SDVariable out = sd.sigmoid("out", z);
+//        SDVariable out = sd.sigmoid("out", z);
+        SDVariable out = activation.asSameDiff("out", sd, z);
 
         return Collections.singletonList("out");
     }
@@ -81,6 +85,7 @@ public class SameDiffDense extends BaseSameDiffLayer {
 
         private int nIn;
         private int nOut;
+        private Activation activation = Activation.TANH;
 
         public Builder nIn(int nIn){
             this.nIn = nIn;
@@ -89,6 +94,11 @@ public class SameDiffDense extends BaseSameDiffLayer {
 
         public Builder nOut(int nOut){
             this.nOut = nOut;
+            return this;
+        }
+
+        public Builder activation(Activation activation){
+            this.activation = activation;
             return this;
         }
 
