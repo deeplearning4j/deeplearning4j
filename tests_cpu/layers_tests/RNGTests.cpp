@@ -221,6 +221,9 @@ TEST_F(RNGTests, Test_Binomial_1) {
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
+    nexp2->printIndexedBuffer("nexp2");
+    x0.printIndexedBuffer("x0");
+
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));

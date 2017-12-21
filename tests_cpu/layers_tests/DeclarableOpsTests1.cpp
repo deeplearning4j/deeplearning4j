@@ -1585,6 +1585,47 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
     delete variableSpace;
 }
 
+TEST_F(DeclarableOpsTests1, Reshape3) {
+    NDArray<float> x('c', {3, 4, 5});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {99, 3, 4, 5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(x.isSameShape(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, Reshape4) {
+    NDArray<float> x('c', {3, 4, 5});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {3, 4, 5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(x.isSameShape(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests1, Reshape5) {
+    NDArray<float> x('c', {3, 4, 5});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {5, 4, 3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests1, TestScatterUpdate1) {
     NDArray<float>* matrix  = new NDArray<float>(3, 2, 'c');
     NDArray<float>* updates = new NDArray<float>(2, 2, 'c');

@@ -17,13 +17,17 @@ namespace nd4j {
 
                 REQUIRE_TRUE(argsSize >= 3, 0, "Reshape arguments should have order and at least 2 dimensions");
 
+                int e = 1;
                 char order = (char) (*argumets)[0];
-                if (order != 'c' && order != 'f')
+                if (order != 'c' && order != 'f') {
                     order = x->ordering();
+                    e = 0;
+                }
 
                 std::vector<int> shapeNew;
 
-                for (int e = 1; e < (int) argumets->size(); e++)
+                
+                for (; e < (int) argumets->size(); e++)
                     shapeNew.push_back((int) argumets->at(e));
 
 
