@@ -7,9 +7,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.RectifedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldAddOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
@@ -40,7 +42,7 @@ public class EndlessTests {
         INDArray arr = Nd4j.ones(100,100);
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
-            Nd4j.getExecutioner().exec(new SoftMax(arr));
+            Nd4j.getExecutioner().exec(new OldSoftMax(arr));
         }
     }
 
@@ -50,7 +52,7 @@ public class EndlessTests {
         INDArray arr2 = Nd4j.ones(100,100);
 
         for (int i = 0; i < RUN_LIMIT; i++ ) {
-            Nd4j.getExecutioner().exec(new AddOp(arr,arr2,arr));
+            Nd4j.getExecutioner().exec(new OldAddOp(arr,arr2,arr));
         }
     }
 

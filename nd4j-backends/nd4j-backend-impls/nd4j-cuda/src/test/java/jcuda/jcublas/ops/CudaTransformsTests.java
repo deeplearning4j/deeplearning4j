@@ -389,9 +389,9 @@ public class CudaTransformsTests {
         INDArray array1 = Nd4j.ones(2048).dup('f');
         INDArray array2 = Nd4j.zeros(2048);
 
-        Nd4j.getExecutioner().exec(new SoftMax(array1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(array1));
 
-        Nd4j.getExecutioner().exec(new SoftMax(array2));
+        Nd4j.getExecutioner().exec(new OldSoftMax(array2));
 
         System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
         System.out.println("Array2: " + Arrays.toString(array2.data().asFloat()));
@@ -506,7 +506,7 @@ public class CudaTransformsTests {
         INDArray array1 = Nd4j.zeros(15);
         array1.putScalar(0, 0.9f);
 
-        Nd4j.getExecutioner().exec(new SoftMax(array1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(array1));
 
         System.out.println("Array1: " + Arrays.toString(array1.data().asFloat()));
 
@@ -536,7 +536,7 @@ public class CudaTransformsTests {
         assertEquals(65408.0f, sumAll, 0.01f);
 
         System.out.println("A2: --------------------------------");
-        SoftMax softMax = new SoftMax(input);
+        OldSoftMax softMax = new OldSoftMax(input);
         long time1 = System.currentTimeMillis();
         Nd4j.getExecutioner().exec(softMax);
         long time2 = System.currentTimeMillis();
@@ -724,8 +724,8 @@ public class CudaTransformsTests {
         INDArray output1T = Nd4j.create(1, 10);
 
         System.out.println("FA --------------------");
-        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
-        Nd4j.getExecutioner().exec(new SoftMax(input1T, output1T));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1, output1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1T, output1T));
         System.out.println("FB --------------------");
 
         System.out.println("Softmax = " + output1);
@@ -746,7 +746,7 @@ public class CudaTransformsTests {
         INDArray input2 = Nd4j.zerosLike(input1);
         Nd4j.copy(input1, input2);
         INDArray output1 = Nd4j.create(1, 1000);
-        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1, output1));
         System.out.println("Softmax = " + output1);
         INDArray output2 = Nd4j.create(1,1000);
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(input2, output2));

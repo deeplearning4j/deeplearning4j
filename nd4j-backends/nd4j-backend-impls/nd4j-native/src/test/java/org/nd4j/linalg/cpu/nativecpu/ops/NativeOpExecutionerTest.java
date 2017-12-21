@@ -22,10 +22,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.transforms.Exp;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -181,8 +178,8 @@ public class NativeOpExecutionerTest {
         INDArray output1T = Nd4j.create(1, 10);
 
         System.out.println("FA --------------------");
-        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
-        Nd4j.getExecutioner().exec(new SoftMax(input1T, output1T));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1, output1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1T, output1T));
         System.out.println("FB --------------------");
 
         System.out.println("Softmax = " + output1);

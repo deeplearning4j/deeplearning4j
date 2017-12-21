@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.Exp;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -158,8 +159,8 @@ public class CudaExecutionerTest {
         INDArray output1T = Nd4j.create(1, 10);
 
         System.out.println("FA --------------------");
-        Nd4j.getExecutioner().exec(new SoftMax(input1, output1));
-        Nd4j.getExecutioner().exec(new SoftMax(input1T, output1T));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1, output1));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input1T, output1T));
         System.out.println("FB --------------------");
 
         System.out.println("Softmax = " + output1);
