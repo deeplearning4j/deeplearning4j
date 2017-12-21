@@ -22,8 +22,15 @@ public:
     int *cShape = new int[8]{2, 2, 2, 2, 1, 0, 1, 99};
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
+    FlatBuffersTest() {
+        //Environment::getInstance()->setDebug(true);
+        //Environment::getInstance()->setVerbose(true);
+    }
 
     ~FlatBuffersTest() {
+        Environment::getInstance()->setDebug(false);
+        Environment::getInstance()->setVerbose(false);
+
         delete[] cShape;
         delete[] fShape;
     }
@@ -547,11 +554,22 @@ TEST_F(FlatBuffersTest, Ae_00) {
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
 
+    NDArray<float> exp('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
+
     graph->printOut();
-/*
+
+    ASSERT_EQ(OutputMode_VARIABLE_SPACE, graph->getExecutorConfiguration()->_outputMode);
+
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
-*/
+
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(18));
+
+    auto z = graph->getVariableSpace()->getVariable(18)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
     delete graph;
 }
 

@@ -747,6 +747,25 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_4) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_5) {
+    NDArray<double> x('c', {3, 1}, {1, 2, 3});
+    NDArray<double> y('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<double> exp('f', {3, 4}, {1.0, 2.0, 3.0, 2.0, 4.0, 6.0, 3.0, 6.0, 9.0, 4.0, 8.0, 12.0});
+
+    nd4j::ops::matmul<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    //z->printIndexedBuffer("z");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
     NDArray<float> x('c', {1, 3}, {2, 2, 2});
     NDArray<float> y('c', {1, 3}, {4, 6, 8});
