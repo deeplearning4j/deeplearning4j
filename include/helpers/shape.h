@@ -16,6 +16,7 @@
 #include "../helpers/logger.h"
 #include "../pointercast.h"
 #include "../cnpy/cnpy.h"
+#include <op_boilerplate.h>
 
 #define MAX_DIMENSION 0x7fffffff
 #define MAX_NUM_THREADS  1024
@@ -402,6 +403,13 @@ __host__ __device__
     __host__ __device__
 #endif
     ND4J_EXPORT int *computeResultShape(int *originalShapeBuffer,int *dimension,int dimensionLength);
+
+    /**
+     * This method does inplace transpose of given shapeBuffer
+     *
+     * @param shapeBuffer
+     */
+    _CUDA_HD ND4J_EXPORT void transposeInplace(int *shapeBuffer);
 
 
 /**
@@ -4108,6 +4116,37 @@ __host__ __device__
         if (tadIndexForOriginal == 0)
             return 0;
         return tadIndexForOriginal / (tadsForOriginal / tadsForReduced);
+    }
+
+
+
+    INLINEDEF _CUDA_HD void transposeInplace(int *shapeBuffer) {
+        int rank = shape::rank(shapeBuffer);
+        int *shape = shape::shapeOf(shapeBuffer);
+        int *strides = shape::stride(shapeBuffer);
+
+        // swap shape
+        for (int e = 0; e < rank / 2; e++) {
+            int idx1 = rank - e - 1;
+            int idx2 =  e;
+            int tmp = shape[idx2];
+            shape[idx2] = shape[idx1];
+            shape[idx1] = tmp;
+        }
+
+        // swap strides
+        for (int e = 0; e < rank / 2; e++) {
+            int idx1 = rank - e - 1;
+            int idx2 =  e;
+            int tmp = strides[idx2];
+            strides[idx2] = strides[idx1];
+            strides[idx1] = tmp;
+        }
+
+        if (shape::order(shapeBuffer) == 'c')
+            shapeBuffer[shape::shapeInfoLength(shapeBuffer) - 1] = 102;
+        else
+            shapeBuffer[shape::shapeInfoLength(shapeBuffer) - 1] = 99;
     }
 
 /**

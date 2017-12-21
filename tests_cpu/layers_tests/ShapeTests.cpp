@@ -164,3 +164,40 @@ TEST_F(ShapeTests, Test_ShapeDetector_7) {
     ASSERT_EQ(10, shape::shapeInfoLength(shape));
     ASSERT_EQ(40, shape::shapeInfoByteLength(shape));
 }
+
+TEST_F(ShapeTests, Test_Transpose_1) {
+    int shape[] = {3, 2, 5, 3, 15, 3, 1, 0, 1, 99};
+    int exp[] = {3, 3, 5, 2, 1, 3, 15, 0, 1, 102};
+
+    shape::transposeInplace(shape);
+
+    ASSERT_TRUE(shape::equalsStrict(exp, shape));
+}
+
+TEST_F(ShapeTests, Test_Transpose_2) {
+    int shape[] = {2, 5, 3, 3, 1, 0, 1, 99};
+    int exp[] = {2, 3, 5, 1, 3, 0, 1, 102};
+
+    shape::transposeInplace(shape);
+
+    ASSERT_TRUE(shape::equalsStrict(exp, shape));
+}
+
+TEST_F(ShapeTests, Test_Transpose_3) {
+    int shape[] = {2, 1, 3, 3, 1, 0, 1, 99};
+    int exp[] = {2, 3, 1, 1, 3, 0, 1, 102};
+
+    shape::transposeInplace(shape);
+
+    ASSERT_TRUE(shape::equalsStrict(exp, shape));
+}
+
+
+TEST_F(ShapeTests, Test_Transpose_4) {
+    int shape[] = {4, 2, 3, 4, 5, 5, 4, 3, 2, 0, 1, 99};
+    int exp[] = {4, 5, 4, 3, 2, 2, 3, 4, 5, 0, 1, 102};
+
+    shape::transposeInplace(shape);
+
+    ASSERT_TRUE(shape::equalsStrict(exp, shape));
+}

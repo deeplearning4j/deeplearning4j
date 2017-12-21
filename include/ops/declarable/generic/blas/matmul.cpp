@@ -71,10 +71,7 @@ namespace nd4j {
             } else if (x->isVector() && y->isMatrix()) {
                 // gemm
                 nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
-            }  else if (x->isVector() && y->isVector()) {
-                // dot
-                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
-            } else if (x->isMatrix() && y->isMatrix() && iSize > 0) {
+            } else if ((x->isMatrix() && y->isMatrix() || (x->isColumnVector() || (x->isRowVector() && transA == 112)) && (y->isRowVector() || (y->isColumnVector() && transB == 112))) && iSize > 0) {
                 // gemm
                 NDArray<T> *_x = transA == 111 ? x : x->transpose();
                 NDArray<T> *_y = transB == 111 ? y : y->transpose();
@@ -86,8 +83,11 @@ namespace nd4j {
 
                 if (transB == 112)
                     delete _y;
-            } else if (x->isMatrix() && y->isMatrix()) {
+            } else if ((x->isMatrix() && y->isMatrix()) || (x->isColumnVector() && y->isRowVector())) {
                 // gemm
+                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
+            } else if (x->isVector() && y->isVector()) {
+                // dot
                 nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
             } else if (x->isVector() && y->isScalar()) {
                 // elementwise mul
@@ -115,6 +115,11 @@ namespace nd4j {
             int *shape;
             ALLOCATE(shape, block.getWorkspace(), 2, int);
 
+            int *tmpA, *tmpB;
+            COPY_SHAPE(inA, tmpA);
+            COPY_SHAPE(inB, tmpB);
+
+
             int iSize = (int) block.getIArguments()->size();
             int transA = 0;
             int transB = 0;
@@ -137,26 +142,32 @@ namespace nd4j {
             if (transB == 1)
                 transB = 112;
 
-            if (shape::isScalar(inA) && shape::isScalar(inB)) {
+            if (transA == 112)
+                shape::transposeInplace(tmpA);
+
+            if (transB == 112)
+                shape::transposeInplace(tmpB);
+
+            if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
                 // just scalar vs scalar
                 shape[0] = 1;
                 shape[1] = 1;
-            } else if ((shape::isVector(inA) && shape::isScalar(inB)) || (shape::isScalar(inA) && shape::isVector(inB))) {
-                // element-wise
-                shape[0] = 1;
-                shape[1] = (int) nd4j::math::nd4j_max<Nd4jIndex>(shape::length(inA), shape::length(inB));
-            } else if (shape::isVector(inA) && shape::isVector(inB)) {
-                // dot case
-                shape[0] = 1;
-                shape[1] = 1;
-            } else if (shape::isMatrix(inA) && shape::isVector(inB)) {
+            }  else if (shape::isMatrix(tmpA) && shape::isVector(tmpB)) {
                 // gemv case
                 shape[0] = inA[1];
                 shape[1] = inB[2];
-            } else if ((shape::isMatrix(inA) && shape::isMatrix(inB)) || (shape::isVector(inA) && shape::isMatrix(inB))) {
-                // gemv case
-                shape[0] = transA == 111 ? inA[1] : inA[2];
-                shape[1] = transB == 111 ? inB[2] : inB[1];
+            } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {
+                // gemm case
+                shape[0] = tmpA[1];
+                shape[1] = tmpB[2];
+            } else if ((shape::isVector(tmpA) && shape::isScalar(tmpB)) || (shape::isScalar(tmpA) && shape::isVector(tmpB))) {
+                // element-wise
+                shape[0] = 1;
+                shape[1] = (int) nd4j::math::nd4j_max<Nd4jIndex>(shape::length(tmpA), shape::length(tmpB));
+            } else if (shape::isRowVector(tmpA) && shape::isRowVector(tmpB)) {
+                // dot case
+                shape[0] = 1;
+                shape[1] = 1;
             }
 
             int *newShape;
@@ -164,6 +175,9 @@ namespace nd4j {
             shape::shapeBufferFortran(2, shape, newShape);
 
             RELEASE(shape, block.getWorkspace());
+
+            RELEASE(tmpA, block.getWorkspace());
+            RELEASE(tmpB, block.getWorkspace());
             return new ShapeList(newShape);
         }
     }

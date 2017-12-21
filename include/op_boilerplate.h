@@ -1491,6 +1491,8 @@ struct __registratorDouble_##NAME {\
                                     else \
                                         shape::shapeBufferFortran(shape::rank(SRC), shape::shapeOf(SRC), TGT);\
 
+
+
 #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; } else {VARIABLE = (TT*) WORKSPACE->allocateBytes(LENGTH * sizeof(TT)); }
 #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) delete[] VARIABLE;
 
@@ -1514,6 +1516,9 @@ struct __registratorDouble_##NAME {\
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
 #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
 
+
+#define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);\
+                                memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
 
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
