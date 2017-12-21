@@ -409,7 +409,10 @@ __host__ __device__
      *
      * @param shapeBuffer
      */
-    _CUDA_HD ND4J_EXPORT void transposeInplace(int *shapeBuffer);
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    ND4J_EXPORT void transposeInplace(int *shapeBuffer);
 
 
 /**
@@ -4120,7 +4123,10 @@ __host__ __device__
 
 
 
-    INLINEDEF _CUDA_HD void transposeInplace(int *shapeBuffer) {
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void transposeInplace(int *shapeBuffer) {
         int rank = shape::rank(shapeBuffer);
         int *shape = shape::shapeOf(shapeBuffer);
         int *strides = shape::stride(shapeBuffer);
