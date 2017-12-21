@@ -19,6 +19,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -165,6 +166,41 @@ public class SameDiffTests {
 
 
 
+
+    @Test
+    public void testUpdateVariableName() throws Exception {
+        INDArray inArr = Nd4j.create(1,4);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable s = sd.tanh("s", in);
+
+        List<SDVariable> l = sd.variables();
+        assertEquals(2, l.size());      //Fails here: returns 3 (inc "tanh" variable that should have been replaced)
+
+        for(SDVariable sdv : l ){
+            String n = sdv.getVarName();
+            assertTrue(n.equals("in") || n.equals("s"));
+        }
+
+        Field f = SameDiff.class.getDeclaredField("incomingArgsReverse");
+        f.setAccessible(true);
+        Map<String,String[]> incomingArgsReverse = (Map<String, String[]>) f.get(sd);
+
+        for(Map.Entry<String,String[]> e : incomingArgsReverse.entrySet()){
+            for(String str : e.getValue()){
+                assertTrue( str, str.equals("in") || str.equals("s"));
+            }
+        }
+
+        f = SameDiff.class.getDeclaredField("ougoingArgsReverse");      //Also: typo in the SameDiff class field name
+        f.setAccessible(true);
+        Map<String,String[]> outgoingArgsReverse = (Map<String, String[]>) f.get(sd);
+        for(Map.Entry<String,String[]> e : outgoingArgsReverse.entrySet()){
+            for(String str : e.getValue()){
+                assertTrue( str, str.equals("in") || str.equals("s"));  //Also fails here due to "tanh" variable
+            }
+        }
+    }
 
     @Test
     public void testFunctionInputsAndArgs() {
