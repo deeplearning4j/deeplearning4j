@@ -62,13 +62,35 @@ Output layers: usable only as the last layer in a network. Loss functions are se
 
 # Graph Vertices
 
-Graph vertex: use with ComputationGraph. Similar to layers, vertices usually don't have any parameters.
+Graph vertex: use with ComputationGraph. Similar to layers, vertices usually don't have any parameters, and may support multiple inputs.
 
+* ElementWiseVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/ElementWiseVertex.java)) - Performs an element-wise operation on the inputs - add, subtract, product, average, max
+* L2NormalizeVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/L2NormalizeVertex.java)) - normalizes the input activations by dividing by the L2 norm for each example. i.e., out <- out / l2Norm(out)
+* L2Vertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/L2Vertex.java)) - calculates the L2 distance between the two input arrays, for each example separately. Output is a single value, for each input value.
+* MergeVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/L2Vertex.java)) - merge the input activations along dimension 1, to make a larger output array. For CNNs, this implements merging along the depth/channels dimension
+* PreprocessorVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/PreprocessorVertex.java)) - a simple GraphVertex that contains an InputPreProcessor only
+*  ReshapeVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/ReshapeVertex.java)) - Performs arbitrary activation array reshaping. The preprocessors in the next section should usually be preferred.
+* ScaleVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/ScaleVertex.java)) - implements simple multiplicative scaling of the inputs - i.e., out = scalar * input
+* ShiftVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/ShiftVertex.java)) - implements simple scalar element-wise addition on the inputs - i.e., out = input + scalar
+* StackVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/StackVertex.java)) - used to stack all inputs along the minibatch dimension. Analogous to MergeVertex, but along dimension 0 (minibatch) instead of dimension 1 (nOut/channels)
+* SubsetVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/SubsetVertex.java)) - used to get a contiguous subset of the input activations along dimension 1. For example, two SubsetVertex instances could be used to split the activations from an input array into two separate activations. Essentially the opposite of MergeVertex.
+*  UnstackVertex - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/UnstackVertex.java)) - similar to SubsetVertex, but along dimension 0 (minibatch) instead of dimension 1 (nOut/channels). Opposite of StackVertex
 
 
 
 # Input Pre Processors
 
+An InputPreProcessor is a simple class/interface that operates on the input of a layer. That is, a preprocessor is attached to a layer, and performs some operation on the input, before passing the layer to the output.
+
+Note that in many cases (such as the XtoYPreProcessor classes), users won't need to (and shouldn't) add these manually, and can instead just use ```.setInputType(InputType.feedForward(10))``` or similar, which whill infer and add the preprocessors as required.
+
+* CnnToFeedForwardPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/CnnToFeedForwardPreProcessor.java)) - handles the activation reshaping necessary to transition from a CNN layer (ConvolutionLayer, SubsamplingLayer, etc)
+* CnnToRnnPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/CnnToRnnPreProcessor.java)) - handles reshaping necessary to transition from a (effectively, time distributed) CNN layer to a RNN layer.
+* ComposableInputPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/ComposableInputPreProcessor.java)) - simple class that allows multiple preprocessors to be chained + used on a single layer
+* FeedForwardToCnnPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/FeedForwardToCnnPreProcessor.java)) - handles activation reshaping to transition from a row vector (per example) to a CNN layer. Note that this transition/preprocessor only makes sense if the activations are actually CNN activations, but have been 'flattened' to a row vector.
+* FeedForwardToRnnPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/FeedForwardToRnnPreProcessor.java)) - handles transition from a (time distributed) feed-forward layer to a RNN layer
+* RnnToCnnPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/RnnToCnnPreProcessor.java)) - handles transition from a sequence of CNN activations with shape ```[minibatch, depth*height*width, timeSeriesLength]``` to time-distributed ```[numExamples*timeSeriesLength, numChannels, inputWidth, inputHeight]``` format
+* RnnToFeedForwardPreProcessor - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/RnnToFeedForwardPreProcessor.java)) - handles transition from time series activations (shape ```[minibatch,size,timeSeriesLength]```) to time-distributed feed-forward (shape ```[minibatch*tsLength,size]```) activations.  
 
 
 # Iteration/Training Listeners
