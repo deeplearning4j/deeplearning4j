@@ -49,7 +49,7 @@ public class GreaterThan extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "gt";
+        return "greater";
     }
 
     @Override

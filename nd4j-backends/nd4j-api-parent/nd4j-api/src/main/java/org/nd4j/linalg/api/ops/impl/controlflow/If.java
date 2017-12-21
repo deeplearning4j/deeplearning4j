@@ -68,7 +68,8 @@ public class If extends DifferentialFunction implements CustomOp {
         this.dummyResult = ifStatement.dummyResult;
         this.inputVars = ifStatement.inputVars;
         this.dummyResult =  this.sameDiff.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
-        sameDiff.putShapeForVarName(dummyResult.getVarName(),new int[]{1,1});
+        if(sameDiff.getShapeForVarName(dummyResult.getVarName()) == null)
+            sameDiff.putShapeForVarName(dummyResult.getVarName(),new int[]{1,1});
 
 
 
@@ -83,17 +84,19 @@ public class If extends DifferentialFunction implements CustomOp {
               SameDiff.SameDiffConditional predicate,
               SameDiff.SameDiffFunctionDefinition trueBody,
               SameDiff.SameDiffFunctionDefinition falseBody) {
-        this.sameDiff = parent;
 
+        this.sameDiff = parent;
+        parent.putFunctionForId(getInstanceId(),this);
         this.inputVars = inputVars;
         this.predicate = predicate;
+
+        parent.addArgsFor(inputVars,this);
         this.trueBody = trueBody;
         this.falseBody = falseBody;
         this.blockName = blockName;
         //need to add the op to the list of ops to be executed when running backwards
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
-
-
+        parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
 
         //create a samediff sub graph for running just the execution
         //return a reference to the loop for referencing during actual execution
@@ -131,14 +134,10 @@ public class If extends DifferentialFunction implements CustomOp {
     }
 
 
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
 
     @Override
     public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
+        return new SDVariable[]{dummyResult};
     }
 
     @Override

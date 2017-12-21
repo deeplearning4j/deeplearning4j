@@ -115,8 +115,10 @@ public class While extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.blockName = blockName;
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
+        parent.putFunctionForId(getInstanceId(),this);
 
-
+        parent.addArgsFor(inputVars,this);
+        parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
 
 
         //create a samediff sub graph for running just the execution
@@ -137,14 +139,10 @@ public class While extends DifferentialFunction implements CustomOp {
 
     }
 
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[0];
-    }
 
     @Override
     public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[0];
+        return new SDVariable[]{dummyResult};
     }
 
     @Override

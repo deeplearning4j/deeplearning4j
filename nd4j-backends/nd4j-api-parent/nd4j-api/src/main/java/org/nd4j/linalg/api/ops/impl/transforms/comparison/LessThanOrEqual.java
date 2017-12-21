@@ -45,7 +45,7 @@ public class LessThanOrEqual extends BaseDynamicTransformOp {
     }
     @Override
     public String opName() {
-        return "lte";
+        return "less_equal";
     }
 
     @Override

@@ -47,7 +47,7 @@ public class EqualTo extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "eq";
+        return "equals";
     }
 
     @Override

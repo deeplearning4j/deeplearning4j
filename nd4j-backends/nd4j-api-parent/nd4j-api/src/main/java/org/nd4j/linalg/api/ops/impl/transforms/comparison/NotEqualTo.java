@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,7 +47,7 @@ public class NotEqualTo extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "neq";
+        return "not_equals";
     }
 
     @Override

@@ -47,7 +47,7 @@ public class LessThan extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "lt";
+        return "less";
     }
 
     @Override

@@ -258,7 +258,7 @@ public abstract class DifferentialFunction {
     public List<SDVariable> diff(List<SDVariable> i_v1) {
         List<SDVariable> vals = doDiff(i_v1);
         val outputVars = args();
-        for(int i = 0; i < outputVars.length; i++) {
+        for(int i = 0; i < vals.size(); i++) {
             SDVariable var = outputVars[i];
             SDVariable grad = var.getGradient();
             if(grad != null) {
@@ -278,7 +278,7 @@ public abstract class DifferentialFunction {
     }
 
 
-    private void setInstanceId() {
+    protected void setInstanceId() {
         if(instanceId == null) {
             this.instanceId = UUID.randomUUID().toString();
             if(sameDiff != null)

@@ -51,7 +51,7 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "gte";
+        return "greater_equal";
     }
 
     @Override
