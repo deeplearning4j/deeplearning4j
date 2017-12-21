@@ -15,6 +15,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -376,7 +377,7 @@ public class LossFunctionGradientCheck {
             case "LossKLD":
                 //KL divergence: should be a probability distribution for labels??
                 ret[1] = Nd4j.rand(labelsShape);
-                Nd4j.getExecutioner().exec(new SoftMax(ret[1]), 1);
+                Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]), 1);
                 break;
             case "LossMCXENT":
             case "LossNegativeLogLikelihood":
