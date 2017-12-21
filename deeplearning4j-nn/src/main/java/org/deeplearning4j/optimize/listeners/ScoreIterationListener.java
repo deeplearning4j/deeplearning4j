@@ -32,7 +32,6 @@ public class ScoreIterationListener implements IterationListener {
     private int printIterations = 10;
     private static final Logger log = LoggerFactory.getLogger(ScoreIterationListener.class);
     private boolean invoked = false;
-    private long iterCount = 0;
 
     /**
      * @param printIterations    frequency with which to print scores (i.e., every printIterations parameter updates)
@@ -48,10 +47,9 @@ public class ScoreIterationListener implements IterationListener {
     public void iterationDone(Model model, int iteration, int epoch) {
         if (printIterations <= 0)
             printIterations = 1;
-        if (iterCount % printIterations == 0) {
-            double result = model.score();
-            log.info("Score at iteration " + iterCount + " is " + result);
+        if (iteration % printIterations == 0) {
+            double score = model.score();
+            log.info("Score at iteration {} is {}", iteration, score);
         }
-        iterCount++;
     }
 }

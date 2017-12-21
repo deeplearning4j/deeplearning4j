@@ -24,7 +24,6 @@ public class PerformanceListener implements IterationListener {
     private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
     private transient ThreadLocal<Long> lastTime = new ThreadLocal<>();
-    private transient ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
 
     private boolean reportScore;
     private boolean reportSample = true;
@@ -59,10 +58,7 @@ public class PerformanceListener implements IterationListener {
         if (batchesPerSec.get() == null)
             batchesPerSec.set(0.0);
 
-        if (iterationCount.get() == null)
-            iterationCount.set(new AtomicLong(0));
-
-        if (iterationCount.get().getAndIncrement() % frequency == 0) {
+        if (iteration % frequency == 0) {
             long currentTime = System.currentTimeMillis();
 
             long timeSpent = currentTime - lastTime.get();
@@ -102,7 +98,7 @@ public class PerformanceListener implements IterationListener {
             }
 
             if (reportIteration)
-                builder.append("iteration ").append(iterationCount.get().get()).append("; ");
+                builder.append("iteration ").append(iteration).append("; ");
 
             if (reportTime)
                 builder.append("iteration time: ").append(timeSpent).append(" ms; ");
@@ -129,7 +125,6 @@ public class PerformanceListener implements IterationListener {
         samplesPerSec = new ThreadLocal<>();
         batchesPerSec = new ThreadLocal<>();
         lastTime = new ThreadLocal<>();
-        iterationCount = new ThreadLocal<>();
     }
 
     public static class Builder {
