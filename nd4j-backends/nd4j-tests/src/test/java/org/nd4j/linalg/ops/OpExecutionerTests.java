@@ -275,7 +275,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testRowSoftmax() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6);
-        SoftMax softMax = new SoftMax(arr);
+        OldSoftMax softMax = new OldSoftMax(arr);
         opExecutioner.exec(softMax);
         assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
     }
@@ -341,7 +341,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testSoftmax() {
         INDArray vec = Nd4j.linspace(1, 6, 6);
         INDArray matrix = vec.dup().reshape('f', 2, 3);
-        Nd4j.getExecutioner().exec(new SoftMax(matrix));
+        Nd4j.getExecutioner().exec(new OldSoftMax(matrix));
         INDArray matrixAssertion = Nd4j.create(
                         new double[] {0.015876241, 0.015876241, 0.11731043, 0.11731043, 0.86681336, 0.86681336},
                         new int[] {2, 3}, 'f');
@@ -352,7 +352,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testOtherSoftmax() {
         INDArray vec = Nd4j.linspace(1, 18, 18);
         INDArray matrix = vec.dup().reshape('f', 3, 6);
-        Nd4j.getExecutioner().exec(new SoftMax(matrix));
+        Nd4j.getExecutioner().exec(new OldSoftMax(matrix));
         INDArray assertion = Nd4j.create(new double[] {2.9067235E-7, 2.9067235E-7, 2.9067235E-7, 5.8383102E-6,
                         5.8383102E-6, 5.8383102E-6, 1.1726559E-4, 1.1726559E-4, 1.1726559E-4, 0.0023553425,
                         0.0023553425, 0.0023553425, 0.047308315, 0.047308315, 0.047308315, 0.95021296, 0.95021296,
@@ -485,7 +485,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
                         0.3049033, 0.29277474, 0.29136384, 0.30316526, 0.2807459}, new int[] {150, 3}, 'f');
 
         System.out.println("Data:" + input.data().length());
-        SoftMax softMax = new SoftMax(input);
+        OldSoftMax softMax = new OldSoftMax(input);
         Nd4j.getExecutioner().exec(softMax);
         assertEquals(assertion, softMax.z());
 
@@ -524,7 +524,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testSoftMax() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6);
-        SoftMax softMax = new SoftMax(arr);
+        OldSoftMax softMax = new OldSoftMax(arr);
         opExecutioner.exec(softMax);
         assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
     }

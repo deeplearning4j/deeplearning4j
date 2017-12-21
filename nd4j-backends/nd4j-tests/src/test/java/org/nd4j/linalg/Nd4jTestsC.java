@@ -2805,7 +2805,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
-        Nd4j.getExecutioner().exec(new SoftMax(input, output));
+        Nd4j.getExecutioner().exec(new OldSoftMax(input, output));
     }
 
     @Test
@@ -3020,7 +3020,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testSoftmaxRow() {
         for (int i = 0; i < 20; i++) {
             INDArray arr1 = Nd4j.zeros(100);
-            Nd4j.getExecutioner().execAndReturn(new SoftMax(arr1));
+            Nd4j.getExecutioner().execAndReturn(new OldSoftMax(arr1));
             System.out.println(Arrays.toString(arr1.data().asFloat()));
         }
     }
@@ -5465,9 +5465,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-        Nd4j.getExecutioner().execAndReturn(new SoftMax(expected));
+        Nd4j.getExecutioner().execAndReturn(new OldSoftMax(expected));
 
-        val result = Nd4j.getExecutioner().execAndReturn(new SoftMax(original, original.dup(original.ordering())));
+        val result = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(original, original.dup(original.ordering())));
 
         assertEquals(reference, original);
         assertEquals(expected, result);

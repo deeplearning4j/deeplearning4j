@@ -19,12 +19,17 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,8 +37,9 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class Mmul extends TensorMmul {
+public class Mmul extends DynamicCustomOp {
 
+    protected MMulTranspose mMulTranspose;
 
     /**
      *
@@ -46,13 +52,9 @@ public class Mmul extends TensorMmul {
                 SDVariable i_v1,
                 SDVariable i_v2,
                 MMulTranspose mMulTranspose) {
-        super(sameDiff,
-                i_v1,
-                i_v2, new int[][] {
-                        {1},{0}
-                },mMulTranspose);
-
+        super(null,sameDiff,new SDVariable[]{i_v1,i_v2});
         this.mMulTranspose = mMulTranspose;
+        addIArgument(fromBoolean(mMulTranspose.isTransposeA()),fromBoolean(mMulTranspose.isTransposeB()));
     }
 
 
@@ -68,26 +70,31 @@ public class Mmul extends TensorMmul {
         this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
     }
 
-    public Mmul(INDArray x, INDArray y, int[][] axes, MMulTranspose mMulTranspose) {
-        super(x, y, axes);
-        this.mMulTranspose = mMulTranspose;
-    }
 
-    public Mmul(INDArray x, INDArray y, INDArray z, MMulTranspose mMulTranspose) {
-        super(x, y, z,  new int[][] {
-                {1},{0}
-        });
-        this.mMulTranspose = mMulTranspose;
-    }
 
     public Mmul() {}
 
+
     @Override
     public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<>(1);
+        int[] aShape = mMulTranspose.isTransposeA() ? ArrayUtil.reverseCopy(larg().getShape()) : larg().getShape();
+        int[] bShape = mMulTranspose.isTransposeB() ? ArrayUtil.reverseCopy(rarg().getShape()) : rarg().getShape();
+        if(Shape.isPlaceholderShape(aShape) || Shape.isPlaceholderShape(bShape))
+            return Collections.emptyList();
 
-        return super.calculateOutputShape();
+        if(aShape != null && bShape != null) {
+            val shape =  Shape.getMatrixMultiplyShape(aShape,bShape);
+            ret.add(shape);
+        }
+        if(!ret.isEmpty()) {
+            for(int i = 0; i < ret.get(0).length; i++) {
+                if(ret.get(0)[i] < 1)
+                    throw new ND4JIllegalStateException("Invalid shape computed at index " +  i);
+            }
+        }
+        return ret;
     }
-
 
 
     @Override
@@ -101,10 +108,6 @@ public class Mmul extends TensorMmul {
     }
 
 
-    @Override
-    public int opNum() {
-        return 3;
-    }
 
     @Override
     public String opName() {

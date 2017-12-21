@@ -1560,9 +1560,24 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-            val status = OpStatus.byNumber(loop.execCustomOpDouble(null, hash, inputBuffers, inputShapes, op.numInputArguments(), outputBuffers, outputShapes, op.numOutputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments(), op.isInplaceCall()));
-            if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
+            OpStatus status = OpStatus.ND4J_STATUS_OK;
+            try {
+                status = OpStatus.byNumber(loop.execCustomOpDouble(
+                        null,
+                        hash,
+                        inputBuffers,
+                        inputShapes,
+                        op.numInputArguments(),
+                        outputBuffers,
+                        outputShapes,
+                        op.numOutputArguments(),
+                        tArgs, op.numTArguments(),
+                        iArgs, op.numIArguments(),
+                        op.isInplaceCall()));
+            }catch(Exception e) {
+                log.error("Failed to execute. Please see above message (printed out from c++) for a possible cause of error.",e);
+            }
+
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.numTArguments() > 0 ? new ShortPointer(op.numTArguments()) : null;
 
@@ -1594,7 +1609,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<int[]>();
         if(op.numInputArguments() < 1) {
-           return Collections.emptyList();
+            return Collections.emptyList();
         }
 
 

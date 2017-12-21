@@ -2,11 +2,11 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * f_i(x) = exp(x_i - shift) / sum_j exp(x_j - shift)
@@ -18,7 +18,7 @@ public class ActivationSoftmax extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
+        Nd4j.getExecutioner().execAndReturn(new OldSoftMax(in));
         return in;
     }
 
@@ -47,7 +47,7 @@ public class ActivationSoftmax extends BaseActivationFunction {
         //        Nd4j.getExecutioner().execAndReturn(new SoftMax(in).derivative());
         //        return in;
 
-        INDArray out = Nd4j.getExecutioner().execAndReturn(new SoftMax(in));
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(in));
 
         INDArray x = out.mul(epsilon).sum(1);
         INDArray dLdz = out.mul(epsilon.subColumnVector(x));

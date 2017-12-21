@@ -481,7 +481,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 val outputVars =  outputVariables();
                 outputArguments.clear();
                 for(val arg : outputVars) {
-                    outputArguments.add(arg.getArr());
+                    val arr = arg.getArr();
+                    if(arr == null) {
+                        throw new ND4JIllegalStateException("Attempting to add null array for variable " + arg.getVarName());
+                    }
+                    outputArguments.add(arr);
                 }
             }
         }

@@ -851,6 +851,8 @@ public class SameDiffTests {
 
     }
 
+
+
     @Test
     public void testLogisticRegression() {
         Map<String,INDArray> vars = this.variablesForInput();

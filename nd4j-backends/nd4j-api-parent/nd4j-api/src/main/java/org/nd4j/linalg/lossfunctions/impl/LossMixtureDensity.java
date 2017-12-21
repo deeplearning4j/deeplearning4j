@@ -10,7 +10,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -135,7 +135,7 @@ public class LossMixtureDensity extends DifferentialFunction implements ILossFun
 
         // Alpha is a softmax because
         // the alpha should all sum to 1 for a given gaussian mixture.
-        mdc.alpha = Nd4j.getExecutioner().execAndReturn(new SoftMax(mdc.alpha));
+        mdc.alpha = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(mdc.alpha));
 
         // Mu comes directly from the network as an unmolested value.
         // Note that this effectively means that the output layer of

@@ -2,7 +2,6 @@ package org.nd4j.linalg.crash;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -11,7 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.LogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.Sqrt;
 import org.nd4j.linalg.factory.Nd4j;
@@ -141,7 +140,7 @@ public class CrashTest extends BaseNd4jTest {
 
 
         // logisoftmax, softmax & softmax derivative
-        Nd4j.getExecutioner().exec(new SoftMax(x));
+        Nd4j.getExecutioner().exec(new OldSoftMax(x));
         Nd4j.getExecutioner().exec(new SoftMaxDerivative(x));
         Nd4j.getExecutioner().exec(new LogSoftMax(x));
 

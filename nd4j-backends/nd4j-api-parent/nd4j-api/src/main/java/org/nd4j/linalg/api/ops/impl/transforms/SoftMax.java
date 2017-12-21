@@ -21,9 +21,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -40,60 +37,21 @@ import java.util.List;
  * @author Adam Gibson
  */
 
-public class SoftMax extends BaseTransformOp {
-    public SoftMax(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
+public class SoftMax extends BaseDynamicTransformOp {
+    public SoftMax() {
+        super();
     }
 
-    public SoftMax(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
+    public SoftMax(SameDiff sameDiff, SDVariable[] args) {
+        super(sameDiff, args, false);
     }
 
-    public SoftMax(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+
+
+    public SoftMax(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(sameDiff, args, inPlace);
     }
 
-    public SoftMax(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public SoftMax(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
-
-    public SoftMax() {}
-
-    public SoftMax(INDArray x, INDArray z) {
-        this(x,null,z);
-
-    }
-
-    public SoftMax(INDArray x, INDArray z, long n) {
-       this(x,null,z,n);
-    }
-
-    public SoftMax(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public SoftMax(INDArray x, INDArray y, INDArray z) {
-        this(x,y,z,x.lengthLong());
-    }
-
-    public SoftMax(INDArray x) {
-        super(x);
-
-    }
-
-    @Override
-    public int opNum() {
-        return 38;
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
 
     @Override
     public String opName() {
@@ -112,54 +70,6 @@ public class SoftMax extends BaseTransformOp {
         return "Softmax";
     }
 
-
-    @Override
-    public void exec() {
-        exec(1);
-    }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        passThrough = true;
-    }
-
-
-    @Override
-    public void exec(int... dimensions) {
-        if (dimensions[0] != 1)
-            throw new IllegalArgumentException("Only supports row wise calculations");
-        if (x.isMatrix()) {
-            INDArray maxAlongDimension = x.max(dimensions);
-            if (!maxAlongDimension.isVector() && !maxAlongDimension.isScalar())
-                throw new IllegalStateException("Max along dimension for input must either be a row vector or scalar");
-
-            INDArray xMinusMax = x.subColumnVector(maxAlongDimension);
-
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax, z));
-            } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(xMinusMax));
-            }
-
-            INDArray sum = exp.sum(dimensions);
-            exp.diviColumnVector(sum);
-
-            if (z == null)
-                z = exp;
-        } else if (x.isVector()) {
-            double max = x.maxNumber().doubleValue();
-            INDArray exp;
-            if (z != null) {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max), z));
-            } else {
-                exp = Nd4j.getExecutioner().execAndReturn(new Exp(x.sub(max)));
-            }
-            exp.divi(exp.sumNumber().doubleValue());
-            this.z = exp;
-        }
-    }
 
 
     @Override

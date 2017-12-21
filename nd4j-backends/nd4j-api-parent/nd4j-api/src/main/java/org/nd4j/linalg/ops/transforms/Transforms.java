@@ -482,7 +482,7 @@ public class Transforms {
      * @return
      */
     public static INDArray softmax(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().execAndReturn(new SoftMax(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().execAndReturn(new OldSoftMax(((copy ? in.dup() : in))));
     }
 
     /**

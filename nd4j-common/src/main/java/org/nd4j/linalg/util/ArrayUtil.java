@@ -1000,7 +1000,7 @@ public class ArrayUtil {
         for (int i = 0; i < validationLength; i++) {
             if (aShape[axes[0][i]] != bShape[axes[1][i]])
                 throw new IllegalArgumentException(
-                                "Size of the given axes a" + "t each dimension must be the same size.");
+                                "Size of the given axes a" + " t each dimension must be the same size.");
             if (axes[0][i] < 0)
                 axes[0][i] += aShape.length;
             if (axes[1][i] < 0)

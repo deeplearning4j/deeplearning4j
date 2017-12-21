@@ -5,7 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
@@ -68,7 +68,7 @@ public class SoftMaxDerivative extends BaseGradientOp  {
 
     @Override
     public void exec() {
-        INDArray softmaxed = Nd4j.getExecutioner().execAndReturn(new SoftMax(x));
+        INDArray softmaxed = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(x));
         INDArray mulled = softmaxed.muli(y);
         INDArray summed = mulled.sum(-1);
         softmaxed.muliColumnVector(summed);

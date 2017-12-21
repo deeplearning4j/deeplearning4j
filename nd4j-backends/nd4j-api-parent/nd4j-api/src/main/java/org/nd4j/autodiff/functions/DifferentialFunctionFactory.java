@@ -377,7 +377,7 @@ public class DifferentialFunctionFactory   {
 
 
     public SDVariable softmax(SDVariable iX) {
-        return new SoftMax(sameDiff(),iX,new Object[]{}).outputVariables()[0];
+        return new SoftMax(sameDiff(),new SDVariable[]{iX}).outputVariables()[0];
 
     }
 

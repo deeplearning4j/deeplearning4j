@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Adam Gibson
  */
-public class SoftMaxDerivative extends SoftMax {
+public class SoftMaxDerivative extends OldSoftMax {
     public SoftMaxDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
