@@ -1,5 +1,6 @@
 package org.deeplearning4j.samediff;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -7,19 +8,24 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.samediff.testlayers.SameDiffDense;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+@Slf4j
 public class SameDiffTest {
 
     @Test
-    public void testSameDiffDenseBasic(){
+    public void testSameDiffDenseBasic() {
 
         int nIn = 3;
         int nOut = 4;
@@ -32,7 +38,7 @@ public class SameDiffTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        Map<String,INDArray> pt1 = net.getLayer(0).paramTable();
+        Map<String, INDArray> pt1 = net.getLayer(0).paramTable();
         assertNotNull(pt1);
         assertEquals(2, pt1.size());
         assertNotNull(pt1.get(DefaultParamInitializer.WEIGHT_KEY));
@@ -43,8 +49,9 @@ public class SameDiffTest {
     }
 
     @Test
-    public void testSameDiffDenseForward(){
+    public void testSameDiffDenseForward() {
 
+        int minibatch = 5;
         int nIn = 3;
         int nOut = 4;
 
@@ -56,21 +63,143 @@ public class SameDiffTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        Map<String,INDArray> pt1 = net.paramTable();
+        Map<String, INDArray> pt1 = net.paramTable();
         assertNotNull(pt1);
 
         System.out.println(pt1);
 
-//        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-//                .list()
-//                .layer(new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(nOut).build())
-//                .build();
-//
-//        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-//        net2.init();
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(nOut).build())
+                .build();
 
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
 
+        net.params().assign(net2.params());
 
+        INDArray in = Nd4j.rand(minibatch, nIn);
+        INDArray out = net.output(in);
+        INDArray outExp = net2.output(in);
+
+        assertEquals(outExp, out);
     }
 
+    @Test
+    public void testShapeResolutionMinus1() {
+
+        int nIn = 3;
+        int nOut = 4;
+
+        int minibatch = 3;
+
+//        for(boolean useMinus1 : new boolean[]{false, true}) {
+        for (boolean useMinus1 : new boolean[]{true}) {
+            log.info("Starting: {}", (useMinus1 ? "minibatch -1" : "minibatch 3"));
+
+            int[] inShape;
+            if (useMinus1) {
+                inShape = new int[]{-1, nIn};
+            } else {
+                inShape = new int[]{minibatch, nIn};
+            }
+            int[] wShape = new int[]{nIn, nOut};
+            int[] bShape = new int[]{1, nOut};
+
+            SameDiff sd = SameDiff.create();
+            SDVariable layerInput = sd.var("in", inShape);
+            SDVariable weights = sd.var("W", wShape);
+            SDVariable bias = sd.var("b", bShape);
+
+            SDVariable mmul = sd.mmul("mmul", layerInput, weights);
+            SDVariable z = mmul.add("z", bias);
+            SDVariable out = sd.sigmoid("out", z);
+
+            INDArray in = Nd4j.rand(new int[]{minibatch, nIn});
+            INDArray w = Nd4j.rand(wShape);
+            INDArray b = Nd4j.rand(bShape);
+
+            Map<String, INDArray> m = new HashMap<>();
+            m.put("in", in);
+            m.put("W", w);
+            m.put("b", b);
+
+            sd.associateArrayWithVariable(in, sd.getVariable("in"));
+            sd.associateArrayWithVariable(w, sd.getVariable("W"));
+            sd.associateArrayWithVariable(b, sd.getVariable("b"));
+
+//            INDArray outArr = sd.execAndEndResult();
+
+            sd.addAsPlaceHolder("in");
+            sd.addAsPlaceHolder("W");
+            sd.addAsPlaceHolder("b");
+
+            sd.execWithPlaceHolder(m);
+
+            INDArray outArr = sd.getVariable("out").getArr();
+
+            assertArrayEquals(new int[]{minibatch, nOut}, outArr.shape());
+        }
+    }
+
+    @Test
+    public void debug() {
+
+        int nIn = 3;
+        int nOut = 4;
+
+        int minibatch = 3;
+
+        int[] inShape = new int[]{-1, nIn};
+        int[] wShape = new int[]{nIn, nOut};
+        int[] bShape = new int[]{1, nOut};
+
+        SameDiff sd = SameDiff.create();
+        SDVariable layerInput = sd.var("in", inShape);
+        SDVariable weights = sd.var("W", wShape);
+        SDVariable bias = sd.var("b", bShape);
+
+        assertArrayEquals(inShape, layerInput.getShape());
+        assertArrayEquals(wShape, weights.getShape());
+
+        SDVariable mmul = sd.mmul("mmul", layerInput, weights);
+        SDVariable z = mmul.add("z", bias);
+        SDVariable out = sd.sigmoid("out", z);
+
+        INDArray in = Nd4j.rand(new int[]{minibatch, nIn});
+        INDArray w = Nd4j.rand(wShape);
+        INDArray b = Nd4j.rand(bShape);
+
+        Map<String, INDArray> m = new HashMap<>();
+        m.put("in", in);
+        m.put("W", w);
+        m.put("b", b);
+
+        sd.associateArrayWithVariable(in, sd.getVariable("in"));
+        sd.associateArrayWithVariable(w, sd.getVariable("W"));
+        sd.associateArrayWithVariable(b, sd.getVariable("b"));
+
+//            INDArray outArr = sd.execAndEndResult();
+
+        sd.addAsPlaceHolder("in");
+        sd.addAsPlaceHolder("W");
+        sd.addAsPlaceHolder("b");
+
+        sd.execWithPlaceHolder(m);
+
+        INDArray outArr = sd.getVariable("out").getArr();
+
+        assertArrayEquals(new int[]{minibatch, nOut}, outArr.shape());
+    }
+
+    @Test
+    public void debug2() {
+        int[] inShape = new int[]{-1, 3};
+
+        SameDiff sd = SameDiff.create();
+        SDVariable layerInput = sd.var("in", inShape);
+
+        int[] actShape = layerInput.getShape(); //Getting: [1,3]
+        assertArrayEquals(inShape, actShape);
+    }
 }

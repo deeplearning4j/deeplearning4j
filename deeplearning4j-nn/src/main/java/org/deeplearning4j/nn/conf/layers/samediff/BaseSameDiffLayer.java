@@ -56,7 +56,7 @@ public abstract class BaseSameDiffLayer extends Layer {
 
     public abstract Map<String,int[]> paramShapes();
 
-    public abstract void defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
+    public abstract List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
 
     //==================================================================================================================
 
