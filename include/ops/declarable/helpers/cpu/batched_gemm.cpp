@@ -19,29 +19,29 @@ namespace nd4j {
                 int batchSize = vA.size();
                 if (BlasHelper::getInstance()->hasBatchedGEMM<T>()) {
                     auto arr = vA.at(0);
-                    CBLAS_TRANSPOSE *_tA, *_tB;
-                    int *_M, *_N, *_K, *_ldA, *_ldB, *_ldC, *_size;
+                    CBLAS_TRANSPOSE *tA, *tB;
+                    int *tM, *tN, *tK, *tldA, *tldB, *tldC, *tsize;
                     // mkl requires mnk etc as arrays, cuda doesn't
-                    ALLOCATE(_tA, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(_tB, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
-                    ALLOCATE(_M, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_N, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_K, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_ldA, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_ldB, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_ldC, arr->getWorkspace(), batchSize, int);
-                    ALLOCATE(_size, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tA, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+                    ALLOCATE(tB, arr->getWorkspace(), batchSize, CBLAS_TRANSPOSE);
+                    ALLOCATE(tM, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tN, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tK, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldA, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldB, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tldC, arr->getWorkspace(), batchSize, int);
+                    ALLOCATE(tsize, arr->getWorkspace(), batchSize, int);
 
-                    shape::fill(_tA, (CBLAS_TRANSPOSE) transA, batchSize);
-                    shape::fill(_tB, (CBLAS_TRANSPOSE) transB, batchSize);
+                    shape::fill(tA, (CBLAS_TRANSPOSE) transA, batchSize);
+                    shape::fill(tB, (CBLAS_TRANSPOSE) transB, batchSize);
 
-                    shape::fill(_M, M, batchSize);
-                    shape::fill(_N, N, batchSize);
-                    shape::fill(_K, K, batchSize);
-                    shape::fill(_ldA, ldA, batchSize);
-                    shape::fill(_ldB, ldB, batchSize);
-                    shape::fill(_ldC, ldC, batchSize);
-                    shape::fill(_size, 1, batchSize);
+                    shape::fill(tM, M, batchSize);
+                    shape::fill(tN, N, batchSize);
+                    shape::fill(tK, K, batchSize);
+                    shape::fill(tldA, ldA, batchSize);
+                    shape::fill(tldB, ldB, batchSize);
+                    shape::fill(tldC, ldC, batchSize);
+                    shape::fill(tsize, 1, batchSize);
 
                     std::vector<T*> buffersA(batchSize);
                     std::vector<T*> buffersB(batchSize);
@@ -54,21 +54,21 @@ namespace nd4j {
                     }
 
                     if (sizeof(T) == 8) {
-                        BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, _tA, _tB, _M, _N, _K, (double *) alphas->buffer(), (double **) buffersA.data(), _ldA, (double **) buffersB.data(), _ldB, (double *) betas->buffer(),(double **)  buffersC.data(), _ldC, vA.size(), _size);
+                        BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->buffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->buffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
                     } else if (sizeof(T) == 4) {
-                        BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, _tA, _tB, _M, _N, _K, (float *) alphas->buffer(), (float **) buffersA.data(), _ldA, (float **) buffersB.data(), _ldB, (float *) betas->buffer(), (float **) buffersC.data(), _ldC, vA.size(), _size);
+                        BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->buffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->buffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
                     }
 
                     // release temporary arrays
-                    RELEASE(_tA, arr->getWorkspace());
-                    RELEASE(_tB, arr->getWorkspace());
-                    RELEASE(_M, arr->getWorkspace());
-                    RELEASE(_N, arr->getWorkspace());
-                    RELEASE(_K, arr->getWorkspace());
-                    RELEASE(_ldA, arr->getWorkspace());
-                    RELEASE(_ldB, arr->getWorkspace());
-                    RELEASE(_ldC, arr->getWorkspace());
-                    RELEASE(_size, arr->getWorkspace());
+                    RELEASE(tA, arr->getWorkspace());
+                    RELEASE(tB, arr->getWorkspace());
+                    RELEASE(tM, arr->getWorkspace());
+                    RELEASE(tN, arr->getWorkspace());
+                    RELEASE(tK, arr->getWorkspace());
+                    RELEASE(tldA, arr->getWorkspace());
+                    RELEASE(tldB, arr->getWorkspace());
+                    RELEASE(tldC, arr->getWorkspace());
+                    RELEASE(tsize, arr->getWorkspace());
                 } else {
                     CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
                     CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
