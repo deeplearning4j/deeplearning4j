@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -94,9 +95,11 @@ public class SameDiffParamInitializer implements ParamInitializer {
             int length = ArrayUtil.prod(sh);
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
             if(!Arrays.equals(sub.shape(), sh)){
-                sub = sub.reshape('c', sh); //TODO initialization order
+                sub = sub.reshape(WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, sh); //TODO do we want to allow users to override initialization order?
             }
             out.put(s, sub);
+
+            soFar += length;
         }
         return out;
     }
