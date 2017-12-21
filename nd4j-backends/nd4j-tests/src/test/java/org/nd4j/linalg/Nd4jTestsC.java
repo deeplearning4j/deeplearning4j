@@ -1071,6 +1071,37 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion, result);
     }
 
+    @Test
+    public void testGemmStrided(){
+
+        for( int x : new int[]{5, 1}) {
+
+            List<Pair<INDArray, String>> la = NDArrayCreationUtil.getAllTestMatricesWithShape(5, x, 12345);
+            List<Pair<INDArray, String>> lb = NDArrayCreationUtil.getAllTestMatricesWithShape(x, 4, 12345);
+
+            for (int i = 0; i < la.size(); i++) {
+                for (int j = 0; j < lb.size(); j++) {
+
+                    String msg = "x=" + x + ", i=" + i + ", j=" + j;
+
+                    INDArray a = la.get(i).getFirst();
+                    INDArray b = lb.get(i).getFirst();
+
+                    INDArray result1 = Nd4j.createUninitialized(5, 4);
+                    INDArray result2 = Nd4j.createUninitialized(5, 4);
+                    INDArray result3 = Nd4j.createUninitialized(5, 4);
+
+                    Nd4j.gemm(a.dup('c'), b.dup('c'), result1, false, false, 1.0, 0.0);
+                    Nd4j.gemm(a.dup('f'), b.dup('f'), result2, false, false, 1.0, 0.0);
+                    Nd4j.gemm(a, b, result3, false, false, 1.0, 0.0);
+
+                    assertEquals(msg, result1, result2);
+                    assertEquals(msg, result1, result3);     // Fails here
+                }
+            }
+        }
+    }
+
 
     @Test
     public void testMultiSum() {
