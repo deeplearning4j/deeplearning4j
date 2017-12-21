@@ -15,6 +15,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
@@ -22,7 +23,7 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
     private static final String INPUT_KEY = "input";
 
     protected SameDiff sameDiff;
-    protected String outputKey;
+    protected List<String> outputKeys;
 
     protected INDArray params;
     protected INDArray gradients;
@@ -56,13 +57,15 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
             doInit();
         }
 
-        SameDiff sd = sameDiff.getFunction(outputKey);
         //Build map:
-        Map<String, INDArray> map = new HashMap<>(paramTable());
-        map.put(INPUT_KEY, input);
+//        Map<String, INDArray> map = new HashMap<>(paramTable());
+//        map.put(INPUT_KEY, input);
+
+        sameDiff.associateArrayWithVariable(input, sameDiff.getVariable(INPUT_KEY));
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            return sd.execAndEndResult();
+            INDArray result = sameDiff.execAndEndResult();
+            return result;
         }
     }
 
@@ -76,16 +79,15 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         Gradient g = new DefaultGradient();
 
-        SameDiff sd = sameDiff.getFunction(outputKey);
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            sd.execBackwards();
+            sameDiff.execBackwards();
             for(String s : layerConf().paramKeys() ){
-                INDArray pg = sd.grad(s).getArr();
+                INDArray pg = sameDiff.grad(s).getArr();
                 g.gradientForVariable().put(s, pg);
             }
 
-            dLdIn = sd.grad(INPUT_KEY).getArr();
+            dLdIn = sameDiff.grad(INPUT_KEY).getArr();
         }
 
         return new Pair<>(g, dLdIn);
@@ -183,14 +185,24 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
         Map<String,INDArray > p = paramTable();
 
         int[] inputShape = input.shape().clone();
-        inputShape[0] = -1;
-        SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);     //TODO WHAT ABOUT VARIABLE SIZES?
+//        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
+        SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
         Map<String,int[]> paramShapes = layerConf().paramShapes();
         Map<String,SDVariable> params = new LinkedHashMap<>();
         for(String s : layerConf().paramKeys()){
             int[] ps = paramShapes.get(s);
-            params.put(s, sameDiff.var(s, ps));
+            SDVariable v = sameDiff.var(s, ps);
+            params.put(s, v);
         }
-        layerConf().defineLayer(sameDiff, inputVar, params);
+        List<String> outputKeys = layerConf().defineLayer(sameDiff, inputVar, params);
+        if(outputKeys == null || outputKeys.size() != 1){
+            throw new IllegalStateException("Invalid output keys: " + outputKeys);
+        }
+
+        for(Map.Entry<String,INDArray> e : p.entrySet()){
+            sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
+        }
+
+        this.outputKeys = outputKeys;
     }
 }
