@@ -12,6 +12,8 @@ fi
 export MAKE_COMMAND="make"
 echo eval $CMAKE_COMMAND
 
+[[ -z ${MAKEJ:-} ]] && MAKEJ=5
+
 # Use > 1 to consume two arguments per pass in the loop (e.g. each
 # argument has a corresponding value to go with it).
 # Use > 0 to consume one or more arguments per pass in the loop (e.g.
@@ -382,7 +384,7 @@ mkbuilddir
 pwd
 eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
-        eval $MAKE_COMMAND -j5 && cd ../../..
+        eval $MAKE_COMMAND -j$MAKEJ && cd ../../..
     else
         eval $MAKE_COMMAND && cd ../../..
 fi
