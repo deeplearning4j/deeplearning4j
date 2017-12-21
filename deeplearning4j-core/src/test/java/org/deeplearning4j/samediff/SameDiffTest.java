@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -56,116 +57,118 @@ public class SameDiffTest {
     @Test
     public void testSameDiffDenseForward() {
 
-        int minibatch = 5;
-        int nIn = 3;
-        int nOut = 4;
+        for (int minibatch : new int[]{5, 1}) {
+            int nIn = 3;
+            int nOut = 4;
 
-        Activation[] afns = new Activation[]{
-                Activation.TANH, Activation.SIGMOID,
-                Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
+            Activation[] afns = new Activation[]{
+                    Activation.TANH, Activation.SIGMOID,
+                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
 //                Activation.CUBE,    //Output differs
 //                Activation.HARDTANH,    //NPE
 //                 Activation.RELU      //JVM crash
-        };
+            };
 
-        for(Activation a : afns) {
-            log.info("Starting test - " + a);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                            .activation(a)
-                            .build())
-                    .build();
+            for (Activation a : afns) {
+                log.info("Starting test - " + a);
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                .activation(a)
+                                .build())
+                        .build();
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
-            assertNotNull(net.paramTable());
+                assertNotNull(net.paramTable());
 
-            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
-                    .build();
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                        .build();
 
-            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-            net2.init();
+                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                net2.init();
 
-            net.params().assign(net2.params());
+                net.params().assign(net2.params());
 
-            //Check params:
-            assertEquals(net2.params(), net.params());
-            Map<String, INDArray> params1 = net.paramTable();
-            Map<String, INDArray> params2 = net2.paramTable();
-            assertEquals(params2, params1);
+                //Check params:
+                assertEquals(net2.params(), net.params());
+                Map<String, INDArray> params1 = net.paramTable();
+                Map<String, INDArray> params2 = net2.paramTable();
+                assertEquals(params2, params1);
 
-            INDArray in = Nd4j.rand(minibatch, nIn);
-            INDArray out = net.output(in);
-            INDArray outExp = net2.output(in);
+                INDArray in = Nd4j.rand(minibatch, nIn);
+                INDArray out = net.output(in);
+                INDArray outExp = net2.output(in);
 
-            assertEquals(outExp, out);
+                assertEquals(outExp, out);
+            }
         }
     }
 
     @Test
     public void testSameDiffDenseBackward() {
 
-        int minibatch = 5;
         int nIn = 3;
         int nOut = 4;
 
-        Activation[] afns = new Activation[]{
-                Activation.TANH, Activation.SIGMOID,
-                Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
-                Activation.CUBE,    //Output differs
-                Activation.HARDTANH,    //NPE
-                 Activation.RELU      //JVM crash
-        };
+        for (int minibatch : new int[]{5, 1}) {
 
-        for(Activation a : afns) {
-            log.info("Starting test - " + a);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                            .activation(a)
-                            .build())
-                    .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .build();
+            Activation[] afns = new Activation[]{
+                    Activation.TANH,
+//                    Activation.SIGMOID,
+//                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
+//                    Activation.CUBE,    //Output differs
+//                    Activation.HARDTANH,    //NPE
+//                    Activation.RELU      //JVM crash
+            };
 
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
+            for (Activation a : afns) {
+                log.info("Starting test - " + a);
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                .activation(a)
+                                .build())
+                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .build();
 
-            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                    .list()
-                    .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
-                    .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
-                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                    .build();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
 
-            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-            net2.init();
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut).activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .build();
 
-            net.params().assign(net2.params());
+                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                net2.init();
 
-            //Check params:
-            assertEquals(net2.params(), net.params());
-            assertEquals(net2.paramTable(), net.paramTable());
+                net.params().assign(net2.params());
 
-            INDArray in = Nd4j.rand(minibatch, nIn);
-            INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
-            net.setInput(in);
-            net2.setInput(in);
-            net.setLabels(l);
-            net2.setLabels(l);
+                //Check params:
+                assertEquals(net2.params(), net.params());
+                assertEquals(net2.paramTable(), net.paramTable());
 
-            net.computeGradientAndScore();
-            net2.computeGradientAndScore();
+                INDArray in = Nd4j.rand(minibatch, nIn);
+                INDArray l = TestUtils.randomOneHot(minibatch, nOut, 12345);
+                net.setInput(in);
+                net2.setInput(in);
+                net.setLabels(l);
+                net2.setLabels(l);
 
-            Gradient g = net.gradient();
-            Gradient g2 = net.gradient();
-            assertEquals(g2.gradient(), g.gradient());
+                net.computeGradientAndScore();
+                net2.computeGradientAndScore();
 
-
+                Gradient g = net.gradient();
+                Gradient g2 = net2.gradient();
+                assertEquals(g2.gradient(), g.gradient());
+            }
         }
     }
 
@@ -309,7 +312,7 @@ public class SameDiffTest {
         int[] wShape = new int[]{nIn, nOut};
         int[] bShape = new int[]{1, nOut};
 
-        for( Activation a : afns ){
+        for (Activation a : afns) {
             log.info("Starting: " + a);
             SameDiff sd = SameDiff.create();
             SDVariable layerInput = sd.var("in", inShape);
@@ -348,8 +351,8 @@ public class SameDiffTest {
         }
     }
 
-    public static SDVariable asSameDiff(Activation a, String variableName, SameDiff sd, SDVariable input, INDArray input2){
-        switch (a){
+    public static SDVariable asSameDiff(Activation a, String variableName, SameDiff sd, SDVariable input, INDArray input2) {
+        switch (a) {
             case CUBE:
                 Transforms.pow(input2, 3, false);
                 return sd.pow(variableName, input, 3.0);
@@ -391,5 +394,51 @@ public class SameDiffTest {
             default:
                 throw new UnsupportedOperationException("Activation function not yet supported: " + a);
         }
+    }
+
+
+    @Test
+    public void debugMmul() {
+
+        INDArray first = Nd4j.linspace(1, 3, 3);
+        INDArray second = Nd4j.linspace(4, 7, 4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable f = sd.var("in1", first);
+        SDVariable s = sd.var("in2", second);
+        SDVariable fTranspose = sd.transpose(f);
+        SDVariable mmul = sd.mmul("mmul", fTranspose, s);
+
+        INDArray out = sd.execAndEndResult();
+
+        INDArray exp = first.transpose().mmul(second);
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void debugMmul2() {
+        //Here: [1,3]^T * [1,4] = [3,4]
+
+        INDArray first = Nd4j.linspace(1, 3, 3);
+        INDArray second = Nd4j.linspace(4, 7, 4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable f = sd.var("in1", first);
+        SDVariable s = sd.var("in2", second);
+
+        MMulTranspose mt = MMulTranspose.builder()
+                .transposeA(true)
+                .transposeB(false)
+                .transposeResult(false)
+                .a(first)
+                .b(second)
+                .build();
+        SDVariable mmul = sd.f().mmul(f, s, mt);
+        sd.updateVariableNameAndReference(mmul, "mmul");
+
+        INDArray out = sd.execAndEndResult();
+
+        INDArray exp = first.transpose().mmul(second);
+        assertEquals(exp, out);
     }
 }
