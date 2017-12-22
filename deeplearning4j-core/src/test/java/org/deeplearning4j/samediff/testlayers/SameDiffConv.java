@@ -2,6 +2,7 @@ package org.deeplearning4j.samediff.testlayers;
 
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
@@ -87,6 +88,11 @@ public class SameDiffConv extends BaseSameDiffLayer {
     public List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
 //        sameDiff.conv2d()
         return null;
+    }
+
+    @Override
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        throw new UnsupportedOperationException();
     }
 
     public static class Builder extends BaseSameDiffLayer.Builder<Builder> {

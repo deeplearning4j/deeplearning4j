@@ -108,6 +108,12 @@ public class SameDiffTest {
                 INDArray outExp = net2.output(in);
 
                 assertEquals(outExp, out);
+
+                //Also check serialization:
+                MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                INDArray outLoaded = netLoaded.output(in);
+
+                assertEquals(outExp, outLoaded);
             }
         }
     }

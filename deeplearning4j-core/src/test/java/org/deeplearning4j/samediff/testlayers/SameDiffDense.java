@@ -1,6 +1,10 @@
 package org.deeplearning4j.samediff.testlayers;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
@@ -9,16 +13,20 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
 
+@Data
+@EqualsAndHashCode(callSuper = true, exclude = {"paramShapes"})
+@JsonIgnoreProperties("paramShapes")
 public class SameDiffDense extends BaseSameDiffLayer {
 
     private static final List<String> W_KEYS = Collections.singletonList(DefaultParamInitializer.WEIGHT_KEY);
     private static final List<String> B_KEYS = Collections.singletonList(DefaultParamInitializer.BIAS_KEY);
     private static final List<String> PARAM_KEYS = Arrays.asList(DefaultParamInitializer.WEIGHT_KEY, DefaultParamInitializer.BIAS_KEY);
 
-    private final Map<String,int[]> paramShapes;
+    private Map<String,int[]> paramShapes;
 
     private int nIn;
     private int nOut;
@@ -30,10 +38,10 @@ public class SameDiffDense extends BaseSameDiffLayer {
         nIn = builder.nIn;
         nOut = builder.nOut;
         activation = builder.activation;
+    }
 
-        paramShapes = new HashMap<>();
-        paramShapes.put(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
-        paramShapes.put(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
+    private SameDiffDense(){
+        //No op constructor for Jackson
     }
 
     @Override
@@ -65,6 +73,11 @@ public class SameDiffDense extends BaseSameDiffLayer {
 
     @Override
     public Map<String, int[]> paramShapes() {
+        if(paramShapes == null){
+            paramShapes = new HashMap<>();
+            paramShapes.put(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
+            paramShapes.put(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
+        }
         return paramShapes;
     }
 
@@ -81,11 +94,18 @@ public class SameDiffDense extends BaseSameDiffLayer {
         return Collections.singletonList("out");
     }
 
+    @Override
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        if(activation == null){
+            activation = Activation.fromIActivation(globalConfig.getActivationFn());
+        }
+    }
+
     public static class Builder extends BaseSameDiffLayer.Builder<Builder> {
 
         private int nIn;
         private int nOut;
-        private Activation activation = Activation.TANH;
+        private Activation activation;
 
         public Builder nIn(int nIn){
             this.nIn = nIn;

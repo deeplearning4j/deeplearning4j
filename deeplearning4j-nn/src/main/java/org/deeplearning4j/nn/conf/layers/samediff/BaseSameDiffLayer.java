@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -19,6 +21,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
 public abstract class BaseSameDiffLayer extends Layer {
 
     protected double l1;
@@ -41,6 +45,10 @@ public abstract class BaseSameDiffLayer extends Layer {
         this.biasUpdater = builder.biasUpdater;
     }
 
+    protected BaseSameDiffLayer(){
+        //No op constructor for Jackson
+    }
+
     @Override
     public abstract InputType getOutputType(int layerIndex, InputType inputType);
 
@@ -57,6 +65,8 @@ public abstract class BaseSameDiffLayer extends Layer {
     public abstract Map<String,int[]> paramShapes();
 
     public abstract List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
+
+    public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     //==================================================================================================================
 
@@ -88,6 +98,16 @@ public abstract class BaseSameDiffLayer extends Layer {
     }
 
     @Override
+    public IUpdater getUpdaterByParam(String paramName){
+        if(biasUpdater != null && initializer().isBiasParam(this, paramName)){
+            return biasUpdater;
+        } else if(initializer().isBiasParam(this, paramName) || initializer().isWeightParam(this, paramName)){
+            return updater;
+        }
+        throw new IllegalStateException("Unknown parameter key: " + paramName);
+    }
+
+    @Override
     public boolean isPretrainParam(String paramName) {
         return false;
     }
@@ -107,6 +127,28 @@ public abstract class BaseSameDiffLayer extends Layer {
         return paramKeys;
     }
 
+    public void applyGlobalConfig(NeuralNetConfiguration.Builder b){
+        if(Double.isNaN(l1)){
+            l1 = b.getL1();
+        }
+        if(Double.isNaN(l2)){
+            l2 = b.getL2();
+        }
+        if(Double.isNaN(l1Bias)){
+            l1Bias = b.getL1Bias();
+        }
+        if(Double.isNaN(l2Bias)){
+            l2Bias = b.getL2Bias();
+        }
+        if(updater == null){
+            updater = b.getIUpdater();
+        }
+        if(biasUpdater == null){
+            biasUpdater = b.getBiasUpdater();
+        }
+
+        applyGlobalConfigToLayer(b);
+    }
 
     public static abstract class Builder<T extends Builder<T>> extends Layer.Builder<T> {
 
