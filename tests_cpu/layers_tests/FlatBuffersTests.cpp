@@ -572,7 +572,7 @@ TEST_F(FlatBuffersTest, Ae_00) {
 
     delete graph;
 }
-
+/*
 TEST_F(FlatBuffersTest, expand_dims) {
     nd4j::ops::rank<float> op1;
 
@@ -585,7 +585,7 @@ TEST_F(FlatBuffersTest, expand_dims) {
 
     delete graph;
 }
-
+*/
 
 TEST_F(FlatBuffersTest, transpose) {
     nd4j::ops::rank<float> op1;
