@@ -7,6 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.FullConv3DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public class FullConv3D extends DynamicCustomOp {
                 conv3DConfig.getAT(),
                 conv3DConfig.getAW(),
                 conv3DConfig.getAH(),
-                fromBoolean(conv3DConfig.isBiasUsed())});
+                ArrayUtil.fromBoolean(conv3DConfig.isBiasUsed())});
 
 
     }

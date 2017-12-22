@@ -189,7 +189,8 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
-            mapNodeType(tfNode,importState);
+            if(!opsToIgnore().contains(getOpType(tfNode)))
+                mapNodeType(tfNode,importState);
         }
 
         return diff;

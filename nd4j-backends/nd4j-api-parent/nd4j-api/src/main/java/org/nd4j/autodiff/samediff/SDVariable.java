@@ -78,7 +78,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 }
             }
 
-            if(!foundPlaceHolder)
+            if(!foundPlaceHolder && shape != null)
                 sameDiff.putShapeForVarName(varName,shape);
         }
 

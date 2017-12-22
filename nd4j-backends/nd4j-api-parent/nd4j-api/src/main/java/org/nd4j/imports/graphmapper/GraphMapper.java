@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Map graph proto types to
@@ -183,6 +184,11 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
     int[] getShapeFromTensor(TENSOR_TYPE tensorType);
 
 
+    /**
+     * Ops to ignore for mapping
+     * @return
+     */
+    Set<String> opsToIgnore();
 
     /**
      * Get the input node for the given node

@@ -19,7 +19,7 @@ public class OnnxGraphMapperTests {
            OnnxGraphMapper onnxGraphMapper = new OnnxGraphMapper();
            assertEquals(graphProto.getNodeList().size(),
                    onnxGraphMapper.getNodeList(graphProto).size());
-           assertEquals(3,onnxGraphMapper.variablesForGraph(graphProto).size());
+           assertEquals(4,onnxGraphMapper.variablesForGraph(graphProto).size());
            val initializer = graphProto.getInput(0).getType().getTensorType();
            INDArray arr = onnxGraphMapper.getNDArrayFromTensor(graphProto.getInitializer(0).getName(), initializer, graphProto);
            assumeNotNull(arr);

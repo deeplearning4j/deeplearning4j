@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -49,7 +50,7 @@ public class AtrousConv2D extends Conv2D {
         addIArgument(conv2DConfig.getPw());
         addIArgument(conv2DConfig.getDh());
         addIArgument(conv2DConfig.getDw());
-        addIArgument(fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
 
     }
 

@@ -27,6 +27,14 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -3139,6 +3147,80 @@ public class SameDiff {
     }
 
 
+    /**
+     * LSTM unit
+     * @param baseName the base name for outputs
+     * @param configuration the configuration to use
+     * @return
+     */
+    public SDVariable lstm(String baseName, LSTMCellConfiguration configuration) {
+        return new LSTMCell(this,configuration).outputVariables(baseName)[0];
+    }
+
+
+
+
+    /**
+     * An sru cell
+     * @param configuration the configuration for the sru cell
+     * @return
+     */
+    public SDVariable sruCell( SRUCellConfiguration configuration) {
+        return new SRUCell(this,configuration).outputVariables()[0];
+    }
+
+
+    /**
+     * Simiple recurrent  unit
+     * @param configuration the configuration for the sru
+     * @return
+     */
+    public SDVariable sru( SRUConfiguration configuration) {
+        return new SRU(this,configuration).outputVariables()[0];
+    }
+
+    /**
+     * The gru cell
+     * @param configuration teh configuration to use
+     * @return
+     */
+    public SDVariable gru(GRUCellConfiguration configuration) {
+        return new GRUCell(this,configuration).outputVariables()[0];
+    }
+
+
+
+    /**
+     * An sru cell
+     * @param baseName the base name to  use for the output variables
+     * @param configuration the configuration for the sru cell
+     * @return
+     */
+    public SDVariable sruCell(String baseName, SRUCellConfiguration configuration) {
+        return new SRUCell(this,configuration).outputVariables(baseName)[0];
+    }
+
+
+    /**
+     * Simiple recurrent  unit
+     * @param baseName the base name to use for output variables
+     * @param configuration the configuration for the sru
+     * @return
+     */
+    public SDVariable sru(String baseName, SRUConfiguration configuration) {
+        return new SRU(this,configuration).outputVariables(baseName)[0];
+    }
+
+    /**
+     * The gru cell
+     * @param baseName the base name for the gru cell
+     * @param configuration teh configuration to use
+     * @return
+     */
+    public SDVariable gru(String baseName, GRUCellConfiguration configuration) {
+        return new GRUCell(this,configuration).outputVariables(baseName)[0];
+    }
+
 
     /**
      * Generate the variables based on the given input op
@@ -3163,7 +3245,7 @@ public class SameDiff {
                 CustomOp customOp = (CustomOp) function;
                 val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
-                if(descriptor.getNumOutputs() <= 0) {
+                if(descriptor == null || descriptor.getNumOutputs() <= 0) {
                     return new SDVariable[0];
                 }
                 else {
@@ -4341,7 +4423,7 @@ public class SameDiff {
                 integerArgs,
                 dimensions,
                 -1,
-                node.opType() == Op.Type.SCALAR ? node.getScalarValue().floatValue() : 0.0f, 0, scopeName);
+                node.opType() == Op.Type.SCALAR && node.getScalarValue() != null ?  node.getScalarValue().floatValue() : 0.0f, 0, scopeName);
 
         return flatNode;
     }

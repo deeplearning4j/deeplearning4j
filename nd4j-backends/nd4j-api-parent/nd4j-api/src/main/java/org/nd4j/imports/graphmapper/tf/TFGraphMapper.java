@@ -33,7 +33,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public final static String VALUE_ATTR_KEY = "value";
     public final static String SHAPE_KEY = "shape";
     private static TFGraphMapper MAPPER_INSTANCE = new TFGraphMapper();
-
+    private Set<String> graphMapper = new HashSet<String>(){{
+        add("LoopCond");
+    }};
     //singleton
     private TFGraphMapper() {}
 
@@ -555,6 +557,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             return shapeFromShapeProto(tensorProto.getAttrOrThrow("value").getTensor().getTensorShape());
     }
 
+    @Override
+    public Set<String> opsToIgnore() {
+        return graphMapper;
+    }
 
 
     @Override
@@ -571,6 +577,14 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         int[] shape = new int[tensorShapeProto.getDimList().size()];
         for(int i = 0; i < shape.length; i++) {
             shape[i] = (int) tensorShapeProto.getDim(i).getSize();
+        }
+
+        //shape should be mapped to a row vector
+        if(shape.length < 2) {
+            if(shape.length == 1)
+            shape = new int[]{1,shape[0]};
+            else
+                shape = new int[]{1,1};
         }
 
         return shape;

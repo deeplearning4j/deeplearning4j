@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -54,7 +55,7 @@ public class Conv2D extends DynamicCustomOp {
                 conv2DConfig.getPw(),
                 conv2DConfig.getDh(),
                 conv2DConfig.getDw(),
-                fromBoolean(conv2DConfig.isSameMode())});
+                ArrayUtil.fromBoolean(conv2DConfig.isSameMode())});
 
     }
 

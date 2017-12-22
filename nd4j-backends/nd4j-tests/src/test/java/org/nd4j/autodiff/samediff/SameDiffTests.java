@@ -301,7 +301,7 @@ public class SameDiffTests {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2, 2, 2}, new int[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());
-        assertEquals(48, sameDiff.numElements());
+        assertEquals(32, sameDiff.numElements());
     }
 
     @Test
@@ -558,7 +558,7 @@ public class SameDiffTests {
 
 
         //1 input plus 2 outputs
-        assertEquals(4,functionDef.variables().size());
+        assertEquals(3,functionDef.variables().size());
 
 
 

@@ -7,6 +7,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,9 +39,9 @@ public class BatchNorm extends DynamicCustomOp {
             addOutputArgument(outputArrays);
         }
 
-        addIArgument(fromBoolean(training));
-        addIArgument(fromBoolean(isLockGammaBeta));
-        addIArgument(fromBoolean(isMiniBatch));
+        addIArgument(ArrayUtil.fromBoolean(training));
+        addIArgument(ArrayUtil.fromBoolean(isLockGammaBeta));
+        addIArgument(ArrayUtil.fromBoolean(isMiniBatch));
     }
 
 

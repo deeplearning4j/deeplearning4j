@@ -2174,4 +2174,13 @@ public class ArrayUtil {
 
         return list.get(RandomUtils.nextInt(0, list.size()));
     }
+
+    /**
+     * Convert an int
+     * @param bool
+     * @return
+     */
+    public static int fromBoolean(boolean bool) {
+        return bool ? 1 : 0;
+    }
 }

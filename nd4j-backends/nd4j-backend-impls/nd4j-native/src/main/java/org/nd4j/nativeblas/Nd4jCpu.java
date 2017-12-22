@@ -669,10 +669,20 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public native @Name("operator*") FloatNDArray get();
     }
 
+    public FloatNDArray pop_back() {
+        long size = size();
+        FloatNDArray value = get(size - 1);
+        resize(size - 1);
+        return value;
+    }
+    public FloatNDArrayVector push_back(FloatNDArray value) {
+        long size = size();
+        resize(size + 1);
+        return put(size, value);
+    }
     public FloatNDArrayVector put(FloatNDArray value) {
         if (size() != 1) { resize(1); }
-        put(0, value);
-        return this;
+        return put(0, value);
     }
     public FloatNDArrayVector put(FloatNDArray ... array) {
         if (size() != array.length) { resize(array.length); }
@@ -712,10 +722,20 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public native @Name("operator*") HalfNDArray get();
     }
 
+    public HalfNDArray pop_back() {
+        long size = size();
+        HalfNDArray value = get(size - 1);
+        resize(size - 1);
+        return value;
+    }
+    public HalfNDArrayVector push_back(HalfNDArray value) {
+        long size = size();
+        resize(size + 1);
+        return put(size, value);
+    }
     public HalfNDArrayVector put(HalfNDArray value) {
         if (size() != 1) { resize(1); }
-        put(0, value);
-        return this;
+        return put(0, value);
     }
     public HalfNDArrayVector put(HalfNDArray ... array) {
         if (size() != array.length) { resize(array.length); }
@@ -755,10 +775,20 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         public native @Name("operator*") DoubleNDArray get();
     }
 
+    public DoubleNDArray pop_back() {
+        long size = size();
+        DoubleNDArray value = get(size - 1);
+        resize(size - 1);
+        return value;
+    }
+    public DoubleNDArrayVector push_back(DoubleNDArray value) {
+        long size = size();
+        resize(size + 1);
+        return put(size, value);
+    }
     public DoubleNDArrayVector put(DoubleNDArray value) {
         if (size() != 1) { resize(1); }
-        put(0, value);
-        return this;
+        return put(0, value);
     }
     public DoubleNDArrayVector put(DoubleNDArray ... array) {
         if (size() != array.length) { resize(array.length); }

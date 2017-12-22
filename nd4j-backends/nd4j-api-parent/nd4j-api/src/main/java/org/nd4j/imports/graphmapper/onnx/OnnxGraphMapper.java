@@ -20,9 +20,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * A mapper for onnx graphs to
@@ -292,6 +290,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
         return ret;
+    }
+
+    @Override
+    public Set<String> opsToIgnore() {
+        return Collections.emptySet();
     }
 
 

@@ -368,7 +368,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
             if(arr == null) {
                 val shapes = calculateOutputShape();
-                if(shapes != null && !shapes.isEmpty()) {
+                if(shapes != null && !shapes.isEmpty() && shapes.get(0) != null) {
                     sameDiff.putShapeForVarName(newVars[0].getVarName(),shapes.get(0));
                     arr = newVars[0].storeAndAllocateNewArray();
                 }

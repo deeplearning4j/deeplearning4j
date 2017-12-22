@@ -10,6 +10,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -60,7 +61,7 @@ public class MaxPooling2D extends DynamicCustomOp {
                         config.getPw(),
                         config.getDh(),
                         config.getDw(),
-                        fromBoolean(config.isSameMode()),
+                        ArrayUtil.fromBoolean(config.isSameMode()),
                         (int) config.getExtra()});
 
     }

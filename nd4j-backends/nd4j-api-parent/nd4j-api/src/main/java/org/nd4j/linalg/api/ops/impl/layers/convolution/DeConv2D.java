@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +55,7 @@ public class DeConv2D extends DynamicCustomOp {
        addIArgument(config.getPX());
        addIArgument(config.getDY());
        addIArgument(config.getDX());
-       addIArgument(fromBoolean(config.isSameMode()));
+       addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
 
     }
 

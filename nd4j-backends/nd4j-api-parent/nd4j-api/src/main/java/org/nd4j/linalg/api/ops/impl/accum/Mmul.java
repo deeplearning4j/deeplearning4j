@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -27,10 +28,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Matrix multiplication/dot product
@@ -54,7 +56,7 @@ public class Mmul extends DynamicCustomOp {
                 MMulTranspose mMulTranspose) {
         super(null,sameDiff,new SDVariable[]{i_v1,i_v2});
         this.mMulTranspose = mMulTranspose;
-        addIArgument(fromBoolean(mMulTranspose.isTransposeA()),fromBoolean(mMulTranspose.isTransposeB()));
+        addIArgument(ArrayUtil.fromBoolean(mMulTranspose.isTransposeA()), ArrayUtil.fromBoolean(mMulTranspose.isTransposeB()));
     }
 
 
@@ -115,6 +117,56 @@ public class Mmul extends DynamicCustomOp {
     public String opName() {
         return "mmul";
     }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        /**
+         * name: "MatMul"
+         op: "MatMul"
+         input: "input"
+         input: "Variable/read"
+         attr {
+         key: "transpose_b"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "transpose_a"
+         value {
+         b: false
+         }
+         }
+         attr {
+         key: "T"
+         value {
+         type: DT_FLOAT
+         }
+         }
+
+         */
+
+        val isTransposeA = attributesForNode.get("transpose_a").getB();
+        val isTransposeB = attributesForNode.get("transpose_b").getB();
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
+        val args = args();
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        val isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
+        val isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+                .transposeA(isTransposeA).transposeB(isTransposeB)
+                .build();
+        this.mMulTranspose = mMulTranspose;
+    }
+
+
 
 
 

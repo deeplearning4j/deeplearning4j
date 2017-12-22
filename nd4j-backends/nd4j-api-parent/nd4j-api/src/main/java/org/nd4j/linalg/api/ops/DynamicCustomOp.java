@@ -167,11 +167,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
             for(int i = 0; i < newVars.length; i++) {
                 INDArray arr = null;
-                if( Shape.isPlaceholderShape(newVars[i].getShape())) {
+                if(Shape.isPlaceholderShape(newVars[i].getShape())) {
                     if(newVars[i].getShape() == null) {
                         val shape = calculateOutputShape();
                         if(!shape.isEmpty()) {
-                            if(shape.get(i) != null) {
+                            if(shape.get(i) != null && !Shape.isPlaceholderShape(shape.get(i))) {
                                 sameDiff.putShapeForVarName(newVars[i].getVarName(),shape.get(i));
                                 arr = newVars[i].storeAndAllocateNewArray();
                             }

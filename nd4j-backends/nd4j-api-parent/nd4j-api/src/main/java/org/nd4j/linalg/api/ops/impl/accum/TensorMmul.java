@@ -314,8 +314,8 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        val isTransposeA = attributesForNode.get("transA").getI() > 0;
-        val isTransposeB = attributesForNode.get("transB").getI() > 0;
+        val isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
+        val isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
         MMulTranspose mMulTranspose = MMulTranspose.builder()
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();

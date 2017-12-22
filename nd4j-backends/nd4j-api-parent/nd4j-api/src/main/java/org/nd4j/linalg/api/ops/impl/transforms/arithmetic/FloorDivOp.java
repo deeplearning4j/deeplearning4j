@@ -46,7 +46,7 @@ public class FloorDivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "fdiv";
+        return "floordiv";
     }
 
     @Override

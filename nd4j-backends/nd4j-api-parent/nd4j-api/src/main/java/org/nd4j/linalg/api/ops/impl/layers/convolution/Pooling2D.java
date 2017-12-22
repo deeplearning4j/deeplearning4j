@@ -10,6 +10,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -63,7 +64,7 @@ public class Pooling2D extends DynamicCustomOp {
         addIArgument(config.getPw());
         addIArgument(config.getDh());
         addIArgument(config.getDw());
-        addIArgument(fromBoolean(config.isSameMode()));
+        addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
         addIArgument((int) config.getExtra());
 
     }

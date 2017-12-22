@@ -7,6 +7,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
 
@@ -42,7 +43,7 @@ public class Col2Im extends DynamicCustomOp {
         addIArgument(conv2DConfig.getKw());
         addIArgument(conv2DConfig.getDh());
         addIArgument(conv2DConfig.getDw());
-        addIArgument(fromBoolean(conv2DConfig.isSameMode()));
+        addIArgument(ArrayUtil.fromBoolean(conv2DConfig.isSameMode()));
 
     }
 
