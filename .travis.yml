@@ -1,6 +1,8 @@
 branches:
   only:
     - master
+notifications:
+  email: false
 dist: trusty
 sudo: false
 cache:
