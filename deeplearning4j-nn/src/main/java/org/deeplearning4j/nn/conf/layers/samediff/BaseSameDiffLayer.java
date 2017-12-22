@@ -127,6 +127,10 @@ public abstract class BaseSameDiffLayer extends Layer {
         return paramKeys;
     }
 
+    public char paramReshapeOrder(String param){
+        return 'f';
+    }
+
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b){
         if(Double.isNaN(l1)){
             l1 = b.getL1();

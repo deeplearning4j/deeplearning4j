@@ -73,7 +73,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         BaseSameDiffLayer sd = (BaseSameDiffLayer) conf.getLayer();
-        Map<String,INDArray> out = subsetAndReshape(sd.paramKeys(), sd.paramShapes(), paramsView);
+        Map<String,INDArray> out = subsetAndReshape(sd.paramKeys(), sd.paramShapes(), paramsView, sd);
         if(initializeParams){
             //TODO
             log.warn("***** SameDiffParamInitializer: Parameter initialization not yet implemented *****");
@@ -89,10 +89,11 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         BaseSameDiffLayer sd = (BaseSameDiffLayer) conf.getLayer();
-        return subsetAndReshape(sd.paramKeys(), sd.paramShapes(), gradientView);
+        return subsetAndReshape(sd.paramKeys(), sd.paramShapes(), gradientView, sd);
     }
 
-    private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,int[]> paramShapes, INDArray view){
+    private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,int[]> paramShapes, INDArray view,
+                                                  BaseSameDiffLayer sdl){
         Map<String,INDArray> out = new LinkedHashMap<>();
         int soFar = 0;
         for(String s : params){
@@ -100,7 +101,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
             int length = ArrayUtil.prod(sh);
             INDArray sub = view.get(point(0), interval(soFar, soFar + length));
             if(!Arrays.equals(sub.shape(), sh)){
-                sub = sub.reshape(WeightInitUtil.DEFAULT_WEIGHT_INIT_ORDER, sh); //TODO do we want to allow users to override initialization order?
+                sub = sub.reshape(sdl.paramReshapeOrder(s), sh); //TODO do we want to allow users to override initialization order?
             }
             out.put(s, sub);
 
