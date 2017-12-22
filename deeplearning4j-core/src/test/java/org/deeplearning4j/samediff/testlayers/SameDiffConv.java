@@ -12,16 +12,12 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SameDiffConv extends BaseSameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
     private static final List<String> BIAS_KEYS = Collections.singletonList(ConvolutionParamInitializer.BIAS_KEY);
-
 
     private int nIn;
     private int nOut;
@@ -30,6 +26,8 @@ public class SameDiffConv extends BaseSameDiffLayer {
     private int[] stride;
     private int[] padding;
     private ConvolutionMode cm;
+
+    private Map<String,int[]> paramShapes;
 
     protected SameDiffConv(Builder b) {
         super(b);
@@ -74,11 +72,20 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
     @Override
     public Map<String, int[]> paramShapes() {
-        return null;
+        if(paramShapes == null) {
+            int[] weightsShape = new int[]{nIn, nOut, kernel[0], kernel[1]};
+            int[] biasShape = new int[]{1, nOut};
+            Map<String,int[]> m = new HashMap<>();
+            m.put(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
+            m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+            paramShapes = m;
+        }
+        return paramShapes;
     }
 
     @Override
     public List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+//        sameDiff.conv2d()
         return null;
     }
 
