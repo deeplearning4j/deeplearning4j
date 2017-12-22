@@ -4389,9 +4389,9 @@ public class SameDiff {
             }
         }
 
-        // log.info("Own Name: {}", node.getOwnName());
+        log.info("Own Name: {}", node.getOwnName());
         int ownId = reverseMap.size() + 1;
-        reverseMap.put(node.outputVariables()[0].getVarName(), ownId);
+        reverseMap.put(node.getOwnName(), ownId);
 
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));

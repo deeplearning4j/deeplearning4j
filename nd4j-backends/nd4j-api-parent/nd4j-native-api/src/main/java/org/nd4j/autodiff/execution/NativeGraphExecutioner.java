@@ -88,6 +88,8 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         log.info("Buffer length: {}", buffer.limit());
 
         Pointer res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraphFloat(null, bPtr);
+        if (res == null)
+            throw new ND4JIllegalStateException("Graph execution failed");
 
         // FIXME: this is BAD
         PagedPointer pagedPointer = new PagedPointer(res,1024 * 1024L);
