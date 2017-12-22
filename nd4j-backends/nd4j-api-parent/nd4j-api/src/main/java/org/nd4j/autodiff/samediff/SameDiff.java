@@ -2564,8 +2564,7 @@ public class SameDiff {
      */
     public SDVariable hardTanh(String name,SDVariable iX) {
         SDVariable result = functionFactory.hardTanh(iX);
-        result.setVarName(name);
-        return result;
+        return updateVariableNameAndReference(result, name);
     }
 
     /**
