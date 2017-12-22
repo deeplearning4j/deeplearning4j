@@ -62,10 +62,14 @@ public class SameDiffTest {
             int nOut = 4;
 
             Activation[] afns = new Activation[]{
-                    Activation.TANH, Activation.SIGMOID,
-                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
-//                Activation.CUBE,    //Output differs
-//                Activation.HARDTANH,    //NPE
+                    Activation.TANH,
+                    Activation.SIGMOID,
+                    Activation.ELU,
+                    Activation.IDENTITY,
+                    Activation.SOFTPLUS,
+                    Activation.SOFTSIGN,
+//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                    Activation.HARDTANH,    //NPE
 //                 Activation.RELU      //JVM crash
             };
 
@@ -118,10 +122,10 @@ public class SameDiffTest {
 
             Activation[] afns = new Activation[]{
                     Activation.TANH,
-//                    Activation.SIGMOID,
-//                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
-//                    Activation.CUBE,    //Output differs
-//                    Activation.HARDTANH,    //NPE
+                    Activation.SIGMOID,
+                    Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
+                    Activation.HARDTANH,
+//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
 //                    Activation.RELU      //JVM crash
             };
 
