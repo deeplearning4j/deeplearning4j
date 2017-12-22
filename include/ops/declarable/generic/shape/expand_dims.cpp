@@ -12,8 +12,6 @@ namespace nd4j {
 
             auto axis = INT_ARG(0);
 
-            input->printShapeInfo("input");
-
             if (axis < 0)
                 axis += input->rankOf();
 
@@ -25,9 +23,6 @@ namespace nd4j {
 
             auto tmp = input->reshape(input->ordering(), shape);
             output->assign(tmp);
-
-            tmp->printShapeInfo("tmp");
-            output->printShapeInfo("output");
 
             delete tmp;
 
