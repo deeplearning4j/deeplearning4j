@@ -91,8 +91,7 @@ public class SoftSign extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softsignDerivative(i_v.get(0));
-
+        SDVariable ret = f().softsignDerivative(arg()).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

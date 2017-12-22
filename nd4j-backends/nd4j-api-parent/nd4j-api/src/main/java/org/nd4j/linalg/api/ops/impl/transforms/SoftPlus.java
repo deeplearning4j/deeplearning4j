@@ -64,7 +64,8 @@ public class SoftPlus extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().sigmoid(arg());
+        //dL/dIn = dL/Out * dOut/dIn
+        SDVariable ret = f().sigmoid(arg()).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

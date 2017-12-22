@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1468,6 +1469,103 @@ public class SameDiffTests {
         assertEquals(expMmul, mmul.getArr());
         assertEquals(expZ, z.getArr());
         assertEquals(expOut, out.getArr());
+    }
+
+    @Test
+    public void testActivationBackprop() {
+
+        Activation[] afns = new Activation[]{
+                Activation.TANH,
+                Activation.SIGMOID,
+                Activation.ELU,
+                Activation.SOFTPLUS,
+                Activation.SOFTSIGN,
+                Activation.HARDTANH,
+                Activation.CUBE,            //WRONG output - see issue https://github.com/deeplearning4j/nd4j/issues/2426
+                Activation.RELU,            //JVM crash
+                Activation.LEAKYRELU        //JVM crash
+        };
+
+        for (Activation a : afns) {
+
+            if(a == Activation.RELU || a == Activation.LEAKYRELU){
+                //TODO REMOVE THIS ONCE FIXED
+                fail("Failing now to avoid JVM crash");
+            }
+
+            SameDiff sd = SameDiff.create();
+            INDArray inArr = Nd4j.linspace(-3, 3, 7);
+            INDArray labelArr = Nd4j.linspace(-3, 3, 7).muli(0.5);
+            SDVariable in = sd.var("in", inArr.dup());
+
+//            System.out.println("inArr: " + inArr);
+
+            INDArray outExp;
+            SDVariable out;
+            switch (a) {
+                case ELU:
+                    out = sd.elu("out", in);
+                    outExp = Transforms.elu(inArr, true);
+                    break;
+                case HARDTANH:
+                    out = sd.hardTanh("out", in);
+                    outExp = Transforms.hardTanh(inArr, true);
+                    break;
+                case LEAKYRELU:
+                    out = sd.leakyRelu("out", in, 0.0);
+                    outExp = Transforms.leakyRelu(inArr, true);
+                    break;
+                case RELU:
+                    out = sd.relu("out", in, 0.0);
+                    outExp = Transforms.relu(inArr, true);
+                    break;
+                case SIGMOID:
+                    out = sd.sigmoid("out", in);
+                    outExp = Transforms.sigmoid(inArr, true);
+                    break;
+                case SOFTPLUS:
+                    out = sd.softplus("out", in);
+                    outExp = Transforms.softPlus(inArr, true);
+                    break;
+                case SOFTSIGN:
+                    out = sd.softsign("out", in);
+                    outExp = Transforms.softsign(inArr, true);
+                    break;
+                case TANH:
+                    out = sd.tanh("out", in);
+                    outExp = Transforms.tanh(inArr, true);
+                    break;
+                case CUBE:
+                    out = sd.pow("out", in, 3);
+                    outExp = Transforms.pow(inArr, 3, true);
+                    break;
+                default:
+                    throw new RuntimeException(a.toString());
+            }
+
+            //Sum squared error loss:
+            SDVariable label = sd.var("label", labelArr.dup());
+            SDVariable diff = label.sub("diff", out);
+            SDVariable sqDiff = diff.mul("sqDiff", diff);
+            SDVariable totSum = sd.sum("totSum", sqDiff, Integer.MAX_VALUE);    //Loss function...
+
+            sd.exec();
+            INDArray outAct = sd.getVariable("out").getArr();
+            assertEquals(outExp, outAct);
+
+            // L = sum_i (label - out)^2
+            //dL/dOut = 2(out - label)
+            INDArray dLdOutExp = outExp.sub(labelArr).mul(2);
+            INDArray dLdInExp = a.getActivationFunction().backprop(inArr.dup(), dLdOutExp.dup()).getFirst();
+
+            sd.execBackwards();
+            SameDiff gradFn = sd.getFunction("grad");
+            INDArray dLdOutAct = gradFn.getVariable("out-grad").getArr();
+            INDArray dLdInAct = gradFn.getVariable("in-grad").getArr();
+
+            assertEquals(a.toString(), dLdOutExp, dLdOutAct);
+            assertEquals(a.toString(), dLdInExp, dLdInAct);
+        }
     }
 
 }

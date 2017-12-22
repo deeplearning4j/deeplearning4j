@@ -86,7 +86,7 @@ public class HardTanh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().hardTanhDerivative(this.sameDiff.getVariable(outputVariables()[0].getVarName()));
+        SDVariable ret = f().hardTanhDerivative(arg()).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 }

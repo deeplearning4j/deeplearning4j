@@ -94,8 +94,9 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().eluDerivative(arg());
-
+        //ELU: e^x-1 if x<0, x otherwise
+        //dL/dIn = dL/Out * dOut/dIn
+        SDVariable ret = f().eluDerivative(arg()).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 
