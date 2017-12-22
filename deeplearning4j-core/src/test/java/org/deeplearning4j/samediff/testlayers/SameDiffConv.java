@@ -31,6 +31,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     private int[] padding;
     private ConvolutionMode cm;
     private int[] dilation;
+    private boolean hasBias;
 
     private Map<String, int[]> paramShapes;
 
@@ -44,6 +45,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
         this.padding = b.padding;
         this.cm = b.cm;
         this.dilation = b.dilation;
+        this.hasBias = b.hasBias;
     }
 
     @Override
@@ -73,12 +75,20 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
     @Override
     public List<String> biasKeys() {
-        return BIAS_KEYS;
+        if(hasBias) {
+            return BIAS_KEYS;
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     @Override
     public List<String> paramKeys() {
-        return PARAM_KEYS;
+        if(hasBias) {
+            return PARAM_KEYS;
+        } else {
+            return WEIGHT_KEYS;
+        }
     }
 
     @Override
@@ -91,10 +101,12 @@ public class SameDiffConv extends BaseSameDiffLayer {
     public Map<String, int[]> paramShapes() {
         if (paramShapes == null) {
             int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
-            int[] biasShape = new int[]{1, nOut};
             Map<String, int[]> m = new HashMap<>();
             m.put(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-            m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+            if(hasBias) {
+                int[] biasShape = new int[]{1, nOut};
+                m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+            }
             paramShapes = m;
         }
         return paramShapes;
@@ -142,6 +154,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
         private int[] padding = new int[]{0, 0};
         private int[] dilation = new int[]{1, 1};
         private ConvolutionMode cm = ConvolutionMode.Same;
+        private boolean hasBias = true;
 
         public Builder nIn(int nIn) {
             this.nIn = nIn;
@@ -180,6 +193,11 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
         public Builder dilation(int... d) {
             this.dilation = d;
+            return this;
+        }
+
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
             return this;
         }
 

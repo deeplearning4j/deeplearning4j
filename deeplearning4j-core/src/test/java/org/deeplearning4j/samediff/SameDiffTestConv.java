@@ -14,8 +14,11 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.samediff.testlayers.SameDiffConv;
 import org.deeplearning4j.samediff.testlayers.SameDiffDense;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -94,6 +97,7 @@ public class SameDiffTestConv {
                                                         .dilation(dilation)
                                                         .convolutionMode(cm)
                                                         .activation(a)
+                                                        .hasBias(false)         //TODO TEST BOTH CASES
                                                         .build())
                                                 .build();
 
@@ -112,6 +116,7 @@ public class SameDiffTestConv {
                                                         .dilation(dilation)
                                                         .convolutionMode(cm)
                                                         .activation(a)
+                                                        .hasBias(false)         //TODO TEST BOTH CASES
                                                         .build())
                                                 .build();
 
@@ -145,5 +150,45 @@ public class SameDiffTestConv {
                 }
             }
         }
+    }
+
+    @Test
+    public void testConv2dBasic(){
+        int nIn = 3;
+        int nOut = 4;
+        int kH = 2;
+        int kW = 2;
+
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW); //As per DL4J
+        INDArray bArr = Nd4j.create(1, nOut);
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("W", wArr);
+        SDVariable b = sd.var("b", bArr);
+
+        //Order: https://github.com/deeplearning4j/libnd4j/blob/6c41ea5528bb1f454e92a9da971de87b93ff521f/include/ops/declarable/generic/convo/conv2d.cpp#L20-L22
+        //in, w, b - bias is optional
+        SDVariable[] vars = new SDVariable[]{in, w, b};
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kh(kH).kw(kW)
+                .ph(0).pw(0)
+                .sy(1).sx(1)
+                .dh(1).dw(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.conv2d(vars, c);
+
+        INDArray outArr = sd.execAndEndResult();
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        int[] outShape = outArr.shape();
+        assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
     }
 }
