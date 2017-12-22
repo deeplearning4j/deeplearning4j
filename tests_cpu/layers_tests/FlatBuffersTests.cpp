@@ -573,6 +573,19 @@ TEST_F(FlatBuffersTest, Ae_00) {
     delete graph;
 }
 
+TEST_F(FlatBuffersTest, expand_dims) {
+    nd4j::ops::rank<float> op1;
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/expand_dim.fb");
+
+    graph->printOut();
+
+    auto result = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+
+    delete graph;
+}
+
 
 TEST_F(FlatBuffersTest, transpose) {
     nd4j::ops::rank<float> op1;

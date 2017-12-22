@@ -12,6 +12,11 @@ namespace nd4j {
 
             auto axis = INT_ARG(0);
 
+            input->printShapeInfo("input");
+
+            if (axis < 0)
+                axis += input->rankOf();
+
             std::vector<int> shape;
             for(int e = 0; e < input->rankOf(); e++)
                 shape.emplace_back(input->sizeAt(e));
@@ -20,6 +25,9 @@ namespace nd4j {
 
             auto tmp = input->reshape(input->ordering(), shape);
             output->assign(tmp);
+
+            tmp->printShapeInfo("tmp");
+            output->printShapeInfo("output");
 
             delete tmp;
 
@@ -34,6 +42,9 @@ namespace nd4j {
             char order = shape::order(inShape);
 
             auto axis = INT_ARG(0);
+
+            if (axis < 0)
+                axis += x_rank;
 
             int* newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank+1), int);

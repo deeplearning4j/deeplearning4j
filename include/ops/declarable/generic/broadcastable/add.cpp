@@ -18,6 +18,8 @@ namespace nd4j {
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
+
+            tZ->printShapeInfo("tz");
     
 			return ND4J_STATUS_OK;
         }
