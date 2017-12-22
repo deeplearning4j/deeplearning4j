@@ -320,7 +320,9 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
     nd4j_debug("Going to execute graph\n", 0);
 
     // executing internal representation
-    GraphExecutioner<T>::execute(nativeGraph);
+    auto status = GraphExecutioner<T>::execute(nativeGraph);
+    if (status != ND4J_STATUS_OK)
+        return nullptr;
 
     nd4j_debug("Building output...\n", 0);
 
