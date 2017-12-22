@@ -136,6 +136,69 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
 
 }
 
+
+TEST_F(ParityOpsTests, ExpandDimsTest2) {
+    NDArray<float> input('c', {3, 4});
+    NDArrayFactory<float>::linspace(1, input);
+    auto reshaped = input.reshape('c', {1, 3, 4});
+
+    nd4j::ops::expand_dims<float> op;
+    auto result = op.execute({&input}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(reshaped->isSameShape(z));
+    ASSERT_TRUE(reshaped->equalsTo(z));
+
+    delete result;
+    delete reshaped;
+
+}
+
+
+TEST_F(ParityOpsTests, ExpandDimsTest3) {
+    NDArray<float> input('c', {3, 4});
+    NDArrayFactory<float>::linspace(1, input);
+    auto reshaped = input.reshape('c', {3, 1, 4});
+
+    nd4j::ops::expand_dims<float> op;
+    auto result = op.execute({&input}, {}, {-2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(reshaped->isSameShape(z));
+    ASSERT_TRUE(reshaped->equalsTo(z));
+
+    delete result;
+    delete reshaped;
+
+}
+
+TEST_F(ParityOpsTests, ExpandDimsTest4) {
+    NDArray<float> input('c', {3, 4});
+    NDArrayFactory<float>::linspace(1, input);
+    auto reshaped = input.reshape('c', {1, 3, 4});
+
+    nd4j::ops::expand_dims<float> op;
+    auto result = op.execute({&input}, {}, {-3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(reshaped->isSameShape(z));
+    ASSERT_TRUE(reshaped->equalsTo(z));
+
+    delete result;
+    delete reshaped;
+
+}
+
+
 TEST_F(ParityOpsTests, Test_Shape_1) {
     NDArray<float> x('c', {3, 4, 5, 6});
     NDArray<float> exp('c', {1, 4}, {3, 4, 5, 6});
