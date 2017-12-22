@@ -1,3 +1,6 @@
+branches:
+  only:
+    - master
 dist: trusty
 sudo: false
 cache:
