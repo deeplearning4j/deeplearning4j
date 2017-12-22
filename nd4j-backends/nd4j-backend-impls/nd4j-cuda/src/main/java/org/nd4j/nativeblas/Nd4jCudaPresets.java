@@ -57,7 +57,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/declarable/BooleanOp.h",
                         "ops/declarable/LogicOp.h",
                         "ops/declarable/OpRegistrator.h",
-                        "ops/declarable/CustomOperations.h"}, compiler = "cpp11",
+                        "ops/declarable/CustomOperations.h"}, compiler = {"cpp11", "nowarnings"},
                                 library = "jnind4jcuda", link = "nd4jcuda", preload = "libnd4jcuda"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",

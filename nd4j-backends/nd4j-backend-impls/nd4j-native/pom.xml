@@ -254,6 +254,17 @@
             </properties>
         </profile>
         <profile>
+            <id>macosx-gcc7</id>
+            <activation>
+                <file>
+                    <exists>/usr/local/bin/g++-7</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/local/bin/g++-7</javacpp.platform.compiler>
+            </properties>
+        </profile>
+        <profile>
             <id>macosx-gcc6</id>
             <activation>
                 <file>

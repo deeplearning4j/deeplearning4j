@@ -94,7 +94,7 @@ import java.util.Scanner;
                                               "ops/declarable/headers/loss.h",
                                               "ops/declarable/headers/datatypes.h",
                                               "ops/declarable/headers/third_party.h"},
-                                compiler = "cpp11", library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
+                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
                                 @Platform(value = "linux", preload = "gomp@.1",
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/",

@@ -413,6 +413,9 @@
                     </plugin>
                     <plugin>
                         <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <quiet>true</quiet>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>attach-javadocs</id>
@@ -460,6 +463,7 @@
                         <artifactId>maven-javadoc-plugin</artifactId>
                         <configuration>
                             <additionalparam>-Xdoclint:none</additionalparam>
+                            <quiet>true</quiet>
                         </configuration>
                         <executions>
                             <execution>
@@ -680,6 +684,9 @@
             </plugin>
             <plugin>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <quiet>true</quiet>
+                </configuration>
                 <executions>
                     <execution>
                         <id>attach-javadocs</id>
@@ -770,6 +777,7 @@
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
                         <additionalparam>-Xdoclint:none</additionalparam>
+                        <quiet>true</quiet>
                     </configuration>
                     <executions>
                         <execution>
