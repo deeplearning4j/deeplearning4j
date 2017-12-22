@@ -256,7 +256,12 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */ 
-        void assign(const NDArray<T> *other);
+        void assign(const NDArray<T>* other);
+
+        /**
+        *  this method assigns values of given array to this one
+        */ 
+        void assign(const NDArray<T>& other);
 
         /**
         *  this method assigns given value to all elements in array

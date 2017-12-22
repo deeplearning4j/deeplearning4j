@@ -2,6 +2,10 @@
 // @author raver119@gmail.com
 //
 
+#ifndef DATATYPEUTILS_H
+#define DATATYPEUTILS_H
+
+
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
 #include <op_boilerplate.h>
@@ -90,3 +94,5 @@ FORCEINLINE T DataTypeUtils::eps() {
 
 
 }
+
+#endif //DATATYPEUTILS_H

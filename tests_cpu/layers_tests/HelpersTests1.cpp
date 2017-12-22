@@ -1,6 +1,7 @@
 #include "testlayers.h"
 #include <ops/declarable/helpers/householder.h>
 
+
 using namespace nd4j;
 
 class HelpersTests1 : public testing::Test {
@@ -55,4 +56,17 @@ TEST_F(HelpersTests1, evalHouseholderData_test2) {
     ASSERT_TRUE(result.equalsTo(&expected));
     delete wT;
 
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, evalHouseholderMatrix_test1) {
+            
+    NDArray<double> x('c', {1,4}, {14,17,3,1});            
+    NDArray<double> pExp('c', {4,4}, {-0.629253, -0.764093,   -0.13484, -0.0449467, -0.764093,  0.641653, -0.0632377, -0.0210792, -0.13484,-0.0632377,    0.98884,-0.00371987, -0.0449467,-0.0210792,-0.00371987,  0.99876});
+
+    NDArray<double> result = ops::helpers::evalHouseholderMatrix(x);
+    result.printBuffer();
+
+    ASSERT_TRUE(result.isSameShapeStrict(&pExp));
+    ASSERT_TRUE(result.equalsTo(&pExp));
 }

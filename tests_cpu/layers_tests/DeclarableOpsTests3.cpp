@@ -766,6 +766,25 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_5) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_6) {
+    NDArray<double> x('c', {4, 1}, {1, 2, 3, 4});
+    NDArray<double> y('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<double> exp('f', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
+
+    nd4j::ops::matmul<double> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    //z->printIndexedBuffer("z");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
     NDArray<float> x('c', {1, 3}, {2, 2, 2});
     NDArray<float> y('c', {1, 3}, {4, 6, 8});
@@ -1768,7 +1787,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     NDArrayFactory<double>::linspace(1., n);        
     x.assign(0.5);
     
-    NDArray<double> expected('c', {3,3}, {4.93480220e+00,-1.68287966e+01, 9.74090910e+01,-7.71474250e+02, 7.69111355e+03,-9.22034579e+04, 1.29044022e+06,-2.06449000e+07, 3.71595452e+08});
+    NDArray<double> expected('c', {3,3}, {4.934802, -16.828796, 97.409088, -771.474243, 7691.113770, -92203.460938, 1290440.250000, -20644900.000000, 3.71595e+08});    
 
     nd4j::ops::polygamma<double> op;
     nd4j::ResultSet<double>* results = op.execute({&n, &x}, {}, {});
@@ -1776,6 +1795,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray<double> *output = results->at(0);            
+    // output->printBuffer();
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));

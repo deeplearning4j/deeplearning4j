@@ -4031,9 +4031,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
     NDArray<double> *ct = results->at(1);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
-    ASSERT_TRUE(expHt.equalsTo(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht,1e-4));
     ASSERT_TRUE(expCt.isSameShape(ct));
-    ASSERT_TRUE(expCt.equalsTo(ct));
+    ASSERT_TRUE(expCt.equalsTo(ct,1e-4));
 
     delete results;
 }

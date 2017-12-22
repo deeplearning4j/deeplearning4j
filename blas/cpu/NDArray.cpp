@@ -604,6 +604,29 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         }
     }
 
+// This method assigns values of given NDArray to this one
+    template<typename T>
+    void NDArray<T>::assign(const NDArray<T>& other) {
+
+        if (this == &other) 
+            return;
+        if (other.lengthOf() != lengthOf()) {
+            nd4j_printf("Can't assign new value to the array: this length [%i]; other length: [%i]\n", lengthOf(), other.lengthOf());
+            throw "Lengths of arrays are mismatched";
+        }
+
+        // memcpy is allowed only for same order && same ews (being equal to 1)
+        if (ordering() == other.ordering() && shape::elementWiseStride(_shapeInfo) == 1 && shape::elementWiseStride(other._shapeInfo) == 1) {
+            
+            memcpy(_buffer, other._buffer, lengthOf() * sizeOfT());
+        } else {
+
+            // now we invoke dup pwt against target buffer
+            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other._buffer, other._shapeInfo,
+                                                         _buffer, _shapeInfo, nullptr);
+        }
+    }
+
 // This method assigns given value to all elements in this NDArray
     template<typename T>
     void NDArray<T>::assign(const T value) {

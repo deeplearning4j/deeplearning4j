@@ -31,6 +31,21 @@ namespace helpers {
     template <typename T>
     void evalHouseholderData(const NDArray<T>& x, NDArray<T>& tail, T& normX, T& coeff);
 
+
+    /**
+    *  this function calculates Householder matrix P = identity_matrix - coeff * w * w^T
+    *  P * x = [normX, 0, 0 , 0, ...]
+    *  coeff - scalar    
+    *  w = [1, w1, w2, w3, ...]
+    *  w = u / u0
+    *  u = x - |x|*e0
+    *  u0 = x0 - |x| 
+    *  e0 = [1, 0, 0 , 0, ...]
+    * 
+    *  x - input vector, remains unaffected
+    */                  	
+    template <typename T>
+    NDArray<T> evalHouseholderMatrix(const NDArray<T>& x);
     
     
 

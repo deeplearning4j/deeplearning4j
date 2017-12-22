@@ -2,6 +2,7 @@
 #ifndef OPS_H_
 #define OPS_H_
 
+#include <DataTypeUtils.h>
 #include <helpers/shape.h>
 #include <vector>
 #include <Environment.h>
@@ -2657,27 +2658,20 @@ namespace simdOps {
         }
 
         op_def static T op(T d1, T d2, T *extraParamsRef) {
-            T abs1 = nd4j::math::nd4j_abs<T>(d1);
-            T abs2 = nd4j::math::nd4j_abs<T>(d2);
-            T diff = nd4j::math::nd4j_abs<T>(d1 - d2);
-            T eps = extraParamsRef[2];
+        	
+        	T eps = extraParamsRef[2];
+    	    T diff = nd4j::math::nd4j_abs(d1 - d2);
+    	
+    		// works well except in the range of very large numbers
+    		if (diff <= eps)
+    	    	return (T)0.;    	    
 
-//			return diff < eps ? (T) 0. : (T) 1.;
-
-
-            if (d1 == d2) {
-                return (T) 0.0f;
-            } else if (d1 == (T) 0.0f || d2 == (T) 0.0f || diff < (T) FLOAT_MIN_NORMAL) {
-                //if (eps > 0.1)
-                return diff < eps ? 0.0f : 1.0f;
-
-                //return diff <  (T) (eps * FLOAT_MIN_NORMAL) ? 0.0f : 1.0f;
-                //return res;
-            } else {
-                T xDiff = (diff / nd4j::math::nd4j_min<T>((abs1 + abs2), FLOAT_MAX_VALUE));
-				return xDiff < eps || diff < eps ? 0.0f : 1.0f;
-                //return  xDiff < eps ? (T) 0.0f : (T) 1.0f;
-            }
+    	    // Knuth approach
+    	    // works well except in the range of very small numbers
+		    if (diff <= nd4j::math::nd4j_max(nd4j::math::nd4j_abs(d1), nd4j::math::nd4j_abs(d2)) * eps)
+		    	return (T)0.;
+        
+        	return (T)1.;
         }
 
 

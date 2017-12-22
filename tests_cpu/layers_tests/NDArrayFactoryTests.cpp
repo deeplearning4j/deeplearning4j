@@ -167,6 +167,21 @@ TEST_F(NDArrayFactoryTests, mmulHelper_test_6) {
 
 }
 
+TEST_F(NDArrayFactoryTests, mmulHelper_test_7) {
+
+    NDArray<float> x('c', {4, 1}, {1, 2, 3, 4});
+    NDArray<float> y('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {4, 4}, {1,2, 3, 4,2,4, 6, 8,3,6, 9,12,4,8,12,16});
+    NDArray<float> result('c', {4,4});
+                                                     
+    NDArrayFactory<float>::mmulHelper(&x, &y, &result, 1., 0.);
+
+    ASSERT_TRUE(exp.isSameShape(&result));
+    ASSERT_TRUE(exp.equalsTo(&result));    
+
+}
+
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayFactoryTests, Test_Concat_1) {
     NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
