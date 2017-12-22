@@ -8,21 +8,21 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T>
-            void _matmul(NDArray<T> *_A, NDArray<T> *_B, NDArray<T> *_C, int transA, int transB, T alpha, T beta) {
+            void _matmul(NDArray<T> *vA, NDArray<T> *vB, NDArray<T> *vC, int transA, int transB, T alpha, T beta) {
                 CBLAS_TRANSPOSE tA = (CBLAS_TRANSPOSE) transA;
                 CBLAS_TRANSPOSE tB = (CBLAS_TRANSPOSE) transB;
 
-                int M = _A->sizeAt(0);
-                int N = _B->sizeAt(1);
-                int K = _A->sizeAt(1);
+                int M = vA->sizeAt(0);
+                int N = vB->sizeAt(1);
+                int K = vA->sizeAt(1);
 
                 int ldA = transA == CblasNoTrans ? M : K;
                 int ldB = transB == CblasNoTrans ? K : N;
                 int ldC = M;
 
-                auto A = _A->buffer();
-                auto B = _B->buffer();
-                auto C = _C->buffer();
+                auto A = vA->buffer();
+                auto B = vB->buffer();
+                auto C = vC->buffer();
 
 #pragma omp parallel for simd collapse(2)
                 for (int m = 0; m < M; ++m) {
