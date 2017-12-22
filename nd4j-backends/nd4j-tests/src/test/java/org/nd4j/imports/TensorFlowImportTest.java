@@ -9,6 +9,7 @@ import org.nd4j.autodiff.execution.NativeGraphExecutioner;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
@@ -24,6 +25,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -665,5 +667,25 @@ public class TensorFlowImportTest {
         assertEquals(expectedOutput,actual);
     }
 
+
+    @Test
+    public void testImportMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/ae_00/frozen_model.pb").getInputStream());
+
+        val variables = new HashMap<String, SDVariable>();
+        for (val var : tg.variables()) {
+            variables.put(var.getVarName(), var);
+        }
+
+        val functions = new HashMap<String, DifferentialFunction>();
+        for (val func: tg.functions()) {
+            val ownName = func.getOwnName();
+            val outName = func.outputVariables()[0].getVarName();
+
+            assertTrue("Missing ownName: [" + ownName +"]",variables.containsKey(ownName));
+            assertEquals(ownName, outName);
+        }
+    }
 
 }

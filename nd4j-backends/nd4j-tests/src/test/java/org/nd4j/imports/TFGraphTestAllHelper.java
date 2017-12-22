@@ -20,11 +20,13 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by susaneraly on 11/6/17.
@@ -136,12 +138,18 @@ public class TFGraphTestAllHelper {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
 
-            val string = graph.asFlatPrint();
-            log.info("Graph structure: \n{}", string);
+            //val string = graph.asFlatPrint();
+            //log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
-            assertEquals(1, results.length); //FIXME: Later
+            assertTrue(results.length > 0); //FIXME: Later
+
+            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/ae_00.fb"));
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
+            for (String input : inputs.keySet()) {
+                graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
+            }
+
             val string = graph.asFlatPrint();
             log.info("Graph structure: \n{}", string);
         }

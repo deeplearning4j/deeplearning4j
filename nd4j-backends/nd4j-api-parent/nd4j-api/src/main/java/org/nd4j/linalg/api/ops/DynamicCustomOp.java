@@ -130,7 +130,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public SDVariable[] outputVariables() {
-        return outputVariables(opName());
+        return outputVariables(getOwnName() != null ? getOwnName() : opName());
     }
 
     @Override
@@ -199,8 +199,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             if(sameDiff.getOutputsForFunction(this) == null)
                 sameDiff.addOutgoingFor(outputVariables,this);
             return newVars;
-
-
         }
 
         return outputVariables;

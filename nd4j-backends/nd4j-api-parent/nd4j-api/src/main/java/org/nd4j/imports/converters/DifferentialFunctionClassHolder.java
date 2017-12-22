@@ -57,12 +57,12 @@ public class DifferentialFunctionClassHolder {
                     continue;
 
                 if(name.endsWith("_bp")) {
-                    log.warn("Skipping derivative " + name);
+                    //log.warn("Skipping derivative " + name);
                 }
                 if (nodeConverters.containsKey(name)) {
                     throw new ND4JIllegalStateException("OpName duplicate found: " + name);
                 } else {
-                    log.info("Adding converter for [" + name + "]");
+                    //log.info("Adding converter for [" + name + "]");
                     nodeConverters.put(name, node);
                     try {
                         for(String s : node.tensorflowNames())

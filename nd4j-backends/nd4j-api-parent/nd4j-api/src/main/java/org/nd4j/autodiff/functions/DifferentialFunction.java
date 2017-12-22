@@ -64,6 +64,10 @@ public abstract class DifferentialFunction {
     @Getter
     private String instanceId;
 
+    @Getter
+    @Setter
+    private String ownName;
+
     public DifferentialFunction() {
         setInstanceId();
     }
@@ -140,7 +144,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public  SDVariable[] outputVariables() {
-        return outputVariables(opName());
+        return outputVariables(getOwnName() != null ? getOwnName() : opName());
     }
 
 

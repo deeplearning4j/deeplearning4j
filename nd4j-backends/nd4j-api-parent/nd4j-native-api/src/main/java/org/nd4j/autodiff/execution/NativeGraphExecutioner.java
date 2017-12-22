@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -61,7 +62,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
     public ByteBuffer convertToFlatBuffers(SameDiff sd, ExecutorConfiguration configuration, Map<Integer, Node> intermediate) {
         log.info("Configuration: {}", configuration);
 
-        return sd.asFlatBuffers();
+        return sd.asFlatBuffers(configuration);
     }
 
     @Override
@@ -99,7 +100,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
-            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
+//            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
             FlatArray ndarray = var.ndarray();
 
             INDArray val = Nd4j.createFromFlatArray(ndarray);
@@ -107,6 +108,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
             if (var.name() != null && sd.variableMap().containsKey(var.name())) {
                 //log.info("VarName: {}; Exists: {}; NDArrayInfo: {};", var.opName(), sd.variableMap().containsKey(var.opName()), sd.getVertexToArray().containsKey(var.opName()));
+  //              log.info("storing: {}; array: {}", var.name(), val);
                 sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
 
             } else {
@@ -114,7 +116,10 @@ public class NativeGraphExecutioner implements GraphExecutioner {
                 if (sd.variableMap().get(var.name()) != null) {
                     sd.associateArrayWithVariable(val,sd.getVariable(var.name()));
                 } else {
-                    sd.var("",val);
+    //                log.info("BAD");
+                    //sd.var("",val);
+
+                    throw new ND4JIllegalStateException("Unknown variable received as result: ["+ var.name() +"]");
                 }
             }
         }
