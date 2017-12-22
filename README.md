@@ -32,11 +32,11 @@ To get started using Deeplearning4j, please go to our [Quickstart](http://deeple
     - spark = integration with Apache Spark versions 1.3 to 1.6 (Spark 2.0 coming soon)
     - parallel-wraper = Single machine model parallelism (for multi-GPU systems, etc)
     - aws = loading data to and from aws resources EC2 and S3
-- ui = provides visual interfaces for tuning models [Details here](https://deeplearning4j.org/visualization)
+- ui = provides visual interfaces for tuning models. [Details here](https://deeplearning4j.org/visualization)
 
 ---
 ## Documentation
-Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](http://deeplearning4j.org/doc).
+Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](http://deeplearning4j.org/doc). Open-source contributors can help us improve our documentation for Deeplearning4j by sending pull requests for the DL4J website [here](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and ND4J [here](https://github.com/deeplearning4j/nd4j/tree/gh-pages).
 
 ## Support
 
