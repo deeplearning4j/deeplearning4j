@@ -572,9 +572,11 @@ TEST_F(FlatBuffersTest, Ae_00) {
 
     delete graph;
 }
-/*
+
 TEST_F(FlatBuffersTest, expand_dims) {
     nd4j::ops::rank<float> op1;
+
+    NDArray<float> exp('c', {3, 1, 4}, {-0.136331f, -0.608995f, 0.361580f, -0.082446f, 0.843615f, 0.755323f, 1.083639f, 1.629809f, 0.749157f, 2.765640f, -0.521926f, 1.402359f});
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/expand_dim.fb");
 
@@ -582,10 +584,16 @@ TEST_F(FlatBuffersTest, expand_dims) {
 
     auto result = GraphExecutioner<float>::execute(graph);
     ASSERT_EQ(ND4J_STATUS_OK, result);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(5));
+
+    auto z = graph->getVariableSpace()->getVariable(5)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete graph;
 }
-*/
+
 
 TEST_F(FlatBuffersTest, transpose) {
     nd4j::ops::rank<float> op1;
