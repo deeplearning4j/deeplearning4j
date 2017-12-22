@@ -5,6 +5,7 @@ import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,6 +13,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -1568,5 +1570,77 @@ public class SameDiffTests {
         }
     }
 
+    @Test
+    public void testMmulWithTranspose(){
+        //Here: [x,3]^T * [x,4] = [3,4]
+
+        for( int i : new int[]{2,1}) {
+            System.out.println("i = " + i);
+            INDArray first = Nd4j.linspace(1, 3*i, 3*i).reshape('c', i,3);      //To [1,3] or [2,3]
+            INDArray second = Nd4j.linspace(4, 4 + 4*i, 4*i).reshape('c',i,4);  //To [1,4] or [2,4]
+
+            System.out.println("Shapes: " + Arrays.toString(first.shape()) + "\t" + Arrays.toString(second.shape()));
+
+            SameDiff sd = SameDiff.create();
+            SDVariable f = sd.var("in1", first);
+            SDVariable s = sd.var("in2", second);
+
+            MMulTranspose mt = MMulTranspose.builder()
+                    .transposeA(true)
+                    .transposeB(false)
+                    .transposeResult(false)
+                    .a(first)
+                    .b(second)
+                    .build();
+            SDVariable mmul = sd.f().mmul(f, s, mt);
+            sd.updateVariableNameAndReference(mmul, "mmul");
+
+            INDArray out = sd.execAndEndResult();
+
+            INDArray exp = first.transpose().mmul(second);
+            assertEquals(exp, out);
+            System.out.println("----- Finished: i = " + i + " ------");
+        }
+    }
+
+    @Test
+    public void testConv2dBasic(){
+        int nIn = 3;
+        int nOut = 4;
+        int kH = 2;
+        int kW = 2;
+
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW); //As per DL4J
+        INDArray bArr = Nd4j.create(1, nOut);
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("W", wArr);
+        SDVariable b = sd.var("b", bArr);
+
+        //Order: https://github.com/deeplearning4j/libnd4j/blob/6c41ea5528bb1f454e92a9da971de87b93ff521f/include/ops/declarable/generic/convo/conv2d.cpp#L20-L22
+        //in, w, b - bias is optional
+        SDVariable[] vars = new SDVariable[]{in, w, b};
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kh(kH).kw(kW)
+                .ph(0).pw(0)
+                .sy(1).sx(1)
+                .dh(1).dw(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.conv2d(vars, c);
+
+        INDArray outArr = sd.execAndEndResult();
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        int[] outShape = outArr.shape();
+        assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
+    }
 }
 
