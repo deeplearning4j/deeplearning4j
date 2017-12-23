@@ -30,7 +30,7 @@ Neural networks help us cluster and classify. You can think of them as a cluster
 
 
 <p align="center">
-<a href="https://skymind.ai/platform" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 
