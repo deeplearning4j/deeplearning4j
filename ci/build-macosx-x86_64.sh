@@ -18,9 +18,9 @@ brew install gcc || true
 brew link --overwrite gcc
 
 if [[ $CUDA == "8.0" ]]; then
-    curl -L https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg -o $HOME/cuda.dmg
+    curl --retry 10 -L https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg -o $HOME/cuda.dmg
 else
-    curl -L https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_mac-dmg -o $HOME/cuda.dmg
+    curl --retry 10 -L https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_mac-dmg -o $HOME/cuda.dmg
 fi
 hdiutil mount $HOME/cuda.dmg
 sleep 5

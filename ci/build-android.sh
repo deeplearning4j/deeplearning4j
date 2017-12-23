@@ -14,7 +14,7 @@ if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j
 fi
 
 mkdir $HOME/Android/
-curl -L https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip -o $HOME/Android/android-ndk.zip
+curl --retry 10 -L https://dl.google.com/android/repository/android-ndk-r16b-linux-x86_64.zip -o $HOME/Android/android-ndk.zip
 unzip -qq $HOME/Android/android-ndk.zip -d $HOME/Android/
 ln -s $HOME/Android/android-ndk-r16b $HOME/Android/android-ndk
 export ANDROID_NDK=$HOME/Android/android-ndk
