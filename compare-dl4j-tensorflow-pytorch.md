@@ -6,14 +6,14 @@ redirect_from: compare-dl4j-torch7-pylearn
 
 # Comparing Top Deep Learning Frameworks: Deeplearning4j, PyTorch, TensorFlow, Caffe, Keras, MxNet, Gluon & CNTK
 
-Skymind bundles Deeplearning4j and Python deep learning libraries such as Tensorflow and Keras (using a managed Conda environment) in the Skymind Intelligence Layer (SKIL), which offers ETL, training and one-click deployment on a managed GPU cluster. The SKIL Community Edition is [free and downloadable here](https://skymind.ai/platform), and its [Quickstart is here](https://skymind.ai/quickstart). 
+Skymind bundles Deeplearning4j and Python deep learning libraries such as Tensorflow and Keras (using a managed Conda environment) in the Skymind Intelligence Layer (SKIL), which offers ETL, training and one-click deployment on a managed GPU cluster. The SKIL Community Edition is [free and downloadable here](https://skymind.readme.io/v1.0.1/docs/quickstart). 
 
 [Eclipse Deeplearning4j](https://projects.eclipse.org/proposals/deeplearning4j) is distinguished from other frameworks in its API languages, intent and integrations. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** that solves problems involving massive amounts of data in a reasonable amount of time. It integrates with Kafka, Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks.
 
 DL4J is portable and platform neutral, rather than being optimized on a specific cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and faster than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. Deeplearning4j has Java, [Scala](https://github.com/deeplearning4j/scalnet) and [Python APIs, the latter using Keras](./keras). 
 
 <p align="center">
-<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING</a>
 </p>
 
 ### Content
