@@ -20,7 +20,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -99,11 +98,7 @@ public class TFGraphTestAllHelper {
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, ExecuteWith execType) throws IOException {
-        if (execType.equals(ExecuteWith.SAMEDIFF)) {
-            checkIntermediate(inputs, modelName, SAMEDIFF_DEFAULT_BASE_DIR, execType);
-        } else if (execType.equals(ExecuteWith.LIBND4J)) {
-            checkIntermediate(inputs, modelName, LIBND4J_DEFAULT_BASE_DIR, execType);
-        }
+        checkIntermediate(inputs, modelName, execType.getDefaultBaseDir(), execType);
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, ExecuteWith execType) throws IOException {
