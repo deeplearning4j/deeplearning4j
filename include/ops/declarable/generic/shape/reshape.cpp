@@ -30,6 +30,9 @@ namespace nd4j {
                 for (; e < (int) argumets->size(); e++)
                     shapeNew.push_back((int) argumets->at(e));
 
+                if (Environment::getInstance()->isDebugAndVerbose()) {
+                    nd4j_printv("Reshape: new shape", shapeNew);
+                }
 
                 if (block.isInplace()) {
                     if (x->reshapei(order, shapeNew)) {
@@ -49,6 +52,10 @@ namespace nd4j {
                 std::vector<int> shapeNew;
                 for (int e = 0; e < (int) s->lengthOf(); e++)
                     shapeNew.push_back((int) s->getIndexedScalar(e));
+
+               if (Environment::getInstance()->isDebugAndVerbose()) {
+                    nd4j_printv("Reshape: new shape", shapeNew);
+                }
 
                 if (block.isInplace()) {
                     if (x->reshapei(x->ordering(), shapeNew)) {

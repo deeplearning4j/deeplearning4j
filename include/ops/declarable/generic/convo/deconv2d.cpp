@@ -36,6 +36,9 @@ namespace nd4j {
             int dY = INT_ARG(6);
             int dX = INT_ARG(7);
             const bool isSameMode = INT_ARG(8) != 0;
+            bool isNCHW = true;
+            if (block.getIArguments()->size() > 9)
+                isNCHW = INT_ARG(9) == 0;
 
             NDArray<T> *z = OUTPUT_VARIABLE(0);
 
@@ -83,6 +86,9 @@ namespace nd4j {
             int dY = INT_ARG(6);
             int dX = INT_ARG(7);
             const bool isSameMode = INT_ARG(8) != 0;
+            bool isNCHW = true;
+            if (block.getIArguments()->size() > 9)
+                isNCHW = INT_ARG(9) == 0;
 
             int oY, oX;
 
@@ -144,6 +150,9 @@ namespace nd4j {
             int dY = INT_ARG(6);
             int dX = INT_ARG(7);
             const bool isSameMode = INT_ARG(8) != 0;
+            bool isNCHW = true;
+            if (block.getIArguments()->size() > 9)
+                isNCHW = INT_ARG(9) == 0;
 
             NDArray<T>* epsilon = OUTPUT_VARIABLE(0);
             NDArray<T>* gradW = OUTPUT_VARIABLE(1);

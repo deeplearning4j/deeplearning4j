@@ -785,6 +785,22 @@ TEST_F(DeclarableOpsTests3, Test_Manual_Gemm_6) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests3, Test_AvgPool_1) {
+    NDArray<float> x('c', {2, 10, 10, 3});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::avgpool2d<float> op;
+    //                                  kY  kX  sY  sX  pY  pX  dY  dX  M   P
+    auto result = op.execute({&x}, {}, {3,  3,  3,  3,  0,  0,  1,  1,  1,  0,  1});
+    //                                  0   1   2   3   4   5   6   7   8   9   10
+    auto z = result->at(0);
+
+    z->printShapeInfo("z shape");
+    z->printIndexedBuffer("z buffr");
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests3, Test_ReverseDivide_1) {
     NDArray<float> x('c', {1, 3}, {2, 2, 2});
     NDArray<float> y('c', {1, 3}, {4, 6, 8});

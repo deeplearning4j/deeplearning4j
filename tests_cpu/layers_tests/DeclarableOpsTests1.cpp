@@ -2136,7 +2136,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test1) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d<float> pooling;
     Nd4jStatus status = pooling.execute(block);
@@ -2179,7 +2179,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test2) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d<float> pooling;
     Nd4jStatus status = pooling.execute(block);
@@ -2222,7 +2222,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test3) {
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1});
     std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d<float> pooling;
     Nd4jStatus status = pooling.execute(block);
