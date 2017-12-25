@@ -1,8 +1,14 @@
 package org.nd4j.linalg.jcublas.ops.executioner;
 
+import lombok.val;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
+import org.bytedeco.javacpp.PointerPointer;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -19,6 +25,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.api.ops.impl.transforms.Set;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.*;
 
@@ -115,6 +123,62 @@ public class MetaOpTests {
         System.out.println("Execution time Linear: " + ((time2 - time1) / 1));
 
         assertEquals(exp2, array);
+    }
+
+    @Test
+    public void testPooling2D() {
+        Nd4j.create(1);
+
+        val input = Nd4j.linspace(1, 600, 600).reshape(2, 10, 10, 3);
+        val permuted = input.permute(0, 3, 1, 2);
+
+        val nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+
+        val output = Nd4j.create(2, 3, 4, 4);
+
+        val context = AtomicAllocator.getInstance().getFlowController().prepareAction(output, permuted);
+
+        val ptrBIn = (FloatPointer) AtomicAllocator.getInstance().getPointer(permuted, context);
+        val ptrBOut = (FloatPointer) AtomicAllocator.getInstance().getPointer(output, context);
+
+        val ptrSIn = (IntPointer) AtomicAllocator.getInstance().getPointer(permuted.shapeInfoDataBuffer());
+        val ptrSOut = (IntPointer) AtomicAllocator.getInstance().getPointer(output.shapeInfoDataBuffer());
+        //                                                                       kY  kX  sY  sX  pY  pX  dY  dX  N   M   P
+        val bufParams = Nd4j.getConstantHandler().getConstantBuffer(new float[] {3,  3,  3,  3,  1,  1,  1,  1,  1,  2,  2});
+        val ptrBParams = (FloatPointer) AtomicAllocator.getInstance().getPointer(bufParams, context);
+
+        PointerPointer xShapeInfoHostPointer = new PointerPointer(32).put(AddressRetriever.retrieveHostPointer(permuted.shapeInfoDataBuffer()), // 0
+                        context.getOldStream(), // 1
+                        AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
+                        context.getBufferAllocation(), // 3
+                        context.getBufferReduction(), // 4
+                        context.getBufferScalar(), // 5
+                        context.getBufferSpecial(), // 6
+                        null, // 7
+                        AddressRetriever.retrieveHostPointer(output.shapeInfoDataBuffer()) // 8
+/*                        hostTadShapeInfo, // 9
+                        devTadShapeInfo, // 10
+                        devTadOffsets, // 11
+                        hostMaxTadShapeInfo, // 12
+                        devMaxTadShapeInfo, // 13
+                        devMaxTadOffsets, // 14
+                        dimensionDevPointer, // special pointer for IsMax  // 15
+                        dimensionHostPointer, // special pointer for IsMax  // 16
+                        retPointer, // special pointer for IsMax // 17
+                        new CudaPointer(dimension == null ? 0 : dimension.length));
+*/
+                        );
+        nativeOps.execTransformFloat(xShapeInfoHostPointer, 71, ptrBIn, ptrSIn, ptrBOut, ptrSOut, ptrBParams);
+
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, output, permuted);
+        nativeOps.streamSynchronize(context.getOldStream());
+        nativeOps.streamSynchronize(context.getOldStream());
+
+        val reverted = output.permute(0, 2, 3, 1);
+
+        System.out.println("Result: " + reverted.toString());
+
     }
 /*
     @Ignore

@@ -57,7 +57,8 @@ public class Conv2D extends DynamicCustomOp {
                 conv2DConfig.getPw(),
                 conv2DConfig.getDh(),
                 conv2DConfig.getDw(),
-                ArrayUtil.fromBoolean(conv2DConfig.isSameMode())});
+                ArrayUtil.fromBoolean(conv2DConfig.isSameMode()),
+                ArrayUtil.fromBoolean(conv2DConfig.isNHWC())});
 
     }
 
@@ -98,23 +99,45 @@ public class Conv2D extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
-        val sY = tfStrides.get(1);
-        val sX = tfStrides.get(2);
+        int sY = 1;
+        int sX = 1;
+        int kY = 1;
+        int kX = 1;
 
         val aPadding = nodeDef.getAttrOrDefault("padding", null);
 
         val paddingMode = aPadding.getS().toStringUtf8();
-        int kY = 1;
-        int kX = 1;
+
         val args = args();
         INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
         if(arr == null) {
             arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
         }
 
-        kY = arr.size(0);
-        kX = arr.size(1);
-        arr = (arr.permute(3, 2, 0, 1).dup('c'));
+        String data_format = "nhwc";
+        if (nodeDef.containsAttr("data_format")) {
+            val attr = nodeDef.getAttrOrThrow("data_format");
+
+            data_format = attr.getS().toStringUtf8().toLowerCase();
+        }
+
+
+        if (data_format.equalsIgnoreCase("nhwc")) {
+            sY = tfStrides.get(1).intValue();
+            sX = tfStrides.get(2).intValue();
+
+            kY = arr.size(0);
+            kX = arr.size(1);
+        } else {
+            sY = tfStrides.get(2).intValue();
+            sX = tfStrides.get(3).intValue();
+
+            kY = arr.size(2);
+            kX = arr.size(3);
+        }
+
+        // TODO: arguable. it might be easier to permute weights once
+        //arr = (arr.permute(3, 2, 0, 1).dup('c'));
         val  varForOp = initWith.getVariable(args[1].getVarName());
         initWith.associateArrayWithVariable(arr, varForOp);
 
@@ -123,9 +146,10 @@ public class Conv2D extends DynamicCustomOp {
         Conv2DConfig conv2DConfig = Conv2DConfig.builder()
                 .kh(kY)
                 .kw(kX)
-                .sx(sX.intValue())
-                .sy(sY.intValue())
+                .sx(sX)
+                .sy(sY)
                 .isSameMode(isSameMode)
+                .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .build();
         this.conv2DConfig = conv2DConfig;
 

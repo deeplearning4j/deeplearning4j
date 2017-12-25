@@ -139,7 +139,7 @@ public class TFGraphTestAllHelper {
             val results = executioner.executeGraph(graph, configuration);
             assertTrue(results.length > 0); //FIXME: Later
 
-            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/ae_00.fb"));
+            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/conv_0.fb"));
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));

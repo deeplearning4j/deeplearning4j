@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 @Data
 public class Pooling2DConfig {
 
-    private int kh, kw, sy, sx, ph, pw, dh, dw,virtualHeight,virtualWidth;
+    private int kh, kw, sy, sx, ph, pw, virtualHeight,virtualWidth;
     /**
      * Extra is an optional parameter mainly for use with pnorm right now.
      * All pooling implementations take 9 parameters save pnorm.
@@ -19,6 +19,9 @@ public class Pooling2DConfig {
     private double extra;
     private Pooling2D.Pooling2DType type;
     private boolean isSameMode;
+    @Builder.Default private int dh = 1;
+    @Builder.Default private int dw = 1;
+    @Builder.Default private boolean isNHWC = false;
 
 
 }

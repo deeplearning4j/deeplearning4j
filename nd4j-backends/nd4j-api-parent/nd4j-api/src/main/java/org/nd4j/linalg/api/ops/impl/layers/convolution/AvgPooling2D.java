@@ -66,7 +66,8 @@ public class AvgPooling2D extends DynamicCustomOp {
                         config.getDh(),
                         config.getDw(),
                         ArrayUtil.fromBoolean(config.isSameMode()),
-                        (int) config.getExtra()});
+                        (int) config.getExtra(),
+                        ArrayUtil.fromBoolean(config.isNHWC())});
 
     }
 
@@ -96,14 +97,18 @@ public class AvgPooling2D extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
-        val sY = tfStrides.get(1);
-        val sX = tfStrides.get(2);
 
         val aKernels = nodeDef.getAttrOrThrow("ksize");
         val tfKernels = aKernels.getList().getIList();
 
-        val kY = tfKernels.get(1);
-        val kX = tfKernels.get(2);
+        int sY = 0;
+        int sX = 0;
+
+        int ph = 0;
+        int pw = 0;
+
+        int kY = 0;
+        int kX = 0;
 
         val aPadding = nodeDef.getAttrOrThrow("padding");
         val padding = aPadding.getList().getIList();
@@ -112,22 +117,46 @@ public class AvgPooling2D extends DynamicCustomOp {
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
-        if (!isSameMode)
-            log.debug("Mode: {}", paddingMode);
+        String data_format = "nhwc";
+        if (nodeDef.containsAttr("data_format")) {
+            val attr = nodeDef.getAttrOrThrow("data_format");
 
-        val ph = padding.size() == 2 ? padding.get(0).intValue() : 0;
-        val pw = padding.size() == 2 ? padding.get(1).intValue() : 0;
+            data_format = attr.getS().toStringUtf8().toLowerCase();
+        }
+
+        if (data_format.equalsIgnoreCase("nhwc")) {
+            sY = tfStrides.get(1).intValue();
+            sX = tfStrides.get(2).intValue();
+
+            kY = tfKernels.get(1).intValue();
+            kX = tfKernels.get(2).intValue();
+
+            ph = padding.size() > 0 ? padding.get(1).intValue() : 0;
+            pw = padding.size() > 0 ? padding.get(2).intValue() : 0;
+        } else {
+            sY = tfStrides.get(2).intValue();
+            sX = tfStrides.get(3).intValue();
+
+            kY = tfKernels.get(2).intValue();
+            kX = tfKernels.get(3).intValue();
+
+            ph = padding.size() > 0 ? padding.get(2).intValue() : 0;
+            pw = padding.size() > 0 ? padding.get(3).intValue() : 0;
+        }
+
         Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sy(sY.intValue())
-                .sx(sX.intValue())
+                .sy(sY)
+                .sx(sX)
                 .type(Pooling2D.Pooling2DType.AVG)
                 .isSameMode(isSameMode)
-                .kh(kY.intValue())
-                .kw(kX.intValue())
+                .kh(kY)
+                .kw(kX)
                 .ph(ph)
                 .pw(pw)
                 .virtualWidth(1)
                 .virtualHeight(1)
+                .isNHWC(data_format.equalsIgnoreCase("nhwc"))
+                .extra(1.0) // averaging only for non-padded values
                 .build();
         this.config = pooling2DConfig;
         addArgs();
