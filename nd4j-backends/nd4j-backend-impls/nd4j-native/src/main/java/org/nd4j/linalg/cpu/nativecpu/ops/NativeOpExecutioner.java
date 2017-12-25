@@ -1634,20 +1634,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, (float) t);
 
-            val ptrptr= loop.calculateOutputShapesFloat(null,
+            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesFloat(null,
                     hash, inputShapes, op.numInputArguments(),
                     tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
-                loop.deleteIntArray(ptrptr.get(e));
-            }
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-            loop.deletePointerArray(ptrptr);
+            loop.deleteShapeList(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.numTArguments() > 0 ? new DoublePointer(op.numTArguments()) : null;
 
@@ -1656,20 +1653,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-            val ptrptr= loop.calculateOutputShapesDouble(null,
+            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesDouble(null,
                     hash, inputShapes, op.numInputArguments(), tArgs,
                     op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
-                loop.deleteIntArray(ptrptr.get(e));
-            }
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-            loop.deletePointerArray(ptrptr);
+
+            loop.deleteShapeList(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.numTArguments() > 0 ? new ShortPointer(op.numTArguments()) : null;
 
@@ -1678,18 +1673,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t:  tArgs1)
                 tArgs.put(cnt++, ArrayUtil.toHalf(t));
 
-            val ptrptr= loop.calculateOutputShapesHalf(null, hash, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
+            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
             val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
-                loop.deleteIntArray(ptrptr.get(e));
-            }
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-            loop.deletePointerArray(ptrptr);
+            loop.deleteShapeList(ptrptr);
         }
 
 

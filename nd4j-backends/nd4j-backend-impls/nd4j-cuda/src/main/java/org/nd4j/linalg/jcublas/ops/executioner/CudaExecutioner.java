@@ -2465,19 +2465,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
 
-            val ptrptr= nativeOps.calculateOutputShapesFloat(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesFloat(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-                Pointer.free(ptrptr.get(e));
-            }
-
-            Pointer.free(ptrptr);
+            nativeOps.deleteShapeList(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
 
@@ -2485,18 +2481,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
 
-            val ptrptr= nativeOps.calculateOutputShapesDouble(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesDouble(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
-                Pointer.free(ptrptr.get(e));
-            }
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-            Pointer.free(ptrptr);
+            nativeOps.deleteShapeList(ptrptr);
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
             val tArgs = op.tArgs().length > 0 ? new ShortPointer(op.tArgs().length) : null;
 
@@ -2504,18 +2497,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
 
-            val ptrptr = nativeOps.calculateOutputShapesHalf(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesHalf(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            val numOutputs = getCustomOperations().get(lc).getNumOutputs();
-            for (int e = 0; e < numOutputs; e++ ) {
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.get(e)).asIntPointer()));
-                Pointer.free(ptrptr.get(e));
-            }
+            for (int e = 0; e < ptrptr.size(); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asIntPointer()));
 
-            Pointer.free(ptrptr);
+
+            nativeOps.deleteShapeList(ptrptr);
         }
 
 

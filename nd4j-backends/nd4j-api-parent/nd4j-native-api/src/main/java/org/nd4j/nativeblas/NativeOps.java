@@ -1606,9 +1606,9 @@ public abstract class NativeOps extends Pointer {
     public abstract int execCustomOpDouble(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
     public abstract int execCustomOpHalf(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, @Cast("float16*") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs, boolean isInplace);
 
-    public abstract PointerPointer calculateOutputShapesFloat(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
-    public abstract PointerPointer calculateOutputShapesHalf(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, @Cast("float16") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
-    public abstract PointerPointer calculateOutputShapesDouble(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapesFloat(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapesHalf(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, @Cast("float16") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapesDouble(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
 
     public abstract int registerGraphFloat(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
     public abstract int registerGraphDouble(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
@@ -1617,6 +1617,8 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer executeStoredGraphFloat(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
     public abstract Pointer executeStoredGraphDouble(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
     public abstract Pointer executeStoredGraphHalf(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+
+    public abstract void deleteShapeList(Pointer ptr);
 
     public abstract int unregisterGraph(PointerPointer extraPointers, long graphId);
 
