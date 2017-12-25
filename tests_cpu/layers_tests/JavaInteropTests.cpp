@@ -36,17 +36,19 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
 
     auto shapeList = nativeOps.calculateOutputShapesFloat(nullptr, op.getOpHash(), ptrs, 2, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
 
-    //ASSERT_EQ(1, shapeList->size());
+    ASSERT_EQ(1, shapeList->size());
 
-    ASSERT_EQ(exp.rankOf(), shape::rank((int *)shapeList[0]));
-    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((int *)shapeList[0])[0]);
-    ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((int *)shapeList[0])[1]);
-    ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((int *)shapeList[0])[2]);
-    ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((int *)shapeList[0])[3]);
+    ASSERT_EQ(exp.rankOf(), shape::rank((int *)shapeList->at(0)));
+    ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((int *)shapeList->at(0))[0]);
+    ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((int *)shapeList->at(0))[1]);
+    ASSERT_EQ(exp.sizeAt(2), shape::shapeOf((int *)shapeList->at(0))[2]);
+    ASSERT_EQ(exp.sizeAt(3), shape::shapeOf((int *)shapeList->at(0))[3]);
 
-    int *ptr = (int *) shapeList[0];
-    delete[] ptr;
-    delete[] shapeList;
+    //int *ptr = (int *) shapeList[0];
+    //delete[] ptr;
+    //delete shapeList;
+
+    nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
 
 
