@@ -25,7 +25,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-
     <artifactId>nd4j-api</artifactId>
     <version>0.9.2-SNAPSHOT</version>
     <packaging>jar</packaging>
@@ -34,7 +33,50 @@
     <url>http://nd4j.org</url>
 
     <build>
-        <plugins>
+      <plugins>
+            <plugin>
+              <groupId>com.github.os72</groupId>
+              <artifactId>protoc-jar-maven-plugin</artifactId>
+              <version>3.5.0</version>
+              <executions>
+                <execution>
+                  <id>tensorflow</id>
+                  <phase>generate-sources</phase>
+                  <goals>
+                    <goal>run</goal>
+                  </goals>
+                  <configuration>
+                    <protocVersion>3.5.0</protocVersion>
+                    <includeDirectories>
+                      <include>src/main/protobuf/tf</include>
+                    </includeDirectories>
+                    <inputDirectories>
+                      <include>src/main/protobuf/tf/tensorflow</include>
+                    </inputDirectories>
+                    <addSources>main</addSources>
+                    <cleanOutputFolder>false</cleanOutputFolder>
+                    <outputDirectory>src/main/java/</outputDirectory>
+                  </configuration>
+                </execution>
+                <execution>
+                  <id>onnx</id>
+                  <phase>generate-sources</phase>
+                  <goals>
+                    <goal>run</goal>
+                  </goals>
+                  <configuration>
+                    <extension>.proto3</extension>
+                    <protocVersion>3.5.0</protocVersion>
+                    <inputDirectories>
+                      <include>src/main/protobuf/onnx</include>
+                    </inputDirectories>
+                    <addSources>main</addSources>
+                    <cleanOutputFolder>false</cleanOutputFolder>
+                    <outputDirectory>src/main/java/</outputDirectory>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

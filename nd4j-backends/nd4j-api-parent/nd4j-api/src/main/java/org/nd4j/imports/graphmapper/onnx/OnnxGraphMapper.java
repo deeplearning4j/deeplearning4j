@@ -28,7 +28,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto,  onnx.OnnxProto3.TypeProto.TensorTypeProto> {
+public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto,  onnx.OnnxProto3.TypeProto.Tensor> {
     private static OnnxGraphMapper INSTANCE = new OnnxGraphMapper();
 
 
@@ -67,7 +67,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean isPlaceHolderNode(OnnxProto3.TypeProto.TensorTypeProto node) {
+    public boolean isPlaceHolderNode(OnnxProto3.TypeProto.Tensor node) {
         return false;
     }
 
@@ -104,12 +104,12 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public Map<String,onnx.OnnxProto3.TypeProto.TensorTypeProto> variablesForGraph(OnnxProto3.GraphProto graphProto) {
+    public Map<String,onnx.OnnxProto3.TypeProto.Tensor> variablesForGraph(OnnxProto3.GraphProto graphProto) {
         /**
          * Need to figure out why
          * gpu_0/conv1_1 isn't present in VGG
          */
-        Map<String,onnx.OnnxProto3.TypeProto.TensorTypeProto> ret = new HashMap<>();
+        Map<String,onnx.OnnxProto3.TypeProto.Tensor> ret = new HashMap<>();
         for(int i = 0; i < graphProto.getInputCount(); i++) {
             ret.put(graphProto.getInput(i).getName(),graphProto.getInput(i).getType().getTensorType());
         }
@@ -149,14 +149,14 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
 
-    protected void addDummyTensor(String name, Map<String, OnnxProto3.TypeProto.TensorTypeProto> to) {
-        val dim =  OnnxProto3.TypeProto.TensorShapeProto.Dimension.
+    protected void addDummyTensor(String name, Map<String, OnnxProto3.TypeProto.Tensor> to) {
+        OnnxProto3.TensorShapeProto.Dimension dim =  OnnxProto3.TensorShapeProto.Dimension.
                 newBuilder()
                 .setDimValue(-1)
                 .build();
-        val typeProto = OnnxProto3.TypeProto.TensorTypeProto.newBuilder()
+        OnnxProto3.TypeProto.Tensor typeProto = OnnxProto3.TypeProto.Tensor.newBuilder()
                 .setShape(
-                        OnnxProto3.TypeProto.TensorShapeProto.newBuilder()
+                        OnnxProto3.TensorShapeProto.newBuilder()
                                 .addDim(dim)
                                 .addDim(dim).build())
                 .build();
@@ -179,7 +179,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public void mapNodeType(OnnxProto3.NodeProto tfNode, ImportState<OnnxProto3.GraphProto,onnx.OnnxProto3.TypeProto.TensorTypeProto> importState) {
+    public void mapNodeType(OnnxProto3.NodeProto tfNode, ImportState<OnnxProto3.GraphProto,onnx.OnnxProto3.TypeProto.Tensor> importState) {
         val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithOnnxName(tfNode.getOpType());
         if(differentialFunction == null) {
             throw new NoOpNameFoundException("No op name found " + tfNode.getOpType());
@@ -208,7 +208,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataBuffer.Type dataTypeForTensor( onnx.OnnxProto3.TypeProto.TensorTypeProto tensorProto) {
+    public DataBuffer.Type dataTypeForTensor( onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
         switch (tensorProto.getElemType()) {
             case DOUBLE: return DataBuffer.Type.DOUBLE;
             case FLOAT: return DataBuffer.Type.FLOAT;
@@ -238,13 +238,13 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean isPlaceHolder(OnnxProto3.TypeProto.TensorTypeProto nodeType) {
+    public boolean isPlaceHolder(OnnxProto3.TypeProto.Tensor nodeType) {
         return false;
     }
 
 
     @Override
-    public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.TensorTypeProto tensorProto, OnnxProto3.GraphProto graph) {
+    public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
         DataBuffer.Type type = dataTypeForTensor(tensorProto);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
@@ -274,7 +274,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public int[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.TensorTypeProto tensorProto) {
+    public int[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
         val ret = new int[Math.max(2,tensorProto.getShape().getDimCount())];
         int dimCount = tensorProto.getShape().getDimCount();
         if(dimCount >= 2)
