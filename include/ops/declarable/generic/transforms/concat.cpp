@@ -7,7 +7,7 @@
 namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
-        CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0){
+        CUSTOM_OP_IMPL(concat, -1, 1, false, 0, -2){
             // do something here{
             NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
 
