@@ -16,8 +16,14 @@ namespace nd4j {
             NDArray<T> *first = INPUT_VARIABLE(0);
             NDArray<T> *output = this->getZ(block);
 
-            Nd4jPointer* buffers = new Nd4jPointer[block.width()];
-            Nd4jPointer* shapes = new Nd4jPointer[block.width()];
+            NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
+
+            int elements = (int) block.width();
+            if (last->isScalar() && !first->isScalar())
+                --elements;
+
+            Nd4jPointer* buffers = new Nd4jPointer[elements];
+            Nd4jPointer* shapes = new Nd4jPointer[elements];
 
             buffers[0] = (Nd4jPointer) first->getBuffer();
             shapes[0] = (Nd4jPointer) first->getShapeInfo();
@@ -30,7 +36,7 @@ namespace nd4j {
                 shape::printShapeInfoLinear((int *) shapes[0]);
             }
 
-            for (int e = 1; e < (int) block.width(); e++) {
+            for (int e = 1; e < elements; e++) {
                 Variable<T> *var = block.variable(e);
 
                 buffers[e] = (Nd4jPointer) var->getNDArray()->getBuffer();
@@ -44,7 +50,7 @@ namespace nd4j {
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())
                 fflush(stdout);
 
-            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, block.width(), buffers, shapes, output->getBuffer(), output->getShapeInfo());
+            nd4j::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->getBuffer(), output->getShapeInfo());
 
             STORE_RESULT(*output);
 
@@ -62,6 +68,12 @@ namespace nd4j {
             int* inp = inputShape->at(0);
             int _dimension = INT_ARG(0);
 
+            int* last = inputShape->at(inputShape->size() - 1);
+
+            int elements = (int) inputShape->size();
+            if (!shape::isScalar(inp) && shape::isScalar(last))
+                --elements;
+
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
 
@@ -69,7 +81,7 @@ namespace nd4j {
                 _dimension += shape::rank(inp);
 
             std::memcpy(newShape, inp, shape::shapeInfoByteLength(inp));
-            for (int i = 1; i < inputShape->size(); i++) {
+            for (int i = 1; i < elements; i++) {
                 newShape[_dimension + 1] += shape::shapeOf(inputShape->at(i))[_dimension];
             }
 
