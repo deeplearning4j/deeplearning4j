@@ -154,7 +154,7 @@ namespace nd4j {
          * T args:
          * 0: scalar value, used to fill NDArray
          */
-        DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 0, 0);
 
         /**
          * This operation applies element-wise rint (round to integral value) operation
