@@ -116,6 +116,29 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 }
 
 
+
+TEST_F(ParityOpsTests, TestUnstack2) {
+    NDArray<float> input('c', {5,2,6});
+    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {2});
+    for (int e = 0; e < tads->size(); e++) {
+        ASSERT_EQ(6, tads->at(e)->lengthOf());
+        tads->at(e)->assign((float) e + 1);
+    }
+
+    nd4j::ops::unstack<float> op;
+
+    auto result = op.execute({&input}, {}, {2});
+
+    ASSERT_EQ(10, result->size());
+
+    for (int e = 0; e < result->size(); e++)
+        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+
+    delete result;
+    delete tads;
+}
+
+
 TEST_F(ParityOpsTests, ExpandDimsTest1) {
     NDArray<float> input('c', {5, 5});
     NDArrayFactory<float>::linspace(1, input);
