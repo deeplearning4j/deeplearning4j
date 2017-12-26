@@ -308,5 +308,17 @@ namespace nd4j {
         * Two input and one output arrays have the same shape
         */
         DECLARE_CONFIGURABLE_OP(polygamma, 2, 1, false, 0, 0);
+
+        /**
+         * This operation takes shape as first argument, and returns new NDArray filled with specific scalar value.
+         * Input arrays:
+         * 0 - shape vector
+         * 1 - optional scalar NDArray
+         * 
+         * T arguments:
+         * 0 - optional scalar value
+         * 
+         */
+        DECLARE_CUSTOM_OP(fill, 1, 1, false, -2, 0);
     }
 }
