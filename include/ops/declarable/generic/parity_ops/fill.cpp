@@ -10,7 +10,7 @@ namespace nd4j {
             auto shapeArray = INPUT_VARIABLE(0);
             
             T scalar = 0;
-            if (block.getIArguments()->size() > 0) {
+            if (block.getTArguments()->size() > 0) {
                 scalar = T_ARG(0);
             } else if (block.width() > 1) {
                 auto scArr = INPUT_VARIABLE(1);
@@ -33,12 +33,14 @@ namespace nd4j {
             // this function won't be used in practice, since this is runtime operation, so shape will be always overwritten
             auto inp = inputShape->at(0);
 
+            int len = shape::length(inp);
+
             std::vector<int> shape((int) shape::length(inp));
             for (int e = 0; e < shape::length(inp); e++)
                 shape[e] = 1;
 
             int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::length(inp), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape::length(inp)), int);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
             return new ShapeList(newShape);

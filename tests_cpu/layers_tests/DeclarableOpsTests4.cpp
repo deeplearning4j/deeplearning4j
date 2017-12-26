@@ -181,3 +181,20 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests4, Test_Fill_1) {
+    NDArray<float> x('c', {1, 3}, {3, 2, 4});
+    NDArray<float> exp('c', {3, 2, 4});
+    exp.assign(2.0f);
+
+    nd4j::ops::fill<float> op;
+    auto result = op.execute({&x}, {2.0f}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
