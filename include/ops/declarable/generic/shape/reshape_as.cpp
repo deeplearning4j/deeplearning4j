@@ -26,7 +26,7 @@ namespace nd4j {
 
         return ND4J_STATUS_BAD_INPUT;
     }
-    DECLARE_SYN(shape, reshapeas);
+    DECLARE_SYN(reshape_as, reshapeas);
     
     DECLARE_SHAPE_FN(reshapeas) {
     
