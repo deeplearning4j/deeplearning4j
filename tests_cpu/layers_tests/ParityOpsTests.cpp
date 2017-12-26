@@ -119,9 +119,9 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
 TEST_F(ParityOpsTests, TestUnstack2) {
     NDArray<float> input('c', {5,2,6});
-    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {2});
+    auto tads = NDArrayFactory<float>::allTensorsAlongDimension(&input, {0, 1});
     for (int e = 0; e < tads->size(); e++) {
-        ASSERT_EQ(6, tads->at(e)->lengthOf());
+        ASSERT_EQ(10, tads->at(e)->lengthOf());
         tads->at(e)->assign((float) e + 1);
     }
 
@@ -129,7 +129,7 @@ TEST_F(ParityOpsTests, TestUnstack2) {
 
     auto result = op.execute({&input}, {}, {2});
 
-    ASSERT_EQ(10, result->size());
+    ASSERT_EQ(6, result->size());
 
     for (int e = 0; e < result->size(); e++)
         ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
