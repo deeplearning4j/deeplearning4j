@@ -7,16 +7,22 @@
 namespace nd4j {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
-        CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1){
+        CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0){
             // do something here{
+            NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
 
-            int _dimension = INT_ARG(0);
+            int _dimension = 0;
+            if (block.getIArguments() > 0)
+                _dimension = INT_ARG(0);
+            else {
+                _dimension = (int) last->getScalar(0);
+            }
 
             // we want to ensure that all
             NDArray<T> *first = INPUT_VARIABLE(0);
             NDArray<T> *output = this->getZ(block);
 
-            NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
+
 
             int elements = (int) block.width();
             if (last->isScalar() && !first->isScalar())
