@@ -1,0 +1,28 @@
+branches:
+  only:
+    - master
+version: '{build}'
+image: Visual Studio 2015
+cache:
+  - '%USERPROFILE%\.m2'
+clone_depth: 50
+environment:
+  matrix:
+    - CUDA: 8.0
+      CUDNN: 6
+      SCALA: 2.10
+    - CUDA: 9.0
+      CUDNN: 7
+      SCALA: 2.11
+
+init:
+
+install:
+
+build_script:
+    - '%APPVEYOR_BUILD_FOLDER%\ci\build-windows-x86_64.cmd'
+
+test_script:
+
+on_finish:
+
