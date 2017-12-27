@@ -29,6 +29,10 @@ namespace nd4j {
         return _indices.size() == 1 && _indices.at(0) == -1;
     }
 
+    bool nd4j::NDIndex::isPoint() {
+        return _indices.size() == 1 && _indices.at(0) >= 0;
+    }
+
     std::vector<int> &nd4j::NDIndex::getIndices() {
         return _indices;
     }

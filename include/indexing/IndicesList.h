@@ -18,6 +18,7 @@ namespace nd4j {
         int size();
         NDIndex* at(int idx);
         void push_back(NDIndex* idx);
+        bool isScalar();
 
         ~IndicesList();
     };

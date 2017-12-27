@@ -18,6 +18,7 @@ namespace nd4j {
         ~NDIndex() = default;
 
         bool isAll();
+        bool isPoint();
 
         std::vector<int>& getIndices();
         int stride();

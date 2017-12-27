@@ -20,6 +20,14 @@ int nd4j::IndicesList::size() {
     return (int) _indices.size();
 }
 
+bool nd4j::IndicesList::isScalar() {
+    if (_indices.size() == 1) {
+        return _indices.at(0)->isPoint();
+    }
+
+    return false;
+}
+
 nd4j::NDIndex* nd4j::IndicesList::at(int idx) {
     return _indices.at(idx);
 }

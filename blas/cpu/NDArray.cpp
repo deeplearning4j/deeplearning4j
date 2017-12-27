@@ -2025,6 +2025,12 @@ bool NDArray<T>::isUnitary() {
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
     NDArray<T>* NDArray<T>::subarray(IndicesList& idx) const {
+        // scalar subarray edge case
+        if (idx.isScalar()) {
+            auto pnt = idx.at(0)->getIndices().at(0);
+            return new NDArray<T>('c', {1, 1}, {this->getScalar(pnt)});   
+        }
+
         if (idx.size() != this->rankOf())
             throw "Number of indices should match";
 
