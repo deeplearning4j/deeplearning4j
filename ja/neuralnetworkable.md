@@ -7,7 +7,7 @@ layout: default
 
 以下の表は、それぞれに異なる用途に役立つニューラルネットワークを紹介するものです。 
 
-![Alt text](./img/neural_net_table.png) 
+![Alt text](../img/neural_net_table.png) 
 
 すべてのディープニューラルネットワークに共通する構造やコードスニペットについての更なる情報は、[ディープニューラルネットワークについて](https://deeplearning4j.org/ja/neuralnet-overview.html)をお読みください。
 
