@@ -221,7 +221,7 @@ public class TFGraphTestAllHelper {
                     varShape = new int[]{1, vectorSize}; //vectors are mapped to a row vector
                 }
             }
-            INDArray varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replaceAll(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
+            INDArray varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
             if (varName.contains("____")) {
                 //these are intermediate node outputs
                 varMap.put(varName.replaceAll("____", "/"), varValue);
