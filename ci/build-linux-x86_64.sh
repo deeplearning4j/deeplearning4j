@@ -18,11 +18,18 @@ if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j
      git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50
 fi
 
+PROTOBUF=3.5.1
+curl --retry 10 -L https://github.com/google/protobuf/releases/download/v$PROTOBUF/protobuf-cpp-$PROTOBUF.tar.gz -o $HOME/protobuf-$PROTOBUF.tar.gz
+tar -C $TRAVIS_BUILD_DIR/.. --totals -xf $HOME/protobuf-$PROTOBUF.tar.gz
+
 docker run -ti -e SONATYPE_USERNAME -e SONATYPE_PASSWORD -v $HOME/.m2:/root/.m2 -v $TRAVIS_BUILD_DIR/..:/build \
     nvidia/cuda:$CUDA-cudnn$CUDNN-devel-centos6 /bin/bash -evxc "\
         yum -y install centos-release-scl-rh epel-release; \
         yum -y install devtoolset-4-toolchain rh-maven33 cmake3 git java-1.8.0-openjdk-devel; \
         source scl_source enable devtoolset-4 rh-maven33 || true; \
+        cd /build/protobuf-$PROTOBUF/; \
+        ./configure; \
+        make -j2; \
         cd /build/libnd4j/; \
         sed -i /cmake_minimum_required/d CMakeLists.txt
         MAKEJ=2 bash buildnativeoperations.sh; \
@@ -30,5 +37,5 @@ docker run -ti -e SONATYPE_USERNAME -e SONATYPE_PASSWORD -v $HOME/.m2:/root/.m2 
         cd /build/nd4j/; \
         source change-cuda-versions.sh $CUDA; \
         source change-scala-versions.sh $SCALA; \
-        mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype;"
+        mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype -DprotocCommand=/build/protobuf-$PROTOBUF/src/protoc;"
 
