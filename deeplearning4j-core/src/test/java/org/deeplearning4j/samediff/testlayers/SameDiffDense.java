@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -97,7 +98,7 @@ public class SameDiffDense extends BaseSameDiffLayer {
     @Override
     public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
         if(activation == null){
-            activation = Activation.fromIActivation(globalConfig.getActivationFn());
+            activation = SameDiffLayerUtils.fromIActivation(globalConfig.getActivationFn());
         }
     }
 

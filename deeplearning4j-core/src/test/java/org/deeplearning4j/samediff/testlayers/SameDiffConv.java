@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -137,7 +138,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     @Override
     public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
         if (activation == null) {
-            activation = Activation.fromIActivation(globalConfig.getActivationFn());
+            activation = SameDiffLayerUtils.fromIActivation(globalConfig.getActivationFn());
         }
         if (cm == null) {
             cm = globalConfig.getConvolutionMode();
