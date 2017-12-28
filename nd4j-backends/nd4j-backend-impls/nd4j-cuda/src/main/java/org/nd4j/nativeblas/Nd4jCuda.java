@@ -5382,6 +5382,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate();
 
         public native @Cast("bool") boolean isAll();
+        public native @Cast("bool") boolean isPoint();
 
         public native @StdVector IntPointer getIndices();
         public native int stride();
@@ -5454,6 +5455,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native int size();
         public native NDIndex at(int idx);
         public native void push_back(NDIndex idx);
+        public native @Cast("bool") boolean isScalar();
     }
 
 // #endif //LIBND4J_INDICESLIST_H
@@ -5554,6 +5556,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public FloatNDArray(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(float[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         
+        /**
+         * Constructor for scalar NDArray
+         */
+        public FloatNDArray(float scalar) { super((Pointer)null); allocate(scalar); }
+        private native void allocate(float scalar);
+
         /**
         *  copy constructor
         */
@@ -6213,6 +6221,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to add
         */
         public native @Name("operator +=") void addPut(@Const @ByRef FloatNDArray other);
+
+        public native @Name("operator +=") void addPut(float other);
+        public native @Name("operator -=") void subtractPut(float other);
         
         /**
         *  subtraction operator: array - other
@@ -6546,6 +6557,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public HalfNDArray(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(@Cast("float16*") short[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         
+        /**
+         * Constructor for scalar NDArray
+         */
+        public HalfNDArray(@Cast("float16") short scalar) { super((Pointer)null); allocate(scalar); }
+        private native void allocate(@Cast("float16") short scalar);
+
         /**
         *  copy constructor
         */
@@ -7205,6 +7222,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to add
         */
         public native @Name("operator +=") void addPut(@Const @ByRef HalfNDArray other);
+
+        public native @Name("operator +=") void addPut(@Cast("const float16") short other);
+        public native @Name("operator -=") void subtractPut(@Cast("const float16") short other);
         
         /**
         *  subtraction operator: array - other
@@ -7538,6 +7558,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public DoubleNDArray(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(buffer, shapeInfo, workspace); }
         private native void allocate(double[] buffer/*=nullptr*/, int[] shapeInfo/*=nullptr*/, Workspace workspace/*=nullptr*/);
         
+        /**
+         * Constructor for scalar NDArray
+         */
+        public DoubleNDArray(double scalar) { super((Pointer)null); allocate(scalar); }
+        private native void allocate(double scalar);
+
         /**
         *  copy constructor
         */
@@ -8197,6 +8223,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  other - input array to add
         */
         public native @Name("operator +=") void addPut(@Const @ByRef DoubleNDArray other);
+
+        public native @Name("operator +=") void addPut(double other);
+        public native @Name("operator -=") void subtractPut(double other);
         
         /**
         *  subtraction operator: array - other

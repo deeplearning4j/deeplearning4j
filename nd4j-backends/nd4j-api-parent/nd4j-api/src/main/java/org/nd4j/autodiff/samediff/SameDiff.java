@@ -11,6 +11,7 @@ import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -4305,6 +4306,7 @@ public class SameDiff {
                 10, // hardcoded value
                 0,
                 0,
+                0,
                 (byte) 0,
                 0,
                 0,
@@ -4393,6 +4395,10 @@ public class SameDiff {
         int ownId = reverseMap.size() + 1;
         reverseMap.put(node.getOwnName(), ownId);
 
+        // TODO: Adam, just put your props here, instead of empty list, and they will be saved
+        List<FunctionProperties> props = new ArrayList<>();
+        int properties = FunctionProperties.asFlatProperties(bufferBuilder, props);
+
         int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
         int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
         int nodesOut = FlatNode.createOutputVector(bufferBuilder,outputIds);
@@ -4415,6 +4421,7 @@ public class SameDiff {
                 fname,
                 getFlatOpType(node.opType()),
                 hash,
+                properties,
                 nodesIn,
                 nodesInPaired,
                 (byte) 0,
@@ -4558,6 +4565,22 @@ public class SameDiff {
      */
     public void asFlatFile(@NonNull File file) throws IOException {
         val fb = asFlatBuffers();
+        val offset = fb.position();
+
+        val array = fb.array();
+
+        try (val fos = new FileOutputStream(file); val bos = new BufferedOutputStream(fos); val dos = new DataOutputStream(bos)) {
+            dos.write(array, offset, array.length - offset);
+        }
+    }
+
+    /**
+     * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
+     *
+     * @param file
+     */
+    public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration) throws IOException {
+        val fb = asFlatBuffers(configuration);
         val offset = fb.position();
 
         val array = fb.array();
