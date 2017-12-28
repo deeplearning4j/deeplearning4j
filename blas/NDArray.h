@@ -72,6 +72,11 @@ namespace nd4j {
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
         
         /**
+         * Constructor for scalar NDArray
+         */
+        NDArray(T scalar);
+
+        /**
         *  copy constructor
         */
         NDArray(const NDArray<T>& other);
@@ -705,6 +710,9 @@ namespace nd4j {
         *  other - input array to add
         */
         void operator+=(const NDArray<T>& other);
+
+        void operator+=(const T other);
+        void operator-=(const T other);
         
         /**
         *  subtraction operator: array - other
@@ -1148,6 +1156,9 @@ FORCEINLINE bool NDArray<T>::isColumnVector() const {
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 FORCEINLINE bool NDArray<T>::isRowVector() const {
+    // 1D edge case
+    if (shape::rank(this->_shapeInfo) == 1)
+        return true;
 
     return !isScalar() && shape::isRowVector(this->_shapeInfo);
 }
@@ -1156,7 +1167,7 @@ FORCEINLINE bool NDArray<T>::isRowVector() const {
 template<typename T>
 FORCEINLINE bool NDArray<T>::isScalar() const {
     
-    return this->lengthOf() == 1;
+    return shape::isScalar(this->_shapeInfo);
 }
 
 // accessing operator for matrix, i - absolute index

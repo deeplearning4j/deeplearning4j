@@ -1,0 +1,14 @@
+include "array.fbs";
+
+namespace nd4j.graph;
+
+
+table FlatProperties {
+    name:string; // name of this property
+    i:[int]; // integer properties
+    l:[long]; // long properties
+    d:[double]; // double properties
+    a:[FlatArray]; // array properties
+}
+
+root_type FlatProperties;

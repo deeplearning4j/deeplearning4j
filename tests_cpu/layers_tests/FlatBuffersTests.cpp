@@ -23,8 +23,8 @@ public:
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
     FlatBuffersTest() {
-        Environment::getInstance()->setDebug(false);
-        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance()->setDebug(true);
+        Environment::getInstance()->setVerbose(true);
     }
 
     ~FlatBuffersTest() {
@@ -98,8 +98,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto name1 = builder.CreateString("wow1");
     auto name2 = builder.CreateString("wow2");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
-    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, 0, in1, 0, nd4j::graph::DataType::DataType_FLOAT, vec1);
+    auto node2 = CreateFlatNode(builder, 2, name2, OpType_TRANSFORM, 2, 0, in2, 0, nd4j::graph::DataType::DataType_FLOAT, vec2);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fVar);
@@ -533,15 +533,13 @@ TEST_F(FlatBuffersTest, ReduceDim_1) {
     auto x = variableSpace->getVariable(1)->getNDArray();
     auto y = variableSpace->getVariable(2)->getNDArray();
 
-    x->printShapeInfo("x shape");
-
     Nd4jStatus status = GraphExecutioner<float>::execute(graph);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     ASSERT_TRUE(variableSpace->hasVariable(3));
 
-    auto result = variableSpace->getVariable(3)->getNDArray();
+    auto result = variableSpace->getVariable(4)->getNDArray();
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));

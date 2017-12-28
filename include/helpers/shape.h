@@ -1809,6 +1809,12 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
 
         int *stride = new int[rank];
 
+        if (rank == 1) {
+            stride[0] = 1;
+            return stride;
+        }
+
+
         if (shape::isVector(shape, rank)) {
             for (int i = 0; i < 2; i++)
                 stride[i] = 1;
@@ -1830,6 +1836,10 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     INLINEDEF int * calcStrides(int *shape, int rank, int startNum, int* ret) {
+        if (rank == 1) {
+            ret[0] = 1;
+            return ret;
+        }
 
         if (shape::isVector(shape, rank)) {
             for (int i = 0; i < 2; i++)
@@ -2811,6 +2821,9 @@ __host__ __device__
 #endif
 
     INLINEDEF int isVector(int *shape, int rank) {
+        if (rank == 1)
+            return 1;
+
         if (rank > 2)
             return 0;
         else if (rank <= 2) {
@@ -3199,6 +3212,9 @@ __host__ __device__
 #endif
 
     INLINEDEF Nd4jIndex length(int *shapeInfo) {
+        if (shape::rank(shapeInfo) == 0)
+            return 1L;
+
         return shape::prodLong(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
     }
 
@@ -3339,6 +3355,8 @@ __host__ __device__
 #endif
 
     INLINEDEF int isScalar(int *info) {
+        if (shape::rank(info) == 0)
+            return 1;
         if (shape::rank(info) > 2)
             return 0;
         if (shape::rank(info) == 1)
@@ -3534,6 +3552,9 @@ __host__ __device__
         if (shapeA[0] != shapeB[0])
             return false;
 
+        if (shapeA[0] == 0)
+            return true;
+
         // we do full comparison here
         int length = shape::shapeInfoLength(shapeA[0]);
 
@@ -3567,6 +3588,9 @@ __host__ __device__
     INLINEDEF bool equalsSoft(int *shapeA, int *shapeB) {
         if (shapeA[0] != shapeB[0])
             return false;
+
+        if (shapeA[0] == 0)
+            return true;
 
         // we compare only shapes, and ignoring stride & ews
         int length = shapeA[0];
@@ -4002,6 +4026,13 @@ __host__ __device__
         int rank = info->rank;
 
         ret[0] = info->rank;
+
+        if (ret[0] == 0) {
+            ret[1] = 0;
+            ret[2] = 1;
+            ret[3] = 99;
+            return ret;
+        }
 
         for (int i = 0; i < rank; i++) {
             ret[count++] = info->shape[i];

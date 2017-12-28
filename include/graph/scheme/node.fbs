@@ -1,5 +1,6 @@
 include "array.fbs";
 include "utils.fbs";
+include "properties.fbs";
 
 namespace nd4j.graph;
 
@@ -10,6 +11,7 @@ table FlatNode {
     name:string; // literal id of this node (optional)
     opType:OpType; // type of this op
     opNum:long; // for custom ops that's field for hash, for all other (legacy XYZ ops) that's actually opNum (as defined in legacy_ops.h)
+    properties:[FlatProperties]; // optional properties
     input:[int]; // ID's of input nodes for this node !!! only used if inputPaired in unset !!!
     inputPaired:[IntPair]; //list of input variables or nodes, in format of IntPair.first is node Id, IntPair.second is output index of the node
     dataType:DataType; // to be removed

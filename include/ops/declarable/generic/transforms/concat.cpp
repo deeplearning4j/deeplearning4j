@@ -22,11 +22,7 @@ namespace nd4j {
             NDArray<T> *first = INPUT_VARIABLE(0);
             NDArray<T> *output = this->getZ(block);
 
-
-
             int elements = (int) block.width();
-            if (last->isScalar() && !first->isScalar())
-                --elements;
 
             Nd4jPointer* buffers = new Nd4jPointer[elements];
             Nd4jPointer* shapes = new Nd4jPointer[elements];
@@ -77,10 +73,39 @@ namespace nd4j {
             int* last = inputShape->at(inputShape->size() - 1);
 
             int elements = (int) inputShape->size();
-            if (!shape::isScalar(inp) && shape::isScalar(last))
-                --elements;
-
             int *newShape;
+
+
+            { // special cases for 0D concat
+                bool allScalars = true;
+                bool hasScalars = false;
+                for (int e = 0; e < elements; e++) {
+                    allScalars &= shape::rank(inputShape->at(e)) == 0;
+                    hasScalars |= shape::rank(inputShape->at(e)) == 0;
+                }
+
+                // all scalars
+                if (allScalars) {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+
+                    shape::shapeBuffer(1, &elements, newShape);
+                    return new ShapeList(newShape);
+                }
+
+                // any scalar
+                if (hasScalars) {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                    int length = shape::length(inp);
+                    for (int i = 1; i < elements; i++) {
+                       length += shape::length(inputShape->at(i));
+                    }
+
+                    shape::shapeBuffer(1, &length, newShape);
+                    return new ShapeList(newShape);
+                }
+            }
+
+            
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
 
             if (_dimension < 0)

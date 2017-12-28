@@ -426,6 +426,7 @@ namespace nd4j {
                     }
                 }
 
+                /*
                 if (node->output() != nullptr)
                     for (int e = 0; e < (int) node->output()->size(); e++) {
                         auto oid = node->output()->Get(e);
@@ -434,6 +435,7 @@ namespace nd4j {
                             pickOutput(oid);
                         }
                     }
+                */
 
 
                 if (node->extraParams() != nullptr && node->extraParams()->size() > 0) {

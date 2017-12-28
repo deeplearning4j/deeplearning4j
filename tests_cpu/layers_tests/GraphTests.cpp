@@ -1221,8 +1221,8 @@ TEST_F(GraphTests, Test_Clone_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, statusClone);
 
-    auto z0 = variableSpace->getVariable(3)->getNDArray();
-    auto z1 = clone->getVariableSpace()->getVariable(3)->getNDArray();
+    auto z0 = variableSpace->getVariable(4)->getNDArray();
+    auto z1 = clone->getVariableSpace()->getVariable(4)->getNDArray();
 
     ASSERT_TRUE(exp.isSameShape(z0));
     ASSERT_TRUE(exp.equalsTo(z0));
@@ -1257,8 +1257,8 @@ TEST_F(GraphTests, Test_Clone_2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, statusClone);
 
-    auto z0 = variableSpace->getVariable(3)->getNDArray();
-    auto z1 = clone->getVariableSpace()->getVariable(3)->getNDArray();
+    auto z0 = variableSpace->getVariable(4)->getNDArray();
+    auto z1 = clone->getVariableSpace()->getVariable(4)->getNDArray();
 
     ASSERT_TRUE(exp.isSameShape(z0));
     ASSERT_TRUE(exp.equalsTo(z0));

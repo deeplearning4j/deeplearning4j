@@ -41,6 +41,16 @@ namespace nd4j {
         DECLARE_SHAPE_FN(expand_dims) {
             auto inShape = inputShape->at(0);
 
+            // 0D scalar edge case
+            if (shape::rank(inShape) == 0) {
+                int* newShape;
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+
+                int x = 1;
+                shape::shapeBuffer(1, &x, newShape);
+                return new ShapeList(newShape);
+            }
+
             // FIXME: temp workaround for TF
             if (shape::isScalar(inShape)) {
                 int* newShape;

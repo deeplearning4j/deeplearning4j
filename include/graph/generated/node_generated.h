@@ -7,6 +7,7 @@
 #include "flatbuffers/flatbuffers.h"
 
 #include "array_generated.h"
+#include "properties_generated.h"
 #include "utils_generated.h"
 
 namespace nd4j {
@@ -20,17 +21,18 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_NAME = 6,
     VT_OPTYPE = 8,
     VT_OPNUM = 10,
-    VT_INPUT = 12,
-    VT_INPUTPAIRED = 14,
-    VT_DATATYPE = 16,
-    VT_OUTPUT = 18,
-    VT_EXTRAPARAMS = 20,
-    VT_EXTRAINTEGER = 22,
-    VT_DIMENSIONS = 24,
-    VT_DEVICE = 26,
-    VT_SCALAR = 28,
-    VT_SCOPE_ID = 30,
-    VT_SCOPE_NAME = 32
+    VT_PROPERTIES = 12,
+    VT_INPUT = 14,
+    VT_INPUTPAIRED = 16,
+    VT_DATATYPE = 18,
+    VT_OUTPUT = 20,
+    VT_EXTRAPARAMS = 22,
+    VT_EXTRAINTEGER = 24,
+    VT_DIMENSIONS = 26,
+    VT_DEVICE = 28,
+    VT_SCALAR = 30,
+    VT_SCOPE_ID = 32,
+    VT_SCOPE_NAME = 34
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -43,6 +45,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   int64_t opNum() const {
     return GetField<int64_t>(VT_OPNUM, 0);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<FlatProperties>> *properties() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatProperties>> *>(VT_PROPERTIES);
   }
   const flatbuffers::Vector<int32_t> *input() const {
     return GetPointer<const flatbuffers::Vector<int32_t> *>(VT_INPUT);
@@ -84,6 +89,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.Verify(name()) &&
            VerifyField<int8_t>(verifier, VT_OPTYPE) &&
            VerifyField<int64_t>(verifier, VT_OPNUM) &&
+           VerifyOffset(verifier, VT_PROPERTIES) &&
+           verifier.Verify(properties()) &&
+           verifier.VerifyVectorOfTables(properties()) &&
            VerifyOffset(verifier, VT_INPUT) &&
            verifier.Verify(input()) &&
            VerifyOffset(verifier, VT_INPUTPAIRED) &&
@@ -121,6 +129,9 @@ struct FlatNodeBuilder {
   }
   void add_opNum(int64_t opNum) {
     fbb_.AddElement<int64_t>(FlatNode::VT_OPNUM, opNum, 0);
+  }
+  void add_properties(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatProperties>>> properties) {
+    fbb_.AddOffset(FlatNode::VT_PROPERTIES, properties);
   }
   void add_input(flatbuffers::Offset<flatbuffers::Vector<int32_t>> input) {
     fbb_.AddOffset(FlatNode::VT_INPUT, input);
@@ -173,6 +184,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::String> name = 0,
     OpType opType = OpType_TRANSFORM,
     int64_t opNum = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatProperties>>> properties = 0,
     flatbuffers::Offset<flatbuffers::Vector<int32_t>> input = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<IntPair>>> inputPaired = 0,
     DataType dataType = DataType_INHERIT,
@@ -196,6 +208,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
   builder_.add_output(output);
   builder_.add_inputPaired(inputPaired);
   builder_.add_input(input);
+  builder_.add_properties(properties);
   builder_.add_name(name);
   builder_.add_id(id);
   builder_.add_dataType(dataType);
@@ -209,6 +222,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const char *name = nullptr,
     OpType opType = OpType_TRANSFORM,
     int64_t opNum = 0,
+    const std::vector<flatbuffers::Offset<FlatProperties>> *properties = nullptr,
     const std::vector<int32_t> *input = nullptr,
     const std::vector<flatbuffers::Offset<IntPair>> *inputPaired = nullptr,
     DataType dataType = DataType_INHERIT,
@@ -226,6 +240,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       name ? _fbb.CreateString(name) : 0,
       opType,
       opNum,
+      properties ? _fbb.CreateVector<flatbuffers::Offset<FlatProperties>>(*properties) : 0,
       input ? _fbb.CreateVector<int32_t>(*input) : 0,
       inputPaired ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputPaired) : 0,
       dataType,
