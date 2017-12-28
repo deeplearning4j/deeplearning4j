@@ -1,9 +1,9 @@
 ---
-title: Markov Chain Monte Carlo and Deep Learning
+title: Markov Chain Monte Carlo and Machine Learning
 layout: default
 ---
 
-# Monte Carlo Methods, Markov Chains and Deep Learning
+# Monte Carlo Methods, Markov Chains and Machine Learning
 
 Let's say you're a horrific alien looking for the perfect planet to colonize. 
 
