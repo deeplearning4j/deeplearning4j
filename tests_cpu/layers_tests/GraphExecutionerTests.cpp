@@ -22,8 +22,6 @@ public:
 
 
 TEST_F(GraphExecutionerTests, Test_Implicit_Output_1) {
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_slice.fb");
     graph->buildGraph();
 
@@ -42,8 +40,6 @@ TEST_F(GraphExecutionerTests, Test_Implicit_Output_1) {
 
 
 TEST_F(GraphExecutionerTests, Test_Implicit_Output_2) {
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
     graph->buildGraph();
 
