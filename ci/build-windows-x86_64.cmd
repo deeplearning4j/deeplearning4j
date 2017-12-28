@@ -1,5 +1,11 @@
-@call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
-@echo on
+call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
+echo on
+
+wmic computersystem set AutomaticManagedPagefile=False
+wmic pagefile list /format:list
+wmic pagefileset create name="C:\pagefile.sys"
+wmic pagefileset where name="C:\\pagefile.sys" set InitialSize=4096,MaximumSize=4096
+wmic pagefileset list /format:list
 
 if "%APPVEYOR_PULL_REQUEST_NUMBER%" == "" (
     set MAVEN_PHASE=deploy
@@ -20,10 +26,8 @@ if "%CUDA%" == "8.0" (
 cuda.exe -s
 set CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%
 set CUDA_PATH_V%CUDA:.=_%=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%
-set PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\libnvvp;%PATH%
-
-set PATH=C:\msys64\usr\bin\core_perl;C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
-echo %PATH%
+set PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\libnvvp;^
+C:\msys64\usr\bin\core_perl;C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
 
 bash -lc "pacman -Syu --noconfirm"
 bash -lc "pacman -Su --noconfirm"
