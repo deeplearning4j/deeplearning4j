@@ -28,7 +28,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class SameDiffTestConv {
+public class TestSameDiffConv {
 
     @Test
     public void testSameDiffConvBasic() {

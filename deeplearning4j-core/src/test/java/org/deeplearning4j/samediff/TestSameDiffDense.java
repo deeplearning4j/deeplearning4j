@@ -28,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @Slf4j
-public class SameDiffTestDense {
+public class TestSameDiffDense {
 
     @Test
     public void testSameDiffDenseBasic() {
