@@ -7,7 +7,9 @@ layout: default
 
 Let's say you're a horrific alien looking for the perfect planet to colonize. 
 
-You have been instructed by a distant galactic empress to find a tolerable globe covered with water and dirt, but which has more of the first than the second. Round and juicy. Your space ship is hovering over the planet Earth, somewhere in the stratosphere, but the planet is covered in clouds... You peer through the cloud cover onto humanity's modest ball of mud and waves, squinting to see if it is suitable for conquest. 
+You have been instructed by your distant galactic empress to find a tolerable orb covered with water and dirt, but which has more of the first than the second. Round and juicy. 
+
+Your space ship comes to hover over the planet Earth, somewhere in the stratosphere, but the planet is covered in clouds... You peer through the cloud cover onto humanity's modest ball of mud and waves, squinting to see if it is suitable for conquest. 
 
 That's where the socks come in. 
 
@@ -17,52 +19,52 @@ It's time to prepare the invasion.
 
 ## Monte Carlo Methods
 
-That's Monte Carlo: A mathematical method used to predict the probability of future events or an unknown distribution of states. (In this case, the distribution of land and water.)
+That's Monte Carlo: A mathematical method used to predict the probability of future events or an unknown distribution of states. (In this case, the distribution of land and water.) MCMC methods help gauge the distribution of a number you're trying to predict, by randomly sampling from a complex probabilistic space.
 
-With a little more jargon, you might say it's a simulation using a pseudo-random number generator (for the placement of socks) to produce data yielding a normally distributed, bell-shaped curve over all possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. In a word, it's James Bond math. 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator (which creates the coordinates for the dropping of the socks) to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's James Bond math. 
 
-You can drop a sock on anything. It's also called *sampling*. Sampling permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large to compute. Randomly sending down those socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
+You can drop a sock on anything. That's *sampling*, which permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large or complex to compute. Randomly sending down socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
 
 Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. So we sample. 
 
-Or forget aliens. You're a gambler in the saloon of a Gold Rush town and you roll a die without knowing if it is fair or loaded. You roll that mysterious, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
+Or forget aliens. You're a gambler in the saloon of a Gold Rush town and you roll a die without knowing if it is fair or loaded. You roll that enigmatic, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
-Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
+Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is an inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
 
-The states in question can vary. Instead of surf and turf, they might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, or the weather (rainy, sunny, overcast), or notes on a scale. These are all systems of discrete states that occur in seriatim, one after another. 
+The states in question can vary. Instead of surf and turf, or games of chance, they might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, weather conditions (rainy, sunny, overcast), notes on a scale, electoral outcomes, or pixel colors in a JPEG file. These are all systems of discrete states that occur in seriatim, one after another. 
 
 [An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
 
 ```
-While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It, then, occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation.
+While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It occurred to him to try to compute the chances that a particular solitaire laid out with 52 cards would come out successfully (Eckhard, 1987). After attempting exhaustive combinatorial calculations, he decided to go for the more practical approach of laying out several solitaires at random and then observing and counting the number of successful plays. This idea of selecting a statistical sample to approximate a hard combinatorial problem by a much simpler problem is at the heart of modern Monte Carlo simulation.
 ```
 
 ## Systems and States
 
-At a more abstract level, where words hardly mean anything at all, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
+At a more abstract level, where words mean almost anything at all, a system is a set of things connected together. You might say it's a set of states, where each state is a condition of the system. But what are states? 
 
 * Cities on a map are states. A road trip strings them together in transitions. The map represents the system.
-* Words in a language are states. A sentence is a series of transitions.
-* Genes on a chromosome are states. To read them and create amino acids is to go through their transitions. 
+* Words in a language are states. A sentence is a series of transitions from word to word.
+* Genes on a chromosome are states. To read them (and create amino acids) is to go through their transitions. 
 * Web pages on the Internet are states. Links are the transitions. 
 * Bank accounts in a financial system are states. Transactions are the transitions.
-* Emotions are states in the system of the psyche. Mood swings are the transitions. 
-* Social media profiles are states in the network. Follows, likes and friending are the transitions. 
-* Ocean and land are states in geography. The shoreline is the transition. 
+* Emotions are states in a psychological system. Mood swings are the transitions. 
+* Social media profiles are states in the network. Follows, likes, messages and friending are the transitions. 
+* Rooms in a house are states. People walking through doorways are the transitions.
 
 So states are an abstraction used to describe all these discrete, separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others. 
 
 We are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from Los Angeles to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both are nearby. 
 
-A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. 
+A list of all possible states is known as the "state space." The more states you have, the larger the space gets, and the more complex your combinatorial problem becomes. A space of connected states is also called a graph, in which each state is a vertex, and each transition is an edge. 
 
 ## Markov Chains
 
 Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next rather than sampling them independently from an alien ship. That's where Markov chains come in. 
 
-A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are always in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others closing behind us. 
+A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. It's a random walk across a graph. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are all, always, in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others close behind us. 
 
-You're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
+Traversing a Markov chain, you're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
 
 While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
 
