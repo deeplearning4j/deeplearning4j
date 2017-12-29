@@ -58,8 +58,7 @@ namespace nd4j {
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
 			// insert (int) block.width() at dim position of input shape to get output shape	
 			outShape.insert(outShape.begin() + dim, (int) block.width());
-			// if input arrays are vectors remove unity from shape
-			NDArray<T>* input = INPUT_VARIABLE(0);
+			// if input arrays are vectors remove unity from shape			
 
 			// evaluate output ShapeInfo
 			int newRank = outShape.size();
@@ -69,7 +68,7 @@ namespace nd4j {
     		for(int i=1; i <= newRank; ++i)
     			outShapeInfo[i] = outShape[i-1];
 	
-    		shape::updateStrides(outShapeInfo, input->ordering());    
+    		shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));    
 
     		return new ShapeList(outShapeInfo);
 		}
