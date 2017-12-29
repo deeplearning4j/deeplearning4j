@@ -3,7 +3,7 @@ title: "Word2vec: Neural Word Embeddings in Java and Scala"
 layout: default
 ---
 
-# Word2Vec
+# Word2Vec: Neural Word Embeddings in Java and Scala
 
 Contents
 
