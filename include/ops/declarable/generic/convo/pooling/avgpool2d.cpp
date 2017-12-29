@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 11) {
 
             NDArray<T> *x = INPUT_VARIABLE(0);
 

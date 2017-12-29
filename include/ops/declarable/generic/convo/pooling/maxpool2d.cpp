@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(maxpool2d_bp, 2, 1, false, 0, 11) {
 
             NDArray<T>* input = INPUT_VARIABLE(0);
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());

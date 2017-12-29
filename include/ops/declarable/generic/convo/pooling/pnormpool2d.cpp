@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 10) {
+        CUSTOM_OP_IMPL(pnormpool2d, 1, 1, false, 0, 11) {
 
             REQUIRE_OK(this->validateInputLengthMatch(block));
             REQUIRE_OK(this->validateInputDimensionsMatch(block));

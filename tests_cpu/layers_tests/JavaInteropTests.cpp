@@ -245,7 +245,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 
     nd4j::ops::pnormpool2d<float> op;
 
-    int exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2};
+    int exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
@@ -253,7 +253,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
 
-    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 10, false);
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, false);
 
     ASSERT_TRUE(output.meanNumber() > 0.0);
 }
