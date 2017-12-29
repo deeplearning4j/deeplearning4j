@@ -84,7 +84,20 @@ namespace nd4j {
             NDArray<T>* output = OUTPUT_VARIABLE(0);
 
             Nd4jIndex prod = batchSize * outDepth * oY * oX;
-            REQUIRE_TRUE(output->sizeAt(0) == batchSize && output->sizeAt(1) == outDepth && output->sizeAt(2) == oY && output->sizeAt(3) == oX, 0, "Expected output shape is [%i, %i, %i, %i] but got [%i, %i, %i, %i] instead", batchSize, outDepth, oY, oX, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3))
+
+            if (isNCHW) {
+                REQUIRE_TRUE(
+                        output->sizeAt(0) == batchSize && output->sizeAt(1) == outDepth && output->sizeAt(2) == oY &&
+                        output->sizeAt(3) == oX, 0,
+                        "Expected output shape is [%i, %i, %i, %i] but got [%i, %i, %i, %i] instead", batchSize,
+                        outDepth, oY, oX, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3));
+            } else {
+                REQUIRE_TRUE(
+                        output->sizeAt(0) == batchSize && output->sizeAt(1) == oY &&
+                        output->sizeAt(2) == oX && output->sizeAt(3) == outDepth , 0,
+                        "Expected output shape is [%i, %i, %i, %i] but got [%i, %i, %i, %i] instead", batchSize,
+                        outDepth, oY, oX, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3));
+            }
             REQUIRE_TRUE(output->lengthOf() == prod, 0, "Z should have total length of %i, but got %i instead", prod, output->lengthOf());
 
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
@@ -124,11 +137,11 @@ namespace nd4j {
                 delete weights;
 
                 output->permutei({0, 2, 3, 1});
-                //auto f = output->dup('c');
+//                auto f = output->dup('c');
                 //f->printShapeInfo("final shape");
                 //OVERWRITE_RESULT(f);
 
-                //output->printIndexedBuffer("conv2d output");
+  //              f->printIndexedBuffer("conv2d output");
             }
 
             return ND4J_STATUS_OK;
@@ -169,8 +182,13 @@ namespace nd4j {
             //z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
-            std::vector<int> shape({batchSize, outDepth, oY, oX});
-            shape::shapeBuffer(4, shape.data(), newShape);
+            if (isNCHW) {
+                std::vector<int> shape({batchSize, outDepth, oY, oX});
+                shape::shapeBuffer(4, shape.data(), newShape);
+            } else {
+                std::vector<int> shape({batchSize, oY, oX, outDepth});
+                shape::shapeBuffer(4, shape.data(), newShape);
+            }
 
             return new ShapeList(newShape);
         }

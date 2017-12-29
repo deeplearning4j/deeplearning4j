@@ -41,6 +41,12 @@ namespace nd4j {
 
             if (!isNCHW) {
                 x = x->permute({0, 3, 1, 2});
+
+                // FIXME: eventually we want NWHC impl
+                auto tz = z->permute({0, 3, 1, 2});
+                z = tz->dup('c');
+
+                delete tz;
             }
 
             const bool isSameMode = INT_ARG(8) > 0;
@@ -110,11 +116,19 @@ namespace nd4j {
             // allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-            newShapeInfo[0] = 4;		// rank
-            newShapeInfo[1] = bS;
-            newShapeInfo[2] = iD;
-            newShapeInfo[3] = oH;
-            newShapeInfo[4] = oW;
+            if (isNCHW) {
+                newShapeInfo[0] = 4;        // rank
+                newShapeInfo[1] = bS;
+                newShapeInfo[2] = iD;
+                newShapeInfo[3] = oH;
+                newShapeInfo[4] = oW;
+            } else {
+                newShapeInfo[0] = 4;        // rank
+                newShapeInfo[1] = bS;
+                newShapeInfo[2] = oH;
+                newShapeInfo[3] = oW;
+                newShapeInfo[4] = iD;
+            }
             shape::updateStrides(newShapeInfo, order);
 
             return new ShapeList(newShapeInfo);

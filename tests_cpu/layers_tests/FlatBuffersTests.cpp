@@ -23,8 +23,8 @@ public:
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
     FlatBuffersTest() {
-        Environment::getInstance()->setDebug(false);
-        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance()->setDebug(true);
+        Environment::getInstance()->setVerbose(true);
     }
 
     ~FlatBuffersTest() {

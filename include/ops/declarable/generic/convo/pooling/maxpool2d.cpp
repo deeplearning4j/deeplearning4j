@@ -114,6 +114,7 @@ namespace nd4j {
         CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
 
             NDArray<T> *x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", x->rankOf());
 
@@ -124,6 +125,12 @@ namespace nd4j {
             if (!isNCHW) {
                 x = x->permute({0, 3, 1, 2});
                 //x = x->dup('c');
+
+                // FIXME: eventually we want NWHC impl
+                auto tz = z->permute({0, 3, 1, 2});
+                z = tz->dup('c');
+
+                delete tz;
             }
 
             const int bSize = x->sizeAt(0);
@@ -133,7 +140,6 @@ namespace nd4j {
         
 
             std::vector<int> argI = *(block.getIArguments());
-            auto z = this->getZ(block);
 
             int kY = argI[0];
             int kX = argI[1];
@@ -219,11 +225,19 @@ namespace nd4j {
             // allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
-            newShapeInfo[0] = 4;		// rank
-            newShapeInfo[1] = bS;
-            newShapeInfo[2] = iD;
-            newShapeInfo[3] = oH;
-            newShapeInfo[4] = oW;
+            if (isNCHW) {
+                newShapeInfo[0] = 4;        // rank
+                newShapeInfo[1] = bS;
+                newShapeInfo[2] = iD;
+                newShapeInfo[3] = oH;
+                newShapeInfo[4] = oW;
+            } else {
+                newShapeInfo[0] = 4;        // rank
+                newShapeInfo[1] = bS;
+                newShapeInfo[2] = oH;
+                newShapeInfo[3] = oW;
+                newShapeInfo[4] = iD;
+            }
             shape::updateStrides(newShapeInfo, order);
 
             return new ShapeList(newShapeInfo);
