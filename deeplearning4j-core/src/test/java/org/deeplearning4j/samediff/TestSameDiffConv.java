@@ -54,6 +54,8 @@ public class TestSameDiffConv {
 
         assertArrayEquals(new int[]{nOut, nIn, kH, kW}, pt1.get(ConvolutionParamInitializer.WEIGHT_KEY).shape());
         assertArrayEquals(new int[]{1, nOut}, pt1.get(ConvolutionParamInitializer.BIAS_KEY).shape());
+
+        TestUtils.testModelSerialization(net);
     }
 
     @Test
@@ -74,74 +76,76 @@ public class TestSameDiffConv {
 //                 Activation.RELU      //JVM crash
             };
 
-            for(int nIn : new int[]{3,4}){
-                for( int nOut : new int[]{4,5}){
-                    for( int[] kernel : new int[][]{{2,2}, {2,1}, {3,2}}){
-                        for( int[] strides : new int[][]{{1,1}, {2,2}, {2,1}}){
-                            for( int[] dilation : new int[][]{{1,1}, {2,2}, {1,2}}){
-                                for(ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}){
-                                    for(Activation a : afns){
-                                        String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", nIn=" + nIn
-                                                + ", nOut=" + nOut + ", kernel=" + Arrays.toString(kernel) + ", stride="
-                                                + Arrays.toString(strides) + ", dilation=" + Arrays.toString(dilation)
-                                                + ", ConvolutionMode=" + cm + ", ActFn=" + a;
-                                        log.info("Starting test: " + msg);
+            for(boolean hasBias : new boolean[]{true, false}) {
+                for (int nIn : new int[]{3, 4}) {
+                    for (int nOut : new int[]{4, 5}) {
+                        for (int[] kernel : new int[][]{{2, 2}, {2, 1}, {3, 2}}) {
+                            for (int[] strides : new int[][]{{1, 1}, {2, 2}, {2, 1}}) {
+                                for (int[] dilation : new int[][]{{1, 1}, {2, 2}, {1, 2}}) {
+                                    for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
+                                        for (Activation a : afns) {
+                                            String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", nIn=" + nIn
+                                                    + ", nOut=" + nOut + ", kernel=" + Arrays.toString(kernel) + ", stride="
+                                                    + Arrays.toString(strides) + ", dilation=" + Arrays.toString(dilation)
+                                                    + ", ConvolutionMode=" + cm + ", ActFn=" + a + ", hasBias=" + hasBias;
+                                            log.info("Starting test: " + msg);
 
-                                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                                .list()
-                                                .layer(new SameDiffConv.Builder()
-                                                        .nIn(nIn)
-                                                        .nOut(nOut)
-                                                        .kernelSize(kernel)
-                                                        .stride(strides)
-                                                        .dilation(dilation)
-                                                        .convolutionMode(cm)
-                                                        .activation(a)
-                                                        .hasBias(false)         //TODO TEST BOTH CASES
-                                                        .build())
-                                                .build();
+                                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .list()
+                                                    .layer(new SameDiffConv.Builder()
+                                                            .nIn(nIn)
+                                                            .nOut(nOut)
+                                                            .kernelSize(kernel)
+                                                            .stride(strides)
+                                                            .dilation(dilation)
+                                                            .convolutionMode(cm)
+                                                            .activation(a)
+                                                            .hasBias(hasBias)
+                                                            .build())
+                                                    .build();
 
-                                        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                                        net.init();
+                                            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                                            net.init();
 
-                                        assertNotNull(net.paramTable());
+                                            assertNotNull(net.paramTable());
 
-                                        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                                                .list()
-                                                .layer(new ConvolutionLayer.Builder()
-                                                        .nIn(nIn)
-                                                        .nOut(nOut)
-                                                        .kernelSize(kernel)
-                                                        .stride(strides)
-                                                        .dilation(dilation)
-                                                        .convolutionMode(cm)
-                                                        .activation(a)
-                                                        .hasBias(false)         //TODO TEST BOTH CASES
-                                                        .build())
-                                                .build();
+                                            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                                                    .list()
+                                                    .layer(new ConvolutionLayer.Builder()
+                                                            .nIn(nIn)
+                                                            .nOut(nOut)
+                                                            .kernelSize(kernel)
+                                                            .stride(strides)
+                                                            .dilation(dilation)
+                                                            .convolutionMode(cm)
+                                                            .activation(a)
+                                                            .hasBias(hasBias)
+                                                            .build())
+                                                    .build();
 
-                                        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-                                        net2.init();
+                                            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                                            net2.init();
 
-                                        net.params().assign(net2.params());
+                                            net.params().assign(net2.params());
 
-                                        //Check params:
-                                        assertEquals(msg, net2.params(), net.params());
-                                        Map<String, INDArray> params1 = net.paramTable();
-                                        Map<String, INDArray> params2 = net2.paramTable();
-                                        assertEquals(msg, params2, params1);
+                                            //Check params:
+                                            assertEquals(msg, net2.params(), net.params());
+                                            Map<String, INDArray> params1 = net.paramTable();
+                                            Map<String, INDArray> params2 = net2.paramTable();
+                                            assertEquals(msg, params2, params1);
 
-                                        INDArray in = Nd4j.rand(minibatch, nIn);
-                                        INDArray out = net.output(in);
-                                        INDArray outExp = net2.output(in);
+                                            INDArray in = Nd4j.rand(minibatch, nIn);
+                                            INDArray out = net.output(in);
+                                            INDArray outExp = net2.output(in);
 
-                                        assertEquals(msg, outExp, out);
+                                            assertEquals(msg, outExp, out);
 
-                                        //Also check serialization:
-                                        MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
-                                        INDArray outLoaded = netLoaded.output(in);
+                                            //Also check serialization:
+                                            MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                                            INDArray outLoaded = netLoaded.output(in);
 
-                                        assertEquals(msg, outExp, outLoaded);
+                                            assertEquals(msg, outExp, outLoaded);
+                                        }
                                     }
                                 }
                             }
