@@ -2425,7 +2425,7 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
     nd4j::NDArrayFactory<double>::linspace(1, weights);
 
     nd4j::ops::deconv2d<double> op;
-    auto result = op.execute({&input, &weights}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
+    auto result = op.execute({&input, &weights}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     auto z = result->at(0);
 
@@ -2452,7 +2452,7 @@ TEST_F(DeclarableOpsTests1, CompactLaunchTests2) {
 
 
     nd4j::ops::deconv2d<double> op;
-    auto result = op.execute({&input, &weights}, {&z}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
+    auto result = op.execute({&input, &weights}, {&z}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 

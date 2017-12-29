@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 10) {
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);
             NDArray<T>* bias = nullptr;
@@ -164,7 +164,7 @@ namespace nd4j {
             // epsilon for deconv2d is FF conv pass
 
             nd4j::ops::conv2d<T> op;
-            Nd4jStatus r1 = op.execute({epsilonNext, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, INT_ARG(8)});
+            Nd4jStatus r1 = op.execute({epsilonNext, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, INT_ARG(8), 0});
             if (r1 != ND4J_STATUS_OK)
                 return r1;
 

@@ -30,7 +30,7 @@ namespace nd4j {
             auto _weights = weights->reshape(weights->ordering(),{weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2), 1});
 
             nd4j::ops::conv2d<T> op;
-            auto result = op.execute({_input, _weights, bias}, {}, {kernel, 1, stride, 1, padding, 0, 1, 1, isSameMode});
+            auto result = op.execute({_input, _weights, bias}, {}, {kernel, 1, stride, 1, padding, 0, 1, 1, isSameMode, 0});
             auto tmpZ = result->at(0);
 
             tmpZ->reshapei(tmpZ->ordering(), {tmpZ->sizeAt(0), tmpZ->sizeAt(1), tmpZ->sizeAt(2)});

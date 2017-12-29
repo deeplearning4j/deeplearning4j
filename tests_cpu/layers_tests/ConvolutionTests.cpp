@@ -64,6 +64,9 @@ TEST_F(ConvolutionTests, TestConv2D_1) {
     // same mode
     block->getIArguments()->push_back(1);
 
+    // is NHWC
+    block->getIArguments()->push_back(0);
+
     nd4j::ops::conv2d<double> op;
 
     Nd4jStatus status = op.execute(block);
@@ -394,6 +397,8 @@ TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     // NOT same mode
     block->getIArguments()->push_back(0);
 
+    block->getIArguments()->push_back(0);
+
     nd4j::ops::deconv2d<double> op;
 
     Nd4jStatus status = op.execute(block);
@@ -550,7 +555,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_NoBias_2) {
 
 
     nd4j::ops::conv2d<double> op2d;
-    auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
+    auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
 
     auto z2d = result2D->at(0);
     //z2d->printShapeInfo("z2d shape");
@@ -584,7 +589,7 @@ TEST_F(ConvolutionTests, sconv2D_FF_pointwise_1) {
 
     nd4j::ops::sconv2d<double> op;
 
-    auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0});
+    auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     auto z = resultFF->at(0);
     //z->printShapeInfo("FF shape");
@@ -805,7 +810,7 @@ TEST_F(ConvolutionTests, TestDeconv_bp_1) {
 
     nd4j::ops::deconv2d_bp<double> op;
 
-    auto result = op.execute({&input, &weights, &bias, &epsilon}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1});
+    auto result = op.execute({&input, &weights, &bias, &epsilon}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -886,7 +891,7 @@ TEST_F(ConvolutionTests, TestDeconv_ff_2) {
 
     nd4j::ops::deconv2d<double> op;
 
-    auto result = op.execute({&input, &weights, &bias}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1});
+    auto result = op.execute({&input, &weights, &bias}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 

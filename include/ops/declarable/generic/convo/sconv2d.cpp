@@ -4,6 +4,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <memory>
 
 namespace nd4j {
     namespace ops {
@@ -105,9 +106,9 @@ namespace nd4j {
                 // now we'll be using conv2d op
                 nd4j::ops::conv2d<T> op;
                 if (bias == nullptr)
-                    op.execute({z_, weightsPoint}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
+                    op.execute({z_, weightsPoint}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0, 0});
                 else
-                    op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0});
+                    op.execute({z_, weightsPoint, bias}, {z}, {}, {1, 1, 1, 1, 0, 0, 1, 1, isSameMode ? 1 : 0, 0});
 
                 delete z_;
             }

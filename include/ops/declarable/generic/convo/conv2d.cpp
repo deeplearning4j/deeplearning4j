@@ -15,7 +15,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
+        CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 10) {
             // basically im2col + gemm
             NDArray<T>* input = INPUT_VARIABLE(0);
             NDArray<T>* weights = INPUT_VARIABLE(1);

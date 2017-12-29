@@ -106,7 +106,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     NativeOps nativeOps;
 
-    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
+    int exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
 
     nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
                                 nullptr, 0, exp, 9, false);
