@@ -469,6 +469,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
 * [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](./bagofwords-tf-idf.html)
+* [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
