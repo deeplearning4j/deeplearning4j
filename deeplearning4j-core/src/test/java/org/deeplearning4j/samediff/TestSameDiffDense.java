@@ -69,7 +69,7 @@ public class TestSameDiffDense {
                     Activation.SOFTPLUS,
                     Activation.SOFTSIGN,
 //                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
-                    Activation.HARDTANH,    //NPE
+                    Activation.HARDTANH,
 //                 Activation.RELU      //JVM crash
             };
 
@@ -90,6 +90,76 @@ public class TestSameDiffDense {
                 MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                         .list()
                         .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                        .build();
+
+                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                net2.init();
+
+                net.params().assign(net2.params());
+
+                //Check params:
+                assertEquals(net2.params(), net.params());
+                Map<String, INDArray> params1 = net.paramTable();
+                Map<String, INDArray> params2 = net2.paramTable();
+                assertEquals(params2, params1);
+
+                INDArray in = Nd4j.rand(minibatch, nIn);
+                INDArray out = net.output(in);
+                INDArray outExp = net2.output(in);
+
+                assertEquals(outExp, out);
+
+                //Also check serialization:
+                MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                INDArray outLoaded = netLoaded.output(in);
+
+                assertEquals(outExp, outLoaded);
+            }
+        }
+    }
+
+    @Test
+    public void testSameDiffDenseForwardMultiLayer() {
+
+        for (int minibatch : new int[]{5, 1}) {
+            int nIn = 3;
+            int nOut = 4;
+
+            Activation[] afns = new Activation[]{
+                    Activation.TANH,
+                    Activation.SIGMOID,
+                    Activation.ELU,
+                    Activation.IDENTITY,
+                    Activation.SOFTPLUS,
+                    Activation.SOFTSIGN,
+//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                    Activation.HARDTANH,
+//                 Activation.RELU      //JVM crash
+            };
+
+            for (Activation a : afns) {
+                log.info("Starting test - " + a);
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                .activation(a).build())
+                        .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut)
+                                .activation(a).build())
+                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
+                                .activation(a).build())
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                assertNotNull(net.paramTable());
+
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .list()
+                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                        .layer(new DenseLayer.Builder().activation(a).nIn(nOut).nOut(nOut).build())
+                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
+                                .activation(a).build())
                         .build();
 
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
