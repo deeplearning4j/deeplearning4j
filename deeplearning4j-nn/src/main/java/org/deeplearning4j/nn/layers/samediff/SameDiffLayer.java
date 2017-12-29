@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -18,9 +19,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
+public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
-    private static final String INPUT_KEY = "input";
+    public static final String INPUT_KEY = "input";
 
     protected SameDiff sameDiff;
     protected List<String> outputKeys;
@@ -181,6 +182,7 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
     }
 
     protected void doInit(){
+        BaseSameDiffLayer bl = (BaseSameDiffLayer)layerConf();
         sameDiff = SameDiff.create();
         Map<String,INDArray > p = paramTable();
 
@@ -194,7 +196,7 @@ public class SameDiffLayer extends AbstractLayer<BaseSameDiffLayer> {
             SDVariable v = sameDiff.var(s, ps);
             params.put(s, v);
         }
-        List<String> outputKeys = layerConf().defineLayer(sameDiff, inputVar, params);
+        List<String> outputKeys = bl.defineLayer(sameDiff, inputVar, params);
         if(outputKeys == null || outputKeys.size() != 1){
             throw new IllegalStateException("Invalid output keys: " + outputKeys);
         }

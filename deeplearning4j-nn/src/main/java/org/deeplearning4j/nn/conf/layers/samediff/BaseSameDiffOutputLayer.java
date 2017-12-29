@@ -6,6 +6,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,7 +24,13 @@ public abstract class BaseSameDiffOutputLayer extends AbstractSameDiffLayer {
 
     public abstract String outputActivationsKey();
 
-    public abstract String lossKey();
+    /**
+     * Two keys:
+     * First - For the score *per example* (1 value per example)
+     * Second - for the average score (1 values for all examples)
+     * @return
+     */
+    public abstract Pair<String,String> lossKeys();
 
     public abstract int[] labelShape();
 

@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.samediff;
 
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffOutputLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,6 +14,9 @@ import java.util.List;
 import java.util.Map;
 
 public class SameDiffOutputLayer extends SameDiffLayer implements IOutputLayer {
+
+    public static final String LABEL_KEY = "label";
+
 
 
     public SameDiffOutputLayer(NeuralNetConfiguration conf) {
@@ -90,12 +94,16 @@ public class SameDiffOutputLayer extends SameDiffLayer implements IOutputLayer {
     }
 
     protected void doInit(){
+        BaseSameDiffOutputLayer ol = ((BaseSameDiffOutputLayer)layerConf());
+
         sameDiff = SameDiff.create();
         Map<String,INDArray > p = paramTable();
 
         int[] inputShape = input.shape().clone();
+        int[] labelShape = ol.labelShape();
 //        inputShape[0] = -1;                                       //TODO THIS DOESN'T ENABLE VARIABLE SIZE MINIBATCHES
         SDVariable inputVar = sameDiff.var(INPUT_KEY, inputShape);
+        SDVariable labelVar = sameDiff.var(LABEL_KEY, labelShape);
         Map<String,int[]> paramShapes = layerConf().paramShapes();
         Map<String,SDVariable> params = new LinkedHashMap<>();
         for(String s : layerConf().paramKeys()){
@@ -103,7 +111,7 @@ public class SameDiffOutputLayer extends SameDiffLayer implements IOutputLayer {
             SDVariable v = sameDiff.var(s, ps);
             params.put(s, v);
         }
-        List<String> outputKeys = layerConf().defineLayer(sameDiff, inputVar, params);
+        List<String> outputKeys = ol.defineLayer(sameDiff, inputVar, labelVar, params);
         if(outputKeys == null || outputKeys.size() != 1){
             throw new IllegalStateException("Invalid output keys: " + outputKeys);
         }
