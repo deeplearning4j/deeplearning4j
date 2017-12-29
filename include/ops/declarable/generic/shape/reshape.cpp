@@ -15,7 +15,7 @@ namespace nd4j {
                 std::vector<int>* argumets = block.getIArguments();
                 int argsSize = argumets->size();
 
-                REQUIRE_TRUE(argsSize >= 3, 0, "Reshape arguments should have order and at least 2 dimensions");
+                REQUIRE_TRUE(argsSize >= 2, 0, "Reshape arguments should have order and at least 1 dimensions");
 
                 int e = 1;
                 char order = (char) (*argumets)[0];
@@ -25,10 +25,12 @@ namespace nd4j {
                 }
 
                 std::vector<int> shapeNew;
-
                 
                 for (; e < (int) argumets->size(); e++)
                     shapeNew.push_back((int) argumets->at(e));
+
+                auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
+                REQUIRE_TRUE(len == x->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
 
                 if (Environment::getInstance()->isDebugAndVerbose()) {
                     nd4j_printv("Reshape: new shape", shapeNew);

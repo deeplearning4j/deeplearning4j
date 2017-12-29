@@ -17,9 +17,25 @@ namespace nd4j {
     			dim += input->rankOf();             
 
 			// input validation
-			// check whether shapes of all input array are the same				
-			for (int i = 0; i < (int) block.width() - 1; ++i)
-				REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
+			// check whether shapes of all input array are the same		
+			bool allScalars = true;
+			auto first = INPUT_VARIABLE(0);
+			for (int i = 0; i < (int) block.width(); ++i) {
+				auto array = INPUT_VARIABLE(i);
+				REQUIRE_TRUE(shape::equalsSoft(array->getShapeInfo(), first->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
+				allScalars &= array->isScalar();
+			}
+
+			// scalar is special case, that produces row vector
+			if (allScalars) {
+				for (int e = 0; e < block.width(); e++) {
+					auto arr = INPUT_VARIABLE(e);
+					output->putScalar(e, arr->getScalar(0));
+				}
+			
+				return ND4J_STATUS_OK;
+			}
+
    			REQUIRE_TRUE(dim < input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input input arrays shapes !");
 
 			std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {dim});	
@@ -52,7 +68,40 @@ namespace nd4j {
 			int* inShapeInfo = inputShape->at(0);
 			int rank = inShapeInfo[0];
 			int dim = INT_ARG(0);
-			if(dim < 0 ) dim += rank;			
+
+			int elements = inputShape->size();
+			if(dim < 0 ) dim += rank;
+
+			{ // special cases for 0D concat
+                bool allScalars = true;
+                bool realScalars = false;
+				int *newShape;
+                for (int e = 0; e < elements; e++) {
+                    allScalars &= shape::isScalar(inputShape->at(e));
+                    realScalars |= shape::rank(inputShape->at(e)) == 0;
+                }
+
+
+				// any scalar
+                if (allScalars && realScalars) {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                    int length = shape::length(inputShape->at(0));
+                    for (int i = 1; i < elements; i++) {
+                       length += 1;
+                    }
+
+					std::array<int, 1> shape({length});
+                    shape::shapeBuffer(1, shape.data(), newShape);
+                    return new ShapeList(newShape);
+                } else if (allScalars) {
+					// all scalars
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+
+                    std::array<int, 2> shape({1, elements});
+                    shape::shapeBuffer(2, shape.data(), newShape);
+                    return new ShapeList(newShape);
+                }
+            }
 
 			//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);

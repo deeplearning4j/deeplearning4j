@@ -16,6 +16,11 @@ namespace nd4j {
                 auto input = INPUT_VARIABLE(e);
                 auto output = OUTPUT_VARIABLE(e);
 
+                if (input->rankOf() == 0 || (input->rankOf() == 1 && input->lengthOf() == 1)) {
+                    output->assign(input->buffer()[0]);
+                    continue;
+                }
+
                 std::vector<int> shape;
                 for (int d = 0; d < input->rankOf(); d++)
                     if (input->sizeAt(d) > 1)
@@ -37,10 +42,26 @@ namespace nd4j {
             auto shapeList = new ShapeList();
 
             for (int e = 0; e < inputShape->size(); e++) {
+                int* newShape;
                 auto in = inputShape->at(e);
                 auto rank = shape::rank(in);
+                auto length = shape::length(in);
+
+                if (rank == 0 || (rank == 1 && length == 1)) {
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+                    newShape[0] = 0;
+                    newShape[1] = 0;
+                    newShape[2] = 1;
+                    newShape[3] = 99;
+
+                    shapeList->push_back(newShape);
+                    continue;
+                }
+
                 auto order = shape::order(in);
                 auto oldShape = shape::shapeOf(in);
+
+            
 
                 std::vector<int> shape;
                 for (int i = 0; i < rank; i++) {
@@ -48,7 +69,6 @@ namespace nd4j {
                         shape.emplace_back(oldShape[i]);
                 }
 
-                int* newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
                 if (order == 'c')
                     shape::shapeBuffer(shape.size(), shape.data(), newShape);

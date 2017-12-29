@@ -40,6 +40,30 @@ TEST_F(ScalarTests, Test_Add_1) {
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 
+TEST_F(ScalarTests, Test_Add_2) {
+    NDArray<float> x(2.0f);
+    NDArray<float> y(3.0f);
+    NDArray<float> exp(5.0f);
+
+    x += y;
+
+    ASSERT_NEAR(5.0f, x.getScalar(0), 1e-5f);
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
+TEST_F(ScalarTests, Test_Add_3) {
+    NDArray<float> x('c', {3}, {1, 2, 3});
+    NDArray<float> y(3.0f);
+    NDArray<float> exp('c', {3}, {4, 5, 6});
+
+    x += y;
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
+
 TEST_F(ScalarTests, Test_EQ_1) {
     NDArray<float> x(2.0f);
     NDArray<float> y(3.0f);
@@ -118,6 +142,94 @@ TEST_F(ScalarTests, Test_ExpandDims_1) {
     nd4j::ops::expand_dims<float> op;
     auto result = op.execute({&x}, {}, {0});
 
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ScalarTests, Test_Squeeze_1) {
+    NDArray<float> x(2.0f);
+    NDArray<float> exp(2.0f);
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ScalarTests, Test_Reshape_1) {
+    NDArray<float> x(2.0f);
+    NDArray<float> exp('c', {1, 1, 1}, {2.0f});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {99, 1, 1, 1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ScalarTests, Test_Permute_1) {
+    NDArray<float> x(3.0f);
+    NDArray<float> exp(3.0f);
+
+    nd4j::ops::permute<float> op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(ScalarTests, Test_Stack_1) {
+    NDArray<float> t(1.0f);
+    NDArray<float> u(2.0f);
+    NDArray<float> v(3.0f);
+    NDArray<float> exp('c', {3}, {1, 2, 3});
+
+    nd4j::ops::stack<float> op;
+    auto result = op.execute({&t, &u, &v}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(ScalarTests, Test_Stack_2) {
+    NDArray<float> t('c', {1, 1}, {1.0f});
+    NDArray<float> u('c', {1, 1}, {2.0f});
+    NDArray<float> v('c', {1, 1}, {3.0f});
+    NDArray<float> w('c', {1, 1}, {4.0f});
+    NDArray<float> exp('c', {1, 4}, {1, 2, 3, 4});
+
+    nd4j::ops::stack<float> op;
+    auto result = op.execute({&t, &u, &v, &w}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);

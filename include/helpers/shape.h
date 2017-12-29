@@ -1906,14 +1906,18 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
         int rank = shape[0];
         int doubleRank = 2*rank;
         if(order == 'c') {
-            shape[doubleRank] = 1;          // set unity as last stride for c order
-            for(int j=1; j<rank; ++j)
-                shape[doubleRank-j] = shape[doubleRank-j+1]*shape[rank+1-j];
+            if (rank > 0) {
+                shape[doubleRank] = 1;          // set unity as last stride for c order
+                for(int j=1; j<rank; ++j)
+                    shape[doubleRank-j] = shape[doubleRank-j+1]*shape[rank+1-j];
+            }
         }
         else {
-            shape[rank+1] = 1;             // set unity as first stride for f order
-            for(int j=rank+1; j<doubleRank; ++j)
-                shape[j+1] = shape[j]*shape[j-rank];
+            if (rank > 0) {
+                shape[rank+1] = 1;             // set unity as first stride for f order
+                for(int j=rank+1; j<doubleRank; ++j)
+                    shape[j+1] = shape[j]*shape[j-rank];
+            }
         }
         // set last 3 elements in shape
         shape[doubleRank + 1] = 0;

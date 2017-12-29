@@ -116,3 +116,88 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
 
     delete result;
 }
+
+
+TEST_F(SingleDimTests, Test_Squeeze_1) {
+    std::vector<int> vecS({1});
+    std::vector<float> vecB({3.0f});
+    NDArray<float> x('c', vecS, vecB);
+    NDArray<float> exp(3.0f);
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(exp.rankOf(), z->rankOf());
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(SingleDimTests, Test_Squeeze_2) {
+    NDArray<float> x('c', {3}, {1, 2, 3});
+    NDArray<float> exp('c', {3}, {1, 2, 3});
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(SingleDimTests, Test_Reshape_1) {
+    NDArray<float> x('c', {1, 3}, {1, 2, 3});
+    NDArray<float> exp('c', {3}, {1, 2, 3});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {99, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(SingleDimTests, Test_Reshape_2) {
+    NDArray<float> x('c', {3}, {1, 2, 3});
+    NDArray<float> exp('c', {1, 3}, {1, 2, 3});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {99, 1, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(SingleDimTests, Test_Permute_1) {
+    NDArray<float> x('c', {3}, {1, 2, 3});
+    NDArray<float> exp('c', {3}, {1, 2, 3});
+
+    nd4j::ops::permute<float> op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

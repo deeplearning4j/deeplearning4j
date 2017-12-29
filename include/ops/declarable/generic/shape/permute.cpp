@@ -33,6 +33,16 @@ namespace nd4j {
                     arguments->emplace_back(e);
             }
 
+            // 0D edge case
+            if (x->rankOf() == 0) {
+                REQUIRE_TRUE(arguments->size() == 1, 0, "Permute: only one axis is allowed for scalar");
+                auto output = OUTPUT_VARIABLE(0);
+                if (!block.isInplace())
+                    output->assign(x);
+
+                return ND4J_STATUS_OK;
+            }
+
             if(block.isInplace()) {		// in-place
                 x->permutei(*arguments);
                 STORE_RESULT(x);
@@ -55,7 +65,15 @@ namespace nd4j {
         DECLARE_SHAPE_FN(permute) {
             auto shapeList = new ShapeList();
             std::vector<int>* arguments = block.getIArguments();
-            if (inputShape->size() == 1 && arguments->size() > 0) {
+            if (shape::rank(inputShape->at(0)) == 0) {
+                int *newshape;
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
+                newshape[0] = 0;
+                newshape[1] = 0;
+                newshape[2] = 1;
+                newshape[3] = 99;
+                shapeList->push_back(newshape);
+            } else if (inputShape->size() == 1 && arguments->size() > 0) {
                 int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0));
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {
