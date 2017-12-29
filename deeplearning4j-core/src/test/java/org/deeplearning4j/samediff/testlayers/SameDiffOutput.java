@@ -14,6 +14,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
@@ -27,7 +28,7 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
     private static final List<String> B_KEYS = Collections.singletonList(DefaultParamInitializer.BIAS_KEY);
     private static final List<String> PARAM_KEYS = Arrays.asList(DefaultParamInitializer.WEIGHT_KEY, DefaultParamInitializer.BIAS_KEY);
 
-    private Map<String,int[]> paramShapes;
+    private Map<String, int[]> paramShapes;
 
     private int nIn;
     private int nOut;
@@ -43,7 +44,7 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
         lossFn = builder.lossFn;
     }
 
-    private SameDiffOutput(){
+    private SameDiffOutput() {
         //No op constructor for Jackson
     }
 
@@ -53,8 +54,8 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
     }
 
     @Override
-    public String lossKey() {
-        return "loss";
+    public Pair<String,String> lossKeys() {
+        return new Pair<>("lossPerEx", "score");
     }
 
     @Override
@@ -69,8 +70,8 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        if(override){
-            this.nIn = ((InputType.InputTypeFeedForward)inputType).getSize();
+        if (override) {
+            this.nIn = ((InputType.InputTypeFeedForward) inputType).getSize();
         }
     }
 
@@ -91,7 +92,7 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
 
     @Override
     public Map<String, int[]> paramShapes() {
-        if(paramShapes == null){
+        if (paramShapes == null) {
             paramShapes = new HashMap<>();
             paramShapes.put(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
             paramShapes.put(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
@@ -110,12 +111,13 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
 
 //        //TODO for now: Calculate MSE only
 //        SDVariable diff = out.sub(layerLabel);
-        int[] labelShape = labelShape();
 //        SDVariable sqDiff = diff.mul(diff);
 //        SDVariable mse = sd.loss
 
-        String lossKey = lossKey();
+        int[] labelShape = labelShape();
+        Pair<String,String> lossKeys = lossKeys();
         SDVariable loss;
+        /*
         int d = 1;
         switch (lossFn){
             case MSE:
@@ -165,6 +167,17 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
             case MEAN_ABSOLUTE_PERCENTAGE_ERROR:
             default:
                 throw new UnsupportedOperationException("Unsupported loss function: " + lossFn);
+        }*/
+
+        switch (lossFn) {
+            case MSE:
+                SDVariable diff = out.sub(layerLabel);
+                SDVariable sqDiff = diff.mul(diff);
+                SDVariable mse = sd.mean(lossKeys.getFirst(), sqDiff, 1);
+                SDVariable score = sd.mean(lossKeys.getSecond(), mse);
+                break;
+            default:
+                throw new UnsupportedOperationException("Not yet implemented: " + lossFn);
         }
 
 
@@ -173,7 +186,7 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
 
     @Override
     public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
-        if(activation == null){
+        if (activation == null) {
             activation = SameDiffLayerUtils.fromIActivation(globalConfig.getActivationFn());
         }
     }
@@ -185,22 +198,22 @@ public class SameDiffOutput extends BaseSameDiffOutputLayer {
         private Activation activation;
         private LossFunctions.LossFunction lossFn = LossFunctions.LossFunction.MSE;
 
-        public Builder nIn(int nIn){
+        public Builder nIn(int nIn) {
             this.nIn = nIn;
             return this;
         }
 
-        public Builder nOut(int nOut){
+        public Builder nOut(int nOut) {
             this.nOut = nOut;
             return this;
         }
 
-        public Builder activation(Activation activation){
+        public Builder activation(Activation activation) {
             this.activation = activation;
             return this;
         }
 
-        public Builder lossFunction(LossFunctions.LossFunction lossFn){
+        public Builder lossFunction(LossFunctions.LossFunction lossFn) {
             this.lossFn = lossFn;
             return this;
         }
