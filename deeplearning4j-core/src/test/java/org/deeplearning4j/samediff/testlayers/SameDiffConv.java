@@ -1,5 +1,7 @@
 package org.deeplearning4j.samediff.testlayers;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -14,9 +16,13 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
 
+@Data
+@EqualsAndHashCode(callSuper = true, exclude = {"paramShapes"})
+@JsonIgnoreProperties({"paramShapes"})
 public class SameDiffConv extends BaseSameDiffLayer {
 
     private static final List<String> WEIGHT_KEYS = Collections.singletonList(ConvolutionParamInitializer.WEIGHT_KEY);
@@ -47,6 +53,10 @@ public class SameDiffConv extends BaseSameDiffLayer {
         this.cm = b.cm;
         this.dilation = b.dilation;
         this.hasBias = b.hasBias;
+    }
+
+    private SameDiffConv(){
+        //No arg constructor for Jackson/JSON serialization
     }
 
     @Override
