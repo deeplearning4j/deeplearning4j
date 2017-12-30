@@ -91,14 +91,14 @@ namespace nd4j {
                        length += 1;
                     }
 
-					std::array<int, 1> shape({length});
+					std::array<int, 1> shape = {{length}};
                     shape::shapeBuffer(1, shape.data(), newShape);
                     return new ShapeList(newShape);
                 } else if (allScalars) {
 					// all scalars
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
 
-                    std::array<int, 2> shape({1, elements});
+                    std::array<int, 2> shape = {{1, elements}};
                     shape::shapeBuffer(2, shape.data(), newShape);
                     return new ShapeList(newShape);
                 }
