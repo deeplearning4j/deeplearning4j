@@ -198,3 +198,21 @@ TEST_F(DeclarableOpsTests4, Test_Fill_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
+    NDArray<float> x('c', {4, 3});
+    NDArray<float> exp('c', {4, 3});
+
+    NDArrayFactory<float>::linspace(1, x);
+    NDArrayFactory<float>::linspace(1, exp);
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x}, {}, {99, 4, 3});
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
