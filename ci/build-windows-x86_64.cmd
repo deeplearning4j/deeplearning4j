@@ -1,12 +1,6 @@
 call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 echo on
 
-wmic computersystem set AutomaticManagedPagefile=False
-wmic pagefile list /format:list
-wmic pagefileset create name="C:\pagefile.sys"
-wmic pagefileset where name="C:\\pagefile.sys" set InitialSize=4096,MaximumSize=4096
-wmic pagefileset list /format:list
-
 if "%APPVEYOR_PULL_REQUEST_NUMBER%" == "" (
     set MAVEN_PHASE=deploy
 ) else (
