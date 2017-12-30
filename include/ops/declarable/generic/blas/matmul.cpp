@@ -76,6 +76,9 @@ namespace nd4j {
                 NDArray<T> *_x = transA == 111 ? x : x->transpose();
                 NDArray<T> *_y = transB == 111 ? y : y->transpose();
 
+                REQUIRE_TRUE(_x->rankOf() == 2 && _y->rankOf() == 2, 0, "MatMul: both operands should have rank 2");
+                REQUIRE_TRUE(_x->columns() == _y->rows(), 0, "MatMul: number of A.colums() should be equal to number of B.rows()");
+
                 nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
 
                 if (transA == 112)
@@ -85,6 +88,10 @@ namespace nd4j {
                     delete _y;
             } else if ((x->isMatrix() && y->isMatrix()) || (x->isColumnVector() && y->isRowVector())) {
                 // gemm
+
+                REQUIRE_TRUE(x->rankOf() == 2 && y->rankOf() == 2, 0, "MatMul: both operands should have rank 2");
+                REQUIRE_TRUE(x->columns() == y->rows(), 0, "MatMul: number of A.colums() should be equal to number of B.rows()");
+
                 nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
             } else if (x->isVector() && y->isVector()) {
                 // dot
