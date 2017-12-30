@@ -41,7 +41,7 @@ Deeplearning4j (and related projects) have a lot of functionality. The goal of t
     * [Data Normalization](#data-norm)
     * [Spark Network Training Data Classes](#data-spark)
 * [Transfer Learning](#transfer)
-* Trained Model Library - Model Zoo
+* [Trained Model Library - Model Zoo](#zoo)
 * [SKIL - Model Deployment](#skil)
 * [Keras Import](#keras)
 * [Distributed Training (Spark)](#spark)
@@ -91,7 +91,7 @@ Output layers: usable only as the last layer in a network. Loss functions are se
 * *LastTimeStep* - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/recurrent/LastTimeStep.java)) - A 'wrapper' layer - extracts out the last time step of the (non-bidirectional) RNN layer it wraps. 3d input with shape [minibatch, size, timeSeriesLength], 2d output with shape [minibatch, size].
 
 
-## <a name="layers-unsupervised>Unsupervised Layers</a>
+## <a name="layers-unsupervised">Unsupervised Layers</a>
 
 * **VariationalAutoencoder** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational/VariationalAutoencoder.java)) - A variational autoencoder implementation with MLP/dense layers for the encoder and decoder. Supports multiple different types of [reconstruction distributions](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/variational)
 * **AutoEncoder** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/layers/AutoEncoder.java)) - Standard denoising autoencoder layer
@@ -130,13 +130,13 @@ An InputPreProcessor is a simple class/interface that operates on the input to a
 
 Note that in many cases (such as the XtoYPreProcessor classes), users won't need to (and shouldn't) add these manually, and can instead just use ```.setInputType(InputType.feedForward(10))``` or similar, which whill infer and add the preprocessors as required.
 
-* **CnnToFeedForwardPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/CnnToFeedForwardPreProcessor.java)) - handles the activation reshaping necessary to transition from a CNN layer (ConvolutionLayer, SubsamplingLayer, etc)
+* **CnnToFeedForwardPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/CnnToFeedForwardPreProcessor.java)) - handles the activation reshaping necessary to transition from a CNN layer (ConvolutionLayer, SubsamplingLayer, etc) to DenseLayer/OutputLayer etc.
 * **CnnToRnnPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/CnnToRnnPreProcessor.java)) - handles reshaping necessary to transition from a (effectively, time distributed) CNN layer to a RNN layer.
 * **ComposableInputPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/ComposableInputPreProcessor.java)) - simple class that allows multiple preprocessors to be chained + used on a single layer
 * **FeedForwardToCnnPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/FeedForwardToCnnPreProcessor.java)) - handles activation reshaping to transition from a row vector (per example) to a CNN layer. Note that this transition/preprocessor only makes sense if the activations are actually CNN activations, but have been 'flattened' to a row vector.
 * **FeedForwardToRnnPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/FeedForwardToRnnPreProcessor.java)) - handles transition from a (time distributed) feed-forward layer to a RNN layer
 * **RnnToCnnPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/RnnToCnnPreProcessor.java)) - handles transition from a sequence of CNN activations with shape ```[minibatch, depth*height*width, timeSeriesLength]``` to time-distributed ```[numExamples*timeSeriesLength, numChannels, inputWidth, inputHeight]``` format
-* **RnnToFeedForwardPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/RnnToFeedForwardPreProcessor.java)) - handles transition from time series activations (shape ```[minibatch,size,timeSeriesLength]```) to time-distributed feed-forward (shape ```[minibatch*tsLength,size]```) activations.  
+* **RnnToFeedForwardPreProcessor** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor/RnnToFeedForwardPreProcessor.java)) - handles transition from time series activations (shape ```[minibatch,size,timeSeriesLength]```) to time-distributed feed-forward (shape ```[minibatch*tsLength,size]```) activations.
 
 
 # <a name="listeners">Iteration/Training Listeners</a>
@@ -153,7 +153,7 @@ Neither type (iteration/training) are called outside of training (i.e., during o
 * *CheckpointListener* - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/checkpoint/CheckpointListener.java), Javadoc) - Save network checkpoints periodically - based on epochs, iterations or time (or some combination of all three).
 * **StatsListener** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-ui-parent/deeplearning4j-ui-model/src/main/java/org/deeplearning4j/ui/stats/StatsListener.java)) - Main listener for DL4J's web-based network training user interface. See [visualization page](https://deeplearning4j.org/visualization) for more details.
 * **CollectScoresIterationListener** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/CollectScoresIterationListener.java), Javadoc) - Similar to ScoreIterationListener, but stores scores internally in a list (for later retrieval) instead of logging scores
-* **TimeIterationListener** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/TimeIterationListener.java), Javadoc) - Attempts to estimate time until training completion, based on current speed
+* **TimeIterationListener** - ([Source](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/listeners/TimeIterationListener.java), Javadoc) - Attempts to estimate time until training completion, based on current speed and specified total number of iterations
 
 # <a name="evaluation">Evaluation</a>
 
