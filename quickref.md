@@ -43,9 +43,9 @@ Deeplearning4j (and related projects) have a lot of functionality. The goal of t
 * [Transfer Learning](#transfer)
 * Trained Model Library - Model Zoo
 * [SKIL - Model Deployment](#skil)
-* Keras Import
-* Distributed Training (Spark)
-* Hyperparameter Optimization (Arbiter)
+* [Keras Import](#keras)
+* [Distributed Training (Spark)](#spark)
+* [Hyperparameter Optimization (Arbiter)](#arbiter)
 
 # <a name="layers">Layers</a>
 
@@ -466,7 +466,7 @@ Models available in DL4J's model zoo:
 
 Link: [SKIL Community Edition - Quickstart](https://docs.skymind.ai/docs/quickstart)
 
-# Keras Import
+# <a name="keras">Keras Import</a>
 
 Models created and trained in [Keras](https://keras.io/) can be imported to DL4J.
 As of 0.9.1, Keras 1 is supported; as of master/snapshots, Keras 2 is also supported.
@@ -476,10 +476,10 @@ For further details, see the following pages:
 * [Keras Model import: Supported Features](https://deeplearning4j.org/keras-supported-features)
 
 
-# Distributed Training (Spark)
+# <a name="spark">Distributed Training (Spark)</a>
 
 [TODO]
 
-# Hyperparameter Optimization (Arbiter)
+# <a name="arbiter">Hyperparameter Optimization (Arbiter)</a>
 
 [TODO]
