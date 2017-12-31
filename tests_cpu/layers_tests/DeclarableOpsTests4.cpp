@@ -216,3 +216,23 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Gemv_Transpose_1) {
+    NDArray<float> x('c', {4, 3});
+    NDArray<float> y('c', {4, 1});
+    NDArray<float> exp('c',{ 3, 1}, {70, 80, 90});
+
+    NDArrayFactory<float>::linspace(1, x);
+    NDArrayFactory<float>::linspace(1, y);
+
+    nd4j::ops::matmul<float> op;
+    auto result = op.execute({&x, &y}, {}, {1, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

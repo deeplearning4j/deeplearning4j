@@ -53,9 +53,16 @@ namespace nd4j {
             REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0, "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
 
             if (x->isMatrix() && y->isVector()) {
+                NDArray<T> *_x = transA == 111 ? x : x->transpose();
+                NDArray<T> *_y = transB == 111 ? y : y->transpose();
                 // gemv
-                nd4j::NDArrayFactory<T>::mmulHelper(x, y, z, alpha, beta);
+                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
 
+                if (transA == 112)
+                    delete _x;
+
+                if (transB == 112)
+                    delete _y;
             } else if (x->isVector() && y->isMatrix() && iSize > 0) {
                 // gemm
                 NDArray<T> *_x = transA == 111 ? x : x->transpose();
@@ -161,8 +168,8 @@ namespace nd4j {
                 shape[1] = 1;
             }  else if (shape::isMatrix(tmpA) && shape::isVector(tmpB)) {
                 // gemv case
-                shape[0] = inA[1];
-                shape[1] = inB[2];
+                shape[0] = tmpA[1];
+                shape[1] = tmpB[2];
             } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {
                 // gemm case
                 shape[0] = tmpA[1];
