@@ -307,10 +307,12 @@ namespace nd4j {
             if (BlasHelper::getInstance()->hasGEMV<T>()) {
                 nd4j_debug("Using provided GEMV pointer\n","");
 
+                auto layout = A->ordering() == 'f' ? CblasColMajor : CblasRowMajor;
+
                 if (sizeof(T) == 4)
-                    BlasHelper::getInstance()->sgemv()(CblasRowMajor, A->ordering() == 'f' ? CblasTrans : CblasNoTrans, A->rows(), A->columns(), (float) alpha, (float *) A->getBuffer(), B->rows(), (float *) B->getBuffer(), 1, (float) beta, (float *) result->getBuffer(), 1);
+                    BlasHelper::getInstance()->sgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (float) alpha, (float *) A->getBuffer(), layout == CblasColMajor ? A->rows() : A->columns(), (float *) B->getBuffer(), 1, (float) beta, (float *) result->getBuffer(), 1);
                 else if (sizeof(T) == 8)
-                    BlasHelper::getInstance()->dgemv()(CblasRowMajor, A->ordering() == 'f' ? CblasTrans : CblasNoTrans, A->rows(), A->columns(), (double) alpha, (double *) A->getBuffer(), B->rows(), (double *) B->getBuffer(), 1, (double) beta, (double *) result->getBuffer(), 1);
+                    BlasHelper::getInstance()->dgemv()(layout, CblasNoTrans, A->rows(), A->columns(), (double) alpha, (double *) A->getBuffer(), layout == CblasColMajor ? A->rows() : A->columns(), (double *) B->getBuffer(), 1, (double) beta, (double *) result->getBuffer(), 1);
                 else
                     nd4j::blas::GEMV<T>::op(A->ordering() == 'f' ? CblasTrans : 0, A->rows(), A->columns(), alpha, A->getBuffer(), B->rows(), B->getBuffer(), 1, beta, result->getBuffer(), 1);
             } else {
