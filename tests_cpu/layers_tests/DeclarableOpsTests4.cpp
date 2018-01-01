@@ -236,3 +236,51 @@ TEST_F(DeclarableOpsTests4, Test_Gemv_Transpose_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Split_1) {
+    NDArray<float> x('c', {5, 30});
+    NDArray<float> sizes('c', {1, 3}, {4, 15, 11});
+
+    IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
+    IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
+    IndicesList list2({NDIndex::all(), NDIndex::interval(19, 30)});
+
+    auto sub0 = x.subarray(list0);
+    auto sub1 = x.subarray(list1);
+    auto sub2 = x.subarray(list2);
+
+    sub0->assign(0.0f);
+    sub1->assign(1.0f);
+    sub2->assign(2.0f);
+
+
+    nd4j::ops::split<float> op;
+    auto result = op.execute({&x, &sizes}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    auto z0 = result->at(0);
+    auto z1 = result->at(1);
+    auto z2 = result->at(2);
+
+    ASSERT_TRUE(sub0->isSameShape(z0));
+    ASSERT_TRUE(sub0->equalsTo(z0));
+
+    ASSERT_TRUE(sub1->isSameShape(z1));
+    ASSERT_TRUE(sub1->equalsTo(z1));
+
+    ASSERT_TRUE(sub2->isSameShape(z2));
+    ASSERT_TRUE(sub2->equalsTo(z2));
+
+    sub0->printShapeInfo("sub0");
+    sub1->printShapeInfo("sub1");
+    sub2->printShapeInfo("sub2");
+
+    delete sub0;
+    delete sub1;
+    delete sub2;
+
+    delete result;
+}

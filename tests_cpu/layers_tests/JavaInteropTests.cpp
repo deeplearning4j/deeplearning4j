@@ -78,6 +78,46 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
     nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
 
+TEST_F(JavaInteropTests, TestShapeExposure3) {
+    NDArray<float> x('c', {5, 30});
+    NDArray<float> sizes('c', {3}, {4, 15, 11});
+
+    IndicesList list0({NDIndex::all(), NDIndex::interval(0, 4)});
+    IndicesList list1({NDIndex::all(), NDIndex::interval(4, 19)});
+    IndicesList list2({NDIndex::all(), NDIndex::interval(19, 30)});
+
+    auto sub0 = x.subarray(list0);
+    auto sub1 = x.subarray(list1);
+    auto sub2 = x.subarray(list2);
+
+    sub0->assign(0.0f);
+    sub1->assign(1.0f);
+    sub2->assign(2.0f);
+
+    Nd4jPointer inputBuffers[] = {x.buffer(), sizes.buffer()};
+    Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo()};
+
+    NativeOps nativeOps;
+    nd4j::ops::split<float> op;
+    
+    int iArgs[] = {1};
+    auto hash = op.getOpHash();
+
+    auto shapeList = nativeOps.calculateOutputShapesFloat(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1);
+
+    ASSERT_EQ(3, shapeList->size());
+
+    ASSERT_TRUE(shape::equalsSoft(sub0->shapeInfo(), shapeList->at(0)));
+    ASSERT_TRUE(shape::equalsSoft(sub1->shapeInfo(), shapeList->at(1)));
+    ASSERT_TRUE(shape::equalsSoft(sub2->shapeInfo(), shapeList->at(2)));
+
+    delete sub0;
+    delete sub1;
+    delete sub2;
+
+    nativeOps.deleteShapeList((Nd4jPointer) shapeList);
+}
+
 
 TEST_F(JavaInteropTests, TestSconv2d_1) {
     NDArray<float> input('c', {3, 3, 8, 8});

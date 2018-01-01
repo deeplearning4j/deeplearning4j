@@ -320,5 +320,18 @@ namespace nd4j {
          * 
          */
         DECLARE_CUSTOM_OP(fill, 1, 1, false, -2, 0);
+
+        /**
+         * This operation splits given NDArray into chunks of specific size, along given dimension
+         * Input arrays:
+         * 0 - input array
+         * 1 - array of sizes
+         * 2 - optional axis
+         * 
+         * Integer arguments:
+         * 0 - optional axis
+         * 
+         */
+        DECLARE_CUSTOM_OP(split, 2, -1, false, 0, -2);
     }
 }

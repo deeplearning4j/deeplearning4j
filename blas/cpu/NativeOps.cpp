@@ -3116,6 +3116,54 @@ void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
 }
 
 template<typename T>
+nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    VariableSpace<T> varSpace;
+    Context<T> block(2, &varSpace);
+    nd4j::ShapeList inShapes;
+
+    for (int e = 0; e < numIArgs; e++)
+        block.getIArguments()->push_back(iArgs[e]);
+
+    for (int e = 0; e < numTArgs; e++)
+        block.getTArguments()->push_back(tArgs[e]);
+
+    for (int e = 0; e < numInputShapes; e++) {
+        auto shape_ = (int *) inputShapes[e];
+        auto buffer_ = (T *) inputBuffers[e];
+        auto array = new NDArray<T>(buffer_, shape_);
+        array->triggerAllocationFlag(false, false);
+
+        // block should contain references to proper variable
+        varSpace.putVariable(1, e, array);
+        block.pickInput(1, e);
+
+        inShapes.push_back(shape_);
+    }
+
+    auto shapeList = op->calculateOutputShape(&inShapes, block);
+
+    return shapeList;
+}
+
+nd4j::ShapeList* NativeOps::calculateOutputShapesFloat(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, float* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationFloat(hash);
+
+    return _calculateOutputShapes<float>(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+}
+
+nd4j::ShapeList* NativeOps::calculateOutputShapesHalf(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, float16* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationHalf(hash);
+
+    return _calculateOutputShapes<float16>(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+}
+
+nd4j::ShapeList* NativeOps::calculateOutputShapesDouble(Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, int *iArgs, int numIArgs) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperationDouble(hash);
+
+    return _calculateOutputShapes<double>(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+}
+
+template<typename T>
 nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, int *iArgs, int numIArgs) {
     Context<T> block(1);
     nd4j::ShapeList inShapes;
@@ -3151,7 +3199,6 @@ nd4j::ShapeList* NativeOps::calculateOutputShapesDouble(Nd4jPointer* extraPointe
 
     return _calculateOutputShapes<double>(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
 }
-
 
 template<typename T>
 Nd4jStatus realExec(nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* extraPointers, Nd4jIndex hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, T* tArgs, int numTArgs, int *iArgs, int numIArgs, bool isInplace) {
