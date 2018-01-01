@@ -3117,7 +3117,7 @@ void NativeOps::deleteShapeList(Nd4jPointer shapeList) {
 
 template<typename T>
 nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp<T>* op, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, T* tArgs, int numTArgs, int *iArgs, int numIArgs) {
-    VariableSpace<T> varSpace;
+    nd4j::graph::VariableSpace<T> varSpace;
     Context<T> block(2, &varSpace);
     nd4j::ShapeList inShapes;
 
