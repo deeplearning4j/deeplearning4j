@@ -5,6 +5,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -18,14 +19,19 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Random;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @Slf4j
 public class TestSameDiffConv {
@@ -61,16 +67,16 @@ public class TestSameDiffConv {
     @Test
     public void testSameDiffConvForward_Debug() {
 
-        int imgH = 16;
-        int imgW = 24;
+        int imgH = 3;
+        int imgW = 3;
         int count = 0;
-        int minibatch = 5;
-        boolean hasBias = true;
-        int nIn = 3;
-        int nOut = 4;
+        int minibatch = 1;
+        boolean hasBias = false;
+        int nIn = 1;
+        int nOut = 1;
         int[] kernel = {2, 2};
         int[] strides = {1, 1};
-        int[] dilation = {1, 1};
+        int[] dilation = {2, 1};
         ConvolutionMode cm = ConvolutionMode.Truncate;
         Activation a = Activation.TANH;
 
@@ -101,6 +107,7 @@ public class TestSameDiffConv {
                         .kernelSize(kernel)
                         .stride(strides)
                         .dilation(dilation)
+//                        .dilation(new int[]{dilation[1], dilation[0]})
                         .convolutionMode(cm)
                         .activation(a)
                         .hasBias(hasBias)
@@ -134,10 +141,16 @@ public class TestSameDiffConv {
     @Test
     public void testSameDiffConvForward() {
 
-        int imgH = 8;
-        int imgW = 12;
+        int imgH = 16;
+        int imgW = 20;
 
         int count = 0;
+
+        //Note: to avoid the exporential number of tests here, we'll randomly run every Nth test only.
+        //With n=1, m=3 this is 1 out of every 3 tests (on average)
+        Random r = new Random(12345);
+        int n = 1;
+        int m = 3;
         for (int minibatch : new int[]{5, 1}) {
 
             Activation[] afns = new Activation[]{
@@ -160,6 +173,12 @@ public class TestSameDiffConv {
                                 for (int[] dilation : new int[][]{{1, 1}, {2, 2}, {1, 2}}) {
                                     for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Truncate, ConvolutionMode.Same}) {
                                         for (Activation a : afns) {
+                                            int i = r.nextInt(m);
+                                            if (i >= n) {
+                                                //Example: n=2, m=3... skip on i=2, run test on i=0, i=1
+                                                continue;
+                                            }
+
                                             String msg = "Test " + (count++) + " - minibatch=" + minibatch + ", nIn=" + nIn
                                                     + ", nOut=" + nOut + ", kernel=" + Arrays.toString(kernel) + ", stride="
                                                     + Arrays.toString(strides) + ", dilation=" + Arrays.toString(dilation)
@@ -170,6 +189,16 @@ public class TestSameDiffConv {
                                                     .list()
                                                     .layer(new SameDiffConv.Builder()
                                                             .nIn(nIn)
+                                                            .nOut(nOut)
+                                                            .kernelSize(kernel)
+                                                            .stride(strides)
+                                                            .dilation(dilation)
+                                                            .convolutionMode(cm)
+                                                            .activation(a)
+                                                            .hasBias(hasBias)
+                                                            .build())
+                                                    .layer(new SameDiffConv.Builder()
+                                                            .nIn(nOut)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)
                                                             .stride(strides)
@@ -189,6 +218,16 @@ public class TestSameDiffConv {
                                                     .list()
                                                     .layer(new ConvolutionLayer.Builder()
                                                             .nIn(nIn)
+                                                            .nOut(nOut)
+                                                            .kernelSize(kernel)
+                                                            .stride(strides)
+                                                            .dilation(dilation)
+                                                            .convolutionMode(cm)
+                                                            .activation(a)
+                                                            .hasBias(hasBias)
+                                                            .build())
+                                                    .layer(new ConvolutionLayer.Builder()
+                                                            .nIn(nOut)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)
                                                             .stride(strides)
@@ -230,49 +269,5 @@ public class TestSameDiffConv {
                 }
             }
         }
-    }
-
-    @Test
-    public void testConv2dBasic() {
-        int nIn = 3;
-        int nOut = 4;
-        int kH = 2;
-        int kW = 2;
-
-        int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-
-        SameDiff sd = SameDiff.create();
-        INDArray wArr = Nd4j.create(nOut, nIn, kH, kW); //As per DL4J
-        INDArray bArr = Nd4j.create(1, nOut);
-        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
-
-        SDVariable in = sd.var("in", inArr);
-        SDVariable w = sd.var("W", wArr);
-        SDVariable b = sd.var("b", bArr);
-
-        //Order: https://github.com/deeplearning4j/libnd4j/blob/6c41ea5528bb1f454e92a9da971de87b93ff521f/include/ops/declarable/generic/convo/conv2d.cpp#L20-L22
-        //in, w, b - bias is optional
-        SDVariable[] vars = new SDVariable[]{in, w, b};
-
-        Conv2DConfig c = Conv2DConfig.builder()
-                .kh(kH).kw(kW)
-                .ph(0).pw(0)
-                .sy(1).sx(1)
-                .dh(1).dw(1)
-                .isSameMode(false)
-                .build();
-
-        SDVariable conv = sd.conv2d(vars, c);
-
-        SDVariable out = sd.tanh("tanh", conv);
-//        SDVariable out = conv.add("out", 1.0);
-//        SDVariable out = sd.sum(conv, 1,2,3);
-
-        INDArray outArr = sd.execAndEndResult();
-        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        int[] outShape = outArr.shape();
-        assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
     }
 }
