@@ -1610,6 +1610,10 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer calculateOutputShapesHalf(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, @Cast("float16") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
     public abstract Pointer calculateOutputShapesDouble(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
 
+    public abstract Pointer calculateOutputShapesFloat(PointerPointer extraPointers, long hash, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapesHalf(PointerPointer extraPointers, long hash, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputShapes, @Cast("float16") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public abstract Pointer calculateOutputShapesDouble(PointerPointer extraPointers, long hash, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+
     public abstract int registerGraphFloat(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
     public abstract int registerGraphDouble(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
     public abstract int registerGraphHalf(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);

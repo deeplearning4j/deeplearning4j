@@ -2446,11 +2446,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<int[]>();
 
+        val inputBuffers = new PointerPointer<>(op.inputArguments().length);
         val inputShapes = new PointerPointer<>(op.inputArguments().length);
 
         int cnt= 0;
-        for (val in: op.inputArguments())
+        for (val in: op.inputArguments()) {
+            // NOT A TYPO: shape functions work on host side only
+            inputBuffers.put(cnt++, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+        }
 
 
         val iArgs = op.iArgs().length > 0 ? new IntPointer(op.iArgs().length) : null;
@@ -2465,7 +2469,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
 
-            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesFloat(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesFloat(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -2481,7 +2485,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, (float) t);
 
-            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesDouble(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesDouble(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -2497,7 +2501,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             for (val t: op.tArgs())
                 tArgs.put(cnt++, ArrayUtil.toHalf((float) t));
 
-            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesHalf(null, hash, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
+            val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapesHalf(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length);
 
             if (ptrptr == null)
                 throw new RuntimeException();

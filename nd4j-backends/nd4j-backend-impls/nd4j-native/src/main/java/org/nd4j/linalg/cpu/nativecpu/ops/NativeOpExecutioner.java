@@ -1614,11 +1614,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
 
+        val inputBuffers = new PointerPointer<>(op.numInputArguments());
         val inputShapes = new PointerPointer<>(op.numInputArguments());
         val inputArgs = op.inputArguments();
         int cnt= 0;
-        for (val in: inputArgs)
+        for (val in: inputArgs) {
+            inputBuffers.put(cnt++, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
+        }
 
 
         val iArgs = op.numIArguments() > 0 ? new IntPointer(op.numIArguments()) : null;
@@ -1635,7 +1638,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 tArgs.put(cnt++, (float) t);
 
             val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesFloat(null,
-                    hash, inputShapes, op.numInputArguments(),
+                    hash, inputBuffers, inputShapes, op.numInputArguments(),
                     tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
@@ -1654,7 +1657,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 tArgs.put(cnt++, t);
 
             val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesDouble(null,
-                    hash, inputShapes, op.numInputArguments(), tArgs,
+                    hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
                     op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
@@ -1673,7 +1676,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t:  tArgs1)
                 tArgs.put(cnt++, ArrayUtil.toHalf(t));
 
-            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
+            val ptrptr= (Nd4jCpu.ShapeList) loop.calculateOutputShapesHalf(null, hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs, op.numTArguments(), iArgs, op.numIArguments());
 
             if (ptrptr == null)
                 throw new RuntimeException();
