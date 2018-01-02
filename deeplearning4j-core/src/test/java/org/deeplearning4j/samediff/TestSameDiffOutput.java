@@ -19,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.*;
@@ -29,6 +30,7 @@ public class TestSameDiffOutput {
     @Test
     public void testSameDiffOutputBasic() {
 
+        int minibatch = 3;
         int nIn = 3;
         int nOut = 4;
 
@@ -50,18 +52,113 @@ public class TestSameDiffOutput {
         assertArrayEquals(new int[]{nIn, nOut}, pt1.get(DefaultParamInitializer.WEIGHT_KEY).shape());
         assertArrayEquals(new int[]{1, nOut}, pt1.get(DefaultParamInitializer.BIAS_KEY).shape());
 
-        INDArray in = Nd4j.create(3, nIn);
+        INDArray in = Nd4j.create(minibatch, nIn);
         INDArray out = net.output(in);
-        assertArrayEquals(new int[]{3, nOut}, out.shape());
+        assertArrayEquals(new int[]{minibatch, nOut}, out.shape());
     }
 
     @Test
-    public void testPlaceholderReduceSimple(){
+    public void test(){
 
         SameDiff sd = SameDiff.create();
-        SDVariable v = sd.var("in", new int[]{-1,10});
-        SDVariable vSum = sd.sum(v, 1);
 
+        int nIn = 3;
+        int nOut = 4;
+        int minibatch = 3;
+        SDVariable input = sd.var("in", new int[]{-1,nIn});
+        SDVariable label = sd.var("label", new int[]{-1, nOut});
+        SDVariable weights = sd.var("W", new int[]{nIn,nOut});
+        SDVariable bias = sd.var("b", new int[]{1,nOut});
+
+
+        SDVariable mmul = sd.mmul("mmul", input, weights);
+        SDVariable z = mmul.add("z", bias);
+        SDVariable out = sd.tanh(z);
+
+        SDVariable diff = out.sub(label);
+        SDVariable sqDiff = diff.mul(diff);
+        SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
+        SDVariable avgMSE = sd.mean("loss", msePerEx, 0);
+
+        INDArray inputArr = Nd4j.rand(minibatch, nIn);
+        INDArray labelArr = Nd4j.rand(minibatch, nOut);
+        INDArray weightsArr = Nd4j.rand(nIn, nOut);
+        INDArray biasArr = Nd4j.rand(1,nOut);
+
+        sd.associateArrayWithVariable(inputArr, input);
+        sd.associateArrayWithVariable(labelArr, label);
+        sd.associateArrayWithVariable(weightsArr, weights);
+        sd.associateArrayWithVariable(biasArr, bias);
+
+        INDArray result = sd.execAndEndResult();
+    }
+
+    @Test
+    public void testPlaceholderReduceSimple() {
+        SameDiff sd = SameDiff.create();
+        SDVariable v = sd.var("in", new int[]{-1, 10});
+        SDVariable vSum = sd.sum(v, 1);                             //Exception here
+    }
+
+    @Test
+    public void testSequentialMeans() {
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", new int[]{10, 10, 10});
+        SDVariable mean1 = sd.mean(in, 2);      //[10,10] out
+        SDVariable mean2 = sd.mean(mean1, 1);   //[10,1] out
+
+        System.out.println(sd.asFlatPrint());
+    }
+
+    @Test
+    public void testSequentialMeansPlaceholder() {
+        for( int dim0 : new int[]{10, -1}){
+            String msg = "Dimension 0 = " + dim0;
+            System.out.println(msg);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", new int[]{dim0, 9, 8});
+            SDVariable mean1 = sd.mean(in, 2);                  //[10,9,8] -> [10,9]
+            SDVariable mean2 = sd.mean(mean1, 1);               //[10,9] -> [10,1]
+
+            INDArray inArr = Nd4j.create(10, 9, 8);
+            sd.associateArrayWithVariable(inArr, in);
+
+            INDArray out = sd.execAndEndResult();
+
+            assertArrayEquals(msg, new int[]{10,1}, out.shape());
+        }
+    }
+
+    @Test
+    public void testReductionShapes1() {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", new int[]{10, 9, 8});
+        SDVariable mean1 = sd.mean(in, 2);      //[10,9] out
+        SDVariable mean2 = sd.mean(mean1, 1);   //[10,1] out
+        sd.execAndEndResult();  //***Exception***
+
+        INDArray m1 = mean1.getArr();
+        INDArray m2 = mean2.getArr();
+
+        assertArrayEquals(new int[]{10, 9}, m1.shape());
+        assertArrayEquals(new int[]{10, 1}, m2.shape());
+    }
+
+    @Test
+    public void testReductionShapes2() {
+
+        SameDiff sd2 = SameDiff.create();
+        SDVariable in2 = sd2.var("in", new int[]{10, 9, 8});
+        SDVariable meanA = sd2.mean(in2, 0);      //[9,8] out
+        SDVariable meanB = sd2.mean(meanA, 0);   //[1,8] out
+        sd2.execAndEndResult(); //***Exception***
+
+        INDArray mA = meanA.getArr();
+        INDArray mB = meanB.getArr();
+
+        assertArrayEquals(new int[]{9, 8}, mA.shape());
+        assertArrayEquals(new int[]{1, 8}, mB.shape());
     }
 
     @Test
@@ -94,7 +191,7 @@ public class TestSameDiffOutput {
 //                    Activation.SIGMOID      //MSLE
             };
 
-            for( int i=0; i<lossFns.length; i++ ){
+            for (int i = 0; i < lossFns.length; i++) {
                 LossFunctions.LossFunction lf = lossFns[i];
                 Activation a = afns[i];
                 log.info("Starting test - " + lf + ", " + a);
