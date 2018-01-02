@@ -18,6 +18,9 @@ public:
     DeclarableOpsTests4() {
         printf("\n");
         fflush(stdout);
+
+        nd4j::ops::adjust_hue<float> op0;
+        nd4j::ops::adjust_saturation<float> op1;
     }
 };
 

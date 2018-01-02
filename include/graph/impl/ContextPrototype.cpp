@@ -94,6 +94,16 @@ namespace nd4j {
         }
 
         template <typename T>
+        int ContextPrototype<T>::numT() {
+            return (int) _tArgs.size();
+        }
+
+        template <typename T>
+        int ContextPrototype<T>::numI() {
+            return (int) _iArgs.size();
+        }
+
+        template <typename T>
         int ContextPrototype<T>::getNodeId() {
             return this->_nodeId;
         }

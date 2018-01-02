@@ -47,6 +47,9 @@ namespace nd4j {
             std::vector<T>* getTArguments();
             std::vector<int>* getIArguments();
 
+            int numT();
+            int numI();
+
             std::pair<int, int>* input(int idx);
 
             int opNum();
