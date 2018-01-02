@@ -127,15 +127,21 @@ public class SameDiffConv extends BaseSameDiffLayer {
     public List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
-        SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
 
-        SDVariable[] vars = new SDVariable[]{layerInput, w, b};
+        SDVariable[] vars;
+        if(hasBias){
+            SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
+            vars = new SDVariable[]{layerInput, w, b};
+        } else {
+            vars = new SDVariable[]{layerInput, w};
+        }
 
         Conv2DConfig c = Conv2DConfig.builder()
                 .kh(kernel[0]).kw(kernel[1])
                 .ph(padding[0]).pw(padding[1])
                 .sy(stride[0]).sx(stride[1])
                 .dh(dilation[0]).dw(dilation[1])
+                .isSameMode(this.cm == ConvolutionMode.Same)
                 .build();
 
         SDVariable conv = sameDiff.conv2d(vars, c);    //TODO can't set name

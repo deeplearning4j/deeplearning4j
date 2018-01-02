@@ -132,7 +132,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public INDArray getParam(String param) {
-        throw new UnsupportedOperationException("Not supported");
+        return paramTable.get(param);
     }
 
     @Override
