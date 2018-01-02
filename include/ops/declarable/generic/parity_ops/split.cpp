@@ -19,6 +19,9 @@ namespace ops {
             axis = _a->getScalar(0);
         } 
 
+        if (axis < 0)
+            axis += input->rankOf();
+
         std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
         //auto tads = NDArrayFactory<T>::allTensorsAlongDimension(input, dims);
 
@@ -61,6 +64,13 @@ namespace ops {
 
         if (block.getIArguments()->size() > 0)
             axis = INT_ARG(0);
+        else if (block.width() > 2) {
+            auto _a = INPUT_VARIABLE(2);
+            axis = _a->getScalar(0);
+        }
+
+        if (axis < 0)
+            axis += shape::rank(input);
         
         // this op assumes we have sizes defined
         auto sizes = INPUT_VARIABLE(1);
