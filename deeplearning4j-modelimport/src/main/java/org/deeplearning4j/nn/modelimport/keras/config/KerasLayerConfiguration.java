@@ -65,6 +65,21 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     private final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
     private final String LAYER_CLASS_NAME_MERGE = "Merge";
+    private final String LAYER_CLASS_NAME_ADD = "Add";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_ADD = "add";
+    private final String LAYER_CLASS_NAME_SUBTRACT = "Subtract";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_SUBTRACT = "subtract";
+    private final String LAYER_CLASS_NAME_MULTIPLY = "Multiply";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_MULTIPLY = "multiply";
+    private final String LAYER_CLASS_NAME_AVERAGE = "Average";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_AVERAGE = "average";
+    private final String LAYER_CLASS_NAME_MAXIMUM = "Maximum";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_MAXIMUM = "maximum";
+    private final String LAYER_CLASS_NAME_CONCATENATE = "Concatenate";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_CONCATENATE = "concatenate";
+    private final String LAYER_CLASS_NAME_DOT = "Dot";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_DOT = "dot";
+
 
     private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
