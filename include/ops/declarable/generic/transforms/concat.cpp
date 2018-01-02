@@ -12,7 +12,7 @@ namespace nd4j {
             NDArray<T> *last = INPUT_VARIABLE((int) block.width() - 1);
 
             int _dimension = 0;
-            if (block.getIArguments() > 0)
+            if (block.numI() > 0)
                 _dimension = INT_ARG(0);
             else {
                 _dimension = (int) last->getScalar(0);
