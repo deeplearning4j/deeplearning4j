@@ -59,7 +59,83 @@ public class TestSameDiffConv {
     }
 
     @Test
+    public void testSameDiffConvForward_Debug() {
+
+        int imgH = 16;
+        int imgW = 24;
+        int count = 0;
+        int minibatch = 5;
+        boolean hasBias = true;
+        int nIn = 3;
+        int nOut = 4;
+        int[] kernel = {2, 2};
+        int[] strides = {1, 1};
+        int[] dilation = {1, 1};
+        ConvolutionMode cm = ConvolutionMode.Truncate;
+        Activation a = Activation.TANH;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new SameDiffConv.Builder()
+                        .nIn(nIn)
+                        .nOut(nOut)
+                        .kernelSize(kernel)
+                        .stride(strides)
+                        .dilation(dilation)
+                        .convolutionMode(cm)
+                        .activation(a)
+                        .hasBias(hasBias)
+                        .build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertNotNull(net.paramTable());
+
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new ConvolutionLayer.Builder()
+                        .nIn(nIn)
+                        .nOut(nOut)
+                        .kernelSize(kernel)
+                        .stride(strides)
+                        .dilation(dilation)
+                        .convolutionMode(cm)
+                        .activation(a)
+                        .hasBias(hasBias)
+                        .build())
+                .build();
+
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        net.params().assign(net2.params());
+
+        //Check params:
+        assertEquals(net2.params(), net.params());
+        Map<String, INDArray> params1 = net.paramTable();
+        Map<String, INDArray> params2 = net2.paramTable();
+        assertEquals(params2, params1);
+
+        INDArray in = Nd4j.rand(new int[]{minibatch, nIn, imgH, imgW});
+        INDArray out = net.output(in);
+        INDArray outExp = net2.output(in);
+
+        assertEquals(outExp, out);
+
+        //Also check serialization:
+        MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+        INDArray outLoaded = netLoaded.output(in);
+
+        assertEquals(outExp, outLoaded);
+    }
+
+    @Test
     public void testSameDiffConvForward() {
+
+        int imgH = 8;
+        int imgW = 12;
 
         int count = 0;
         for (int minibatch : new int[]{5, 1}) {
@@ -72,11 +148,11 @@ public class TestSameDiffConv {
                     Activation.SOFTPLUS,
                     Activation.SOFTSIGN,
 //                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
-                    Activation.HARDTANH,    //NPE
-//                 Activation.RELU      //JVM crash
+                    Activation.HARDTANH,
+                    Activation.RELU
             };
 
-            for(boolean hasBias : new boolean[]{true, false}) {
+            for (boolean hasBias : new boolean[]{true, false}) {
                 for (int nIn : new int[]{3, 4}) {
                     for (int nOut : new int[]{4, 5}) {
                         for (int[] kernel : new int[][]{{2, 2}, {2, 1}, {3, 2}}) {
@@ -134,7 +210,7 @@ public class TestSameDiffConv {
                                             Map<String, INDArray> params2 = net2.paramTable();
                                             assertEquals(msg, params2, params1);
 
-                                            INDArray in = Nd4j.rand(minibatch, nIn);
+                                            INDArray in = Nd4j.rand(new int[]{minibatch, nIn, imgH, imgW});
                                             INDArray out = net.output(in);
                                             INDArray outExp = net2.output(in);
 
@@ -157,7 +233,7 @@ public class TestSameDiffConv {
     }
 
     @Test
-    public void testConv2dBasic(){
+    public void testConv2dBasic() {
         int nIn = 3;
         int nOut = 4;
         int kH = 2;
@@ -188,7 +264,11 @@ public class TestSameDiffConv {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.conv2d(vars, c);
+        SDVariable conv = sd.conv2d(vars, c);
+
+        SDVariable out = sd.tanh("tanh", conv);
+//        SDVariable out = conv.add("out", 1.0);
+//        SDVariable out = sd.sum(conv, 1,2,3);
 
         INDArray outArr = sd.execAndEndResult();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
