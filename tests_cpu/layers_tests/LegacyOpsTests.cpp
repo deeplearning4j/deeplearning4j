@@ -264,3 +264,16 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
 
     delete list;
 }
+
+TEST_F(LegacyOpsTests, PowDerivative_1) {
+    NDArray<float> x('c', {5, 5});
+    NDArray<float> exp('c', {5, 5});
+    x.assign(3.f);
+    exp.assign(6.f);
+
+    float p = 2.0f;
+
+    x.template applyTransform<simdOps::PowDerivative<float>>(&p);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
