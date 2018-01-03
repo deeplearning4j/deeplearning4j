@@ -445,6 +445,21 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
     delete result;
 }
 
+TEST_F(IndexingTests, Test_Subarray_Strided_1) {
+    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    NDArray<float> exp('c', {3, 2}, {1, 3, 4, 6, 7, 9});
+    IndicesList indices({NDIndex::all(), NDIndex::interval(0, 3, 2)});
+    auto sub = x.subarray(indices);
+
+    //sub->printShapeInfo("sub shape");
+    //sub->printIndexedBuffer("sub buffr");
+
+    ASSERT_TRUE(exp.isSameShape(sub));
+    ASSERT_TRUE(exp.equalsTo(sub));
+
+    delete sub;
+}
+
 
 /*
 TEST_F(IndexingTests, MaskedSlice_5) {
