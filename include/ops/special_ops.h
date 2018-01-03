@@ -227,8 +227,10 @@ namespace simdOps {
 							if (poolingMode == 1) {
 								if ((int) extraParam0 == 0)
 									divide_factor = pool_size;
-								else
+								else if ((int) extraParam0 == 1)
 									divide_factor = (hend - hstart) * (wend - wstart);
+                                else if ((int) extraParam0 == 2)
+                                    divide_factor = kH * kW;
 							}
 
 							long kx, ky;
