@@ -410,8 +410,7 @@ public class ROCTest {
         int minibatch = 64;
         int nROCs = 3;
 
-        for (int steps : new int[] {0}) { //0 steps: exact
-            //            int steps = 20;
+        for (int steps : new int[] {0, 20}) { //0 steps: exact, 20 steps: thresholded
 
             Nd4j.getRandom().setSeed(12345);
             Random r = new Random(12345);
@@ -448,6 +447,50 @@ public class ROCTest {
 
             assertEquals(single.getRocCurve(), first.getRocCurve());
         }
+    }
+
+    @Test
+    public void testROCMerging2() {
+        int nArrays = 10;
+        int minibatch = 64;
+        int exactAllocBlockSize = 10;
+        int nROCs = 3;
+        int steps = 0;  //Exact
+
+        Nd4j.getRandom().setSeed(12345);
+        Random r = new Random(12345);
+
+        List<ROC> rocList = new ArrayList<>();
+        for (int i = 0; i < nROCs; i++) {
+            rocList.add(new ROC(steps, true, exactAllocBlockSize));
+        }
+
+        ROC single = new ROC(steps);
+        for (int i = 0; i < nArrays; i++) {
+            INDArray p = Nd4j.rand(minibatch, 2);
+            p.diviColumnVector(p.sum(1));
+
+            INDArray l = Nd4j.zeros(minibatch, 2);
+            for (int j = 0; j < minibatch; j++) {
+                l.putScalar(j, r.nextInt(2), 1.0);
+            }
+
+            single.eval(l, p);
+
+            ROC other = rocList.get(i % rocList.size());
+            other.eval(l, p);
+        }
+
+        ROC first = rocList.get(0);
+        for (int i = 1; i < nROCs; i++) {
+            first.merge(rocList.get(i));
+        }
+
+        double singleAUC = single.calculateAUC();
+        assertTrue(singleAUC >= 0.0 && singleAUC <= 1.0);
+        assertEquals(singleAUC, first.calculateAUC(), 1e-6);
+
+        assertEquals(single.getRocCurve(), first.getRocCurve());
     }
 
 
