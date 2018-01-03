@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLossLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffOutputLayer;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -39,6 +40,10 @@ public class SameDiffLossLayer implements IOutputLayer {
     protected SDVariable inVar;
     protected SDVariable labelVar;
 
+    protected Gradient emptyGrad = new DefaultGradient();
+
+    protected double fullNetL1;
+    protected double fullNetL2;
 
 
     public SameDiffLossLayer(NeuralNetConfiguration conf) {
@@ -47,7 +52,10 @@ public class SameDiffLossLayer implements IOutputLayer {
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        this.fullNetL1 = fullNetworkL1;
+        this.fullNetL2 = fullNetworkL2;
+        computeGradientAndScore();
+        return score;
     }
 
     @Override
@@ -74,6 +82,7 @@ public class SameDiffLossLayer implements IOutputLayer {
         }
 
         score = out.getDouble(0);
+        score += fullNetL1 + fullNetL2;
     }
 
     @Override
@@ -90,7 +99,9 @@ public class SameDiffLossLayer implements IOutputLayer {
 
         Pair<Map<SDVariable,DifferentialFunction>,List<DifferentialFunction>> p = sameDiff.execBackwards();
 
-        return null;
+        SDVariable inGrad = sameDiff.grad(inVar.getVarName());
+
+        return new Pair<>(emptyGrad, inGrad.getArr());
     }
 
 
