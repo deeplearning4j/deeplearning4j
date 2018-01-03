@@ -3,7 +3,7 @@ title: Using snapshots for daily updated builds of DL4J in your app
 layout: default
 ---
 
-# Snapshots Aren't Working
+# DL4J and ND4J Snapshots
 
 Contents
 
@@ -18,7 +18,9 @@ Contents
 
 We provide automated daily builds of our repositories: ND4J/DataVec/DeepLearning4j/RL4J etc. So, all newest functionality & bug fixes are delivered daily.
 
-Snapshots work like any other maven depenedencies, just served from custom repository, instead of Maven Central. 
+Snapshots work like any other maven depenedencies, just served from custom repository, instead of Maven Central.
+
+Note that due to ongoing development, snapshots should be considered less stable than releases: breaking changes or bugs can in principle be introduced at any point during the course of normal development. Typically, releases (not snapshots) shouldbe used when possible, unless a bug fix or new feature is required.
 
 ## <a name="Setup_Instructions">Setup Instructions</a>
 
@@ -40,7 +42,7 @@ Basically to use snapshots in your project, you should just add snapshot reposit
 </repositories>
 ```
 
-And specify snapshot version. We follow simple rule. If latest stable release version is `A.B.C`, snapshot version will be `A.B.(C+1)-SNAPSHOT`. I.e. as of writing this, latest stable version is `0.9.1`, and snapshot version is `0.9.2-SNAPSHOT`
+And specify snapshot version. We follow simple rule. If latest stable release version is `A.B.C`, snapshot version will be `A.B.(C+1)-SNAPSHOT`. i.e. as of writing this, latest stable version is `0.9.1`, and snapshot version is `0.9.2-SNAPSHOT`
 
 ## <a name="Limitations">Limitations</a>
 
