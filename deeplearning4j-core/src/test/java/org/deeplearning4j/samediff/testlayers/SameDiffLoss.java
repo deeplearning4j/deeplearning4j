@@ -27,6 +27,7 @@ public class SameDiffLoss extends BaseSameDiffLossLayer {
 
     protected SameDiffLoss(Builder builder) {
         super(builder);
+        this.lossFn = builder.lossFn;
     }
 
     private SameDiffLoss() {
