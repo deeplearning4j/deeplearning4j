@@ -57,6 +57,24 @@ public class KerasMerge extends KerasLayer {
     }
 
     /**
+     * Constructor from parsed Keras layer configuration dictionary and merge mode passed in.
+     *
+     * @param layerConfig               dictionary containing Keras layer configuration
+     * @param mergeMode                 ElementWiseVertex merge mode
+     * @param enforceTrainingConfig     whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasMerge(Map<String, Object> layerConfig, ElementWiseVertex.Op mergeMode, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        super(layerConfig, enforceTrainingConfig);
+        if (this.mergeMode == null)
+            this.vertex = new MergeVertex();
+        else
+            this.vertex = new ElementWiseVertex(mergeMode);
+    }
+
+    /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig               dictionary containing Keras layer configuration

@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
@@ -225,6 +226,21 @@ public class KerasLayerUtils {
             layer = new KerasInput(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MERGE())) {
             layer = new KerasMerge(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ADD()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_ADD())) {
+            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Add, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SUBTRACT()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_SUBTRACT())) {
+            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Subtract, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_AVERAGE()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_AVERAGE())) {
+            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Average, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MULTIPLY()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_MULTIPLY())) {
+            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Product, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONCATENATE()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_CONCATENATE())) {
+            layer = new KerasMerge(layerConfig, null, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_FLATTEN())) {
             layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_RESHAPE())) {
