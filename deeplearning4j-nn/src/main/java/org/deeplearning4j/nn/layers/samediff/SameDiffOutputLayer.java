@@ -17,6 +17,8 @@ public class SameDiffOutputLayer extends SameDiffLayer implements IOutputLayer {
 
     public static final String LABEL_KEY = "label";
 
+    private INDArray labels;
+
 
 
     public SameDiffOutputLayer(NeuralNetConfiguration conf) {
@@ -25,22 +27,22 @@ public class SameDiffOutputLayer extends SameDiffLayer implements IOutputLayer {
 
     @Override
     public void setLabels(INDArray labels) {
-
+        this.labels = labels;
     }
 
     @Override
     public INDArray getLabels() {
-        return null;
+        return labels;
     }
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
-        return 0;
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        return null;
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

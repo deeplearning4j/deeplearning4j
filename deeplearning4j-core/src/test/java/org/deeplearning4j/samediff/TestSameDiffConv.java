@@ -270,4 +270,128 @@ public class TestSameDiffConv {
             }
         }
     }
+
+
+    @Test
+    public void testConv2dEdgeCase(){
+        Nd4j.getExecutioner().enableVerboseMode(true);
+        Nd4j.getExecutioner().enableDebugMode(true);
+
+        INDArray in = Nd4j.create(1,1,1,4).assign(Nd4j.linspace(1,4,4)).muli(10);      //NCHW
+        INDArray wArr = Nd4j.create(4,1,1,1);       //dOut, dIt, kH, kW
+        wArr.get(all(), point(0), point(0), point(0)).assign(Nd4j.linspace(1,4,4)).addi(0.5);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable i = sd.var("in", in);
+        SDVariable w = sd.var("w", wArr);
+
+        Conv2DConfig conf = Conv2DConfig.builder()
+                .isSameMode(false)
+                .kw(1)
+                .kh(1)
+                .dh(1)
+                .dw(1)
+                .sy(1)
+                .sx(1)
+                .ph(0)
+                .pw(0)
+                .build();
+
+        SDVariable conv2d = sd.conv2d(new SDVariable[]{i,w}, conf);
+
+        INDArray out = sd.execAndEndResult();
+
+
+        //1x1 conv edge case: equivalent to linear op for each position. Also: depth 1 in allows us to use concat + mul here
+        INDArray wVec = wArr.get( all(), point(0), point(0), point(0));
+        INDArray exp = Nd4j.concat(1, in, in, in, in);
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(exp, wVec, exp, 1));
+
+        for(int j=0; j<4; j++ ){
+            System.out.println(exp.get(point(0), point(j), all(), all()) + "\t" + out.get(point(0), point(j), all(), all()));
+        }
+
+        assertEquals(exp, out);
+    }
+
+
+    @Test
+    public void testConv2dEdgeCase2(){
+
+        INDArray in = Nd4j.create(1,1,1,4).assign(Nd4j.linspace(1,4,4)).muli(10);      //NCHW
+        INDArray wArr = Nd4j.create(3,1,1,1);       //dOut, dIt, kH, kW
+        wArr.get(all(), point(0), point(0), point(0)).assign(Nd4j.linspace(1,3,3)).addi(0.5);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable i = sd.var("in", in);
+        SDVariable w = sd.var("w", wArr);
+
+        Conv2DConfig conf = Conv2DConfig.builder()
+                .isSameMode(false)
+                .kw(1)
+                .kh(1)
+                .dh(1)
+                .dw(1)
+                .sy(1)
+                .sx(1)
+                .ph(0)
+                .pw(0)
+                .build();
+
+        SDVariable conv2d = sd.conv2d(new SDVariable[]{i,w}, conf);
+
+        INDArray out = sd.execAndEndResult();
+
+
+        //1x1 conv edge case: equivalent to linear op for each position. Also: depth 1 in allows us to use concat + mul here
+        INDArray wVec = wArr.get( all(), point(0), point(0), point(0));
+        INDArray exp = Nd4j.concat(1, in, in, in);
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(exp, wVec, exp, 1));
+
+        for(int j=0; j<3; j++ ){
+            System.out.println(exp.get(point(0), point(j), all(), all()) + "\t" + out.get(point(0), point(j), all(), all()));
+        }
+
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testConv2dEdgeCase3(){
+
+        INDArray in = Nd4j.create(1,1,1,3).assign(Nd4j.linspace(1,3,3)).muli(10);      //NCHW
+        INDArray wArr = Nd4j.create(4,1,1,1);       //dOut, dIt, kH, kW
+        wArr.get(all(), point(0), point(0), point(0)).assign(Nd4j.linspace(1,4,4)).addi(0.5);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable i = sd.var("in", in);
+        SDVariable w = sd.var("w", wArr);
+
+        Conv2DConfig conf = Conv2DConfig.builder()
+                .isSameMode(false)
+                .kw(1)
+                .kh(1)
+                .dh(1)
+                .dw(1)
+                .sy(1)
+                .sx(1)
+                .ph(0)
+                .pw(0)
+                .build();
+
+        SDVariable conv2d = sd.conv2d(new SDVariable[]{i,w}, conf);
+
+        INDArray out = sd.execAndEndResult();
+
+
+        //1x1 conv edge case: equivalent to linear op for each position. Also: depth 1 in allows us to use concat + mul here
+        INDArray wVec = wArr.get( all(), point(0), point(0), point(0));
+        INDArray exp = Nd4j.concat(1, in, in, in, in);
+        Nd4j.getExecutioner().exec(new BroadcastMulOp(exp, wVec, exp, 1));
+
+        for(int j=0; j<4; j++ ){
+            System.out.println(exp.get(point(0), point(j), all(), all()) + "\t" + out.get(point(0), point(j), all(), all()));
+        }
+
+        assertEquals(exp, out);
+    }
 }
