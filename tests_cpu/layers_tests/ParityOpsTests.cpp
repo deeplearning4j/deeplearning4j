@@ -157,6 +157,25 @@ TEST_F(ParityOpsTests, TestUnstack3) {
 }
 
 
+TEST_F(ParityOpsTests, TestUnstack4) { 
+    NDArray<float> input('c', {3,2,3});
+    NDArray<float> exp('c', {3, 3}, { 1, 2, 3, 7, 8, 9, 13, 14, 15.});
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::unstack<float> op;
+
+    auto result = op.execute({&input}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 TEST_F(ParityOpsTests, ExpandDimsTest1) {
     NDArray<float> input('c', {5, 5});
     NDArrayFactory<float>::linspace(1, input);
