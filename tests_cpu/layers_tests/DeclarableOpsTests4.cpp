@@ -230,6 +230,27 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_10) {
 }
 
 
+TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_11) {
+    NDArray<float> x('c', {1, 1, 3, 3});
+    NDArray<float> exp('c', {1, 1, 2, 2}, {3, 4, 6, 7});
+
+    NDArrayFactory<float>::linspace(1, x);
+
+
+    nd4j::ops::avgpool2d<float> op;
+    auto result = op.execute({&x}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
     NDArray<float> x('c', {2, 3, 3, 2});
     NDArray<float> bias('c', {1, 2}, {1, 2});
