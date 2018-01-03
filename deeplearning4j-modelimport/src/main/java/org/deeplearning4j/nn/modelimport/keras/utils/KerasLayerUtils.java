@@ -238,11 +238,8 @@ public class KerasLayerUtils {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MULTIPLY()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_MULTIPLY())) {
             layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Product, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ADD()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_ADD())) {
-            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Add, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_DOT()) ||
-                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_DOT())) {
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONCATENATE()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_CONCATENATE())) {
             layer = new KerasMerge(layerConfig, null, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_FLATTEN())) {
             layer = new KerasFlatten(layerConfig, enforceTrainingConfig);
