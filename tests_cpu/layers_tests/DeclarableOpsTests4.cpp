@@ -92,7 +92,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_4) {
     NDArray<float> exp('c', {2, 2, 2, 2}, {11.f,  12.f,  15.f,  16.f,  27.f,  28.f,  31.f,  32.f,  43.f,  44.f,  47.f,  48.f,  59.f,  60.f,  63.f, 64.f});
 
     NDArrayFactory<float>::linspace(1, x);
-    
+
 
     nd4j::ops::maxpool2d<float> op;
     auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1});
@@ -136,6 +136,88 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_6) {
     
     nd4j::ops::avgpool2d<float> op;
     auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_7) {
+    NDArray<float> x('c', {2, 2, 5, 5});
+    NDArray<float> exp('c', {2, 2, 2, 2}, {7.f, 9.f, 17.f, 19.f, 32.f, 34.f, 42.f, 44.f, 57.f, 59.f, 67.f, 69.f, 82.f, 84.f, 92.f, 94.f});
+
+    NDArrayFactory<float>::linspace(1, x);
+
+
+    nd4j::ops::maxpool2d<float> op;
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_8) {
+    NDArray<float> x('c', {2, 2, 5, 5});
+    NDArray<float> exp('c', {2, 2, 3, 3}, {1.f, 2.5f, 4.5f, 8.5f, 10.f, 12.f, 18.5f, 20.f, 22.f, 26.f, 27.5f, 29.5f, 33.5f, 35.f, 37.f, 43.5f, 45.f, 47.f,  51.f, 52.5f, 54.5f,  58.5f, 60.f, 62.f, 68.5f, 70.f, 72.f,  76.f, 77.5f, 79.5f, 83.5f, 85.f, 87.f,  93.5f, 95.f, 97.f});
+
+    NDArrayFactory<float>::linspace(1, x);
+
+
+    nd4j::ops::avgpool2d<float> op;
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 1, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_9) {
+    NDArray<float> x('c', {2, 2, 5, 5});
+    NDArray<float> exp('c', {2, 2, 3, 3}, {0.25f, 1.25f, 2.25f,  4.25f, 10.f, 12.f, 9.25f, 20.f, 22.f, 6.5f, 13.75f, 14.75, 16.75f, 35.f, 37.f,  21.75f, 45.f, 47.f,  12.75f, 26.25f, 27.25f,  29.25f, 60.f, 62.f, 34.25f, 70.f, 72.f, 19.f, 38.75f, 39.75f, 41.75f, 85.f, 87.f, 46.75f, 95.f, 97.f});
+
+    NDArrayFactory<float>::linspace(1, x);
+
+
+    nd4j::ops::avgpool2d<float> op;
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_10) {
+    NDArray<float> x('c', {2, 2, 5, 5});
+    NDArray<float> exp('c', {2, 2, 3, 3}, {4.f, 6.f, 7.5f, 14.f, 16.f, 17.5f,  21.5f, 23.5f, 25.f, 29.f, 31.f, 32.5f, 39.f, 41.f, 42.5f, 46.5f, 48.5f, 50.f, 54.f, 56.f, 57.5f,  64.f, 66.f, 67.5f, 71.5f, 73.5f, 75.f, 79.f, 81.f, 82.5f, 89.f, 91.f, 92.5f,  96.5f, 98.5f, 100.f});
+
+    NDArrayFactory<float>::linspace(1, x);
+
+
+    nd4j::ops::avgpool2d<float> op;
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -276,10 +358,6 @@ TEST_F(DeclarableOpsTests4, Test_Split_1) {
 
     ASSERT_TRUE(sub2->isSameShape(z2));
     ASSERT_TRUE(sub2->equalsTo(z2));
-
-    sub0->printShapeInfo("sub0");
-    sub1->printShapeInfo("sub1");
-    sub2->printShapeInfo("sub2");
 
     delete sub0;
     delete sub1;
