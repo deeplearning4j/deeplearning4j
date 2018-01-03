@@ -264,6 +264,9 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_12) {
 
     auto z = result->at(0);
 
+    //z->printShapeInfo("z shape:");
+    //z->printBuffer("z buffer:");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
