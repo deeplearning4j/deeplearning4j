@@ -292,6 +292,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
                         referenceMap.remove(reference.getKey());
                     }
+                } catch (InterruptedException e) {
+                    return; /* terminate thread when being interrupted */
                 } catch (Exception e) {
                     //
                 }
