@@ -98,7 +98,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo()};
 
     NativeOps nativeOps;
-    nd4j::ops::split<float> op;
+    nd4j::ops::split_v<float> op;
     
     int iArgs[] = {1};
     auto hash = op.getOpHash();
