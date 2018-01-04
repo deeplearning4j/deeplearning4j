@@ -26,7 +26,6 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by susaneraly on 11/6/17.
@@ -136,8 +135,8 @@ public class TFGraphTestAllHelper {
 
             //val string = graph.asFlatPrint();
             //log.info("Graph structure: \n{}", string);
-            //val executioner = new NativeGraphExecutioner();
-            //val results = executioner.executeGraph(graph, configuration);
+            val executioner = new NativeGraphExecutioner();
+            val results = executioner.executeGraph(graph, configuration);
             //assertTrue(results.length > 0); //FIXME: Later
 
             graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/conv_0.fb"));
