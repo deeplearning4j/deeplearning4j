@@ -79,5 +79,10 @@ namespace nd4j {
          * This operation clones given NDArrayList
          */
         DECLARE_LIST_OP(clone_list, 1, 1, 0, 0);
+
+        /**
+         * This operation unstacks given NDArray into NDArrayList
+         */
+        DECLARE_LIST_OP(unstack_list, 1, 1, 0, 0);
     }
 }

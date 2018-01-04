@@ -51,7 +51,7 @@ public:
         auto conv2d_Input = new NDArray<float>('c', {1, 2, 5, 4});
         auto conv2d_Weights = new NDArray<float>('c', {3, 2, 2, 2});
         auto conv2d_Bias = new NDArray<float>('c', {3, 1});
-        tuples.push_back(new OpTuple("conv2d", {conv2d_Input, conv2d_Weights, conv2d_Bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1}));
+        tuples.push_back(new OpTuple("conv2d", {conv2d_Input, conv2d_Weights, conv2d_Bias}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1, 0}));
 
         // test custom op
         tuples.emplace_back((new OpTuple("testcustom"))
@@ -63,7 +63,7 @@ public:
         tuples.emplace_back((new OpTuple("deconv2d"))
                                     ->addInput(new NDArray<float>('c', {2, 3, 4, 4}))
                                     ->addInput(new NDArray<float >('c', {3, 3, 5, 5}))
-                                    ->setIArgs({5, 5, 1, 1, 0, 0, 1, 1, 0}));
+                                    ->setIArgs({5, 5, 1, 1, 0, 0, 1, 1, 0, 0}));
 
         // maxpool2d
         tuples.emplace_back((new OpTuple("maxpool2d"))

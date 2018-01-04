@@ -498,3 +498,21 @@ TEST_F(DeclarableOpsTests4, Test_Split_3) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Stack_4) {
+    NDArray<float> t('c', {2, 3, 5});
+    NDArray<float> u('c', {2, 3, 5});
+    NDArray<float> v('c', {2, 3, 5});
+    NDArray<float> exp('c', {3, 2, 3, 5});
+
+    nd4j::ops::stack<float> op;
+    auto result = op.execute({&t, &u, &v}, {}, {-4});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}

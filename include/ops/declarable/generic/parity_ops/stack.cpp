@@ -15,7 +15,7 @@ namespace nd4j {
 
     		int dim = INT_ARG(0);
     		if(dim < 0)
-    			dim += input->rankOf();             
+    			dim += input->rankOf() + 1;
 
 			// input validation
 			// check whether shapes of all input array are the same		
@@ -64,14 +64,14 @@ namespace nd4j {
 		DECLARE_SYN(Pack, stack);
 
 		DECLARE_SHAPE_FN(stack) {
-	
+
 			// check whether input dimension is within rank range
 			int* inShapeInfo = inputShape->at(0);
 			int rank = inShapeInfo[0];
 			int dim = INT_ARG(0);
 
 			int elements = inputShape->size();
-			if(dim < 0 ) dim += rank;
+			if(dim < 0 ) dim += rank + 1;
 
 			{ // special cases for 0D concat
                 bool allScalars = true;
@@ -106,19 +106,20 @@ namespace nd4j {
 
 			//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-			// insert (int) block.width() at dim position of input shape to get output shape	
+			// insert (int) block.width() at dim position of input shape to get output shape
+
 			outShape.insert(outShape.begin() + dim, (int) block.width());
 			// if input arrays are vectors remove unity from shape			
 
 			// evaluate output ShapeInfo
 			int newRank = outShape.size();
 			int* outShapeInfo = nullptr;
-    		ALLOCATE(outShapeInfo, block.getWorkspace(), newRank*2+4, int);
+    		ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(newRank), int);
     		outShapeInfo[0] = newRank;
     		for(int i=1; i <= newRank; ++i)
     			outShapeInfo[i] = outShape[i-1];
-	
-    		shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));    
+
+    		shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
 
     		return new ShapeList(outShapeInfo);
 		}
