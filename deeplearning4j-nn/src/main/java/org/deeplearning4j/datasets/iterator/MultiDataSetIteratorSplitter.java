@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -17,6 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class MultiDataSetIteratorSplitter {
     protected MultiDataSetIterator backedIterator;
     protected final long totalExamples;
@@ -85,6 +87,7 @@ public class MultiDataSetIteratorSplitter {
                 if (resetPending.get()) {
                     backedIterator.reset();
                     counter.set(0);
+                    resetPending.set(false);
                 }
 
                 val state = backedIterator.hasNext();
