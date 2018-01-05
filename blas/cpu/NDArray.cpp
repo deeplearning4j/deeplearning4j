@@ -2716,8 +2716,37 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
             delete[] _shapeInfo;
     }
     
+template<typename T>
+void NDArray<T>::streamline(char o) {
+    char order = o == 'a' ? this->ordering() : o;
+    
+    int *newShape;
+    ALLOCATE(newShape, this->_workspace, shape::shapeInfoLength(this->rankOf()), int);
 
+    T *newBuffer;
+    ALLOCATE(newBuffer, this->_workspace, this->lengthOf(), T);
 
+    std::vector<int> shape(this->rankOf());
+    for (int e = 0; e < this->rankOf(); e++)
+        shape[e] = this->sizeAt(e);
+
+    if (order == 'c')
+        shape::shapeBuffer(this->rankOf(), shape.data(), newShape);
+    else
+        shape::shapeBufferFortran(this->rankOf(), shape.data(), newShape);
+
+    NativeOpExcutioner<T>::execPairwiseTransform(1, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+
+    if (_isBuffAlloc)
+        RELEASE(this->_buffer, this->_workspace);
+    if (_isShapeAlloc)
+        RELEASE(this->_shapeInfo, this->_workspace);
+
+    this->_buffer = newBuffer;
+    this->_shapeInfo = newShape;
+    this->_isBuffAlloc = true;
+    this->_isShapeAlloc = true;
+}
 
 
 template class ND4J_EXPORT NDArray<float>;

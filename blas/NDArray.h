@@ -228,6 +228,11 @@ namespace nd4j {
         NDArray<T>* permute(const int* dimensions, const int rank) const;
 
         /**
+         * This method streamlines given view or permuted array, and reallocates buffer
+         */
+        void streamline(char order = 'a');
+
+        /**
         *  permutes the dimensions in target according to "dimensions" array
         */
         void permute(const int* dimensions, const int rank, NDArray<T>& target) const;
