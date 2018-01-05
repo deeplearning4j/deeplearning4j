@@ -15,7 +15,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+<<<<<<< HEAD
+ * Stack op conversion
+=======
  * Gather op conversion
+>>>>>>> 1f8f565053e71ee4ac4430ca176857959b0659d2
  *
  * @author raver119@gmail.com
  */

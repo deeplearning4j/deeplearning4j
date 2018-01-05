@@ -56,6 +56,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
+    public String getTargetMappingForOp(DifferentialFunction function) {
+        return null;
+    }
+
+    @Override
     public OnnxProto3.NodeProto getNodeWithNameFromGraph(OnnxProto3.GraphProto graph, String name) {
         for(int i = 0; i < graph.getNodeCount(); i++) {
             val node = graph.getNode(i);

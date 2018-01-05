@@ -82,6 +82,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
+    public String getTargetMappingForOp(DifferentialFunction function) {
+        return null;
+    }
+
+    @Override
     public NodeDef getNodeWithNameFromGraph(GraphDef graph, String name) {
         for(int i = 0; i < graph.getNodeCount(); i++) {
             val node = graph.getNode(i);
