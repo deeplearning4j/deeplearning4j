@@ -4,12 +4,14 @@ set -evx
 while true; do echo .; sleep 60; done &
 
 if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then
+    BRANCH=$TRAVIS_BRANCH
     MAVEN_PHASE="deploy"
 else
+    BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
     MAVEN_PHASE="install"
 fi
 
-if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50 --branch=$TRAVIS_BRANCH; then
+if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50 --branch=$BRANCH; then
      git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50
 fi
 
@@ -32,10 +34,10 @@ sudo /Volumes/CUDAMacOSXInstaller/CUDAMacOSXInstaller.app/Contents/MacOS/CUDAMac
 
 cd $TRAVIS_BUILD_DIR/../libnd4j/
 sed -i="" /cmake_minimum_required/d CMakeLists.txt
-MAKEJ=2 bash buildnativeoperations.sh
+MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT
 MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30
 cd $TRAVIS_BUILD_DIR/
 source change-cuda-versions.sh $CUDA
 source change-scala-versions.sh $SCALA
-mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype
+mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype -Djavacpp.extension=$EXT
 

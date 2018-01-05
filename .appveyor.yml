@@ -11,9 +11,11 @@ environment:
     - CUDA: 8.0
       CUDNN: 6
       SCALA: 2.10
+      EXT:
     - CUDA: 9.0
       CUDNN: 7
       SCALA: 2.11
+      EXT: avx2
 
 init:
   - wmic computersystem set AutomaticManagedPagefile=False

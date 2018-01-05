@@ -4,12 +4,14 @@ set -evx
 while true; do echo .; sleep 60; done &
 
 if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then
+    BRANCH=$TRAVIS_BRANCH
     MAVEN_PHASE="deploy"
 else
+    BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
     MAVEN_PHASE="install"
 fi
 
-if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50 --branch=$TRAVIS_BRANCH; then
+if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50 --branch=$BRANCH; then
      git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50
 fi
 

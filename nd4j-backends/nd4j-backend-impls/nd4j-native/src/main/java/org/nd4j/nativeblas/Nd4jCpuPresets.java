@@ -103,7 +103,7 @@ import java.util.Scanner;
                                 "mkl_avx512#mkl_avx512", "mkl_avx512_mic#mkl_avx512_mic", "mkl_def#mkl_def",
                                 "mkl_mc#mkl_mc", "mkl_mc3#mkl_mc3", "mkl_core#mkl_core", "mkl_intel_lp64#mkl_intel_lp64",
                                 "mkl_intel_thread#mkl_intel_thread", "mkl_rt#mkl_rt", "libnd4jcpu"}),
-                @Platform(extension = "-avx512") })
+                @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 
     private Logger logger;
