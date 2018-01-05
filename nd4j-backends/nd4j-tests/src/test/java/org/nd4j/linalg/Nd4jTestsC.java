@@ -125,6 +125,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testGetRowEdgeCase() {
+
+        INDArray orig = Nd4j.linspace(1,300,300).reshape('c', 100, 3);
+        INDArray col = orig.getColumn(0);
+
+        for( int i = 0; i < 100; i++) {
+            INDArray row = col.getRow(i);
+            INDArray rowDup = row.dup();
+            double d = orig.getDouble(i,0);
+            double d2 = col.getDouble(i, 0);
+            double dRowDup = rowDup.getDouble(0);
+            double dRow = row.getDouble(0);
+
+            String s = String.valueOf(i);
+            assertEquals(s, d, d2, 0.0);
+            assertEquals(s, d, dRowDup, 0.0);   //Fails
+            assertEquals(s, d, dRow, 0.0);      //Fails
+        }
+    }
+
+    @Test
     public void testNd4jEnvironment() {
         System.out.println(Nd4j.getExecutioner().getEnvironmentInformation());
         int manualNumCores = Integer.parseInt(Nd4j.getExecutioner().getEnvironmentInformation()

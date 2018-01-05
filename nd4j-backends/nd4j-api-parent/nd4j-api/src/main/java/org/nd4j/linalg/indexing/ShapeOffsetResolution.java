@@ -1,6 +1,5 @@
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -87,11 +86,11 @@ public class ShapeOffsetResolution implements Serializable {
                 this.strides = new long[2];
                 for (int i = 0; i < 2; i++) {
                     shapes[i] = 1;
-                    strides[i] = 1;
+                    strides[i] = arr.stride(i);
                 }
 
                 this.offsets = new long[arr.rank()];
-                this.offset = indexes[0].offset();
+                this.offset = indexes[0].offset() * ArrayUtil.prod(strides);
 
                 return true;
             }
@@ -100,10 +99,10 @@ public class ShapeOffsetResolution implements Serializable {
                 this.strides = new long[2];
                 for (int i = 0; i < 2; i++) {
                     shapes[i] = 1;
-                    strides[i] = 1;
+                    strides[i] = arr.stride(i);
                 }
 
-                this.offset = indexes[0].offset();
+                this.offset = indexes[0].offset() * ArrayUtil.prod(strides);
 
                 return true;
             }

@@ -322,6 +322,23 @@ public class ArrayUtil {
     }
 
 
+
+    /**
+     * Product of an int array
+     * @param mult the elements
+     *            to calculate the sum for
+     * @return the product of this array
+     */
+    public static int prod(long... mult) {
+        if (mult.length < 1)
+            return 0;
+        int ret = 1;
+        for (int i = 0; i < mult.length; i++)
+            ret *= mult[i];
+        return ret;
+    }
+
+
     /**
      * Product of an int array
      * @param mult the elements
