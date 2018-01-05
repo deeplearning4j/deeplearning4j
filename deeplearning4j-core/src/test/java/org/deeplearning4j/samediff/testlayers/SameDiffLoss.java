@@ -55,6 +55,7 @@ public class SameDiffLoss extends BaseSameDiffLossLayer {
                 SDVariable sqDiff = diff.mul(diff);
                 SDVariable mse = sd.mean(lossKeys.getFirst(), sqDiff, 1);
                 SDVariable score = sd.mean(lossKeys.getSecond(), mse);
+//                SDVariable score = sd.sum(lossKeys.getSecond(), mse);
                 break;
             default:
                 throw new UnsupportedOperationException("Not yet implemented: " + lossFn);

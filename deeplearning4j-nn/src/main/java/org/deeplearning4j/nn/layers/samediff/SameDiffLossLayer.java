@@ -83,6 +83,7 @@ public class SameDiffLossLayer implements IOutputLayer {
 
         score = out.getDouble(0);
         score += fullNetL1 + fullNetL2;
+//        score /= input.size(0);
     }
 
     @Override
