@@ -13,9 +13,13 @@ if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j
      git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50
 fi
 
-brew update > /dev/null
+brew update
+brew upgrade maven || true
 brew install gcc || true
 brew link --overwrite gcc
+
+/usr/local/bin/gcc-? --version
+mvn -version
 
 if [[ $CUDA == "8.0" ]]; then
     curl --retry 10 -L https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg -o $HOME/cuda.dmg
