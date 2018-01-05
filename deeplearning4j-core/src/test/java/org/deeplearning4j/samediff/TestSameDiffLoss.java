@@ -56,6 +56,142 @@ public class TestSameDiffLoss {
     }
 
     @Test
+    public void testReductionsBackwards() {
+
+        for (int i = 1; i < 7; i++) {
+
+            SameDiff sd = SameDiff.create();
+
+            int nOut = 4;
+            int minibatch = 3;
+            SDVariable input = sd.var("in", new int[]{-1, nOut});
+            SDVariable label = sd.var("label", new int[]{-1, nOut});
+
+            SDVariable diff = input.sub(label);
+            SDVariable sqDiff = diff.mul(diff);
+            SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
+
+            SDVariable loss;
+            String name;
+            switch (i) {
+                case 0:
+                    loss = sd.mean("loss", msePerEx, 0);
+                    name = "mean";
+                    break;
+                case 1:
+                    loss = sd.sum("loss", msePerEx, 0);
+                    name = "sum";
+                    break;
+                case 2:
+                    loss = sd.standardDeviation("loss", msePerEx, true, 0);
+                    name = "stdev";
+                    break;
+                case 3:
+                    loss = sd.min("loss", msePerEx, 0);
+                    name = "min";
+                    break;
+                case 4:
+                    loss = sd.max("loss", msePerEx, 0);
+                    name = "max";
+                    break;
+                case 5:
+                    loss = sd.variance("loss", msePerEx, true, 0);
+                    name = "variance";
+                    break;
+                case 6:
+                    loss = sd.prod("loss", msePerEx, 0);
+                    name = "prod";
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            String msg = "test: " + i + " - " + name;
+            log.info("*** Starting test: " + msg);
+
+            INDArray inputArr = Nd4j.rand(minibatch, nOut);
+            INDArray labelArr = Nd4j.rand(minibatch, nOut);
+
+            sd.associateArrayWithVariable(inputArr, input);
+            sd.associateArrayWithVariable(labelArr, label);
+
+            INDArray result = sd.execAndEndResult();
+            assertEquals(1, result.length());
+
+            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
+        }
+    }
+
+    @Test
+    public void testReductionsBackwards2() {
+
+        for (int i = 0; i < 7; i++) {
+
+            SameDiff sd = SameDiff.create();
+
+            int nOut = 4;
+            int minibatch = 3;
+            SDVariable input = sd.var("in", new int[]{-1, nOut});
+            SDVariable label = sd.var("label", new int[]{-1, nOut});
+
+            SDVariable diff = input.sub(label);
+            SDVariable sqDiff = diff.mul(diff);
+            SDVariable msePerEx = sd.mean("msePerEx", sqDiff, 1);
+
+            SDVariable loss;
+            String name;
+            switch (i) {
+                case 0:
+                    loss = sd.mean("loss", msePerEx);
+                    name = "mean";
+                    break;
+                case 1:
+                    loss = sd.sum("loss", msePerEx);
+                    name = "sum";
+                    break;
+                case 2:
+                    loss = sd.standardDeviation("loss", msePerEx, true);
+                    name = "stdev";
+                    break;
+                case 3:
+                    loss = sd.min("loss", msePerEx);
+                    name = "min";
+                    break;
+                case 4:
+                    loss = sd.max("loss", msePerEx);
+                    name = "max";
+                    break;
+                case 5:
+                    loss = sd.variance("loss", msePerEx, true);
+                    name = "variance";
+                    break;
+                case 6:
+                    loss = sd.prod("loss", msePerEx);
+                    name = "prod";
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+
+            String msg = "test: " + i + " - " + name;
+            log.info("*** Starting test: " + msg);
+
+            INDArray inputArr = Nd4j.rand(minibatch, nOut);
+            INDArray labelArr = Nd4j.rand(minibatch, nOut);
+
+            sd.associateArrayWithVariable(inputArr, input);
+            sd.associateArrayWithVariable(labelArr, label);
+
+            INDArray result = sd.execAndEndResult();
+            assertEquals(1, result.length());
+
+            Pair<Map<SDVariable, DifferentialFunction>, List<DifferentialFunction>> p = sd.execBackwards();
+        }
+    }
+
+    @Test
     public void testSameDiffLossVsDl4j() {
 
         for (int minibatch : new int[]{5, 1}) {
