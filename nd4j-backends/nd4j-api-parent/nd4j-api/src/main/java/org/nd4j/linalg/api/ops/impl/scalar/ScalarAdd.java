@@ -83,7 +83,6 @@ public class ScalarAdd extends BaseScalarOp {
         return "RealAdd";
     }
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable g = i_v1.get(0);
