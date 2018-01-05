@@ -1,29 +1,40 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.*;
+import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.transforms.Pow;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import java.util.Arrays;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class TestGraphNodes {
 
@@ -264,6 +275,105 @@ public class TestGraphNodes {
     }
 
     @Test
+    public void testStackVertexEmbedding() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new StackVertex(null, "", -1);
+
+        INDArray in1 = Nd4j.zeros(5, 1);
+        INDArray in2 = Nd4j.zeros(5, 1);
+        for (int i = 0; i < 5; i++) {
+            in1.putScalar(i, 0, i);
+            in2.putScalar(i, 0, i);
+        }
+
+        INDArray l = Nd4j.rand(5, 5);
+        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[] {in1, in2}, new INDArray[] {l, l},
+                        null, null);
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in1", "in2")
+                        .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
+                        .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
+                        .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                        .addVertex("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 2), "1")
+                        .addLayer("out1", new OutputLayer.Builder().activation(Activation.TANH)
+                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
+                        .addLayer("out2", new OutputLayer.Builder().activation(Activation.TANH)
+                                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2")
+                        .setOutputs("out1", "out2").build();
+
+        ComputationGraph g = new ComputationGraph(conf);
+        g.init();
+
+        g.feedForward(new INDArray[] {in1, in2}, false);
+
+        g.fit(ds);
+
+    }
+
+    @Test
+    public void testStackUnstackNodeVariableLength() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex stack = new StackVertex(null, "", -1);
+
+        //Test stack with variable length + mask arrays
+        INDArray in0 = Nd4j.rand(new int[] {5, 2, 5});
+        INDArray in1 = Nd4j.rand(new int[] {5, 2, 6});
+        INDArray in2 = Nd4j.rand(new int[] {5, 2, 7});
+
+        INDArray mask0 = Nd4j.ones(5, 5);
+        INDArray mask1 = Nd4j.ones(5, 6);
+        INDArray mask2 = Nd4j.ones(5, 7);
+
+        stack.setInputs(in0, in1, in2);
+        Pair<INDArray, MaskState> p =
+                        stack.feedForwardMaskArrays(new INDArray[] {mask0, mask1, mask2}, MaskState.Active, 5);
+        assertArrayEquals(new int[] {15, 7}, p.getFirst().shape());
+        assertEquals(MaskState.Active, p.getSecond());
+
+        INDArray out = stack.doForward(false);
+        assertEquals(in0, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
+        assertEquals(in1, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
+        assertEquals(in2, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
+
+        stack.setEpsilon(out);
+        Pair<Gradient, INDArray[]> b = stack.doBackward(false);
+
+        assertEquals(in0, b.getSecond()[0]);
+        assertEquals(in1, b.getSecond()[1]);
+        assertEquals(in2, b.getSecond()[2]);
+
+        //Test unstack with variable length + mask arrays
+        //Note that we don't actually need changes here - unstack has a single input, and the unstacked mask
+        //might be a bit longer than we really need, but it'll still be correct
+        GraphVertex unstack0 = new UnstackVertex(null, "u0", 0, 0, 3);
+        GraphVertex unstack1 = new UnstackVertex(null, "u1", 0, 1, 3);
+        GraphVertex unstack2 = new UnstackVertex(null, "u2", 0, 2, 3);
+
+        unstack0.setInputs(out);
+        unstack1.setInputs(out);
+        unstack2.setInputs(out);
+        INDArray f0 = unstack0.doForward(true);
+        INDArray f1 = unstack1.doForward(true);
+        INDArray f2 = unstack2.doForward(true);
+
+        assertEquals(in0, f0.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
+        assertEquals(in1, f1.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
+        assertEquals(in2, f2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
+
+        Pair<INDArray, MaskState> p0 =
+                        unstack0.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+        Pair<INDArray, MaskState> p1 =
+                        unstack1.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+        Pair<INDArray, MaskState> p2 =
+                        unstack2.feedForwardMaskArrays(new INDArray[] {p.getFirst()}, MaskState.Active, 5);
+
+        assertEquals(mask0, p0.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
+        assertEquals(mask1, p1.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
+        assertEquals(mask2, p2.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
+    }
+
+    @Test
     public void testUnstackNode() {
         Nd4j.getRandom().setSeed(12345);
         GraphVertex unstack0 = new UnstackVertex(null, "", -1, 0, 3);
@@ -387,6 +497,24 @@ public class TestGraphNodes {
     }
 
     @Test
+    public void testReshapeNode() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, 'c', new int[] {-1, 736}, null);
+
+        int[] inputShape = new int[] {1, 1, 1, 736};
+        INDArray input = Nd4j.create(inputShape);
+
+        reshapeVertex.setInputs(input);
+        INDArray out = reshapeVertex.doForward(false);
+
+        assertArrayEquals(new int[] {1, 736}, out.shape());
+
+        reshapeVertex.setEpsilon(out);
+        INDArray[] backward = reshapeVertex.doBackward(false).getSecond();
+        assert (Arrays.equals(backward[0].shape(), inputShape));
+    }
+
+    @Test
     public void testJSON() {
         //The config here is non-sense, but that doesn't matter for config -> json -> config test
         ComputationGraphConfiguration conf =
@@ -406,5 +534,57 @@ public class TestGraphNodes {
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
         assertEquals(conf, conf2);
+    }
+
+
+    @Test
+    public void testLastTimeStepWithTransfer(){
+        int lstmLayerSize = 16;
+        int numLabelClasses = 10;
+        int numInputs = 5;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .trainingWorkspaceMode(WorkspaceMode.NONE)
+                .inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .seed(123)    //Random number generator seed for improved repeatability. Optional.
+                .updater(new AdaDelta())
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("rr")
+                .setInputTypes(InputType.recurrent(30))
+                .addLayer("1", new GravesLSTM.Builder().activation(Activation.TANH).nIn(numInputs).nOut(lstmLayerSize).dropOut(0.9).build(), "rr")
+                .addLayer("2", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nOut(numLabelClasses).build(), "1")
+                .pretrain(false).backprop(true)
+                .setOutputs("2")
+                .build();
+
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        ComputationGraph updatedModel = new TransferLearning.GraphBuilder(net)
+                .addVertex("laststepoutput", new LastTimeStepVertex("rr"), "2")
+                .setOutputs("laststepoutput")
+                .build();
+
+
+        INDArray input = Nd4j.rand(new int[]{10, numInputs, 16});
+
+        INDArray[] out = updatedModel.output(input);
+
+        assertNotNull(out);
+        assertEquals(1, out.length);
+        assertNotNull(out[0]);
+
+        assertArrayEquals(new int[]{10, numLabelClasses}, out[0].shape());
+
+        Map<String,INDArray> acts = updatedModel.feedForward(input, false);
+
+        assertEquals(4, acts.size());   //2 layers + input + vertex output
+        assertNotNull(acts.get("laststepoutput"));
+        assertArrayEquals(new int[]{10, numLabelClasses}, acts.get("laststepoutput").shape());
+
+        String toString = out[0].toString();
     }
 }

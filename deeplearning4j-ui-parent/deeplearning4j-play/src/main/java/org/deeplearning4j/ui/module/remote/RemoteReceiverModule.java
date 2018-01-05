@@ -7,14 +7,13 @@ import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
-import org.nd4j.shade.jackson.core.type.TypeReference;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
 
 import javax.xml.bind.DatatypeConverter;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static play.mvc.Http.Context.Implicit.request;

@@ -24,7 +24,7 @@ import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -210,10 +210,10 @@ public class MathUtils {
         Counter<String> counter2 = new Counter<>();
 
         for (int i = 0; i < strings[0].length(); i++)
-            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0);
+            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0f);
 
         for (int i = 0; i < strings[1].length(); i++)
-            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0);
+            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0f);
         Set<String> v1 = counter.keySet();
         Set<String> v2 = counter2.keySet();
 
@@ -602,7 +602,9 @@ public class MathUtils {
      * @param arr the data applyTransformToDestination to pass in
      * @param chunk the number to separate by
      * @return a partition data applyTransformToDestination relative to the passed in chunk number
+     * @deprecated not thread-safe, unused, see https://github.com/deeplearning4j/deeplearning4j/issues/3797
      */
+    @Deprecated
     public static List<List<Double>> partitionVariable(List<Double> arr, int chunk) {
         int count = 0;
         List<List<Double>> ret = new ArrayList<>();

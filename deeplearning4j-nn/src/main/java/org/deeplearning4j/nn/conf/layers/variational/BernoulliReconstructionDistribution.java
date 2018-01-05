@@ -8,6 +8,7 @@ import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldLessThan;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -134,7 +135,7 @@ public class BernoulliReconstructionDistribution implements ReconstructionDistri
 
         INDArray out = Nd4j.createUninitialized(p.shape());
 
-        Nd4j.getExecutioner().execAndReturn(new LessThan(rand, p, out, p.length()));
+        Nd4j.getExecutioner().execAndReturn(new OldLessThan(rand, p, out, p.length()));
         return out;
     }
 

@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
-import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.movingwindow.Util;
 import org.deeplearning4j.util.Index;
 import org.deeplearning4j.util.SerializationUtils;
+import org.nd4j.linalg.primitives.Counter;
 
 import java.io.File;
 import java.io.InputStream;
@@ -240,7 +240,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
         if (!tokens.containsKey(word)) {
             VocabWord token = new VocabWord(1.0, word);
             tokens.put(word, token);
-            wordFrequencies.incrementCount(word, 1.0);
+            wordFrequencies.incrementCount(word, (float) 1.0);
         }
 
         /*
@@ -253,7 +253,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
             vw.setIndex(index);
         }
 
-        if (!wordFrequencies.containsKey(word))
+        if (!wordFrequencies.containsElement(word))
             wordFrequencies.incrementCount(word, 1);
 
         wordIndex.add(word, index);
@@ -357,11 +357,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     public void importVocabulary(VocabCache<VocabWord> vocabCache) {
         for (VocabWord word : vocabCache.vocabWords()) {
             if (vocabs.containsKey(word.getLabel())) {
-                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+                wordFrequencies.incrementCount(word.getLabel(), (float) word.getElementFrequency());
             } else {
                 tokens.put(word.getLabel(), word);
                 vocabs.put(word.getLabel(), word);
-                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+                wordFrequencies.incrementCount(word.getLabel(), (float) word.getElementFrequency());
             }
             totalWordOccurrences.addAndGet((long) word.getElementFrequency());
         }

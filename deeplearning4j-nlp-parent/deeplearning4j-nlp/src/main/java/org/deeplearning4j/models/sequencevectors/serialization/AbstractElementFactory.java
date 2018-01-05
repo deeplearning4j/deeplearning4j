@@ -1,9 +1,9 @@
 package org.deeplearning4j.models.sequencevectors.serialization;
 
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

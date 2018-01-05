@@ -23,11 +23,11 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>
     <properties>
-        <hdf5.version>1.10.0-patch1</hdf5.version>
+        <hdf5.version>1.10.1</hdf5.version>
     </properties>
     <build>
         <pluginManagement>

@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.nn.conf.distribution;
 
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.deeplearning4j.nn.conf.distribution.serde.LegacyDistributionHelper;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -27,11 +27,8 @@ import java.io.Serializable;
  * An abstract distribution.
  *
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = BinomialDistribution.class, name = "binomial"),
-                @JsonSubTypes.Type(value = NormalDistribution.class, name = "normal"),
-                @JsonSubTypes.Type(value = GaussianDistribution.class, name = "gaussian"),
-                @JsonSubTypes.Type(value = UniformDistribution.class, name = "uniform"),})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type",
+                defaultImpl = LegacyDistributionHelper.class)
 public abstract class Distribution implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 5401741214954998498L;

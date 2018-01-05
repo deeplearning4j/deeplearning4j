@@ -19,7 +19,6 @@
 package org.deeplearning4j.nn.layers;
 
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,6 +28,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -94,13 +94,25 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
 
     protected Gradient createGradient(INDArray wGradient, INDArray vBiasGradient, INDArray hBiasGradient) {
-        Gradient ret = new DefaultGradient();
-        // The order of the following statements matters!! The gradient is being flattened and applied to
+        Gradient ret = new DefaultGradient(gradientsFlattened);
+        // The order of the following statements matter! The gradient is being flattened and applied to
         // flattened params in this order.
-        // The order might need to be handled via ordering
-        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY, wGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY, hBiasGradient);
-        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+        // The arrays neeed to be views, with the current Updater implementation
+
+        //TODO: optimize this, to do it would the assigns
+        INDArray wg = gradientViews.get(PretrainParamInitializer.WEIGHT_KEY);
+        wg.assign(wGradient);
+
+        INDArray hbg = gradientViews.get(PretrainParamInitializer.BIAS_KEY);
+        hbg.assign(hBiasGradient);
+
+        INDArray vbg = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
+        vbg.assign(vBiasGradient);
+
+        ret.gradientForVariable().put(PretrainParamInitializer.WEIGHT_KEY, wg);
+        ret.gradientForVariable().put(PretrainParamInitializer.BIAS_KEY, hbg);
+        ret.gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
+
         return ret;
     }
 
@@ -126,7 +138,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     protected void setScoreWithZ(INDArray z) {
         if (input == null || z == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
@@ -182,7 +194,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
 
         if (params.length() != paramLength) {
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength);
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength
+                            + ", got params of length " + params.length() + " " + layerId());
         }
 
         // Set for backprop and only W & hb
@@ -192,16 +205,22 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         Pair<Gradient, INDArray> result = super.backpropGradient(epsilon);
+        ((DefaultGradient) result.getFirst()).setFlattenedGradient(gradientsFlattened);
+
+        //During backprop, visible bias gradients are set to 0 - this is necessary due to the gradient view mechanics
+        // that DL4J uses
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         result.getFirst().gradientForVariable().put(PretrainParamInitializer.VISIBLE_BIAS_KEY, vBiasGradient);
+        vBiasGradient.assign(0);
+
+        weightNoiseParams.clear();
+
         return result;
     }
 
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
         double l2Sum = super.calcL2(true);
         if (backpropParamsOnly)
             return l2Sum;
@@ -214,8 +233,6 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
         double l1Sum = super.calcL1(true);
         if (conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY) > 0) {
             l1Sum += conf.getL1ByParam(PretrainParamInitializer.VISIBLE_BIAS_KEY)

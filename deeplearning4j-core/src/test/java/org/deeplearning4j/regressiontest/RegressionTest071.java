@@ -1,7 +1,11 @@
 package org.deeplearning4j.regressiontest;
 
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -14,6 +18,8 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
@@ -52,24 +58,22 @@ public class RegressionTest071 {
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.XAVIER, l0.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l0.getUpdater());
-        assertEquals(0.9, l0.getMomentum(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(new Nesterovs(0.15, 0.9), l0.getIUpdater());
+        assertEquals(0.15, ((Nesterovs)l0.getIUpdater()).getLearningRate(), 1e-6);
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertEquals("softmax", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.XAVIER, l1.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l1.getUpdater());
-        assertEquals(0.9, l1.getMomentum(), 1e-6);
-        assertEquals(0.15, l1.getLearningRate(), 1e-6);
+        assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
+        assertEquals(0.9, ((Nesterovs)l1.getIUpdater()).getMomentum(), 1e-6);
+        assertEquals(0.15, ((Nesterovs)l1.getIUpdater()).getLearningRate(), 1e-6);
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = net.getUpdater().stateSizeForLayer(net);
+        int updaterSize = (int) new Nesterovs().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -93,10 +97,9 @@ public class RegressionTest071 {
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
-        assertEquals(0.6, l0.getDropOut(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
+        assertEquals(new Dropout(0.6), l0.getIDropout());
         assertEquals(0.1, l0.getL1(), 1e-6);
         assertEquals(0.2, l0.getL2(), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
@@ -104,16 +107,14 @@ public class RegressionTest071 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertTrue(l1.getActivationFn() instanceof ActivationIdentity);
-        assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l1.getRmsDecay(), 1e-6);
-        assertEquals(0.15, l1.getLearningRate(), 1e-6);
-        assertEquals(0.6, l1.getDropOut(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l1.getIUpdater());
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
+        assertEquals(new Dropout(0.6), l1.getIDropout());
         assertEquals(0.1, l1.getL1(), 1e-6);
         assertEquals(0.2, l1.getL2(), 1e-6);
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
@@ -121,7 +122,7 @@ public class RegressionTest071 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = net.getUpdater().stateSizeForLayer(net);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -144,9 +145,8 @@ public class RegressionTest071 {
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
@@ -160,21 +160,19 @@ public class RegressionTest071 {
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Same);
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
-        assertEquals("sigmoid", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
+        assertEquals("sigmoid", l2.getActivationFn().toString());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(new RmsProp(0.15, 0.96, RmsProp.DEFAULT_RMSPROP_EPSILON), l0.getIUpdater());
+        assertEquals(0.15, ((RmsProp)l0.getIUpdater()).getLearningRate(), 1e-6);
 
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = net.getUpdater().stateSizeForLayer(net);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 

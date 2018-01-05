@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.deeplearning4j.berkeley.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -17,13 +18,13 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Batch normalization layer.
@@ -36,8 +37,8 @@ import java.util.List;
  *
  * ideal to apply this between linear and non-linear transformations in layers it follows
  **/
+@Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
-    protected static final Logger log = LoggerFactory.getLogger(BatchNormalization.class);
 
     BatchNormalizationHelper helper = null;
     protected int index = 0;
@@ -55,10 +56,20 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
                             .asSubclass(BatchNormalizationHelper.class).newInstance();
-            log.debug("CudnnBatchNormalizationHelper successfully loaded");
+            log.debug("CudnnBatchNormalizationHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getEps())) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnBatchNormalizationHelper", t);
+                log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    OneTimeLogger.info(log, "cuDNN not found: "
+                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }
@@ -76,16 +87,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public Type type() {
         return Type.NORMALIZATION;
-    }
-
-    @Override
-    public Gradient error(INDArray input) {
-        return null;
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return null;
     }
 
     @Override
@@ -210,15 +211,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported.");
+                            "The layer prior to BatchNorm in the configuration is not currently supported. "
+                                            + layerId());
         }
 
         return new Pair<>(retGradient, nextEpsilon);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -268,8 +265,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     var = x.var(false, 0, 2, 3);
                     break;
                 default:
-                    throw new IllegalStateException(
-                                    "Batch normalization on activations of rank " + x.rank() + " not supported");
+                    throw new IllegalStateException("Batch normalization on activations of rank " + x.rank()
+                                    + " not supported " + layerId());
             }
 
 
@@ -297,7 +294,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
         }
 
-        if (helper != null && input.rank() != 4) {
+        if (helper != null && input.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
             INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
@@ -330,10 +327,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else if (x.rank() == 4) {
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-            xMu = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
-            xHat = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
+            xMu = Nd4j.getExecutioner()
+                            .execAndReturn(new BroadcastSubOp(x, mean,
+                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
+                            .leverageTo(ComputationGraph.workspaceExternal);
+            xHat = Nd4j.getExecutioner()
+                            .execAndReturn(new BroadcastDivOp(xMu, std,
+                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
+                            .leverageTo(ComputationGraph.workspaceExternal);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -356,7 +357,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported.");
+                            "The layer prior to BatchNorm in the configuration is not currently supported. "
+                                            + layerId());
         }
 
         // store mean and var if using batch mean while training
@@ -394,7 +396,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -409,13 +411,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
 
     }
 
     @Override
     public Layer clone() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
 
     }
 
@@ -451,10 +453,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             int wDim = x.size(1);
             int hdim = x.size(2);
             if (x.size(0) > 1 && wDim * hdim == x.length())
-                throw new IllegalArgumentException("Illegal input for batch size");
+                throw new IllegalArgumentException("Illegal input for batch size " + layerId());
             return new int[] {1, wDim * hdim};
         } else
-            throw new IllegalStateException("Unable to process input of rank " + x.rank());
+            throw new IllegalStateException("Unable to process input of rank " + x.rank() + " " + layerId());
     }
 
 }

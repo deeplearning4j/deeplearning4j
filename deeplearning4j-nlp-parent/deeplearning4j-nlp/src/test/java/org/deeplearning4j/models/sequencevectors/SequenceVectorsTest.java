@@ -12,6 +12,7 @@ import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
@@ -21,8 +22,10 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.impl.PopularityWalker;
+import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
+import org.deeplearning4j.models.sequencevectors.serialization.AbstractElementFactory;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.GraphTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -186,6 +189,13 @@ public class SequenceVectorsTest {
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
+
+        SequenceElementFactory<VocabWord> factory = new AbstractElementFactory<VocabWord>(VocabWord.class);
+        WordVectorSerializer.writeSequenceVectors(vectors, factory, "seqvec.mod");
+
+        SequenceVectors<VocabWord> model = WordVectorSerializer.readSequenceVectors(factory, new File("seqvec.mod"));
+        sim = model.similarity("day", "night");
+        logger.info("day/night similarity: " + sim);
     }
 
     @Test
@@ -425,7 +435,7 @@ public class SequenceVectorsTest {
     private static Graph<Blogger, Double> buildGraph() throws IOException, InterruptedException {
         File nodes = new File("/ext/Temp/BlogCatalog/nodes.csv");
 
-        CSVRecordReader reader = new CSVRecordReader(0, ",");
+        CSVRecordReader reader = new CSVRecordReader(0, ',');
         reader.initialize(new FileSplit(nodes));
 
         List<Blogger> bloggers = new ArrayList<>();
@@ -444,7 +454,7 @@ public class SequenceVectorsTest {
         // load edges
         File edges = new File("/ext/Temp/BlogCatalog/edges.csv");
 
-        reader = new CSVRecordReader(0, ",");
+        reader = new CSVRecordReader(0, ',');
         reader.initialize(new FileSplit(edges));
 
         while (reader.hasNext()) {

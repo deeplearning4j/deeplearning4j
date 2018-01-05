@@ -5,7 +5,6 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
@@ -53,8 +52,7 @@ public class ParameterAveragingElementCombineFunction implements
                 stats.addOtherTrainingStats(v2.getSparkTrainingStats());
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> listenerMetaData = v1.getListenerMetaData();
         if (listenerMetaData == null)

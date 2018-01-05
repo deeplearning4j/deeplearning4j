@@ -1,10 +1,14 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -20,12 +24,19 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class ZeroPaddingLayer extends Layer {
 
     private int[] padding;
 
     private ZeroPaddingLayer(Builder builder) {
         super(builder);
+        if(builder.padding == null || builder.padding.length != 4){
+            throw new IllegalArgumentException("Invalid padding values: must have exactly 4 values [top, bottom, left, right]." +
+                    " Got: " + (builder.padding == null ? null : Arrays.toString(builder.padding)));
+        }
+
         this.padding = builder.padding;
     }
 
@@ -101,8 +112,20 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        return learningRate;
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
+                        .standardMemory(0, 0) //No params
+                        //Inference and training is same - just output activations, no working memory in addition to that
+                        .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {
@@ -123,6 +146,11 @@ public class ZeroPaddingLayer extends Layer {
         }
 
         public Builder(int[] padding) {
+            if(padding.length == 2){
+                padding = new int[]{padding[0], padding[0], padding[1], padding[1]};
+            } else if(padding.length != 4){
+                throw new IllegalArgumentException("Padding must have exactly 2 or 4 values - got " + Arrays.toString(padding));
+            }
             this.padding = padding;
         }
 

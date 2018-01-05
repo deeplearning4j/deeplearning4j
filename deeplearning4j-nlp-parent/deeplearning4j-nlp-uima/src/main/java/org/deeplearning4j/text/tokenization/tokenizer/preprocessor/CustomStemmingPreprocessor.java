@@ -5,9 +5,11 @@ import org.tartarus.snowball.SnowballProgram;
 
 /**
  * This is StemmingPreprocessor compatible with different StemmingProcessors defined as lucene/tartarus SnowballProgram
- * Like, but not limited to: RussianStemmer, DutchStemmer, FrenchStemmer etc
- *
- * PLEASE NOTE: This preprocessor is thread-safe by using synchronized method
+ * such as: RussianStemmer, DutchStemmer, FrenchStemmer etc.
+ * <br>
+ * Note that CommonPreprocessor#preProcess(String) is first applied (i.e. punctuation marks are removed and and lower-cased), then the stemmer is applied.
+ * <br>
+ * This preprocessor is synchronized, thus thread-safe.
  *
  * @author raver119@gmail.com
  */

@@ -18,14 +18,16 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
@@ -41,6 +43,7 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = SubsetVertex.class, name = "SubsetVertex"),
                 @JsonSubTypes.Type(value = LayerVertex.class, name = "LayerVertex"),
                 @JsonSubTypes.Type(value = LastTimeStepVertex.class, name = "LastTimeStepVertex"),
+                @JsonSubTypes.Type(value = ReverseTimeSeriesVertex.class, name = "ReverseTimeSeriesVertex"),
                 @JsonSubTypes.Type(value = DuplicateToTimeSeriesVertex.class, name = "DuplicateToTimeSeriesVertex"),
                 @JsonSubTypes.Type(value = PreprocessorVertex.class, name = "PreprocessorVertex"),
                 @JsonSubTypes.Type(value = StackVertex.class, name = "StackVertex"),
@@ -60,6 +63,16 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     public abstract int hashCode();
 
     public abstract int numParams(boolean backprop);
+
+    /**
+     * @return The Smallest valid number of inputs to this vertex
+     */
+    public abstract int minVertexInputs();
+
+    /**
+     * @return The largest valid number of inputs to this vertex
+     */
+    public abstract int maxVertexInputs();
 
     /**
      * Create a {@link org.deeplearning4j.nn.graph.vertex.GraphVertex} instance, for the given computation graph,
@@ -86,5 +99,13 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */
     public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
+
+    /**
+     * This is a report of the estimated memory consumption for the given vertex
+     *
+     * @param inputTypes Input types to the vertex. Memory consumption is often a function of the input type
+     * @return Memory report for the vertex
+     */
+    public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
 }

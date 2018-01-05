@@ -1,15 +1,17 @@
 package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
 import java.util.Map;
@@ -24,25 +26,38 @@ import java.util.Map;
  */
 
 @Slf4j
-public class FrozenLayer<LayerT extends Layer> implements Layer {
+public class FrozenLayer implements Layer {
 
-    private LayerT insideLayer;
+    private Layer insideLayer;
     private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
 
-    public FrozenLayer(LayerT insideLayer) {
+    public FrozenLayer(Layer insideLayer) {
+        this.insideLayer = insideLayer;
         if (insideLayer instanceof OutputLayer) {
-            throw new IllegalArgumentException("Output Layers are not allowed to be frozen");
+            throw new IllegalArgumentException("Output Layers are not allowed to be frozen " + layerId());
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
-        for (String paramType : insideLayer.paramTable().keySet()) {
-            //save memory??
-            zeroGradient.setGradientFor(paramType, null);
+        if (insideLayer.paramTable() != null) {
+            for (String paramType : insideLayer.paramTable().keySet()) {
+                //save memory??
+                zeroGradient.setGradientFor(paramType, null);
+            }
         }
+    }
+
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        // no-op
+    }
+
+    protected String layerId() {
+        String name = insideLayer.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
 
     @Override
@@ -60,39 +75,10 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         return insideLayer.type();
     }
 
-    @Override
-    public Gradient error(INDArray input) {
-        if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
-            logGradient = true;
-        }
-        return zeroGradient;
-    }
-
-    @Override
-    public INDArray derivativeActivation(INDArray input) {
-        return insideLayer.derivativeActivation(input);
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        return zeroGradient;
-    }
-
     //FIXME
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         return new Pair<>(zeroGradient, null);
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        insideLayer.merge(layer, batchSize);
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return insideLayer.activationMean();
     }
 
     @Override
@@ -153,7 +139,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public Layer clone() {
-        log.info("Frozen layers are cloned as their original versions.");
+        OneTimeLogger.info(log, "Frozen layers are cloned as their original versions.");
         return new FrozenLayer(insideLayer.clone());
     }
 
@@ -167,10 +153,20 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         insideLayer.setListeners(listeners);
     }
 
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListeners(IterationListener... listener) {
+        insideLayer.addListeners(listener);
+    }
+
     @Override
     public void fit() {
         if (!logFit) {
-            log.info("Frozen layers cannot be fit. Warning will be issued only once per instance");
+            OneTimeLogger.info(log, "Frozen layers cannot be fit. Warning will be issued only once per instance");
             logFit = true;
         }
         //no op
@@ -179,7 +175,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void update(Gradient gradient) {
         if (!logUpdate) {
-            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
         }
         //no op
@@ -188,7 +184,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (!logUpdate) {
-            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            OneTimeLogger.info(log, "Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
         }
         //no op
@@ -202,7 +198,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void computeGradientAndScore() {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,
+                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         insideLayer.score();
@@ -240,23 +237,24 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return insideLayer.getGradientsViewArray();
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,
+                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         //no-op
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        insideLayer.applyLearningRateScoreDecay();
-    }
-
-    @Override
     public void fit(INDArray data) {
         if (!logFit) {
-            log.info("Frozen layers cannot be fit.Warning will be issued only once per instance");
+            OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
             logFit = true;
         }
     }
@@ -276,7 +274,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,
+                            "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         return new Pair<>(zeroGradient, insideLayer.score());
@@ -347,6 +346,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         insideLayer.clear();
     }
 
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        //No-op
+    }
+
     /**
      * Init the model
      */
@@ -368,6 +372,26 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public int getIndex() {
         return insideLayer.getIndex();
+    }
+
+    @Override
+    public int getIterationCount() {
+        return insideLayer.getIterationCount();
+    }
+
+    @Override
+    public int getEpochCount() {
+        return insideLayer.getEpochCount();
+    }
+
+    @Override
+    public void setIterationCount(int iterationCount) {
+        insideLayer.setIterationCount(iterationCount);
+    }
+
+    @Override
+    public void setEpochCount(int epochCount) {
+        insideLayer.setEpochCount(epochCount);
     }
 
     @Override
@@ -401,6 +425,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     }
 
     @Override
+    public void clearNoiseWeightParams() {
+        insideLayer.clearNoiseWeightParams();
+    }
+
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
         return insideLayer.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
@@ -412,7 +441,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         if (logTestMode) {
             return;
         } else {
-            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            OneTimeLogger.info(log,
+                            "Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }
     }
@@ -423,12 +453,13 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         if (logTestMode) {
             return;
         } else {
-            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            OneTimeLogger.info(log,
+                            "Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }
     }
 
-    public LayerT getInsideLayer() {
+    public Layer getInsideLayer() {
         return insideLayer;
     }
 }

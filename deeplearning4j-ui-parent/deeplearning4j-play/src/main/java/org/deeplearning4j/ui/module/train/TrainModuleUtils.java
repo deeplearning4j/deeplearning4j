@@ -11,12 +11,8 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
-import org.deeplearning4j.ui.flow.beans.Description;
-import org.deeplearning4j.ui.flow.beans.LayerInfo;
-import org.deeplearning4j.ui.flow.beans.ModelInfo;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  *
@@ -205,7 +201,7 @@ public class TrainModuleUtils {
 
                 Map<String, String> decoderInfo = new LinkedHashMap<>();
                 inputSize = (i == 0 ? va.getNOut() : decLayerSizes[i - 1]);
-                outputSize = encLayerSizes[i];
+                outputSize = decLayerSizes[i];
                 decoderInfo.put("Input Size", String.valueOf(inputSize));
                 decoderInfo.put("Layer Size", String.valueOf(outputSize));
                 decoderInfo.put("Num Parameters", String.valueOf((inputSize + 1) * outputSize));
@@ -230,7 +226,7 @@ public class TrainModuleUtils {
 
 
         } else {
-            //RBM or similar...
+            //VAE or similar...
             Layer layer = config.getLayer();
             String layerName = layer.getLayerName();
             if (layerName == null)

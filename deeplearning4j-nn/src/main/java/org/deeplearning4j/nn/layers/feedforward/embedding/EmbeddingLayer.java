@@ -19,7 +19,8 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -28,8 +29,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Arrays;
+import org.nd4j.linalg.primitives.Pair;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
@@ -43,6 +43,8 @@ import java.util.Arrays;
  */
 @Slf4j
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
+    private static final int[] DIM_1 = new int[]{1};
+
     public EmbeddingLayer(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -52,33 +54,31 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
-        //        INDArray delta = epsilon.muli(activationDerivative);
-        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
         int[] indexes = new int[input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
-
-            weightGradients.getRow(indexes[i]).addi(delta.getRow(i));
         }
 
-        INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        INDArray biasGradients = delta.sum(0);
-        biasGradientsView.assign(biasGradients); //TODO do this without the assign...
+        ScatterUpdate op = new ScatterUpdate(weightGradients, delta, indexes, DIM_1, ScatterUpdate.UpdateOp.ADD);
+        Nd4j.getExecutioner().exec(op);
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
-        ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+
+        if(hasBias()) {
+            INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
+            delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
+            ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradientsView);
+        }
 
         return new Pair<>(ret, null); //Don't bother returning epsilons: no layer below this one...
     }
@@ -89,7 +89,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
                             "Cannot do forward pass for embedding layer with input more than one column. "
-                                            + "Expected input shape: [numExamples,1] with each entry being an integer index");
+                                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                                            + layerId());
         }
 
         int[] indexes = new int[input.length()];
@@ -99,15 +100,10 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        //INDArray rows = weights.getRows(indexes);
-        /*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
-        
-        for( int i=0; i<indexes.length; i++ ){
-            rows.putRow(i,weights.getRow(indexes[i]));
-        }
-        */
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
-        rows.addiRowVector(bias);
+        if(hasBias()){
+            rows.addiRowVector(bias);
+        }
 
         return rows;
     }
@@ -117,11 +113,16 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray rows = preOutput(training);
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(rows, training);
+        INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }
         return ret;
+    }
+
+    @Override
+    public boolean hasBias() {
+        return layerConf().hasBias();
     }
 
     @Override
@@ -131,7 +132,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     protected void applyDropOutIfNecessary(boolean training) {
-        throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer");
+        throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer " + layerId());
     }
 
 }

@@ -23,7 +23,7 @@ set -e
 
 VALID_VERSIONS=( 1 2 )
 SPARK_2_VERSION="2\.1\.0"
-SPARK_1_VERSION="1\.6\.2"
+SPARK_1_VERSION="1\.6\.3"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <spark version to be used>
@@ -75,7 +75,7 @@ BASEDIR=$(dirname $0)
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(spark.major.version>\)'$FROM_BINARY'<\/spark.major.version>/\1'$TO_BINARY'<\/spark.major.version>/g' {}" \;
 
-# <spark.version>1.6.2</spark.version>
+# <spark.version>1.6.3</spark.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(spark.version>\)'$FROM_VERSION'<\/spark.version>/\1'$TO_VERSION'<\/spark.version>/g' {}" \;
 

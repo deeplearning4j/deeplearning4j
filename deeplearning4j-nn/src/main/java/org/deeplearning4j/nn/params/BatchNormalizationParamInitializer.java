@@ -3,12 +3,11 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Batch normalization variable init
@@ -27,10 +26,18 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
     public static final String GLOBAL_MEAN = "mean";
     public static final String GLOBAL_VAR = "var";
 
+    public static List<String> keys() {
+        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
+    }
+
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        return numParams(conf.getLayer());
+    }
 
+    @Override
+    public int numParams(Layer l) {
+        BatchNormalization layer = (BatchNormalization) l;
         //Parameters in batch norm:
         //gamma, beta, global mean estimate, global variance estimate
         // latter 2 are treated as parameters, which greatly simplifies spark training and model serialization
@@ -42,6 +49,31 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
             //Standard case: gamma and beta are learned per output; additional 2*nOut for global mean/variance estimate
             return 4 * layer.getNOut();
         }
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        return Arrays.asList(GAMMA, BETA, GLOBAL_MEAN, GLOBAL_VAR);
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public boolean isWeightParam(Layer layer, String key) {
+        return false;
+    }
+
+    @Override
+    public boolean isBiasParam(Layer layer, String key) {
+        return false;
     }
 
     @Override

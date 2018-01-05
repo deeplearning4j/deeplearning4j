@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,9 +29,7 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Static weight initializer with just a weight matrix and a bias
@@ -49,11 +48,49 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf =
-                        (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        return numParams(conf.getLayer());
+    }
+
+    @Override
+    public int numParams(Layer l) {
+        FeedForwardLayer layerConf = (FeedForwardLayer) l;
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
-        return nIn * nOut + nOut; //weights + bias
+        return nIn * nOut + (hasBias(l) ? nOut : 0); //weights + bias
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        if(hasBias(layer)){
+            return Arrays.asList(WEIGHT_KEY, BIAS_KEY);
+        } else {
+            return weightKeys(layer);
+        }
+
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Collections.singletonList(WEIGHT_KEY);
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        if(hasBias(layer)){
+            return Collections.singletonList(BIAS_KEY);
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    public boolean isWeightParam(Layer layer, String key) {
+        return WEIGHT_KEY.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(Layer layer, String key) {
+        return BIAS_KEY.equals(key);
     }
 
     @Override
@@ -75,14 +112,17 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         int nWeightParams = nIn * nOut;
         INDArray weightView = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams));
-        INDArray biasView = paramsView.get(NDArrayIndex.point(0),
-                        NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
-
 
         params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
-        params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
         conf.addVariable(WEIGHT_KEY);
-        conf.addVariable(BIAS_KEY);
+
+
+        if(hasBias(layerConf)){
+            INDArray biasView = paramsView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(nWeightParams, nWeightParams + nOut));
+            params.put(BIAS_KEY, createBias(conf, biasView, initializeParams));
+            conf.addVariable(BIAS_KEY);
+        }
 
         return params;
     }
@@ -97,12 +137,15 @@ public class DefaultParamInitializer implements ParamInitializer {
 
         INDArray weightGradientView = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nWeightParams))
                         .reshape('f', nIn, nOut);
-        INDArray biasView = gradientView.get(NDArrayIndex.point(0),
-                        NDArrayIndex.interval(nWeightParams, nWeightParams + nOut)); //Already a row vector
 
         Map<String, INDArray> out = new LinkedHashMap<>();
         out.put(WEIGHT_KEY, weightGradientView);
-        out.put(BIAS_KEY, biasView);
+
+        if(hasBias(layerConf)){
+            INDArray biasView = gradientView.get(NDArrayIndex.point(0),
+                    NDArrayIndex.interval(nWeightParams, nWeightParams + nOut)); //Already a row vector
+            out.put(BIAS_KEY, biasView);
+        }
 
         return out;
     }
@@ -149,5 +192,16 @@ public class DefaultParamInitializer implements ParamInitializer {
         } else {
             return WeightInitUtil.reshapeWeights(shape, weightParamView);
         }
+    }
+
+    protected boolean hasBias(Layer layer){
+        if(layer instanceof BaseOutputLayer ) {
+            return ((BaseOutputLayer) layer).hasBias();
+        } else if(layer instanceof DenseLayer){
+            return ((DenseLayer)layer).hasBias();
+        } else if(layer instanceof EmbeddingLayer){
+            return ((EmbeddingLayer)layer).hasBias();
+        }
+        return true;
     }
 }

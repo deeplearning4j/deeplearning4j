@@ -3,8 +3,6 @@ package org.deeplearning4j.spark.models.sequencevectors.functions;
 import lombok.NonNull;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;

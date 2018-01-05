@@ -4,11 +4,11 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
 import org.deeplearning4j.models.embeddings.learning.SequenceLearningAlgorithm;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DM;
@@ -28,10 +28,8 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.*;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +68,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     protected transient boolean configured = false;
 
     protected boolean enableScavenger = false;
+    protected int vocabLimit = 0;
 
 
     @Setter
@@ -78,6 +77,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
     @Override
     public String getUNK() {
         return configuration.getUNK();
+    }
+
+    @Override
+    public void setUNK(String UNK) {
+        configuration.setUNK(UNK);
+        super.setUNK(UNK);
     }
 
     public double getElementsScore() {
@@ -105,7 +110,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
         VocabConstructor<T> constructor = new VocabConstructor.Builder<T>().addSource(iterator, minWordFrequency)
                         .setTargetVocabCache(vocab).fetchLabels(trainSequenceVectors).setStopWords(stopWords)
-                        .enableScavenger(enableScavenger)
+                        .enableScavenger(enableScavenger).setEntriesLimit(vocabLimit)
                         .setUnk(useUnknown && unknownElement != null ? unknownElement : null).build();
 
         if (existingModel != null && lookupTable instanceof InMemoryLookupTable
@@ -274,9 +279,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         timeSpent.set(System.currentTimeMillis());
         if (this.stopWords == null)
             this.stopWords = new ArrayList<>();
+
+        final AtomicLong wordsCounter = new AtomicLong(0);
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
             final AtomicLong linesCounter = new AtomicLong(0);
-            final AtomicLong wordsCounter = new AtomicLong(0);
+
 
             AsyncSequencer sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
@@ -287,7 +294,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             final List<VectorCalculationsThread> threads = new ArrayList<>();
             for (int x = 0; x < workers; x++) {
                 threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
-                                linesCounter, sequencer, timer));
+                                linesCounter, sequencer, timer, numEpochs));
                 threads.get(x).start();
             }
 
@@ -317,9 +324,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             && sequenceLearningAlgorithm.isEarlyTerminationHit()) {
                 break;
             }
-            log.info("Epoch: [" + currentEpoch + "]; Words vectorized so far: [" + wordsCounter.get()
-                            + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: ["
-                            + minLearningRate + "]");
+            log.info("Epoch [" + currentEpoch + "] finished; Elements processed so far: [" + wordsCounter.get()
+                            + "];  Sequences processed: [" + linesCounter.get() + "]");
 
             if (eventListeners != null && !eventListeners.isEmpty()) {
                 for (VectorsListener listener : eventListeners) {
@@ -400,6 +406,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         protected String STOP = configuration.getSTOP();
 
         protected boolean enableScavenger = false;
+        protected int vocabLimit;
 
         // defaults values for learning algorithms are set here
         protected ElementsLearningAlgorithm<T> elementsLearningAlgorithm = new SkipGram<>();
@@ -635,6 +642,23 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          */
         public Builder<T> minWordFrequency(int minWordFrequency) {
             this.minWordFrequency = minWordFrequency;
+            return this;
+        }
+
+
+        /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        public Builder limitVocabularySize(int limit) {
+            if (limit < 0)
+                throw new DL4JInvalidConfigException("Vocabulary limit should be non-negative number");
+
+            this.vocabLimit = limit;
             return this;
         }
 
@@ -948,6 +972,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             vectors.useUnknown = this.useUnknown;
             vectors.unknownElement = this.unknownElement;
             vectors.variableWindows = this.variableWindows;
+            vectors.vocabLimit = this.vocabLimit;
 
 
             vectors.trainElementsVectors = this.trainElementsVectors;
@@ -1109,13 +1134,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final AtomicLong nextRandom;
         private final AtomicLong timer;
         private final long startTime;
+        private final int totalEpochs;
 
         /*
                 Long constructors suck, so this should be reduced to something reasonable later
          */
         public VectorCalculationsThread(int threadId, int epoch, AtomicLong wordsCounter, long totalWordsCount,
-                        AtomicLong linesCounter, AsyncSequencer digitizer, AtomicLong timer) {
+                        AtomicLong linesCounter, AsyncSequencer digitizer, AtomicLong timer, int totalEpochs) {
             this.threadId = threadId;
+            this.totalEpochs = totalEpochs;
             this.epochNumber = epoch;
             this.wordsCounter = wordsCounter;
             this.totalWordsCount = totalWordsCount;
@@ -1142,9 +1169,6 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
                     }
-                    /*
-                            TODO: investigate, if fix needed here to become iteration-dependent, not line-position
-                      */
                     double alpha = 0.025;
 
                     if (sequences.isEmpty()) {
@@ -1159,8 +1183,10 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             Sequence<T> sequence = sequences.get(x);
 
                             //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
-                            alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
-                                            / ((double) this.totalWordsCount) / numIterations)));
+                            alpha = Math.max(minLearningRate,
+                                            learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
+                                                            / ((double) this.totalWordsCount) / (numIterations
+                                                                            * totalEpochs))));
 
                             trainSequence(sequence, nextRandom, alpha);
 

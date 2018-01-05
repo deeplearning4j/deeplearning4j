@@ -6,7 +6,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.BaseSparkLearningAlgorithm;
 import org.deeplearning4j.spark.models.sequencevectors.learning.elements.SparkCBOW;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.logic.sequence.BasicSequenceProvider;
 import org.nd4j.parameterserver.distributed.messages.Frame;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;

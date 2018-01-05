@@ -1,13 +1,12 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -23,7 +22,10 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -174,16 +176,16 @@ public class GravesBidirectionalLSTMTest {
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
-                        false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null).fwdPassOutput;
+                        false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true,
+                        null, CacheMode.NONE).fwdPassOutput;
 
         final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
-                        true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
-                        null).fwdPassOutputAsArrays;
+                        true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true, null,
+                        CacheMode.NONE).fwdPassOutputAsArrays;
 
         //I have no idea what the heck this does --Ben
         for (int i = 0; i < timeSeriesLength; i++) {
@@ -256,7 +258,7 @@ public class GravesBidirectionalLSTMTest {
                                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                                         .nIn(nIn).nOut(layerSize).weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new UniformDistribution(-0.1, 0.1))
-                                                        .activation(Activation.TANH).updater(Updater.NONE).build())
+                                                        .activation(Activation.TANH).updater(new NoOp()).build())
                                         .build();
 
         final NeuralNetConfiguration confForwards = new NeuralNetConfiguration.Builder()
@@ -461,8 +463,9 @@ public class GravesBidirectionalLSTMTest {
         final DataSet ds = new DataSet(sig, labels);
 
         final MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
-                        .learningRate(0.1).rmsDecay(0.95).regularization(true).l2(0.001).updater(Updater.ADAGRAD)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new AdaGrad(0.1))
+                        .l2(0.001)
                         .seed(12345).list().pretrain(false)
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
@@ -484,16 +487,9 @@ public class GravesBidirectionalLSTMTest {
         final MultiLayerNetwork net = new MultiLayerNetwork(conf);
 
         final IterationListener scoreSaver = new IterationListener() {
-            @Override
-            public boolean invoked() {
-                return false;
-            }
 
             @Override
-            public void invoke() {}
-
-            @Override
-            public void iterationDone(Model model, int iteration) {
+            public void iterationDone(Model model, int iteration, int epoch) {
                 score = model.score();
             }
         };
@@ -502,7 +498,9 @@ public class GravesBidirectionalLSTMTest {
         double oldScore = Double.POSITIVE_INFINITY;
         net.init();
         for (int iEpoch = 0; iEpoch < 3; iEpoch++) {
-            net.fit(ds);
+            for( int i=0; i<5; i++ ) {
+                net.fit(ds);
+            }
 
             System.out.print(String.format("score is %f%n", score));
 
@@ -522,8 +520,9 @@ public class GravesBidirectionalLSTMTest {
     public void testSerialization() {
 
         final MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(5)
-                        .learningRate(0.1).rmsDecay(0.95).regularization(true).l2(0.001).updater(Updater.ADAGRAD)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new AdaGrad(0.1))
+                        .l2(0.001)
                         .seed(12345).list().pretrain(false)
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                         .activation(Activation.TANH).nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
@@ -552,7 +551,7 @@ public class GravesBidirectionalLSTMTest {
         for (String gateAfn : new String[] {"sigmoid", "hardsigmoid"}) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .seed(12345).list()
                             .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
                                             .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2)

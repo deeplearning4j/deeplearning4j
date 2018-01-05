@@ -53,7 +53,7 @@ public class MovingWindowDataSetFetcher extends BaseDataFetcher {
                             new MovingWindowMatrix(list.get(i).getFeatureMatrix(), windowRows, windowColumns, true)
                                             .windows(true);
             for (int j = 0; j < windows.size(); j++) {
-                flipped.add(new DataSet(windows.get(i), label));
+                flipped.add(new DataSet(windows.get(j), label));
             }
             flipped.add(list.get(i));
         }

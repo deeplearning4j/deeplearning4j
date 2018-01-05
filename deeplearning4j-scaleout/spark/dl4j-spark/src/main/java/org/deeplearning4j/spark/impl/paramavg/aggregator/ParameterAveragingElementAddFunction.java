@@ -6,7 +6,6 @@ import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
@@ -50,8 +49,7 @@ public class ParameterAveragingElementAddFunction implements
                 stats.addOtherTrainingStats(result.getSparkTrainingStats());
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> listenerMetaData = tuple.getListenerMetaData();
         if (listenerMetaData == null)

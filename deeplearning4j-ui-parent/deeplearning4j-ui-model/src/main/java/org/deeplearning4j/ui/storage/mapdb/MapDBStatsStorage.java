@@ -10,8 +10,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * An implementation of the {@link StatsStorage} interface, backed by MapDB (in-memory or file).<br>
@@ -26,6 +28,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
 
     private boolean isClosed = false;
     private DB db;
+    private Lock updateMapLock = new ReentrantLock(true);
 
     private Map<String, Integer> classToInteger; //For storage
     private Map<Integer, String> integerToClass; //For storage
@@ -79,7 +82,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
     }
 
     @Override
-    protected synchronized Map<Long, Persistable> getUpdateMap(String sessionID, String typeID, String workerID,
+    protected Map<Long, Persistable> getUpdateMap(String sessionID, String typeID, String workerID,
                     boolean createIfRequired) {
         SessionTypeWorkerId id = new SessionTypeWorkerId(sessionID, typeID, workerID);
         if (updates.containsKey(id)) {
@@ -90,9 +93,21 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         }
         String compositeKey = COMPOSITE_KEY_HEADER + sessionID + COMPOSITE_KEY_SEPARATOR + typeID
                         + COMPOSITE_KEY_SEPARATOR + workerID;
-        Map<Long, Persistable> updateMap = db.hashMap(compositeKey).keySerializer(Serializer.LONG)
-                        .valueSerializer(new PersistableSerializer<>()).createOrOpen();
-        updates.put(id, updateMap);
+
+        Map<Long, Persistable> updateMap;
+        updateMapLock.lock();
+        try {
+            //Try again, in case another thread created it before lock was acquired in this thread
+            if (updates.containsKey(id)) {
+                return updates.get(id);
+            }
+            updateMap = db.hashMap(compositeKey).keySerializer(Serializer.LONG)
+                            .valueSerializer(new PersistableSerializer<>()).createOrOpen();
+            updates.put(id, updateMap);
+        } finally {
+            updateMapLock.unlock();
+        }
+
         return updateMap;
     }
 
@@ -203,35 +218,8 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
 
     }
 
-    //    @Data
-    //    public static class SessionTypeWorkerId implements Serializable, Comparable<SessionTypeWorkerId> {
-    //        private final String sessionID;
-    //        private final String typeID;
-    //        private final String workerID;
-    //
-    //        public SessionTypeWorkerId(String sessionID, String typeID, String workerID) {
-    //            this.sessionID = sessionID;
-    //            this.typeID = typeID;
-    //            this.workerID = workerID;
-    //        }
-    //
-    //        @Override
-    //        public int compareTo(SessionTypeWorkerId o) {
-    //            int c = sessionID.compareTo(o.sessionID);
-    //            if (c != 0) return c;
-    //            c = typeID.compareTo(o.typeID);
-    //            if (c != 0) return c;
-    //            return workerID.compareTo(workerID);
-    //        }
-    //
-    //        @Override
-    //        public String toString() {
-    //            return "(" + sessionID + "," + typeID + "," + workerID + ")";
-    //        }
-    //    }
 
-
-    private synchronized int getIntForClass(Class<?> c) {
+    private int getIntForClass(Class<?> c) {
         String str = c.getName();
         if (classToInteger.containsKey(str)) {
             return classToInteger.get(str);
@@ -243,31 +231,12 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         return idx;
     }
 
-    private synchronized String getClassForInt(int integer) {
+    private String getClassForInt(int integer) {
         String c = integerToClass.get(integer);
         if (c == null)
             throw new RuntimeException("Unknown class index: " + integer); //Should never happen
         return c;
     }
-
-    //    @AllArgsConstructor
-    //    @Data
-    //    public static class SessionTypeId implements Serializable, Comparable<SessionTypeId> {
-    //        private final String sessionID;
-    //        private final String typeID;
-    //
-    //        @Override
-    //        public int compareTo(SessionTypeId o) {
-    //            int c = sessionID.compareTo(o.sessionID);
-    //            if (c != 0) return c;
-    //            return typeID.compareTo(o.typeID);
-    //        }
-    //
-    //        @Override
-    //        public String toString() {
-    //            return "(" + sessionID + "," + typeID + ")";
-    //        }
-    //    }
 
     //Simple serializer, based on MapDB's SerializerJava
     private static class SessionTypeWorkerIdSerializer implements Serializer<SessionTypeWorkerId> {

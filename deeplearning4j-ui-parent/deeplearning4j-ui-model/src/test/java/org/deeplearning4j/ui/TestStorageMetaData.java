@@ -6,9 +6,7 @@ import org.junit.Test;
 
 import java.io.Serializable;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 07/10/2016.

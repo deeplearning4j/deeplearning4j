@@ -18,12 +18,12 @@
 
 package org.deeplearning4j.nn.api;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
 import java.util.Map;
@@ -52,6 +52,13 @@ public interface Model {
      * Set the IterationListeners for the ComputationGraph (and all layers in the network)
      */
     void setListeners(IterationListener... listeners);
+
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    void addListeners(IterationListener... listener);
 
 
     /**
@@ -127,20 +134,15 @@ public interface Model {
      */
     void setParamsViewArray(INDArray params);
 
+
+    INDArray getGradientsViewArray();
+
     /**
      * Set the gradients array as a view of the full (backprop) network parameters
      * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.
      * @param gradients a 1 x nParams row vector that is a view of the larger (MLN/CG) gradients array
      */
     void setBackpropGradientsViewArray(INDArray gradients);
-
-    /**
-     * Update learningRate using for this model.
-     * Use the learningRateScoreBasedDecay to adapt the score
-     * if the Eps termination condition is met
-     */
-    void applyLearningRateScoreDecay();
-
 
     /**
      * Fit the model to the given data
@@ -254,4 +256,10 @@ public interface Model {
      * Clear input
      */
     void clear();
+
+
+    /**
+     * Apply any constraints to the model
+     */
+    void applyConstraints(int iteration, int epoch);
 }

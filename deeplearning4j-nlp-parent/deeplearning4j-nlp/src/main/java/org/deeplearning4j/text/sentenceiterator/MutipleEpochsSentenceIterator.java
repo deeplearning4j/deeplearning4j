@@ -1,7 +1,6 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
-import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

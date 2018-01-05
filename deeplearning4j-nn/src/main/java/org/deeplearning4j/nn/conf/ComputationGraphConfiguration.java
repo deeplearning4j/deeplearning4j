@@ -22,9 +22,12 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -59,8 +62,17 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
 
-    @Getter @Setter
-    protected WorkspaceMode workspaceMode;
+    @Getter
+    @Setter
+    protected WorkspaceMode trainingWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected WorkspaceMode inferenceWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
 
     /**
      * List of inputs to the network, by name
@@ -85,16 +97,21 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     // for Spark and model serialization
     protected int iterationCount = 0;
 
+    //Counter for the number of epochs completed so far. Used for per-epoch schedules
+    protected int epochCount = 0;
+
 
     /**
      * @return JSON representation of configuration
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -119,10 +136,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     public String toJson() {
         //As per MultiLayerConfiguration.toJson()
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
+            //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -156,7 +177,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if (lv.getLayerConf() != null && lv.getLayerConf().getLayer() != null) {
                 Layer layer = lv.getLayerConf().getLayer();
 
-                if (layer.getActivationFn() == null) {
+                if (layer instanceof BaseLayer && ((BaseLayer) layer).getActivationFn() == null) {
                     String layerName = layer.getLayerName();
 
                     try {
@@ -182,7 +203,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            layer.setActivationFn(ia);
+                            ((BaseLayer) layer).setActivationFn(ia);
                         }
 
                     } catch (IOException e) {
@@ -226,7 +247,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
         conf.defaultConfiguration = defaultConfiguration.clone();
-        conf.workspaceMode = workspaceMode;
+        conf.trainingWorkspaceMode = trainingWorkspaceMode;
+        conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
+        conf.cacheMode = this.cacheMode;
+        conf.defaultConfiguration.cacheMode = this.cacheMode;
 
         return conf;
     }
@@ -238,6 +262,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * @throws IllegalStateException if configuration is not valid
      */
     public void validate() {
+        validate(false);
+    }
+
+    /**
+     * Check the configuration, make sure it is valid
+     *
+     * @param allowDisconnected If true: don't throw an exception on vertices that are 'disconnected'. A disconnected
+     *                          vertex is one that is not an output, and doesn't connect to any other vertices. i.e.,
+     *                          it's output activations don't go anywhere
+     * @throws IllegalStateException if configuration is not valid
+     */
+    public void validate(boolean allowDisconnected){
+
         if (networkInputs == null || networkInputs.size() < 1) {
             throw new IllegalStateException(
                             "Invalid configuration: network has no inputs. Use .addInputs(String...) to label (and give an ordering to) the network inputs");
@@ -277,6 +314,29 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             }
         }
 
+        //Check that there aren't any disconnected vertices
+        if(!allowDisconnected){
+            //A vertex is considered disconnected if it is (a) not an output vertex, and (b) isn't used an as input
+            // to another layer
+
+            Set<String> seenAsInput = new HashSet<>();
+            seenAsInput.addAll(networkOutputs);
+            for(Map.Entry<String,List<String>> e : vertexInputs.entrySet()){
+                seenAsInput.addAll(e.getValue());
+            }
+
+            Set<String> disconnected = new HashSet<>();
+            disconnected.addAll(networkInputs);
+            disconnected.addAll(vertices.keySet());
+            disconnected.removeAll(seenAsInput);
+            if(disconnected.size() > 0){
+                throw new IllegalStateException("Invalid configuration: disconnected vertices found - " + disconnected
+                        + ". Disconnected vertices are those that do not connect to either another vertex, and are also"
+                        + " not a network output. To disable this error (i.e., allow network configurations with" +
+                        " disconnected vertices) use GraphBuilder.allowDisconnected(true)");
+            }
+        }
+
         //Check for no graph cycles: done in ComputationGraph.init()
     }
 
@@ -301,64 +361,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         //Now: need to do essentially a forward pass through the network, to work out what type of preprocessors to add
         //To do this: need to know what the output types are for each GraphVertex.
 
-        //First step: build network in reverse order (i.e., define map of a -> list(b) instead of list(a) -> b)
-        Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
-        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
-            String vertexName = entry.getKey();
-            List<String> vertexInputNames;
-            vertexInputNames = vertexInputs.get(vertexName);
-
-            if (vertexInputNames == null)
-                continue;
-
-            //Build reverse network structure:
-            for (String s : vertexInputNames) {
-                List<String> list = verticesOutputTo.get(s);
-                if (list == null) {
-                    list = new ArrayList<>();
-                    verticesOutputTo.put(s, list);
-                }
-                list.add(vertexName); //Edge: s -> vertexName
-            }
-        }
-
-        //Now: do topological sort
-        LinkedList<String> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
-        List<String> topologicalOrdering = new ArrayList<>();
-
-        Map<String, Set<String>> inputEdges = new HashMap<>();
-        for (Map.Entry<String, List<String>> entry : vertexInputs.entrySet()) {
-            inputEdges.put(entry.getKey(), new HashSet<>(entry.getValue()));
-        }
-
-        while (!noIncomingEdges.isEmpty()) {
-            String next = noIncomingEdges.removeFirst();
-            topologicalOrdering.add(next);
-
-            //Remove edges next -> vertexOuputsTo[...] from graph;
-            List<String> nextEdges = verticesOutputTo.get(next);
-
-            if (nextEdges != null && !nextEdges.isEmpty()) {
-                for (String s : nextEdges) {
-                    Set<String> set = inputEdges.get(s);
-                    set.remove(next);
-                    if (set.isEmpty()) {
-                        noIncomingEdges.add(s); //No remaining edges for vertex i -> add to list for processing
-                    }
-                }
-            }
-        }
-
-        //If any edges remain in the graph: graph has cycles:
-        for (Map.Entry<String, Set<String>> entry : inputEdges.entrySet()) {
-            Set<String> set = entry.getValue();
-            if (set == null)
-                continue;
-            if (!set.isEmpty())
-                throw new IllegalStateException(
-                                "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
-                                                + "cycle includes vertex \"" + entry.getKey() + "\")");
-        }
+        //Do topological sort
+        List<String> topologicalOrdering = topologicalOrdering();
 
         //Now, given the topological sort: do equivalent of forward pass
         Map<String, InputType> vertexOutputs = new HashMap<>();
@@ -369,6 +373,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 vertexOutputs.put(s, inputTypes[inputIdx]);
                 continue;
             }
+
             GraphVertex gv = vertices.get(s);
 
             List<InputType> inputTypeList = new ArrayList<>();
@@ -414,6 +419,129 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
     }
 
+    private Map<String, List<String>> verticesOutputTo() {
+        Map<String, List<String>> verticesOutputTo = new HashMap<>(); //Key: vertex. Values: vertices that this node is an input for
+        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
+            String vertexName = entry.getKey();
+            List<String> vertexInputNames;
+            vertexInputNames = vertexInputs.get(vertexName);
+
+            if (vertexInputNames == null)
+                continue;
+
+            //Build reverse network structure:
+            for (String s : vertexInputNames) {
+                List<String> list = verticesOutputTo.get(s);
+                if (list == null) {
+                    list = new ArrayList<>();
+                    verticesOutputTo.put(s, list);
+                }
+                list.add(vertexName); //Edge: s -> vertexName
+            }
+        }
+
+        return verticesOutputTo;
+    }
+
+    private List<String> topologicalOrdering() {
+        //First step: build network in reverse order (i.e., define map of a -> list(b) instead of list(a) -> b)
+        Map<String, List<String>> verticesOutputTo = verticesOutputTo();
+        LinkedList<String> noIncomingEdges = new LinkedList<>(networkInputs); //Set of all nodes with no incoming edges
+        List<String> topologicalOrdering = new ArrayList<>();
+
+        Map<String, Set<String>> inputEdges = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : vertexInputs.entrySet()) {
+            inputEdges.put(entry.getKey(), new HashSet<>(entry.getValue()));
+        }
+
+        while (!noIncomingEdges.isEmpty()) {
+            String next = noIncomingEdges.removeFirst();
+            topologicalOrdering.add(next);
+
+            //Remove edges next -> vertexOuputsTo[...] from graph;
+            List<String> nextEdges = verticesOutputTo.get(next);
+
+            if (nextEdges != null && !nextEdges.isEmpty()) {
+                for (String s : nextEdges) {
+                    Set<String> set = inputEdges.get(s);
+                    set.remove(next);
+                    if (set.isEmpty()) {
+                        noIncomingEdges.add(s); //No remaining edges for vertex i -> add to list for processing
+                    }
+                }
+            }
+        }
+
+        //If any edges remain in the graph: graph has cycles:
+        for (Map.Entry<String, Set<String>> entry : inputEdges.entrySet()) {
+            Set<String> set = entry.getValue();
+            if (set == null)
+                continue;
+            if (!set.isEmpty())
+                throw new IllegalStateException(
+                                "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+                                                + "cycle includes vertex \"" + entry.getKey() + "\")");
+        }
+
+        return topologicalOrdering;
+    }
+
+    /**
+     * Get a {@link MemoryReport} for the given computation graph configuration. This is used to estimate the
+     * memory requirements for the given network configuration and input
+     *
+     * @param inputTypes Input types for the network
+     * @return Memory report for the network
+     */
+    public NetworkMemoryReport getMemoryReport(InputType... inputTypes) {
+
+
+        Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
+        List<String> topologicalOrdering = topologicalOrdering();
+
+        Map<String, InputType> vertexOutputs = new HashMap<>();
+        int currLayerIdx = -1;
+        for (String s : topologicalOrdering) {
+            int inputIdx = networkInputs.indexOf(s);
+            if (inputIdx != -1) {
+                vertexOutputs.put(s, inputTypes[inputIdx]);
+                continue;
+            }
+
+            GraphVertex gv = vertices.get(s);
+
+            List<InputType> inputTypeList = new ArrayList<>();
+
+            if (gv instanceof LayerVertex) {
+                //Add preprocessor, if necessary:
+                String in = vertexInputs.get(s).get(0);
+                InputType layerInput = vertexOutputs.get(in);
+                inputTypeList.add(layerInput);
+                currLayerIdx++;
+            } else {
+                List<String> inputs = vertexInputs.get(s);
+                if (inputs != null) {
+                    for (String inputVertexName : inputs) {
+                        inputTypeList.add(vertexOutputs.get(inputVertexName));
+                    }
+                }
+            }
+
+
+
+            InputType outputFromVertex =
+                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+            vertexOutputs.put(s, outputFromVertex);
+
+            MemoryReport mr = gv.getMemoryReport(inputTypeList.toArray(new InputType[inputTypeList.size()]));
+
+            memoryReportMap.put(s, mr);
+        }
+
+        return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph",
+                        inputTypes);
+    }
+
 
     @Data
     public static class GraphBuilder {
@@ -438,7 +566,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+        protected boolean allowDisconnected = false;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -475,12 +603,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             inputPreProcessors.put(layer, processor);
             return this;
         }
-
-        public GraphBuilder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.workspaceMode = workspaceMode;
-            return this;
-        }
-
 
         /**
          * Whether to do back prop (standard supervised learning) or not
@@ -545,6 +667,18 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * When doing truncated backpropagation through time (tBPTT): how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         *
+         * @param tbpttLength length > 0
+         */
+        public GraphBuilder tBPTTLength(int tbpttLength){
+            tBPTTForwardLength(tbpttLength);
+            return tBPTTBackwardLength(tbpttLength);
+        }
+
+        /**
          * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
          *
          * @param layerName   Name/label of the layer to add
@@ -554,6 +688,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @see #addLayer(String, Layer, InputPreProcessor, String...)
          */
         public GraphBuilder addLayer(String layerName, Layer layer, String... layerInputs) {
+            return addLayer(layerName, layer, null, layerInputs);
+        }
+
+        /**
+         * Add a layer, with no {@link InputPreProcessor}, with the specified name and specified inputs.
+         *
+         * @param layerName   Name/label of the layer to add
+         * @param layer       The layer configuration
+         * @param layerInputs Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                    on a combination of the two.
+         * @see #addLayer(String, Layer, InputPreProcessor, String...)
+         */
+        public GraphBuilder layer(String layerName, Layer layer, String... layerInputs) {
             return addLayer(layerName, layer, null, layerInputs);
         }
 
@@ -570,19 +717,23 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            vertices.put(layerName, new LayerVertex(builder.build(), preProcessor));
-
-            //Automatically insert a MergeNode if layerInputs.length > 1
-            //Layers can only have 1 input
-            if (layerInputs != null && layerInputs.length > 1) {
-                String mergeName = layerName + "-merge";
-                addVertex(mergeName, new MergeVertex(), layerInputs);
-                this.vertexInputs.put(layerName, Collections.singletonList(mergeName));
-            } else if (layerInputs != null) {
-                this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
-            }
+            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
             return this;
+        }
+
+        /**
+         * Add a layer and an {@link InputPreProcessor}, with the specified name and specified inputs.
+         *
+         * @param layerName    Name/label of the layer to add
+         * @param layer        The layer configuration
+         * @param preProcessor The InputPreProcessor to use with this layer.
+         * @param layerInputs  Inputs to this layer (must be 1 or more). Inputs may be other layers, GraphVertex objects,
+         *                     on a combination of the two.
+         */
+        public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
+                                     String... layerInputs) {
+            return addLayer(layerName, layer, preProcessor, layerInputs);
         }
 
         /**
@@ -637,6 +788,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Specify the inputs to the network, and their associated labels.
+         *
+         * @param inputNames The names of the inputs. This also defines their order
+         */
+        public GraphBuilder addInputs(Collection<String> inputNames) {
+            networkInputs.addAll(inputNames);
+            return this;
+        }
+
         /**Specify the types of inputs to the network, so that:<br>
          * (a) preprocessors can be automatically added, and<br>
          * (b) the nIns (input size) for each layer can be automatically calculated and set<br>
@@ -662,7 +823,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param outputNames The names of the output layers. This also defines their order.
          */
         public GraphBuilder setOutputs(String... outputNames) {
+            networkOutputs.clear();
             Collections.addAll(networkOutputs, outputNames);
+
             return this;
         }
 
@@ -679,7 +842,28 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
             vertices.put(vertexName, vertex);
-            this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+
+            //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
+            if (vertex.maxVertexInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
+                String mergeName = vertexName + "-merge";
+                addVertex(mergeName, new MergeVertex(), vertexInputs);
+                this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));
+            } else if (vertexInputs != null) {
+                this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+            }
+            return this;
+        }
+
+        /**
+         * Used only during validation after building.<br>
+         * If true: don't throw an exception on configurations containing vertices that are 'disconnected'. A disconnected
+         * vertex is one that is not an output, and doesn't connect to any other vertices. i.e., it's output activations
+         * don't go anywhere. Most users can (and should) leave this as the default value of false.
+         *
+         * @param allowDisconnected Whether to allow disconnected vertices, during validation
+         */
+        public GraphBuilder allowDisconnected(boolean allowDisconnected){
+            this.allowDisconnected = allowDisconnected;
             return this;
         }
 
@@ -700,7 +884,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             conf.vertices = this.vertices;
             conf.vertexInputs = this.vertexInputs;
-            conf.workspaceMode = globalConfiguration.workspaceMode;
+            conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
+            conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
+            conf.cacheMode = globalConfiguration.cacheMode;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
@@ -729,7 +915,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             }
 
-            conf.validate(); //throws exception for invalid configuration
+            conf.validate(allowDisconnected); //throws exception for invalid configuration
 
             //Automatically add preprocessors, set nIns for CNN->dense transitions, etc
             if (!networkInputTypes.isEmpty()) {

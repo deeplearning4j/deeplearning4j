@@ -22,6 +22,9 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,6 +51,7 @@ public class AutoEncoder extends BasePretrainNetwork {
         super(builder);
         this.corruptionLevel = builder.corruptionLevel;
         this.sparsity = builder.sparsity;
+        initializeConstraints(builder);
     }
 
     @Override
@@ -67,6 +71,36 @@ public class AutoEncoder extends BasePretrainNetwork {
     @Override
     public ParamInitializer initializer() {
         return PretrainParamInitializer.getInstance();
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requirements
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+
+        int trainSizePerEx = 0;
+        if (getIDropout() != null) {
+            if (false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainSizePerEx += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by loss function
+        trainSizePerEx += actElementsPerEx;
+
+        return new LayerMemoryReport.Builder(layerName, AutoEncoder.class, inputType, outputType)
+                        .standardMemory(numParams, updaterStateSize).workingMemory(0, 0, 0, trainSizePerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @AllArgsConstructor

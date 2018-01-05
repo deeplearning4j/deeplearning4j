@@ -1,15 +1,13 @@
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -21,6 +19,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -197,9 +196,7 @@ public class SubsamplingLayerTest {
     private Layer getSubsamplingLayer(SubsamplingLayer.PoolingType pooling) {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).activation(Activation.RELU)
-                                        .build())
-                        .build();
+                        .layer(new SubsamplingLayer.Builder(pooling, new int[] {2, 2}).build()).build();
 
         return conf.getLayer().instantiate(conf, null, 0, null, true);
     }
@@ -241,7 +238,7 @@ public class SubsamplingLayerTest {
 
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
-                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).list()
+                        new NeuralNetConfiguration.Builder().seed(123).list()
                                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                                         kernelHeight, kernelWidth).stride(1, 1).nOut(2)
                                                                         .activation(Activation.RELU).weightInit(
@@ -253,8 +250,8 @@ public class SubsamplingLayerTest {
                                                         .stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder, imageHeight, imageWidth, nChannels);
+                                        .backprop(true).pretrain(false)
+                                        .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

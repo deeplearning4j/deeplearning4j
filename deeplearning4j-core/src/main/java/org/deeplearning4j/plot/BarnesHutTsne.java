@@ -23,7 +23,6 @@ package org.deeplearning4j.plot;
 import com.google.common.util.concurrent.AtomicDouble;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
@@ -38,7 +37,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -189,7 +189,7 @@ public class BarnesHutTsne implements Model {
             double betaMin = -Double.MAX_VALUE;
             double betaMax = Double.MAX_VALUE;
             List<DataPoint> results = new ArrayList<>();
-            tree.search(new DataPoint(i, d.slice(i)), k + 1, results, new ArrayList<Double>());
+            tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
             double betas = beta.getDouble(i);
 
             INDArray cArr = VPTree.buildFromData(results);
@@ -272,6 +272,11 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
+    public void addListeners(IterationListener... listener) {
+        // no-op
+    }
+
+    @Override
     public Map<String, INDArray> paramTable() {
         return null;
     }
@@ -293,6 +298,11 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public void clear() {}
+
+    @Override
+    public void applyConstraints(int iteration, int epoch) {
+        //No op
+    }
 
     /* compute the gradient given the current solution, the probabilities and the constant */
     protected Pair<Double, INDArray> gradient(INDArray p) {
@@ -473,7 +483,7 @@ public class BarnesHutTsne implements Model {
 
 
                 if (iterationListener != null) {
-                    iterationListener.iterationDone(this, i);
+                    iterationListener.iterationDone(this, i, 0);
                 }
                 log.info("Error at iteration " + i + " is " + score());
             }
@@ -509,14 +519,19 @@ public class BarnesHutTsne implements Model {
         INDArray gradChange = gains.mul(yGrads);
 
         if (useAdaGrad) {
-            if (adaGrad == null)
-                adaGrad = new AdaGrad();
+            if (adaGrad == null) {
+                adaGrad = new AdaGrad(gradient.shape(), learningRate);
+                adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1, gradChange.length()),
+                                gradChange.shape(), gradient.ordering(), true);
+            }
+
             gradChange = adaGrad.getGradient(gradChange, 0);
 
         }
 
-        else
+        else {
             gradChange.muli(learningRate);
+        }
 
         yIncs.muli(momentum).subi(gradChange);
         Y.addi(yIncs);
@@ -647,13 +662,13 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void setBackpropGradientsViewArray(INDArray gradients) {
+    public INDArray getGradientsViewArray() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void applyLearningRateScoreDecay() {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public void setBackpropGradientsViewArray(INDArray gradients) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

@@ -42,6 +42,9 @@ public class BaseDatasetIterator implements DataSetIterator {
 
 
     public BaseDatasetIterator(int batch, int numExamples, BaseDataFetcher fetcher) {
+        if(batch <= 0){
+            throw new IllegalArgumentException("Invalid minibatch size: must be > 0 (got: " + batch + ")");
+        }
         this.batch = batch;
         if (numExamples < 0)
             numExamples = fetcher.totalExamples();

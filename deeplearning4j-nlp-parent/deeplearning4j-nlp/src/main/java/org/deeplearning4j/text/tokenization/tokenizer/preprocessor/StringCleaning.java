@@ -31,7 +31,7 @@ public class StringCleaning {
     private StringCleaning() {}
 
     /**
-     * Strip punctuation
+     * Removes ASCII punctuation marks, which are: 0123456789.:,"'()[]|/?!;
      * @param base the base string
      * @return the cleaned string
      */

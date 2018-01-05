@@ -1,7 +1,7 @@
 package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import org.apache.spark.AccumulatorParam;
-import org.deeplearning4j.berkeley.Counter;
+import org.nd4j.linalg.primitives.Counter;
 
 /**
  * Accumulator for elements count

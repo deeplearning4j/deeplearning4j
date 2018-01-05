@@ -3,10 +3,10 @@ package org.deeplearning4j.spark.models.sequencevectors.functions;
 import lombok.NonNull;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * This accumulator function does count individual elements, using provided Accumulator
@@ -34,14 +34,14 @@ public class ExtraCountFunction<T extends SequenceElement> implements Function<S
                 continue;
 
             // FIXME: hashcode is bad idea here. we need Long id
-            localCounter.incrementCount(element.getStorageId(), 1.0);
+            localCounter.incrementCount(element.getStorageId(), 1.0f);
             seqLen++;
         }
 
         // FIXME: we're missing label information here due to shallow vocab mechanics
         if (sequence.getSequenceLabels() != null)
             for (T label : sequence.getSequenceLabels()) {
-                localCounter.incrementCount(label.getStorageId(), 1.0);
+                localCounter.incrementCount(label.getStorageId(), 1.0f);
             }
 
         localCounter.buildNetworkSnapshot();

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -17,6 +17,7 @@
         <module>deeplearning4j-nlp-uima</module>
         <module>deeplearning4j-nlp-korean</module>
         <module>deeplearning4j-nlp-japanese</module>
+        <module>deeplearning4j-nlp-chinese</module>
     </modules>
 
     <profiles>

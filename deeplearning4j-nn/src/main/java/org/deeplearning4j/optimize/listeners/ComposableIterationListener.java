@@ -42,18 +42,8 @@ public class ComposableIterationListener implements IterationListener {
     }
 
     @Override
-    public boolean invoked() {
-        return invoked;
-    }
-
-    @Override
-    public void invoke() {
-        this.invoked = true;
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         for (IterationListener listener : listeners)
-            listener.iterationDone(model, iteration);
+            listener.iterationDone(model, iteration, epoch);
     }
 }

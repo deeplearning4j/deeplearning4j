@@ -1,8 +1,15 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -22,7 +29,9 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                             + inputType);
         }
 
-        return InputType.recurrent(nOut);
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
+
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
     }
 
     @Override
@@ -44,9 +53,34 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
     }
 
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+        protected List<LayerConstraint> recurrentConstraints;
+        protected List<LayerConstraint> inputWeightConstraints;
 
+        /**
+         * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the recurrent weight parameters of this layer
+         */
+        public T constrainRecurrent(LayerConstraint... constraints) {
+            this.recurrentConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
+
+        /**
+         * Set constraints to be applied to the RNN input weight parameters of this layer. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to the input weight parameters of this layer
+         */
+        public T constrainInputWeights(LayerConstraint... constraints) {
+            this.inputWeightConstraints = Arrays.asList(constraints);
+            return (T) this;
+        }
     }
 
 }

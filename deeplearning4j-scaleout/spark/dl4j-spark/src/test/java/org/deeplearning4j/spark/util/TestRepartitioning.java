@@ -7,7 +7,6 @@ import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
-import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
 import org.junit.Test;
 import scala.Tuple2;

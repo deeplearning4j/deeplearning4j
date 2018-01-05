@@ -22,23 +22,30 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -47,17 +54,31 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.*;
+import java.util.zip.ZipFile;
 
 import static org.junit.Assert.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * Created by agibsonccc on 12/22/14.
  */
 public class EvalTest {
+
+    @Before
+    public void before(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @After
+    public void after(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+    }
 
 
     @Test
@@ -178,8 +199,8 @@ public class EvalTest {
         // Network config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
 
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(42)
-                        .learningRate(1e-6).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(42)
+                        .updater(new Sgd(1e-6)).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(2).activation(Activation.TANH)
                                         .weightInit(WeightInit.XAVIER).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
@@ -254,7 +275,7 @@ public class EvalTest {
             for (int j = 0; j < tsLength; j++) {
                 INDArray rand = Nd4j.rand(1, nOut);
                 rand.divi(rand.sumNumber());
-                predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(j)},
+                predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), all(), NDArrayIndex.point(j)},
                                 rand);
                 int idx = r.nextInt(nOut);
                 labels.putScalar(new int[] {i, idx, j}, 1.0);
@@ -264,11 +285,11 @@ public class EvalTest {
         //Create a longer labels/predicted with mask for first and last time step
         //Expect masked evaluation to be identical to original evaluation
         INDArray labels2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        labels2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, tsLength + 1)}, labels);
+        labels2.put(new INDArrayIndex[] {all(), all(),
+                        interval(1, tsLength + 1)}, labels);
         INDArray predicted2 = Nd4j.zeros(miniBatch, nOut, tsLength + 2);
-        predicted2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(1, tsLength + 1)}, predicted);
+        predicted2.put(new INDArrayIndex[] {all(), all(),
+                        interval(1, tsLength + 1)}, predicted);
 
         INDArray labelsMask = Nd4j.ones(miniBatch, tsLength + 2);
         for (int i = 0; i < miniBatch; i++) {
@@ -323,7 +344,7 @@ public class EvalTest {
             INDArray rand = Nd4j.rand(1, numClasses);
             rand.put(0, winner, rand.sumNumber());
             rand.divi(rand.sumNumber());
-            predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.all()}, rand);
+            predicted.put(new INDArrayIndex[] {NDArrayIndex.point(i), all()}, rand);
             //Generating random label
             int label = r.nextInt(numClasses);
             labels.putScalar(new int[] {i, label}, 1.0);
@@ -359,16 +380,16 @@ public class EvalTest {
 
         //Now: split into 3 separate evaluation objects -> expect identical values after merging
         Evaluation eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(interval(0, 5), all()),
+                        predicted.get(interval(0, 5), all()));
 
         Evaluation eval2 = new Evaluation();
-        eval2.eval(actual.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+        eval2.eval(actual.get(interval(5, 10), all()),
+                        predicted.get(interval(5, 10), all()));
 
         Evaluation eval3 = new Evaluation();
-        eval3.eval(actual.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(10, nRows), NDArrayIndex.all()));
+        eval3.eval(actual.get(interval(10, nRows), all()),
+                        predicted.get(interval(10, nRows), all()));
 
         eval1.merge(eval2);
         eval1.merge(eval3);
@@ -378,8 +399,8 @@ public class EvalTest {
 
         //Next: check evaluation merging with empty, and empty merging with non-empty
         eval1 = new Evaluation();
-        eval1.eval(actual.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()),
-                        predicted.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+        eval1.eval(actual.get(interval(0, 5), all()),
+                        predicted.get(interval(0, 5), all()));
 
         Evaluation evalInitiallyEmpty = new Evaluation();
         evalInitiallyEmpty.merge(eval1);
@@ -416,23 +437,27 @@ public class EvalTest {
 
         Evaluation eval = new Evaluation(1);
 
-        INDArray zero = Nd4j.create(1);
-        INDArray one = Nd4j.ones(1);
+        for (int xe = 0; xe < 3; xe++) {
+            INDArray zero = Nd4j.create(1);
+            INDArray one = Nd4j.ones(1);
 
-        //One incorrect, three correct
-        eval.eval(one, zero);
-        eval.eval(one, one);
-        eval.eval(one, one);
-        eval.eval(zero, zero);
+            //One incorrect, three correct
+            eval.eval(one, zero);
+            eval.eval(one, one);
+            eval.eval(one, one);
+            eval.eval(zero, zero);
 
-        System.out.println(eval.stats());
+            System.out.println(eval.stats());
 
-        assertEquals(0.75, eval.accuracy(), 1e-6);
-        assertEquals(4, eval.getNumRowCounter());
+            assertEquals(0.75, eval.accuracy(), 1e-6);
+            assertEquals(4, eval.getNumRowCounter());
 
-        assertEquals(1, (int) eval.truePositives().get(0));
-        assertEquals(2, (int) eval.truePositives().get(1));
-        assertEquals(1, (int) eval.falseNegatives().get(1));
+            assertEquals(1, (int) eval.truePositives().get(0));
+            assertEquals(2, (int) eval.truePositives().get(1));
+            assertEquals(1, (int) eval.falseNegatives().get(1));
+
+            eval.reset();
+        }
     }
 
     @Test
@@ -618,9 +643,9 @@ public class EvalTest {
         rrdsi.reset();
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).iterations(1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
-                        .learningRate(0.1).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1))
+                        .list()
                         .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
                         .pretrain(false).backprop(true).build();
@@ -692,8 +717,8 @@ public class EvalTest {
     }
 
     @Test
-    public void testBinaryCase(){
-        INDArray ones10 = Nd4j.ones(10,1);
+    public void testBinaryCase() {
+        INDArray ones10 = Nd4j.ones(10, 1);
         INDArray ones4 = Nd4j.ones(4, 1);
         INDArray zeros4 = Nd4j.zeros(4, 1);
         INDArray ones3 = Nd4j.ones(3, 1);
@@ -701,22 +726,342 @@ public class EvalTest {
         INDArray zeros2 = Nd4j.zeros(2, 1);
 
         Evaluation e = new Evaluation();
-        e.eval(ones10, ones10);             //10 true positives
-        e.eval(ones3, zeros3);              //3 false negatives
-        e.eval(zeros4, ones4);              //4 false positives
-        e.eval(zeros2, zeros2);             //2 true negatives
+        e.eval(ones10, ones10); //10 true positives
+        e.eval(ones3, zeros3); //3 false negatives
+        e.eval(zeros4, ones4); //4 false positives
+        e.eval(zeros2, zeros2); //2 true negatives
 
 
-        assertEquals((10+2)/(double)(10+3+4+2), e.accuracy(), 1e-6);
-        assertEquals(10, (int)e.truePositives().get(1));
-        assertEquals(3, (int)e.falseNegatives().get(1));
-        assertEquals(4, (int)e.falsePositives().get(1));
-        assertEquals(2, (int)e.trueNegatives().get(1));
+        assertEquals((10 + 2) / (double) (10 + 3 + 4 + 2), e.accuracy(), 1e-6);
+        assertEquals(10, (int) e.truePositives().get(1));
+        assertEquals(3, (int) e.falseNegatives().get(1));
+        assertEquals(4, (int) e.falsePositives().get(1));
+        assertEquals(2, (int) e.trueNegatives().get(1));
 
         //If we switch the label around: tp becomes tn, fp becomes fn, etc
-        assertEquals(10, (int)e.trueNegatives().get(0));
-        assertEquals(3, (int)e.falsePositives().get(0));
-        assertEquals(4, (int)e.falseNegatives().get(0));
-        assertEquals(2, (int)e.truePositives().get(0));
+        assertEquals(10, (int) e.trueNegatives().get(0));
+        assertEquals(3, (int) e.falsePositives().get(0));
+        assertEquals(4, (int) e.falseNegatives().get(0));
+        assertEquals(2, (int) e.truePositives().get(0));
     }
+
+    @Test
+    public void testF1FBeta_MicroMacroAveraging() {
+        //Confusion matrix: rows = actual, columns = predicted
+        //[3, 1, 0]
+        //[2, 2, 1]
+        //[0, 3, 4]
+
+        INDArray zero = Nd4j.create(new double[] {1, 0, 0});
+        INDArray one = Nd4j.create(new double[] {0, 1, 0});
+        INDArray two = Nd4j.create(new double[] {0, 0, 1});
+
+        Evaluation e = new Evaluation();
+        apply(e, 3, zero, zero);
+        apply(e, 1, one, zero);
+        apply(e, 2, zero, one);
+        apply(e, 2, one, one);
+        apply(e, 1, two, one);
+        apply(e, 3, one, two);
+        apply(e, 4, two, two);
+
+        assertEquals(3, e.confusion.getCount(0, 0));
+        assertEquals(1, e.confusion.getCount(0, 1));
+        assertEquals(0, e.confusion.getCount(0, 2));
+        assertEquals(2, e.confusion.getCount(1, 0));
+        assertEquals(2, e.confusion.getCount(1, 1));
+        assertEquals(1, e.confusion.getCount(1, 2));
+        assertEquals(0, e.confusion.getCount(2, 0));
+        assertEquals(3, e.confusion.getCount(2, 1));
+        assertEquals(4, e.confusion.getCount(2, 2));
+
+        double beta = 3.5;
+        double[] prec = new double[3];
+        double[] rec = new double[3];
+        for (int i = 0; i < 3; i++) {
+            prec[i] = e.truePositives().get(i) / (double) (e.truePositives().get(i) + e.falsePositives().get(i));
+            rec[i] = e.truePositives().get(i) / (double) (e.truePositives().get(i) + e.falseNegatives().get(i));
+        }
+
+        //Binarized confusion
+        //class 0:
+        // [3, 1]       [tp fn]
+        // [2, 10]      [fp tn]
+        assertEquals(3, (int) e.truePositives().get(0));
+        assertEquals(1, (int) e.falseNegatives().get(0));
+        assertEquals(2, (int) e.falsePositives().get(0));
+        assertEquals(10, (int) e.trueNegatives().get(0));
+
+        //class 1:
+        // [2, 3]       [tp fn]
+        // [4, 7]       [fp tn]
+        assertEquals(2, (int) e.truePositives().get(1));
+        assertEquals(3, (int) e.falseNegatives().get(1));
+        assertEquals(4, (int) e.falsePositives().get(1));
+        assertEquals(7, (int) e.trueNegatives().get(1));
+
+        //class 2:
+        // [4, 3]       [tp fn]
+        // [1, 8]       [fp tn]
+        assertEquals(4, (int) e.truePositives().get(2));
+        assertEquals(3, (int) e.falseNegatives().get(2));
+        assertEquals(1, (int) e.falsePositives().get(2));
+        assertEquals(8, (int) e.trueNegatives().get(2));
+
+        double[] fBeta = new double[3];
+        double[] f1 = new double[3];
+        double[] mcc = new double[3];
+        for (int i = 0; i < 3; i++) {
+            fBeta[i] = (1 + beta * beta) * prec[i] * rec[i] / (beta * beta * prec[i] + rec[i]);
+            f1[i] = 2 * prec[i] * rec[i] / (prec[i] + rec[i]);
+            assertEquals(fBeta[i], e.fBeta(beta, i), 1e-6);
+            assertEquals(f1[i], e.f1(i), 1e-6);
+
+            double gmeasure = Math.sqrt(prec[i] * rec[i]);
+            assertEquals(gmeasure, e.gMeasure(i), 1e-6);
+
+            double tp = e.truePositives().get(i);
+            double tn = e.trueNegatives().get(i);
+            double fp = e.falsePositives().get(i);
+            double fn = e.falseNegatives().get(i);
+            mcc[i] = (tp * tn - fp * fn) / Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
+            assertEquals(mcc[i], e.matthewsCorrelation(i), 1e-6);
+        }
+
+        //Test macro and micro averaging:
+        int tp = 0;
+        int fn = 0;
+        int fp = 0;
+        int tn = 0;
+        double macroPrecision = 0.0;
+        double macroRecall = 0.0;
+        double macroF1 = 0.0;
+        double macroFBeta = 0.0;
+        double macroMcc = 0.0;
+        for (int i = 0; i < 3; i++) {
+            tp += e.truePositives().get(i);
+            fn += e.falseNegatives().get(i);
+            fp += e.falsePositives().get(i);
+            tn += e.trueNegatives().get(i);
+
+            macroPrecision += prec[i];
+            macroRecall += rec[i];
+            macroF1 += f1[i];
+            macroFBeta += fBeta[i];
+            macroMcc += mcc[i];
+        }
+        macroPrecision /= 3;
+        macroRecall /= 3;
+        macroF1 /= 3;
+        macroFBeta /= 3;
+        macroMcc /= 3;
+
+        double microPrecision = tp / (double) (tp + fp);
+        double microRecall = tp / (double) (tp + fn);
+        double microFBeta =
+                        (1 + beta * beta) * microPrecision * microRecall / (beta * beta * microPrecision + microRecall);
+        double microF1 = 2 * microPrecision * microRecall / (microPrecision + microRecall);
+        double microMcc = (tp * tn - fp * fn) / Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
+
+        assertEquals(microPrecision, e.precision(EvaluationAveraging.Micro), 1e-6);
+        assertEquals(microRecall, e.recall(EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroPrecision, e.precision(EvaluationAveraging.Macro), 1e-6);
+        assertEquals(macroRecall, e.recall(EvaluationAveraging.Macro), 1e-6);
+
+        assertEquals(microFBeta, e.fBeta(beta, EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroFBeta, e.fBeta(beta, EvaluationAveraging.Macro), 1e-6);
+
+        assertEquals(microF1, e.f1(EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroF1, e.f1(EvaluationAveraging.Macro), 1e-6);
+
+        assertEquals(microMcc, e.matthewsCorrelation(EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroMcc, e.matthewsCorrelation(EvaluationAveraging.Macro), 1e-6);
+
+    }
+
+    private static void apply(Evaluation e, int nTimes, INDArray predicted, INDArray actual) {
+        for (int i = 0; i < nTimes; i++) {
+            e.eval(actual, predicted);
+        }
+    }
+
+
+    @Test
+    public void testConfusionMatrixStats() {
+
+        Evaluation e = new Evaluation();
+
+        INDArray c0 = Nd4j.create(new double[] {1, 0, 0});
+        INDArray c1 = Nd4j.create(new double[] {0, 1, 0});
+        INDArray c2 = Nd4j.create(new double[] {0, 0, 1});
+
+        apply(e, 3, c2, c0); //Predicted class 2 when actually class 0, 3 times
+        apply(e, 2, c0, c1); //Predicted class 0 when actually class 1, 2 times
+
+        String s1 = "Examples labeled as 0 classified by model as 2: 3 times";
+        String s2 = "Examples labeled as 1 classified by model as 0: 2 times";
+
+        String stats = e.stats();
+        assertTrue(stats, stats.contains(s1));
+        assertTrue(stats, stats.contains(s2));
+    }
+
+    @Test
+    public void testEvalSplitting(){
+        //Test for "tbptt-like" functionality
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("Starting test for workspace mode: " + ws);
+
+            int nIn = 4;
+            int layerSize = 5;
+            int nOut = 6;
+            int tbpttLength = 10;
+            int tsLength = 5 * tbpttLength + tbpttLength / 2;
+
+            MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build())
+                    .build();
+
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new LSTM.Builder().nIn(nIn).nOut(layerSize).build())
+                    .layer(new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX).build())
+                    .tBPTTLength(10)
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+
+            MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+            net1.init();
+
+            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+            net2.init();
+
+            net2.setParams(net1.params());
+
+            for(boolean useMask : new boolean[]{false, true}) {
+
+                INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+                INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+
+                INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+                INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+
+                INDArray lMask1 = null;
+                INDArray lMask2 = null;
+                if(useMask){
+                    lMask1 = Nd4j.create(3, tsLength);
+                    lMask2 = Nd4j.create(5, tsLength);
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask1, 0.5));
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask2, 0.5));
+                }
+
+                List<DataSet> l = Arrays.asList(new DataSet(in1, out1, null, lMask1), new DataSet(in2, out2, null, lMask2));
+                DataSetIterator iter = new ExistingDataSetIterator(l);
+
+                System.out.println("Net 1 eval");
+                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                System.out.println("Net 2 eval");
+                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+                assertEquals(e1[0], e2[0]);
+                assertEquals(e1[1], e2[1]);
+                assertEquals(e1[2], e2[2]);
+            }
+        }
+    }
+
+    @Test
+    public void testEvalSplittingCompGraph(){
+        //Test for "tbptt-like" functionality
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("Starting test for workspace mode: " + ws);
+
+            int nIn = 4;
+            int layerSize = 5;
+            int nOut = 6;
+            int tbpttLength = 10;
+            int tsLength = 5 * tbpttLength + tbpttLength / 2;
+
+            ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build(), "0")
+                    .setOutputs("1")
+                    .build();
+
+            ComputationGraphConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new LSTM.Builder().nIn(nIn).nOut(layerSize).build(), "in")
+                    .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut)
+                            .activation(Activation.SOFTMAX)
+                            .build(), "0")
+                    .setOutputs("1")
+                    .tBPTTLength(10)
+                    .backpropType(BackpropType.TruncatedBPTT)
+                    .build();
+
+            ComputationGraph net1 = new ComputationGraph(conf1);
+            net1.init();
+
+            ComputationGraph net2 = new ComputationGraph(conf2);
+            net2.init();
+
+            net2.setParams(net1.params());
+
+            for (boolean useMask : new boolean[]{false, true}) {
+
+                INDArray in1 = Nd4j.rand(new int[]{3, nIn, tsLength});
+                INDArray out1 = TestUtils.randomOneHotTimeSeries(3, nOut, tsLength);
+
+                INDArray in2 = Nd4j.rand(new int[]{5, nIn, tsLength});
+                INDArray out2 = TestUtils.randomOneHotTimeSeries(5, nOut, tsLength);
+
+                INDArray lMask1 = null;
+                INDArray lMask2 = null;
+                if (useMask) {
+                    lMask1 = Nd4j.create(3, tsLength);
+                    lMask2 = Nd4j.create(5, tsLength);
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask1, 0.5));
+                    Nd4j.getExecutioner().exec(new BernoulliDistribution(lMask2, 0.5));
+                }
+
+                List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
+                DataSetIterator iter = new ExistingDataSetIterator(l);
+
+                System.out.println("Eval net 1");
+                IEvaluation[] e1 = net1.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+                System.out.println("Eval net 2");
+                IEvaluation[] e2 = net2.doEvaluation(iter, new Evaluation(), new ROCMultiClass(), new RegressionEvaluation());
+
+                assertEquals(e1[0], e2[0]);
+                assertEquals(e1[1], e2[1]);
+                assertEquals(e1[2], e2[2]);
+            }
+        }
+    }
+
+
 }

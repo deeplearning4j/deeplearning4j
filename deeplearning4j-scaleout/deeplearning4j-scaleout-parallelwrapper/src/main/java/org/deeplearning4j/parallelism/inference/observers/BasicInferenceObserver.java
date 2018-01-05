@@ -8,7 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Simple Observer implementation for sequential inference
+ * Simple Observer implementation for
+ * sequential inference
  *
  * @author raver119@gmail.com
  */
@@ -28,7 +29,7 @@ public class BasicInferenceObserver implements Observer {
     /**
      * FOR DEBUGGING ONLY, TO BE REMOVED BEFORE MERGE
      */
-    public void waitTillDone(){
+    public void waitTillDone() {
         while (!finished.get()) {
             LockSupport.parkNanos(1000);
         }

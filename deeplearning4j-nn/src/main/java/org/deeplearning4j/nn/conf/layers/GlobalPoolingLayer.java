@@ -1,12 +1,14 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -37,6 +39,7 @@ import java.util.Map;
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class GlobalPoolingLayer extends Layer {
 
     private PoolingType poolingType;
@@ -148,9 +151,29 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("Global pooling layer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        int fwdTrainInferenceWorkingPerEx = 0;
+        //Here: we'll assume we are doing 'full array' global pooling.
+        //For max/avg/sum pooling, no working memory (GlobalPoolingLayer.activateHelperFullArray
+        //But for pnorm, we have working memory
+        if (poolingType == PoolingType.PNORM) {
+            //Dup the input array once before
+            fwdTrainInferenceWorkingPerEx = inputType.arrayElementsPerExample();
+        }
+
+        return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
+                        .standardMemory(0, 0) //No params
+                        //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                        .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {

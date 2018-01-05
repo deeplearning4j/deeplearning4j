@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -65,11 +65,6 @@ public class LastTimeStepVertex extends BaseGraphVertex {
 
     @Override
     public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public boolean isOutputVertex() {
         return false;
     }
 

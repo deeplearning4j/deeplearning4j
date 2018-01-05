@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.nd4j.linalg.convolution.Convolution;
 
 import java.util.Arrays;
 
@@ -20,9 +19,65 @@ import java.util.Arrays;
 @Slf4j
 public class InputTypeUtil {
 
+    public static InputType getOutputTypeDeconvLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                     int[] dilation, ConvolutionMode convolutionMode, int outputDepth,
+                                                     int layerIdx, String layerName, Class<?> layerClass) {
+        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        int hIn = i.getHeight();
+        int wIn = i.getWidth();
+
+        int inHeight = i.getHeight();
+        int inWidth = i.getWidth();
+        int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
+        int padW = (padding == null ? 0 : padding[1]);
+        int kH = kernelSize[0];
+        int kW = kernelSize[1];
+        if(dilation[0] != 1){
+            kH = kH + (kH-1)*(dilation[0]-1);
+        }
+        if(dilation[1] != 1){
+            kW = kW + (kW-1)*(dilation[1]-1);
+        }
+
+        int sH = stride[0];
+        int sW = stride[1];
+
+        if (sH <= 0 || sW <= 0) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, sH <= 0)
+                    + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
+                    + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth,
+                    convolutionMode));
+        }
+
+        if (kH <= 0 || kH > inHeight + 2 * padH) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, true)
+                    + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
+                    + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
+                    inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
+        }
+
+        if (kW <= 0 || kW > inWidth + 2 * padW) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine1(layerIdx, layerName, layerClass, false)
+                    + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
+                    + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
+                    inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
+        }
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            int hOut = stride[0] * hIn;
+            int wOut = stride[1] * wIn ;
+            return InputType.convolutional(hOut, wOut, outputDepth);
+        }
+
+        int hOut = sH * (hIn - 1) + kH - 2 * padH;
+        int wOut = sW * (wIn - 1) + kW - 2 * padW;
+
+        return InputType.convolutional(hOut, wOut, outputDepth);
+    }
+
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                    ConvolutionMode convolutionMode, int outputDepth, int layerIdx, String layerName,
+                    int[] dilation, ConvolutionMode convolutionMode, int outputDepth, int layerIdx, String layerName,
                     Class<?> layerClass) {
 
         if (convolutionMode == null) {
@@ -38,6 +93,14 @@ public class InputTypeUtil {
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
         int kW = kernelSize[1];
+        if(dilation[0] != 1){
+            //Use *effective* kernel size, accounting for dilation
+            kH = kH + (kH-1)*(dilation[0]-1);
+        }
+        if(dilation[1] != 1){
+            kW = kW + (kW-1)*(dilation[1]-1);
+        }
+
         int sH = stride[0];
         int sW = stride[1];
 

@@ -3,7 +3,6 @@ package org.deeplearning4j.ui.stats;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.ui.stats.api.StatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
 import org.deeplearning4j.ui.stats.api.StatsReport;

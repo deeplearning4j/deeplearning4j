@@ -5,10 +5,8 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.CifarLoader;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.fetchers.DataSetType;
+import org.deeplearning4j.datasets.iterator.impl.*;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -18,7 +16,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -74,7 +71,7 @@ public class DataSetIteratorTest {
     @Test
     public void testMnist() throws Exception {
         ClassPathResource cpr = new ClassPathResource("mnist_first_200.txt");
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(cpr.getTempFileFromArchive()));
         RecordReaderDataSetIterator dsi = new RecordReaderDataSetIterator(rr, 10, 0, 10);
 
@@ -111,24 +108,36 @@ public class DataSetIteratorTest {
     }
 
     @Test
+    public void testTinyImageNetIterator() throws Exception {
+        int numClasses = 200;
+        int row = 64;
+        int col = 64;
+        int channels = 3;
+        TinyImageNetDataSetIterator iter = new TinyImageNetDataSetIterator(1, DataSetType.TEST);
+        assertTrue(iter.hasNext());
+        DataSet data = iter.next();
+        assertEquals(numClasses, data.getLabels().size(1));
+        assertEquals(row, data.getFeatureMatrix().size(2));
+    }
+
+    @Test
     public void testLfwModel() throws Exception {
         final int numRows = 28;
         final int numColumns = 28;
         int numChannels = 3;
-        int outputNum = LFWLoader.SUB_NUM_LABELS;
-        int numSamples = 4;
+        int outputNum = LFWLoader.NUM_LABELS;
+        int numSamples = LFWLoader.NUM_IMAGES;
         int batchSize = 2;
-        int iterations = 1;
         int seed = 123;
-        int listenerFreq = iterations;
+        int listenerFreq = 1;
 
         LFWDataSetIterator lfw = new LFWDataSetIterator(batchSize, numSamples,
-                        new int[] {numRows, numColumns, numChannels}, outputNum, true, true, 1.0, new Random(seed));
+                        new int[] {numRows, numColumns, numChannels}, outputNum, false, true, 1.0, new Random(seed));
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(numChannels).nOut(6)
+                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
                                         .stride(1, 1).build())
@@ -182,14 +191,13 @@ public class DataSetIteratorTest {
         int outputNum = CifarLoader.NUM_LABELS;
         int numSamples = 10;
         int batchSize = 5;
-        int iterations = 1;
         int seed = 123;
-        int listenerFreq = iterations;
+        int listenerFreq = 1;
 
         CifarDataSetIterator cifar = new CifarDataSetIterator(batchSize, numSamples,
                         new int[] {height, width, channels}, preProcessCifar, true);
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(channels).nOut(6).weightInit(WeightInit.XAVIER)
@@ -209,7 +217,7 @@ public class DataSetIteratorTest {
 
         model.fit(cifar);
 
-        cifar.test(10);
+        cifar = new CifarDataSetIterator(batchSize, 10, false);
         Evaluation eval = new Evaluation(cifar.getLabels());
         while (cifar.hasNext()) {
             DataSet testDS = cifar.next(batchSize);

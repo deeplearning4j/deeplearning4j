@@ -3,7 +3,6 @@ package org.deeplearning4j.gradientcheck;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -15,6 +14,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
@@ -32,10 +32,25 @@ public class GradientCheckTestsMasking {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-7;
 
     static {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    private static class GradientCheckSimpleScenario {
+        private final ILossFunction lf;
+        private final Activation act;
+        private final int nOut;
+        private final int labelWidth;
+
+        GradientCheckSimpleScenario(ILossFunction lf, Activation act, int nOut, int labelWidth) {
+            this.lf = lf;
+            this.act = act;
+            this.nOut = nOut;
+            this.labelWidth = labelWidth;
+        }
+
     }
 
     @Test
@@ -51,63 +66,69 @@ public class GradientCheckTestsMasking {
 
         int nIn = 4;
         int layerSize = 3;
-        int nOut = 2;
 
+        GradientCheckSimpleScenario[] scenarios = new GradientCheckSimpleScenario[] {
+                        new GradientCheckSimpleScenario(LossFunctions.LossFunction.MCXENT.getILossFunction(),
+                                        Activation.SOFTMAX, 2, 2),
+                        new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                                        Activation.TANH, 10, 3),
+                        new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(4).build(),
+                                        Activation.IDENTITY, 12, 4),
+                        new GradientCheckSimpleScenario(LossFunctions.LossFunction.L2.getILossFunction(),
+                                        Activation.SOFTMAX, 2, 2)};
 
-        Random r = new Random(12345L);
-        INDArray input = Nd4j.zeros(1, nIn, timeSeriesLength);
-        for (int m = 0; m < 1; m++) {
-            for (int j = 0; j < nIn; j++) {
-                for (int k = 0; k < timeSeriesLength; k++) {
-                    input.putScalar(new int[] {m, j, k}, r.nextDouble() - 0.5);
+        for (GradientCheckSimpleScenario s : scenarios) {
+
+            Random r = new Random(12345L);
+            INDArray input = Nd4j.zeros(1, nIn, timeSeriesLength);
+            for (int m = 0; m < 1; m++) {
+                for (int j = 0; j < nIn; j++) {
+                    for (int k = 0; k < timeSeriesLength; k++) {
+                        input.putScalar(new int[] {m, j, k}, r.nextDouble() - 0.5);
+                    }
                 }
             }
-        }
 
-        INDArray labels = Nd4j.zeros(1, nOut, timeSeriesLength);
-        for (int m = 0; m < 1; m++) {
-            for (int j = 0; j < timeSeriesLength; j++) {
-                int idx = r.nextInt(nOut);
-                labels.putScalar(new int[] {m, idx, j}, 1.0f);
-            }
-        }
-
-        for (int i = 0; i < mask.length; i++) {
-
-            //Create mask array:
-            INDArray maskArr = Nd4j.create(1, timeSeriesLength);
-            for (int j = 0; j < mask[i].length; j++) {
-                maskArr.putScalar(new int[] {0, j}, mask[i][j] ? 1.0 : 0.0);
+            INDArray labels = Nd4j.zeros(1, s.labelWidth, timeSeriesLength);
+            for (int m = 0; m < 1; m++) {
+                for (int j = 0; j < timeSeriesLength; j++) {
+                    int idx = r.nextInt(s.labelWidth);
+                    labels.putScalar(new int[] {m, idx, j}, 1.0f);
+                }
             }
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false).seed(12345L)
-                            .list()
-                            .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .updater(Updater.NONE).build())
-                            .layer(1, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut)
-                                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                                            .updater(Updater.NONE).build())
-                            .pretrain(false).backprop(true).build();
-            MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-            mln.init();
+            for (int i = 0; i < mask.length; i++) {
 
-            mln.setLayerMaskArrays(null, maskArr);
+                //Create mask array:
+                INDArray maskArr = Nd4j.create(1, timeSeriesLength);
+                for (int j = 0; j < mask[i].length; j++) {
+                    maskArr.putScalar(new int[] {0, j}, mask[i][j] ? 1.0 : 0.0);
+                }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L)
+                                .list()
+                                .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp()).build())
+                                .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
+                                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                                                .updater(new NoOp()).build())
+                                .pretrain(false).backprop(true).build();
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                mln.init();
 
-            String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
-                            + ", miniBatchSize=" + 1;
-            assertTrue(msg, gradOK);
+                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, maskArr);
 
+                String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
+                                + ", miniBatchSize=" + 1;
+                assertTrue(msg, gradOK);
+            }
         }
     }
 
     @Test
     public void testBidirectionalLSTMMasking() {
-        //Basic test of GravesLSTM layer
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 5;
@@ -125,8 +146,8 @@ public class GradientCheckTestsMasking {
         int testNum = 0;
         for (INDArray mask : masks) {
 
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().regularization(false)
-                            .updater(Updater.NONE).weightInit(WeightInit.DISTRIBUTION)
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
                             .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
                                             .activation(Activation.TANH).build())
@@ -140,14 +161,7 @@ public class GradientCheckTestsMasking {
             mln.init();
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength; k++) {
-                        input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
 
             INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
             for (int i = 0; i < miniBatchSize; i++) {
@@ -156,8 +170,6 @@ public class GradientCheckTestsMasking {
                 }
             }
 
-            mln.setLayerMaskArrays(mask, mask);
-
             if (PRINT_RESULTS) {
                 System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
                 for (int j = 0; j < mln.getnLayers(); j++)
@@ -165,7 +177,7 @@ public class GradientCheckTestsMasking {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask);
 
             assertTrue(gradOK);
         }
@@ -221,7 +233,7 @@ public class GradientCheckTestsMasking {
                 Activation a = act[i];
 
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -233,7 +245,6 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, minibatch, nIn, nOut, 12345);
                 INDArray features = fl[0];
                 INDArray labels = fl[1];
@@ -244,7 +255,7 @@ public class GradientCheckTestsMasking {
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
 
                 assertTrue(msg, gradOK);
             }
@@ -315,7 +326,7 @@ public class GradientCheckTestsMasking {
                 Activation a = act[i];
 
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).seed(12345)
                                 .list()
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(Activation.TANH)
@@ -327,7 +338,6 @@ public class GradientCheckTestsMasking {
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
 
-                net.setLayerMaskArrays(null, labelMask);
                 INDArray[] fl = LossFunctionGradientCheck.getFeaturesAndLabels(lf, new int[] {minibatch, nIn, tsLength},
                                 new int[] {minibatch, nOut, tsLength}, 12345);
                 INDArray features = fl[0];
@@ -339,15 +349,14 @@ public class GradientCheckTestsMasking {
                 System.out.println(msg);
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels);
+                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
 
                 assertTrue(msg, gradOK);
 
 
                 //Check the equivalent compgraph:
-
                 Nd4j.getRandom().setSeed(12345);
-                ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
+                ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(new NoOp())
                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
@@ -359,11 +368,9 @@ public class GradientCheckTestsMasking {
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();
 
-                net.setLayerMaskArrays(null, labelMask);
-
                 gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                new INDArray[] {features}, new INDArray[] {labels});
+                                new INDArray[] {features}, new INDArray[] {labels}, null, new INDArray[]{labelMask});
 
                 assertTrue(msg + " (compgraph)", gradOK);
             }

@@ -5,12 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLearningAlgorithm;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
@@ -67,14 +67,14 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
                 continue;
 
             // FIXME: hashcode is bad idea here. we need Long id
-            localCounter.incrementCount(element.getStorageId(), 1.0);
+            localCounter.incrementCount(element.getStorageId(), 1.0f);
             seqLen++;
         }
 
         // FIXME: we're missing label information here due to shallow vocab mechanics
         if (sequence.getSequenceLabels() != null)
             for (T label : sequence.getSequenceLabels()) {
-                localCounter.incrementCount(label.getStorageId(), 1.0);
+                localCounter.incrementCount(label.getStorageId(), 1.0f);
             }
 
         accumulator.add(localCounter);

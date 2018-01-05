@@ -1,7 +1,6 @@
 package org.deeplearning4j.ui.play;
 
 import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.impl.CollectionStatsStorageRouter;
@@ -18,7 +17,6 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -104,7 +102,7 @@ public class TestRemoteReceiver {
         //Use this in conjunction with startRemoteUI()
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).list()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
                         .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(4).nOut(3).build())

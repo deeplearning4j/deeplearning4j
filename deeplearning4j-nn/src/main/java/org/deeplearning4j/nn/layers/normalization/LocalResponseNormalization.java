@@ -1,18 +1,22 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -41,7 +45,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Created by nyghtowl on 10/29/15.
  */
 public class LocalResponseNormalization
-                extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
+                extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
     protected static final Logger log =
                     LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
@@ -59,6 +63,11 @@ public class LocalResponseNormalization
         initializeHelper();
     }
 
+    @Override
+    public Layer clone() {
+        return new LocalResponseNormalization(conf.clone());
+    }
+
     public LocalResponseNormalization(NeuralNetConfiguration conf) {
         super(conf);
         initializeHelper();
@@ -68,10 +77,21 @@ public class LocalResponseNormalization
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                             .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
-            log.debug("CudnnLocalResponseNormalizationHelper successfully loaded");
+            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(),
+                            layerConf().getBeta())) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnLocalResponseNormalizationHelper", t);
+                log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
+            } else {
+                Properties p = Nd4j.getExecutioner().getEnvironmentInformation();
+                if (p.getProperty("backend").equals("CUDA")) {
+                    OneTimeLogger.info(log, "cuDNN not found: "
+                                    + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
+                                    + "For more information, please refer to: https://deeplearning4j.org/cudnn", t);
+                }
             }
         }
     }
@@ -110,17 +130,13 @@ public class LocalResponseNormalization
 
         // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
         for (int i = 1; i < halfN + 1; i++) {
-            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+            tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = reverse.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
                             NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+            tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = reverse.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
                             NDArrayIndex.all()}, tmp.addi(addVal));
         }
@@ -175,7 +191,7 @@ public class LocalResponseNormalization
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -183,15 +199,9 @@ public class LocalResponseNormalization
         return false;
     }
 
-
     @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+    public void clearNoiseWeightParams() {
+        //No op
     }
 
     @Override
@@ -207,6 +217,11 @@ public class LocalResponseNormalization
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
     }
 
 

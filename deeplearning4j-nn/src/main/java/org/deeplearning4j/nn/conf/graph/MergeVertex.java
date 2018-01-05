@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -53,6 +55,21 @@ public class MergeVertex extends GraphVertex {
     @Override
     public int numParams(boolean backprop) {
         return 0;
+    }
+
+    @Override
+    public int minVertexInputs() {
+        return 2;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
+    public String toString() {
+        return "MergeVertex()";
     }
 
     @Override
@@ -106,16 +123,20 @@ public class MergeVertex extends GraphVertex {
 
             if (size > 0) {
                 //Size is specified
-                if (type == InputType.Type.FF)
+                if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
-                else
-                    return InputType.recurrent(size);
+                } else {
+                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    return InputType.recurrent(size, tsLength);
+                }
             } else {
                 //size is unknown
-                if (type == InputType.Type.FF)
+                if (type == InputType.Type.FF) {
                     return InputType.feedForward(-1);
-                else
-                    return InputType.recurrent(-1);
+                } else {
+                    int tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
+                    return InputType.recurrent(-1, tsLength);
+                }
             }
         } else {
             //CNN inputs... also check that the depth, width and heights match:
@@ -152,5 +173,16 @@ public class MergeVertex extends GraphVertex {
 
             return InputType.convolutional(fh, fw, depthSum);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        InputType outputType = getOutputType(-1, inputTypes);
+
+        //TODO multiple input types
+        return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0) //No working memory in addition to activations/epsilons
+                        .cacheMemory(0, 0) //No caching
+                        .build();
     }
 }

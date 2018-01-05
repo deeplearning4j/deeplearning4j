@@ -19,12 +19,14 @@
 package org.deeplearning4j.nn.conf.inputs;
 
 import lombok.*;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /** The InputType class is used to track and define the types of activations etc used in a ComputationGraph.
  * This is most useful for automatically adding preprocessors between layers, and automatically setting nIn values.
@@ -56,6 +58,9 @@ public abstract class InputType implements Serializable {
     @Override
     public abstract String toString();
 
+    @JsonIgnore
+    public abstract int arrayElementsPerExample();
+
     /** InputType for feed forward network data
      * @param size The size of the activations
      */
@@ -69,6 +74,15 @@ public abstract class InputType implements Serializable {
      */
     public static InputType recurrent(int size) {
         return new InputTypeRecurrent(size);
+    }
+
+    /** InputType for recurrent neural network (time series) data
+     * @param size The size of the activations
+     * @param timeSeriesLength Length of the input time series
+     * @return
+     */
+    public static InputType recurrent(int size, int timeSeriesLength) {
+        return new InputTypeRecurrent(size, timeSeriesLength);
     }
 
     /**Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, depth, height, width].
@@ -99,6 +113,7 @@ public abstract class InputType implements Serializable {
     @AllArgsConstructor
     @Getter
     @NoArgsConstructor
+    @EqualsAndHashCode(callSuper = false)
     public static class InputTypeFeedForward extends InputType {
         private int size;
 
@@ -111,13 +126,24 @@ public abstract class InputType implements Serializable {
         public String toString() {
             return "InputTypeFeedForward(" + size + ")";
         }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return size;
+        }
     }
 
-    @AllArgsConstructor
     @Getter
     @NoArgsConstructor
+    @AllArgsConstructor
+    @EqualsAndHashCode(callSuper = false)
     public static class InputTypeRecurrent extends InputType {
         private int size;
+        private int timeSeriesLength;
+
+        public InputTypeRecurrent(int size) {
+            this(size, -1);
+        }
 
         @Override
         public Type getType() {
@@ -126,7 +152,20 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeRecurrent(" + size + ")";
+            if (timeSeriesLength > 0) {
+                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ")";
+            } else {
+                return "InputTypeRecurrent(" + size + ")";
+            }
+        }
+
+        @Override
+        public int arrayElementsPerExample() {
+            if (timeSeriesLength <= 0) {
+                throw new IllegalStateException("Cannot calculate number of array elements per example: "
+                                + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
+            }
+            return timeSeriesLength * size;
         }
     }
 
@@ -147,6 +186,11 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
+        }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return height * width * depth;
         }
     }
 
@@ -176,7 +220,40 @@ public abstract class InputType implements Serializable {
         public String toString() {
             return "InputTypeConvolutionalFlat(h=" + height + ",w=" + width + ",d=" + depth + ")";
         }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return height * width * depth;
+        }
     }
 
+
+
+    public static InputType inferInputType(INDArray inputArray) {
+        //Note: ConvolutionalFlat and FeedForward look identical... but either should work OK if using something
+        // like FeedForwardToCnnPreProcessor
+
+        switch (inputArray.rank()) {
+            case 2:
+                return InputType.feedForward(inputArray.size(1));
+            case 3:
+                return InputType.recurrent(inputArray.size(1), inputArray.size(2));
+            case 4:
+                //Order: [minibatch, depth, height, width] -> [h, w, d]
+                return InputType.convolutional(inputArray.size(2), inputArray.size(3), inputArray.size(1));
+            default:
+                throw new IllegalArgumentException(
+                                "Cannot infer input type for array with shape: " + Arrays.toString(inputArray.shape()));
+        }
+    }
+
+    public static InputType[] inferInputTypes(INDArray... inputArrays) {
+        InputType[] out = new InputType[inputArrays.length];
+        for (int i = 0; i < inputArrays.length; i++) {
+            out[i] = inferInputType(inputArrays[i]);
+        }
+
+        return out;
+    }
 
 }

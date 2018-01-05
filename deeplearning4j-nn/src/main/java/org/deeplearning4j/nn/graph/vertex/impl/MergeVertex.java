@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -62,11 +62,6 @@ public class MergeVertex extends BaseGraphVertex {
 
     @Override
     public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public boolean isOutputVertex() {
         return false;
     }
 
@@ -115,34 +110,41 @@ public class MergeVertex extends BaseGraphVertex {
         switch (inputs[0].rank()) {
             case 2:
                 //Standard feedforward inputs...
+                /*
                 out = Nd4j.create(nExamples, nOut);
-
+                
                 for (INDArray activation : inputs) {
                     int[] currShape = activation.shape();
                     out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]))
                                     .assign(activation);
                     nOutCumulative += currShape[1];
                 }
+                */
+                out = Nd4j.hstack(inputs);
                 break;
             case 3:
                 //Time series inputs...
+                /*
                 int tsLength = inputs[0].size(2);
                 out = Nd4j.create(nExamples, nOut, tsLength);
-
+                
                 for (INDArray activation : inputs) {
                     int[] currShape = activation.shape();
                     out.get(NDArrayIndex.all(), NDArrayIndex.interval(nOutCumulative, nOutCumulative + currShape[1]),
                                     NDArrayIndex.all()).assign(activation);
                     nOutCumulative += currShape[1];
                 }
+                */
+                out = Nd4j.hstack(inputs);
 
                 break;
             case 4:
                 fwdPassRank = 4;
+                /*
                 int[] outShape = Arrays.copyOf(inputs[0].shape(), 4);
                 outShape[1] = nOut;
                 out = Nd4j.create(outShape);
-
+                
                 //Input activations: [minibatch,depth,width,height]
                 for (INDArray activation : inputs) {
                     out.get(NDArrayIndex.all(),
@@ -150,6 +152,8 @@ public class MergeVertex extends BaseGraphVertex {
                                     NDArrayIndex.all(), NDArrayIndex.all()).assign(activation);
                     nOutCumulative += activation.size(1);
                 }
+                */
+                out = Nd4j.hstack(inputs);
 
                 break;
             default:
@@ -172,7 +176,7 @@ public class MergeVertex extends BaseGraphVertex {
         //Split the epsilons in the opposite way that the activations were merged
         INDArray[] out = new INDArray[forwardPassShapes.length];
         for (int i = 0; i < out.length; i++)
-            out[i] = Nd4j.create(forwardPassShapes[i]);
+            out[i] = Nd4j.createUninitialized(forwardPassShapes[i]);
 
         int cumulative = 0;
         switch (fwdPassRank) {

@@ -4,7 +4,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.ml.param.{ParamPair, Params}
 import org.apache.spark.ml.util.{MLReadable, MLReader}
-import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods.{compact, parse, render}
@@ -120,6 +120,13 @@ object SparkDl4jUtil {
         Option(Thread.currentThread().getContextClassLoader).getOrElse(getSparkClassLoader)
 
     def getSparkClassLoader: ClassLoader = getClass.getClassLoader
+
+    def createScheme() : StructType = {
+        new StructType(Array(
+            StructField("mlc", DataTypes.StringType, false),
+            StructField("params", ArrayType.apply(DataTypes.DoubleType), false)
+        ))
+    }
 }
 
 object SchemaUtils {

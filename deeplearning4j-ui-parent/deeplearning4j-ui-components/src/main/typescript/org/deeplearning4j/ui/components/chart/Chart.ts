@@ -20,7 +20,7 @@
 /// <reference path="../../util/TSUtils.ts" />
 
 
-import Ordinal = d3.scale.Ordinal;
+
 
 abstract class Chart extends Component {
 

@@ -1,7 +1,5 @@
 package org.deeplearning4j.api.storage;
 
-import org.deeplearning4j.api.storage.StatsStorage;
-
 /**
  * A listener interface, so that classes can be notified of changes to a {@link StatsStorage}
  * implementation

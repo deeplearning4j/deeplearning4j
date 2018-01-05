@@ -19,10 +19,8 @@
 package org.deeplearning4j.nn.layers;
 
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -33,6 +31,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.Serializable;
@@ -75,7 +74,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = input;
@@ -102,7 +101,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -129,7 +128,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        throw new RuntimeException("Not yet implemented");
+        throw new RuntimeException("Not supported " + layerId());
     }
 
     @Override
@@ -187,9 +186,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public INDArray activate(boolean training) {
         INDArray z = input;
-        //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
-        //    conf.getLayer().getActivationFunction(), z.dup(), conf.getExtraArgs() ));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(z.dup(), training);
+        INDArray ret = layerConf().getActivationFn().getActivation(z.dup(), training);
 
         if (maskArray != null) {
             ret.muliColumnVector(maskArray);
@@ -235,30 +232,20 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return a probability distribution for each row
      */
     public INDArray output(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+        }
         return activate(training);
     }
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not applicable");
+        throw new UnsupportedOperationException("Not applicable " + layerId());
     }
 
     @Override
     public boolean isPretrainLayer() {
         return false;
-    }
-
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not applicable");
-    }
-
-    @Override
-    public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -362,19 +349,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      */
     @Override
     public void fit(INDArray input, INDArray labels) {
-        setInput(input);
-        setLabels(labels);
-        applyDropOutIfNecessary(true);
-        if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = updater.stateSizeForLayer(this);
-            if (updaterStateSize > 0)
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
-        }
-        solver.optimize();
+        throw new UnsupportedOperationException("LossLayer has no parameters and cannot be fit");
     }
 
     /**
@@ -412,7 +387,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

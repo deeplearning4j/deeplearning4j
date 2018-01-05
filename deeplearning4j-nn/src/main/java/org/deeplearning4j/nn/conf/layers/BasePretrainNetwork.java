@@ -33,13 +33,11 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
     protected LossFunctions.LossFunction lossFunction;
     protected double visibleBiasInit;
-    private int preTrainIterations;
 
     public BasePretrainNetwork(Builder builder) {
         super(builder);
         this.lossFunction = builder.lossFunction;
         this.visibleBiasInit = builder.visibleBiasInit;
-        this.preTrainIterations = builder.preTrainIterations;
 
     }
 
@@ -72,33 +70,13 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case PretrainParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case PretrainParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            case PretrainParamInitializer.VISIBLE_BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
+    public boolean isPretrainParam(String paramName) {
+        return PretrainParamInitializer.VISIBLE_BIAS_KEY.equals(paramName);
     }
 
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
         protected LossFunctions.LossFunction lossFunction = LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY;
         protected double visibleBiasInit = 0.0;
-        protected int preTrainIterations = 1;
 
         public Builder() {}
 
@@ -109,11 +87,6 @@ public abstract class BasePretrainNetwork extends FeedForwardLayer {
 
         public T visibleBiasInit(double visibleBiasInit) {
             this.visibleBiasInit = visibleBiasInit;
-            return (T) this;
-        }
-
-        public T preTrainIterations(int preTrainIterations) {
-            this.preTrainIterations = preTrainIterations;
             return (T) this;
         }
 

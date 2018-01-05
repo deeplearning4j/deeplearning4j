@@ -1,10 +1,11 @@
 package org.deeplearning4j.nn.modelimport.keras.layers;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.modelimport.keras.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -15,9 +16,10 @@ import java.util.Map;
  * @author dave@skymind.io
  */
 @Slf4j
+@Data
 public class KerasInput extends KerasLayer {
 
-    public static final int NO_TRUNCATED_BPTT = 0;
+    private final int NO_TRUNCATED_BPTT = 0;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -71,7 +73,7 @@ public class KerasInput extends KerasLayer {
      */
     public KerasInput(String layerName, int[] inputShape, boolean enforceTrainingConfig)
                     throws UnsupportedKerasConfigurationException {
-        this.className = LAYER_CLASS_NAME_INPUT;
+        this.className = conf.getLAYER_CLASS_NAME_INPUT();
         this.layerName = layerName;
         this.inputShape = inputShape;
         this.inboundLayerNames = new ArrayList<String>();
@@ -130,16 +132,6 @@ public class KerasInput extends KerasLayer {
 
     /**
      * Returns value of truncated BPTT, if any found.
-     *
-     * TODO: figure out how to infer truncated BPTT value for non-sequence inputs
-     *
-     * In Keras, truncated BPTT is specified implicitly by specifying a fixed
-     * size input and by passing in the "unroll" argument to recurrent layers.
-     * Currently, the only setting in which we can confidently determine the
-     * value of truncated BPTT is if the original input has two dimensions,
-     * the first of which is sequence length. Hypothetically, we should be
-     * able to do this for other types of inputs, but that's less straightforward.
-     *
      * @return          value of truncated BPTT
      */
     public int getTruncatedBptt() {

@@ -4,8 +4,6 @@ import com.google.common.collect.Lists;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.ElementsLearningAlgorithm;
@@ -34,6 +32,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -120,7 +120,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
-    @Deprecated
     public String predict(LabelledDocument document) {
         if (document.getReferencedContent() != null)
             return predict(document.getReferencedContent());
@@ -212,6 +211,9 @@ public class ParagraphVectors extends Word2Vec {
      */
     public INDArray inferVector(@NonNull List<VocabWord> document, double learningRate, double minLearningRate,
                     int iterations) {
+
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
 
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
 
@@ -388,7 +390,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return the word distances for each label
      */
-    @Deprecated
     public String predict(List<VocabWord> document) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
@@ -396,18 +397,19 @@ public class ParagraphVectors extends Word2Vec {
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
 
+        /*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
-        }
+        }*/
 
-        INDArray docMean = arr.mean(0);
+        INDArray docMean = inferVector(document); //arr.mean(0);
         Counter<String> distances = new Counter<>();
 
         for (String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
         return distances.argMax();
@@ -420,7 +422,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param document raw text of the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(@NonNull LabelledDocument document, int limit) {
         if (document.getReferencedContent() != null) {
             return predictSeveral(document.getReferencedContent(), limit);
@@ -435,7 +436,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param rawText raw text of the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(String rawText, int limit) {
         if (tokenizerFactory == null)
             throw new IllegalStateException("TokenizerFactory should be defined, prior to predict() call");
@@ -458,30 +458,29 @@ public class ParagraphVectors extends Word2Vec {
      * @param document the document
      * @return possible labels in descending order
      */
-    @Deprecated
     public Collection<String> predictSeveral(List<VocabWord> document, int limit) {
         /*
             This code was transferred from original ParagraphVectors DL4j implementation, and yet to be tested
          */
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
-
+/*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
         }
-
-        INDArray docMean = arr.mean(0);
+*/
+        INDArray docMean = inferVector(document); //arr.mean(0);
         Counter<String> distances = new Counter<>();
 
         for (String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
             log.debug("Similarity inside: [" + s + "] -> " + sim);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
-        return distances.getSortedKeys().subList(0, limit);
+        return distances.keySetSorted().subList(0, limit);
     }
 
     /**
@@ -653,7 +652,6 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(LabelledDocument document, String label) {
         if (document.getReferencedContent() != null) {
             return similarityToLabel(document.getReferencedContent(), label);
@@ -668,17 +666,17 @@ public class ParagraphVectors extends Word2Vec {
      * @param label
      * @return
      */
-    @Deprecated
     public double similarityToLabel(List<VocabWord> document, String label) {
         if (document.isEmpty())
             throw new IllegalStateException("Document has no words inside");
 
+        /*
         INDArray arr = Nd4j.create(document.size(), this.layerSize);
         for (int i = 0; i < document.size(); i++) {
             arr.putRow(i, getWordVectorMatrix(document.get(i).getWord()));
-        }
+        }*/
 
-        INDArray docMean = arr.mean(0);
+        INDArray docMean = inferVector(document); //arr.mean(0);
 
         INDArray otherVec = getWordVectorMatrix(label);
         double sim = Transforms.cosineSim(docMean, otherVec);
@@ -821,6 +819,20 @@ public class ParagraphVectors extends Word2Vec {
         }
 
         /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        @Override
+        public Builder limitVocabularySize(int limit) {
+            super.limitVocabularySize(limit);
+            return this;
+        }
+
+        /**
          * This method allows you to specify SequenceElement that will be used as UNK element, if UNK is used
          *
          * @param element
@@ -945,6 +957,7 @@ public class ParagraphVectors extends Word2Vec {
             ret.unknownElement = this.unknownElement;
             ret.seed = this.seed;
             ret.enableScavenger = this.enableScavenger;
+            ret.vocabLimit = this.vocabLimit;
 
             ret.trainElementsVectors = this.trainElementsVectors;
             ret.trainSequenceVectors = this.trainSequenceVectors;
@@ -1198,6 +1211,10 @@ public class ParagraphVectors extends Word2Vec {
         /**
          * This method defines whether negative sampling should be used or not
          *
+         * PLEASE NOTE: If you're going to use negative sampling, you might want to disable HierarchicSoftmax, which is enabled by default
+         *
+         * Default value: 0
+         *
          * @param negative set > 0 as negative sampling argument, or 0 to disable
          * @return
          */
@@ -1290,6 +1307,14 @@ public class ParagraphVectors extends Word2Vec {
             return this;
         }
 
+        /**
+         * This method enables/disables Hierarchic softmax
+         *
+         * Default value: enabled
+         *
+         * @param reallyUse
+         * @return
+         */
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);

@@ -1,7 +1,6 @@
 package org.deeplearning4j.api.storage;
 
 
-import java.io.Serializable;
 import java.util.Collection;
 
 /**

@@ -5,12 +5,12 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -21,10 +21,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PerformanceListener implements IterationListener {
     private final int frequency;
     private static final Logger logger = LoggerFactory.getLogger(PerformanceListener.class);
-    private ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
-    private ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
-    private ThreadLocal<Long> lastTime = new ThreadLocal<>();
-    private ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
+    private transient ThreadLocal<Double> samplesPerSec = new ThreadLocal<>();
+    private transient ThreadLocal<Double> batchesPerSec = new ThreadLocal<>();
+    private transient ThreadLocal<Long> lastTime = new ThreadLocal<>();
 
     private boolean reportScore;
     private boolean reportSample = true;
@@ -42,20 +41,12 @@ public class PerformanceListener implements IterationListener {
     public PerformanceListener(int frequency, boolean reportScore) {
         this.frequency = frequency;
         this.reportScore = reportScore;
+
+        lastTime.set(System.currentTimeMillis());
     }
 
     @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    @Override
-    public void invoke() {
-
-    }
-
-    @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         // we update lastTime on every iteration
         // just to simplify things
         if (lastTime.get() == null)
@@ -67,10 +58,7 @@ public class PerformanceListener implements IterationListener {
         if (batchesPerSec.get() == null)
             batchesPerSec.set(0.0);
 
-        if (iterationCount.get() == null)
-            iterationCount.set(new AtomicLong(0));
-
-        if (iterationCount.get().getAndIncrement() % frequency == 0) {
+        if (iteration % frequency == 0) {
             long currentTime = System.currentTimeMillis();
 
             long timeSpent = currentTime - lastTime.get();
@@ -90,9 +78,9 @@ public class PerformanceListener implements IterationListener {
                 input = model.input();
             }
 
-            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
+            //            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
-            long numSamples = input.lengthLong() / tadLength;
+            long numSamples = input.size(0);
 
             samplesPerSec.set((double) (numSamples / timeSec));
             batchesPerSec.set((double) (1 / timeSec));
@@ -104,12 +92,13 @@ public class PerformanceListener implements IterationListener {
                 builder.append("Device: [").append(Nd4j.getAffinityManager().getDeviceForCurrentThread()).append("]; ");
 
             if (reportEtl) {
-                long time = (model instanceof MultiLayerNetwork) ? ((MultiLayerNetwork) model).getLastEtlTime() : ((ComputationGraph) model).getLastEtlTime();
+                long time = (model instanceof MultiLayerNetwork) ? ((MultiLayerNetwork) model).getLastEtlTime()
+                                : ((ComputationGraph) model).getLastEtlTime();
                 builder.append("ETL: ").append(time).append(" ms; ");
             }
 
             if (reportIteration)
-                builder.append("iteration ").append(iterationCount.get().get()).append("; ");
+                builder.append("iteration ").append(iteration).append("; ");
 
             if (reportTime)
                 builder.append("iteration time: ").append(timeSpent).append(" ms; ");
@@ -128,6 +117,14 @@ public class PerformanceListener implements IterationListener {
         }
 
         lastTime.set(System.currentTimeMillis());
+    }
+
+    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        //Custom deserializer, as transient ThreadLocal fields won't be initialized...
+        in.defaultReadObject();
+        samplesPerSec = new ThreadLocal<>();
+        batchesPerSec = new ThreadLocal<>();
+        lastTime = new ThreadLocal<>();
     }
 
     public static class Builder {

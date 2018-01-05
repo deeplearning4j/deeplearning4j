@@ -27,20 +27,11 @@ public interface Updater extends Serializable {
     INDArray getStateViewArray();
 
     /**
-     * Calculate and return the state size for this updater (for the given layer).
-     * How many parameters/values does this updater have?
-     *
-     * @param layer Layer that this updater belongs to
-     * @return number of parameters/values in the updater state
-     */
-    int stateSizeForLayer(Layer layer);
-
-    /**
      * Updater: updates the model
      *
      * @param layer
      * @param gradient
      * @param iteration
      */
-    void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize);
+    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize);
 }

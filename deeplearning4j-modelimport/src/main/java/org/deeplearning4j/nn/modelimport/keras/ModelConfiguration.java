@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -115,7 +117,7 @@ public class ModelConfiguration {
     public static MultiLayerConfiguration importSequentialModelConfig(String modelJson)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasSequentialModel kerasModel =
-                        new KerasSequentialModel.ModelBuilder().modelJson(modelJson).buildSequential();
+                        new KerasSequentialModel().modelBuilder().modelJson(modelJson).buildSequential();
         return kerasModel.getMultiLayerConfiguration();
     }
 
@@ -130,7 +132,7 @@ public class ModelConfiguration {
     @Deprecated
     public static ComputationGraphConfiguration importFunctionalApiConfig(String modelJson)
                     throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel kerasModel = new KerasModel.ModelBuilder().modelJson(modelJson).buildModel();
+        KerasModel kerasModel = new KerasModel().modelBuilder().modelJson(modelJson).buildModel();
         return kerasModel.getComputationGraphConfiguration();
     }
 }

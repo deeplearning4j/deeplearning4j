@@ -31,21 +31,10 @@ import java.io.Serializable;
 public interface IterationListener extends Serializable {
 
     /**
-     * Get if listener invoked
-     */
-    boolean invoked();
-
-    /**
-     * Change invoke to true
-     */
-    void invoke();
-
-
-    /**
      * Event listener for each iteration
      * @param iteration the iteration
      * @param model the model iterating
      */
-    void iterationDone(Model model, int iteration);
+    void iterationDone(Model model, int iteration, int epoch);
 
 }

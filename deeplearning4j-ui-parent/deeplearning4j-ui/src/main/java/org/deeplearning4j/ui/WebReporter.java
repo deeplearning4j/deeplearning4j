@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui;
 
 import lombok.NonNull;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

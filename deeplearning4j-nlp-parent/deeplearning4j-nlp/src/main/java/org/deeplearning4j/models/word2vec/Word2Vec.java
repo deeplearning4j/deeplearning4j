@@ -255,6 +255,20 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
         }
 
         /**
+         * This method sets vocabulary limit during construction.
+         *
+         * Default value: 0. Means no limit
+         *
+         * @param limit
+         * @return
+         */
+        @Override
+        public Builder limitVocabularySize(int limit) {
+            super.limitVocabularySize(limit);
+            return this;
+        }
+
+        /**
          * This method allows to define external VocabCache to be used
          *
          * @param vocabCache
@@ -304,6 +318,10 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
 
         /**
          * This method defines whether negative sampling should be used or not
+         *
+         * PLEASE NOTE: If you're going to use negative sampling, you might want to disable HierarchicSoftmax, which is enabled by default
+         *
+         * Default value: 0
          *
          * @param negative set > 0 as negative sampling argument, or 0 to disable
          * @return
@@ -496,6 +514,14 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             return this;
         }
 
+        /**
+         * This method enables/disables Hierarchic softmax
+         *
+         * Default value: enabled
+         *
+         * @param reallyUse
+         * @return
+         */
         @Override
         public Builder useHierarchicSoftmax(boolean reallyUse) {
             super.useHierarchicSoftmax(reallyUse);
@@ -554,6 +580,7 @@ public class Word2Vec extends SequenceVectors<VocabWord> {
             ret.variableWindows = this.variableWindows;
             ret.seed = this.seed;
             ret.enableScavenger = this.enableScavenger;
+            ret.vocabLimit = this.vocabLimit;
 
 
             ret.iterator = this.iterator;

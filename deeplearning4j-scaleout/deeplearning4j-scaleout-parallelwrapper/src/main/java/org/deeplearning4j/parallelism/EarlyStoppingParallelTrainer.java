@@ -107,7 +107,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
 
         this.wrapper = new ParallelWrapper.Builder<>(model).workers(workers).prefetchBuffer(prefetchBuffer)
-                        .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
+                        .averagingFrequency(averagingFrequency)
+                        //.useLegacyAveraging(useLegacyAveraging)
                         .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
     }
 
@@ -323,18 +324,7 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
 
         @Override
-        public boolean invoked() {
-            return invoked;
-        }
-
-        @Override
-        public void invoke() {
-            this.invoked = true;
-        }
-
-        @Override
-        public void iterationDone(Model model, int iteration) {
-            invoke();
+        public void iterationDone(Model model, int iteration, int epoch) {
             //Check per-iteration termination conditions
             double latestScore = model.score();
             trainer.setLatestScore(latestScore);

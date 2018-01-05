@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.graph;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -18,6 +17,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Map;
@@ -44,8 +45,8 @@ public class TestVariableLengthTSCG {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).graphBuilder().addInputs("in")
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
                             .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
@@ -88,7 +89,7 @@ public class TestVariableLengthTSCG {
             Gradient g2 = net.gradient();
 
             //Scores and gradients should be identical for two cases (given mask array)
-            assertEquals(score1, score2, 0.0);
+            assertEquals(score1, score2, 1e-6);
 
             Map<String, INDArray> g1map = g1.gradientForVariable();
             Map<String, INDArray> g2map = g2.gradientForVariable();
@@ -110,7 +111,7 @@ public class TestVariableLengthTSCG {
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();
-                assertEquals(score2, score2a, 0.0);
+                assertEquals(score2, score2a, 1e-6);
                 for (String s : g2map.keySet()) {
                     INDArray g2s = g2map.get(s);
                     INDArray g2sa = g2a.getGradientFor(s);
@@ -133,8 +134,8 @@ public class TestVariableLengthTSCG {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).graphBuilder().addInputs("in")
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
                             .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
                                             "in")
                             .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
@@ -270,21 +271,21 @@ public class TestVariableLengthTSCG {
                         INDArray labels = Nd4j.ones(miniBatch, nOut, tsLength);
 
                         ComputationGraphConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L)
+                                        new NeuralNetConfiguration.Builder().seed(12345L)
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "in")
                                                         .addLayer("1", new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MSE)
                                                                                         .activation(Activation.IDENTITY)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.ZERO)
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "0")
                                                         .setOutputs("1").pretrain(false).backprop(true).build();
                         ComputationGraph net = new ComputationGraph(conf);
@@ -338,42 +339,42 @@ public class TestVariableLengthTSCG {
                         INDArray input = Nd4j.rand(new int[] {miniBatch, nIn, tsLength});
 
                         ComputationGraphConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L)
+                                        new NeuralNetConfiguration.Builder().seed(12345L)
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "in")
                                                         .addLayer("1", new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MSE)
                                                                                         .activation(Activation.IDENTITY)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "0")
                                                         .setOutputs("1").pretrain(false).backprop(true).build();
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
                         ComputationGraphConfiguration conf2 =
-                                        new NeuralNetConfiguration.Builder().regularization(false).seed(12345L)
+                                        new NeuralNetConfiguration.Builder().seed(12345L)
                                                         .graphBuilder()
                                                         .addInputs("in").addLayer("0",
                                                                         new GravesLSTM.Builder().nIn(nIn).nOut(5)
                                                                                         .weightInit(WeightInit.DISTRIBUTION)
                                                                                         .dist(new NormalDistribution(0,
                                                                                                         1))
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "in")
                                                         .addLayer("1", new RnnOutputLayer.Builder(
                                                                         LossFunctions.LossFunction.MCXENT)
                                                                                         .activation(Activation.SOFTMAX)
                                                                                         .nIn(5).nOut(nOut)
                                                                                         .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(Updater.NONE).build(),
+                                                                                        .updater(new NoOp()).build(),
                                                                         "0")
                                                         .setOutputs("1").pretrain(false).backprop(true).build();
                         ComputationGraph net2 = new ComputationGraph(conf2);

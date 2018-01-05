@@ -3,7 +3,6 @@ package org.deeplearning4j.parallelism;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -19,11 +18,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -54,14 +52,13 @@ public class ParallelInferenceTest {
 
     @Test
     public void testInferenceSequential1() throws Exception {
-        ParallelInference inf = new ParallelInference.Builder(model)
-                .inferenceMode(InferenceMode.SEQUENTIAL)
-                .workers(2)
-                .build();
+        ParallelInference inf =
+                        new ParallelInference.Builder(model).inferenceMode(InferenceMode.SEQUENTIAL).workers(2).build();
 
 
 
-        log.info("Features shape: {}", Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+        log.info("Features shape: {}",
+                        Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
 
         INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
         INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
@@ -77,20 +74,19 @@ public class ParallelInferenceTest {
         evalClassifcationSingleThread(inf, iterator);
 
         // both workers threads should have non-zero
-        assertTrue( inf.getWorkerCounter(0) > 100L);
-        assertTrue( inf.getWorkerCounter(1) > 100L);
+        assertTrue(inf.getWorkerCounter(0) > 100L);
+        assertTrue(inf.getWorkerCounter(1) > 100L);
     }
 
     @Test
     public void testInferenceSequential2() throws Exception {
-        ParallelInference inf = new ParallelInference.Builder(model)
-                .inferenceMode(InferenceMode.SEQUENTIAL)
-                .workers(2)
-                .build();
+        ParallelInference inf =
+                        new ParallelInference.Builder(model).inferenceMode(InferenceMode.SEQUENTIAL).workers(2).build();
 
 
 
-        log.info("Features shape: {}", Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+        log.info("Features shape: {}",
+                        Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
 
         INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
         INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
@@ -106,22 +102,20 @@ public class ParallelInferenceTest {
         evalClassifcationMultipleThreads(inf, iterator, 10);
 
         // both workers threads should have non-zero
-        assertTrue( inf.getWorkerCounter(0) > 100L);
-        assertTrue( inf.getWorkerCounter(1) > 100L);
+        assertTrue(inf.getWorkerCounter(0) > 100L);
+        assertTrue(inf.getWorkerCounter(1) > 100L);
     }
 
 
     @Test
     public void testInferenceBatched1() throws Exception {
-        ParallelInference inf = new ParallelInference.Builder(model)
-                .inferenceMode(InferenceMode.BATCHED)
-                .batchLimit(8)
-                .workers(2)
-                .build();
+        ParallelInference inf = new ParallelInference.Builder(model).inferenceMode(InferenceMode.BATCHED).batchLimit(8)
+                        .workers(2).build();
 
 
 
-        log.info("Features shape: {}", Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
+        log.info("Features shape: {}",
+                        Arrays.toString(iterator.next().getFeatureMatrix().shapeInfoDataBuffer().asInt()));
 
         INDArray array1 = inf.output(iterator.next().getFeatureMatrix());
         INDArray array2 = inf.output(iterator.next().getFeatureMatrix());
@@ -137,17 +131,18 @@ public class ParallelInferenceTest {
         evalClassifcationMultipleThreads(inf, iterator, 20);
 
         // both workers threads should have non-zero
-        assertTrue( inf.getWorkerCounter(0) > 10L);
-        assertTrue( inf.getWorkerCounter(1) > 10L);
+        assertTrue(inf.getWorkerCounter(0) > 10L);
+        assertTrue(inf.getWorkerCounter(1) > 10L);
     }
 
 
     @Test
-    public void  testProvider1() throws Exception {
+    public void testProvider1() throws Exception {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
 
-        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 100, queue);
+        ParallelInference.ObservablesProvider provider =
+                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100));
@@ -158,10 +153,11 @@ public class ParallelInferenceTest {
     }
 
     @Test
-    public void  testProvider2() throws Exception {
+    public void testProvider2() throws Exception {
         LinkedBlockingQueue queue = new LinkedBlockingQueue();
         BasicInferenceObserver observer = new BasicInferenceObserver();
-        ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L,100, queue);
+        ParallelInference.ObservablesProvider provider =
+                        new ParallelInference.ObservablesProvider(10000000L, 100, queue);
 
         InferenceObservable observable1 = provider.setInput(observer, Nd4j.create(100).assign(1.0));
         InferenceObservable observable2 = provider.setInput(observer, Nd4j.create(100).assign(2.0));
@@ -173,7 +169,7 @@ public class ParallelInferenceTest {
         INDArray[] input = observable1.getInput();
 
         assertEquals(1, input.length);
-        assertArrayEquals(new int[]{2, 100}, input[0].shape());
+        assertArrayEquals(new int[] {2, 100}, input[0].shape());
         assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
         assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
     }
@@ -211,9 +207,12 @@ public class ParallelInferenceTest {
         BasicInferenceObserver observer = new BasicInferenceObserver();
         ParallelInference.ObservablesProvider provider = new ParallelInference.ObservablesProvider(10000000L, 4, queue);
 
-        BatchedInferenceObservable observable1 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(1.0));
-        BatchedInferenceObservable observable2 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(2.0));
-        BatchedInferenceObservable observable3 = (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(3.0));
+        BatchedInferenceObservable observable1 =
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(1.0));
+        BatchedInferenceObservable observable2 =
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(2.0));
+        BatchedInferenceObservable observable3 =
+                        (BatchedInferenceObservable) provider.setInput(observer, Nd4j.create(100).assign(3.0));
 
         INDArray bigOutput = Nd4j.create(3, 10);
         for (int i = 0; i < bigOutput.rows(); i++)
@@ -224,17 +223,17 @@ public class ParallelInferenceTest {
 
         observable3.setPosition(0);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertArrayEquals(new int[] {1, 10}, out.shape());
         assertEquals(0.0f, out.meanNumber().floatValue(), 0.01f);
 
         observable3.setPosition(1);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertArrayEquals(new int[] {1, 10}, out.shape());
         assertEquals(1.0f, out.meanNumber().floatValue(), 0.01f);
 
         observable3.setPosition(2);
         out = observable3.getOutput()[0];
-        assertArrayEquals(new int[]{1, 10}, out.shape());
+        assertArrayEquals(new int[] {1, 10}, out.shape());
         assertEquals(2.0f, out.meanNumber().floatValue(), 0.01f);
     }
 
@@ -252,7 +251,8 @@ public class ParallelInferenceTest {
         log.info(eval.stats());
     }
 
-    protected void evalClassifcationMultipleThreads(@NonNull ParallelInference inf, @NonNull DataSetIterator iterator, int numThreads) throws Exception {
+    protected void evalClassifcationMultipleThreads(@NonNull ParallelInference inf, @NonNull DataSetIterator iterator,
+                    int numThreads) throws Exception {
         DataSet ds = iterator.next();
         log.info("NumColumns: {}", ds.getLabels().columns());
         iterator.reset();

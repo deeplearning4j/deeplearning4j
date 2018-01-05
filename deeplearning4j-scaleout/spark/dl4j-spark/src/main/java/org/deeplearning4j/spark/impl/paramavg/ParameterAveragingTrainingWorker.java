@@ -6,7 +6,6 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -16,7 +15,6 @@ import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.TrainingHook;
-import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
@@ -24,10 +22,10 @@ import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouter;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingWorkerStats;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +38,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ParameterAveragingTrainingWorker implements TrainingWorker<ParameterAveragingTrainingResult> {
+public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<ParameterAveragingTrainingResult> {
 
     private final Broadcast<NetBroadcastTuple> broadcast;
     private final boolean saveUpdater;
@@ -107,8 +105,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Can't have shared updater state
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         configureListeners(net, tuple.getCounter().getAndIncrement());
 
@@ -138,8 +135,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         configureListeners(net, tuple.getCounter().getAndIncrement());
 
@@ -192,8 +188,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (configuration.isCollectTrainingStats())
             stats.logFitEnd(dataSet.numExamples());
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (isLast)
             return getFinalResult(network);
@@ -231,8 +226,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (configuration.isCollectTrainingStats())
             stats.logFitEnd(dataSet.getFeatures(0).size(0));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (isLast)
             return getFinalResult(graph);
@@ -278,8 +272,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
                 updaterState = u.getStateViewArray();
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;
@@ -306,8 +299,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
                 updaterState = u.getStateViewArray();
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;

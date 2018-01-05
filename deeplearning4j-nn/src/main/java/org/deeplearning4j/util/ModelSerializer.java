@@ -1,8 +1,8 @@
 package org.deeplearning4j.util;
 
+import com.google.common.io.Files;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.deeplearning4j.nn.api.Layer;
@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -99,7 +98,8 @@ public class ModelSerializer {
             Nd4j.write(model.params(), dos);
         } finally {
             dos.flush();
-            if(!saveUpdater) dos.close();
+            if (!saveUpdater)
+                dos.close();
         }
 
         if (saveUpdater) {
@@ -260,10 +260,21 @@ public class ModelSerializer {
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater)
                     throws IOException {
-        File tmpFile = File.createTempFile("restore", "multiLayer");
-        tmpFile.deleteOnExit();
-        FileUtils.copyInputStreamToFile(is, tmpFile);
-        return restoreMultiLayerNetwork(tmpFile, loadUpdater);
+        File tmpFile = null;
+        try{
+            tmpFile = File.createTempFile("restore", "multiLayer");
+            tmpFile.deleteOnExit();
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            IOUtils.copy(is, bos);
+            bos.flush();
+            IOUtils.closeQuietly(bos);
+            return restoreMultiLayerNetwork(tmpFile, loadUpdater);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+        }
+
     }
 
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
@@ -327,10 +338,20 @@ public class ModelSerializer {
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater)
                     throws IOException {
-        File tmpFile = File.createTempFile("restore", "compGraph");
-        tmpFile.deleteOnExit();
-        FileUtils.copyInputStreamToFile(is, tmpFile);
-        return restoreComputationGraph(tmpFile, loadUpdater);
+        File tmpFile = null;
+        try{
+            tmpFile = File.createTempFile("restore", "compGraph");
+            tmpFile.deleteOnExit();
+            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            IOUtils.copy(is, bos);
+            bos.flush();
+            IOUtils.closeQuietly(bos);
+            return restoreComputationGraph(tmpFile, loadUpdater);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+        }
     }
 
     /**
@@ -483,11 +504,6 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
@@ -508,11 +524,6 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
@@ -545,12 +556,12 @@ public class ModelSerializer {
      * @param normalizer
      */
     public static void addNormalizerToModel(File f, Normalizer<?> normalizer) {
+        File tempFile = null;
         try {
             // copy existing model to temporary file
-            File tempFile = File.createTempFile("tempcopy", "temp");
+            tempFile = File.createTempFile("tempcopy", "temp");
             tempFile.deleteOnExit();
-            FileUtils.copyFile(f, tempFile);
-
+            Files.copy(f, tempFile);
             try (ZipFile zipFile = new ZipFile(tempFile);
                             ZipOutputStream writeFile =
                                             new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
@@ -580,6 +591,10 @@ public class ModelSerializer {
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        } finally {
+            if (tempFile != null) {
+                tempFile.delete();
+            }
         }
     }
 
@@ -608,6 +623,30 @@ public class ModelSerializer {
             addNormalizerToModel(file, restoredDeprecated);
 
             return (T) restoredDeprecated;
+        }
+    }
+
+
+    /**
+     * This method restores the normalizer form a persisted model file.
+     *
+     * @param is A stream to load data from.
+     * @return the loaded normalizer
+     */
+    public static <T extends Normalizer> T restoreNormalizerFromInputStream(InputStream is) throws IOException {
+        File tmpFile = null;
+        try {
+            tmpFile = File.createTempFile("restore", "normalizer");
+            tmpFile.deleteOnExit();
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            IOUtils.copy(is, bufferedOutputStream);
+            bufferedOutputStream.flush();
+            IOUtils.closeQuietly(bufferedOutputStream);
+            return restoreNormalizerFromFile(tmpFile);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
         }
     }
 

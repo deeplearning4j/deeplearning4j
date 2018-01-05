@@ -23,3 +23,5 @@ deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/
 .classpath
 metastore_db
 *.ipynb*
+!/dl4j-examples/tutorials/*.ipynb
+*-git.properties

@@ -160,6 +160,11 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    @Override
     public void remove() {
         throw new UnsupportedOperationException("Not supported");
     }

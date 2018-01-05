@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -14,7 +13,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,17 +24,19 @@ import java.util.concurrent.atomic.AtomicLong;
  * Basic idea is simple: DataSets are coming from DataSetIterator, and their device location is unknown.
  * So, for better performance DataSets should be transparently moved to the devices where they will be used later, and this should be done in background.
  *
+ *
+ * PLEASE NOTE: This class is pending removal, since better behavior was implemented as InterleavedCallback for AsyncDataSetIterator
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class MagicQueue<T> implements BlockingQueue<T> {
     public enum Mode {
         THREADED, SEQUENTIAL,
     }
 
     public enum Type {
-        DS,
-        MDS
+        DS, MDS
     }
 
     protected final List<LinkedBlockingQueue<T>> backingQueues;
@@ -521,7 +521,8 @@ public class MagicQueue<T> implements BlockingQueue<T> {
             Nd4j.create(1);
             WorkspaceConfiguration configuration = null;
             String id = "MQAD_THREAD";
-            log.info("MQAD_THREAD started on device [{}/{}]", device, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            log.info("MQAD_THREAD started on device [{}/{}]", device,
+                            Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             while (true) {
                 try {
@@ -537,26 +538,27 @@ public class MagicQueue<T> implements BlockingQueue<T> {
                         if (configuration == null) {
                             long initSize = Math.max(ds.getMemoryFootprint() * capacity, 10 * 1024L * 1024L);
 
-                            configuration = WorkspaceConfiguration.builder()
-                                    .initialSize(initSize)
-                                    .overallocationLimit(1.0)
-                                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                                    .build();
+                            configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                                            .overallocationLimit(1.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
                         }
 
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
+                        try (MemoryWorkspace workspace =
+                                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             // now we initialize dataset on target device (if applicable)
+                            ds.migrate();
+                            /*
                             if (ds.getFeaturesMaskArray() != null)
                                 ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
-                                //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
-
-                                if (ds.getLabelsMaskArray() != null)
+                            //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
+                            
+                            if (ds.getLabelsMaskArray() != null)
                                 ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
-                                //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
-
+                            //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+                            
                             ds.setFeatures(ds.getFeatures().migrate());
                             ds.setLabels(ds.getLabels().migrate());
+                            */
                             //Nd4j.getAffinityManager().touch(ds.getFeatures());
                             //Nd4j.getAffinityManager().touch(ds.getLabels());
                         }
@@ -567,15 +569,13 @@ public class MagicQueue<T> implements BlockingQueue<T> {
                         if (configuration == null) {
                             long initSize = Math.max(mds.getMemoryFootprint() * capacity, 10 * 1024L * 1024L);
 
-                            configuration = WorkspaceConfiguration.builder()
-                                    .initialSize(initSize)
-                                    .overallocationLimit(1.0)
-                                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                                    .build();
+                            configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                                            .overallocationLimit(1.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
                         }
 
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
+                        try (MemoryWorkspace workspace =
+                                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             if (mds.getFeaturesMaskArrays() != null)
                                 for (int i = 0; i < mds.getFeaturesMaskArrays().length; i++)
                                     mds.getFeaturesMaskArrays()[i] = mds.getFeaturesMaskArrays()[i].migrate();

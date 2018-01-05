@@ -24,7 +24,9 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,11 +41,7 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.*;
 
 /**
  * Configuration for a multi layer network
@@ -66,12 +64,23 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode workspaceMode;
+    protected WorkspaceMode trainingWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected WorkspaceMode inferenceWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
 
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
     protected int iterationCount = 0;
+
+    //Counter for the number of epochs completed so far. Used for per-epoch schedules
+    protected int epochCount = 0;
 
     /**
      *
@@ -79,10 +88,12 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -108,10 +119,14 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
      */
     public String toJson() {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
+            //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -213,7 +228,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             //Also, pre 0.7.2: activation functions were Strings ("activationFunction" field), not classes ("activationFn")
             //Try to load the old format if necessary, and create the appropriate IActivation instance
-            if (l.getActivationFn() == null) {
+            if ((l instanceof BaseLayer) && ((BaseLayer) l).getActivationFn() == null) {
                 try {
                     JsonNode jsonNode = mapper.readTree(json);
                     if (confs == null) {
@@ -235,7 +250,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            l.setActivationFn(ia);
+                            ((BaseLayer) l).setActivationFn(ia);
                         }
                     }
 
@@ -280,6 +295,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 clone.inputPreProcessors = map;
             }
 
+            clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
+            clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
+            clone.cacheMode = this.cacheMode;
+
             return clone;
 
         } catch (CloneNotSupportedException e) {
@@ -289,6 +308,39 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public InputPreProcessor getInputPreProcess(int curr) {
         return inputPreProcessors.get(curr);
+    }
+
+    /**
+     * Get a {@link MemoryReport} for the given MultiLayerConfiguration. This is used to estimate the
+     * memory requirements for the given network configuration and input
+     *
+     * @param inputType Input types for the network
+     * @return Memory report for the network
+     */
+    public NetworkMemoryReport getMemoryReport(InputType inputType) {
+
+        Map<String, MemoryReport> memoryReportMap = new LinkedHashMap<>();
+        int nLayers = confs.size();
+        for (int i = 0; i < nLayers; i++) {
+            String layerName = confs.get(i).getLayer().getLayerName();
+            if (layerName == null) {
+                layerName = String.valueOf(i);
+            }
+
+            //Pass input type through preprocessor, if necessary
+            InputPreProcessor preproc = getInputPreProcess(i);
+            //TODO memory requirements for preprocessor
+            if (preproc != null) {
+                inputType = preproc.getOutputType(inputType);
+            }
+
+            LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
+            memoryReportMap.put(layerName, report);
+
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+        }
+
+        return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
     }
 
     @Data
@@ -303,10 +355,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
         protected InputType inputType;
-        @Deprecated
-        protected int[] cnnInputSize;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         /**
          * Specify the processors.
@@ -336,7 +388,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during training/inference:
+         * This method defines Workspace mode being used during training:
          * NONE: workspace won't be used
          * SINGLE: one workspace will be used during whole iteration loop
          * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
@@ -344,8 +396,36 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param workspaceMode
          * @return
          */
-        public Builder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.workspaceMode = workspaceMode;
+        public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.trainingWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines Workspace mode being used during inference:
+         * NONE: workspace won't be used
+         * SINGLE: one workspace will be used during whole iteration loop
+         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         *
+         * @param workspaceMode
+         * @return
+         */
+        public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -356,6 +436,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         public Builder backpropType(BackpropType type) {
             this.backpropType = type;
             return this;
+        }
+
+        /**When doing truncated BPTT: how many steps should we do?<br>
+         * Only applicable when doing backpropType(BackpropType.TruncatedBPTT)<br>
+         * See: http://www.cs.utoronto.ca/~ilya/pubs/ilya_sutskever_phd_thesis.pdf
+         * @param bpttLength length > 0
+         */
+        public Builder tBPTTLength(int bpttLength) {
+            tBPTTForwardLength(bpttLength);
+            return tBPTTBackwardLength(bpttLength);
         }
 
         /**When doing truncated BPTT: how many steps of forward pass should we do
@@ -399,48 +489,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Size of input for CNNs. Should only be used when convolutional layers are present.
-         * This information (input size) is necessary in order to:<br>
-         * (a) automatically add layer preprocessors, which allow CNN and dense/output layers to be used together
-         * (as well as CNN/RNN layers) <br>
-         * (b) automatically calculate input/output sizes; for example, input size for a dense layer, in a
-         *     Convolutional->DenseLayer or Convolutional->OutputLayer configuratio
-         * @param height Input image height
-         * @param width Input image width
-         * @param depth Input image depth / number of channels (for example: 3 for color, 1 for grayscale etc)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
-         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
-         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
-         */
-        @Deprecated
-        public Builder cnnInputSize(int height, int width, int depth) {
-            this.cnnInputSize = new int[] {height, width, depth};
-            return this;
-        }
-
-        /** CNN input size, in order of {height,width,depth}.
-         * @see #cnnInputSize(int, int, int)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
-         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
-         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
-         */
-        @Deprecated
-        public Builder cnnInputSize(int[] cnnInputSize) {
-            if (cnnInputSize != null) {
-                this.cnnInputSize = cnnInputSize;
-            }
-            return this;
-        }
-
         public Builder setInputType(InputType inputType) {
             this.inputType = inputType;
             return this;
         }
 
         public MultiLayerConfiguration build() {
-            if (cnnInputSize != null) {
-                new ConvolutionLayerSetup(this, cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
-            } else if (inputType == null && inputPreProcessors.get(0) == null) {
+            if (inputType == null && inputPreProcessors.get(0) == null) {
                 //User hasn't set the InputType. Sometimes we can infer it...
                 // For example, Dense/RNN layers, where preprocessor isn't set -> user is *probably* going to feed in
                 // standard feedforward or RNN data
@@ -469,8 +524,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             // Builder.inputType field can be set in 1 of 4 ways:
             // 1. User calls setInputType directly
             // 2. Via ConvolutionLayerSetup -> internally calls setInputType(InputType.convolutional(...))
-            // 3. User calls one of  the two cnnInputSize methods -> sets inputType field directly
-            // 4. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
+            // 3. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
             if (inputType != null) {
                 InputType currentInputType = inputType;
                 for (int i = 0; i < confs.size(); i++) {
@@ -510,7 +564,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
-            conf.workspaceMode = workspaceMode;
+            conf.trainingWorkspaceMode = trainingWorkspaceMode;
+            conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
+            conf.cacheMode = cacheMode;
+
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

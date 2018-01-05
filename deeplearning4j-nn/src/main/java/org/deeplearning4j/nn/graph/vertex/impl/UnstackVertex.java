@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -29,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -61,11 +61,6 @@ public class UnstackVertex extends BaseGraphVertex {
 
     @Override
     public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public boolean isOutputVertex() {
         return false;
     }
 
@@ -139,9 +134,20 @@ public class UnstackVertex extends BaseGraphVertex {
             return new Pair<>(null, currentMaskState);
         }
 
+        boolean allNull = true;
+        for (int i = 0; i < maskArrays.length; i++) {
+            if (maskArrays[i] != null) {
+                allNull = false;
+                break;
+            }
+        }
+        if (allNull) {
+            return new Pair<>(null, currentMaskState);
+        }
+
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from * step;
-        int end = (from + 1) * step;
+        int start = from * minibatchSize;
+        int end = (from + 1) * minibatchSize;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }

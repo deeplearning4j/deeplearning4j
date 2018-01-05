@@ -2,13 +2,16 @@ package org.deeplearning4j.nn.params;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -31,6 +34,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     public static final String PZX_PREFIX = "pZX";
     public static final String PZX_MEAN_PREFIX = PZX_PREFIX + "Mean";
     public static final String PZX_LOGSTD2_PREFIX = PZX_PREFIX + "LogStd2";
+
+    public static final String ENCODER_PREFIX = "e";
+    public static final String DECODER_PREFIX = "d";
 
     /** Key for weight parameters connecting the last encoder layer and the mean values for p(z|data) */
     public static final String PZX_MEAN_W = "pZXMean" + WEIGHT_KEY_SUFFIX;
@@ -92,6 +98,76 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         paramCount += (lastDecLayerSize + 1) * nDistributionParams;
 
         return paramCount;
+    }
+
+    @Override
+    public List<String> paramKeys(Layer l) {
+        VariationalAutoencoder layer = (VariationalAutoencoder) l;
+        int[] encoderLayerSizes = layer.getEncoderLayerSizes();
+        int[] decoderLayerSizes = layer.getDecoderLayerSizes();
+
+        List<String> p = new ArrayList<>();
+
+        int soFar = 0;
+        for (int i = 0; i < encoderLayerSizes.length; i++) {
+            String sW = "e" + i + WEIGHT_KEY_SUFFIX;
+            String sB = "e" + i + BIAS_KEY_SUFFIX;
+            p.add(sW);
+            p.add(sB);
+        }
+
+        //Last encoder layer -> p(z|x)
+        p.add(PZX_MEAN_W);
+        p.add(PZX_MEAN_B);
+
+        //Pretrain params
+        p.add(PZX_LOGSTD2_W);
+        p.add(PZX_LOGSTD2_B);
+
+        for (int i = 0; i < decoderLayerSizes.length; i++) {
+            String sW = "d" + i + WEIGHT_KEY_SUFFIX;
+            String sB = "d" + i + BIAS_KEY_SUFFIX;
+            p.add(sW);
+            p.add(sB);
+        }
+
+        //Finally, p(x|z):
+        p.add(PXZ_W);
+        p.add(PXZ_B);
+
+        return p;
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        List<String> out = new ArrayList<>();
+        for(String s : paramKeys(layer)){
+            if(isWeightParam(layer, s)){
+                out.add(s);
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        List<String> out = new ArrayList<>();
+        for(String s : paramKeys(layer)){
+            if(isBiasParam(layer, s)){
+                out.add(s);
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public boolean isWeightParam(Layer layer, String key) {
+        return key.endsWith(WEIGHT_KEY_SUFFIX);
+    }
+
+    @Override
+    public boolean isBiasParam(Layer layer, String key) {
+        return key.endsWith(BIAS_KEY_SUFFIX);
     }
 
     @Override

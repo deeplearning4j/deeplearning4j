@@ -10,7 +10,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com
@@ -18,12 +19,10 @@ import static org.junit.Assert.*;
 @Slf4j
 public class BatchedInferenceObservableTest {
     @Before
-    public void setUp() throws Exception {
-    }
+    public void setUp() throws Exception {}
 
     @After
-    public void tearDown() throws Exception {
-    }
+    public void tearDown() throws Exception {}
 
     @Test
     public void testVerticalBatch1() throws Exception {
@@ -82,8 +81,8 @@ public class BatchedInferenceObservableTest {
         INDArray features0 = inputs[0];
         INDArray features1 = inputs[1];
 
-        assertArrayEquals(new int[]{32, 3, 72, 72}, features0.shape());
-        assertArrayEquals(new int[]{32, 100, 100}, features1.shape());
+        assertArrayEquals(new int[] {32, 3, 72, 72}, features0.shape());
+        assertArrayEquals(new int[] {32, 100, 100}, features1.shape());
 
         for (int i = 0; i < 32; i++) {
             assertEquals((float) i, features0.tensorAlongDimension(i, 1, 2, 3).meanNumber().floatValue(), 0.001f);
@@ -94,8 +93,8 @@ public class BatchedInferenceObservableTest {
     @Test
     public void testTearsBatch1() throws Exception {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
-        INDArray output0 = Nd4j.create(32,10);
-        INDArray output1 = Nd4j.create(32,15);
+        INDArray output0 = Nd4j.create(32, 10);
+        INDArray output1 = Nd4j.create(32, 15);
         for (int i = 0; i < 32; i++) {
             output0.tensorAlongDimension(i, 1).assign(i);
             output1.tensorAlongDimension(i, 1).assign(i);
@@ -106,7 +105,7 @@ public class BatchedInferenceObservableTest {
 
         List<INDArray[]> outputs = observable.getOutputs();
 
-        for(int i = 0; i < 32; i++) {
+        for (int i = 0; i < 32; i++) {
             assertEquals(2, outputs.get(i).length);
 
             assertEquals((float) i, outputs.get(i)[0].meanNumber().floatValue(), 0.001f);

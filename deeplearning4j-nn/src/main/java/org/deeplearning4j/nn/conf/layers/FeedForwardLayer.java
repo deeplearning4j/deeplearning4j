@@ -17,7 +17,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class FeedForwardLayer extends Layer {
+public abstract class FeedForwardLayer extends BaseLayer {
     protected int nIn;
     protected int nOut;
 
@@ -107,34 +107,45 @@ public abstract class FeedForwardLayer extends Layer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case DefaultParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case DefaultParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
-        }
+    public boolean isPretrainParam(String paramName) {
+        return false; //No pretrain params in standard FF layers
     }
 
-    public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+    public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
         protected int nIn = 0;
         protected int nOut = 0;
 
+        /**
+         * Number of inputs for the layer (usually the size of the last layer). <br>
+         * Note that for Convolutional layers, this is the input depth, otherwise is the previous layer size.
+         *
+         * @param nIn Number of inputs for the layer
+         */
         public T nIn(int nIn) {
             this.nIn = nIn;
             return (T) this;
         }
 
+        /**
+         * Number of outputs - used to set the layer size (number of units/nodes for the current layer).
+         * Note that this is equivalent to {@link #units(int)}
+         *
+         * @param nOut Number of outputs / layer size
+         */
         public T nOut(int nOut) {
             this.nOut = nOut;
             return (T) this;
+        }
+
+        /**
+         * Set the number of units / layer size for this layer.<br>
+         * This is equivalent to {@link #nOut(int)}
+         *
+         * @param units Size of the layer (number of units) / nOut
+         * @see #nOut(int)
+         */
+        public T units(int units){
+            return nOut(units);
         }
     }
 }

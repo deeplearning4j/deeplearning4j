@@ -5,8 +5,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -16,6 +17,8 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
@@ -34,8 +37,8 @@ public class TransferLearningComplex {
         // (b) Test global override (should be selective)
 
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM)
-                        .learningRate(1e-4).activation(Activation.LEAKYRELU).graphBuilder().addInputs("in1", "in2")
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Adam(1e-4))
+                        .activation(Activation.LEAKYRELU).graphBuilder().addInputs("in1", "in2")
                         .addLayer("A", new DenseLayer.Builder().nIn(10).nOut(9).build(), "in1")
                         .addLayer("B", new DenseLayer.Builder().nIn(9).nOut(8).build(), "A")
                         .addLayer("C", new DenseLayer.Builder().nIn(7).nOut(6).build(), "in2")
@@ -57,8 +60,7 @@ public class TransferLearningComplex {
 
         ComputationGraph graph2 =
                         new TransferLearning.GraphBuilder(graph)
-                                        .fineTuneConfiguration(
-                                                        new FineTuneConfiguration.Builder().learningRate(2e-2).build())
+                                        .fineTuneConfiguration(new FineTuneConfiguration.Builder().updater(new Adam(2e-2)).build())
                                         .setFeatureExtractor("C").build();
 
         boolean cFound = false;
@@ -76,9 +78,9 @@ public class TransferLearningComplex {
             }
 
             //Also check config:
-            assertEquals(Updater.ADAM, l.conf().getLayer().getUpdater());
-            assertEquals(2e-2, l.conf().getLayer().getLearningRate(), 1e-5);
-            assertEquals(Activation.LEAKYRELU.getActivationFunction(), l.conf().getLayer().getActivationFn());
+            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            assertEquals(new Adam(2e-2), bl.getIUpdater());
+            assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }
         assertTrue(cFound);
 
@@ -87,9 +89,9 @@ public class TransferLearningComplex {
     @Test
     public void testSimplerMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
                         .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT);
 
         /*
                 inCentre                inRight
@@ -169,9 +171,8 @@ public class TransferLearningComplex {
     @Test
     public void testLessSimpleMergeBackProp() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
-                        .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
+                        .activation(Activation.IDENTITY);
 
         /*
                 inCentre                inRight
@@ -194,7 +195,7 @@ public class TransferLearningComplex {
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
                                         "mergeRight")
-                        .setOutputs("outRight").setOutputs("outCentre").build();
+                        .setOutputs("outCentre", "outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
         modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
@@ -236,9 +237,8 @@ public class TransferLearningComplex {
 
     @Test
     public void testAddOutput() {
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9)
-                        .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9))
+                        .activation(Activation.IDENTITY);
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new DenseLayer.Builder().nIn(2).nOut(2).build(), "inCentre")
@@ -257,13 +257,14 @@ public class TransferLearningComplex {
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2)
                                                                         .nOut(3).build(),
                                                         "denseCentre0")
-                                        .setOutputs("outCentre").build();
+                                        .setOutputs("outRight", "outCentre").build();
 
         assertEquals(2, modelNow.getNumOutputArrays());
         MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)},
                         new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)});
         modelNow.fit(rand);
         log.info(modelNow.summary());
+        log.info(modelNow.summary(InputType.feedForward(2),InputType.feedForward(2)));
 
     }
 }

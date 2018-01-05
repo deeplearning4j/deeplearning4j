@@ -18,18 +18,6 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
-import org.deeplearning4j.models.word2vec.StaticWord2Vec;
-import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.compression.impl.NoOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -38,10 +26,11 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.apache.commons.io.output.*;
-import org.deeplearning4j.berkeley.Pair;
+import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
+import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
@@ -51,6 +40,7 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
+import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -60,9 +50,19 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
+import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
+import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.OneTimeLogger;
+import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -239,11 +239,9 @@ public class WordVectorSerializer {
 
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
-        try (BufferedInputStream bis = new BufferedInputStream(
-                GzipUtils.isCompressedFilename(modelFile.getName())
-                        ? new GZIPInputStream(new FileInputStream(modelFile))
-                        : new FileInputStream(modelFile));
-             DataInputStream dis = new DataInputStream(bis)) {
+        try (BufferedInputStream bis = new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName())
+                        ? new GZIPInputStream(new FileInputStream(modelFile)) : new FileInputStream(modelFile));
+                        DataInputStream dis = new DataInputStream(bis)) {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
@@ -472,10 +470,9 @@ public class WordVectorSerializer {
      * @param file
      */
     public static void writeParagraphVectors(ParagraphVectors vectors, File file) {
-        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                        BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeParagraphVectors(vectors, stream);
-            stream.flush();
-            stream.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -496,10 +493,9 @@ public class WordVectorSerializer {
      *
      */
     public static void writeWord2VecModel(Word2Vec vectors, File file) {
-        try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
+        try (FileOutputStream fos = new FileOutputStream(file);
+                        BufferedOutputStream stream = new BufferedOutputStream(fos)) {
             writeWord2VecModel(vectors, stream);
-            stream.flush();
-            stream.close();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -946,7 +942,8 @@ public class WordVectorSerializer {
             if (zsyn1Neg != null) {
                 stream = zipFile.getInputStream(zsyn1Neg);
 
-                try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
+                try (InputStreamReader isr = new InputStreamReader(stream);
+                                BufferedReader reader = new BufferedReader(isr)) {
                     String line = null;
                     List<INDArray> rows = new ArrayList<>();
                     while ((line = reader.readLine()) != null) {
@@ -1364,7 +1361,7 @@ public class WordVectorSerializer {
             Line 0 - VectorsConfiguration JSON string
             Line 1 - expTable
             Line 2 - table
-
+        
             All following lines are vocab/weight lookup table saved line by line as VocabularyWord JSON representation
          */
 
@@ -2065,10 +2062,11 @@ public class WordVectorSerializer {
         for (int x = 0; x < vocabCache.numWords(); x++) {
             T element = vocabCache.elementAtIndex(x);
             String json = factory.serialize(element);
-            double[] vector = lookupTable.vector(element.getLabel()).data().asDouble();
-
+            INDArray d = Nd4j.create(1);
+            double[] vector = lookupTable.vector(element.getLabel()).dup().data().asDouble();
             ElementPair pair = new ElementPair(json, vector);
             writer.println(pair.toEncodedJson());
+            writer.flush();
         }
         writer.flush();
         writer.close();
@@ -2108,11 +2106,13 @@ public class WordVectorSerializer {
 
 
         List<INDArray> rows = new ArrayList<>();
+
         while ((line = reader.readLine()) != null) {
+            if (line.isEmpty()) // skip empty line
+                continue;
             ElementPair pair = ElementPair.fromEncodedJson(line);
             T element = factory.deserialize(pair.getObject());
             rows.add(Nd4j.create(pair.getVector()));
-
             vocabCache.addToken(element);
             vocabCache.addWordToIndex(element.getIndex(), element.getLabel());
         }
@@ -2120,14 +2120,12 @@ public class WordVectorSerializer {
         reader.close();
 
         InMemoryLookupTable<T> lookupTable = (InMemoryLookupTable<T>) new InMemoryLookupTable.Builder<T>()
-                        .vectorLength(rows.get(0).columns()).build();
+                        .vectorLength(rows.get(0).columns()).cache(vocabCache).build(); // fix: add vocab cache
 
         /*
-        INDArray syn0 = Nd4j.create(rows.size(), rows.get(0).columns());
-        for (int x = 0; x < rows.size(); x++) {
-            syn0.putRow(x, rows.get(x));
-        }
-        */
+         * INDArray syn0 = Nd4j.create(rows.size(), rows.get(0).columns()); for (int x = 0; x < rows.size(); x++) {
+         * syn0.putRow(x, rows.get(x)); }
+         */
         INDArray syn0 = Nd4j.vstack(rows);
 
         lookupTable.setSyn0(syn0);
@@ -2346,7 +2344,9 @@ public class WordVectorSerializer {
                 log.debug("Trying simplified model restoration...");
 
                 File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+                tmpFileSyn0.deleteOnExit();
                 File tmpFileConfig = File.createTempFile("word2vec", "config");
+                tmpFileConfig.deleteOnExit();
                 // we don't need full model, so we go directly to syn0 file
 
                 ZipFile zipFile = new ZipFile(file);
@@ -2521,12 +2521,8 @@ public class WordVectorSerializer {
 
                 return factory;
 
-            } catch (InstantiationException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+            } catch (Exception e) {
+                log.error("Can't instantiate saved TokenizerFactory: {}", configuration.getTokenizerFactory());
             }
         }
         return null;
@@ -2557,11 +2553,8 @@ public class WordVectorSerializer {
 
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
-        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
-                .useInplaceCompression(false)
-                .setCompressor(new NoOp())
-                .emulateIsAbsent(false)
-                .build();
+        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>().useInplaceCompression(false)
+                        .setCompressor(new NoOp()).emulateIsAbsent(false).build();
 
         VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 
@@ -2571,6 +2564,7 @@ public class WordVectorSerializer {
         try {
             log.debug("Trying DL4j format...");
             File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+            tmpFileSyn0.deleteOnExit();
 
             ZipFile zipFile = new ZipFile(file);
             ZipEntry syn0 = zipFile.getEntry("syn0.txt");
@@ -2597,6 +2591,12 @@ public class WordVectorSerializer {
                     Nd4j.getMemoryManager().togglePeriodicGc(true);
 
                 Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
+                try {
+                    tmpFileSyn0.delete();
+                } catch (Exception e) {
+                    //
+                }
             }
         } catch (Exception e) {
             //
@@ -2818,7 +2818,7 @@ public class WordVectorSerializer {
             value = memSize / 1024 / 1024 / 1024;
         }
 
-        log.info("Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
+        OneTimeLogger.info(log, "Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
 
     }
 }

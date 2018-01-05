@@ -1,20 +1,25 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.conf.layers.LayerValidation;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Collection;
 import java.util.Map;
@@ -35,6 +40,7 @@ import java.util.Map;
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class VariationalAutoencoder extends BasePretrainNetwork {
 
     private int[] encoderLayerSizes;
@@ -75,20 +81,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        if (paramName.endsWith("b")) {
-            if (!Double.isNaN(biasLearningRate)) {
-                //Bias learning rate has been explicitly set
-                return biasLearningRate;
-            } else {
-                return learningRate;
-            }
-        } else {
-            return learningRate;
-        }
-    }
-
-    @Override
     public double getL1ByParam(String paramName) {
         if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
             return l1Bias;
@@ -100,6 +92,68 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
             return l2Bias;
         return l2;
+    }
+
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.DECODER_PREFIX)) {
+            return true;
+        }
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_PREFIX)) {
+            return true;
+        }
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PXZ_PREFIX)) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //For training: we'll assume unsupervised pretraining, as this has higher memory requirements
+
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+
+        int inferenceWorkingMemSizePerEx = 0;
+        //Forward pass size through the encoder:
+        for (int i = 1; i < encoderLayerSizes.length; i++) {
+            inferenceWorkingMemSizePerEx += encoderLayerSizes[i];
+        }
+
+        //Forward pass size through the decoder, during training
+        //p(Z|X) mean and stdev; pzxSigmaSquared, pzxSigma -> all size equal to nOut
+        int decoderFwdSizeWorking = 4 * nOut;
+        //plus, nSamples * decoder size
+        //For each decoding: random sample (nOut), z (nOut), activations for each decoder layer
+        decoderFwdSizeWorking += numSamples * (2 * nOut + ArrayUtil.sum(getDecoderLayerSizes()));
+        //Plus, component of score
+        decoderFwdSizeWorking += nOut;
+
+
+
+        //Backprop size through the decoder and decoder: approx. 2x forward pass size
+        int trainWorkingMemSize = 2 * (inferenceWorkingMemSizePerEx + decoderFwdSizeWorking);
+
+
+        if (getIDropout() != null) {
+            if (false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainWorkingMemSize += inputType.arrayElementsPerExample();
+            }
+        }
+
+        return new LayerMemoryReport.Builder(layerName, VariationalAutoencoder.class, inputType, outputType)
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {
@@ -203,15 +257,6 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         public Builder pzxActivationFn(IActivation activationFunction) {
             this.pzxActivationFn = activationFunction;
             return this;
-        }
-
-
-        /**
-         * @deprecated Use {@link #pzxActivationFunction(Activation)}
-         */
-        @Deprecated
-        public Builder pzxActivationFunction(String activationFunction) {
-            return pzxActivationFn(Activation.fromString(activationFunction).getActivationFunction());
         }
 
         /**

@@ -17,9 +17,9 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Helper for the batch normalization layer.
@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface BatchNormalizationHelper {
+    boolean checkSupported(double eps);
+
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps);
 

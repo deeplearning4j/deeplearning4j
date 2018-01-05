@@ -17,12 +17,15 @@
  */
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdDataAlgo;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.BwdFilterAlgo;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.FwdAlgo;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Helper for the convolution layer.
@@ -30,12 +33,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface ConvolutionHelper {
+    boolean checkSupported();
+
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, ConvolutionMode convolutionMode);
+                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                    ConvolutionMode convolutionMode, int[] dilation);
 
     INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                    AlgoMode mode, ConvolutionMode convolutionMode);
+                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation);
 
     INDArray activate(INDArray z, IActivation afn);
 }

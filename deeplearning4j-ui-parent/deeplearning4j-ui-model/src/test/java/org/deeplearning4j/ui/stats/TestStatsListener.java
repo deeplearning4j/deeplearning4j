@@ -1,13 +1,13 @@
 package org.deeplearning4j.ui.stats;
 
+import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -31,7 +31,7 @@ public class TestStatsListener {
             DataSet ds = new IrisDataSetIterator(150, 150).next();
 
             MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder().iterations(1)
+                            new NeuralNetConfiguration.Builder()
                                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                             .list().layer(0,
                                                             new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

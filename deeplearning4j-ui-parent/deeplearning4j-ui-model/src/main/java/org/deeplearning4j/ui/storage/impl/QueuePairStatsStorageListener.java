@@ -1,10 +1,10 @@
 package org.deeplearning4j.ui.storage.impl;
 
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Queue;
 

@@ -1,33 +1,39 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
+import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.layers.LossLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /** A utility for numerically checking gradients. <br>
  * Basic idea: compare calculated gradients with those calculated numerically,
@@ -60,6 +66,32 @@ public class GradientCheckUtil {
 
     private GradientCheckUtil() {}
 
+
+    private static void configureLossFnClippingIfPresent(IOutputLayer outputLayer){
+
+        ILossFunction lfn = null;
+        IActivation afn = null;
+        if(outputLayer instanceof BaseOutputLayer){
+            BaseOutputLayer o = (BaseOutputLayer)outputLayer;
+            lfn = ((org.deeplearning4j.nn.conf.layers.BaseOutputLayer)o.layerConf()).getLossFn();
+            afn = o.layerConf().getActivationFn();
+        } else if(outputLayer instanceof LossLayer){
+            LossLayer o = (LossLayer) outputLayer;
+            lfn = o.layerConf().getLossFn();
+            afn = o.layerConf().getActivationFn();
+        }
+
+        if (lfn instanceof LossMCXENT && afn instanceof ActivationSoftmax && ((LossMCXENT) lfn).getSoftmaxClipEps() != 0) {
+            log.info("Setting softmax clipping epsilon to 0.0 for " + lfn.getClass()
+                    + " loss function to avoid spurious gradient check failures");
+            ((LossMCXENT) lfn).setSoftmaxClipEps(0.0);
+        } else if(lfn instanceof LossBinaryXENT && ((LossBinaryXENT) lfn).getClipEps() != 0) {
+            log.info("Setting clipping epsilon to 0.0 for " + lfn.getClass()
+                    + " loss function to avoid spurious gradient check failures");
+            ((LossBinaryXENT) lfn).setClipEps(0.0);
+        }
+    }
+
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
@@ -76,6 +108,20 @@ public class GradientCheckUtil {
      */
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, null, null);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask) {
+        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
+                input, labels, inputMask, labelMask, false, -1);
+    }
+
+    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
+                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
+                                         boolean subset, int maxPerParam) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -85,54 +131,63 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
         DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if( dataType != DataBuffer.Type.DOUBLE ){
+        if (dataType != DataBuffer.Type.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:
-
         int layerCount = 0;
         for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
-            org.deeplearning4j.nn.conf.Updater u = n.getLayer().getUpdater();
-            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
-                //Must have LR of 1.0
-                double lr = n.getLayer().getLearningRate();
-                if (lr != 1.0) {
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                    + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                    + n.getLayer().getLayerName() + "\"");
+            if (n.getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) n.getLayer();
+                IUpdater u = bl.getIUpdater();
+                if (u instanceof Sgd) {
+                    //Must have LR of 1.0
+                    double lr = ((Sgd) u).getLearningRate();
+                    if (lr != 1.0) {
+                        throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + n.getLayer().getLayerName() + "\"");
+                    }
+                } else if (!(u instanceof NoOp)) {
+                    throw new IllegalStateException(
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
-            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
-                throw new IllegalStateException(
-                                "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+
+                IActivation activation = bl.getActivationFn();
+                if (activation != null) {
+                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                        log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                    }
+                }
             }
 
-            double dropout = n.getLayer().getDropOut();
-            if (n.isUseRegularization() && dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (n.getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                                + n.getLayer().getIDropout() + " for layer " + layerCount);
             }
+        }
 
-            IActivation activation = n.getLayer().getActivationFn();
-            if (activation != null) {
-                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                    log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
-                                    + activation.getClass()
-                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                }
+        //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
+        for(Layer l : mln.getLayers()){
+            if(l instanceof IOutputLayer){
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
         mln.setInput(input);
         mln.setLabels(labels);
+        mln.setLayerMaskArrays(inputMask, labelMask);
         mln.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, mln.batchSize());
+        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
@@ -143,18 +198,42 @@ public class GradientCheckUtil {
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         int[] paramEnds = new int[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
+        Map<String,Integer> stepSizeForParam;
+        if(subset){
+            stepSizeForParam = new HashMap<>();
+            stepSizeForParam.put(paramNames.get(0), Math.max(1, paramTable.get(paramNames.get(0)).length() / maxPerParam));
+        } else {
+            stepSizeForParam = null;
+        }
         for (int i = 1; i < paramEnds.length; i++) {
-            paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
+            int n = paramTable.get(paramNames.get(i)).length();
+            paramEnds[i] = paramEnds[i - 1] + n;
+            if(subset){
+                int ss = n / maxPerParam;
+                if(ss == 0){
+                    ss = n;
+                }
+                stepSizeForParam.put(paramNames.get(i), ss);
+            }
+        }
+
+        if(print) {
+            int i=0;
+            for (Layer l : mln.getLayers()) {
+                Set<String> s = l.paramTable().keySet();
+                log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
+                i++;
+            }
         }
 
 
         int totalNFailures = 0;
         double maxError = 0.0;
-        DataSet ds = new DataSet(input, labels);
+        DataSet ds = new DataSet(input, labels, inputMask, labelMask);
         int currParamNameIdx = 0;
 
         INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
-        for (int i = 0; i < nParams; i++) {
+        for (int i = 0; i < nParams; ) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
@@ -193,9 +272,11 @@ public class GradientCheckUtil {
             if (relError > maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
                 if (absError < minAbsoluteError) {
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    if(print) {
+                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                    }
                 } else {
                     if (print)
                         log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
@@ -209,6 +290,18 @@ public class GradientCheckUtil {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
                                 + numericalGradient + ", relError= " + relError);
             }
+
+            int step;
+            if(subset){
+                step = stepSizeForParam.get(paramName);
+                if(i + step > paramEnds[currParamNameIdx]+1){
+                    step = paramEnds[currParamNameIdx]+1 - i;
+                }
+            } else {
+                step = 1;
+            }
+
+            i += step;
         }
 
         if (print) {
@@ -238,6 +331,12 @@ public class GradientCheckUtil {
     public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
                     INDArray[] labels) {
+        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs, labels, null, null);
+    }
+
+    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
+                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -251,10 +350,10 @@ public class GradientCheckUtil {
                             "Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
 
         DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if( dataType != DataBuffer.Type.DOUBLE ){
+        if (dataType != DataBuffer.Type.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check configuration
@@ -265,33 +364,43 @@ public class GradientCheckUtil {
                 continue;
             LayerVertex lv = (LayerVertex) gv;
 
-            org.deeplearning4j.nn.conf.Updater u = lv.getLayerConf().getLayer().getUpdater();
-            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
-                //Must have LR of 1.0
-                double lr = lv.getLayerConf().getLayer().getLearningRate();
-                if (lr != 1.0) {
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer \""
-                                    + vertexName + "\"; got " + u);
+            if (lv.getLayerConf().getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) lv.getLayerConf().getLayer();
+                IUpdater u = bl.getIUpdater();
+                if (u instanceof Sgd) {
+                    //Must have LR of 1.0
+                    double lr = ((Sgd) u).getLearningRate();
+                    if (lr != 1.0) {
+                        throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                    }
+                } else if (!(u instanceof NoOp)) {
+                    throw new IllegalStateException(
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
-            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
-                throw new IllegalStateException(
-                                "Must have Updater.NONE (or SGD + lr=1.0) for layer \"" + vertexName + "\"; got " + u);
+
+                IActivation activation = bl.getActivationFn();
+                if (activation != null) {
+                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                        log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                    }
+                }
             }
 
-            double dropout = lv.getLayerConf().getLayer().getDropOut();
-            if (lv.getLayerConf().isUseRegularization() && dropout != 0.0) {
-                throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
-                                + dropout + " for layer " + layerCount);
+            if (lv.getLayerConf().getLayer().getIDropout() != null) {
+                throw new IllegalStateException("Must have no dropout for gradient checks - got dropout = "
+                        + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
             }
+        }
 
-            IActivation activation = lv.getLayerConf().getLayer().getActivationFn();
-            if (activation != null) {
-                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                    log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
-                                    + activation.getClass()
-                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                }
+        //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
+        for(Layer l : graph.getLayers()){
+            if(l instanceof IOutputLayer){
+                configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
@@ -300,11 +409,13 @@ public class GradientCheckUtil {
         for (int i = 0; i < labels.length; i++)
             graph.setLabel(i, labels[i]);
 
+        graph.setLayerMaskArrays(fMask, lMask);
+
         graph.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(graph, gradAndScore.getFirst(), 0, graph.batchSize());
+        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
@@ -322,7 +433,7 @@ public class GradientCheckUtil {
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs, labels);
+        MultiDataSet mds = new MultiDataSet(inputs, labels, fMask, lMask);
         INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
         for (int i = 0; i < nParams; i++) {
             //Get param name
@@ -407,10 +518,10 @@ public class GradientCheckUtil {
             throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
 
         DataBuffer.Type dataType = DataTypeUtil.getDtypeFromContext();
-        if( dataType != DataBuffer.Type.DOUBLE ){
+        if (dataType != DataBuffer.Type.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Datatype is not set to double precision ("
-                    + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
-                    + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
+                            + "is: " + dataType + "). Double precision must be used for gradient checks. Set "
+                            + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
         }
 
         //Check network configuration:
@@ -420,7 +531,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        updater.update(layer, gradAndScore.getFirst(), 0, layer.batchSize());
+        updater.update(layer, gradAndScore.getFirst(), 0, 0, layer.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = layer.params().dup(); //need dup: params are a *view* of full parameters

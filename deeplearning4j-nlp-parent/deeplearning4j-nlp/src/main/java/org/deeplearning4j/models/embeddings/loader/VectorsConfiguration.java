@@ -1,17 +1,16 @@
 package org.deeplearning4j.models.embeddings.loader;
 
+import lombok.Data;
+import org.apache.commons.codec.binary.Base64;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
-import lombok.Data;
-import org.apache.commons.codec.binary.Base64;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 /**
  *

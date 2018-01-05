@@ -18,12 +18,12 @@
 package org.deeplearning4j.ui.components.text.style;
 
 
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 import org.deeplearning4j.ui.api.Utils;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.awt.*;
 
@@ -40,6 +40,7 @@ public class StyleText extends Style {
     private Double fontSize;
     private Boolean underline;
     private String color;
+    private Boolean whitespacePre;
 
     private StyleText(Builder builder) {
         super(builder);
@@ -47,6 +48,7 @@ public class StyleText extends Style {
         this.fontSize = builder.fontSize;
         this.underline = builder.underline;
         this.color = builder.color;
+        this.whitespacePre = builder.whitespacePre;
     }
 
 
@@ -56,6 +58,7 @@ public class StyleText extends Style {
         private Double fontSize;
         private Boolean underline;
         private String color;
+        private Boolean whitespacePre;
 
         /** Specify the font to be used for the text */
         public Builder font(String font) {
@@ -83,6 +86,16 @@ public class StyleText extends Style {
         /** Color for the text */
         public Builder color(String color) {
             this.color = color;
+            return this;
+        }
+
+        /**
+         * If set to true: add a "white-space: pre" to the style.
+         * In effect, this stops the representation from compressing the whitespace characters, and messing up/removing
+         * text that contains newlines, tabs, etc.
+         */
+        public Builder whitespacePre(boolean whitespacePre) {
+            this.whitespacePre = whitespacePre;
             return this;
         }
 

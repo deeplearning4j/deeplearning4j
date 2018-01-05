@@ -1,57 +1,53 @@
 package org.deeplearning4j.datasets.iterator;
 
-
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
+import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.ConcurrentModificationException;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.LockSupport;
 
 /**
- * AsyncDataSetIterator takes an existing DataSetIterator and loads one or more DataSet objects
- * from it using a separate thread.
- * For data sets where DataSetIterator.next() is long running (limited by disk read or processing time
- * for example) this may improve performance by loading the next DataSet asynchronously (i.e., while
- * training is continuing on the previous DataSet). Obviously this may use additional memory.<br>
- * Note however that due to asynchronous loading of data, next(int) is not supported.
- * <p>
- * PLEASE NOTE: If used together with CUDA backend, please use it with caution.
+ * Async prefetching iterator wrapper for MultiDataSetIterator implementations
  *
- * @author Alex Black
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AsyncDataSetIterator implements DataSetIterator {
-    private final DataSetIterator baseIterator;
-    private BlockingQueue<DataSet> blockingQueue;
-    private Thread thread;
-    private IteratorRunnable runnable;
+    protected DataSetIterator backedIterator;
 
-    private MemoryWorkspace workspace;
+    protected DataSet terminator = new DataSet();
+    protected DataSet nextElement = null;
+    protected BlockingQueue<DataSet> buffer;
+    protected AsyncPrefetchThread thread;
+    protected AtomicBoolean shouldWork = new AtomicBoolean(true);
+    protected volatile RuntimeException throwable = null;
+    protected boolean useWorkspace = true;
+    protected int prefetchSize;
+    protected String workspaceId;
+    protected Integer deviceId;
+    protected AtomicBoolean hasDepleted = new AtomicBoolean(false);
 
-    protected static final Logger logger = LoggerFactory.getLogger(AsyncDataSetIterator.class);
+    protected DataSetCallback callback;
 
-    /**
-     * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
-     * single additional DataSet)
-     *
-     * @param baseIterator The DataSetIterator to load data from asynchronously
-     */
+    protected AsyncDataSetIterator() {
+        //
+    }
+
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
         this(baseIterator, 8);
     }
@@ -60,65 +56,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(iterator, queueSize, queue, true);
     }
 
-    /**
-     * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
-     * single additional DataSet)
-     *
-     * @param iterator
-     * @param queueSize
-     * @param queue BlockingQueue instance that will be used as backing queue. MagicQueue probably?
-     */
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
-        if (queueSize <= 0)
-            throw new IllegalArgumentException("Queue size must be > 0");
-        if (queueSize < 2)
-            queueSize = 2;
-
-        if (iterator.resetSupported() && useWorkspace) {
-            iterator.reset();
-
-            DataSet ds = iterator.next();
-
-            logger.info("Sample dimensions: {}", Arrays.toString(ds.getFeatures().shape()));
-
-            long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
-
-            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                    .initialSize(initSize)
-                    .overallocationLimit(2.0)
-                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                    .build();
-
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
-            this.workspace = workspace;
-        } else workspace = null;
-
-        this.baseIterator = iterator;
-        if (this.baseIterator.resetSupported())
-            this.baseIterator.reset();
-        blockingQueue = queue;
-
-        runnable = new IteratorRunnable(baseIterator.hasNext(), workspace);
-        thread = runnable;
-
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
-
-        thread.setDaemon(true);
-        thread.start();
-    }
-
-    /**
-     * Create an AsyncDataSetIterator with a specified queue size.
-     * LinkedBlockingQueue will be used as backing queue
-     *
-     * @param baseIterator The DataSetIterator to load data from asynchronously
-     * @param queueSize    size of the queue (max number of elements to load into queue)
-     */
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize));
     }
@@ -127,277 +64,401 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace);
     }
 
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(),
+                        deviceId);
+    }
 
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace,
+                    DataSetCallback callback) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, callback);
+    }
+
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace) {
+        this(iterator, queueSize, queue, useWorkspace, new DefaultCallback());
+    }
+
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback) {
+        this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+    }
+
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+        if (queueSize < 2)
+            queueSize = 2;
+
+        this.deviceId = deviceId;
+        this.callback = callback;
+        this.useWorkspace = useWorkspace;
+        this.buffer = queue;
+        this.prefetchSize = queueSize;
+        this.backedIterator = iterator;
+        this.workspaceId = "ADSI_ITER-" + java.util.UUID.randomUUID().toString();
+
+        if (iterator.resetSupported() && !iterator.hasNext())
+            this.backedIterator.reset();
+
+        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null);
+
+        /**
+         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
+         */
+
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    /**
+     * Like the standard next method but allows a
+     * customizable number of examples returned
+     *
+     * @param num the number of examples
+     * @return the next data applyTransformToDestination
+     */
     @Override
     public DataSet next(int num) {
-        // TODO: why isn't supported? We could just check queue size
-        throw new UnsupportedOperationException("Next(int) not supported for AsyncDataSetIterator");
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Total examples in the iterator
+     *
+     * @return
+     */
     @Override
     public int totalExamples() {
-        return baseIterator.totalExamples();
+        return backedIterator.totalExamples();
     }
 
+    /**
+     * Input columns for the dataset
+     *
+     * @return
+     */
     @Override
     public int inputColumns() {
-        return baseIterator.inputColumns();
+        return backedIterator.inputColumns();
     }
 
+    /**
+     * The number of labels for the dataset
+     *
+     * @return
+     */
     @Override
     public int totalOutcomes() {
-        return baseIterator.totalOutcomes();
+        return backedIterator.totalOutcomes();
     }
 
+    /**
+     * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
+     * but some don't
+     *
+     * @return true if reset method is supported; false otherwise
+     */
     @Override
     public boolean resetSupported() {
-        return baseIterator.resetSupported();
+        return backedIterator.resetSupported();
     }
 
+    /**
+     * Does this DataSetIterator support asynchronous prefetching of multiple DataSet objects?
+     * Most DataSetIterators do, but in some cases it may not make sense to wrap this iterator in an
+     * iterator that does asynchronous prefetching. For example, it would not make sense to use asynchronous
+     * prefetching for the following types of iterators:
+     * (a) Iterators that store their full contents in memory already
+     * (b) Iterators that re-use features/labels arrays (as future next() calls will overwrite past contents)
+     * (c) Iterators that already implement some level of asynchronous prefetching
+     * (d) Iterators that may return different data depending on when the next() method is called
+     *
+     * @return true if asynchronous prefetching from this iterator is OK; false if asynchronous prefetching should not
+     * be used with this iterator
+     */
     @Override
     public boolean asyncSupported() {
         return false;
     }
 
+    protected void externalCall() {
+        // for spark
+    }
+
+    /**
+     * Resets the iterator back to the beginning
+     */
     @Override
-    public synchronized void reset() {
-        if (!resetSupported())
-            throw new UnsupportedOperationException(
-                    "Cannot reset Async iterator wrapping iterator that does not support reset");
-        //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
-        runnable.killRunnable = true;
-        if (runnable.isAlive.get()) {
+    public void reset() {
+        buffer.clear();
+
+        if (thread != null)
             thread.interrupt();
-        }
-        //Wait for runnable to exit, but should only have to wait very short period of time
-        //This probably isn't necessary, but is included as a safeguard against race conditions
         try {
-            runnable.runCompletedSemaphore.tryAcquire(5, TimeUnit.SECONDS);
+            // Shutdown() should be a synchronous operation since the iterator is reset after shutdown() is
+            // called in AsyncLabelAwareIterator.reset().
+            if (thread != null)
+                thread.join();
         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+        this.thread.shutdown();
+        buffer.clear();
 
-        //Clear the queue, reset the base iterator, set up a new thread
-        blockingQueue.clear();
-        baseIterator.reset();
-        runnable = new IteratorRunnable(baseIterator.hasNext(), this.workspace);
-        thread = runnable;
 
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+        backedIterator.reset();
+        shouldWork.set(true);
+        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null);
+
+        /**
+         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
+         */
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
         thread.start();
+        hasDepleted.set(false);
+
+        nextElement = null;
     }
 
+    /**
+     * This method will terminate background thread AND will destroy attached workspace (if any)
+     *
+     * PLEASE NOTE: After shutdown() call, this instance can't be used anymore
+     */
+    public void shutdown() {
+        buffer.clear();
+
+        if (thread != null)
+            thread.interrupt();
+        try {
+            // Shutdown() should be a synchronous operation since the iterator is reset after shutdown() is
+            // called in AsyncLabelAwareIterator.reset().
+            if (thread != null)
+                thread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        this.thread.shutdown();
+        buffer.clear();
+    }
+
+    /**
+     * Batch size
+     *
+     * @return
+     */
     @Override
     public int batch() {
-        return baseIterator.batch();
+        return backedIterator.batch();
     }
 
+    /**
+     * The current cursor if applicable
+     *
+     * @return
+     */
     @Override
     public int cursor() {
-        return baseIterator.cursor();
+        return backedIterator.cursor();
     }
 
+    /**
+     * Total number of examples in the dataset
+     *
+     * @return
+     */
     @Override
     public int numExamples() {
-        return baseIterator.numExamples();
+        return backedIterator.numExamples();
     }
 
+    /**
+     * Set a pre processor
+     *
+     * @param preProcessor a pre processor to set
+     */
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        baseIterator.setPreProcessor(preProcessor);
+        backedIterator.setPreProcessor(preProcessor);
     }
 
+    /**
+     * Returns preprocessors, if defined
+     *
+     * @return
+     */
     @Override
     public DataSetPreProcessor getPreProcessor() {
-        return baseIterator.getPreProcessor();
+        return backedIterator.getPreProcessor();
     }
 
+    /**
+     * Get dataset iterator record reader labels
+     */
     @Override
     public List<String> getLabels() {
-        return baseIterator.getLabels();
+        return backedIterator.getLabels();
     }
 
+    /**
+     * Returns {@code true} if the iteration has more elements.
+     * (In other words, returns {@code true} if {@link #next} would
+     * return an element rather than throwing an exception.)
+     *
+     * @return {@code true} if the iteration has more elements
+     */
     @Override
-    public synchronized boolean hasNext() {
-        if (!blockingQueue.isEmpty()) {
-            return true;
-        }
+    public boolean hasNext() {
+        if (throwable != null)
+            throw throwable;
 
-        if (runnable.isAlive.get()) {
-            //Empty blocking queue, but runnable is alive
-            //(a) runnable is blocking on baseIterator.next()
-            //(b) runnable is blocking on blockingQueue.put()
-            //either way: there's at least 1 more element to come
-
-            // this is fix for possible race condition within runnable cycle
-            return runnable.hasLatch();
-        } else {
-            if (!runnable.killRunnable && runnable.exception != null) {
-                throw runnable.exception; //Something went wrong
-            }
-            //Runnable has exited, presumably because it has fetched all elements
-            return runnable.hasLatch();
-        }
-    }
-
-    @Override
-    public synchronized DataSet next() {
-        if (!hasNext()) {
-            throw new NoSuchElementException();
-        }
-        //If base iterator threw an unchecked exception: rethrow it now
-        if (runnable.exception != null) {
-            throw runnable.exception;
-        }
-
-        if (!blockingQueue.isEmpty()) {
-            runnable.feeder.decrementAndGet();
-            try {
-                return blockingQueue.poll(2, TimeUnit.SECONDS); //non-blocking, but returns null if empty
-            } catch (InterruptedException e) {
-                //
-            }
-        }
-
-        //Blocking queue is empty, but more to come
-        //Possible reasons:
-        // (a) runnable died (already handled - runnable.exception != null)
-        // (b) baseIterator.next() hasn't returned yet -> wait for it
         try {
-            //Normally: just do blockingQueue.take(), but can't do that here
-            //Reason: what if baseIterator.next() throws an exception after
-            // blockingQueue.take() is called? In this case, next() will never return
-            while (runnable.exception == null) {
-                DataSet ds = blockingQueue.poll(2, TimeUnit.SECONDS);
-                if (ds != null) {
-                    runnable.feeder.decrementAndGet();
-                    return ds;
-                }
-                if (runnable.killRunnable) {
-                    //should never happen
-                    throw new ConcurrentModificationException("Reset while next() is waiting for element?");
-                }
-                if (!runnable.isAlive.get() && blockingQueue.isEmpty()) {
-                    if (runnable.exception != null)
-                        throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
-                    throw new IllegalStateException(
-                            "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
-                }
+            if (hasDepleted.get())
+                return false;
+
+            if (nextElement != null && nextElement != terminator) {
+                return true;
+            } else if (nextElement == terminator)
+                return false;
+
+
+            nextElement = buffer.take();
+
+            if (nextElement == terminator) {
+                hasDepleted.set(true);
+                return false;
             }
-            //exception thrown while getting data from base iterator
-            throw runnable.exception;
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e); //Shouldn't happen under normal circumstances
+
+            return true;
+        } catch (Exception e) {
+            log.error("Premature end of loop!");
+            throw new RuntimeException(e);
         }
     }
 
     /**
-     * Shut down the async data set iterator thread
-     * This is not typically necessary if using a single AsyncDataSetIterator
-     * (thread is a daemon thread and so shouldn't block the JVM from exiting)
-     * Behaviour of next(), hasNext() etc methods after shutdown of async iterator is undefined
+     * Returns the next element in the iteration.
+     *
+     * @return the next element in the iteration
      */
-    public void shutdown() {
-        if (thread != null && thread.isAlive()) {
-            runnable.killRunnable = true;
-            thread.interrupt();
-            thread = null;
-        }
+    @Override
+    public DataSet next() {
+        if (throwable != null)
+            throw throwable;
+
+        if (hasDepleted.get())
+            return null;
+
+        DataSet temp = nextElement;
+        nextElement = null;
+        return temp;
     }
 
-    private class IteratorRunnable extends Thread implements Runnable {
-        private volatile boolean killRunnable = false;
-        private volatile AtomicBoolean isAlive = new AtomicBoolean(true);
-        private volatile RuntimeException exception;
-        private Semaphore runCompletedSemaphore = new Semaphore(0);
-        private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-        private AtomicLong feeder = new AtomicLong(0);
+    /**
+     * Removes from the underlying collection the last element returned
+     * by this iterator (optional operation).  This method can be called
+     * only once per call to {@link #next}.  The behavior of an iterator
+     * is unspecified if the underlying collection is modified while the
+     * iteration is in progress in any way other than by calling this
+     * method.
+     *
+     * @throws UnsupportedOperationException if the {@code remove}
+     *                                       operation is not supported by this iterator
+     * @throws IllegalStateException         if the {@code next} method has not
+     *                                       yet been called, or the {@code remove} method has already
+     *                                       been called after the last call to the {@code next}
+     *                                       method
+     * @implSpec The default implementation throws an instance of
+     * {@link UnsupportedOperationException} and performs no other action.
+     */
+    @Override
+    public void remove() {
+
+    }
+
+    protected class AsyncPrefetchThread extends Thread implements Runnable {
+        private BlockingQueue<DataSet> queue;
+        private DataSetIterator iterator;
+        private DataSet terminator;
+        private AtomicBoolean isShutdown = new AtomicBoolean(false);
+        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
+                        .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policySpill(SpillPolicy.REALLOCATE).build();
+
         private MemoryWorkspace workspace;
 
-        public IteratorRunnable(boolean hasNext, MemoryWorkspace workspace) {
-            this.isAlive.set(hasNext);
-            this.workspace  = workspace;
-            this.setName("AsyncIterator thread");
+
+        protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator,
+                        @NonNull DataSet terminator, MemoryWorkspace workspace) {
+            this.queue = queue;
+            this.iterator = iterator;
+            this.terminator = terminator;
+
             this.setDaemon(true);
-        }
-
-        public boolean hasLatch() {
-            /*
-            This method was added to address possible race condition within runnable loop.
-            Idea is simple: in 99% of cases semaphore won't lock in hasLatch calls, since method is called ONLY if there's nothing in queue,
-            and if it's already locked within main runnable loop - we get fast TRUE.
-            */
-
-            // this is added just to avoid expensive lock
-            if (feeder.get() > 0 || !blockingQueue.isEmpty())
-                return true;
-
-            try {
-                lock.readLock().lock();
-                boolean result = baseIterator.hasNext() || feeder.get() != 0 || !blockingQueue.isEmpty();
-                if (!isAlive.get())
-                    return result;
-                else
-                    while (isAlive.get()) {
-                        // in normal scenario this cycle is possible to hit into feeder state, since readLock is taken
-                        result = feeder.get() != 0 || !blockingQueue.isEmpty() || baseIterator.hasNext();
-                        if (result)
-                            return true;
-                    }
-                return result;
-            } finally {
-                lock.readLock().unlock();
-            }
+            this.setName("ADSI prefetch thread");
         }
 
         @Override
         public void run() {
+            externalCall();
             try {
+                if (useWorkspace)
+                    workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
 
-                while (!killRunnable && baseIterator.hasNext()) {
-                    feeder.incrementAndGet();
-                    lock.writeLock().lock();
+                while (iterator.hasNext() && shouldWork.get()) {
+                    DataSet smth = null;
 
-                    DataSet ds = null;
+                    if (useWorkspace) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            smth = iterator.next();
 
-                    if (workspace != null) {
-                        try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
-                            ds = baseIterator.next();
+                            if (callback != null)
+                                callback.call(smth);
                         }
-                    } else ds = baseIterator.next();
+                    } else {
+                        smth = iterator.next();
 
+                        if (callback != null)
+                            callback.call(smth);
+                    }
 
-                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    // we want to ensure underlying iterator finished dataset creation
+                    Nd4j.getExecutioner().commit();
 
-                    // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
+                    if (smth != null)
+                        queue.put(smth);
 
-                    lock.writeLock().unlock();
-                    if(ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
-                        blockingQueue.put(ds);
                 }
-                isAlive.set(false);
+                queue.put(terminator);
             } catch (InterruptedException e) {
-                //thread.interrupt() while put(DataSet) was blocking
-                if (killRunnable) {
-                    return;
-                } else
-                    exception = new RuntimeException("Runnable interrupted unexpectedly", e); //Something else interrupted
+                // do nothing
+                shouldWork.set(false);
             } catch (RuntimeException e) {
-                exception = e;
-                if (lock.writeLock().isHeldByCurrentThread()) {
-                    lock.writeLock().unlock();
-                }
+                throwable = e;
+                throw new RuntimeException(e);
+            } catch (Exception e) {
+                throwable = new RuntimeException(e);
+                throw new RuntimeException(e);
             } finally {
-                isAlive.set(false);
-                runCompletedSemaphore.release();
+                //log.info("Trying destroy...");
+                //if (useWorkspace)
+                //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                isShutdown.set(true);
+            }
+        }
+
+        public void shutdown() {
+            while (!isShutdown.get())
+                LockSupport.parkNanos(100L);
+
+            if (workspace != null) {
+                log.debug("Manually destroying ADSI workspace");
+                workspace.destroyWorkspace(true);
             }
         }
     }
-
-    @Override
-    public void remove() {}
-
 }

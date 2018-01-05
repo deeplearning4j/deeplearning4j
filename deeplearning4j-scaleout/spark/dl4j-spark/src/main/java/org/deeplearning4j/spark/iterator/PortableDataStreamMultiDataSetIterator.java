@@ -61,6 +61,11 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return preprocessor;
+    }
+
+    @Override
     public boolean hasNext() {
         return iter.hasNext();
     }

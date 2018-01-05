@@ -7,9 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Iterator;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Asynchronous Iterator for better performance of iterators in dl4j-nn & dl4j-nlp

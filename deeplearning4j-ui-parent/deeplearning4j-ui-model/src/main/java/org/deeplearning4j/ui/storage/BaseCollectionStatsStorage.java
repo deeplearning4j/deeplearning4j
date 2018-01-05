@@ -3,9 +3,8 @@ package org.deeplearning4j.ui.storage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.api.storage.*;
-import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -307,6 +306,41 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     @Override
     public StorageMetaData getStorageMetaData(String sessionID, String typeID) {
         return this.storageMetaData.get(new SessionTypeId(sessionID, typeID));
+    }
+
+    @Override
+    public long[] getAllUpdateTimes(String sessionID, String typeID, String workerID) {
+        SessionTypeWorkerId stw = new SessionTypeWorkerId(sessionID, typeID, workerID);
+        Map<Long,Persistable> m = updates.get(stw);
+        if(m == null){
+            return new long[0];
+        }
+
+        long[] ret = new long[m.size()];
+        int i=0;
+        for(Long l : m.keySet()){
+            ret[i++] = l;
+        }
+        Arrays.sort(ret);
+        return ret;
+    }
+
+    @Override
+    public List<Persistable> getUpdates(String sessionID, String typeID, String workerID, long[] timestamps) {
+        SessionTypeWorkerId stw = new SessionTypeWorkerId(sessionID, typeID, workerID);
+        Map<Long,Persistable> m = updates.get(stw);
+        if(m == null){
+            return Collections.emptyList();
+        }
+
+        List<Persistable> ret = new ArrayList<>(timestamps.length);
+        for(long l : timestamps){
+            Persistable p = m.get(l);
+            if(p != null){
+                ret.add(p);
+            }
+        }
+        return ret;
     }
 
     // ----- Store new info -----

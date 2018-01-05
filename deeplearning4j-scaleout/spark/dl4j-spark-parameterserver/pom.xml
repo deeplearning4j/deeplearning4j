@@ -3,7 +3,7 @@
     <parent>
         <artifactId>spark_2.11</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.8.1_spark_1-SNAPSHOT</version>
+        <version>0.9.2_spark_1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -23,9 +23,24 @@
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-parallel-wrapper_2.11</artifactId>
+            <version>${nd4j.version}</version>
         </dependency>
     </dependencies>
 
@@ -37,5 +52,18 @@
             <id>test-nd4j-cuda-8.0</id>
         </profile>
     </profiles>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

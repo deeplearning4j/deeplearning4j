@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -28,9 +27,9 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * L2NormalizeVertex performs L2 normalization on a single input.
@@ -60,11 +59,6 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
     @Override
     public boolean hasLayer() {
-        return false;
-    }
-
-    @Override
-    public boolean isOutputVertex() {
         return false;
     }
 

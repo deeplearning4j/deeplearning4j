@@ -2,12 +2,9 @@ package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.ui.providers.ObjectMapperProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;

@@ -6,7 +6,6 @@ import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.math3.util.MathArrays;
-import org.deeplearning4j.berkeley.PriorityQueue;
 import org.deeplearning4j.models.sequencevectors.graph.enums.NoEdgeHandling;
 import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
 import org.deeplearning4j.models.sequencevectors.graph.enums.SpreadSpectrum;
@@ -20,10 +19,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * This is vertex popularity-based walker for SequenceVectors-based DeepWalk implementation.
@@ -53,6 +49,15 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
     @Override
     public boolean isLabelEnabled() {
         return false;
+    }
+
+
+    protected class NodeComparator implements Comparator<Node<T>> {
+
+        @Override
+        public int compare(Node<T> o1, Node<T> o2) {
+            return Integer.compare(o2.weight, o1.weight);
+        }
     }
 
     /**
@@ -90,12 +95,14 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                 case FORWARD_ONLY:
                 case FORWARD_UNIQUE:
                 case FORWARD_PREFERRED: {
-                    // we get  popularity of each node connected to the current node.
-                    PriorityQueue<Node<T>> queue = new PriorityQueue<>();
 
                     // ArrayUtils.removeElements(sourceGraph.getConnectedVertexIndices(order[currentPosition]), visitedHops);
                     int[] connections = ArrayUtils.removeElements(
                                     sourceGraph.getConnectedVertexIndices(vertex.vertexID()), visitedHops);
+
+                    // we get  popularity of each node connected to the current node.
+                    PriorityQueue<Node<T>> queue = new PriorityQueue<>(Math.max(10, connections.length), new NodeComparator());
+
                     int start = 0;
                     int stop = 0;
                     int cnt = 0;
@@ -103,8 +110,8 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
 
 
                         for (int connected : connections) {
-                            queue.add(new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size()),
-                                            sourceGraph.getConnectedVertices(connected).size());
+                            Node<T> tNode = new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size());
+                            queue.add(tNode);
                         }
 
 
@@ -135,8 +142,8 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
                         double[] weights = new double[cSpread];
 
                         int fcnt = 0;
-                        while (queue.hasNext()) {
-                            Node<T> node = queue.next();
+                        while (!queue.isEmpty()) {
+                            Node<T> node = queue.poll();
                             if (cnt >= start && cnt <= stop) {
                                 list.add(node);
                                 weights[fcnt] = node.getWeight();

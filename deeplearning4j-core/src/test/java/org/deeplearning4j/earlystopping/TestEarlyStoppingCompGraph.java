@@ -31,7 +31,6 @@ import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -40,6 +39,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,8 +54,8 @@ public class TestEarlyStoppingCompGraph {
     @Test
     public void testEarlyStoppingIris() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").pretrain(false).backprop(true).build();
@@ -97,8 +97,8 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).learningRate(5.0) //Intentionally huge LR
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Sgd(5.0)) //Intentionally huge LR
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
@@ -133,8 +133,8 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).learningRate(1e-6).weightInit(WeightInit.XAVIER).graphBuilder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Sgd(1e-6)).weightInit(WeightInit.XAVIER).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
@@ -174,8 +174,8 @@ public class TestEarlyStoppingCompGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).learningRate(0.0).weightInit(WeightInit.XAVIER).graphBuilder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Sgd(0.0)).weightInit(WeightInit.XAVIER).graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
@@ -208,8 +208,8 @@ public class TestEarlyStoppingCompGraph {
     @Test
     public void testListeners() {
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                        .updater(Updater.SGD).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new OutputLayer.Builder().nIn(4).nOut(3)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").pretrain(false).backprop(true).build();

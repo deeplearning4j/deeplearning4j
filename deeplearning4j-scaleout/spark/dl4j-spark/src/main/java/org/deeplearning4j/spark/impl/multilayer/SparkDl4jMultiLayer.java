@@ -36,6 +36,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
@@ -48,6 +49,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -214,6 +216,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         trainingMaster.executeTraining(this, trainingData);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -255,6 +258,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public MultiLayerNetwork fitPaths(JavaRDD<String> paths) {
         trainingMaster.executeTrainingPaths(this, paths);
+        network.incrementEpochCount();
         return network;
     }
 
@@ -573,10 +577,26 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param <T>             Type of evaluation instance to return
      * @return                IEvaluation instance
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
-        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
-        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+        return doEvaluation(data, evalBatchSize, emptyEvaluation)[0];
+    }
+
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation} - or multiple IEvaluation instances.
+     * Distributed equivalent of {@link MultiLayerNetwork#doEvaluation(DataSetIterator, IEvaluation[])}
+     *
+     * @param data             Data to evaluate on
+     * @param emptyEvaluations Empty evaluation instances. Starting point (serialized/duplicated, then merged)
+     * @param evalBatchSize    Evaluation batch size
+     * @param <T>              Type of evaluation instance to return
+     * @return IEvaluation instances
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
+        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
+                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+        JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }
 }

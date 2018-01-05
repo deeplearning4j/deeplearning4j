@@ -3,7 +3,7 @@ package org.deeplearning4j.text.sentenceiterator;
 import org.datavec.api.util.ClassPathResource;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * @author raver119@gmail.com

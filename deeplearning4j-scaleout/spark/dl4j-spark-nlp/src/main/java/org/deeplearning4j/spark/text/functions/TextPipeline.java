@@ -22,14 +22,15 @@ import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.spark.text.accumulators.WordFreqAccumulator;
+import org.nd4j.linalg.primitives.AtomicDouble;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -123,7 +124,7 @@ public class TextPipeline {
         return (tokenCount < numWords) ? configuration.getUNK() : stringToken;
     }
 
-    private void addTokenToVocabCache(String stringToken, Double tokenCount) {
+    private void addTokenToVocabCache(String stringToken, Float tokenCount) {
         // Making string token into actual token if not already an actual token (vocabWord)
         VocabWord actualToken;
         if (vocabCache.hasToken(stringToken)) {
@@ -152,16 +153,16 @@ public class TextPipeline {
                             "IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 
-        for (Entry<String, Double> entry : wordFreq.entrySet()) {
+        for (Entry<String, AtomicDouble> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
-            Double tokenCount = entry.getValue();
+            Double tokenCount = entry.getValue().doubleValue();
 
             // Turn words below min count to UNK
             stringToken = filterMinWord(stringToken, tokenCount);
             if (!useUnk && stringToken.equals("UNK")) {
                 // Turn tokens to vocab and add to vocab cache
             } else
-                addTokenToVocabCache(stringToken, tokenCount);
+                addTokenToVocabCache(stringToken, tokenCount.floatValue());
         }
     }
 

@@ -7,8 +7,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -22,9 +22,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 15/11/2016.
@@ -313,6 +311,7 @@ public class TestConvolutionModes {
         int[] kernel = {kH, kW};
         int[] stride = {sH, sW};
         int[] padding = {pH, pW};
+        int[] dilation = {1,1};
 
         INDArray inData = Nd4j.create(minibatch, dIn, inH, inW);
         InputType inputType = InputType.convolutional(inH, inW, dIn);
@@ -320,7 +319,7 @@ public class TestConvolutionModes {
         //Strict mode: expect 2x2 out -> (inH - kernel + 2*padding)/stride + 1 = (3-2+0)/1+1 = 2
         InputType.InputTypeConvolutional it =
                         (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel,
-                                        stride, padding, ConvolutionMode.Strict, dOut, -1, "layerName",
+                                        stride, padding, dilation, ConvolutionMode.Strict, dOut, -1, "layerName",
                                         ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
@@ -332,7 +331,7 @@ public class TestConvolutionModes {
 
         //Truncate: same as strict here
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding,
-                        ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
         assertEquals(dOut, it.getDepth());
@@ -342,7 +341,7 @@ public class TestConvolutionModes {
 
         //Same mode: ceil(in / stride) = 3
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null,
-                        ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(3, it.getHeight());
         assertEquals(3, it.getWidth());
         assertEquals(dOut, it.getDepth());
@@ -369,7 +368,7 @@ public class TestConvolutionModes {
 
         //Strict mode: (4-3+0)/2+1 is not an integer -> exception
         try {
-            InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, ConvolutionMode.Strict, dOut, -1,
+            InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, dilation, ConvolutionMode.Strict, dOut, -1,
                             "layerName", ConvolutionLayer.class);
             fail("Expected exception");
         } catch (DL4JException e) {
@@ -384,7 +383,7 @@ public class TestConvolutionModes {
 
         //Truncate: (3-3+0)/2+1 = 1 in height dim; (4-3+0)/2+1 = 1 in width dim
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding,
-                        ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Truncate, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(1, it.getHeight());
         assertEquals(1, it.getWidth());
         assertEquals(dOut, it.getDepth());
@@ -394,7 +393,7 @@ public class TestConvolutionModes {
 
         //Same mode: ceil(3/2) = 2 in height dim; ceil(4/2) = 2 in width dimension
         it = (InputType.InputTypeConvolutional) InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, null,
-                        ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
+                dilation, ConvolutionMode.Same, dOut, -1, "layerName", ConvolutionLayer.class);
         assertEquals(2, it.getHeight());
         assertEquals(2, it.getWidth());
         assertEquals(dOut, it.getDepth());

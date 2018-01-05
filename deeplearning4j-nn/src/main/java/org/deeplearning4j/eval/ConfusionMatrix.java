@@ -20,26 +20,31 @@ package org.deeplearning4j.eval;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ConfusionMatrix<T extends Comparable<? super T>> implements Serializable {
-    private Map<T, Multiset<T>> matrix;
+    @Getter
+    private volatile Map<T, Multiset<T>> matrix;
     private List<T> classes;
 
     /**
      * Creates an empty confusion Matrix
      */
     public ConfusionMatrix(List<T> classes) {
-        this.matrix = new HashMap<>();
+        this.matrix = new ConcurrentHashMap<>();
         this.classes = classes;
     }
 
-    public ConfusionMatrix() {}
+    public ConfusionMatrix() {
+        this(new ArrayList<T>());
+    }
 
     /**
      * Creates a new ConfusionMatrix initialized with the contents of another ConfusionMatrix.
@@ -52,14 +57,14 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
     /**
      * Increments the entry specified by actual and predicted by one.
      */
-    public void add(T actual, T predicted) {
+    public synchronized void add(T actual, T predicted) {
         add(actual, predicted, 1);
     }
 
     /**
      * Increments the entry specified by actual and predicted by count.
      */
-    public void add(T actual, T predicted, int count) {
+    public synchronized void add(T actual, T predicted, int count) {
         if (matrix.containsKey(actual)) {
             matrix.get(actual).add(predicted, count);
         } else {
@@ -72,7 +77,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
     /**
      * Adds the entries from another confusion matrix to this one.
      */
-    public void add(ConfusionMatrix<T> other) {
+    public synchronized void add(ConfusionMatrix<T> other) {
         for (T actual : other.matrix.keySet()) {
             Multiset<T> counts = other.matrix.get(actual);
             for (T predicted : counts.elementSet()) {
@@ -86,6 +91,8 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
      * Gives the applyTransformToDestination of all classes in the confusion matrix.
      */
     public List<T> getClasses() {
+        if (classes == null)
+            classes = new ArrayList<>();
         return classes;
     }
 
@@ -93,7 +100,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
      * Gives the count of the number of times the "predicted" class was predicted for the "actual"
      * class.
      */
-    public int getCount(T actual, T predicted) {
+    public synchronized int getCount(T actual, T predicted) {
         if (!matrix.containsKey(actual)) {
             return 0;
         } else {
@@ -104,7 +111,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
     /**
      * Computes the total number of times the class was predicted by the classifier.
      */
-    public int getPredictedTotal(T predicted) {
+    public synchronized int getPredictedTotal(T predicted) {
         int total = 0;
         for (T actual : classes) {
             total += getCount(actual, predicted);
@@ -115,7 +122,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
     /**
      * Computes the total number of times the class actually appeared in the data.
      */
-    public int getActualTotal(T actual) {
+    public synchronized int getActualTotal(T actual) {
         if (!matrix.containsKey(actual)) {
             return 0;
         } else {

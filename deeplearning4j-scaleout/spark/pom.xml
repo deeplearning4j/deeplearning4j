@@ -20,11 +20,11 @@
     <parent>
         <artifactId>deeplearning4j-scaleout</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spark_2.11</artifactId>
-    <version>0.8.1_spark_1-SNAPSHOT</version>
+    <version>0.9.2_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>org.deeplearning4j.spark</name>
@@ -43,9 +43,9 @@
          the properties will be resolved to their defaults (and not the values present during the build). Whereas when
          defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
           (in different pom files) instead of a single global property -->
-        <spark.version>1.6.2</spark.version>
+        <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
-        <datavec.spark.version>0.8.1_spark_1-SNAPSHOT</datavec.spark.version>
+        <datavec.spark.version>0.9.2_spark_1-SNAPSHOT</datavec.spark.version>
     </properties>
 
 
@@ -55,7 +55,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${maven-build-helper-plugin.version}</version>
                 <executions>
                     <execution>
                         <id>add-source</id>
@@ -74,15 +73,24 @@
                 <artifactId>scala-maven-plugin</artifactId>
                 <version>${maven-scala-plugin.version}</version>
                 <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>testCompile</goal>
-                        </goals>
-                    </execution>
+                  <execution>
+                    <id>scala-compile-first</id>
+                    <phase>process-resources</phase>
+                    <goals>
+                      <goal>add-source</goal>
+                      <goal>compile</goal>
+                    </goals>
+                  </execution>
+                  <execution>
+                    <id>scala-test-compile</id>
+                    <phase>process-test-resources</phase>
+                    <goals>
+                      <goal>testCompile</goal>
+                    </goals>
+                  </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.7</scalaVersion>
+                    <scalaVersion>2.11.8</scalaVersion>
                 </configuration>
             </plugin>
         </plugins>
@@ -105,17 +113,21 @@
         <dependency>
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-library</artifactId>
-            <version>2.11.7</version>
+            <version>2.11.8</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
             <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
+              <exclusion>
+                <groupId>javax.servlet</groupId>
+                <artifactId>servlet-api</artifactId>
+              </exclusion>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+              </exclusion>
             </exclusions>
 
         </dependency>

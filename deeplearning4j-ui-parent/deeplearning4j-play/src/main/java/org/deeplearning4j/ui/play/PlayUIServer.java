@@ -6,28 +6,25 @@ import com.beust.jcommander.ParameterException;
 import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
-import org.deeplearning4j.ui.module.flow.FlowListenerModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
-import org.deeplearning4j.ui.module.histogram.HistogramModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
-import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
-import org.deeplearning4j.ui.storage.impl.QueuePairStatsStorageListener;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
+import org.nd4j.linalg.primitives.Pair;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import play.Mode;
@@ -38,6 +35,7 @@ import play.server.Server;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -69,10 +67,10 @@ public class PlayUIServer extends UIServer {
 
     private Server server;
     private final BlockingQueue<StatsStorageEvent> eventQueue = new LinkedBlockingQueue<>();
-    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new ArrayList<>();
-    private List<StatsStorage> statsStorageInstances = new ArrayList<>();
+    private List<Pair<StatsStorage, StatsStorageListener>> listeners = new CopyOnWriteArrayList<>();
+    private List<StatsStorage> statsStorageInstances = new CopyOnWriteArrayList<>();
 
-    private List<UIModule> uiModules = new ArrayList<>();
+    private List<UIModule> uiModules = new CopyOnWriteArrayList<>();
     private RemoteReceiverModule remoteReceiverModule;
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
@@ -123,13 +121,15 @@ public class PlayUIServer extends UIServer {
         routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
 
         uiModules.add(new DefaultModule()); //For: navigation page "/"
-        uiModules.add(new HistogramModule());
         uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
-        uiModules.add(new FlowListenerModule());
         uiModules.add(new TsneModule());
         remoteReceiverModule = new RemoteReceiverModule();
         uiModules.add(remoteReceiverModule);
+
+        //Check service loader mechanism (Arbiter UI, etc) for modules
+        uiModules.addAll(modulesViaServiceLoader());
+
 
         //Check if custom UI modules are enabled...
         String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
@@ -146,6 +146,7 @@ public class PlayUIServer extends UIServer {
             List<UIModule> list = getCustomUIModules(excludeClasses);
             uiModules.addAll(list);
         }
+
 
 
         for (UIModule m : uiModules) {
@@ -179,19 +180,54 @@ public class PlayUIServer extends UIServer {
         }
 
         String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
-        if(portProperty != null){
-            try{
+        if (portProperty != null) {
+            try {
                 port = Integer.parseInt(portProperty);
-            }catch (NumberFormatException e){
+            } catch (NumberFormatException e) {
                 log.warn("Could not parse UI port property \"{}\" with value \"{}\"", UI_SERVER_PORT_PROPERTY,
-                        portProperty, e);
+                                portProperty, e);
             }
         }
 
-        Router router = routingDsl.build();
-        server = Server.forRouter(router, Mode.DEV, port);
-        this.port = port;
+        //Set play secret key, if required
+        //http://www.playframework.com/documentation/latest/ApplicationSecret
+        String crypto = System.getProperty("play.crypto.secret");
+        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto) ) {
+            byte[] newCrypto = new byte[1024];
 
+            new Random().nextBytes(newCrypto);
+
+            String base64 = Base64.getEncoder().encodeToString(newCrypto);
+            System.setProperty("play.crypto.secret", base64);
+        }
+
+        Router router = routingDsl.build();
+        try {
+            server = Server.forRouter(router, Mode.PROD, port);
+        } catch (Throwable e){
+            if(e.getMessage().contains("'play.crypto.provider")){
+                //Usual cause: user's uber-jar does not include application.conf
+                log.error("Error starting UI server due to missing play.crypto.provider config: This usually occurs due to missing" +
+                        " application.conf file. DL4J's UI (based on the Play framework) requires this file in order" +
+                        " to run. File can be missing due to incorrect creation of uber-jars that do not include resource" +
+                        " files. See https://deeplearning4j.org/visualization#issues for more information", e);
+            } else {
+                log.error("Unknown error when starting UI server",e);
+            }
+            throw e;
+        }
+
+        log.info("DL4J UI Server started at {}", getAddress());
+
+        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
+        uiEventRoutingThread.setDaemon(true);
+        uiEventRoutingThread.start();
+        if (enableRemote)
+            enableRemoteListener();
+    }
+
+    @Override
+    public String getAddress() {
         String addr = server.mainAddress().toString();
         if (addr.startsWith("/0:0:0:0:0:0:0:0")) {
             int last = addr.lastIndexOf(':');
@@ -199,13 +235,26 @@ public class PlayUIServer extends UIServer {
                 addr = "http://localhost:" + addr.substring(last + 1);
             }
         }
-        log.info("UI Server started at {}", addr);
+        return addr;
+    }
 
-        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
-        uiEventRoutingThread.setDaemon(true);
-        uiEventRoutingThread.start();
-        if (enableRemote)
-            enableRemoteListener();
+    private List<UIModule> modulesViaServiceLoader() {
+
+        ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
+        Iterator<UIModule> iter = sl.iterator();
+
+        if (!iter.hasNext()) {
+            return Collections.emptyList();
+        }
+
+        List<UIModule> l = new ArrayList<>();
+        while (iter.hasNext()) {
+            UIModule m = iter.next();
+            log.debug("Loaded UI module via service loader: {}", m.getClass());
+            l.add(m);
+        }
+
+        return l;
     }
 
 
@@ -275,10 +324,11 @@ public class PlayUIServer extends UIServer {
         if (!statsStorageInstances.contains(statsStorage))
             return; //No op
         boolean found = false;
-        for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
+        for (Iterator<Pair<StatsStorage, StatsStorageListener>> iterator = listeners.iterator(); iterator.hasNext();) {
+            Pair<StatsStorage, StatsStorageListener> p = iterator.next();
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
-                listeners.remove(p);
+                iterator.remove();
                 found = true;
             }
         }

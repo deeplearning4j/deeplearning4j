@@ -29,3 +29,5 @@ Taisuke Oe - Android app
 Jeffrey Tang
 
 @bennythedataguy - Bi-directional LSTMs
+
+Justin Long @crockpotveggies

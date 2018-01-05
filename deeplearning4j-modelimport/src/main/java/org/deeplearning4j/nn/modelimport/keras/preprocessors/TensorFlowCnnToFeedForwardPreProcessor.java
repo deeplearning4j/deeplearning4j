@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -38,20 +39,22 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
          * TensorFlow convolutional input: # rows, # cols, # channels
          * Theano convolutional input:     # channels, # rows, # cols
          */
+        INDArray permuted = input.permute(0, 2, 3, 1).dup('c'); //To: [n, h, w, c]
 
-        /* TODO: remove the extra copies of the input. These are only
-         * used for debugging purposes during development and testing.
-         */
-        INDArray flatInput = super.preProcess(input, miniBatchSize);
-        INDArray permuted = input.permute(0, 2, 3, 1);
-        INDArray flatPermuted = super.preProcess(permuted, miniBatchSize);
-        return flatPermuted;
+        int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
+        int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
+
+        return permuted.reshape('c', outShape);
     }
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        INDArray epsilonsReshaped = super.backprop(epsilons, miniBatchSize);
-        return epsilonsReshaped.permute(0, 3, 1, 2);
+        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+            epsilons = epsilons.dup('c');
+
+        INDArray epsilonsReshaped = epsilons.reshape('c', epsilons.size(0), inputHeight, inputWidth, numChannels);
+
+        return epsilonsReshaped.permute(0, 3, 1, 2);    //To [n, c, h, w]
     }
 
     @Override

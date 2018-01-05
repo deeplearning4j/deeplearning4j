@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.graph.SubsetVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -17,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -32,9 +32,9 @@ public class TransferLearningHelperTest {
     @Test
     public void tesUnfrozenSubset() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1).seed(124)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().seed(124)
                         .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.1));
         /*
                              (inCentre)                        (inRight)
                                 |                                |
@@ -114,9 +114,9 @@ public class TransferLearningHelperTest {
     @Test
     public void testFitUnFrozen() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.9).seed(124)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.9)).seed(124)
                         .activation(Activation.IDENTITY)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD);
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT);
 
         ComputationGraphConfiguration conf = overallConf.graphBuilder().addInputs("inCentre", "inRight")
                         .addLayer("denseCentre0", new DenseLayer.Builder().nIn(10).nOut(9).build(), "inCentre")
@@ -187,8 +187,8 @@ public class TransferLearningHelperTest {
     public void testMLN() {
         DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .activation(Activation.IDENTITY);
 
         MultiLayerNetwork modelToFineTune = new MultiLayerNetwork(overallConf.clone().list()

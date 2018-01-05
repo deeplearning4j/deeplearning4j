@@ -7,8 +7,8 @@ import org.apache.spark.mllib.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions.{col, udf}
 import org.apache.spark.sql.types.StructType
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
 import org.deeplearning4j.spark.ml.utils.{DatasetFacade, SchemaUtils}
 import org.nd4j.linalg.factory.Nd4j
 
@@ -32,7 +32,7 @@ class AutoEncoder(uid: String) extends AutoEncoderWrapper[AutoEncoder, AutoEncod
       */
     override def fit(dataset: DataFrame) : AutoEncoderModel = {
         val sparkdl4j = fitter(DatasetFacade.dataRows(dataset))
-        new AutoEncoderModel(uid, sparkdl4j)
+        new AutoEncoderModel(uid, sparkdl4j, _multiLayerConfiguration)
             .setInputCol($(inputCol))
             .setOutputCol($(outputCol))
             .setCompressedLayer($(compressedLayer))
@@ -40,7 +40,8 @@ class AutoEncoder(uid: String) extends AutoEncoderWrapper[AutoEncoder, AutoEncod
 
 }
 
-class AutoEncoderModel(uid: String, multiLayerNetwork: MultiLayerNetwork) extends AutoEncoderModelWrapper[AutoEncoderModel](uid, multiLayerNetwork) {
+class AutoEncoderModel(uid: String, multiLayerNetwork: MultiLayerNetwork, multiLayerConfiguration: MultiLayerConfiguration)
+    extends AutoEncoderModelWrapper[AutoEncoderModel](uid, multiLayerNetwork, multiLayerConfiguration) {
 
     override def udfTransformer = udf[Vector, Vector](vec => {
         val out = multiLayerNetwork.feedForwardToLayer($(compressedLayer), Nd4j.create(vec.toArray))
@@ -59,7 +60,7 @@ class AutoEncoderModel(uid: String, multiLayerNetwork: MultiLayerNetwork) extend
       * @return returns a copy of the autoencoder model
       */
     override def copy(extra: ParamMap) : AutoEncoderModel = {
-        copyValues(new AutoEncoderModel(uid, multiLayerNetwork)).setParent(parent)
+        copyValues(new AutoEncoderModel(uid, multiLayerNetwork, multiLayerConfiguration)).setParent(parent)
     }
 
     /**

@@ -1,10 +1,17 @@
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -76,15 +83,33 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public double getLearningRateByParam(String paramName) {
-        //Not applicable
-        return 0;
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("Dropout layer does not contain parameters");
     }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        int actElementsPerEx = inputType.arrayElementsPerExample();
+        //During inference: not applied. During  backprop: dup the input, in case it's used elsewhere
+        //But: this will be counted in the activations
+        //(technically inference memory is over-estimated as a result)
+
+        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0) //No working mem, other than activations etc
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
+    }
+
 
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
-        public Builder(double dropOut) {
-            this.dropOut = dropOut;
+
+        public Builder(double dropout){
+            this.dropOut(new Dropout(dropout));
+        }
+
+        public Builder(IDropout dropout){
+            this.dropOut(dropout);
         }
 
         @Override

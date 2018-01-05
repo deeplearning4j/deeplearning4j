@@ -21,10 +21,8 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -38,9 +36,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.LeakyReLU;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-
-import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -74,9 +71,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testJson() {
-        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-
-        assertFalse(conf.useRegularization);
+        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.XAVIER, true);
         String json = conf.toJson();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromJson(json);
 
@@ -86,9 +81,7 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testYaml() {
-        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.XAVIER, true);
-
-        assertFalse(conf.useRegularization);
+        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.XAVIER, true);
         String json = conf.toYaml();
         NeuralNetConfiguration read = NeuralNetConfiguration.fromYaml(json);
 
@@ -97,28 +90,25 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testClone() {
-        NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM, true);
-        conf.getLayer().setMomentumSchedule(new HashMap<Integer, Double>());
+        NeuralNetConfiguration conf = getConfig(1, 1, WeightInit.UNIFORM, true);
+        BaseLayer bl = (BaseLayer) conf.getLayer();
         conf.setStepFunction(new DefaultStepFunction());
 
         NeuralNetConfiguration conf2 = conf.clone();
 
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
-        assertNotSame(conf.getLayer().getMomentumSchedule(), conf2.getLayer().getMomentumSchedule());
         assertNotSame(conf.getLayer(), conf2.getLayer());
-        assertNotSame(conf.getLayer().getDist(), conf2.getLayer().getDist());
+        assertNotSame(bl.getDist(), ((BaseLayer) conf2.getLayer()).getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
     }
 
     @Test
     public void testRNG() {
-        RBM layer = new RBM.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
-                        .weightInit(WeightInit.UNIFORM).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                        .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
+        DenseLayer layer = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
+                        .weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123).iterations(3)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -127,11 +117,9 @@ public class NeuralNetConfigurationTest {
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
 
-        RBM layer2 = new RBM.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
-                        .weightInit(WeightInit.UNIFORM).visibleUnit(RBM.VisibleUnit.GAUSSIAN)
-                        .hiddenUnit(RBM.HiddenUnit.RECTIFIED).activation(Activation.TANH)
-                        .lossFunction(LossFunctions.LossFunction.RMSE_XENT).build();
-        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123).iterations(3)
+        DenseLayer layer2 = new DenseLayer.Builder().nIn(trainingSet.numInputs()).nOut(trainingSet.numOutcomes())
+                        .weightInit(WeightInit.UNIFORM).activation(Activation.TANH).build();
+        NeuralNetConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(123)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer2).build();
 
         int numParams2 = conf2.getLayer().initializer().numParams(conf);
@@ -146,11 +134,11 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedSize() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
@@ -160,11 +148,11 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedNormalized() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.XAVIER, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
         assertEquals(modelWeights, modelWeights2);
     }
@@ -173,11 +161,11 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedXavier() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -187,11 +175,11 @@ public class NeuralNetConfigurationTest {
     public void testSetSeedDistribution() {
         Nd4j.getRandom().setSeed(123);
 
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
         INDArray modelWeights = model.getParam(DefaultParamInitializer.WEIGHT_KEY);
         Nd4j.getRandom().setSeed(123);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.DISTRIBUTION, true);
         INDArray modelWeights2 = model2.getParam(DefaultParamInitializer.WEIGHT_KEY);
 
         assertEquals(modelWeights, modelWeights2);
@@ -199,28 +187,27 @@ public class NeuralNetConfigurationTest {
 
     @Test
     public void testPretrain() {
-        Layer model = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
+        Layer model = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, true);
 
-        Layer model2 = getRBMLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, false);
+        Layer model2 = getLayer(trainingSet.numInputs(), trainingSet.numOutcomes(), WeightInit.UNIFORM, false);
 
         assertNotEquals(model.conf().isPretrain(), model2.conf().isPretrain());
     }
 
 
-    private static NeuralNetConfiguration getRBMConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
-        RBM layer = new RBM.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
-                        .visibleUnit(RBM.VisibleUnit.GAUSSIAN).hiddenUnit(RBM.HiddenUnit.RECTIFIED)
-                        .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
+    private static NeuralNetConfiguration getConfig(int nIn, int nOut, WeightInit weightInit, boolean pretrain) {
+        DenseLayer layer = new DenseLayer.Builder().nIn(nIn).nOut(nOut).weightInit(weightInit).dist(new NormalDistribution(1, 1))
+                        .activation(Activation.TANH).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(3)
-                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).regularization(false).layer(layer)
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).layer(layer)
                         .build();
         conf.setPretrain(pretrain);
         return conf;
     }
 
-    private static Layer getRBMLayer(int nIn, int nOut, WeightInit weightInit, boolean preTrain) {
-        NeuralNetConfiguration conf = getRBMConfig(nIn, nOut, weightInit, preTrain);
+    private static Layer getLayer(int nIn, int nOut, WeightInit weightInit, boolean preTrain) {
+        NeuralNetConfiguration conf = getConfig(nIn, nOut, weightInit, preTrain);
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         return conf.getLayer().instantiate(conf, null, 0, params, true);
@@ -238,14 +225,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(0.3).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.3)).list()
                         .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).learningRate(lr)
-                                        .biasLearningRate(biasLr).build())
-                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).learningRate(0.7)
-                                        .build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                                        .updater(new Sgd(lr)).biasUpdater(new Sgd(biasLr)).build())
+                        .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).updater(new Sgd(0.7)).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -254,11 +238,11 @@ public class NeuralNetConfigurationTest {
         ConvexOptimizer opt = new StochasticGradientDescent(net.getDefaultConfiguration(),
                         new NegativeDefaultStepFunction(), null, net);
         opt.checkTerminalConditions(gradientW, oldScore, newScore, iteration);
-        assertEquals(lr, net.getLayer(0).conf().getLearningRateByParam("W"), 1e-4);
-        assertEquals(biasLr, net.getLayer(0).conf().getLearningRateByParam("b"), 1e-4);
-        assertEquals(0.7, net.getLayer(1).conf().getLearningRateByParam("gamma"), 1e-4);
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("W"), 1e-4); //From global LR
-        assertEquals(0.3, net.getLayer(2).conf().getLearningRateByParam("b"), 1e-4); //From global LR
+        assertEquals(lr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4);
+        assertEquals(biasLr, ((Sgd)net.getLayer(0).conf().getLayer().getUpdaterByParam("b")).getLearningRate(), 1e-4);
+        assertEquals(0.7, ((Sgd)net.getLayer(1).conf().getLayer().getUpdaterByParam("gamma")).getLearningRate(), 1e-4);
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
+        assertEquals(0.3, ((Sgd)net.getLayer(2).conf().getLayer().getUpdaterByParam("W")).getLearningRate(), 1e-4); //From global LR
     }
 
     @Test
@@ -303,13 +287,11 @@ public class NeuralNetConfigurationTest {
         int iteration = 3;
         INDArray gradientW = Nd4j.ones(nIns[0], nOuts[0]);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(8).regularization(true).l1(l1)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l1(l1)
                         .l2(l2).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(0, new DenseLayer.Builder().nIn(nIns[0]).nOut(nOuts[0]).build())
                         .layer(1, new BatchNormalization.Builder().nIn(nIns[1]).nOut(nOuts[1]).l2(0.5).build())
-                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2])
-                                        .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(2, new OutputLayer.Builder().nIn(nIns[2]).nOut(nOuts[2]).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -332,12 +314,11 @@ public class NeuralNetConfigurationTest {
     public void testLayerPretrainConfig() {
         boolean pretrain = true;
 
-        org.deeplearning4j.nn.conf.layers.RBM layer =
-                        new org.deeplearning4j.nn.conf.layers.RBM.Builder(RBM.HiddenUnit.BINARY, RBM.VisibleUnit.BINARY)
-                                        .nIn(10).nOut(5).learningRate(1e-1f)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
+        VariationalAutoencoder layer = new VariationalAutoencoder.Builder()
+                .nIn(10).nOut(5).updater(new Sgd(1e-1))
+                .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build();
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(42).layer(layer).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().seed(42).layer(layer).build();
 
         assertFalse(conf.isPretrain());
         conf.setPretrain(pretrain);

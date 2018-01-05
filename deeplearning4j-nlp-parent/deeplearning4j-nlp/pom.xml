@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>deeplearning4j-nlp-parent</artifactId>
-    <version>0.8.1-SNAPSHOT</version>
+    <version>0.9.2-SNAPSHOT</version>
   </parent>
   <build>
     <pluginManagement>
@@ -36,13 +36,6 @@
   <artifactId>deeplearning4j-nlp</artifactId>
 
   <dependencies>
-
-    <dependency>
-      <groupId>org.apache.directory.studio</groupId>
-      <artifactId>org.apache.commons.codec</artifactId>
-      <version>1.8</version>
-    </dependency>
-
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native-api</artifactId>
@@ -68,7 +61,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>2.2.6</version>
+      <version>${mockito.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -90,7 +83,7 @@
       <dependency>
           <groupId>org.apache.commons</groupId>
           <artifactId>commons-lang3</artifactId>
-          <version>3.4</version>
+          <version>${commonslang.version}</version>
       </dependency>
   </dependencies>
 

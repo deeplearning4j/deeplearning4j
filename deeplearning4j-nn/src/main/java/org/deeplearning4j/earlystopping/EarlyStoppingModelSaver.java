@@ -34,10 +34,9 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = InMemoryModelSaver.class, name = "InMemoryModelSaver"),
-        @JsonSubTypes.Type(value = LocalFileGraphSaver.class, name = "LocalFileGraphSaver"),
-        @JsonSubTypes.Type(value = LocalFileModelSaver.class, name = "LocalFileModelSaver"),
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = InMemoryModelSaver.class, name = "InMemoryModelSaver"),
+                @JsonSubTypes.Type(value = LocalFileGraphSaver.class, name = "LocalFileGraphSaver"),
+                @JsonSubTypes.Type(value = LocalFileModelSaver.class, name = "LocalFileModelSaver"),
 
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")

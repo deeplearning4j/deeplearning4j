@@ -1,6 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -11,23 +11,17 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.nn.updater.LayerUpdater;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -36,17 +30,17 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.NoOpUpdater;
+import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -79,7 +73,7 @@ public class BatchNormalizationTest {
             b.lockGammaBeta(true).gamma(gamma).beta(beta);
         }
         BatchNormalization bN = b.build();
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).layer(bN).build();
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(bN).build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = null;
@@ -341,7 +335,7 @@ public class BatchNormalizationTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -373,7 +367,7 @@ public class BatchNormalizationTest {
         DataSet next = iter.next();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -398,7 +392,7 @@ public class BatchNormalizationTest {
         // i.e., make sure state is properly stored
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(12345)
+                        .seed(12345)
                         .list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -425,13 +419,7 @@ public class BatchNormalizationTest {
 
         assertEquals(out, out2);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ModelSerializer.writeModel(net, baos, true);
-        baos.close();
-        byte[] bArr = baos.toByteArray();
-
-        ByteArrayInputStream bais = new ByteArrayInputStream(bArr);
-        MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
 
         INDArray outDeser = net2.output(in, false);
 
@@ -443,7 +431,7 @@ public class BatchNormalizationTest {
         //Global mean/variance are part of the parameter vector. Expect 0 gradient, and no-op updater for these
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.IDENTITY).build())
@@ -478,26 +466,21 @@ public class BatchNormalizationTest {
         }
 
         org.deeplearning4j.nn.api.Updater u = net.getUpdater();
-        Field f = MultiLayerUpdater.class.getDeclaredField("layerUpdaters");
-        f.setAccessible(true);
-        org.deeplearning4j.nn.api.Updater[] updaters = (org.deeplearning4j.nn.api.Updater[]) f.get(u);
-        assertNotNull(updaters);
-        assertEquals(6, updaters.length);
 
-        for (int i = 0; i <= 5; i++) {
-            LayerUpdater lu = (LayerUpdater) updaters[i];
-            Map<String, GradientUpdater> guMap = lu.getUpdaterForVariable();
-            for (Map.Entry<String, GradientUpdater> entry : guMap.entrySet()) {
-                if (i == 1 || i == 4) {
-                    String param = entry.getKey();
-                    if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(param)
-                                    || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(param)) {
-                        assertTrue(entry.getValue() instanceof NoOpUpdater);
-                    } else {
-                        assertTrue(entry.getValue() instanceof RmsProp);
-                    }
+        MultiLayerUpdater mlu = (MultiLayerUpdater) u;
+        List<UpdaterBlock> l = mlu.getUpdaterBlocks();
+        assertNotNull(l);
+        assertEquals(5, l.size()); //Conv+bn (RMSProp), No-op (bn), RMSProp (dense, bn), no-op (bn), RMSProp (out)
+
+        for (UpdaterBlock ub : l) {
+
+            List<UpdaterBlock.ParamState> list = ub.getLayersAndVariablesInBlock();
+            for (UpdaterBlock.ParamState v : list) {
+                if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(v.getParamName())
+                                || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName())) {
+                    assertTrue(ub.getGradientUpdater() instanceof NoOpUpdater);
                 } else {
-                    assertTrue(entry.getValue() instanceof RmsProp);
+                    assertTrue(ub.getGradientUpdater() instanceof RmsPropUpdater);
                 }
             }
         }
@@ -511,7 +494,7 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345)
                         .list().layer(0,
                                         new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
@@ -567,7 +550,7 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(Updater.RMSPROP).seed(12345).list()
                         .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)

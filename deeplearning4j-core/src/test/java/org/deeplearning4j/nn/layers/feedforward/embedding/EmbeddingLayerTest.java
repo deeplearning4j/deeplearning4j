@@ -4,7 +4,6 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
@@ -16,6 +15,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -30,24 +30,28 @@ public class EmbeddingLayerTest {
     @Test
     public void testEmbeddingLayerConfig() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                        .layer(0, new EmbeddingLayer.Builder().nIn(10).nOut(5).build())
-                        .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
-                        .build();
+        for(boolean hasBias : new boolean[]{true, false}){
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
+                    .layer(0, new EmbeddingLayer.Builder().hasBias(hasBias).nIn(10).nOut(5).build())
+                    .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
+                    .build();
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
 
-        Layer l0 = net.getLayer(0);
+            Layer l0 = net.getLayer(0);
 
-        assertEquals(org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer.class, l0.getClass());
-        assertEquals(10, ((FeedForwardLayer) l0.conf().getLayer()).getNIn());
-        assertEquals(5, ((FeedForwardLayer) l0.conf().getLayer()).getNOut());
+            assertEquals(org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer.class, l0.getClass());
+            assertEquals(10, ((FeedForwardLayer) l0.conf().getLayer()).getNIn());
+            assertEquals(5, ((FeedForwardLayer) l0.conf().getLayer()).getNOut());
 
-        INDArray weights = l0.getParam(DefaultParamInitializer.WEIGHT_KEY);
-        INDArray bias = l0.getParam(DefaultParamInitializer.BIAS_KEY);
-        assertArrayEquals(new int[] {10, 5}, weights.shape());
-        assertArrayEquals(new int[] {1, 5}, bias.shape());
+            INDArray weights = l0.getParam(DefaultParamInitializer.WEIGHT_KEY);
+            INDArray bias = l0.getParam(DefaultParamInitializer.BIAS_KEY);
+            assertArrayEquals(new int[]{10, 5}, weights.shape());
+            if(hasBias){
+                assertArrayEquals(new int[]{1, 5}, bias.shape());
+            }
+        }
     }
 
     @Test
@@ -58,7 +62,7 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                        .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                        .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
                         .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).build()).pretrain(false).backprop(true)
                         .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
@@ -101,7 +105,7 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                        .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build()).layer(1,
+                        .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build()).layer(1,
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4)
                                                         .activation(Activation.SOFTMAX).build())
                         .pretrain(false).backprop(true).build();
@@ -160,7 +164,7 @@ public class EmbeddingLayerTest {
         int nClassesIn = 10;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                        .layer(0, new EmbeddingLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                        .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
                         .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                         .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                                         .activation(Activation.SOFTMAX).build())
@@ -239,9 +243,9 @@ public class EmbeddingLayerTest {
             Nd4j.getRandom().setSeed(12345);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).list()
-                            .layer(0, new EmbeddingLayer.Builder().activation(Activation.TANH).nIn(numInputClasses)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new Sgd(0.1)).seed(12345).list()
+                            .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
                                             .nOut(5).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
                             .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
@@ -254,8 +258,8 @@ public class EmbeddingLayerTest {
             net.init();
 
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                            .updater(Updater.SGD).learningRate(0.1).seed(12345).list()
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                                             .build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())

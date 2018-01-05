@@ -18,14 +18,15 @@
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -37,7 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;
@@ -79,6 +79,16 @@ public class LastTimeStepVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex instantiate(ComputationGraph graph,
                     String name, int idx, INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.rnn.LastTimeStepVertex(graph, name, idx, maskArrayInputName);
@@ -94,6 +104,14 @@ public class LastTimeStepVertex extends GraphVertex {
         }
 
         return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //No additional working memory (beyond activations/epsilons)
+        return new LayerMemoryReport.Builder(null, LastTimeStepVertex.class, inputTypes[0],
+                        getOutputType(-1, inputTypes)).standardMemory(0, 0).workingMemory(0, 0, 0, 0).cacheMemory(0, 0)
+                                        .build();
     }
 
     @Override

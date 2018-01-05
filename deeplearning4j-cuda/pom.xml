@@ -18,16 +18,17 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>deeplearning4j-cuda-8.0</artifactId>
+    <artifactId>deeplearning4j-cuda-9.0</artifactId>
     <name>deeplearning4j-cuda</name>
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j-parent</artifactId>
-        <version>0.8.1-SNAPSHOT</version>
+        <version>0.9.2-SNAPSHOT</version>
     </parent>
 
     <properties>
-        <cuda.version>8.0</cuda.version>
+        <cuda.version>9.0</cuda.version>
+        <cudnn.version>7.0</cudnn.version>
     </properties>
 
     <dependencyManagement>
@@ -75,7 +76,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda-platform</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -85,7 +86,9 @@
     </dependencies>
 
     <build>
+<!-- Uncomment to run the full test suite using cuDNN.
         <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
+-->
         <pluginManagement>
             <plugins>
                 <plugin>

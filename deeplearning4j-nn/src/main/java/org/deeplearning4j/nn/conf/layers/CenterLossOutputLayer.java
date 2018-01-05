@@ -25,12 +25,14 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -63,6 +65,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
         this.alpha = builder.alpha;
         this.lambda = builder.lambda;
         this.gradientCheck = builder.gradientCheck;
+        initializeConstraints(builder);
     }
 
     @Override
@@ -86,32 +89,13 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
-    public Updater getUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
         switch (paramName) {
             case CenterLossParamInitializer.CENTER_KEY:
-                return Updater.NONE;
+                return new NoOp();
             default:
-                return updater;
-        }
-    }
-
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case CenterLossParamInitializer.WEIGHT_KEY:
-                return learningRate;
-            case CenterLossParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            case CenterLossParamInitializer.CENTER_KEY:
-                return 0;
-            default:
-                throw new IllegalStateException("Unknown parameter: \"" + paramName + "\"");
+                return iUpdater;
         }
     }
 
@@ -153,6 +137,45 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     public boolean getGradientCheck() {
         return gradientCheck;
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Basically a dense layer, with some extra params...
+        InputType outputType = getOutputType(-1, inputType);
+
+        int nParamsW = nIn * nOut;
+        int nParamsB = nOut;
+        int nParamsCenter = nIn * nOut;
+        int numParams = nParamsW + nParamsB + nParamsCenter;
+
+        int updaterStateSize = (int) (getUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
+                        + getUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
+                        + getUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
+
+        int trainSizeFixed = 0;
+        int trainSizeVariable = 0;
+        if (getIDropout() != null) {
+            if (false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+                trainSizeVariable += 0; //TODO
+            } else {
+                //Assume we dup the input
+                trainSizeVariable += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by activation function backprop
+        // then we have 'epsilonNext' which is equivalent to input size
+        trainSizeVariable += outputType.arrayElementsPerExample();
+
+        return new LayerMemoryReport.Builder(layerName, CenterLossOutputLayer.class, inputType, outputType)
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @NoArgsConstructor

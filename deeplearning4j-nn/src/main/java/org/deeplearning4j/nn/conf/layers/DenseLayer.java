@@ -18,14 +18,18 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
-import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -38,9 +42,13 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class DenseLayer extends FeedForwardLayer {
+    private boolean hasBias = true;
 
     private DenseLayer(Builder builder) {
         super(builder);
+        this.hasBias = builder.hasBias;
+
+        initializeConstraints(builder);
     }
 
     @Override
@@ -64,8 +72,56 @@ public class DenseLayer extends FeedForwardLayer {
         return DefaultParamInitializer.getInstance();
     }
 
-    @AllArgsConstructor
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+
+        int trainSizeFixed = 0;
+        int trainSizeVariable = 0;
+        if (getIDropout() != null) {
+            if (false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+                trainSizeVariable += 0; //TODO
+            } else {
+                //Assume we dup the input
+                trainSizeVariable += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by activation function backprop
+        // then we have 'epsilonNext' which is equivalent to input size
+        trainSizeVariable += outputType.arrayElementsPerExample();
+
+        return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, outputType)
+                        .standardMemory(numParams, updaterStateSize)
+                        .workingMemory(0, 0, trainSizeFixed, trainSizeVariable) //No additional memory (beyond activations) for inference
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
+                        .build();
+    }
+
+    public boolean hasBias(){
+        return hasBias;
+    }
+
+    @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
+
+        private boolean hasBias = true;
+
+        /**
+         * If true (default): include bias parameters in the model. False: no bias.
+         *
+         * @param hasBias If true: include bias parameters in this model
+         */
+        public Builder hasBias(boolean hasBias){
+            this.hasBias = hasBias;
+            return this;
+        }
 
         @Override
         @SuppressWarnings("unchecked")

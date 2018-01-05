@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2017 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -20,19 +20,14 @@ package org.deeplearning4j.base;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.codec.digest.DigestUtils;
-
 import org.deeplearning4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
 
 @Data
@@ -66,33 +61,110 @@ public class MnistFetcher {
     public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
 
 
+    public String getName() {
+        return "MNIST";
+    }
+
+    public File getBaseDir() {
+        return FILE_DIR;
+    }
+
+    // --- Train files ---
+    public String getTrainingFilesURL() {
+        return trainingFilesURL;
+    }
+
+    public String getTrainingFilesMD5() {
+        return trainingFilesMD5;
+    }
+
+    public String getTrainingFilesFilename() {
+        return trainingFilesFilename;
+    }
+
+    public String getTrainingFilesFilename_unzipped() {
+        return trainingFilesFilename_unzipped;
+    }
+
+    public String getTrainingFileLabelsURL() {
+        return trainingFileLabelsURL;
+    }
+
+    public String getTrainingFileLabelsMD5() {
+        return trainingFileLabelsMD5;
+    }
+
+    public String getTrainingFileLabelsFilename() {
+        return trainingFileLabelsFilename;
+    }
+
+    public String getTrainingFileLabelsFilename_unzipped() {
+        return trainingFileLabelsFilename_unzipped;
+    }
+
+
+    // --- Test files ---
+
+    public String getTestFilesURL() {
+        return testFilesURL;
+    }
+
+    public String getTestFilesMD5() {
+        return testFilesMD5;
+    }
+
+    public String getTestFilesFilename() {
+        return testFilesFilename;
+    }
+
+    public String getTestFilesFilename_unzipped() {
+        return testFilesFilename_unzipped;
+    }
+
+    public String getTestFileLabelsURL() {
+        return testFileLabelsURL;
+    }
+
+    public String getTestFileLabelsMD5() {
+        return testFileLabelsMD5;
+    }
+
+    public String getTestFileLabelsFilename() {
+        return testFileLabelsFilename;
+    }
+
+    public String getTestFileLabelsFilename_unzipped() {
+        return testFileLabelsFilename_unzipped;
+    }
+
+
     public File downloadAndUntar() throws IOException {
         if (fileDir != null) {
             return fileDir;
         }
 
-        File baseDir = FILE_DIR;
+        File baseDir = getBaseDir();
         if (!(baseDir.isDirectory() || baseDir.mkdir())) {
             throw new IOException("Could not mkdir " + baseDir);
         }
 
-        log.info("Downloading mnist...");
+        log.info("Downloading {}...", getName());
         // getFromOrigin training records
-        File tarFile = new File(baseDir, trainingFilesFilename);
-        File testFileLabels = new File(baseDir, testFilesFilename);
+        File tarFile = new File(baseDir, getTrainingFilesFilename());
+        File testFileLabels = new File(baseDir, getTestFilesFilename());
 
-        tryDownloadingAFewTimes(new URL(trainingFilesURL), tarFile, trainingFilesMD5);
-        tryDownloadingAFewTimes(new URL(testFilesURL), testFileLabels, testFilesMD5);
+        tryDownloadingAFewTimes(new URL(getTrainingFilesURL()), tarFile, getTrainingFilesMD5());
+        tryDownloadingAFewTimes(new URL(getTestFilesURL()), testFileLabels, getTestFilesMD5());
 
         ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), baseDir.getAbsolutePath());
         ArchiveUtils.unzipFileTo(testFileLabels.getAbsolutePath(), baseDir.getAbsolutePath());
 
         // getFromOrigin training records
-        File labels = new File(baseDir, trainingFileLabelsFilename);
-        File labelsTest = new File(baseDir, testFileLabelsFilename);
+        File labels = new File(baseDir, getTrainingFileLabelsFilename());
+        File labelsTest = new File(baseDir, getTestFileLabelsFilename());
 
-        tryDownloadingAFewTimes(new URL(trainingFileLabelsURL), labels, trainingFileLabelsMD5);
-        tryDownloadingAFewTimes(new URL(testFileLabelsURL), labelsTest, testFileLabelsMD5);
+        tryDownloadingAFewTimes(new URL(getTrainingFileLabelsURL()), labels, getTrainingFileLabelsMD5());
+        tryDownloadingAFewTimes(new URL(getTestFileLabelsURL()), labelsTest, getTestFileLabelsMD5());
 
         ArchiveUtils.unzipFileTo(labels.getAbsolutePath(), baseDir.getAbsolutePath());
         ArchiveUtils.unzipFileTo(labelsTest.getAbsolutePath(), baseDir.getAbsolutePath());
@@ -110,8 +182,10 @@ public class MnistFetcher {
         boolean isCorrectFile = f.isFile();
         if (attempt < maxTries && !isCorrectFile) {
             FileUtils.copyURLToFile(url, f);
-            if (!checkMD5OfFile(targetMD5, f))
+            if (!checkMD5OfFile(targetMD5, f)) {
+                f.delete();
                 tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
+            }
         } else if (isCorrectFile) {
             // do nothing, file downloaded
         } else {

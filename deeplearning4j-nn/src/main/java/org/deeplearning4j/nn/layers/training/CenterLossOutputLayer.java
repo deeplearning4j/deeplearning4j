@@ -18,21 +18,16 @@
 
 package org.deeplearning4j.nn.layers.training;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
-import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.lossfunctions.impl.LossL2;
+import org.nd4j.linalg.primitives.Pair;
 
 
 /**
@@ -69,7 +64,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
@@ -119,7 +114,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
         // calculate the intra-class score component
@@ -155,8 +150,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        //        setScore(z, null);
-        throw new RuntimeException("Not yet implemented");
+        throw new RuntimeException("Not supported " + layerId());
     }
 
     @Override
@@ -174,9 +168,14 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray centersForExamples = labels.mmul(centers);
         INDArray dLcdai = input.sub(centersForExamples);
 
-        INDArray epsilonNext = params.get(CenterLossParamInitializer.WEIGHT_KEY).mmul(delta.transpose()).transpose();
+        INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true);
+
+        INDArray epsilonNext = w.mmul(delta.transpose()).transpose();
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here
+
+        weightNoiseParams.clear();
+
         return new Pair<>(pair.getFirst(), epsilonNext);
     }
 
@@ -194,8 +193,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
-            throw new DL4JInvalidInputException("Labels array numColumns (size(1) = " + labels2d.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1) + ")");
+            throw new DL4JInvalidInputException(
+                            "Labels array numColumns (size(1) = " + labels2d.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOut.size(1) + ") " + layerId());
         }
 
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
@@ -229,7 +229,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // other standard calculations
         Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-        biasGradView.assign(delta.sum(0));
+        delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
 
         gradient.gradientForVariable().put(CenterLossParamInitializer.WEIGHT_KEY, weightGradView);
         gradient.gradientForVariable().put(CenterLossParamInitializer.BIAS_KEY, biasGradView);

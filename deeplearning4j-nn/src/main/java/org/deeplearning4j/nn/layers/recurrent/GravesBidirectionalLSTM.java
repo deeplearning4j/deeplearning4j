@@ -18,14 +18,16 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
-import org.deeplearning4j.berkeley.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
 
@@ -49,8 +51,12 @@ import java.util.Map;
  * @author Alex Black
  * @author Benjamin Joseph
  */
+@Slf4j
 public class GravesBidirectionalLSTM
                 extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM> {
+
+    protected FwdPassReturn cachedPassForward;
+    protected FwdPassReturn cachedPassBackward;
 
     public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
         super(conf);
@@ -62,12 +68,7 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -86,7 +87,8 @@ public class GravesBidirectionalLSTM
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
-                            "you can not time step a bidirectional RNN, it has to run on a batch of data all at once");
+                            "Time step for bidirectional RNN not supported: it has to run on a batch of data all at once "
+                                            + layerId());
         }
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
@@ -98,7 +100,8 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
+                        null);
 
 
 
@@ -111,7 +114,8 @@ public class GravesBidirectionalLSTM
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
-                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray);
+                        GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
+                        null);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -179,29 +183,46 @@ public class GravesBidirectionalLSTM
     }
 
     private INDArray activateOutput(final boolean training, boolean forBackprop) {
+        final FwdPassReturn forwardsEval;
+        final FwdPassReturn backwardsEval;
 
+        if (cacheMode != CacheMode.NONE && cachedPassForward != null && cachedPassBackward != null) {
+            // restore from cache. but this coll will probably never happen
+            forwardsEval = cachedPassForward;
+            backwardsEval = cachedPassBackward;
 
-        final FwdPassReturn forwardsEval =
-                        LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training,
-                                        null, null, forBackprop, true,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray);
+            cachedPassBackward = null;
+            cachedPassForward = null;
+        } else {
 
-        final FwdPassReturn backwardsEval =
-                        LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training,
-                                        null, null, forBackprop, false,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray);
+            forwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                            this.input, getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
+                            forBackprop || (cacheMode != CacheMode.NONE && training), true,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
+                            forBackprop ? cacheMode : CacheMode.NONE);
 
+            backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                            this.input,
+                            getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
+                            getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
+                            forBackprop || (cacheMode != CacheMode.NONE && training), false,
+                            GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
+                            forBackprop ? cacheMode : CacheMode.NONE);
+
+            cachedPassForward = forwardsEval;
+            cachedPassBackward = backwardsEval;
+        }
 
         //sum outputs
         final INDArray fwdOutput = forwardsEval.fwdPassOutput;
         final INDArray backOutput = backwardsEval.fwdPassOutput;
-        final INDArray totalOutput = fwdOutput.addi(backOutput);
+
+        // if we're on ff pass & cache enabled - we should not modify fwdOutput, and for backprop pass - we don't care
+        final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput)
+                        : fwdOutput.addi(backOutput);
 
         return totalOutput;
     }
@@ -209,25 +230,34 @@ public class GravesBidirectionalLSTM
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, boolean forwards) {
 
-        String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
-        String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
-        String biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS;
+        if (cacheMode == null)
+            cacheMode = CacheMode.NONE;
 
-        if (!forwards) {
-            recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS;
-            inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS;
-            biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
+        if (cacheMode != CacheMode.NONE && forwards && forBackprop && cachedPassForward != null) {
+            FwdPassReturn ret = cachedPassForward;
+            cachedPassForward = null;
+            return ret;
+        } else if (cacheMode != CacheMode.NONE && !forwards && forBackprop) {
+            FwdPassReturn ret = cachedPassBackward;
+            cachedPassBackward = null;
+            return ret;
+        } else {
+
+            String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
+            String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
+            String biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS;
+
+            if (!forwards) {
+                recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS;
+                inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS;
+                biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
+            }
+
+            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+                            getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
+                            prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
+                            null, forBackprop ? cacheMode : CacheMode.NONE);
         }
-
-        return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                        getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                        prevMemCellState, forBackprop, forwards, inputKey, maskArray);
-
-    }
-
-    @Override
-    public INDArray activationMean() {
-        return activate();
     }
 
     @Override
@@ -237,7 +267,7 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -247,9 +277,6 @@ public class GravesBidirectionalLSTM
 
     @Override
     public double calcL2(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l2Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l2 = conf.getL2ByParam(entry.getKey());
@@ -265,9 +292,6 @@ public class GravesBidirectionalLSTM
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
@@ -283,14 +307,16 @@ public class GravesBidirectionalLSTM
     @Override
     public INDArray rnnTimeStep(INDArray input) {
         throw new UnsupportedOperationException(
-                        "you can not time step a bidirectional RNN, it has to run on a batch of data all at once");
+                        "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
+                                        + layerId());
     }
 
 
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        throw new UnsupportedOperationException("Cannot set stored state: bidirectional RNNs don't have stored state");
+        throw new UnsupportedOperationException(
+                        "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }
 
 

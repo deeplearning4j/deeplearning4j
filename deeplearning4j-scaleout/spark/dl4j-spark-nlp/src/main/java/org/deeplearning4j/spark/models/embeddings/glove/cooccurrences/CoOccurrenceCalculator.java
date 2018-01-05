@@ -20,11 +20,11 @@ package org.deeplearning4j.spark.models.embeddings.glove.cooccurrences;
 
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.CounterMap;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -68,19 +68,19 @@ public class CoOccurrenceCalculator implements Function<Pair<List<String>, Atomi
                     continue;
                 if (wordIdx < otherWord) {
                     coOCurreneCounts.incrementCount(sentence.get(i), sentence.get(j),
-                                    1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                                    (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
                     if (symmetric)
                         coOCurreneCounts.incrementCount(sentence.get(j), sentence.get(i),
-                                        1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                                        (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
 
 
 
                 } else {
-                    coOCurreneCounts.incrementCount(sentence.get(j), sentence.get(i),
-                                    1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                    float coCount = (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                    coOCurreneCounts.incrementCount(sentence.get(j), sentence.get(i), (float) coCount);
                     if (symmetric)
                         coOCurreneCounts.incrementCount(sentence.get(i), sentence.get(j),
-                                        1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                                        (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
 
 
                 }

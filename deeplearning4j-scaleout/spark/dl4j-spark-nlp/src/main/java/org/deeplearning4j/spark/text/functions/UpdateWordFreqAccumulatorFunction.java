@@ -21,8 +21,8 @@ package org.deeplearning4j.spark.text.functions;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
-import org.deeplearning4j.berkeley.Counter;
-import org.deeplearning4j.berkeley.Pair;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,12 +53,12 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
 
             if (!stops.isEmpty()) {
                 if (stops.contains(w)) {
-                    counter.incrementCount("STOP", 1.0);
+                    counter.incrementCount("STOP", 1.0f);
                 } else {
-                    counter.incrementCount(w, 1.0);
+                    counter.incrementCount(w, 1.0f);
                 }
             } else {
-                counter.incrementCount(w, 1.0);
+                counter.incrementCount(w, 1.0f);
             }
         }
         wordFreqAcc.add(counter);

@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui;
 
+import org.apache.commons.io.IOUtils;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -8,33 +9,40 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.ui.flow.FlowIterationListener;
+import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
-import org.deeplearning4j.ui.weights.HistogramIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,65 +80,35 @@ public class ManualTests {
         fail("not implemneted");
     }
 
+
     @Test
-    public void testHistograms() throws Exception {
-        final int numRows = 28;
-        final int numColumns = 28;
-        int outputNum = 10;
-        int numSamples = 60000;
-        int batchSize = 100;
-        int iterations = 10;
-        int seed = 123;
-        int listenerFreq = batchSize / 5;
+    public void testTsne() throws Exception {
+        Nd4j.ENFORCE_NUMERICAL_STABILITY = true;
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
+        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
+                        .useAdaGrad(true).build();
 
-        log.info("Load data....");
-        DataSetIterator iter = new MnistDataSetIterator(batchSize, numSamples, true);
+        org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("/mnist2500_X.txt");
+        File f = resource.getTempFileFromArchive();
+        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
+                        NDArrayIndex.interval(0, 784));
 
-        log.info("Build model....");
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
-                        .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                        .gradientNormalizationThreshold(1.0).iterations(iterations).momentum(0.5)
-                        .momentumAfter(Collections.singletonMap(3, 0.9))
-                        .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
-                        .layer(0, new RBM.Builder().nIn(numRows * numColumns).nOut(500).weightInit(WeightInit.XAVIER)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .visibleUnit(RBM.VisibleUnit.BINARY).hiddenUnit(RBM.HiddenUnit.BINARY).build())
-                        .layer(1, new RBM.Builder().nIn(500).nOut(250).weightInit(WeightInit.XAVIER)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .visibleUnit(RBM.VisibleUnit.BINARY).hiddenUnit(RBM.HiddenUnit.BINARY).build())
-                        .layer(2, new RBM.Builder().nIn(250).nOut(200).weightInit(WeightInit.XAVIER)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE)
-                                        .visibleUnit(RBM.VisibleUnit.BINARY).hiddenUnit(RBM.HiddenUnit.BINARY).build())
-                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .activation(Activation.SOFTMAX).nIn(200).nOut(outputNum).build())
-                        .pretrain(true).backprop(false).build();
 
-        //        UiServer server = UiServer.getInstance();
-        //        UiConnectionInfo connectionInfo = server.getConnectionInfo();
-        //        connectionInfo.setSessionId("my session here");
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-        model.setListeners(Arrays.asList(new ScoreIterationListener(listenerFreq),
-                        new HistogramIterationListener(listenerFreq), new FlowIterationListener(listenerFreq)));
+        org.nd4j.linalg.io.ClassPathResource labels = new org.nd4j.linalg.io.ClassPathResource("mnist2500_labels.txt");
+        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
+        b.fit(data);
+        File save = new File(System.getProperty("java.io.tmpdir"), "labels-" + UUID.randomUUID().toString());
+        System.out.println("Saved to " + save.getAbsolutePath());
+        save.deleteOnExit();
+        b.saveAsFile(labelsList, save.getAbsolutePath());
 
-        log.info("Train model....");
-        model.fit(iter); // achieves end to end pre-training
+        INDArray output = b.getData();
+        System.out.println("Coordinates");
 
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(outputNum);
-
-        DataSetIterator testIter = new MnistDataSetIterator(100, 10000);
-        while (testIter.hasNext()) {
-            DataSet testMnist = testIter.next();
-            INDArray predict2 = model.output(testMnist.getFeatureMatrix());
-            eval.eval(testMnist.getLabels(), predict2);
-        }
-
-        log.info(eval.stats());
-        log.info("****************Example finished********************");
-
-        fail("Not implemented");
+        UIServer server = UIServer.getInstance();
+        Thread.sleep(10000000000L);
     }
 
     /**
@@ -162,11 +140,10 @@ public class ManualTests {
                         outputNum, useSubset, true, 1.0, new Random(seed));
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.01)
-                        .momentum(0.9).regularization(true).updater(Updater.ADAGRAD).useDropConnect(true).list()
+                        .updater(new AdaGrad(0.01)).weightNoise(new DropConnect(0.5)).list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).name("cnn1").nIn(nChannels).stride(1, 1).nOut(20)
                                         .build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
@@ -181,8 +158,8 @@ public class ManualTests {
                         .layer(7, new DenseLayer.Builder().name("ffn1").nOut(160).dropOut(0.5).build())
                         .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder, numRows, numColumns, nChannels);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
@@ -212,73 +189,6 @@ public class ManualTests {
         eval.eval(testLabels.get(0), output);
         log.info(eval.stats());
         log.info("****************Example finished********************");
-
-    }
-
-    @Test
-    public void testFlowActivationsMLN1() throws Exception {
-        int nChannels = 1;
-        int outputNum = 10;
-        int batchSize = 64;
-        int nEpochs = 10;
-        int iterations = 1;
-        int seed = 123;
-
-        log.info("Load data....");
-        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
-        DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
-
-        log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l2(0.0005).learningRate(0.01)//.biasLearningRate(0.02)
-                        //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
-                        .weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
-                        .momentum(0.9).list()
-                        .layer(0, new ConvolutionLayer.Builder(5, 5)
-                                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-                                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
-                                        .stride(2, 2).build())
-                        .layer(2, new ConvolutionLayer.Builder(5, 5)
-                                        //Note that nIn needed be specified in later layers
-                                        .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
-                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
-                                        .stride(2, 2).build())
-                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
-                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
-
-        MultiLayerConfiguration conf = builder.build();
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
-
-
-        log.info("Train model....");
-        model.setListeners(new FlowIterationListener(1));
-        for (int i = 0; i < nEpochs; i++) {
-            model.fit(mnistTrain);
-            log.info("*** Completed epoch {} ***", i);
-            mnistTest.reset();
-        }
-
-        log.info("Evaluate model....");
-        Evaluation eval = new Evaluation(outputNum);
-        while (mnistTest.hasNext()) {
-            DataSet ds = mnistTest.next();
-            INDArray output = model.output(ds.getFeatureMatrix(), false);
-            eval.eval(ds.getLabels(), output);
-        }
-        log.info(eval.stats());
-
-        log.info("****************Example finished********************");
-    }
-
-    @Test
-    public void testFlowActivationsCG1() throws Exception {
 
     }
 
@@ -344,7 +254,6 @@ public class ManualTests {
         int outputNum = 10;
         int batchSize = 64;
         int nEpochs = 10;
-        int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
@@ -352,12 +261,10 @@ public class ManualTests {
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l2(0.0005).learningRate(0.01)//.biasLearningRate(0.02)
-                        //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
+                        .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.NESTEROVS)
-                        .momentum(0.9).list()
+                        .updater(new Nesterovs(0.01, 0.9)).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5)
                                         //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
                                         .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build())
@@ -371,9 +278,7 @@ public class ManualTests {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -415,5 +320,44 @@ public class ManualTests {
         mnistTest.reset();
 
         log.info("****************Example finished********************");
+    }
+
+    @Test
+    public void testCNNActivationsFrozen() throws Exception {
+
+        int nChannels = 1;
+        int outputNum = 10;
+        int batchSize = 64;
+        int nEpochs = 10;
+        int seed = 123;
+
+        log.info("Load data....");
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
+
+        log.info("Build model....");
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
+                .l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Nesterovs(0.01, 0.9)).list()
+                .layer(0, new FrozenLayer(new ConvolutionLayer.Builder(5, 5)
+                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build()))
+                .layer(1, new FrozenLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .stride(2, 2).build()))
+                .layer(2, new FrozenLayer(new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build()))
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(outputNum).activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, nChannels));
+
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        log.info("Train model....");
+        model.setListeners(new ConvolutionalIterationListener(1));
+
+        for (int i = 0; i < nEpochs; i++) {
+            model.fit(mnistTrain);
+        }
     }
 }

@@ -1,5 +1,5 @@
 <!--
-  ~ /*
+  ~ /*-
   ~  * Copyright 2015 Skymind,Inc.
   ~  *
   ~  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,46 +14,74 @@
   ~  *    See the License for the specific language governing permissions and
   ~  *    limitations under the License.
   ~  */
-  -->
+-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-        <modelVersion>4.0.0</modelVersion>
-        <parent>
-                <groupId>org.deeplearning4j</groupId>
-                <artifactId>deeplearning4j-scaleout</artifactId>
-                <version>0.8.1-SNAPSHOT</version>
-        </parent>
-        <artifactId>deeplearning4j-aws</artifactId>
-        <name>DeepLearning4j-AWS</name>
-        <dependencies>
-                <dependency>
-                        <groupId>com.amazonaws</groupId>
-                        <artifactId>aws-java-sdk</artifactId>
-                        <version>1.11.24</version>
-                </dependency>
-                <dependency>
-                        <groupId>org.deeplearning4j</groupId>
-                        <artifactId>deeplearning4j-core</artifactId>
-                        <version>${project.version}</version>
-                </dependency>
-                <dependency>
-                        <groupId>args4j</groupId>
-                        <artifactId>args4j</artifactId>
-                        <version>2.32</version>
-                </dependency>
-                <dependency>
-                        <groupId>com.jcraft</groupId>
-                        <artifactId>jsch</artifactId>
-                        <version>0.1.51</version>
-                </dependency>
-        </dependencies>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>deeplearning4j-scaleout</artifactId>
+    <version>0.9.2-SNAPSHOT</version>
+  </parent>
 
-    <profiles>
-        <profile>
-            <id>test-nd4j-native</id>
-        </profile>
-        <profile>
-            <id>test-nd4j-cuda-8.0</id>
-        </profile>
-    </profiles>
+  <artifactId>deeplearning4j-aws_2.11</artifactId>
+  <name>DeepLearning4j-AWS</name>
+  <version>0.9.2_spark_1-SNAPSHOT</version>
+
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+  <properties>
+    <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom. Otherwise,
+         the properties will be resolved to their defaults (and not the values present during the build). Whereas when
+         defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
+         (in different pom files) instead of a single global property -->
+    <spark.version>1.6.3</spark.version>
+    <spark.major.version>1</spark.major.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-java-sdk</artifactId>
+      <version>1.11.24</version>
+    </dependency>
+    <dependency>
+      <groupId>org.deeplearning4j</groupId>
+      <artifactId>deeplearning4j-core</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>args4j</groupId>
+      <artifactId>args4j</artifactId>
+      <version>2.32</version>
+    </dependency>
+    <dependency>
+      <groupId>com.jcraft</groupId>
+      <artifactId>jsch</artifactId>
+      <version>0.1.51</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>spark-core_2.11</artifactId>
+      <version>${spark.version}</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>test-nd4j-native</id>
+    </profile>
+    <profile>
+      <id>test-nd4j-cuda-8.0</id>
+    </profile>
+  </profiles>
 </project>

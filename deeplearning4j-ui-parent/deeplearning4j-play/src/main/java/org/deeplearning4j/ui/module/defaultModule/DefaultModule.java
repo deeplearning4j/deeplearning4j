@@ -11,7 +11,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static play.mvc.Results.ok;
 import static play.mvc.Results.redirect;
 
 /**

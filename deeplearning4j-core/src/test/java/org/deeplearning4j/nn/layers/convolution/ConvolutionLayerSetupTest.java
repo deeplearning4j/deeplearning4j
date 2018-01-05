@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.layers.convolution;
 
-import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
@@ -11,14 +10,14 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,12 +37,13 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@Ignore
 public class ConvolutionLayerSetupTest {
 
     @Test
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
+        builder.setInputType(InputType.convolutional(28, 28, 1));
         MultiLayerConfiguration completed = complete().build();
         MultiLayerConfiguration test = builder.build();
         assertEquals(completed, test);
@@ -57,12 +57,11 @@ public class ConvolutionLayerSetupTest {
         final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
-        int iterations = 3;
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
-                        .regularization(true).l1(1e-1).l2(2e-4).useDropConnect(true).dropOut(0.5).miniBatch(true)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
+                        .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
@@ -76,9 +75,9 @@ public class ConvolutionLayerSetupTest {
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
-        new ConvolutionLayerSetup(builder, numRows, numColumns, nChannels);
         DataSet d = new DataSet(Nd4j.rand(12345, 10, nChannels, numRows, numColumns),
                         FeatureUtil.toOutcomeMatrix(new int[] {1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, 6));
         MultiLayerNetwork network = new MultiLayerNetwork(builder.build());
@@ -113,7 +112,7 @@ public class ConvolutionLayerSetupTest {
         DataSet next = new DataSet(in, labels);
 
         NeuralNetConfiguration.ListBuilder builder = (NeuralNetConfiguration.ListBuilder) incompleteLFW();
-        new ConvolutionLayerSetup(builder, 28, 28, 3);
+        builder.setInputType(InputType.convolutional(28, 28, 3));
         MultiLayerConfiguration conf = builder.build();
         ConvolutionLayer layer2 = (ConvolutionLayer) conf.getConf(2).getLayer();
         assertEquals(6, layer2.getNIn());
@@ -226,15 +225,14 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration.Builder inComplete() {
         int nChannels = 1;
         int outputNum = 10;
-        int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
+                                        .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
@@ -249,15 +247,14 @@ public class ConvolutionLayerSetupTest {
         final int numColumns = 28;
         int nChannels = 1;
         int outputNum = 10;
-        int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
-                                        .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
+                                        .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nIn(5 * 5 * 1 * 6) //216
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
@@ -268,14 +265,15 @@ public class ConvolutionLayerSetupTest {
         return builder;
     }
 
+
     @Test
-    public void testSubSamplingWithPadding() {
+    public void testDeconvolution() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                        .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
-                        .layer(2, new OutputLayer.Builder().nOut(3).build());
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
+                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
 
         MultiLayerConfiguration conf = builder.build();
 
@@ -289,6 +287,48 @@ public class ConvolutionLayerSetupTest {
         assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
+    @Test
+    public void testSubSamplingWithPadding() {
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                        .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                        .layer(2, new OutputLayer.Builder().nOut(3).build())
+                        .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(8, proc.getInputHeight());
+        assertEquals(8, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+    }
+
+    @Test
+    public void testUpsampling() {
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new Upsampling2D.Builder().size(3).build()) // 14 * 3 = 42!
+                .layer(new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(42, proc.getInputHeight());
+        assertEquals(42, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+        assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+    }
+
 
     @Test
     public void testCNNDBNMultiLayer() throws Exception {
@@ -297,7 +337,7 @@ public class ConvolutionLayerSetupTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
                                         .activation(Activation.IDENTITY).build())
@@ -309,7 +349,7 @@ public class ConvolutionLayerSetupTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).cnnInputSize(28, 28, 1).build();
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -323,6 +363,53 @@ public class ConvolutionLayerSetupTest {
         INDArray actualBetaParam = network.getLayer(1).getParam(BatchNormalizationParamInitializer.BETA);
         assertTrue(actualGammaParam != null);
         assertTrue(actualBetaParam != null);
+    }
+
+    @Test
+    public void testSeparableConv2D() {
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer( new SeparableConvolution2D.Builder(2, 2)
+                        .depthMultiplier(2)
+                        .padding(0, 0)
+                        .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(8, proc.getInputHeight());
+        assertEquals(8, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+    }
+
+    @Test
+    public void testDeconv2D() {
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer( new Deconvolution2D.Builder(2, 2)
+                        .padding(0, 0)
+                        .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                .layer(2, new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(8, proc.getInputHeight());
+        assertEquals(8, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
 }

@@ -60,29 +60,13 @@ public class RemoteConvolutionalIterationListener implements IterationListener {
     }
 
     /**
-     * Get if listener invoked
-     */
-    @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    /**
-     * Change invoke to true
-     */
-    @Override
-    public void invoke() {
-
-    }
-
-    /**
      * Event listener for each iteration
      *
      * @param model     the model iterating
      * @param iteration the iteration number
      */
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (iteration % freq == 0) {
 
             List<INDArray> tensors = new ArrayList<>();
@@ -96,7 +80,7 @@ public class RemoteConvolutionalIterationListener implements IterationListener {
                     INDArray output = layer.activate();
 
                     if (sampleDim < 0)
-                        sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
 
                     if (cnt == 0) {
                         INDArray inputs = ((ConvolutionLayer) layer).input();

@@ -1,13 +1,13 @@
 package org.deeplearning4j.nn.layers.pooling;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.MaskedReductionUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -38,7 +39,7 @@ import java.util.Arrays;
  *
  * @author Alex Black
  */
-public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
+public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
     private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[] {2};
     private static final int[] DEFAULT_CNN_POOL_DIMS = new int[] {2, 3};
@@ -62,8 +63,18 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
+    }
+
+    @Override
     public boolean isPretrainLayer() {
         return false;
+    }
+
+    @Override
+    public void clearNoiseWeightParams() {
+        //No op
     }
 
     @Override
@@ -84,8 +95,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray activate(boolean training) {
         if (input == null) {
-            throw new IllegalStateException(
-                            "Cannot perform forward pass: input not set for layer " + layerNameAndIndex());
+            throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
         }
 
         int[] poolDim = null;
@@ -109,8 +119,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         } else {
             throw new UnsupportedOperationException("Received rank " + input.rank() + " input (shape = "
-                            + Arrays.toString(input.shape())
-                            + "). Only rank 3 (time series) and rank 4 (images/CNN data) are currently supported for global pooling");
+                            + Arrays.toString(input.shape()) + "). Only rank 3 (time series) and rank 4 (images"
+                            + "/CNN data) are currently supported for global pooling " + layerId());
         }
 
         INDArray reduced2d;
@@ -135,8 +145,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                     "Only 2d mask arrays are currently supported for masked global reductions "
                                                     + "on CNN data. Got 4d activations array (shape "
                                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape())
-                                                    + ")");
+                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + layerId());
                 }
 
                 int h = input.size(2);
@@ -149,8 +159,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                                     + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively.\n"
                                                     + " Got 4d activations array (shape "
                                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape())
-                                                    + ")");
+                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + layerId());
                 }
 
                 //Valid combinations of global pooling + masking for CNNs:
@@ -159,7 +169,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     throw new UnsupportedOperationException(
                                     "Masked global pooling with on CNN data currently only supports poolling over dimensions "
                                                     + "[2,3] (i.e., width and height - both required). Got pooling dimensions "
-                                                    + Arrays.toString(poolDim) + ")");
+                                                    + Arrays.toString(poolDim) + ") " + layerId());
                 }
 
                 boolean maskAlongHeight = (h == maskLength); //At this point: can't confuse w and h, as one has to be 1...
@@ -167,7 +177,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 reduced2d = MaskedReductionUtil.maskedPoolingConvolution(poolingType, input, maskArray, maskAlongHeight,
                                 pNorm);
             } else {
-                throw new UnsupportedOperationException("Invalid input: is rank " + input.rank());
+                throw new UnsupportedOperationException("Invalid input: is rank " + input.rank() + " " + layerId());
             }
         }
 
@@ -182,6 +192,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 return reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1);
             }
         }
+    }
+
+    @Override
+    public Layer clone() {
+        return new GlobalPoolingLayer(conf);
     }
 
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {
@@ -201,9 +216,9 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 Transforms.pow(abs, pnorm, false);
                 INDArray pNorm = abs.sum(poolDim);
 
-                return Transforms.pow(pNorm, 1.0 / pnorm);
+                return Transforms.pow(pNorm, 1.0 / pnorm, false);
             default:
-                throw new RuntimeException("Unknown or not supported pooling type: " + poolingType);
+                throw new RuntimeException("Unknown or not supported pooling type: " + poolingType + " " + layerId());
         }
     }
 
@@ -254,7 +269,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 epsilonNd = MaskedReductionUtil.maskedPoolingEpsilonCnn(poolingType, input, maskArray, epsilon,
                                 maskAlongHeight, pNorm);
             } else {
-                throw new UnsupportedOperationException();
+                throw new UnsupportedOperationException(layerId());
             }
 
         }
@@ -319,7 +334,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
                 return numerator;
             default:
-                throw new RuntimeException("Unknown or not supported pooling type: " + poolingType);
+                throw new RuntimeException("Unknown or not supported pooling type: " + poolingType + " " + layerId());
         }
     }
 

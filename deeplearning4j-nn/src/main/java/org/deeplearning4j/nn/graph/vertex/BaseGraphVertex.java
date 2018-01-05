@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.graph.vertex;
 
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -49,6 +51,12 @@ public abstract class BaseGraphVertex implements GraphVertex {
 
     protected INDArray[] inputs;
     protected INDArray epsilon;
+
+    //Set outputVertex to true when Layer is an OutputLayer, OR For use in specialized situations like reinforcement learning
+    // For RL situations, this Layer insn't an OutputLayer, but is the last layer in a graph, that gets its error/epsilon
+    // passed in externally
+    @Setter @Getter
+    protected boolean outputVertex;
 
     protected BaseGraphVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
                     VertexIndices[] outputVertices) {

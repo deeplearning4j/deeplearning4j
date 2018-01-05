@@ -17,27 +17,23 @@
  */
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.ShortPointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.primitives.Pair;
 
-import static org.bytedeco.javacpp.cuda.*;
+import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
 
 /**
@@ -45,25 +41,13 @@ import static org.bytedeco.javacpp.cudnn.*;
  *
  * @author saudet
  */
-public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
-    protected static final Logger log = LoggerFactory.getLogger(CudnnBatchNormalizationHelper.class);
+@Slf4j
+public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements BatchNormalizationHelper {
 
-    static void checkCuda(int error) {
-        if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
-        }
-    }
+    private static class CudnnBatchNormalizationContext extends CudnnContext {
 
-    static void checkCudnn(int status) {
-        if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
-        }
-    }
-
-    static class CudnnContext extends cudnnContext {
-
-        static class Deallocator extends CudnnContext implements Pointer.Deallocator {
-            Deallocator(CudnnContext c) {
+        private static class Deallocator extends CudnnBatchNormalizationContext implements Pointer.Deallocator {
+            Deallocator(CudnnBatchNormalizationContext c) {
                 super(c);
             }
 
@@ -73,18 +57,15 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
             }
         }
 
-        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
+        private cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
                         deltaTensorDesc = new cudnnTensorStruct(), gammaBetaTensorDesc = new cudnnTensorStruct();
 
-        CudnnContext() {
-            // insure that cuDNN initializes on the same device as ND4J for this thread
-            Nd4j.create(1);
-            AtomicAllocator.getInstance();
+        public CudnnBatchNormalizationContext() {
             createHandles();
             deallocator(new Deallocator(this));
         }
 
-        CudnnContext(CudnnContext c) {
+        public CudnnBatchNormalizationContext(CudnnBatchNormalizationContext c) {
             super(c);
             srcTensorDesc = new cudnnTensorStruct(c.srcTensorDesc);
             dstTensorDesc = new cudnnTensorStruct(c.dstTensorDesc);
@@ -92,91 +73,43 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
             gammaBetaTensorDesc = new cudnnTensorStruct(c.gammaBetaTensorDesc);
         }
 
-        void createHandles() {
-            checkCudnn(cudnnCreate(this));
+        @Override
+        protected void createHandles() {
+            super.createHandles();
             checkCudnn(cudnnCreateTensorDescriptor(srcTensorDesc));
             checkCudnn(cudnnCreateTensorDescriptor(dstTensorDesc));
             checkCudnn(cudnnCreateTensorDescriptor(deltaTensorDesc));
             checkCudnn(cudnnCreateTensorDescriptor(gammaBetaTensorDesc));
         }
 
-        void destroyHandles() {
+        @Override
+        protected void destroyHandles() {
             checkCudnn(cudnnDestroyTensorDescriptor(srcTensorDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(dstTensorDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(deltaTensorDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(gammaBetaTensorDesc));
-            checkCudnn(cudnnDestroy(this));
+            super.destroyHandles();
         }
     }
 
-    static class Cache extends Pointer {
+    protected final int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
 
-        static class Deallocator extends Cache implements Pointer.Deallocator {
-            Deallocator(Cache c) {
-                super(c);
-            }
+    private CudnnBatchNormalizationContext cudnnContext = new CudnnBatchNormalizationContext();
+    private DataCache meanCache = new DataCache();
+    private DataCache varCache = new DataCache();
 
-            @Override
-            public void deallocate() {
-                checkCuda(cudaFree(this));
-                setNull();
-            }
+    public boolean checkSupported(double eps) {
+        boolean supported = checkSupported();
+        if (eps < CUDNN_BN_MIN_EPSILON) {
+            supported = false;
+            log.warn("Not supported: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
         }
-
-        static class HostDeallocator extends Cache implements Pointer.Deallocator {
-            HostDeallocator(Cache c) {
-                super(c);
-            }
-
-            @Override
-            public void deallocate() {
-                checkCuda(cudaFreeHost(this));
-                setNull();
-            }
-        }
-
-        Cache() {}
-
-        Cache(long size) {
-            position = 0;
-            limit = capacity = size;
-            int error = cudaMalloc(this, size);
-            if (error != cudaSuccess) {
-                log.warn("Cannot allocate " + size + " bytes of device memory (CUDA error = " + error
-                                + "), proceeding with host memory");
-                checkCuda(cudaMallocHost(this, size));
-                deallocator(new HostDeallocator(this));
-            } else {
-                deallocator(new Deallocator(this));
-            }
-        }
-
-        Cache(Cache c) {
-            super(c);
-        }
+        return supported;
     }
-
-    CudnnContext cudnnContext = new CudnnContext();
-    Cache meanCache = new Cache();
-    Cache varCache = new Cache();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    int tensorFormat = CUDNN_TENSOR_NCHW;
-    int batchNormMode = CUDNN_BATCHNORM_SPATIAL; // would need to increase rank of gamma and beta for CUDNN_BATCHNORM_PER_ACTIVATION
-    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
-    Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps) {
-        if (eps < CUDNN_BN_MIN_EPSILON) {
-            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
-        }
-
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -229,6 +162,10 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
 
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -236,10 +173,6 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps) {
-        if (eps < CUDNN_BN_MIN_EPSILON) {
-            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
-        }
-
         int miniBatch = x.size(0);
         int inDepth = x.size(1);
         int inH = x.size(2);
@@ -274,11 +207,11 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
         if (training) {
             if (meanCache.capacity() < mean.data().length() * mean.data().getElementSize()) {
                 meanCache.deallocate();
-                meanCache = new Cache(mean.data().length() * mean.data().getElementSize());
+                meanCache = new DataCache(mean.data().length() * mean.data().getElementSize());
             }
             if (varCache.capacity() < var.data().length() * mean.data().getElementSize()) {
                 varCache.deallocate();
-                varCache = new Cache(var.data().length() * mean.data().getElementSize());
+                varCache = new DataCache(var.data().length() * mean.data().getElementSize());
             }
             checkCudnn(cudnnBatchNormalizationForwardTraining(cudnnContext, batchNormMode, this.alpha, this.beta,
                             cudnnContext.srcTensorDesc, srcData, cudnnContext.dstTensorDesc, dstData,
@@ -291,6 +224,9 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
         }
 
         allocator.getFlowController().registerActionAllWrite(context, x, activations, gamma, beta, mean, var);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
 
         return activations;
     }

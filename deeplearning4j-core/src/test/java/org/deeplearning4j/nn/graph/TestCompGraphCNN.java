@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.graph;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -18,6 +17,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -170,7 +170,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(nChannels, imageWidth,
                                                         imageHeight))
                                         .addLayer("conv1", new ConvolutionLayer.Builder()
@@ -216,7 +216,7 @@ public class TestCompGraphCNN {
         ComputationGraphConfiguration conf =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(123).graphBuilder().addInputs("input")
+                                        .seed(123).graphBuilder().addInputs("input")
                                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth,
                                                         nChannels))
                                         .addLayer("conv1",
@@ -256,7 +256,7 @@ public class TestCompGraphCNN {
         int nChannels = 1;
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .graphBuilder().addInputs("input")
                         .setInputTypes(InputType.convolutional(imageHeight, imageWidth, nChannels))
                         //-- kernel size, stride , padding

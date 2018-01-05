@@ -7,18 +7,12 @@ import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
@@ -31,6 +25,10 @@ import org.deeplearning4j.ui.views.html.training.TrainingHelp;
 import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
 import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
@@ -314,7 +312,7 @@ public class TrainModule implements UIModule {
         try {
             currentWorkerIdx = Integer.parseInt(newWorkerIdx);
         } catch (NumberFormatException e) {
-            log.debug("Invaild call to setWorkerByIdx", e);
+            log.debug("Invalid call to setWorkerByIdx", e);
         }
         return ok();
     }
@@ -376,8 +374,24 @@ public class TrainModule implements UIModule {
         result.put("scoresIter", scoresIterCount);
 
         //Get scores info
-        List<Persistable> updates =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+        List<Persistable> updates = null;
+        if(allTimes != null && allTimes.length > maxChartPoints){
+            int subsamplingFrequency = allTimes.length / maxChartPoints;
+            LongArrayList timesToQuery = new LongArrayList(maxChartPoints+2);
+            int i=0;
+            for(; i<allTimes.length; i+= subsamplingFrequency){
+                timesToQuery.add(allTimes[i]);
+            }
+            if((i-subsamplingFrequency) != allTimes.length-1){
+                //Also add final point
+                timesToQuery.add(allTimes[allTimes.length-1]);
+            }
+            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+        } else if(allTimes != null) {
+            //Don't subsample
+            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+        }
         if (updates == null || updates.size() == 0) {
             noData = true;
         }
@@ -516,7 +530,7 @@ public class TrainModule implements UIModule {
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
-                        double d = stdAct.getOrDefault(s,0.0);
+                        double d = stdAct.getOrDefault(s, 0.0);
                         stdevActivations.get(s).add(fixNaN(d));
                     }
                 }
@@ -689,57 +703,40 @@ public class TrainModule implements UIModule {
         result.put("layerInfo", layerInfoTable);
 
         //First: get all data, and subsample it if necessary, to avoid returning too many points...
-        List<Persistable> updates =
-                        (noData ? null : ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0));
+        long[] allTimes = (noData ? null : ss.getAllUpdateTimes(currentSessionID, StatsListener.TYPE_ID, wid));
+
+        List<Persistable> updates = null;
         List<Integer> iterationCounts = null;
         boolean needToHandleLegacyIterCounts = false;
-        if (updates != null && updates.size() > maxChartPoints) {
-            int subsamplingFrequency = updates.size() / maxChartPoints;
-            List<Persistable> subsampled = new ArrayList<>();
-            iterationCounts = new ArrayList<>();
-            int pCount = -1;
-            int lastUpdateIdx = updates.size() - 1;
-
-            int lastIterCount = -1;
-            for (Persistable p : updates) {
-                if (!(p instanceof StatsReport))
-                    continue;;
-                StatsReport sr = (StatsReport) p;
-                pCount++;
-
-                int iterCount = sr.getIterationCount();
-                if (iterCount <= lastIterCount) {
-                    needToHandleLegacyIterCounts = true;
-                }
-                lastIterCount = iterCount;
-
-
-                if (pCount > 0 && subsamplingFrequency > 1 && pCount % subsamplingFrequency != 0) {
-                    //Skip this to subsample the data
-                    if (pCount != lastUpdateIdx)
-                        continue; //Always keep the most recent value
-                }
-
-                subsampled.add(p);
-                iterationCounts.add(iterCount);
+        if(allTimes != null && allTimes.length > maxChartPoints){
+            int subsamplingFrequency = allTimes.length / maxChartPoints;
+            LongArrayList timesToQuery = new LongArrayList(maxChartPoints+2);
+            int i=0;
+            for(; i<allTimes.length; i+= subsamplingFrequency){
+                timesToQuery.add(allTimes[i]);
             }
-            updates = subsampled;
-        } else if (updates != null) {
-            int offset = 0;
-            iterationCounts = new ArrayList<>(updates.size());
-            int lastIterCount = -1;
-            for (Persistable p : updates) {
-                if (!(p instanceof StatsReport))
-                    continue;;
-                StatsReport sr = (StatsReport) p;
-                int iterCount = sr.getIterationCount();
-
-                if (iterCount <= lastIterCount) {
-                    needToHandleLegacyIterCounts = true;
-                }
-
-                iterationCounts.add(iterCount);
+            if((i-subsamplingFrequency) != allTimes.length-1){
+                //Also add final point
+                timesToQuery.add(allTimes[allTimes.length-1]);
             }
+            updates = ss.getUpdates(currentSessionID, StatsListener.TYPE_ID, wid, timesToQuery.toArray());
+        } else if(allTimes != null) {
+            //Don't subsample
+            updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
+        }
+
+        iterationCounts = new ArrayList<>(updates.size());
+        int lastIterCount = -1;
+        for (Persistable p : updates) {
+            if (!(p instanceof StatsReport))
+                continue;;
+            StatsReport sr = (StatsReport) p;
+            int iterCount = sr.getIterationCount();
+
+            if (iterCount <= lastIterCount) {
+                needToHandleLegacyIterCounts = true;
+            }
+            iterationCounts.add(iterCount);
         }
 
         //Legacy issue - Spark training - iteration counts are used to be reset... which means: could go 0,1,2,0,1,2, etc...
@@ -912,26 +909,29 @@ public class TrainModule implements UIModule {
                                         String.valueOf(ffl.getNIn())});
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerSize"),
                                         String.valueOf(ffl.getNOut())});
-                        activationFn = layer.getActivationFn().toString();
                     }
-                    int nParams = layer.initializer().numParams(nnc);
-                    layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
-                                    String.valueOf(nParams)});
-                    if (nParams > 0) {
-                        WeightInit wi = layer.getWeightInit();
-                        String str = wi.toString();
-                        if (wi == WeightInit.DISTRIBUTION) {
-                            str += layer.getDist();
+                    if (layer instanceof BaseLayer) {
+                        BaseLayer bl = (BaseLayer) layer;
+                        activationFn = bl.getActivationFn().toString();
+                        int nParams = layer.initializer().numParams(nnc);
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
+                                        String.valueOf(nParams)});
+                        if (nParams > 0) {
+                            WeightInit wi = bl.getWeightInit();
+                            String str = wi.toString();
+                            if (wi == WeightInit.DISTRIBUTION) {
+                                str += bl.getDist();
+                            }
+                            layerInfoRows.add(new String[] {
+                                            i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+
+                            IUpdater u = bl.getIUpdater();
+                            String us = (u == null ? "" : u.getClass().getSimpleName());
+                            layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"),
+                                            us});
+
+                            //TODO: Maybe L1/L2, dropout, updater-specific values etc
                         }
-                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerWeightInit"),
-                                        str});
-
-                        Updater u = layer.getUpdater();
-                        String us = (u == null ? "" : u.toString());
-                        layerInfoRows.add(
-                                        new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
-
-                        //TODO: Maybe L1/L2, dropout, updater-specific values etc
                     }
 
                     if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer) {
@@ -1235,7 +1235,7 @@ public class TrainModule implements UIModule {
                         //MLN or CG parameter naming convention
                         paramName = s.substring(layerName.length() + 1);
                     } else {
-                        //Pretrain layer (VAE, RBM) naming convention
+                        //Pretrain layer (VAE, AE) naming convention
                         paramName = s.substring(layerName.length());
                     }
 

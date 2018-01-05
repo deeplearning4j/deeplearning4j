@@ -20,6 +20,8 @@ package org.deeplearning4j.spark.datavec;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
+import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
@@ -45,7 +47,11 @@ public class MiniBatchTests extends BaseSparkTest {
         long count = lines.count();
         assertEquals(300, count);
         // gotta map this to a Matrix/INDArray
-        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(new SVMLightRecordReader(), 4, 3)).cache();
+        RecordReader rr = new SVMLightRecordReader();
+        Configuration c = new Configuration();
+        c.set(SVMLightRecordReader.NUM_FEATURES, "5");
+        rr.setConf(c);
+        JavaRDD<DataSet> points = lines.map(new RecordReaderFunction(rr, 4, 3)).cache();
         count = points.count();
         assertEquals(300, count);
 

@@ -9,7 +9,6 @@ import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 
 /**

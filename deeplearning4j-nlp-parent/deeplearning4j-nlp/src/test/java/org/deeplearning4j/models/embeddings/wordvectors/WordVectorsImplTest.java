@@ -2,10 +2,8 @@ package org.deeplearning4j.models.embeddings.wordvectors;
 
 import com.google.common.collect.Lists;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
-import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;

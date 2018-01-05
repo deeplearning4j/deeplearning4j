@@ -39,7 +39,7 @@ public class DefaultStepFunction implements StepFunction {
 
     @Override
     public void step(INDArray x, INDArray line) {
-        throw new UnsupportedOperationException();
+        step(x, line, 1.0);
     }
 
     @Override

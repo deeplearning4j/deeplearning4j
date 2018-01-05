@@ -21,10 +21,7 @@ package org.deeplearning4j.spark.util;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
-import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.mllib.linalg.Matrices;
 import org.apache.spark.mllib.linalg.Matrix;
@@ -34,8 +31,6 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -86,7 +81,9 @@ public class MLLibUtil {
      * @return an mllib vector
      */
     public static INDArray toMatrix(Matrix arr) {
-        return Nd4j.create(arr.toArray(), new int[] {arr.numRows(), arr.numCols()});
+
+        // we assume that Matrix always has F order
+        return Nd4j.create(arr.toArray(), new int[] {arr.numRows(), arr.numCols()}, 'f');
     }
 
     /**
@@ -109,7 +106,13 @@ public class MLLibUtil {
         if (!arr.isMatrix()) {
             throw new IllegalArgumentException("passed in array must be a matrix");
         }
-        return Matrices.dense(arr.rows(), arr.columns(), arr.data().asDouble());
+
+        // if arr is a view - we have to dup anyway
+        if (arr.isView()) {
+            return Matrices.dense(arr.rows(), arr.columns(), arr.dup('f').data().asDouble());
+        } else // if not a view - we must ensure data is F ordered
+            return Matrices.dense(arr.rows(), arr.columns(),
+                            arr.ordering() == 'f' ? arr.data().asDouble() : arr.dup('f').data().asDouble());
     }
 
     /**

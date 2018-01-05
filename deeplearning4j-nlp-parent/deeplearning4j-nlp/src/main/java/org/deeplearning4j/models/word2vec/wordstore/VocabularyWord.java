@@ -1,12 +1,11 @@
 package org.deeplearning4j.models.word2vec.wordstore;
 
+import lombok.Data;
+import lombok.NonNull;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.ToString;
 
 import java.io.IOException;
 import java.io.Serializable;

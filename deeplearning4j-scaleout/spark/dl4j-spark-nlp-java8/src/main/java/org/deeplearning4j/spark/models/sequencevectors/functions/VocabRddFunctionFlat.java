@@ -15,7 +15,6 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**

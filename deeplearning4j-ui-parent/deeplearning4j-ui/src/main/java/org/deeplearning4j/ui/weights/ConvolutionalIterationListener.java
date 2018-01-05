@@ -9,6 +9,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -100,29 +101,13 @@ public class ConvolutionalIterationListener implements IterationListener {
     }
 
     /**
-     * Get if listener invoked
-     */
-    @Override
-    public boolean invoked() {
-        return false;
-    }
-
-    /**
-     * Change invoke to true
-     */
-    @Override
-    public void invoke() {
-
-    }
-
-    /**
      * Event listener for each iteration
      *
      * @param model     the model iterating
      * @param iteration the iteration number
      */
     @Override
-    public void iterationDone(Model model, int iteration) {
+    public void iterationDone(Model model, int iteration, int epoch) {
         if (iteration % freq == 0) {
 
             List<INDArray> tensors = new ArrayList<>();
@@ -134,9 +119,9 @@ public class ConvolutionalIterationListener implements IterationListener {
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                         INDArray output = layer.activate();
-                        int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = layer.input();
 
                             try {
                                 sourceImage = restoreRGBImage(
@@ -159,9 +144,9 @@ public class ConvolutionalIterationListener implements IterationListener {
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
                         INDArray output = layer.activate();
-                        int sampleDim = rnd.nextInt(output.shape()[0] - 1) + 1;
+                        int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
-                            INDArray inputs = ((ConvolutionLayer) layer).input();
+                            INDArray inputs = layer.input();
 
                             try {
                                 sourceImage = restoreRGBImage(

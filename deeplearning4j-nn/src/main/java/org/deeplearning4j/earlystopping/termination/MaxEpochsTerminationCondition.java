@@ -27,6 +27,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 public class MaxEpochsTerminationCondition implements EpochTerminationCondition {
     @JsonProperty
     private int maxEpochs;
+
     @JsonCreator
     public MaxEpochsTerminationCondition(int maxEpochs) {
         if (maxEpochs <= 0)

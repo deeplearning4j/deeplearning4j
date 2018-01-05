@@ -1,8 +1,8 @@
 package org.deeplearning4j.nn.transferlearning;
 
-import org.deeplearning4j.nn.conf.Updater;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.AdaGrad;
 
 import static org.junit.Assert.assertEquals;
 
@@ -12,14 +12,10 @@ import static org.junit.Assert.assertEquals;
 public class TestTransferLearningJson {
 
     @Test
-    public void testJsonYaml(){
+    public void testJsonYaml() {
 
-        FineTuneConfiguration c = new FineTuneConfiguration.Builder()
-                .activation(Activation.ELU)
-                .backprop(true)
-                .updater(Updater.ADAGRAD)
-                .biasLearningRate(10.0)
-                .build();
+        FineTuneConfiguration c = new FineTuneConfiguration.Builder().activation(Activation.ELU).backprop(true)
+                        .updater(new AdaGrad(1.0)).biasUpdater(new AdaGrad(10.0)).build();
 
         String asJson = c.toJson();
         String asYaml = c.toYaml();
@@ -27,7 +23,7 @@ public class TestTransferLearningJson {
         FineTuneConfiguration fromJson = FineTuneConfiguration.fromJson(asJson);
         FineTuneConfiguration fromYaml = FineTuneConfiguration.fromYaml(asYaml);
 
-//        System.out.println(asJson);
+        //        System.out.println(asJson);
 
         assertEquals(c, fromJson);
         assertEquals(c, fromYaml);

@@ -16,30 +16,32 @@ public interface Trainer extends Runnable {
      * Train on a {@link MultiDataSet}
      * @param dataSet the data set to train on
      */
-     void feedMultiDataSet(@NonNull MultiDataSet dataSet);
+    void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime);
 
 
     /**
      * Train on a {@link DataSet}
      * @param dataSet the data set to train on
      */
-    void feedDataSet(@NonNull DataSet dataSet);
+    void feedDataSet(@NonNull DataSet dataSet, long etlTime);
 
     /**
      * THe current model for the trainer
      * @return the current  {@link Model}
      * for the worker
      */
-     Model getModel();
+    Model getModel();
 
     /**
      * Update the current {@link Model}
      * for the worker
      * @param model the new model for this worker
      */
-     void updateModel(@NonNull Model model);
+    void updateModel(@NonNull Model model);
 
     boolean isRunning();
+
+    String getUuid();
 
     /**
      * Shutdown this worker
@@ -63,4 +65,10 @@ public interface Trainer extends Runnable {
      * Start this trainer
      */
     void start();
+
+    /**
+     * This method returns TRUE if this Trainer implementation assumes periodic aver
+     * @return
+     */
+    boolean averagingRequired();
 }

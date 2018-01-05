@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -28,9 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**LSTM Parameter initializer, for LSTM based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
@@ -54,10 +53,22 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     public final static String BIAS_KEY_BACKWARDS = DefaultParamInitializer.BIAS_KEY + "B";
     public final static String INPUT_WEIGHT_KEY_BACKWARDS = DefaultParamInitializer.WEIGHT_KEY + "B";
 
+    private static final List<String> WEIGHT_KEYS = Collections.unmodifiableList(Arrays.asList(INPUT_WEIGHT_KEY_FORWARDS,
+            INPUT_WEIGHT_KEY_BACKWARDS, RECURRENT_WEIGHT_KEY_FORWARDS, RECURRENT_WEIGHT_KEY_BACKWARDS));
+    private static final List<String> BIAS_KEYS = Collections.unmodifiableList(Arrays.asList(BIAS_KEY_FORWARDS, BIAS_KEY_BACKWARDS));
+    private static final List<String> ALL_PARAM_KEYS = Collections.unmodifiableList(Arrays.asList(INPUT_WEIGHT_KEY_FORWARDS,
+            INPUT_WEIGHT_KEY_BACKWARDS, RECURRENT_WEIGHT_KEY_FORWARDS, RECURRENT_WEIGHT_KEY_BACKWARDS, BIAS_KEY_FORWARDS,
+            BIAS_KEY_BACKWARDS));
+
     @Override
     public int numParams(NeuralNetConfiguration conf) {
+        return numParams(conf.getLayer());
+    }
+
+    @Override
+    public int numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) conf.getLayer();
+                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
@@ -67,6 +78,32 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
                         + 4 * nL; //bias
 
         return 2 * nParamsForward;
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        return ALL_PARAM_KEYS;
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return WEIGHT_KEYS;
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        return BIAS_KEYS;
+    }
+
+    @Override
+    public boolean isWeightParam(Layer layer, String key) {
+        return RECURRENT_WEIGHT_KEY_FORWARDS.equals(key) || INPUT_WEIGHT_KEY_FORWARDS.equals(key)
+                || RECURRENT_WEIGHT_KEY_BACKWARDS.equals(key) || INPUT_WEIGHT_KEY_BACKWARDS.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(Layer layer, String key) {
+        return BIAS_KEY_FORWARDS.equals(key) || BIAS_KEY_BACKWARDS.equals(key);
     }
 
     @Override

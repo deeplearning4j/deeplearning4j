@@ -23,18 +23,18 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.hdf5;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.lang.Exception;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.bytedeco.javacpp.hdf5.H5F_ACC_RDONLY;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_DATASET;
-import static org.bytedeco.javacpp.hdf5.H5O_TYPE_GROUP;
+import static org.bytedeco.javacpp.hdf5.*;
 
 /**
  * Class for reading ND4J arrays and JSON strings from HDF5
@@ -58,7 +58,22 @@ public class Hdf5Archive {
     private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
 
     public Hdf5Archive(String archiveFilename) {
-        this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY);
+        this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY());
+    }
+
+    private hdf5.Group[] openGroups(String ... groups) {
+        hdf5.Group[] groupArray = new hdf5.Group[groups.length];
+        groupArray[0] = this.file.openGroup(groups[0]);
+        for (int i = 1; i < groups.length; i++) {
+            groupArray[i] = groupArray[i - 1].openGroup(groups[i]);
+        }
+        return groupArray;
+    }
+
+    private void closeGroups(hdf5.Group[] groupArray) {
+        for (int i = groupArray.length - 1; i >= 0; i--) {
+            groupArray[i].deallocate();
+        }
     }
 
     /**
@@ -70,10 +85,12 @@ public class Hdf5Archive {
      * @throws UnsupportedKerasConfigurationException
      */
     public INDArray readDataSet(String datasetName, String... groups) throws UnsupportedKerasConfigurationException {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return readDataSet(group, datasetName);
+        if (groups.length == 0)
+            return readDataSet(this.file, datasetName);
+        hdf5.Group[] groupArray = openGroups(groups);
+        INDArray a = readDataSet(groupArray[groupArray.length - 1], datasetName);
+        closeGroups(groupArray);
+        return a;
     }
 
     /**
@@ -88,10 +105,28 @@ public class Hdf5Archive {
                     throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
-        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
-        for (int i = 1; i < groups.length; i++)
-            group = group.asCommonFG().openGroup(groups[i]);
-        return readAttributeAsJson(group.openAttribute(attributeName));
+        hdf5.Group[] groupArray = openGroups(groups);
+        String s = readAttributeAsJson(groupArray[groups.length - 1].openAttribute(attributeName));
+        closeGroups(groupArray);
+        return s;
+    }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param groups            Array of zero or more ancestor groups from root to parent.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsString(String attributeName, String... groups)
+                    throws UnsupportedKerasConfigurationException {
+        if (groups.length == 0)
+            return readAttributeAsString(this.file.openAttribute(attributeName));
+        hdf5.Group[] groupArray = openGroups(groups);
+        String s = readAttributeAsString(groupArray[groupArray.length - 1].openAttribute(attributeName));
+        closeGroups(groupArray);
+        return s;
     }
 
     /**
@@ -104,10 +139,10 @@ public class Hdf5Archive {
     public boolean hasAttribute(String attributeName, String... groups) {
         if (groups.length == 0)
             return this.file.attrExists(attributeName);
-        hdf5.Group group = this.file.asCommonFG().openGroup(groups[0]);
-        for (int i = 1; i < groups.length; i++)
-            group = group.asCommonFG().openGroup(groups[i]);
-        return group.attrExists(attributeName);
+        hdf5.Group[] groupArray = openGroups(groups);
+        boolean b = groupArray[groupArray.length - 1].attrExists(attributeName);
+        closeGroups(groupArray);
+        return b;
     }
 
     /**
@@ -117,10 +152,12 @@ public class Hdf5Archive {
      * @return
      */
     public List<String> getDataSets(String... groups) {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return getObjects(group, H5O_TYPE_DATASET);
+        if (groups.length == 0)
+            return getObjects(this.file, H5O_TYPE_DATASET);
+        hdf5.Group[] groupArray = openGroups(groups);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_DATASET);
+        closeGroups(groupArray);
+        return ls;
     }
 
     /**
@@ -130,21 +167,23 @@ public class Hdf5Archive {
      * @return
      */
     public List<String> getGroups(String... groups) {
-        hdf5.CommonFG group = this.file.asCommonFG();
-        for (int i = 0; i < groups.length; i++)
-            group = group.openGroup(groups[i]).asCommonFG();
-        return getObjects(group, H5O_TYPE_GROUP);
+        if (groups.length == 0)
+            return getObjects(this.file, H5O_TYPE_GROUP);
+        hdf5.Group[] groupArray = openGroups(groups);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_GROUP);
+        closeGroups(groupArray);
+        return ls;
     }
 
     /**
      * Read data set as ND4J array from HDF5 group.
      *
-     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param fileGroup     HDF5 file or group
      * @param datasetName   Name of data set
      * @return
      * @throws UnsupportedKerasConfigurationException
      */
-    private INDArray readDataSet(hdf5.CommonFG fileGroup, String datasetName)
+    private INDArray readDataSet(hdf5.Group fileGroup, String datasetName)
                     throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
@@ -205,17 +244,19 @@ public class Hdf5Archive {
             default:
                 throw new UnsupportedKerasConfigurationException("Cannot import weights with rank " + nbDims);
         }
+        space.deallocate();
+        dataset.deallocate();
         return data;
     }
 
     /**
      * Get list of objects with a given type from a file group.
      *
-     * @param fileGroup     HDF5 file or group (as CommonFG)
+     * @param fileGroup     HDF5 file or group
      * @param objType       Type of object as integer
      * @return
      */
-    private List<String> getObjects(hdf5.CommonFG fileGroup, int objType) {
+    private List<String> getObjects(hdf5.Group fileGroup, int objType) {
         List<String> groups = new ArrayList<String>();
         for (int i = 0; i < fileGroup.getNumObjs(); i++) {
             BytePointer objPtr = fileGroup.getObjnameByIdx(i);
@@ -262,6 +303,76 @@ public class Hdf5Archive {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
+        return s;
+    }
+
+    /**
+     * Read attribute as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsString(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        int bufferSizeMult = 1;
+        String s = null;
+        /* TODO: find a less hacky way to do this.
+         * Reading variable length strings (from attributes) is a giant
+         * pain. There does not appear to be any way to determine the
+         * length of the string in advance, so we use a hack: choose a
+         * buffer size and read the config, increase buffer and repeat
+         * until the buffer ends with \u0000
+         */
+        while (true) {
+            byte[] attrBuffer = new byte[bufferSizeMult * 2000];
+            BytePointer attrPointer = new BytePointer(attrBuffer);
+            attribute.read(vl, attrPointer);
+            attrPointer.get(attrBuffer);
+            s = new String(attrBuffer);
+
+            if (s.endsWith("\u0000")) {
+                s = s.replace("\u0000", "");
+                break;
+            }
+
+            bufferSizeMult++;
+            if (bufferSizeMult > 100) {
+                throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
+            }
+        }
+
+        return s;
+    }
+
+    /**
+     * Read string attribute from group path.
+     *
+     * @param attributeName     Name of attribute
+     * @param bufferSize        buffer size to read
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        return readAttributeAsFixedLengthString(this.file.openAttribute(attributeName), bufferSize);
+    }
+
+    /**
+     * Read attribute of fixed buffer size as string.
+     *
+     * @param attribute     HDF5 attribute to read as string.
+     * @return
+     * @throws UnsupportedKerasConfigurationException
+     */
+    private String readAttributeAsFixedLengthString(hdf5.Attribute attribute, int bufferSize)
+            throws UnsupportedKerasConfigurationException {
+        hdf5.VarLenType vl = attribute.getVarLenType();
+        byte[] attrBuffer = new byte[bufferSize];
+        BytePointer attrPointer = new BytePointer(attrBuffer);
+        attribute.read(vl, attrPointer);
+        attrPointer.get(attrBuffer);
+        String s = new String(attrBuffer);
         return s;
     }
 }

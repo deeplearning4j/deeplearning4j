@@ -4,7 +4,6 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -21,6 +20,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Collections;
@@ -147,7 +147,7 @@ public class BackTrackLineSearchTest {
     private static OutputLayer getIrisLogisticLayerConfig(Activation activationFunction, int maxIterations,
                     LossFunctions.LossFunction lossFunction) {
         NeuralNetConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345L).iterations(1).miniBatch(true)
+                        new NeuralNetConfiguration.Builder().seed(12345L).miniBatch(true)
                                         .maxNumLineSearchIterations(maxIterations)
                                         .layer(new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(lossFunction)
                                                         .nIn(4).nOut(3).activation(activationFunction)
@@ -168,12 +168,14 @@ public class BackTrackLineSearchTest {
         DataSetIterator irisIter = new IrisDataSetIterator(1, 1);
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, 100, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
-        network.fit(data.getFeatureMatrix(), data.getLabels());
+        for( int i=0; i<100; i++ ) {
+            network.fit(data.getFeatureMatrix(), data.getLabels());
+        }
         double score = network.score();
         assertTrue(score < oldScore);
     }
@@ -184,13 +186,15 @@ public class BackTrackLineSearchTest {
 
         DataSet data = irisIter.next();
         data.normalizeZeroMeanZeroUnitVariance();
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 5, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double firstScore = network.score(data);
 
-        network.fit(data.getFeatureMatrix(), data.getLabels());
+        for( int i=0; i<5; i++ ) {
+            network.fit(data.getFeatureMatrix(), data.getLabels());
+        }
         double score = network.score();
         assertTrue(score < firstScore);
 
@@ -201,13 +205,15 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.LBFGS;
         DataSet data = irisIter.next();
         data.normalizeZeroMeanZeroUnitVariance();
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 5, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
 
-        network.fit(data.getFeatureMatrix(), data.getLabels());
+        for( int i=0; i<5; i++ ) {
+            network.fit(data.getFeatureMatrix(), data.getLabels());
+        }
         double score = network.score();
         assertTrue(score < oldScore);
 
@@ -218,21 +224,21 @@ public class BackTrackLineSearchTest {
         OptimizationAlgorithm optimizer = OptimizationAlgorithm.HESSIAN_FREE;
         DataSet data = irisIter.next();
 
-        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, 100, optimizer));
+        MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
         IterationListener listener = new ScoreIterationListener(1);
         network.setListeners(Collections.singletonList(listener));
 
-        network.fit(data.getFeatureMatrix(), data.getLabels());
+        for( int i=0; i<100; i++ ) {
+            network.fit(data.getFeatureMatrix(), data.getLabels());
+        }
     }
 
 
 
-    private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, int iterations,
-                    OptimizationAlgorithm optimizer) {
+    private static MultiLayerConfiguration getIrisMultiLayerConfig(Activation activationFunction, OptimizationAlgorithm optimizer) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().optimizationAlgo(optimizer)
-                        .iterations(iterations).miniBatch(false).momentum(0.9).learningRate(0.01)
-                        .updater(Updater.NESTEROVS).seed(12345L).list()
+                        .miniBatch(false).updater(new Nesterovs(0.9)).seed(12345L).list()
                         .layer(0, new DenseLayer.Builder().nIn(4).nOut(100).weightInit(WeightInit.XAVIER)
                                         .activation(activationFunction).build())
                         .layer(1, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(

@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.layers.normalization;
 
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -23,6 +22,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -120,7 +120,7 @@ public class LocalResponseTest {
         // Confirm a structure with regularization true will not throw an error
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).regularization(true).l1(0.2)
+                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).l1(0.2)
                         .l2(0.1).seed(123)
                         .layer(new LocalResponseNormalization.Builder().k(2).n(5).alpha(1e-4).beta(0.75).build())
                         .build();
@@ -129,7 +129,7 @@ public class LocalResponseTest {
     @Test
     public void testMultiCNNLayer() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).iterations(1).seed(123).list()
+                        .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
                                         .activation(Activation.RELU).build())
                         .layer(1, new LocalResponseNormalization.Builder().build()).layer(2,

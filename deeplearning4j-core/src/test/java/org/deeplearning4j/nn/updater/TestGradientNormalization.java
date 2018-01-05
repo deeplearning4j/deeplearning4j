@@ -10,7 +10,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.NoOp;
 
 import static org.junit.Assert.*;
 
@@ -22,23 +25,26 @@ public class TestGradientNormalization {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                                        .updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).build())
                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        Updater updater = UpdaterCreator.getUpdater(layer);
-        INDArray weightGrad = Nd4j.rand(10, 20);
-        INDArray biasGrad = Nd4j.rand(1, 10);
+        INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
+        layer.setBackpropGradientsViewArray(gradArray);
+        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                        new int[] {10, 20}, true);
+        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
-        Gradient gradient = new DefaultGradient();
+        Gradient gradient = new DefaultGradient(gradArray);
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        updater.update(layer, gradient, 0, 1);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertNotEquals(weightGradCopy, weightGrad);
         assertNotEquals(biasGradCopy, biasGrad);
@@ -65,13 +71,14 @@ public class TestGradientNormalization {
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new DenseLayer.Builder().nIn(10).nOut(20)
-                                        .updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                                        .updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.RenormalizeL2PerParamType).build())
                         .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
         INDArray biasGrad = Nd4j.rand(1, 10);
@@ -81,7 +88,7 @@ public class TestGradientNormalization {
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         INDArray normWeightsExpected = weightGradCopy.div(weightGradCopy.norm2Number());
         INDArray normBiasExpected = biasGradCopy.div(biasGradCopy.norm2Number());
@@ -96,7 +103,7 @@ public class TestGradientNormalization {
         double threshold = 3;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();
@@ -104,16 +111,19 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        Updater updater = UpdaterCreator.getUpdater(layer);
-        INDArray weightGrad = Nd4j.rand(10, 20).muli(10).subi(5);
-        INDArray biasGrad = Nd4j.rand(1, 10).muli(10).subi(5);
+        INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
+        layer.setBackpropGradientsViewArray(gradArray);
+        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                        new int[] {10, 20}, true);
+        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
-        Gradient gradient = new DefaultGradient();
+        Gradient gradient = new DefaultGradient(gradArray);
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
-        updater.update(layer, gradient, 0, 1);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertNotEquals(weightGradCopy, weightGrad);
         assertNotEquals(biasGradCopy, biasGrad);
@@ -149,7 +159,7 @@ public class TestGradientNormalization {
             //t=1: large -> clipping
 
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                            new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                            new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                             .gradientNormalization(GradientNormalization.ClipL2PerLayer)
                                             .gradientNormalizationThreshold(threshold).build())
                             .build();
@@ -157,12 +167,15 @@ public class TestGradientNormalization {
             int numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-            Updater updater = UpdaterCreator.getUpdater(layer);
-            INDArray weightGrad = Nd4j.rand(10, 20).muli((t == 0 ? 0.05 : 10));
-            INDArray biasGrad = Nd4j.rand(1, 10).muli((t == 0 ? 0.05 : 10));
+            INDArray gradArray = Nd4j.rand(1, 220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
+            layer.setBackpropGradientsViewArray(gradArray);
+            INDArray weightGrad =
+                            Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                                            new int[] {10, 20}, true);
+            INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
             INDArray weightGradCopy = weightGrad.dup();
             INDArray biasGradCopy = biasGrad.dup();
-            Gradient gradient = new DefaultGradient();
+            Gradient gradient = new DefaultGradient(gradArray);
             gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
             gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
@@ -172,7 +185,8 @@ public class TestGradientNormalization {
             else
                 assertTrue(layerGradL2 > threshold);
 
-            updater.update(layer, gradient, 0, 1);
+            Updater updater = UpdaterCreator.getUpdater(layer);
+            updater.update(layer, gradient, 0, 0, 1);
 
             if (t == 0) {
                 //norm2 < threshold -> no change
@@ -200,7 +214,7 @@ public class TestGradientNormalization {
         double threshold = 3;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().layer(
-                        new DenseLayer.Builder().nIn(10).nOut(20).updater(org.deeplearning4j.nn.conf.Updater.NONE)
+                        new DenseLayer.Builder().nIn(10).nOut(20).updater(new NoOp())
                                         .gradientNormalization(GradientNormalization.ClipL2PerParamType)
                                         .gradientNormalizationThreshold(threshold).build())
                         .build();
@@ -208,6 +222,7 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);
         INDArray biasGrad = Nd4j.rand(1, 10).muli(10);
@@ -222,7 +237,7 @@ public class TestGradientNormalization {
         assertTrue(weightL2 < threshold);
         assertTrue(biasL2 > threshold);
 
-        updater.update(layer, gradient, 0, 1);
+        updater.update(layer, gradient, 0, 0, 1);
 
         assertEquals(weightGradCopy, weightGrad); //weight norm2 < threshold -> no change
         assertNotEquals(biasGradCopy, biasGrad); //bias norm2 > threshold -> rescale

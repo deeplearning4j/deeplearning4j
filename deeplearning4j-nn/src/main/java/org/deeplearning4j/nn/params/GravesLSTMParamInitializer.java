@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -28,9 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**LSTM Parameter initializer, for LSTM based on
  * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
@@ -45,14 +44,18 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
     }
 
     /** Weights for previous time step -> current time step connections */
-    public final static String RECURRENT_WEIGHT_KEY = "RW";
-    public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
-    public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
+    public final static String RECURRENT_WEIGHT_KEY = LSTMParamInitializer.RECURRENT_WEIGHT_KEY;
+    public final static String BIAS_KEY = LSTMParamInitializer.BIAS_KEY;
+    public final static String INPUT_WEIGHT_KEY = LSTMParamInitializer.INPUT_WEIGHT_KEY;
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+        return numParams(conf.getLayer());
+    }
+
+    @Override
+    public int numParams(Layer l) {
+        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf = (org.deeplearning4j.nn.conf.layers.GravesLSTM) l;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
@@ -62,6 +65,31 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
                         + 4 * nL; //bias
 
         return nParams;
+    }
+
+    @Override
+    public List<String> paramKeys(Layer layer) {
+        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY, BIAS_KEY);
+    }
+
+    @Override
+    public List<String> weightKeys(Layer layer) {
+        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY);
+    }
+
+    @Override
+    public List<String> biasKeys(Layer layer) {
+        return Collections.singletonList(BIAS_KEY);
+    }
+
+    @Override
+    public boolean isWeightParam(Layer layer, String key) {
+        return RECURRENT_WEIGHT_KEY.equals(key) || INPUT_WEIGHT_KEY.equals(key);
+    }
+
+    @Override
+    public boolean isBiasParam(Layer layer, String key) {
+        return BIAS_KEY.equals(key);
     }
 
     @Override

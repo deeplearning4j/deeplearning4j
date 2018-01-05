@@ -23,7 +23,6 @@ import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import scala.Tuple2;
 
@@ -104,8 +103,7 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
             }
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);

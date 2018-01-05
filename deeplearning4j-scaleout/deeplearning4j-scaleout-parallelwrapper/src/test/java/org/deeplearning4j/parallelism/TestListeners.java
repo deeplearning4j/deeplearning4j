@@ -5,19 +5,12 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
@@ -40,13 +33,12 @@ import static org.junit.Assert.assertEquals;
 public class TestListeners {
 
     @Test
-    public void testListeners(){
+    public void testListeners() {
         TestListener.clearCounts();
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).activation(Activation.TANH).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list().layer(0,
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(10).nOut(10)
+                                        .activation(Activation.TANH).build());
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -59,13 +51,12 @@ public class TestListeners {
     public void testListenersGraph() {
         TestListener.clearCounts();
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).activation(Activation.TANH).build(), "in")
-                .setOutputs("0")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
+                        .addInputs("in").addLayer("0",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(10).nOut(10)
+                                                        .activation(Activation.TANH).build(),
+                                        "in")
+                        .setOutputs("0").build();
 
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
@@ -74,13 +65,12 @@ public class TestListeners {
     }
 
     @Test
-    public void testListenersViaModel(){
+    public void testListenersViaModel() {
         TestListener.clearCounts();
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).activation(Activation.TANH).build());
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list().layer(0,
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(10).nOut(10)
+                                        .activation(Activation.TANH).build());
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -96,16 +86,15 @@ public class TestListeners {
     }
 
     @Test
-    public void testListenersViaModelGraph(){
+    public void testListenersViaModelGraph() {
         TestListener.clearCounts();
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                        .nIn(10).nOut(10).activation(Activation.TANH).build(), "in")
-                .setOutputs("0")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder()
+                        .addInputs("in").addLayer("0",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(10).nOut(10)
+                                                        .activation(Activation.TANH).build(),
+                                        "in")
+                        .setOutputs("0").build();
 
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
@@ -119,59 +108,58 @@ public class TestListeners {
         assertEquals(2, ss.listWorkerIDsForSession(ss.listSessionIDs().get(0)).size());
     }
 
-    private static void testListenersForModel(Model model, List<IterationListener> listeners ){
+    private static void testListenersForModel(Model model, List<IterationListener> listeners) {
 
         int nWorkers = 2;
-        ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
-                .workers(nWorkers)
-                .averagingFrequency(1)
-                .reportScoreAfterAveraging(true)
-                .useLegacyAveraging(true)
-                .build();
+        ParallelWrapper wrapper = new ParallelWrapper.Builder(model).workers(nWorkers).averagingFrequency(1)
+                        .reportScoreAfterAveraging(true).build();
 
-        if(listeners != null){
+        if (listeners != null) {
             wrapper.setListeners(listeners);
         }
 
         List<DataSet> data = new ArrayList<>();
-        for( int i=0; i<nWorkers; i++ ){
-            data.add( new DataSet(Nd4j.rand(1, 10), Nd4j.rand(1,10)));
+        for (int i = 0; i < nWorkers; i++) {
+            data.add(new DataSet(Nd4j.rand(1, 10), Nd4j.rand(1, 10)));
         }
 
         DataSetIterator iter = new ExistingDataSetIterator(data);
 
+        TestListener.clearCounts();
         wrapper.fit(iter);
 
-        assertEquals(nWorkers+1, TestListener.instanceCount.get()); //Original instance + 2 clones
         assertEquals(2, TestListener.workerIDs.size());
         assertEquals(1, TestListener.sessionIDs.size());
         assertEquals(2, TestListener.forwardPassCount.get());
+        assertEquals(2, TestListener.backwardPassCount.get());
     }
 
 
     private static class TestListener implements RoutingIterationListener {
 
         private static final AtomicInteger forwardPassCount = new AtomicInteger();
+        private static final AtomicInteger backwardPassCount = new AtomicInteger();
         private static final AtomicInteger instanceCount = new AtomicInteger();
         private static final Set<String> workerIDs = new ConcurrentHashSet<>();
         private static final Set<String> sessionIDs = new ConcurrentHashSet<>();
 
-        public static void clearCounts(){
+        public static void clearCounts() {
             forwardPassCount.set(0);
+            backwardPassCount.set(0);
             instanceCount.set(0);
             workerIDs.clear();
             sessionIDs.clear();
         }
 
-        public TestListener(){
+        public TestListener() {
             instanceCount.incrementAndGet();
         }
 
         @Override
-        public void onEpochStart(Model model) { }
+        public void onEpochStart(Model model) {}
 
         @Override
-        public void onEpochEnd(Model model) { }
+        public void onEpochEnd(Model model) {}
 
         @Override
         public void onForwardPass(Model model, List<INDArray> activations) {
@@ -184,16 +172,20 @@ public class TestListeners {
         }
 
         @Override
-        public void onGradientCalculation(Model model) { }
+        public void onGradientCalculation(Model model) {}
 
         @Override
-        public void onBackwardPass(Model model) { }
+        public void onBackwardPass(Model model) {
+            backwardPassCount.getAndIncrement();
+        }
 
         @Override
-        public void setStorageRouter(StatsStorageRouter router) { }
+        public void setStorageRouter(StatsStorageRouter router) {}
 
         @Override
-        public StatsStorageRouter getStorageRouter() { return null; }
+        public StatsStorageRouter getStorageRouter() {
+            return null;
+        }
 
         @Override
         public void setWorkerID(String workerID) {
@@ -221,13 +213,7 @@ public class TestListeners {
         }
 
         @Override
-        public boolean invoked() { return false; }
-
-        @Override
-        public void invoke() { }
-
-        @Override
-        public void iterationDone(Model model, int iteration) { }
+        public void iterationDone(Model model, int iteration, int epoch) {}
     }
 
 }

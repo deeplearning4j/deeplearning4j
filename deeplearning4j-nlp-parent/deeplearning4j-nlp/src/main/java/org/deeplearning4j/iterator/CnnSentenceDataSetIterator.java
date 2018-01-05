@@ -2,13 +2,11 @@ package org.deeplearning4j.iterator;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.iterator.provider.LabelAwareConverter;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.documentiterator.LabelAwareDocumentIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
@@ -21,6 +19,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -68,6 +67,8 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
     private INDArray unknown;
 
     private int cursor = 0;
+
+    private Pair<List<String>, String> preLoadedTokens;
 
     private CnnSentenceDataSetIterator(Builder builder) {
         this.sentenceProvider = builder.sentenceProvider;
@@ -192,7 +193,26 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (sentenceProvider == null) {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
-        return sentenceProvider.hasNext();
+
+        while (preLoadedTokens == null && sentenceProvider.hasNext()) {
+            //Pre-load tokens. Because we filter out empty strings, or sentences with no valid words
+            //we need to pre-load some tokens. Otherwise, sentenceProvider could have 1 (invalid) sentence
+            //next, hasNext() would return true, but next(int) wouldn't be able to return anything
+            preLoadTokens();
+        }
+
+        return preLoadedTokens != null;
+    }
+
+    private void preLoadTokens() {
+        if (preLoadedTokens != null) {
+            return;
+        }
+        Pair<String, String> p = sentenceProvider.nextSentence();
+        List<String> tokens = tokenizeSentence(p.getFirst());
+        if (tokens.size() > 0) {
+            preLoadedTokens = new Pair<>(tokens, p.getSecond());
+        }
     }
 
     @Override
@@ -205,17 +225,33 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (sentenceProvider == null) {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
+        if (!hasNext()) {
+            throw new NoSuchElementException("No next element");
+        }
 
 
         List<Pair<List<String>, String>> tokenizedSentences = new ArrayList<>(num);
         int maxLength = -1;
         int minLength = Integer.MAX_VALUE; //Track to we know if we can skip mask creation for "all same length" case
-        for (int i = 0; i < num && sentenceProvider.hasNext(); i++) {
+        if (preLoadedTokens != null) {
+            tokenizedSentences.add(preLoadedTokens);
+            maxLength = Math.max(maxLength, preLoadedTokens.getFirst().size());
+            minLength = Math.min(minLength, preLoadedTokens.getFirst().size());
+            preLoadedTokens = null;
+        }
+        for (int i = tokenizedSentences.size(); i < num && sentenceProvider.hasNext(); i++) {
             Pair<String, String> p = sentenceProvider.nextSentence();
             List<String> tokens = tokenizeSentence(p.getFirst());
 
-            maxLength = Math.max(maxLength, tokens.size());
-            tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            if (tokens.size() > 0) {
+                //Handle edge case: no tokens from sentence
+                maxLength = Math.max(maxLength, tokens.size());
+                minLength = Math.min(minLength, tokens.size());
+                tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            } else {
+                //Skip the current iterator
+                i--;
+            }
         }
 
         if (maxSentenceLength > 0 && maxLength > maxSentenceLength) {

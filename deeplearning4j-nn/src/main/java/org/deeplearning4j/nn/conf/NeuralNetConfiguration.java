@@ -19,40 +19,47 @@
 package org.deeplearning4j.nn.conf;
 
 import com.google.common.collect.Sets;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.LayerValidation;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
+import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
+import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -69,9 +76,9 @@ import java.util.*;
  */
 @Data
 @NoArgsConstructor
+@Slf4j
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
-    private static final Logger log = LoggerFactory.getLogger(NeuralNetConfiguration.class);
 
     /**
      * System property for custom layers, preprocessors, graph vertices etc. Enabled by default.
@@ -83,11 +90,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public static final String CUSTOM_FUNCTIONALITY = "org.deeplearning4j.config.custom.enabled";
 
     protected Layer layer;
-    @Deprecated
-    protected double leakyreluAlpha;
     //batch size: primarily used for conv nets. Will be reinforced if set.
     protected boolean miniBatch = true;
-    protected int numIterations;
     //number of line search iterations
     protected int maxNumLineSearchIterations;
     protected long seed;
@@ -95,28 +99,25 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //gradient keys used for ensuring order when getting and setting the gradient
     protected List<String> variables = new ArrayList<>();
     //whether to constrain the gradient to unit norm or not
-    //adadelta - weight for how much to consider previous history
     protected StepFunction stepFunction;
-    protected boolean useRegularization = false;
-    protected boolean useDropConnect = false;
     //minimize or maximize objective
     protected boolean minimize = true;
-    // Graves LSTM & RNN
-    protected Map<String, Double> learningRateByParam = new HashMap<>();
     protected Map<String, Double> l1ByParam = new HashMap<>();
     protected Map<String, Double> l2ByParam = new HashMap<>();
-    protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-    protected double lrPolicyDecayRate;
-    protected double lrPolicySteps;
-    protected double lrPolicyPower;
     protected boolean pretrain;
 
+    // this field defines preOutput cache
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far for this layer.
-    //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
+    //Note that this is only used for pretrain layers (AE, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
     protected int iterationCount = 0;
+
+    //Counter for the number of epochs completed so far. Used for per-epoch schedules
+    protected int epochCount = 0;
 
     private static ObjectMapper mapper = initMapper();
     private static final ObjectMapper mapperYaml = initMapperYaml();
@@ -136,8 +137,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 clone.stepFunction = clone.stepFunction.clone();
             if (clone.variables != null)
                 clone.variables = new ArrayList<>(clone.variables);
-            if (clone.learningRateByParam != null)
-                clone.learningRateByParam = new HashMap<>(clone.learningRateByParam);
             if (clone.l1ByParam != null)
                 clone.l1ByParam = new HashMap<>(clone.l1ByParam);
             if (clone.l2ByParam != null)
@@ -167,27 +166,25 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     public void clearVariables() {
         variables.clear();
+        l1ByParam.clear();
+        l2ByParam.clear();
+    }
+
+    public void resetVariables() {
+        for (String s : variables) {
+            setLayerParamLR(s);
+        }
     }
 
     public void setLayerParamLR(String variable) {
-        double lr = layer.getLearningRateByParam(variable);
         double l1 = layer.getL1ByParam(variable);
         if (Double.isNaN(l1))
             l1 = 0.0; //Not set
         double l2 = layer.getL2ByParam(variable);
         if (Double.isNaN(l2))
             l2 = 0.0; //Not set
-        learningRateByParam.put(variable, lr);
         l1ByParam.put(variable, l1);
         l2ByParam.put(variable, l2);
-    }
-
-    public double getLearningRateByParam(String variable) {
-        return learningRateByParam.get(variable);
-    }
-
-    public void setLearningRateByParam(String variable, double rate) {
-        learningRateByParam.put(variable, rate);
     }
 
     public double getL1ByParam(String variable) {
@@ -202,6 +199,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * Fluent interface for building a list of configurations
      */
     public static class ListBuilder extends MultiLayerConfiguration.Builder {
+        private int layerCounter = -1; //Used only for .layer(Layer) method
         private Map<Integer, Builder> layerwise;
         private Builder globalConfig;
 
@@ -226,23 +224,48 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        public ListBuilder layer(int ind, Layer layer) {
+        public ListBuilder layer(int ind, @NonNull Layer layer) {
             if (layerwise.containsKey(ind)) {
+                log.info("Layer index {} already exists, layer of type {} will be replace by layer type {}",
+                        ind, layerwise.get(ind).getClass().getSimpleName(), layer.getClass().getSimpleName());
                 layerwise.get(ind).layer(layer);
             } else {
                 layerwise.put(ind, globalConfig.clone().layer(layer));
             }
+            if(layerCounter < ind){
+                //Edge case: user is mixing .layer(Layer) and .layer(int, Layer) calls
+                //This should allow a .layer(A, X) and .layer(Y) to work such that layer Y is index (A+1)
+                layerCounter = ind;
+            }
             return this;
+        }
+
+        public ListBuilder layer(Layer layer){
+            return layer(++layerCounter, layer);
         }
 
         public Map<Integer, Builder> getLayerwise() {
             return layerwise;
         }
 
+        @Override
+        public ListBuilder setInputType(InputType inputType){
+            return (ListBuilder)super.setInputType(inputType);
+        }
+
+        /**
+         * A convenience method for setting input types: note that for example .inputType().convolutional(h,w,d)
+         * is equivalent to .setInputType(InputType.convolutional(h,w,d))
+         */
+        public ListBuilder.InputTypeBuilder inputType(){
+            return new InputTypeBuilder();
+        }
+
         /**
          * Build the multi layer network
          * based on this neural network and
          * overr ridden parameters
+         *
          * @return the configuration to build
          */
         public MultiLayerConfiguration build() {
@@ -268,14 +291,46 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                            .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
-                            .setInputType(this.inputType).workspaceMode(globalConfig.workspaceMode).confs(list).build();
+                            .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
+                            .trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).cacheMode(globalConfig.cacheMode)
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
+        /** Helper class for setting input types */
+        public class InputTypeBuilder {
+            /**
+             * See {@link InputType#convolutional(int, int, int)}
+             */
+            public ListBuilder convolutional(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutional(height, width, depth));
+            }
+
+            /**
+             * * See {@link InputType#convolutionalFlat(int, int, int)}
+             */
+            public ListBuilder convolutionalFlat(int height, int width, int depth){
+                return ListBuilder.this.setInputType(InputType.convolutionalFlat(height, width, depth));
+            }
+
+            /**
+             * See {@link InputType#feedForward(int)}
+             */
+            public ListBuilder feedForward(int size){
+                return ListBuilder.this.setInputType(InputType.feedForward(size));
+            }
+
+            /**
+             * See {@link InputType#recurrent(int)}}
+             */
+            public ListBuilder recurrent(int size){
+                return ListBuilder.this.setInputType(InputType.recurrent(size));
+            }
+        }
     }
 
     /**
      * Return this configuration as json
+     *
      * @return this configuration represented as json
      */
     public String toYaml() {
@@ -292,6 +347,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     /**
      * Create a neural net configuration from json
+     *
      * @param json the neural net configuration from json
      * @return
      */
@@ -307,6 +363,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     /**
      * Return this configuration as json
+     *
      * @return this configuration represented as json
      */
     public String toJson() {
@@ -323,6 +380,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     /**
      * Create a neural net configuration from json
+     *
      * @param json the neural net configuration from json
      * @return
      */
@@ -338,6 +396,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     /**
      * Object mapper for serialization of configurations
+     *
      * @return
      */
     public static ObjectMapper mapperYaml() {
@@ -352,13 +411,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     /**
      * Object mapper for serialization of configurations
+     *
      * @return
      */
     public static ObjectMapper mapper() {
         return mapper;
     }
 
-    /**Reinitialize and return the Jackson/json ObjectMapper with additional named types.
+    /**
+     * Reinitialize and return the Jackson/json ObjectMapper with additional named types.
      * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
      * types defined outside of the main DL4J codebase)
      */
@@ -380,6 +441,23 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                            JsonDeserializer<?> deserializer) {
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
+                    return new MultiLayerConfigurationDeserializer(deserializer);
+                } else if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
+                    return new ComputationGraphConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
 
         registerSubtypes(ret);
     }
@@ -495,44 +573,31 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected WeightInit weightInit = WeightInit.XAVIER;
         protected double biasInit = 0.0;
         protected Distribution dist = null;
-        protected double learningRate = 1e-1;
-        protected double biasLearningRate = Double.NaN;
-        protected Map<Integer, Double> learningRateSchedule = null;
-        protected double lrScoreBasedDecay;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
-        protected double dropOut = 0;
-        protected Updater updater = Updater.SGD;
-        protected double momentum = Double.NaN;
-        protected Map<Integer, Double> momentumSchedule = null;
-        protected double epsilon = Double.NaN;
-        protected double rho = Double.NaN;
-        protected double rmsDecay = Double.NaN;
-        protected double adamMeanDecay = Double.NaN;
-        protected double adamVarDecay = Double.NaN;
+        protected IDropout idropOut;
+        protected IWeightNoise weightNoise;
+        protected IUpdater iUpdater = new Sgd();
+        protected IUpdater biasUpdater = null;
         protected Layer layer;
-        @Deprecated
-        protected double leakyreluAlpha = 0.01;
         protected boolean miniBatch = true;
-        protected int numIterations = 1;
         protected int maxNumLineSearchIterations = 5;
         protected long seed = System.currentTimeMillis();
-        protected boolean useRegularization = false;
         protected OptimizationAlgorithm optimizationAlgo = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT;
         protected StepFunction stepFunction = null;
-        protected boolean useDropConnect = false;
         protected boolean minimize = true;
         protected GradientNormalization gradientNormalization = GradientNormalization.None;
         protected double gradientNormalizationThreshold = 1.0;
-        protected LearningRatePolicy learningRatePolicy = LearningRatePolicy.None;
-        protected double lrPolicyDecayRate = Double.NaN;
-        protected double lrPolicySteps = Double.NaN;
-        protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
+        protected List<LayerConstraint> allParamConstraints;
+        protected List<LayerConstraint> weightConstraints;
+        protected List<LayerConstraint> biasConstraints;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
@@ -545,30 +610,25 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 minimize = newConf.minimize;
                 maxNumLineSearchIterations = newConf.maxNumLineSearchIterations;
                 layer = newConf.layer;
-                numIterations = newConf.numIterations;
-                useRegularization = newConf.useRegularization;
                 optimizationAlgo = newConf.optimizationAlgo;
                 seed = newConf.seed;
                 stepFunction = newConf.stepFunction;
-                useDropConnect = newConf.useDropConnect;
                 miniBatch = newConf.miniBatch;
-                learningRatePolicy = newConf.learningRatePolicy;
-                lrPolicyDecayRate = newConf.lrPolicyDecayRate;
-                lrPolicySteps = newConf.lrPolicySteps;
-                lrPolicyPower = newConf.lrPolicyPower;
                 pretrain = newConf.pretrain;
             }
         }
 
-        /** Process input as minibatch vs full dataset.
-         * Default set to true. */
+        /**
+         * Process input as minibatch vs full dataset.
+         * Default set to true.
+         */
         public Builder miniBatch(boolean miniBatch) {
             this.miniBatch = miniBatch;
             return this;
         }
 
         /**
-         * This method defines Workspace mode being used during training/inference:
+         * This method defines Workspace mode being used during training:
          * NONE: workspace won't be used
          * SINGLE: one workspace will be used during whole iteration loop
          * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
@@ -576,32 +636,53 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param workspaceMode
          * @return
          */
-        public Builder workspaceMode(@NonNull WorkspaceMode workspaceMode){
-            this.workspaceMode = workspaceMode;
+        public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.trainingWorkspaceMode = workspaceMode;
             return this;
         }
 
         /**
-         * Use drop connect: multiply the weight by a binomial sampling wrt the dropout probability.
-         * Dropconnect probability is set using {@link #dropOut(double)}; this is the probability of retaining a weight
-         * @param useDropConnect whether to use drop connect or not
-         * @return the
+         * This method defines Workspace mode being used during inference:
+         * NONE: workspace won't be used
+         * SINGLE: one workspace will be used during whole iteration loop
+         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         *
+         * @param workspaceMode
+         * @return
          */
-        public Builder useDropConnect(boolean useDropConnect) {
-            this.useDropConnect = useDropConnect;
+        public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.inferenceWorkspaceMode = workspaceMode;
             return this;
         }
 
-        /** Objective function to minimize or maximize cost function
-         * Default set to minimize true. */
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
+            return this;
+        }
+
+        /**
+         * Objective function to minimize or maximize cost function
+         * Default set to minimize true.
+         */
         public Builder minimize(boolean minimize) {
             this.minimize = minimize;
             return this;
         }
 
-        /** Maximum number of line search iterations.
+        /**
+         * Maximum number of line search iterations.
          * Only applies for line search optimizers: Line Search SGD, Conjugate Gradient, LBFGS
          * is NOT applicable for standard SGD
+         *
          * @param maxNumLineSearchIterations > 0
          * @return
          */
@@ -611,37 +692,43 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
 
-
-        /** Layer class. */
+        /**
+         * Layer class.
+         */
         public Builder layer(Layer layer) {
             this.layer = layer;
             return this;
         }
 
-        /** Step function to apply for back track line search.
+        /**
+         * Step function to apply for back track line search.
          * Only applies for line search optimizers: Line Search SGD, Conjugate Gradient, LBFGS
          * Options: DefaultStepFunction (default), NegativeDefaultStepFunction
-         * GradientStepFunction (for SGD), NegativeGradientStepFunction */
+         * GradientStepFunction (for SGD), NegativeGradientStepFunction
+         */
+        @Deprecated
         public Builder stepFunction(StepFunction stepFunction) {
             this.stepFunction = stepFunction;
             return this;
         }
 
-        /**Create a ListBuilder (for creating a MultiLayerConfiguration)<br>
+        /**
+         * Create a ListBuilder (for creating a MultiLayerConfiguration)<br>
          * Usage:<br>
          * <pre>
          * {@code .list()
-         * .layer(0,new DenseLayer.Builder()...build())
+         * .layer(new DenseLayer.Builder()...build())
          * ...
-         * .layer(n,new OutputLayer.Builder()...build())
+         * .layer(new OutputLayer.Builder()...build())
          * }
          * </pre>
-         * */
+         */
         public ListBuilder list() {
             return new ListBuilder(this);
         }
 
-        /**Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
+        /**
+         * Create a ListBuilder (for creating a MultiLayerConfiguration) with the specified layers<br>
          * Usage:<br>
          * <pre>
          * {@code .list(
@@ -650,6 +737,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *      new OutputLayer.Builder()...build())
          * }
          * </pre>
+         *
          * @param layers The layer configurations for the network
          */
         public ListBuilder list(Layer... layers) {
@@ -672,20 +760,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return new ComputationGraphConfiguration.GraphBuilder(this);
         }
 
-        /** Number of optimization iterations. */
-        public Builder iterations(int numIterations) {
-            this.numIterations = numIterations;
-            return this;
-        }
-
-        /** Random number generator seed. Used for reproducability between runs */
-        public Builder seed(int seed) {
-            this.seed = (long) seed;
-            Nd4j.getRandom().setSeed(seed);
-            return this;
-        }
-
-        /** Random number generator seed. Used for reproducability between runs */
+        /**
+         * Random number generator seed. Used for reproducability between runs
+         */
         public Builder seed(long seed) {
             this.seed = seed;
             Nd4j.getRandom().setSeed(seed);
@@ -695,16 +772,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /**
          * Optimization algorithm to use. Most common: OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT
          *
-         * @param optimizationAlgo    Optimization algorithm to use when training
+         * @param optimizationAlgo Optimization algorithm to use when training
          */
         public Builder optimizationAlgo(OptimizationAlgorithm optimizationAlgo) {
             this.optimizationAlgo = optimizationAlgo;
-            return this;
-        }
-
-        /** Whether to use regularization (l1, l2, dropout, etc */
-        public Builder regularization(boolean useRegularization) {
-            this.useRegularization = useRegularization;
             return this;
         }
 
@@ -724,19 +795,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             }
         }
 
-        /**Activation function / neuron non-linearity
-         * Typical values include:<br>
-         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
-         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
-         * @deprecated Use {@link #activation(Activation)} or
-         * {@link @activation(IActivation)}
-         */
-        @Deprecated
-        public Builder activation(String activationFunction) {
-            return activation(Activation.fromString(activationFunction).getActivationFunction());
-        }
-
-        /**Activation function / neuron non-linearity
+        /**
+         * Activation function / neuron non-linearity
+         *
          * @see #activation(Activation)
          */
         public Builder activation(IActivation activationFunction) {
@@ -744,22 +805,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**Activation function / neuron non-linearity
+        /**
+         * Activation function / neuron non-linearity
          */
         public Builder activation(Activation activation) {
             return activation(activation.getActivationFunction());
         }
 
         /**
-         * @deprecated Use {@link #activation(IActivation)} with leaky relu, setting alpha value directly in constructor.
-         */
-        @Deprecated
-        public Builder leakyreluAlpha(double leakyreluAlpha) {
-            this.leakyreluAlpha = leakyreluAlpha;
-            return this;
-        }
-
-        /** Weight initialization scheme.
+         * Weight initialization scheme.
+         *
          * @see org.deeplearning4j.nn.weights.WeightInit
          */
         public Builder weightInit(WeightInit weightInit) {
@@ -768,16 +823,28 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Set weight initialization scheme to random sampling via the specified distribution.
+         * Equivalent to: {@code .weightInit(WeightInit.DISTRIBUTION).dist(distribution)}
+         *
+         * @param distribution Distribution to use for weight initialization
+         */
+        public Builder weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
+        }
+
+        /**
          * Constant for bias initialization. Default: 0.0
          *
-         * @param biasInit    Constant for bias initialization
+         * @param biasInit Constant for bias initialization
          */
         public Builder biasInit(double biasInit) {
             this.biasInit = biasInit;
             return this;
         }
 
-        /** Distribution to sample initial weights from. Used in conjunction with
+        /**
+         * Distribution to sample initial weights from. Used in conjunction with
          * .weightInit(WeightInit.DISTRIBUTION).
          */
         public Builder dist(Distribution dist) {
@@ -785,57 +852,32 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Learning rate. Defaults to 1e-1*/
-        public Builder learningRate(double learningRate) {
-            this.learningRate = learningRate;
-            return this;
-        }
-
-        /** Bias learning rate. Set this to apply a different learning rate to the bias*/
-        public Builder biasLearningRate(double biasLearningRate) {
-            this.biasLearningRate = biasLearningRate;
-            return this;
-        }
-
-        /** Learning rate schedule. Map of the iteration to the learning rate to apply at that iteration. */
-        public Builder learningRateSchedule(Map<Integer, Double> learningRateSchedule) {
-            this.learningRateSchedule = learningRateSchedule;
-            return this;
-        }
-
-        /** Rate to decrease learningRate by when the score stops improving.
-         * Learning rate is multiplied by this rate so ideally keep between 0 and 1. */
-        public Builder learningRateScoreBasedDecayRate(double lrScoreBasedDecay) {
-            this.lrScoreBasedDecay = lrScoreBasedDecay;
-            return this;
-        }
-
-        /** L1 regularization coefficient for the weights.
-         *  Use with .regularization(true)
+        /**
+         * L1 regularization coefficient for the weights.
          */
         public Builder l1(double l1) {
             this.l1 = l1;
             return this;
         }
 
-        /** L2 regularization coefficient for the weights.
-         * Use with .regularization(true)
+        /**
+         * L2 regularization coefficient for the weights.
          */
         public Builder l2(double l2) {
             this.l2 = l2;
             return this;
         }
 
-        /** L1 regularization coefficient for the bias.
-         *  Use with .regularization(true)
+        /**
+         * L1 regularization coefficient for the bias.
          */
         public Builder l1Bias(double l1Bias) {
             this.l1Bias = l1Bias;
             return this;
         }
 
-        /** L2 regularization coefficient for the bias.
-         * Use with .regularization(true)
+        /**
+         * L2 regularization coefficient for the bias.
          */
         public Builder l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
@@ -843,84 +885,91 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * Dropout probability. This is the probability of <it>retaining</it> an activation. So dropOut(x) will keep an
-         * activation with probability x, and set to 0 with probability 1-x.<br>
-         * dropOut(0.0) is disabled (default).
+         * Dropout probability. This is the probability of <it>retaining</it> each input activation value for a layer.
+         * dropOut(x) will keep an input activation with probability x, and set to 0 with probability 1-x.<br>
+         * dropOut(0.0) is a special value / special case - when set to 0.0., dropout is disabled (not applied). Note
+         * that a dropout value of 1.0 is functionally equivalent to no dropout: i.e., 100% probability of retaining
+         * each input activation.<br>
+         * <p>
+         * Note 1: Dropout is applied at training time only - and is automatically not applied at test time
+         * (for evaluation, etc)<br>
+         * Note 2: This sets the probability per-layer. Care should be taken when setting lower values for
+         * complex networks (too much information may be lost with aggressive (very low) dropout values).<br>
+         * Note 3: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
+         * layers. Dropout is also often not applied to output layers. This needs to be handled MANUALLY by the user
+         * - set .dropout(0) on those layers when using global dropout setting.<br>
+         * Note 4: Implementation detail (most users can ignore): DL4J uses inverted dropout, as described here:
+         * <a href="http://cs231n.github.io/neural-networks-2/">http://cs231n.github.io/neural-networks-2/</a>
+         * </p>
          *
-         * @param dropOut    Dropout probability (probability of retaining an activation)
+         * @param inputRetainProbability Dropout probability (probability of retaining each input activation value for a layer)
+         * @see #dropOut(IDropout)
          */
-        public Builder dropOut(double dropOut) {
-            this.dropOut = dropOut;
+        public Builder dropOut(double inputRetainProbability) {
+            if(inputRetainProbability == 0.0){
+                return dropOut(null);
+            }
+            return dropOut(new Dropout(inputRetainProbability));
+        }
+
+        /**
+         * Set the dropout for all layers in this network
+         *
+         * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
+         *                {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
+         * @return
+         */
+        public Builder dropOut(IDropout dropout){
+            this.idropOut = dropout;
             return this;
         }
 
-        /** Momentum rate
-         *  Used only when Updater is set to {@link Updater#NESTEROVS}
+        /**
+         * Set the weight noise (such as {@link org.deeplearning4j.nn.conf.weightnoise.DropConnect} and
+         * {@link org.deeplearning4j.nn.conf.weightnoise.WeightNoise}) for the layers in this network.
+         *
+         * @param weightNoise Weight noise instance to use
          */
-        public Builder momentum(double momentum) {
-            this.momentum = momentum;
+        public Builder weightNoise(IWeightNoise weightNoise){
+            this.weightNoise = weightNoise;
             return this;
         }
 
-        /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration
-         *  Used only when Updater is set to {@link Updater#NESTEROVS}
-         */
-        public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
-            this.momentumSchedule = momentumAfter;
-            return this;
-        }
 
-        /** Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
-         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.
-         * @see Updater
+        /**
+         * @deprecated Use {@link #updater(IUpdater)}
          */
+        @Deprecated
         public Builder updater(Updater updater) {
-            this.updater = updater;
-            return this;
+            return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
         /**
-         * Ada delta coefficient
-         * @param rho
-         */
-        public Builder rho(double rho) {
-            this.rho = rho;
-            return this;
-        }
-
-
-        /**
-         * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
-         * Default values: {@link Adam#DEFAULT_ADAM_EPSILON}, {@link RmsProp#DEFAULT_RMSPROP_EPSILON}, {@link AdaGrad#DEFAULT_ADAGRAD_EPSILON},
-         * {@link AdaDelta#DEFAULT_ADADELTA_EPSILON}
+         * Gradient updater configuration. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
          *
-         * @param epsilon    Epsilon value to use for adagrad or
+         * @param updater Updater to use
          */
-        public Builder epsilon(double epsilon) {
-            this.epsilon = epsilon;
+        public Builder updater(IUpdater updater) {
+            this.iUpdater = updater;
             return this;
         }
 
-        /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+        /**
+         * Gradient updater configuration, for the biases only. If not set, biases will use the updater as
+         * set by {@link #updater(IUpdater)}
+         *
+         * @param updater Updater to use for bias parameters
          */
-        public Builder rmsDecay(double rmsDecay) {
-            this.rmsDecay = rmsDecay;
+        public Builder biasUpdater(IUpdater updater){
+            this.biasUpdater = updater;
             return this;
         }
 
-        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
-        public Builder adamMeanDecay(double adamMeanDecay) {
-            this.adamMeanDecay = adamMeanDecay;
-            return this;
-        }
-
-        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
-        public Builder adamVarDecay(double adamVarDecay) {
-            this.adamVarDecay = adamVarDecay;
-            return this;
-        }
-
-        /** Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+        /**
+         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
+         * See {@link GradientNormalization} for details
+         *
          * @param gradientNormalization Type of normalization to use. Defaults to None.
          * @see GradientNormalization
          */
@@ -929,7 +978,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
+        /**
+         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
          * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
          * Not used otherwise.<br>
          * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
@@ -939,89 +989,51 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Learning rate decay policy. Used to adapt learning rate based on policy.
-         * @param policy Type of policy to use. Defaults to None.
+        /**
+         * Sets the convolution mode for convolutional layers, which impacts padding and output sizes.
+         * See {@link ConvolutionMode} for details. Defaults to ConvolutionMode.TRUNCATE
+         * @param convolutionMode Convolution mode to use
          */
-        public Builder learningRateDecayPolicy(LearningRatePolicy policy) {
-            this.learningRatePolicy = policy;
-            return this;
-        }
-
-        /** Set the decay rate for the learning rate decay policy.
-         * @param lrPolicyDecayRate rate.
-         */
-        public Builder lrPolicyDecayRate(double lrPolicyDecayRate) {
-            this.lrPolicyDecayRate = lrPolicyDecayRate;
-            return this;
-        }
-
-        /** Set the number of steps used for learning decay rate steps policy.
-         * @param lrPolicySteps number of steps
-         */
-        public Builder lrPolicySteps(double lrPolicySteps) {
-            this.lrPolicySteps = lrPolicySteps;
-            return this;
-        }
-
-        /** Set the power used for learning rate inverse policy.
-         * @param lrPolicyPower power
-         */
-        public Builder lrPolicyPower(double lrPolicyPower) {
-            this.lrPolicyPower = lrPolicyPower;
-            return this;
-        }
-
         public Builder convolutionMode(ConvolutionMode convolutionMode) {
             this.convolutionMode = convolutionMode;
             return this;
         }
 
-        private void learningRateValidation(String layerName) {
-            if (learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
-                //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
-                if (!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null)
-                                && !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
-                    throw new IllegalStateException("Layer \"" + layerName
-                                    + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
-            }
-            switch (learningRatePolicy) {
-                case Inverse:
-                case Poly:
-                    if (Double.isNaN(lrPolicyPower))
-                        throw new IllegalStateException("Layer \"" + layerName
-                                        + "\" learning rate policy power (lrPolicyPower) must be set to use "
-                                        + learningRatePolicy);
-                    break;
-                case Step:
-                case Sigmoid:
-                    if (Double.isNaN(lrPolicySteps))
-                        throw new IllegalStateException("Layer \"" + layerName
-                                        + "\" learning rate policy steps (lrPolicySteps) must be set to use "
-                                        + learningRatePolicy);
-                    break;
-                case Schedule:
-                    if (learningRateSchedule == null)
-                        throw new IllegalStateException("Layer \"" + layerName
-                                        + "\" learning rate policy schedule (learningRateSchedule) must be set to use "
-                                        + learningRatePolicy);
-                    break;
-            }
-
-            if (!Double.isNaN(lrPolicyPower) && (learningRatePolicy != LearningRatePolicy.Inverse
-                            && learningRatePolicy != LearningRatePolicy.Poly))
-                throw new IllegalStateException("Layer \"" + layerName
-                                + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
-            if (!Double.isNaN(lrPolicySteps) && (learningRatePolicy != LearningRatePolicy.Step
-                            && learningRatePolicy != LearningRatePolicy.Sigmoid
-                            && learningRatePolicy != LearningRatePolicy.TorchStep))
-                throw new IllegalStateException("Layer \"" + layerName
-                                + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
-            if ((learningRateSchedule != null) && (learningRatePolicy != LearningRatePolicy.Schedule))
-                throw new IllegalStateException("Layer \"" + layerName
-                                + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
-
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all parameters of all layers
+         */
+        public Builder constrainAllParameters(LayerConstraint... constraints){
+            this.allParamConstraints = Arrays.asList(constraints);
+            return this;
         }
-        ////////////////
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all bias parameters of all layers
+         */
+        public Builder constrainBias(LayerConstraint... constraints) {
+            this.biasConstraints = Arrays.asList(constraints);
+            return this;
+        }
+
+        /**
+         * Set constraints to be applied to all layers. Default: no constraints.<br>
+         * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
+         * etc). These constraints are applied at each iteration, after the parameters have been updated.
+         *
+         * @param constraints Constraints to apply to all weight parameters of all layers
+         */
+        public Builder constrainWeights(LayerConstraint... constraints) {
+            this.weightConstraints = Arrays.asList(constraints);
+            return this;
+        }
 
         /**
          * Return a configuration based on this builder
@@ -1034,79 +1046,113 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.minimize = minimize;
             conf.maxNumLineSearchIterations = maxNumLineSearchIterations;
             conf.layer = layer;
-            conf.numIterations = numIterations;
-            conf.useRegularization = useRegularization;
             conf.optimizationAlgo = optimizationAlgo;
             conf.seed = seed;
             conf.stepFunction = stepFunction;
-            conf.useDropConnect = useDropConnect;
             conf.miniBatch = miniBatch;
-            conf.learningRatePolicy = learningRatePolicy;
-            conf.lrPolicyDecayRate = lrPolicyDecayRate;
-            conf.lrPolicySteps = lrPolicySteps;
-            conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
+            conf.cacheMode = this.cacheMode;
+
+            configureLayer(layer);
+            if (layer instanceof FrozenLayer) {
+                configureLayer(((FrozenLayer) layer).getLayer());
+            }
+
+            return conf;
+        }
+
+        private void configureLayer(Layer layer) {
             String layerName;
             if (layer == null || layer.getLayerName() == null)
                 layerName = "Layer not named";
             else
                 layerName = layer.getLayerName();
-            learningRateValidation(layerName);
 
             if (layer != null) {
-                if (Double.isNaN(layer.getLearningRate()))
-                    layer.setLearningRate(learningRate);
-                if (Double.isNaN(layer.getBiasLearningRate())){
-                    //Two possibilities when bias LR isn't set for layer:
-                    // (a) If global bias LR *is* set -> set it to that
-                    // (b) Otherwise, set to layer LR (and, by extension, the global LR)
-                    if(!Double.isNaN(biasLearningRate)){
-                        //Global bias LR is set
-                        layer.setBiasLearningRate(biasLearningRate);
-                    } else {
-                        layer.setBiasLearningRate(layer.getLearningRate());
-                    }
-                }
-                if (layer.getLearningRateSchedule() == null)
-                    layer.setLearningRateSchedule(learningRateSchedule);
-                if (Double.isNaN(layer.getL1()))
-                    layer.setL1(l1);
-                if (Double.isNaN(layer.getL2()))
-                    layer.setL2(l2);
-                if (layer.getActivationFn() == null)
-                    layer.setActivationFn(activationFn);
-                if (layer.getWeightInit() == null)
-                    layer.setWeightInit(weightInit);
-                if (Double.isNaN(layer.getBiasInit()))
-                    layer.setBiasInit(biasInit);
-                if (Double.isNaN(layer.getDropOut()))
-                    layer.setDropOut(dropOut);
-                if (layer.getUpdater() == null)
-                    layer.setUpdater(updater);
-                //                updaterValidation(layerName);
-                LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay,
-                                adamVarDecay, rho, rmsDecay, epsilon);
-                if (layer.getGradientNormalization() == null)
-                    layer.setGradientNormalization(gradientNormalization);
-                if (Double.isNaN(layer.getGradientNormalizationThreshold()))
-                    layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-                if (layer instanceof ConvolutionLayer) {
-                    ConvolutionLayer cl = (ConvolutionLayer) layer;
-                    if (cl.getConvolutionMode() == null) {
-                        cl.setConvolutionMode(convolutionMode);
-                    }
-                }
-                if (layer instanceof SubsamplingLayer) {
-                    SubsamplingLayer sl = (SubsamplingLayer) layer;
-                    if (sl.getConvolutionMode() == null) {
-                        sl.setConvolutionMode(convolutionMode);
-                    }
+                copyConfigToLayer(layerName, layer);
+            }
+
+            if (layer instanceof FrozenLayer) {
+                copyConfigToLayer(layerName, ((FrozenLayer) layer).getLayer());
+            }
+
+            if (layer instanceof Bidirectional) {
+                Bidirectional b = (Bidirectional)layer;
+                copyConfigToLayer(b.getFwd().getLayerName(), b.getFwd());
+                copyConfigToLayer(b.getBwd().getLayerName(), b.getBwd());
+            }
+
+            if(layer instanceof BaseWrapperLayer){
+                BaseWrapperLayer bwr = (BaseWrapperLayer)layer;
+                configureLayer(bwr.getUnderlying());
+            }
+
+            if (layer instanceof ConvolutionLayer) {
+                ConvolutionLayer cl = (ConvolutionLayer) layer;
+                if (cl.getConvolutionMode() == null) {
+                    cl.setConvolutionMode(convolutionMode);
                 }
             }
-            LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist);
-            return conf;
+            if (layer instanceof SubsamplingLayer) {
+                SubsamplingLayer sl = (SubsamplingLayer) layer;
+                if (sl.getConvolutionMode() == null) {
+                    sl.setConvolutionMode(convolutionMode);
+                }
+            }
+            LayerValidation.generalValidation(layerName, layer, idropOut, l2, l2Bias, l1, l1Bias, dist,
+                    allParamConstraints, weightConstraints, biasConstraints);
         }
 
+        private void copyConfigToLayer(String layerName, Layer layer) {
+
+            if (layer.getIDropout() == null)
+                layer.setIDropout(idropOut);
+
+            if (layer instanceof BaseLayer) {
+                BaseLayer bLayer = (BaseLayer) layer;
+                if (Double.isNaN(bLayer.getL1()))
+                    bLayer.setL1(l1);
+                if (Double.isNaN(bLayer.getL2()))
+                    bLayer.setL2(l2);
+                if (bLayer.getActivationFn() == null)
+                    bLayer.setActivationFn(activationFn);
+                if (bLayer.getWeightInit() == null)
+                    bLayer.setWeightInit(weightInit);
+                if (Double.isNaN(bLayer.getBiasInit()))
+                    bLayer.setBiasInit(biasInit);
+
+                //Configure weight noise:
+                if(weightNoise != null && ((BaseLayer) layer).getWeightNoise() == null){
+                    ((BaseLayer) layer).setWeightNoise(weightNoise.clone());
+                }
+
+                //Configure updaters:
+                if(iUpdater != null && bLayer.getIUpdater() == null){
+                    bLayer.setIUpdater(iUpdater);
+                }
+                if(biasUpdater != null && bLayer.getBiasUpdater() == null){
+                    bLayer.setBiasUpdater(biasUpdater);
+                }
+
+                if(bLayer.getIUpdater() == null && iUpdater == null && bLayer.initializer().numParams(bLayer) > 0){
+                    //No updater set anywhere
+                    IUpdater u = new Sgd();
+                    bLayer.setIUpdater(u);
+                    log.warn("*** No updater configuration is set for layer {} - defaulting to {} ***", layerName, u);
+                }
+
+                if (bLayer.getGradientNormalization() == null)
+                    bLayer.setGradientNormalization(gradientNormalization);
+                if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
+                    bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+            }
+
+            if (layer instanceof ActivationLayer){
+                ActivationLayer al = (ActivationLayer)layer;
+                if(al.getActivationFn() == null)
+                    al.setActivationFn(activationFn);
+            }
+        }
     }
+
 }

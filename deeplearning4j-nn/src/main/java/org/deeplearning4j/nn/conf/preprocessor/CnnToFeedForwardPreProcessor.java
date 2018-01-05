@@ -18,15 +18,15 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.MaskState;
-import org.nd4j.shade.jackson.annotation.JsonCreator;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.shade.jackson.annotation.JsonCreator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
@@ -48,9 +48,9 @@ import java.util.Arrays;
  */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
-    private int inputHeight;
-    private int inputWidth;
-    private int numChannels;
+    protected int inputHeight;
+    protected int inputWidth;
+    protected int numChannels;
 
     /**
      * @param inputHeight the columns
@@ -79,6 +79,14 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize) {
         if (input.rank() == 2)
             return input; //Should usually never happen
+
+        //Check input: nchw format
+        if(input.size(1) != numChannels || input.size(2) != inputHeight ||
+                input.size(3) != inputWidth){
+            throw new IllegalStateException("Invalid input array: expected shape [minibatch, channels, height, width] = "
+                    + "[minibatch, " + numChannels + ", " + inputHeight + ", " + inputWidth + "] - got "
+                    + Arrays.toString(input.shape()));
+        }
 
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct

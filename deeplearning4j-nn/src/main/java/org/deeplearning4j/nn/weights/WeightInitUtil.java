@@ -85,6 +85,10 @@ public class WeightInitUtil {
                 double a = 1.0 / Math.sqrt(fanIn);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
                 break;
+            case LECUN_UNIFORM:
+                double b = 3.0 / Math.sqrt(fanIn);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-b, b));
+                break;
             case XAVIER:
                 ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
@@ -94,6 +98,8 @@ public class WeightInitUtil {
                 double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
                 ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
                 break;
+            case LECUN_NORMAL:  //Fall through: these 3 are equivalent
+            case NORMAL:
             case XAVIER_FAN_IN:
                 ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
                 break;
@@ -103,11 +109,45 @@ public class WeightInitUtil {
             case ZERO:
                 ret = Nd4j.create(shape, order);
                 break;
-
+            case ONES:
+                ret = Nd4j.createUninitialized(shape, order).assign(1.0);    //No Nd4j.ones(int[], char)
+                break;
+            case IDENTITY:
+                if(shape.length != 2 || shape[0] != shape[1]){
+                    throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
+                            + Arrays.toString(shape) + ": weights must be a square matrix for identity");
+                }
+                if(order == Nd4j.order()){
+                    ret = Nd4j.eye(shape[0]);
+                } else {
+                    ret = Nd4j.createUninitialized(shape, order).assign(Nd4j.eye(shape[0]));
+                }
+                break;
+            case VAR_SCALING_NORMAL_FAN_IN:
+                // TODO: needs to be truncated normal to match keras.
+                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
+                break;
+            case VAR_SCALING_NORMAL_FAN_OUT:
+                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanOut));
+                break;
+            case VAR_SCALING_NORMAL_FAN_AVG:
+                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt((fanIn + fanOut) / 2));
+                break;
+            case VAR_SCALING_UNIFORM_FAN_IN:
+                double scalingFanIn = 3.0 / Math.sqrt(fanIn);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanIn, scalingFanIn));
+                break;
+            case VAR_SCALING_UNIFORM_FAN_OUT:
+                double scalingFanOut = 3.0 / Math.sqrt(fanOut);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut));
+                break;
+            case VAR_SCALING_UNIFORM_FAN_AVG:
+                double scalingFanAvg = 3.0 / Math.sqrt((fanIn + fanOut) / 2);
+                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanAvg, scalingFanAvg));
+                break;
             default:
                 throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
-
         INDArray flat = Nd4j.toFlattened(order, ret);
         if (flat.length() != paramView.length())
             throw new RuntimeException("ParamView length does not match initialized weights length (view length: "

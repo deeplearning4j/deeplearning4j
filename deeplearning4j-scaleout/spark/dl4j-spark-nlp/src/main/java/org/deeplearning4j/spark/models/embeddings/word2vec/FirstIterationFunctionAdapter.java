@@ -1,12 +1,12 @@
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import scala.Tuple2;
 
 import java.util.*;

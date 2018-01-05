@@ -33,7 +33,9 @@ public class ParameterServerTrainer extends DefaultTrainer {
     private ParameterServerClient parameterServerClient;
 
     @Override
-    public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+    public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long time) {
+        // FIXME: this is wrong, and should be fixed
+
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
@@ -47,7 +49,9 @@ public class ParameterServerTrainer extends DefaultTrainer {
     }
 
     @Override
-    public void feedDataSet(@NonNull DataSet dataSet) {
+    public void feedDataSet(@NonNull DataSet dataSet, long time) {
+        // FIXME: this is wrong, and should be fixed. Training should happen within run() loop
+
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
@@ -66,73 +70,78 @@ public class ParameterServerTrainer extends DefaultTrainer {
 
     @Override
     public Model getModel() {
-       return super.getModel();
+        return super.getModel();
     }
 
     @Override
     public void updateModel(@NonNull Model model) {
         super.updateModel(model);
     }
-   
+
     public static class ParameterServerTrainerBuilder extends DefaultTrainerBuilder {
         @Override
         public ParameterServerTrainerBuilder originalModel(Model originalModel) {
-           return (ParameterServerTrainerBuilder) super.originalModel(originalModel);
+            return (ParameterServerTrainerBuilder) super.originalModel(originalModel);
         }
 
         @Override
         public ParameterServerTrainerBuilder replicatedModel(Model replicatedModel) {
-           return (ParameterServerTrainerBuilder) super.replicatedModel(replicatedModel);
+            return (ParameterServerTrainerBuilder) super.replicatedModel(replicatedModel);
         }
 
         @Override
         public ParameterServerTrainerBuilder queue(LinkedBlockingQueue<DataSet> queue) {
-           return (ParameterServerTrainerBuilder) super.queue(queue);
+            return (ParameterServerTrainerBuilder) super.queue(queue);
         }
 
         @Override
         public ParameterServerTrainerBuilder queueMDS(LinkedBlockingQueue<MultiDataSet> queueMDS) {
-           return (ParameterServerTrainerBuilder) super.queueMDS(queueMDS);
+            return (ParameterServerTrainerBuilder) super.queueMDS(queueMDS);
         }
 
         @Override
         public ParameterServerTrainerBuilder running(AtomicInteger running) {
-           return (ParameterServerTrainerBuilder) super.running(running);
+            return (ParameterServerTrainerBuilder) super.running(running);
         }
 
         @Override
         public ParameterServerTrainerBuilder threadId(int threadId) {
-           return (ParameterServerTrainerBuilder) super.threadId(threadId);
+            return (ParameterServerTrainerBuilder) super.threadId(threadId);
         }
 
         @Override
         public ParameterServerTrainerBuilder shouldUpdate(AtomicBoolean shouldUpdate) {
-           return (ParameterServerTrainerBuilder) super.shouldUpdate(shouldUpdate);
+            return (ParameterServerTrainerBuilder) super.shouldUpdate(shouldUpdate);
         }
 
         @Override
         public ParameterServerTrainerBuilder shouldStop(AtomicBoolean shouldStop) {
-           return (ParameterServerTrainerBuilder) super.shouldStop(shouldStop);
+            return (ParameterServerTrainerBuilder) super.shouldStop(shouldStop);
         }
 
         @Override
         public ParameterServerTrainerBuilder thrownException(Exception thrownException) {
-           return (ParameterServerTrainerBuilder) super.thrownException(thrownException);
+            return (ParameterServerTrainerBuilder) super.thrownException(thrownException);
         }
 
         @Override
         public ParameterServerTrainerBuilder useMDS(boolean useMDS) {
-           return (ParameterServerTrainerBuilder) super.useMDS(useMDS);
+            return (ParameterServerTrainerBuilder) super.useMDS(useMDS);
         }
 
         @Override
         public ParameterServerTrainerBuilder onRootModel(boolean onRootModel) {
-           return (ParameterServerTrainerBuilder) super.onRootModel(onRootModel);
+            return (ParameterServerTrainerBuilder) super.onRootModel(onRootModel);
         }
 
         @Override
         public ParameterServerTrainerBuilder parallelWrapper(ParallelWrapper parallelWrapper) {
-           return (ParameterServerTrainerBuilder) super.parallelWrapper(parallelWrapper);
+            return (ParameterServerTrainerBuilder) super.parallelWrapper(parallelWrapper);
+        }
+
+        @Override
+        public ParameterServerTrainerBuilder averagingFrequency(int frequency) {
+            return (ParameterServerTrainerBuilder) super.averagingFrequency(frequency);
         }
     }
 }

@@ -1,8 +1,8 @@
 /*- Generated SBE (Simple Binary Encoding) message codec */
 package org.deeplearning4j.ui.stats.sbe;
 
-import org.agrona.MutableDirectBuffer;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 @javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.StorageMetaDataDecoder"})
 @SuppressWarnings("all")

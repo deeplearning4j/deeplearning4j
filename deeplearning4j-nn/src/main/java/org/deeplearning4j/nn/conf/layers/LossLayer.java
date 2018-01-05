@@ -7,13 +7,15 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
 import java.util.Collection;
 import java.util.Map;
@@ -47,6 +49,20 @@ public class LossLayer extends FeedForwardLayer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
         return ret;
+    }
+
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("LossLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //During inference and training: dup the input array. But, this counts as *activations* not working memory
+        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType).standardMemory(0, 0) //No params
+                        .workingMemory(0, 0, 0, 0)
+                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                        .build();
     }
 
     @Override

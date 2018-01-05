@@ -3,9 +3,7 @@ package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.models.sequencevectors.graph.enums.PopularityMode;
 import org.deeplearning4j.models.sequencevectors.graph.enums.SamplingMode;
-import org.deeplearning4j.models.sequencevectors.graph.primitives.Graph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
@@ -16,7 +14,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This walker represents connections of a given node + their neighborhoods up to certain depth.
