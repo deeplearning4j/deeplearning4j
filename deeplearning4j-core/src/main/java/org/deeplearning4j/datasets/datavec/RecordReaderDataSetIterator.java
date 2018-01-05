@@ -19,6 +19,7 @@
 package org.deeplearning4j.datasets.datavec;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
@@ -46,8 +47,39 @@ import java.util.List;
 
 
 /**
- * Record reader dataset iterator
+ * Record reader dataset iterator. Takes a DataVec {@link RecordReader} as input, and handles the conversion to ND4J
+ * DataSet objects as well as producing minibatches from individual records.<br>
+ * <br>
+ * Multiple constructors are available, though a {@link Builder} class is also available.<br>
+ * <br>
+ * Example 1: Image classification, batch size 32, 10 classes<br>
+ * <pre>
+ * {@code RecordReader rr = new ImageRecordReader(28,28,3); //28x28 RGB images
+ *  rr.initialize(new FileSplit(new File("/path/to/directory")));
  *
+ *  DataSetIterator iter = new RecordReaderDataSetIterator.Builder(rr, 32)
+ *       //Label index (first arg): Always value 1 when using ImageRecordReader. For CSV etc: use index of the column
+ *       //  that contains the label (should contain an integer value, 0 to nClasses-1 inclusive). Column indexes start
+ *       // at 0. Number of classes (second arg): number of label classes (i.e., 10 for MNIST - 10 digits)
+ *       .classification(1, nClasses)
+ *       .preProcessor(new ImagePreProcessingScaler())      //For normalization of image values 0-255 to 0-1
+ *       .build()
+ * }
+ * </pre>
+ * <br>
+ * <br>
+ * Example 2: Multi-output regression from CSV, batch size 128<br>
+ * <pre>
+ * {@code RecordReader rr = new CsvRecordReader(0, ','); //Skip 0 header lines, comma separated
+ *  rr.initialize(new FileSplit(new File("/path/to/myCsv.txt")));
+ *
+ *  DataSetIterator iter = new RecordReaderDataSetIterator.Builder(rr, 128)
+ *       //Specify the columns that the regression labels/targets appear in. Note that all other columns will be
+ *       // treated as features. Columns indexes start at 0
+ *       .regression(labelColFrom, labelColTo)
+ *       .build()
+ * }
+ * </pre>
  * @author Adam Gibson
  */
 @Slf4j
@@ -157,6 +189,19 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
+    }
+
+
+    protected RecordReaderDataSetIterator(Builder b){
+        this.recordReader = b.recordReader;
+        this.converter = b.converter;
+        this.batchSize = b.batchSize;
+        this.maxNumBatches = b.maxNumBatches;
+        this.labelIndex = b.labelIndex;
+        this.labelIndexTo = b.labelIndexTo;
+        this.numPossibleLabels = b.numPossibleLabels;
+        this.regression = b.regression;
+        this.preProcessor = b.preProcessor;
     }
 
     /**
@@ -457,5 +502,115 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         MultiDataSet m = underlying.loadFromMetaData(l);
 
         return mdsToDataSet(m);
+    }
+
+    /**
+     * Builder class for RecordReaderDataSetIterator
+     */
+    public static class Builder {
+
+        protected RecordReader recordReader;
+        protected WritableConverter converter;
+        protected int batchSize;
+        protected int maxNumBatches = -1;
+        protected int labelIndex = -1;
+        protected int labelIndexTo = -1;
+        protected int numPossibleLabels = -1;
+        protected boolean regression = false;
+        protected DataSetPreProcessor preProcessor;
+        private boolean collectMetaData = false;
+
+        private boolean clOrRegCalled = false;
+
+        /**
+         *
+         * @param rr        Underlying record reader to source data from
+         * @param batchSize Batch size to use
+         */
+        public Builder(@NonNull RecordReader rr, int batchSize){
+            this.recordReader = rr;
+            this.batchSize = batchSize;
+        }
+
+        public Builder writableConverter(WritableConverter converter){
+            this.converter = converter;
+            return this;
+        }
+
+        /**
+         * Optional argument, usually not used. If set, can be used to limit the maximum number of minibatches that
+         * will be returned (between resets). If not set, will always return as many minibatches as there is data
+         * available.
+         *
+         * @param maxNumBatches Maximum number of minibatches per epoch / reset
+         */
+        public Builder maxNumBatches(int maxNumBatches){
+            this.maxNumBatches = maxNumBatches;
+            return this;
+        }
+
+        /**
+         * Use this for single output regression (i.e., 1 output/regression target)
+         *
+         * @param labelIndex Column index that contains the regression target (indexes start at 0)
+         */
+        public Builder regression(int labelIndex){
+            return regression(labelIndex, labelIndex);
+        }
+
+        /**
+         * Use this for multiple output regression (1 or more output/regression targets). Note that all regression
+         * targets must be contiguous (i.e., positions x to y, without gaps)
+         *
+         * @param labelIndexFrom Column index of the first regression target (indexes start at 0)
+         * @param labelIndexTo   Column index of the last regression target (inclusive)
+         */
+        public Builder regression(int labelIndexFrom, int labelIndexTo){
+            this.labelIndex = labelIndexFrom;
+            this.labelIndexTo = labelIndexTo;
+            this.regression = true;
+            clOrRegCalled = true;
+            return this;
+        }
+
+        /**
+         * Use this for classification
+         *
+         * @param labelIndex Index that contains the label index. Column (indexes start from 0) be an integer value,
+         *                   and contain values 0 to numClasses-1
+         * @param numClasses Number of label classes (i.e., number of categories/classes in the dataset)
+         */
+        public Builder classification(int labelIndex, int numClasses){
+            this.labelIndex = labelIndex;
+            this.numPossibleLabels = numClasses;
+            this.regression = false;
+            clOrRegCalled = true;
+            return this;
+        }
+
+        /**
+         * Optional arg. Allows the preprocessor to be set
+         * @param preProcessor Preprocessor to use
+         */
+        public Builder preProcessor(DataSetPreProcessor preProcessor){
+            this.preProcessor = preProcessor;
+            return this;
+        }
+
+        /**
+         * When set to true: metadata for  the current examples will be present in the returned DataSet.
+         * Disabled by default.
+         *
+         * @param collectMetaData Whether metadata should be collected or not
+         */
+        public Builder collectMetaData(boolean collectMetaData){
+            this.collectMetaData = collectMetaData;
+            return this;
+        }
+
+        public RecordReaderDataSetIterator build(){
+            return new RecordReaderDataSetIterator(this);
+        }
+
     }
 }
