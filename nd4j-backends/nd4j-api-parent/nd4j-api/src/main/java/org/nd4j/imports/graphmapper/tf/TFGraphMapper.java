@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.*;
 
 import java.io.*;
@@ -34,7 +35,23 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     public final static String SHAPE_KEY = "shape";
     private static TFGraphMapper MAPPER_INSTANCE = new TFGraphMapper();
     private Set<String> graphMapper = new HashSet<String>(){{
+        //While and If
+        //While -> Enter
+        /**
+         * Need to work on coping with variables
+         * that are marked as "shouldSkip"
+         *
+         * Possibly consider replacing should skip
+         * with a special handler interface. Something like
+         *
+         * public interface ImportOpHandler
+         */
         add("LoopCond");
+        add("Merge");
+        add("Exit");
+        add("NextIteration");
+        add("NoOp");
+        add("Switch");
     }};
     //singleton
     private TFGraphMapper() {}
@@ -193,7 +210,6 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         String ret = name;
         if(ret.startsWith("^"))
             ret = ret.substring(1);
-        ret = ret.indexOf(':') >= 0 ? ret.substring(0,ret.indexOf(':')) : ret;
         if(ret.endsWith("/read")) {
             ret = ret.replace("/read","");
         }
@@ -305,6 +321,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 for(int i = 0; i < tfNode.getInputCount(); i++) {
                     val name = getNodeName(tfNode.getInput(i));
                     args[i] = diff.getVariable(name);
+                    if(args[i] == null) {
+                        args[i] = diff.var(name,null,new ZeroInitScheme('f'));
+                        diff.addAsPlaceHolder(args[i].getVarName());
+                    }
 
                     /**
                      * Note here that we are associating
@@ -326,8 +346,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-                importState.getSameDiff().putFunctionForId(newInstance.getInstanceId(),newInstance);
-                 //ensure we can track node name to function instance later.
+                importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
+                //ensure we can track node name to function instance later.
                 diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
                 diff.addVarNameForImport(tfNode.getName());
 
@@ -582,7 +602,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         //shape should be mapped to a row vector
         if(shape.length < 2) {
             if(shape.length == 1)
-            shape = new int[]{1,shape[0]};
+                shape = new int[]{1,shape[0]};
             else
                 shape = new int[]{1,1};
         }

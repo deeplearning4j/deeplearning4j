@@ -7,6 +7,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
@@ -14,10 +15,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -50,6 +48,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
     public LocalResponseNormalization() {}
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return config.toProperties();
+    }
 
     private void addArgs() {
         addTArgument(config.getAlpha());
@@ -106,6 +108,49 @@ public class LocalResponseNormalization extends DynamicCustomOp {
                 .build();
         this.config = localResponseNormalizationConfig;
         addArgs();
+    }
+
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        val depthMapping = PropertyMapping.builder()
+                .tfAttrName("depth_radius")
+                .propertyNames(new String[]{"depth"})
+                .onnxAttrName("size")
+                .build();
+
+        val alphaMapping = PropertyMapping.builder()
+                .tfAttrName("alpha")
+                .onnxAttrName("alpha")
+                .propertyNames(new String[]{"alpha"})
+                .build();
+
+        val betaMapping = PropertyMapping.builder()
+                .tfAttrName("beta")
+                .onnxAttrName("beta")
+                .propertyNames(new String[]{"beta"})
+                .build();
+
+        val biasMapping = PropertyMapping.builder()
+                .tfAttrName("bias")
+                .onnxAttrName("bias")
+                .propertyNames(new String[]{"bias"})
+                .build();
+
+
+
+
+        Map<String,PropertyMapping> map = new HashMap<>();
+        map.put("depth",depthMapping);
+        map.put("alpha",alphaMapping);
+        map.put("beta",betaMapping);
+        map.put("bias",biasMapping);
+
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+        return ret;
     }
 
 

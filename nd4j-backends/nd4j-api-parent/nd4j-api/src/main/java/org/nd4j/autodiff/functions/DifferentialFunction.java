@@ -9,6 +9,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -17,10 +18,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 
 @Data
@@ -62,9 +60,6 @@ public abstract class DifferentialFunction {
     protected  boolean arrayInitialized = false;
 
     @Getter
-    private String instanceId;
-
-    @Getter
     @Setter
     private String ownName;
 
@@ -84,7 +79,7 @@ public abstract class DifferentialFunction {
     }
 
     /**
-     * Iniitialize the function from the given
+     * Initialize the function from the given
      * {@link onnx.OnnxProto3.NodeProto}
      * @param node
      */
@@ -92,6 +87,45 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
+    }
+
+
+    /**
+     * Returns the mappings for a given function (
+     * for tensorflow and onnx import mapping properties
+     * of this function). The mapping is indexed by field name.
+     * If the function has no properties, this returned map
+     * will be empty.
+     *
+     * Note that some functions have multiple names.
+     * This function returns a map indexed by each
+     * alias it has for a given name.
+     * These names include both onnx and tensorflow names (which might be 1 or more)
+     *
+     * @return
+     */
+    public Map<String,Map<String,PropertyMapping>> mappingsForFunction() {
+        return Collections.emptyMap();
+    }
+
+    /**
+     * Returns the properties for a given function
+     * @return
+     */
+    public Map<String,Object> propertiesForFunction() {
+        return Collections.emptyMap();
+    }
+
+
+    /**
+     * Return function properties for the given function
+     * @return
+     */
+    public FunctionProperties asProperties() {
+        return FunctionProperties.builder()
+                .name(opName())
+                .fieldNames(propertiesForFunction())
+                .build();
     }
 
 
@@ -132,6 +166,11 @@ public abstract class DifferentialFunction {
         setInstanceId();
         if(sameDiff != null)
             sameDiff.addArgsFor(args,this);
+        for(int i = 0; i < args.length; i++) {
+            if(args[i].isPlaceHolder()) {
+                sameDiff.addPropertyToResolve(this,args[i].getVarName());
+            }
+        }
     }
 
 
@@ -188,41 +227,6 @@ public abstract class DifferentialFunction {
 
 
 
-    //by default no op, used for certain situations like
-    //place holder arrays
-    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        if(isArrayInit() || isArrayInitialized()) {
-            return;
-        }
-
-        val shapeCalc = calculateOutputShape();
-        if(hasPlaceHolderInputs() && shapeCalc != null && !shapeCalc.isEmpty()) {
-            //update place holder shapes in case the shapes
-            // need to be resolved
-            //post adding the variables to the graph.
-            if(sameDiff.shapeAlreadyExistsForVarName(args()[0].getVarName()))
-                sameDiff.updateShapeForVarName(args()[0].getVarName(),shapeCalc.get(0));
-            else
-                sameDiff.putShapeForVarName(args()[0].getVarName(),shapeCalc.get(0));
-
-        }
-
-        this.arrayInitialized = true;
-    }
-
-    //by default no op, used for certain situations like
-    //place holder arrays
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        if(isArrayInit() || isArrayInitialized()) {
-            return;
-        }
-
-        for(val arg : args()) {
-            arg.initWithArrays(arrayMap,extraArgs);
-        }
-
-    }
-
 
 
     /**
@@ -247,12 +251,20 @@ public abstract class DifferentialFunction {
         return false;
     }
 
+    /**
+     * Return the arguments for a given function
+     * @return the arguments for a given function
+     */
     public  SDVariable[] args() {
         return sameDiff.getInputVariablesForFunction(this);
     }
 
 
 
+
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+
+    }
 
     public SDVariable arg() {
         return args()[0];
@@ -283,10 +295,22 @@ public abstract class DifferentialFunction {
 
 
     protected void setInstanceId() {
-        if(instanceId == null) {
-            this.instanceId = UUID.randomUUID().toString();
-            if(sameDiff != null)
-                sameDiff.putFunctionForId(instanceId,this);
+        if(ownName == null) {
+            if(sameDiff == null)
+                this.ownName = UUID.randomUUID().toString();
+            else {
+                int argIndex = 0;
+                String varName = sameDiff.generateNewVarName(opName(),argIndex);
+                while(sameDiff.functionExists(varName)) {
+                    varName = sameDiff.generateNewVarName(opName(), argIndex);
+                    argIndex++;
+                }
+
+                this.ownName = varName;
+            }
+
+            if(sameDiff != null && !(this instanceof SDVariable))
+                sameDiff.putFunctionForId(ownName,this);
         }
     }
 
@@ -398,7 +422,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public  DifferentialFunction dup() {
-        Cloner cloner = new Cloner();
+        Cloner cloner = SameDiff.newCloner();
         return cloner.deepClone(this);
     }
 
@@ -429,7 +453,7 @@ public abstract class DifferentialFunction {
         if (arrayInitialized != that.arrayInitialized) return false;
         if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
         if (!Arrays.equals(dimensions, that.dimensions)) return false;
-        return instanceId != null ? instanceId.equals(that.instanceId) : that.instanceId == null;
+        return ownName != null ? ownName.equals(that.ownName) : that.ownName == null;
     }
 
     @Override
@@ -440,7 +464,7 @@ public abstract class DifferentialFunction {
         result = 31 * result + Arrays.hashCode(dimensions);
         result = 31 * result + (isArrayInit ? 1 : 0);
         result = 31 * result + (arrayInitialized ? 1 : 0);
-        result = 31 * result + (instanceId != null ? instanceId.hashCode() : 0);
+        result = 31 * result + (ownName != null ? ownName.hashCode() : 0);
         return result;
     }
 

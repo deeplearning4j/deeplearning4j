@@ -23,6 +23,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
@@ -154,6 +155,11 @@ public class Mmul extends DynamicCustomOp {
                 .build();
         this.mMulTranspose = mMulTranspose;
         val args = args();
+        for(val arg : args) {
+            if(sameDiff.isPlaceHolder(arg.getVarName()) || arg.getShape() == null) {
+                sameDiff.addPropertyToResolve(this,arg.getVarName());
+            }
+        }
     }
 
     @Override
@@ -191,6 +197,32 @@ public class Mmul extends DynamicCustomOp {
         return ret;
     }
 
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        val transposeA = PropertyMapping.builder()
+                .onnxAttrName("transA")
+                .tfAttrName("transpose_a")
+                .propertyNames(new String[]{"transposeA"})
+                .build();
+
+        val transposeB = PropertyMapping.builder()
+                .onnxAttrName("transB")
+                .tfAttrName("transpose_b")
+                .propertyNames(new String[]{"transposeB"})
+                .build();
+
+        map.put("transposeA",transposeA);
+        map.put("transposeB",transposeB);
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
 
     @Override
     public boolean equals(Object o) {

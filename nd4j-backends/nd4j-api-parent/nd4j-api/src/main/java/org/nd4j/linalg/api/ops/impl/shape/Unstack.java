@@ -3,11 +3,14 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -41,18 +44,41 @@ public class Unstack extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val attrAxis = nodeDef.getAttrOrThrow("axis");
-        int num = -1;
-        if(attributesForNode.containsKey("num")) {
-            num = (int) nodeDef.getAttrOrThrow("num").getI();
-        }
-
-
         int axis = (int) attrAxis.getI();
         this.axis = axis;
         addIArgument(axis);
 
-
     }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("axis",axis);
+        return ret;
+    }
+
+
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        val axisMapping = PropertyMapping.builder()
+                .onnxAttrName("axis")
+                .tfInputPosition(-1)
+                .propertyNames(new String[]{"axis"})
+                .build();
+
+        map.put("axis",axisMapping);
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
+
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {

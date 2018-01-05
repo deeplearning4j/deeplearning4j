@@ -19,13 +19,18 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.val;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ShapeOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Repeat function
@@ -56,6 +61,13 @@ public class Repeat extends ShapeOp {
 
     public Repeat(INDArray x) {
         super(x);
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("axis",axis);
+        return ret;
     }
 
 
@@ -91,7 +103,35 @@ public class Repeat extends ShapeOp {
     }
 
 
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
 
+        val axisMapping = PropertyMapping.builder()
+                .onnxAttrName("axis")
+                .tfInputPosition(-1)
+                .propertyNames(new String[]{"axis"})
+                .build();
+
+        map.put("axis",axisMapping);
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
+
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        super.initFromOnnx(node, initWith, attributesForNode, graph);
+    }
 
     @Override
     public String onnxName() {

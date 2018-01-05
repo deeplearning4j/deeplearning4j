@@ -24,7 +24,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Inverted DropOut implementation as Op
@@ -52,6 +54,13 @@ public class DropOut extends BaseRandomOp {
         init(x, null, z, n);
     }
 
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("p",p);
+        return ret;
+    }
 
     @Override
     public int opNum() {

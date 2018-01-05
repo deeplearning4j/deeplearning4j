@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -43,6 +44,10 @@ public class Pooling3D extends DynamicCustomOp {
         addArgs();
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return config.toProperties();
+    }
 
     private void addArgs() {
         addIArgument(config.getKT());

@@ -23,16 +23,16 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * ExpandDims function
@@ -77,6 +77,45 @@ public class ExpandDims extends DynamicCustomOp {
             this.axis = Integer.MAX_VALUE;
             addIArgument(this.axis);
         }
+    }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("axis",axis);
+        return ret;
+    }
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+            Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+            val axisMapping = PropertyMapping.builder()
+                    .tfInputPosition(1)
+                    .propertyNames(new String[]{"axis"})
+                    .build();
+            Map<String,PropertyMapping> map = new HashMap<>();
+            map.put("axis",axisMapping);
+
+            ret.put(tensorflowName(),map);
+            return ret;
+    }
+
+    @Override
+    public void assertValidForExecution() {
+        val descriptor = getDescriptor();
+        if(descriptor.getNumInputs() > 0 && numInputArguments() >  2 || numInputArguments() < 1)
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
+
+        if(descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
+
+        //< 0 means dynamic size
+        if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
+
+        if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
+
     }
 
     @Override

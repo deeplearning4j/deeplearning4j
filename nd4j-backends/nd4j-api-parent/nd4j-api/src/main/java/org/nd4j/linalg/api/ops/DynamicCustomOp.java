@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -165,34 +166,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
 
-            for(int i = 0; i < newVars.length; i++) {
-                INDArray arr = null;
-                if(Shape.isPlaceholderShape(newVars[i].getShape())) {
-                    if(newVars[i].getShape() == null) {
-                        val shape = calculateOutputShape();
-                        if(!shape.isEmpty()) {
-                            if(shape.get(i) != null && !Shape.isPlaceholderShape(shape.get(i))) {
-                                sameDiff.putShapeForVarName(newVars[i].getVarName(),shape.get(i));
-                                arr = newVars[i].storeAndAllocateNewArray();
-                            }
-
-                        }
-
-                        else
-                            arr = null;
-                    }
-
-                }
-                else if(sameDiff.getArrForVarName(newVars[i].getVarName()) == null) {
-                    if(newVars[i].getShape()  != null)
-                        arr = newVars[i].storeAndAllocateNewArray();
-                }
-                else {
-                    arr = newVars[i].getArr();
+            val outputShapes = calculateOutputShape();
+            if(newVars != null && outputShapes != null && !outputShapes.isEmpty()) {
+                for (int i = 0; i < newVars.length; i++) {
+                    if (newVars[i] == null)
+                        continue;
+                    attemptToGetOrCreateArrForVar(newVars[i], outputShapes.get(i));
                 }
 
-                if(arr != null)
-                    addOutputArgument(arr);
+
+
+            } else if(getDescriptor().getNumOutputs() < 1) {
+                //this should only happen if we have no way of knowing how many
+                //outputs are known from the descriptor
+                return new SDVariable[0];
+            } else {
+                outputVariables = newVars;
+                return newVars;
             }
 
             outputVariables = newVars;
@@ -201,7 +191,51 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             return newVars;
         }
 
+        else {
+            for(int i = 0; i < outputVariables.length; i++) {
+                val var = outputVariables[i];
+                val shape = calculateOutputShape();
+                if(var.getShape() == null) {
+                    attemptToGetOrCreateArrForVar(var,shape.get(i));
+                }
+            }
+        }
+
         return outputVariables;
+    }
+
+
+    private INDArray attemptToGetOrCreateArrForVar(SDVariable var,int[] currShape) {
+        INDArray arr = null;
+        if(Shape.isPlaceholderShape(var.getShape())) {
+            if(var.getShape() == null) {
+                val shape = calculateOutputShape();
+                if(!shape.isEmpty()) {
+                    if(currShape != null && !Shape.isPlaceholderShape(currShape)) {
+                        sameDiff.putShapeForVarName(var.getVarName(),currShape);
+                        arr = var.storeAndAllocateNewArray();
+                    }
+
+                }
+
+                else
+                    arr = null;
+            }
+
+        }
+        else if(sameDiff.getArrForVarName(var.getVarName()) == null) {
+            if(var.getShape()  != null)
+                arr = var.storeAndAllocateNewArray();
+        }
+        else {
+            arr = var.getArr();
+        }
+
+        if(arr != null)
+            addOutputArgument(arr);
+
+        sameDiff.associateArrayWithVariable(arr,var);
+        return arr;
     }
 
     /**
@@ -416,17 +450,17 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             throw new NoOpNameFoundException("No descriptor found for op name " + opName());
 
 
-        if(descriptor.getNumInputs() > 0 && numInputArguments() != descriptor.getNumInputs())
+        if(descriptor.getNumInputs() > 0 && numInputArguments() < descriptor.getNumInputs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
 
-        if(descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
+        if(descriptor.getNumOutputs() > 0 && numOutputArguments() < descriptor.getNumOutputs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
 
         //< 0 means dynamic size
-        if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
+        if(descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
 
-        if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
+        if(descriptor.getNumTArgs() >= 0 && numTArguments() < descriptor.getNumTArgs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
 
     }
@@ -462,6 +496,16 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 //clear just in case
                 val args = args();
                 inputArguments.clear();
+                for(val arg : args()) {
+                    //we should not attempt to resolve
+                    //outputs when null inputs exist
+                    if(arg.getArr() == null) {
+                        log.warn("No input found for " + arg.getVarName() + " and op name " + opName());
+                        return;
+                    }
+                }
+
+
                 for(val arg : args) {
                     inputArguments.add(arg.getArr());
                 }
@@ -496,6 +540,21 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         }
 
     }
+
+
+    /**
+     * Return function properties for the given function
+     * @return
+     */
+    public FunctionProperties asProperties() {
+        return FunctionProperties.builder()
+                .name(opName())
+                .i(iArguments)
+                .d(tArguments)
+                .fieldNames(propertiesForFunction())
+                .build();
+    }
+
 
 
     @Override
@@ -561,17 +620,17 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             DynamicCustomOp ret =  super.build();
             ret.setSameDiff(sameDiff);
             ret.outputShapes = outputShapes;
-            sameDiff.putFunctionForId(ret.getInstanceId(),ret);
+            sameDiff.putFunctionForId(ret.getOwnName(),ret);
             if(outputs.isEmpty() && !outputShapes.isEmpty()) {
                 for (int i = 0; i < outputShapes.size(); i++) {
-                    outputs.add(sameDiff.var(sameDiff.generateVariableName(
-                            "dynamicoutput-" + i + "-" + UUID.randomUUID().toString(),
-                            false),outputShapes.get(i)));
+                    outputs.add(sameDiff.var(sameDiff.generateNewVarName("dynamiccustomop",i),outputShapes.get(i)));
                 }
 
             }
 
+            sameDiff.putFunctionForId(ret.getOwnName(),ret);
             ret.outputVariables = outputs.toArray(new SDVariable[outputs.size()]);
+
             return ret;
         }
     }
@@ -603,86 +662,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     }
 
-    @Override
-    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        val outputFunctions = outputVariables();
-
-        //ensure output functions are initialized as well
-        for(val outputFunction : outputFunctions) {
-            outputFunction.initWithArrays(arrayMap,extraArgs);
-        }
-
-
-        if(outputArguments.size() < outputFunctions.length) {
-            //ambiguous state, clear just in case
-            outputArguments.clear();
-            /**
-             * Need to think about how I want to handle this.
-             * Should each vertex id set itself?
-             *
-             *
-             */
-            for(val function : outputFunctions) {
-                INDArray arr = sameDiff.getArrForVarName(function.getVarName());
-                if(arr == null) {
-                    val var = sameDiff.getVariable(function.getVarName());
-                    arr = var.getWeightInitScheme().create(function.getShape());
-                    sameDiff.putArrayForVarName(function.getVarName(),arr);
-                }
-
-                addOutputArgument(arr);
-            }
-        }
-
-    }
-
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        if(isArrayInit() || isArrayInitialized()) {
-            return;
-        }
-
-        //already initialized
-        if(inputArguments.size() == args().length && outputArguments.size() == outputVariables().length || isArrayInit() || isArrayInitialized())
-            return;
-
-
-        val args = args();
-
-
-        //ensure there's no redundant calls
-        isArrayInit = true;
-        for(int i = 0; i < args().length; i++) {
-            val var = sameDiff.getVariable(args()[i].getVarName());
-            val func = args[i];
-
-            if(var != null) {
-                if(var.getArr() == null) {
-                    int[] shape = sameDiff.getShapeForVarName(var.getVarName());
-                    if(shape == null) {
-                        shape = func.getShape();
-                    }
-                    if(shape == null) {
-                        throw new ND4JIllegalStateException("Unable to resolve shape for variable " + var.getVarName());
-                    }
-
-                    sameDiff.putArrayForVarName(var.getVarName(),var.getWeightInitScheme().create(shape));
-                }
-
-                addInputArgument(var.getArr());
-            }
-
-        }
-
-
-
-        if(inputArguments.size()  != args.length)
-            throw new ND4JIllegalStateException("Input arguments not initialized!");
-
-        arrayInitialized = true;
-
-
-    }
 
     public static SameDiffBuilder sameDiffBuilder(String opName, SameDiff sameDiff) {
         return new SameDiffBuilder(opName,sameDiff);

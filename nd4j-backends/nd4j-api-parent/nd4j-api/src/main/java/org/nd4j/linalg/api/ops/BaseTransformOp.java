@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
@@ -31,7 +32,6 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * A base op for basic getters and setters
@@ -61,6 +61,13 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             this.xVertexId = i_v1.getVarName();
             this.yVertexId = i_v2.getVarName();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
+            if(Shape.isPlaceholderShape(i_v1.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v1.getVarName());
+            }
+
+            if(Shape.isPlaceholderShape(i_v2.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
+            }
             if(i_v1.getShape() != null)
                 this.n = ArrayUtil.prod(i_v1.getShape());
 
@@ -92,6 +99,14 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             if(i_v1.getShape() != null)
                 this.n = ArrayUtil.prod(i_v1.getShape());
 
+            if(Shape.isPlaceholderShape(i_v1.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v1.getVarName());
+            }
+
+            if(Shape.isPlaceholderShape(i_v2.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
+            }
+
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -119,6 +134,11 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             if(i_v.getShape() != null) {
                 this.n = ArrayUtil.prod(i_v.getShape());
             }
+
+            if(Shape.isPlaceholderShape(i_v.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v.getVarName());
+            }
+
 
         } else {
             throw new IllegalArgumentException("Input must not null variable.");
@@ -171,85 +191,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
     }
 
 
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        if(isArrayInit() || isArrayInitialized()) {
-            return;
-        }
-
-
-        super.initWithArrays(arrayMap);
-
-
-
-        val args = args();
-        for(val arg : args) {
-            arg.initWithArrays(arrayMap,extraArgs);
-        }
-    }
-
-
-    @Override
-    public void initOutputWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initOutputWithArrays(arrayMap, extraArgs);
-        val vertexId = outputVariables()[0].getVarName();
-        if(!sameDiff.shapeAlreadyExistsForVarName(vertexId) && sameDiff.getArrForVarName(vertexId) == null) {
-            val shape = calculateOutputShape();
-            if (shape.isEmpty() || shape.get(0) == null) {
-                throw new ND4JIllegalStateException("Shape should not be null or empty");
-            }
-
-            sameDiff.putShapeForVarName(vertexId, shape.get(0));
-
-        }
-
-
-
-        if(!sameDiff.shapeAlreadyExistsForVarName(vertexId) && sameDiff.getArrForVarName(vertexId) == null) {
-            val shape = calculateOutputShape();
-            if (shape.isEmpty() || shape.get(0) == null) {
-                throw new ND4JIllegalStateException("Shape should not be null or empty");
-            }
-
-            sameDiff.putShapeForVarName(vertexId, shape.get(0));
-
-        }
-
-        val args = args();
-        val resultVertexId = outputVariables()[0].getVarName();
-        if(sameDiff.getArrForVarName(vertexId) == null || x == null) {
-            if(sameDiff.getArrForVarName(args[0].getVarName()) != null) {
-                this.x = sameDiff.getArrForVarName(args[0].getVarName());
-            }
-            else
-                throw new ND4JIllegalStateException("No input found for vertex id " + resultVertexId + " and op " + opName());
-            if(args().length  > 1) {
-                if(sameDiff.getArrForVarName(args[1].getVarName()) != null) {
-                    this.y = sameDiff.getArrForVarName(args[1].getVarName());
-                }
-
-                else
-                    throw new ND4JIllegalStateException("No second input found for vertex id " + resultVertexId + " and op " + opName());
-
-            }
-        }
-
-        arrayInitialized = true;
-
-        val outputFunctions = outputVariables();
-       /*
-        for(val arg : outputVariables) {
-            arg.initOutputWithArrays(arrayMap,extraArgs);
-        }
-*/
-        if(sameDiff.getArrForVarName(vertexId) == null || z == null) {
-            if(sameDiff.getArrForVarName(args[0].getVarName()) != null) {
-                this.z = sameDiff.getArrForVarName(outputFunctions[0].getVarName());
-            }
-            else
-                throw new ND4JIllegalStateException("No input found for vertex id " + outputVariables()[0].getVarName() + " and op " + opName());
-        }
-    }
 
     @Override
     public List<int[]> calculateOutputShape() {

@@ -7,7 +7,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * BernoulliDistribution implementation
@@ -50,6 +52,14 @@ public class BernoulliDistribution extends BaseRandomOp {
         this.prob = 0.0;
         this.extraArgs = new Object[] {this.prob};
     }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("prob",prob);
+        return ret;
+    }
+
 
 
     @Override

@@ -6,7 +6,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This Op generates binomial distribution
@@ -52,6 +54,15 @@ public class BinomialDistribution extends BaseRandomOp {
         this.trials = trials;
         this.probability = 0.0;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
+    }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("trials",trials);
+        ret.put("probability",probability);
+        return ret;
     }
 
 

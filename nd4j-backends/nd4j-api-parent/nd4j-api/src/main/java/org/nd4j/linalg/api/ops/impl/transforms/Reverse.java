@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -29,17 +28,8 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import java.util.List;
 
 /**
- * Soft max function
- * row_maxes is a row vector (max for each row)
- * row_maxes = rowmaxes(input)
- * diff = exp(input - max) / diff.rowSums()
- * Outputs a probability distribution.
- * Note that this is a parameterized model and requires
- * the sum and max for the vector being calculated
- *
- * @author Adam Gibson
+ * Reverse op
  */
-
 public class Reverse extends BaseTransformOp {
     public Reverse(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

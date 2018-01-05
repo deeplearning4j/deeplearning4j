@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -28,7 +27,9 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Absolute sum the components
@@ -70,6 +71,16 @@ public class MatchCondition extends BaseAccumulation {
 
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("compare",compare);
+        ret.put("eps",eps);
+        ret.put("mode",mode);
+        return ret;
+    }
+
 
     @Override
     public int opNum() {

@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -98,9 +99,13 @@ public class Max extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        List<SDVariable> ret = new ArrayList<>(1);
-        ret.add(sameDiff.f().doGradChoose(outputVariables()[0],i_v1.get(0)));
-        return ret;
+        //TODO do we need to handle the "multiple equal maximums" case?
+
+        //Broadcast to input shape, work out IsMax (essentially)
+        SDVariable repeatOut = f().doRepeat(outputVariables()[0], arg());
+        SDVariable argMaxLoc = f().eq(repeatOut, arg());
+        SDVariable out = argMaxLoc.mul(i_v1.get(0));
+        return Collections.singletonList(out);
     }
 
     @Override

@@ -1522,6 +1522,49 @@ public class ConvolutionTests extends BaseNd4jTest {
         assertEquals(assertcol2im, col2im);
     }
 
+    @Test
+    public void testIm2ColWithDilation() {
+        int kH = 2;
+        int kW = 2;
+        int sH = 1;
+        int sW = 1;
+        int pH = 0;
+        int pW = 0;
+        int dH = 1;
+        int dW = 2;
+        boolean same = false;
+
+        /*
+        Input:
+        [ 1,  2,  3
+          4,  5,  6
+          7,  8,  9 ]
+
+        Im2col:
+        [ 1,  3
+          4,  6 ]
+
+        [ 4,  6
+          7,  9 ]
+         */
+
+
+        INDArray in = Nd4j.create(1, 1, 3, 3);
+        in.get(point(0), point(0), all(), all()).assign(Nd4j.linspace(1, 9, 9).reshape('c', 3, 3));
+
+        INDArray out = Nd4j.create(1, 1, 2, 2, 2, 1);    //minibatch, depth, kH, kW, outH, outW
+        Convolution.im2col(in, kH, kW, sH, sW, pH, pW, dH, dW, same, out);
+
+        INDArray act0 = out.get(point(0), point(0), all(), all(), point(0), point(0));
+        INDArray act1 = out.get(point(0), point(0), all(), all(), point(1), point(0));
+
+        INDArray exp0 = Nd4j.create(new double[][]{{1, 3}, {4, 6}});
+        INDArray exp1 = Nd4j.create(new double[][]{{4, 6}, {7, 9}});
+
+        assertEquals(exp0, act0);
+        assertEquals(exp1, act1);
+    }
+
 
     @Test
     public void testPoolingEdgeCases(){

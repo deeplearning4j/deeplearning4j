@@ -2452,7 +2452,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         for (val in: op.inputArguments()) {
             // NOT A TYPO: shape functions work on host side only
-            inputBuffers.put(cnt++, in.data().addressPointer());
+            inputBuffers.put(cnt, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 

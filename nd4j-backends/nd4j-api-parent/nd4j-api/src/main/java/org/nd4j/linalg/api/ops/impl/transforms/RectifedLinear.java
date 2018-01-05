@@ -39,16 +39,20 @@ public class RectifedLinear extends BaseTransformOp {
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v1, i_v2, extraArgs);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, inPlace);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
+
     }
 
     public RectifedLinear() {

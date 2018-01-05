@@ -6,7 +6,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This Op generates normal distribution over provided mean and stddev
@@ -68,6 +70,16 @@ public class GaussianDistribution extends BaseRandomOp {
     public int opNum() {
         return 6;
     }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("mean",mean);
+        ret.put("stddev",stddev);
+        return ret;
+    }
+
 
     @Override
     public String opName() {

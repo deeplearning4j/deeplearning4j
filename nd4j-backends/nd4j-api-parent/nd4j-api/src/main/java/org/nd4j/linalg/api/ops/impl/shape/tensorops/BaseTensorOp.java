@@ -15,6 +15,8 @@ import java.util.List;
 import java.util.Map;
 
 public abstract  class BaseTensorOp extends DynamicCustomOp {
+
+
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val inputOne = nodeDef.getInput(1);

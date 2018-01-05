@@ -12,6 +12,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class ProbablisticMerge extends BaseRandomOp {
+
     private double probability;
 
     public ProbablisticMerge() {

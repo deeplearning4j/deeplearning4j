@@ -26,7 +26,7 @@ public class Shape extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "shape";
+        return "shape_of";
     }
 
     @Override

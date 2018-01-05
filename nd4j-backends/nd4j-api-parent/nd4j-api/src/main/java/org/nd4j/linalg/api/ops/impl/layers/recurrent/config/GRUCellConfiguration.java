@@ -4,6 +4,9 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Data
 @Builder
 public class GRUCellConfiguration {
@@ -26,6 +29,13 @@ public class GRUCellConfiguration {
     private int batchSize,intSize,numUnits;
     private SDVariable xt,ht_1,Wx,Wh,b;
 
+    public Map<String,Object> toProperties() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("batchSize",batchSize);
+        ret.put("intSize",intSize);
+        ret.put("numUnits",numUnits);
+        return ret;
+    }
 
     public int[] iArgs() {
         return new int[] {batchSize,intSize,numUnits};

@@ -41,6 +41,13 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
+            if(Shape.isPlaceholderShape(i_v1.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v1.getVarName());
+            }
+
+            if(Shape.isPlaceholderShape(i_v2.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
+            }
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
 
         } else {
@@ -130,7 +137,9 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         List<int[]> ret = new ArrayList<>();
         if (larg().getShape() != null && rarg().getShape() != null)
             ret.add(Shape.broadcastOutputShape(larg().getShape(), rarg().getShape()));
-        ret.add(larg().getShape());
+        else if(larg().getShape() != null)
+            ret.add(larg().getShape());
+
         return ret;
     }
 
@@ -143,19 +152,6 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         return dimension;
     }
 
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initWithArrays(arrayMap);
-        if (args().length > 1 && larg() != null && rarg() != null && larg().getShape() != null && rarg().getShape() != null) {
-            if (Shape.isRowVectorShape(rarg().getShape())) {
-                this.dimension = new int[]{1};
-            } else if(Shape.isColumnVectorShape(rarg().getShape()))
-                this.dimension = new int[]{0};
-            else if (args().length > 1 && larg() != null && rarg() != null && larg().getShape() != null && rarg().getShape() != null && !sameDiff.isPlaceHolder(larg().getVarName()) && !sameDiff.isPlaceHolder(rarg().getVarName()))
-                this.dimension = Shape.getBroadcastDimensions(larg().getShape(), rarg().getShape());
-        }
-
-    }
 
     @Override
     public void setDimension(int... dimension) {

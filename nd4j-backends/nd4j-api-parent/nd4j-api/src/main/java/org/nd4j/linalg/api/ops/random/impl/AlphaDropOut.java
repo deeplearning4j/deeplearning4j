@@ -25,7 +25,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * AlphaDropOut implementation as Op
@@ -59,6 +61,15 @@ public class AlphaDropOut extends BaseRandomOp {
         init(x, null, z, n);
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("p",p);
+        ret.put("a",a);
+        ret.put("alphaPrime",alphaPrime);
+        ret.put("b",b);
+        return ret;
+    }
 
     @Override
     public int opNum() {

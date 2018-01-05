@@ -10,6 +10,12 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.Map;
 
+
+/**
+ * GRU cell for RNNs
+ *
+ *
+ */
 public class GRUCell extends DynamicCustomOp {
 
     private GRUCellConfiguration configuration;
@@ -21,6 +27,12 @@ public class GRUCell extends DynamicCustomOp {
         super(null, sameDiff, configuration.args());
         this.configuration = configuration;
         addIArgument(configuration.iArgs());
+    }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return configuration.toProperties();
     }
 
     @Override

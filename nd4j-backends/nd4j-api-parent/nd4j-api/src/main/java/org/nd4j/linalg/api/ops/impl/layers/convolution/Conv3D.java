@@ -3,17 +3,17 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -60,8 +60,65 @@ public class Conv3D extends DynamicCustomOp {
     }
 
     @Override
+    public Map<String, Object> propertiesForFunction() {
+        return config.toProperties();
+    }
+
+    @Override
     public String opName() {
         return "conv3d";
+    }
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+        val strideMapping = PropertyMapping.builder()
+                .tfAttrName("strides")
+                .onnxAttrName("strides")
+                .build();
+
+
+
+        val kernelMapping = PropertyMapping.builder()
+                .propertyNames(new String[]{"kh","kw"})
+                .tfInputPosition(1)
+                .onnxAttrName("kernel_shape")
+                .build();
+
+        val dilationMapping = PropertyMapping.builder()
+                .onnxAttrName("dilations")
+                .propertyNames(new String[]{"dw","dh"})
+                .tfAttrName("rates")
+                .build();
+
+
+
+        val sameMode = PropertyMapping.builder()
+                .onnxAttrName("auto_pad")
+                .propertyNames(new String[]{"isSameMode"})
+                .tfAttrName("padding")
+                .build();
+
+        val paddingWidthHeight = PropertyMapping.builder()
+                .onnxAttrName("padding")
+                .propertyNames(new String[]{"ph","pw"})
+                .build();
+
+
+        map.put("sx", strideMapping);
+        map.put("sy", strideMapping);
+        map.put("kh", kernelMapping);
+        map.put("kw", kernelMapping);
+        map.put("dw", dilationMapping);
+        map.put("dh", dilationMapping);
+        map.put("isSameMode",sameMode);
+        map.put("ph", paddingWidthHeight);
+        map.put("pw", paddingWidthHeight);
+
+        ret.put(onnxName(),map);
+        ret.put(tensorflowName(),map);
+        return ret;
     }
 
 

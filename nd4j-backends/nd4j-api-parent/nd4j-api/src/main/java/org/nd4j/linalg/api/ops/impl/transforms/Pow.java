@@ -108,7 +108,7 @@ public class Pow extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable g = f().mul(f().pow(arg(),scalarValue.doubleValue()),i_v1.get(0));
+        SDVariable g = f().powDerivative(arg(), i_v1.get(0), this.pow);
 
         return Arrays.asList(g);
     }

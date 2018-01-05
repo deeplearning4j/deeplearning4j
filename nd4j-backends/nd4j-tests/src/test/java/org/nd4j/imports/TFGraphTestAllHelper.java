@@ -109,6 +109,9 @@ public class TFGraphTestAllHelper {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
                     INDArray tfValue = intermediateVars(modelName, baseDir, varName);
+                    if(tfValue == null) {
+                        continue;
+                    }
                     assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getShape()));
                     assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
                     log.info("\n\tShapes equal for " + varName);
@@ -136,6 +139,7 @@ public class TFGraphTestAllHelper {
             //log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
+
             //assertTrue(results.length > 0); //FIXME: Later
 
             //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/conv_0.fb"));

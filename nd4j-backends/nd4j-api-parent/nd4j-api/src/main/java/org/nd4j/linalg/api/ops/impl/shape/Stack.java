@@ -5,11 +5,13 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -61,4 +63,27 @@ public class Stack  extends DynamicCustomOp {
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         throw new UnsupportedOperationException("No analog found for onnx for " + opName());
     }
+
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        val axisMapping = PropertyMapping.builder()
+                .onnxAttrName("axis")
+                .tfInputPosition(-1)
+                .propertyNames(new String[]{"axis"})
+                .build();
+
+        map.put("axis",axisMapping);
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
+
+
+
 }

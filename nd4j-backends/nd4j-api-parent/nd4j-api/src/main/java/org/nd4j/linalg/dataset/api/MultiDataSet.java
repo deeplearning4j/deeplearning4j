@@ -130,7 +130,7 @@ public interface MultiDataSet extends Serializable {
     void load(File from) throws IOException;
 
     /**
-     * Split the MultiDataSet into a list of individual examples.
+     * SplitV the MultiDataSet into a list of individual examples.
      *
      * @return List of MultiDataSets, each with 1 example
      */

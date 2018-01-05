@@ -5,6 +5,9 @@ import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Builder
 @Data
 public class LSTMCellConfiguration {
@@ -37,6 +40,17 @@ public class LSTMCellConfiguration {
     private double forgetBias;
     //input variables
     private SDVariable xt,ht_1,ct_1,Wx,Wh,Wc,Wp,b;
+
+    public Map<String,Object> toProperties()  {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("peepHole",peepHole);
+        ret.put("projection",projection);
+        ret.put("clippingCellValue",clippingCellValue);
+        ret.put("clippingProjValue",clippingProjValue);
+        ret.put("forgetBias",forgetBias);
+        return ret;
+    }
+
 
     public SDVariable[] args()  {
         return new SDVariable[] {xt,ht_1,ct_1,Wx,Wh,Wc,Wp,b};

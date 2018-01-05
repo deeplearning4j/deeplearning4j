@@ -5267,6 +5267,16 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native ShapeList calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
     public native ShapeList calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
 
+    public native ShapeList calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, FloatPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, FloatBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, float[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") ShortPointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") ShortBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, @Cast("float16*") short[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, IntPointer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, DoubleBuffer tArgs, int numTArgs, IntBuffer iArgs, int numIArgs);
+    public native ShapeList calculateOutputShapesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, int[] iArgs, int numIArgs);
+
     public native void deleteShapeList(@Cast("Nd4jPointer") Pointer shapeList);
 
     public native int registerGraphFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jIndex") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
@@ -10557,6 +10567,9 @@ public static final long MAX_UINT = MAX_UINT();
             public native @StdVector FloatPointer getTArguments();
             public native @StdVector IntPointer getIArguments();
 
+            public native int numT();
+            public native int numI();
+
             public native IntIntPair input(int idx);
 
             public native int opNum();
@@ -10607,6 +10620,9 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("float16*") @StdVector ShortPointer getTArguments();
             public native @StdVector IntPointer getIArguments();
 
+            public native int numT();
+            public native int numI();
+
             public native IntIntPair input(int idx);
 
             public native int opNum();
@@ -10656,6 +10672,9 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native @StdVector DoublePointer getTArguments();
             public native @StdVector IntPointer getIArguments();
+
+            public native int numT();
+            public native int numI();
 
             public native IntIntPair input(int idx);
 

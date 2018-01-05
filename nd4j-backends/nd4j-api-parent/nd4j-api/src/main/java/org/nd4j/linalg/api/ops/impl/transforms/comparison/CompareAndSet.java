@@ -26,7 +26,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Element-wise Compare-and-set implementation as Op
@@ -227,6 +229,17 @@ public class CompareAndSet extends BaseTransformOp {
         this.mode = 0;
         init(x, null, x, n);
     }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("compare",compare);
+        ret.put("set",set);
+        ret.put("eps",eps);
+        ret.put("mode",mode);
+        return ret;
+    }
+
 
     @Override
     public int opNum() {

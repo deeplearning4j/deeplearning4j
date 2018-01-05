@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
+import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
@@ -12,7 +13,9 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.FunctionProperties;
+import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.graph.*;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -22,6 +25,9 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
@@ -41,6 +47,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.primitives.AtomicBoolean;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -80,7 +87,8 @@ public class SameDiff {
     private Map<String[],DifferentialFunction> incomingArgs;
     private Map<String[],DifferentialFunction> outgoingArgs;
     private Map<String,String[]> incomingArgsReverse;
-    private Map<String,String[]> ougoingArgsReverse;
+    private Map<String,String[]> outgoingArgsReverse;
+    private Map<String,int[]> permuteOrder;
     private boolean shouldBootStrap = true;
     private Set<String> importedVarName;
     //map a function's instance id to a base name, used for propagating variable names
@@ -100,6 +108,31 @@ public class SameDiff {
     private Map<String,List<DifferentialFunction>> functionsArgsFor;
     private Map<String,List<DifferentialFunction>> functionOutputFor;
 
+    /**
+     * For import, many times we have variables
+     * that map to properties. Most common
+     * we will have an input to a function that is mapped to an ndarray.
+     * That ndarray is usually a scalar shape.
+     *
+     * That array with a scalar shape can be something like an axis.
+     *
+     * We often don't know that array's value till run time.
+     * This map stores variable names  that we should resolve
+     * from samediff. We use the value of that array
+     * to update the properties.
+     */
+    private Map<String,List<String>> propertiesToResolve;
+
+    /**
+     * A map of own name to
+     * the properties of the function (things like execution axes etc)
+     * The valid values can be:
+     * int
+     * long
+     * INDArray
+     */
+    private Map<String,Map<String,Object>> propertiesForFunction;
+
 
     private Map<String,List<String[]>> placeHolderMap;
     private Map<String,int[]> placeHolderOriginalShapes;
@@ -109,7 +142,7 @@ public class SameDiff {
     private Map<String,SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String,SameDiff> sameDiffFunctionInstances;
     private Set<String> placeHolderFunctions;
-    private static Cloner cloner = new Cloner();
+    private static Cloner cloner = newCloner();
     private static Map<String,Method> opMethods;
 
     private  Map<String,DifferentialFunction> functionInstancesById;
@@ -140,6 +173,18 @@ public class SameDiff {
         }
     }
 
+    public static Cloner newCloner(){
+        Cloner cloner = new Cloner();
+
+        //Implement custom cloning for INDArrays (default can have problems with off-heap and pointers)
+        //Sadly: the cloner library does NOT support interfaces here, hence we need to use the actual classes
+        //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
+        IFastCloner fc = new INDArrayFastCloner();
+        cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
+        cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
+        return cloner;
+    }
+
 
 
     /**
@@ -152,10 +197,11 @@ public class SameDiff {
         SDVariable oldVarNameRef = getVariable(varName);
         variableMap.remove(oldVarNameRef.getVarName());
         val oldVarName = varName;
+        oldVarNameRef.setVarName(withName);
         variableMap.put(withName,oldVarNameRef);
 
 
-        for(val reverseValues : ougoingArgsReverse.entrySet()) {
+        for(val reverseValues : outgoingArgsReverse.entrySet()) {
             for(int i = 0; i < reverseValues.getValue().length; i++) {
                 if(reverseValues.getValue()[i].equals(oldVarName)) {
                     reverseValues.getValue()[i] = withName;
@@ -309,13 +355,18 @@ public class SameDiff {
 
         val newFunctions = new LinkedHashMap<String,DifferentialFunction>();
         for(DifferentialFunction function :functionInstancesById.values())  {
+            if(function instanceof SDVariable) {
+                continue;
+            }
+
             DifferentialFunction clone = cloner.deepCloneDontCloneInstances(
                     function,
                     function.getSameDiff());
             clone.setSameDiff(sameDiff);
-            clone.setInstanceId(function.getInstanceId());
-            sameDiff.putFunctionForId(function.getInstanceId(),function);
-            newFunctions.put(function.getInstanceId(),clone);
+            clone.setOwnName(function.getOwnName());
+            if(sameDiff.functionExists(function.getOwnName()))
+                sameDiff.putFunctionForId(function.getOwnName(),function);
+            newFunctions.put(function.getOwnName(),clone);
 
             val argsForFunction = function.args();
             val outputsForFunction = function.outputVariables();
@@ -333,6 +384,7 @@ public class SameDiff {
                 output.setSameDiff(sameDiff);
             }
 
+            sameDiff.functionInstancesById.put(function.getOwnName(),function);
         }
 
         for(val reverseArrayEntry : reverseArrayLookup.entrySet()) {
@@ -344,10 +396,18 @@ public class SameDiff {
     }
 
 
+    /**
+     * Returns true if the given function id exists
+     * @param id the function id to test for
+     * @return true if the function id exists, false otherwise
+     */
+    public boolean functionExists(String id) {
+        return functionInstancesById.containsKey(id);
+    }
 
 
     /**
-     * Get the function by the {@link DifferentialFunction#getInstanceId()}
+     * Get the function by the {@link DifferentialFunction#getOwnName()}
      * @param id the id of the function
      * @return the function for the given id if it exists
      */
@@ -369,6 +429,10 @@ public class SameDiff {
             throw new ND4JIllegalStateException("Function by id already exists!");
         }
 
+        else if(function instanceof SDVariable) {
+            throw new ND4JIllegalStateException("Function must not be a variable!");
+        }
+
         functionInstancesById.put(id,function);
     }
 
@@ -382,9 +446,9 @@ public class SameDiff {
      * @return the input ids for a given function
      */
     public String[] getInputsForFunction(DifferentialFunction function) {
-        if(!incomingArgsReverse.containsKey(function.getInstanceId()))
-            throw new ND4JIllegalStateException("Illegal function instance id found " + function.getInstanceId());
-        return incomingArgsReverse.get(function.getInstanceId());
+        if(!incomingArgsReverse.containsKey(function.getOwnName()))
+            throw new ND4JIllegalStateException("Illegal function instance id found " + function.getOwnName());
+        return incomingArgsReverse.get(function.getOwnName());
     }
 
     /**
@@ -394,7 +458,7 @@ public class SameDiff {
      * @return the outputs ids for a given function
      */
     public String[] getOutputsForFunction(DifferentialFunction function) {
-        return ougoingArgsReverse.get(function.getInstanceId());
+        return outgoingArgsReverse.get(function.getOwnName());
     }
 
 
@@ -532,7 +596,7 @@ public class SameDiff {
     /**
      * Associate a vertex id with the given shape.
      * @param varName the vertex id to associate
-     * @param shape the shape to assciate with
+     * @param shape the shape to associate with
      */
     public void putShapeForVarName(String varName, int[] shape) {
         if(shape == null || shape.length < 2) {
@@ -589,6 +653,11 @@ public class SameDiff {
     public void associateArrayWithVariable(INDArray arr, SDVariable variable) {
         reverseArrayLookup.put(arr,variable);
         variableNameToArr.put(variable.getVarName(),arr);
+        if(!shapeAlreadyExistsForVarName(variable.getVarName()))
+            putShapeForVarName(variable.getVarName(),arr.shape());
+        else {
+            updateShapeForVarName(variable.getVarName(),arr.shape());
+        }
     }
 
 
@@ -712,15 +781,129 @@ public class SameDiff {
         incomingArgs = new LinkedHashMap<>();
         outgoingArgs = new LinkedHashMap<>();
         incomingArgsReverse = new LinkedHashMap<>();
-        ougoingArgsReverse = new LinkedHashMap<>();
+        outgoingArgsReverse = new LinkedHashMap<>();
         this.functionInstancesById = new LinkedHashMap<>();
         placeHolderFunctions = new LinkedHashSet<>();
         functionsArgsFor = new LinkedHashMap<>();
         functionOutputFor = new LinkedHashMap<>();
         baseNameForFunctionInstanceId = new LinkedHashMap<>();
         importedVarName = new LinkedHashSet<>();
+        permuteOrder = new LinkedHashMap<>();
+        propertiesToResolve = new LinkedHashMap<>();
+        propertiesForFunction = new LinkedHashMap<>();
 
     }
+
+    /**
+     * Adds a property that needs to be resolve for later.
+     * These variables are typically values that are arrays
+     * that are named but have an unknown value till execution time.
+     *
+     * This is very common for model import.
+     * @param forFunction the function to add the property to resolve for
+     * @param arrayName the array name
+     */
+    public void addPropertyToResolve(DifferentialFunction forFunction,String arrayName) {
+        if(!propertiesToResolve.containsKey(forFunction.getOwnName())) {
+            List<String> newVal = new ArrayList<>();
+            newVal.add(arrayName);
+            propertiesToResolve.put(forFunction.getOwnName(),newVal);
+        }
+        else {
+            List<String> newVal = propertiesToResolve.get(forFunction.getOwnName());
+            newVal.add(arrayName);
+        }
+
+    }
+
+    /**
+     * Return the properties to resolve for the given function.
+     * This is typically used right before execution in model import in
+     * {@link DifferentialFunction#resolvePropertiesFromSameDiffBeforeExecution()}
+     * @param function the function get the properties to resolve for
+     * @return the properties to resolve for the given function
+     */
+    public List<String> propertiesToResolveForFunction(DifferentialFunction function) {
+        if(!propertiesToResolve.containsKey(function.getOwnName()))
+            return Collections.emptyList();
+
+        return propertiesToResolve.get(function.getOwnName());
+    }
+
+
+    /**
+     * Returns true if the given function
+     * has ndarray properties to resolve.
+     *
+     * @param function the function to check
+     * @return true if the function has yet to be resolved properties
+     */
+    public boolean hasPropertiesToResolve(DifferentialFunction function) {
+        return propertiesToResolve.containsKey(function.getOwnName());
+    }
+
+
+    /**
+     * Get the property for a given function
+     * @param functionInstance the function to get the
+     *                         property for
+     * @param propertyName the name of the property to get
+     * @param <T> the inferred return type
+     * @return the property for the given function
+     */
+    public <T> T getPropertyForFunction(DifferentialFunction functionInstance,String propertyName) {
+        if(!propertiesForFunction.containsKey(functionInstance.getOwnName())) {
+            return null;
+        }
+        else {
+            val map = propertiesForFunction.get(functionInstance.getOwnName());
+            return (T) map.get(propertyName);
+
+        }
+    }
+
+    /**
+     * Add a property for the given function
+     * @param functionFor the function add a property for
+     * @param propertyName the property name
+     * @param property the property value
+     */
+    public void addPropertyForFunction(DifferentialFunction functionFor,String propertyName,INDArray property) {
+        addPropertyForFunction(functionFor,propertyName,(Object) property);
+    }
+
+
+    /**
+     *  Add a property for the given function
+     * @param functionFor the function to add the property for
+     * @param propertyName the name of the property to add the value for
+     * @param property the property value to add
+     */
+    public void addPropertyForFunction(DifferentialFunction functionFor,String propertyName,long property) {
+        addPropertyForFunction(functionFor,propertyName,(Object) property);
+    }
+
+
+
+    private void addPropertyForFunction(DifferentialFunction functionFor,String propertyName,Object propertyValue) {
+        if(!propertiesForFunction.containsKey(functionFor.getOwnName())) {
+            Map<String,Object> fields = new LinkedHashMap<>();
+            fields.put(propertyName,propertyValue);
+            propertiesForFunction.put(functionFor.getOwnName(),fields);
+        }
+        else {
+            val fieldMap = propertiesForFunction.get(functionFor.getOwnName());
+            if(fieldMap.containsKey(propertyName)) {
+                throw new ND4JIllegalStateException("Attempting to override property " + propertyName);
+            }
+
+            fieldMap.put(propertyName,propertyValue);
+        }
+    }
+
+
+
+
 
     /**
      * Returns true if the variable name is imported
@@ -752,7 +935,7 @@ public class SameDiff {
      * @param function the function to declare a base name for.
      */
     public void setBaseNameForFunctionInstanceId(String baseName,DifferentialFunction function) {
-        baseNameForFunctionInstanceId.put(function.getInstanceId(),baseName);
+        baseNameForFunctionInstanceId.put(function.getOwnName(),baseName);
     }
 
     /**
@@ -763,7 +946,7 @@ public class SameDiff {
      * on the function's instance id.
      */
     public String getBaseNameForFunction(DifferentialFunction function) {
-        return baseNameForFunctionInstanceId.get(function.getInstanceId());
+        return baseNameForFunctionInstanceId.get(function.getOwnName());
     }
 
 
@@ -823,10 +1006,10 @@ public class SameDiff {
      */
     public void addOutgoingFor(String[] varNames, DifferentialFunction function) {
 
-        if(function.getInstanceId() == null)
+        if(function.getOwnName() == null)
             throw new ND4JIllegalStateException("Instance id can not be null. Function not initialized properly");
 
-        if(ougoingArgsReverse.containsKey(function.getInstanceId())) {
+        if(outgoingArgsReverse.containsKey(function.getOwnName())) {
             throw new ND4JIllegalStateException("Outgoing arguments already declared for " + function);
         }
 
@@ -839,7 +1022,7 @@ public class SameDiff {
                 throw new ND4JIllegalStateException("Variable name elements can not be null!");
         }
 
-        ougoingArgsReverse.put(function.getInstanceId(),varNames);
+        outgoingArgsReverse.put(function.getOwnName(),varNames);
         outgoingArgs.put(varNames,function);
 
         for(val resultName : varNames) {
@@ -860,19 +1043,19 @@ public class SameDiff {
      * @param function
      */
     public void addArgsFor(String[] variables, DifferentialFunction function) {
-        if(function.getInstanceId() == null)
+        if(function.getOwnName() == null)
             throw new ND4JIllegalStateException("Instance id can not be null. Function not initialized properly");
 
         //double check if function contains placeholder args
         for(val varName : variables) {
             if(isPlaceHolder(varName)) {
-                placeHolderFunctions.add(function.getInstanceId());
+                placeHolderFunctions.add(function.getOwnName());
             }
         }
 
 
         incomingArgs.put(variables,function);
-        incomingArgsReverse.put(function.getInstanceId(),variables);
+        incomingArgsReverse.put(function.getOwnName(),variables);
         for(val variableName : variables) {
             List<DifferentialFunction> funcs = functionsArgsFor.get(variableName);
             if(funcs == null) {
@@ -922,7 +1105,7 @@ public class SameDiff {
      * @return true if the function has args false otherwise
      */
     public boolean hasArgs(DifferentialFunction function) {
-        val vertexIdArgs = incomingArgsReverse.get(function.getInstanceId());
+        val vertexIdArgs = incomingArgsReverse.get(function.getOwnName());
         if(vertexIdArgs != null) {
             val args = incomingArgs.get(vertexIdArgs);
             if(args != null)
@@ -1018,7 +1201,7 @@ public class SameDiff {
      * @return
      */
     public SameDiff dup() {
-        Cloner cloner = new Cloner();
+        Cloner cloner = newCloner();
         return cloner.deepClone(this);
     }
 
@@ -1195,6 +1378,42 @@ public class SameDiff {
     }
 
 
+    /**
+     * Remove an argument for a function. Note that if this function
+     * does not contain the argument, it will just be a no op.
+     * @param varName the variable name to remove
+     * @param function the function to remove the argument from
+     */
+    public void removeArgFromFunction(String varName,DifferentialFunction function) {
+        val args = function.args();
+
+        for(int i = 0; i < args.length; i++) {
+            if(args[i].getVarName().equals(varName)) {
+                /**
+                 * Since we are removing the variable reference
+                 * from the arguments we need to  update both
+                 * the reverse and forward arguments.
+                 */
+                val reverseArgs = incomingArgsReverse.get(function.getOwnName());
+                incomingArgs.remove(reverseArgs);
+                incomingArgsReverse.remove(function.getOwnName());
+                val newArgs = new ArrayList<String>(args.length - 1);
+                for(int arg = 0; arg < args.length; arg++) {
+                    if(!reverseArgs[arg].equals(varName)) {
+                        newArgs.add(reverseArgs[arg]);
+                    }
+                }
+
+                val newArgsArr = newArgs.toArray(new String[newArgs.size()]);
+                incomingArgs.put(newArgsArr,function);
+                incomingArgsReverse.put(function.getOwnName(),newArgsArr);
+                //no further need to scan
+                break;
+            }
+        }
+
+
+    }
 
 
     /**
@@ -1336,7 +1555,6 @@ public class SameDiff {
                 .build();
 
         val outputVertexId = conv2D.outputVariables()[0];
-        updateVariableName(outputVertexId.getVarName(),generateVariableName(conv2D.opName(),false,inputs));
         return outputVertexId;
     }
 
@@ -1355,7 +1573,6 @@ public class SameDiff {
                 .build();
 
         val outputVars = conv3D.outputVariables();
-        updateVariableName(outputVars[0].getVarName(),generateVariableName(conv3D.opName(),false,inputs));
         return outputVars[0];
     }
 
@@ -1656,6 +1873,17 @@ public class SameDiff {
         return log(null,iX);
     }
 
+
+    /**
+     *
+     * @param iX
+     * @return
+     */
+    public SDVariable cube(SDVariable iX) {
+        return cube(null,iX);
+    }
+
+
     /**
      *
      * @param iX
@@ -1717,7 +1945,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
-        return gradientBackwardsMarker(generateVariableName(new GradientBackwardsMarker().opName(),true,iX),iX);
+        return gradientBackwardsMarker(generateNewVarName(new GradientBackwardsMarker().opName(),0),iX);
     }
 
 
@@ -1833,6 +2061,17 @@ public class SameDiff {
         return mean(null,iX);
     }
 
+
+    /**
+     *
+     * @param iX
+     * @param dimension
+     * @return
+     */
+    public SDVariable mean(SDVariable iX, int... dimension){
+        return mean(null, iX, dimension);
+    }
+
     /**
      *
      * @param iX
@@ -1937,6 +2176,19 @@ public class SameDiff {
         return rollAxis(null,x,axis);
     }
 
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @param transpose
+     * @return
+     */
+    public SDVariable mmul(SDVariable x, SDVariable y, MMulTranspose transpose) {
+        return mmul(null,x,y,transpose);
+
+    }
+
     /**
      *
      * @param x
@@ -1969,7 +2221,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return cosineSimilarity(generateVariableName("cosineSimilarity",false,iX,i_y),iX,i_y,dimensions);
+        return cosineSimilarity(generateNewVarName(new CosineSimilarity().opName(),0),iX,i_y,dimensions);
     }
 
     /**
@@ -1980,7 +2232,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return euclideanDistance(generateVariableName("euclideandistance",false,iX,i_y),iX,i_y,dimensions);
+        return euclideanDistance(generateNewVarName(new EuclideanDistance().opName(),0),iX,i_y,dimensions);
     }
 
     /**
@@ -1991,7 +2243,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable manhattanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return manhattanDistance(generateVariableName("manhattanDistance",false,iX,i_y),iX,i_y,dimensions);
+        return manhattanDistance(generateNewVarName(new ManhattanDistance().opName(),0),iX,i_y,dimensions);
     }
 
     /**
@@ -2002,7 +2254,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossBinaryXENT(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossBinaryXENT(generateVariableName("lossBinaryXENT",false,iX,i_y),iX,i_y,dimensions);
+        return lossBinaryXENT(generateNewVarName(new LossBinaryXENT().opName(),0),iX,i_y,dimensions);
     }
 
     /**
@@ -2013,7 +2265,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossCosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossCosineSimilarity(null,iX,i_y,dimensions);
+        return lossCosineSimilarity(generateNewVarName(new LossCosineProximity().opName(),0),iX,i_y,dimensions);
     }
 
     /**
@@ -2024,7 +2276,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossHinge(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossHinge(generateVariableName("lossHinge",false,iX,i_y),iX,i_y,dimensions);
+        return lossHinge(generateNewVarName(new LossHinge().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2036,7 +2288,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossKLD(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossKLD(generateVariableName("lossKKLD",false,iX,i_y),iX,i_y,dimensions);
+        return lossKLD(generateNewVarName(new LossKLD().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2048,7 +2300,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossL1(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossL1(generateVariableName("lossL1",false,iX),iX,i_y,dimensions);
+        return lossL1(generateNewVarName(new LossL1().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2060,7 +2312,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossL2(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossL2(generateVariableName("lossL2",false,iX),iX,i_y,dimensions);
+        return lossL2(generateNewVarName(new LossL2().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2072,7 +2324,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMAE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMAE(generateVariableName("lossMAE",false,iX,i_y),iX,i_y,dimensions);
+        return lossMAE(generateNewVarName(new LossMAE().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2084,7 +2336,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMSE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMSE(generateVariableName("lossMSE",false,iX,i_y),iX,i_y,dimensions);
+        return lossMSE(generateNewVarName(new LossMSE().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2096,7 +2348,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMCXENT(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMCXENT(generateVariableName("lossMCXENT",false,iX,i_y),iX,i_y,dimensions);
+        return lossMCXENT(generateNewVarName(new LossMCXENT().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2108,7 +2360,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossMSLE(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossMSLE(null,iX,i_y,dimensions);
+        return lossMSLE(generateNewVarName(new LossMSLE().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2120,7 +2372,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossNegativeLogLikelihood(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossNegativeLogLikelihood(generateVariableName("lossNegativeLogLikelihood",false,iX,i_y),iX,i_y,dimensions);
+        return lossNegativeLogLikelihood(generateNewVarName(new LossNegativeLogLikelihood().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2132,7 +2384,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossPoisson(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossPoisson(generateVariableName("lossPoisson",false,iX,i_y),iX,i_y,dimensions);
+        return lossPoisson(generateNewVarName(new LossPoisson().opName(),0),iX,i_y,dimensions);
 
     }
 
@@ -2145,7 +2397,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable lossSquaredHinge(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return lossSquaredHinge(generateVariableName("lossPoisson",false,iX,i_y),iX,i_y,dimensions);
+        return lossSquaredHinge(generateNewVarName(new LossSquaredHinge().opName(),0),iX,i_y,dimensions);
     }
 
 
@@ -2506,6 +2758,18 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable cube(String name,SDVariable iX) {
+        SDVariable result = functionFactory.cube(iX);
+        return updateVariableNameAndReference(result,name);
+
+    }
+
+
+    /**
+     *
+     * @param iX
+     * @return
+     */
     public SDVariable sqrt(String name,SDVariable iX) {
         SDVariable result = functionFactory.sqrt(iX);
         return updateVariableNameAndReference(result,name);
@@ -2716,7 +2980,11 @@ public class SameDiff {
     public SDVariable mean(String name,SDVariable iX) {
         SDVariable result = functionFactory.mean(iX);
         return updateVariableNameAndReference(result,name);
+    }
 
+    public SDVariable mean(String name,SDVariable iX, int... dimension) {
+        SDVariable result = functionFactory.mean(iX, dimension);
+        return updateVariableNameAndReference(result,name);
     }
 
     /**
@@ -2734,7 +3002,6 @@ public class SameDiff {
                 biasCorrected ,
                 dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -2816,7 +3083,6 @@ public class SameDiff {
      */
     public SDVariable reshape(String name,SDVariable iX,
                               int...shape) {
-        shape = Shape.resolveNegativeShapeIfNeccessary(shape,iX.getShape());
         SDVariable result = functionFactory
                 .reshape(iX,shape);
         return updateVariableNameAndReference(result,name);
@@ -2847,6 +3113,20 @@ public class SameDiff {
 
     }
 
+
+    /**
+     *
+     * @param x
+     * @param y
+     * @param transpose
+     * @return
+     */
+    public SDVariable mmul(String name, SDVariable x, SDVariable y, MMulTranspose transpose) {
+        SDVariable result = functionFactory.mmul(x, y,transpose);
+        return updateVariableNameAndReference(result,name);
+
+    }
+
     /**
      *
      * @param x
@@ -2854,8 +3134,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable mmul(String name,SDVariable x, SDVariable y) {
-        SDVariable result = functionFactory.mmul(x, y);
-        return updateVariableNameAndReference(result,name);
+        return mmul(name,x,y,MMulTranspose.allFalse());
 
     }
 
@@ -3247,7 +3526,7 @@ public class SameDiff {
                 val descriptor = customOp.getDescriptor();
                 //can't guess number of outputs, variable
                 if(descriptor == null || descriptor.getNumOutputs() <= 0) {
-                    return new SDVariable[0];
+                    throw new ND4JIllegalStateException("No output variables found!");
                 }
                 else {
                     SDVariable[] ret = new SDVariable[descriptor.getNumOutputs()];
@@ -3307,13 +3586,26 @@ public class SameDiff {
 
         SDVariable[] ret = new SDVariable[outputShape.size()];
 
+        // ownName/baseName will be used to get variables names
+        val ownName = function.getOwnName();
+        val rootName = baseName;
         for(int i = 0; i < ret.length; i++) {
             val shape = outputShape.get(i);
+            // it should be: rootName:index. i.e.: split:1, split:2, split:3, split:4 etc
+            baseName = rootName + (i > 0 ? ":" + i : "");
             SDVariable checkGet = getVariable(baseName);
-            if(checkGet == null) {
-                checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape);
-            }
-            else if(!importedVarName.contains(baseName)) {
+            if (checkGet == null) {
+                // obviously - there's no such var, just add it
+                checkGet = var(baseName, shape);
+            } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
+                // var exists, let's update its shape
+                putShapeForVarName(checkGet.getVarName(), shape);
+            } else if (shape != null && shapeAlreadyExistsForVarName(checkGet.getVarName())) {
+                // no-op.
+                // TODO: maybe we should check shapes equality here?
+                // it's either var that already exist, or something bad happening
+            } else if(!importedVarName.contains(baseName)) {
+                // FIXME: dead end.  it's impossble to get here with null as shape
                 //need to find a new name
                 int count = 1;
                 String name = baseName + "_" + count   + (i > 0 ? ":" +  i : "");
@@ -3329,9 +3621,6 @@ public class SameDiff {
 
                 checkGet = var(name,shape);
             }
-
-            else if(shape != null)
-                putShapeForVarName(checkGet.getVarName(),shape);
 
             if(checkGet == null) {
                 checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape);
@@ -3357,37 +3646,6 @@ public class SameDiff {
     }
 
 
-    /**
-     *
-     * @param funcName
-     * @param grad
-     * @param inputs
-     * @return
-     */
-    public String generateVariableName(String funcName,boolean grad,SDVariable...inputs) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(funcName).append("(");
-        if(inputs != null) {
-            for (SDVariable variable : inputs) {
-                if(variable == null) {
-                    throw new ND4JIllegalStateException("Found null variable when attempting to generate variable name for function " + funcName);
-                }
-                sb.append(variable.getVarName());
-                if (grad) {
-                    sb.append("-grad");
-                }
-
-                sb.append("-");
-
-
-                sb.append(",");
-            }
-        }
-
-
-        return sb.toString();
-
-    }
 
 
 
@@ -3696,13 +3954,17 @@ public class SameDiff {
 
                     outer.invokeGraphOn(sameDiff);
 
-                    List<DifferentialFunction> allFunctions = new ArrayList<DifferentialFunction>(sameDiff.functionInstancesById.values());
+                    List<DifferentialFunction> allFunctions = new ArrayList<>(sameDiff.functionInstancesById.values());
                     if(allFunctions.isEmpty()) {
                         throw new ND4JIllegalStateException("No ops found!");
                     }
 
 
                     for(val func : allFunctions) {
+                        if(func instanceof SDVariable) {
+                            continue;
+                        }
+
                         val args = func.args();
                         for(val arg : args)
                             arg.setSameDiff(sameDiff);
@@ -3791,8 +4053,14 @@ public class SameDiff {
      */
     public INDArray execBackwardAndEndResult() {
         List<DifferentialFunction> backwards = execBackwards().getRight();
-        Op op = (Op) backwards.get(backwards.size() - 1);
-        return op.z();
+        DifferentialFunction df = backwards.get(backwards.size() - 1);
+        if(df instanceof Op) {
+            return ((Op) df).z();
+        } else if(df instanceof DynamicCustomOp){
+            return ((DynamicCustomOp) df).getOutputArgument(0);
+        } else {
+            return null;
+        }
     }
 
 
@@ -3875,6 +4143,9 @@ public class SameDiff {
      */
     public void addAsPlaceHolder(String varName) {
         placeHolderVarNames.add(varName);
+        if(getVariable(varName) != null && getVariable(varName).getShape() != null) {
+            placeHolderOriginalShapes.put(varName,getVariable(varName).getShape());
+        }
     }
 
 
@@ -3882,7 +4153,1272 @@ public class SameDiff {
      * Resolve all ndarrays by updating the variables
      * for each array specified in the given map.
      * An {@link IllegalStateException} will be thrown
-     * if not all arrays are specified for resolution.
+     * if not all arrays are
+     Facebook
+
+     ￼
+     ￼
+     ￼
+     Search
+     ￼
+     Adam
+     Home
+     Friend Requests
+     Messages
+     Notifications
+     Account Settings
+     ￼
+     Adam Gibson
+     News Feed
+     Messenger
+     Shortcuts
+     IQA(Image Processing QnA) : 영상처리 묻고 답하기
+     20+
+     Montreal.AI
+     1
+     Machine Learning Tokyo (study group)
+     7
+     Foreigners in Tokyo
+     1
+     Artificial Intelligence & Deep Learning Memes For Back-propagated Poets
+     PnPJapan Batch Members
+     IoT, Deep Learning, Smart Factory, Smart City (smartbean.org forum)
+     Explore
+     2
+     Events
+     Groups
+     Pages
+     Friend Lists
+     4
+     On This Day
+     20+
+     Pages Feed
+     Manage Apps
+     Photos
+     Insights
+     Games
+     See More...
+     Create
+     Ad · Page · Group · Event
+     Stories
+     question-solid
+     ￼
+     Raj
+     ￼
+     Jacob
+     ￼
+     Ivan
+     ￼
+     Mary
+     ￼
+     Ritesh
+     ￼
+     Yohhei
+     chevron-right
+     ￼
+     2 event invites
+     birthday
+     Keigo Hattori's birthday is today
+     English (US) · 日本語 · Español · Português (Brasil) · Français (France)
+     Privacy · Terms · Advertising · Ad Choices · Cookies ·
+     More
+     Facebook © 2017
+
+     Make PostPhoto/Video AlbumChoose a file to upload￼￼Choose FilesLive Video
+     ￼
+     ￼
+     What's on your mind?
+     Photo/Video￼￼Choose Files
+     Feeling/Activity
+     News Feed
+     ￼
+     ‎Suzana Ilić‎ to Machine Learning Tokyo (study group)
+     1 hr · ￼
+     Hi all! I just wanted to say that I'm very proud of our group, we started 6 months ago and had over 200 hours of Machine Learning study! お疲れ様でした！Now, the Lodge is closed for 2 weeks and it's a good time for us to take some time off as well! I will let you know when our first session in 2018 will kick off and until then: To a happy, healthy and unforgettable new year! ￼<3
+     Like
+     Show more reactions
+     Comment
+     Share
+     5 Leung Tatsu, Билгээ Баяраа and 3 others
+     Comments
+     ￼
+     Hiromi Oyama
+     Manage
+     LikeShow more reactions · Reply · 54m
+     ￼
+     Hiromi Oyama Happy holidays!
+     Manage
+     LikeShow more reactions · Reply · 53m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     Masato Uehara was tagged in a photo.
+     ￼
+     Takafumi Matsudome is feeling thankful with Ryusuke Izumida and 3 others.
+     16 mins · Minato-ku ·
+     #BOP #WASSHA #ハッカソン #チームタロ
+     3月のBOPハッカソンで出会ったメンバーで、忘年会できるって、嬉しい限り。
+     また来年もまた集まってなんかするーーー！！
+     See Translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     6 6
+     Comments
+     ￼
+     Satoshi Akita たのしそう！！
+     Manage
+     LikeShow more reactions · Reply · See Translation · 8m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yoonchul Shin shared 마링의 마음상담소's post.
+     20 hrs · ￼
+     다시합니다.
+     See Translation
+     ￼
+     마링의 마음상담소￼Like Page
+     20 hrs · ￼
+     -일시: 2018.01.03~ 2018.01.17
+     -장소: 상수역 1번출구 코코갤러리
+
+     '마음은 볼 수 없습니다.'
+     그래요 어떻게 보나요 눈을 씻고...
+     See More
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     14 14
+     Comments
+     ￼
+     Jae Seok Kim 보러갈께유
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 20h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     박성근 오 또 보러가야하는데...
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     이지나 전시회 시간이 어떻게 돼요??
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 3 Replies
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Leung Tatsu
+     16 hrs · ￼
+     Already Put it into the list of hk trip from 2/10 to 2/19￼😎
+     What a shame that haven visited Hidden agenda yet￼😝
+     ￼
+     香港最老的爵士樂酒吧：不收入場費、親民貼地的La La Land - The News Lens 關鍵評論網
+     爵士樂酒吧Ned Kelly Last Stand成立45週年，澳洲老闆Parker接受記者訪問，希望更多人了解他的「娛樂餐飲」意念，以及「Dixieland」這種爵士樂流派的妙處。
+     HK.THENEWSLENS.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     4 4
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes added 5 new photos.
+     19 hrs · ￼
+     The difference 24 hours & 8C make.
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     12 12
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     太郎 スティーブン
+     17 hrs ·
+     CNN is the new Onion.
+     ￼
+     Why kids love 'fascist' cartoons like 'Paw Patrol' and 'Thomas'
+     Young children are drawn to worlds in which identities are fixed and transgressions are met with routine punishment.
+     CNN.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     1 1
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Christian Moen
+     20 hrs ·
+     Shako
+     · See original ·
+     Rate this translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     15 15
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes is with Ben Lowndes and Robyn Lowndes.
+     19 hrs · ￼
+     Watching Mary Poppins #supercalafragalisticexpealidocious
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     11 11
+     Comments
+     ￼
+     Mikayla Phan Where’s mom’s costume??
+     1
+     Manage
+     LikeShow more reactions · Reply · 19h
+     ￼
+     Alexandra McIlwraith aww i want to be there, I know all the words too lol
+     1
+     Manage
+     LikeShow more reactions · Reply · 9h
+     ￼
+     Alison B. Lowndes replied · 1 Reply
+     ￼
+     Mike Wake Too cold to go fly a kite?
+     Manage
+     LikeShow more reactions · Reply · 2h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yuta Okamoto
+     18 hrs ·
+     Twitter
+     · ￼
+     自分の目の前で、技術動向が１日単位で変化していく様子をが見られるのは非常にエキサイティングな経験ですね（キャッチアップできているとは言ってない。
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     8 8
+     Comments
+     ￼
+     大黒 寛仁 「俺たちは雰囲気で」云々
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 15h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Wei Chuan Chen added 2 new photos — with Ariel Marissa.
+     5 hrs · Taito-ku ·
+     Ariel is in Tokyo!!! ￼😍
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     40 40
+     Comments
+     ￼
+     Chris Michael Kelly Ok this is a VERY small world. I did a few musicals with her back home in New York lolol our hometowns are super close!
+     1
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     Laura Floyd Sharp Hay Wei, we missed you at Christmas. Auntie La loves you and very proud of your accomplishments with school and work.
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     More Stories
+     Chat with friends
+     CONTACT PAGES
+     SEE ALL
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     CONTACTS
+     ￼
+     Ritvik Choudhary
+     ￼
+     Eugene Huang
+     ￼
+     Jana Thompson
+     ￼
+     Yoovraj Shinde
+     ￼
+     1h
+     Shawn YS Tan
+     ￼
+     6h
+     Chris Nicholson
+     ￼
+     1m
+     Suzana Ilić
+     ￼
+     HongJoon Kim
+     ￼
+     Erin Akinci
+     ￼
+     Ahyoung Park
+     ￼
+     Tan Zu Puayen
+     ￼
+     Zain Abiddin
+     ￼
+     Lev Sixteenletters
+     ￼
+     Anthony Seungwook Paek
+     ￼
+     Lee SangHoon
+     NEARBY
+     ￼
+     3h
+     Takeshi Izaki
+     永田町
+     MORE CONTACTS (21)
+     ￼
+     Alexander Strunkin
+     ￼
+     Angela Tyson
+     ￼
+     Charles Muguru
+     ￼
+     Cho Sung Kwang
+     ￼
+     Ivan Novikov
+     ￼
+     Jeongyeol Choe
+     ￼
+     Johnathan Davis
+     ￼
+     Jonny Lee
+     ￼
+     Kabjin Kwon
+     ￼
+     Leah Zinn
+     ￼
+     Li Xia
+     ￼
+     Mohit Agrawal
+     ￼
+     Parthojit Chakraborty
+     ￼
+     Robert Haidari
+     ￼
+     Shuntaro Tamura
+     ￼
+     Vicente Vial
+     Facebook
+
+     ￼
+     ￼
+     ￼
+     Search
+     ￼
+     Adam
+     Home
+     Friend Requests
+     Messages
+     Notifications
+     Account Settings
+     ￼
+     Adam Gibson
+     News Feed
+     Messenger
+     Shortcuts
+     IQA(Image Processing QnA) : 영상처리 묻고 답하기
+     20+
+     Montreal.AI
+     1
+     Machine Learning Tokyo (study group)
+     7
+     Foreigners in Tokyo
+     1
+     Artificial Intelligence & Deep Learning Memes For Back-propagated Poets
+     PnPJapan Batch Members
+     IoT, Deep Learning, Smart Factory, Smart City (smartbean.org forum)
+     Explore
+     2
+     Events
+     Groups
+     Pages
+     Friend Lists
+     4
+     On This Day
+     20+
+     Pages Feed
+     Manage Apps
+     Photos
+     Insights
+     Games
+     See More...
+     Create
+     Ad · Page · Group · Event
+     Stories
+     question-solid
+     ￼
+     Raj
+     ￼
+     Jacob
+     ￼
+     Ivan
+     ￼
+     Mary
+     ￼
+     Ritesh
+     ￼
+     Yohhei
+     chevron-right
+     ￼
+     2 event invites
+     birthday
+     Keigo Hattori's birthday is today
+     English (US) · 日本語 · Español · Português (Brasil) · Français (France)
+     Privacy · Terms · Advertising · Ad Choices · Cookies ·
+     More
+     Facebook © 2017
+
+     Make PostPhoto/Video AlbumChoose a file to upload￼￼Choose FilesLive Video
+     ￼
+     ￼
+     What's on your mind?
+     Photo/Video￼￼Choose Files
+     Feeling/Activity
+     News Feed
+     ￼
+     ‎Suzana Ilić‎ to Machine Learning Tokyo (study group)
+     1 hr · ￼
+     Hi all! I just wanted to say that I'm very proud of our group, we started 6 months ago and had over 200 hours of Machine Learning study! お疲れ様でした！Now, the Lodge is closed for 2 weeks and it's a good time for us to take some time off as well! I will let you know when our first session in 2018 will kick off and until then: To a happy, healthy and unforgettable new year! ￼<3
+     Like
+     Show more reactions
+     Comment
+     Share
+     5 Leung Tatsu, Билгээ Баяраа and 3 others
+     Comments
+     ￼
+     Hiromi Oyama
+     Manage
+     LikeShow more reactions · Reply · 54m
+     ￼
+     Hiromi Oyama Happy holidays!
+     Manage
+     LikeShow more reactions · Reply · 53m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     Masato Uehara was tagged in a photo.
+     ￼
+     Takafumi Matsudome is feeling thankful with Ryusuke Izumida and 3 others.
+     16 mins · Minato-ku ·
+     #BOP #WASSHA #ハッカソン #チームタロ
+     3月のBOPハッカソンで出会ったメンバーで、忘年会できるって、嬉しい限り。
+     また来年もまた集まってなんかするーーー！！
+     See Translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     6 6
+     Comments
+     ￼
+     Satoshi Akita たのしそう！！
+     Manage
+     LikeShow more reactions · Reply · See Translation · 8m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yoonchul Shin shared 마링의 마음상담소's post.
+     20 hrs · ￼
+     다시합니다.
+     See Translation
+     ￼
+     마링의 마음상담소￼Like Page
+     20 hrs · ￼
+     -일시: 2018.01.03~ 2018.01.17
+     -장소: 상수역 1번출구 코코갤러리
+
+     '마음은 볼 수 없습니다.'
+     그래요 어떻게 보나요 눈을 씻고...
+     See More
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     14 14
+     Comments
+     ￼
+     Jae Seok Kim 보러갈께유
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 20h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     박성근 오 또 보러가야하는데...
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     이지나 전시회 시간이 어떻게 돼요??
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 3 Replies
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Leung Tatsu
+     16 hrs · ￼
+     Already Put it into the list of hk trip from 2/10 to 2/19￼😎
+     What a shame that haven visited Hidden agenda yet￼😝
+     ￼
+     香港最老的爵士樂酒吧：不收入場費、親民貼地的La La Land - The News Lens 關鍵評論網
+     爵士樂酒吧Ned Kelly Last Stand成立45週年，澳洲老闆Parker接受記者訪問，希望更多人了解他的「娛樂餐飲」意念，以及「Dixieland」這種爵士樂流派的妙處。
+     HK.THENEWSLENS.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     4 4
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes added 5 new photos.
+     19 hrs · ￼
+     The difference 24 hours & 8C make.
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     12 12
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     太郎 スティーブン
+     17 hrs ·
+     CNN is the new Onion.
+     ￼
+     Why kids love 'fascist' cartoons like 'Paw Patrol' and 'Thomas'
+     Young children are drawn to worlds in which identities are fixed and transgressions are met with routine punishment.
+     CNN.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     1 1
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Christian Moen
+     20 hrs ·
+     Shako
+     · See original ·
+     Rate this translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     15 15
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes is with Ben Lowndes and Robyn Lowndes.
+     19 hrs · ￼
+     Watching Mary Poppins #supercalafragalisticexpealidocious
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     11 11
+     Comments
+     ￼
+     Mikayla Phan Where’s mom’s costume??
+     1
+     Manage
+     LikeShow more reactions · Reply · 19h
+     ￼
+     Alexandra McIlwraith aww i want to be there, I know all the words too lol
+     1
+     Manage
+     LikeShow more reactions · Reply · 9h
+     ￼
+     Alison B. Lowndes replied · 1 Reply
+     ￼
+     Mike Wake Too cold to go fly a kite?
+     Manage
+     LikeShow more reactions · Reply · 2h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yuta Okamoto
+     18 hrs ·
+     Twitter
+     · ￼
+     自分の目の前で、技術動向が１日単位で変化していく様子をが見られるのは非常にエキサイティングな経験ですね（キャッチアップできているとは言ってない。
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     8 8
+     Comments
+     ￼
+     大黒 寛仁 「俺たちは雰囲気で」云々
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 15h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Wei Chuan Chen added 2 new photos — with Ariel Marissa.
+     5 hrs · Taito-ku ·
+     Ariel is in Tokyo!!! ￼😍
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     40 40
+     Comments
+     ￼
+     Chris Michael Kelly Ok this is a VERY small world. I did a few musicals with her back home in New York lolol our hometowns are super close!
+     1
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     Laura Floyd Sharp Hay Wei, we missed you at Christmas. Auntie La loves you and very proud of your accomplishments with school and work.
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     More Stories
+     Chat with friends
+     CONTACT PAGES
+     SEE ALL
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     CONTACTS
+     ￼
+     Ritvik Choudhary
+     ￼
+     Eugene Huang
+     ￼
+     Jana Thompson
+     ￼
+     Yoovraj Shinde
+     ￼
+     1h
+     Shawn YS Tan
+     ￼
+     6h
+     Chris Nicholson
+     ￼
+     1m
+     Suzana Ilić
+     ￼
+     HongJoon Kim
+     ￼
+     Erin Akinci
+     ￼
+     Ahyoung Park
+     ￼
+     Tan Zu Puayen
+     ￼
+     Zain Abiddin
+     ￼
+     Lev Sixteenletters
+     ￼
+     Anthony Seungwook Paek
+     ￼
+     Lee SangHoon
+     NEARBY
+     ￼
+     3h
+     Takeshi Izaki
+     永田町
+     MORE CONTACTS (21)
+     ￼
+     Alexander Strunkin
+     ￼
+     Angela Tyson
+     ￼
+     Charles Muguru
+     ￼
+     Cho Sung Kwang
+     ￼
+     Ivan Novikov
+     ￼
+     Jeongyeol Choe
+     ￼
+     Johnathan Davis
+     ￼
+     Jonny Lee
+     ￼
+     Kabjin Kwon
+     ￼
+     Leah Zinn
+     ￼
+     Li Xia
+     ￼
+     Mohit Agrawal
+     ￼
+     Parthojit Chakraborty
+     ￼
+     Robert Haidari
+     ￼
+     Shuntaro Tamura
+     ￼
+     Vicente Vial
+     ￼
+     Facebook
+
+     ￼
+     ￼
+     ￼
+     Search
+     ￼
+     Adam
+     Home
+     Friend Requests
+     Messages
+     Notifications
+     Account Settings
+     ￼
+     Adam Gibson
+     News Feed
+     Messenger
+     Shortcuts
+     IQA(Image Processing QnA) : 영상처리 묻고 답하기
+     20+
+     Montreal.AI
+     1
+     Machine Learning Tokyo (study group)
+     7
+     Foreigners in Tokyo
+     1
+     Artificial Intelligence & Deep Learning Memes For Back-propagated Poets
+     PnPJapan Batch Members
+     IoT, Deep Learning, Smart Factory, Smart City (smartbean.org forum)
+     Explore
+     2
+     Events
+     Groups
+     Pages
+     Friend Lists
+     4
+     On This Day
+     20+
+     Pages Feed
+     Manage Apps
+     Photos
+     Insights
+     Games
+     See More...
+     Create
+     Ad · Page · Group · Event
+     Stories
+     question-solid
+     ￼
+     Raj
+     ￼
+     Jacob
+     ￼
+     Ivan
+     ￼
+     Mary
+     ￼
+     Ritesh
+     ￼
+     Yohhei
+     chevron-right
+     ￼
+     2 event invites
+     birthday
+     Keigo Hattori's birthday is today
+     English (US) · 日本語 · Español · Português (Brasil) · Français (France)
+     Privacy · Terms · Advertising · Ad Choices · Cookies ·
+     More
+     Facebook © 2017
+
+     Make PostPhoto/Video AlbumChoose a file to upload￼￼Choose FilesLive Video
+     ￼
+     ￼
+     What's on your mind?
+     Photo/Video￼￼Choose Files
+     Feeling/Activity
+     News Feed
+     ￼
+     ‎Suzana Ilić‎ to Machine Learning Tokyo (study group)
+     1 hr · ￼
+     Hi all! I just wanted to say that I'm very proud of our group, we started 6 months ago and had over 200 hours of Machine Learning study! お疲れ様でした！Now, the Lodge is closed for 2 weeks and it's a good time for us to take some time off as well! I will let you know when our first session in 2018 will kick off and until then: To a happy, healthy and unforgettable new year! ￼<3
+     Like
+     Show more reactions
+     Comment
+     Share
+     5 Leung Tatsu, Билгээ Баяраа and 3 others
+     Comments
+     ￼
+     Hiromi Oyama
+     Manage
+     LikeShow more reactions · Reply · 54m
+     ￼
+     Hiromi Oyama Happy holidays!
+     Manage
+     LikeShow more reactions · Reply · 53m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     Masato Uehara was tagged in a photo.
+     ￼
+     Takafumi Matsudome is feeling thankful with Ryusuke Izumida and 3 others.
+     16 mins · Minato-ku ·
+     #BOP #WASSHA #ハッカソン #チームタロ
+     3月のBOPハッカソンで出会ったメンバーで、忘年会できるって、嬉しい限り。
+     また来年もまた集まってなんかするーーー！！
+     See Translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     6 6
+     Comments
+     ￼
+     Satoshi Akita たのしそう！！
+     Manage
+     LikeShow more reactions · Reply · See Translation · 8m
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yoonchul Shin shared 마링의 마음상담소's post.
+     20 hrs · ￼
+     다시합니다.
+     See Translation
+     ￼
+     마링의 마음상담소￼Like Page
+     20 hrs · ￼
+     -일시: 2018.01.03~ 2018.01.17
+     -장소: 상수역 1번출구 코코갤러리
+
+     '마음은 볼 수 없습니다.'
+     그래요 어떻게 보나요 눈을 씻고...
+     See More
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     14 14
+     Comments
+     ￼
+     Jae Seok Kim 보러갈께유
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 20h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     박성근 오 또 보러가야하는데...
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 1 Reply
+     ￼
+     이지나 전시회 시간이 어떻게 돼요??
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 19h
+     ￼
+     Yoonchul Shin replied · 3 Replies
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Leung Tatsu
+     16 hrs · ￼
+     Already Put it into the list of hk trip from 2/10 to 2/19￼😎
+     What a shame that haven visited Hidden agenda yet￼😝
+     ￼
+     香港最老的爵士樂酒吧：不收入場費、親民貼地的La La Land - The News Lens 關鍵評論網
+     爵士樂酒吧Ned Kelly Last Stand成立45週年，澳洲老闆Parker接受記者訪問，希望更多人了解他的「娛樂餐飲」意念，以及「Dixieland」這種爵士樂流派的妙處。
+     HK.THENEWSLENS.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     4 4
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes added 5 new photos.
+     19 hrs · ￼
+     The difference 24 hours & 8C make.
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     12 12
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     太郎 スティーブン
+     17 hrs ·
+     CNN is the new Onion.
+     ￼
+     Why kids love 'fascist' cartoons like 'Paw Patrol' and 'Thomas'
+     Young children are drawn to worlds in which identities are fixed and transgressions are met with routine punishment.
+     CNN.COM
+     Like
+     Show more reactions
+     Comment
+     Share
+     1 1
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Christian Moen
+     20 hrs ·
+     Shako
+     · See original ·
+     Rate this translation
+     ￼
+     Like
+     Show more reactions
+     Comment
+     15 15
+     Comments
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Alison B. Lowndes is with Ben Lowndes and Robyn Lowndes.
+     19 hrs · ￼
+     Watching Mary Poppins #supercalafragalisticexpealidocious
+     ￼
+     Like
+     Show more reactions
+     Comment
+     Share
+     11 11
+     Comments
+     ￼
+     Mikayla Phan Where’s mom’s costume??
+     1
+     Manage
+     LikeShow more reactions · Reply · 19h
+     ￼
+     Alexandra McIlwraith aww i want to be there, I know all the words too lol
+     1
+     Manage
+     LikeShow more reactions · Reply · 9h
+     ￼
+     Alison B. Lowndes replied · 1 Reply
+     ￼
+     Mike Wake Too cold to go fly a kite?
+     Manage
+     LikeShow more reactions · Reply · 2h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Yuta Okamoto
+     18 hrs ·
+     Twitter
+     · ￼
+     自分の目の前で、技術動向が１日単位で変化していく様子をが見られるのは非常にエキサイティングな経験ですね（キャッチアップできているとは言ってない。
+     See Translation
+     Like
+     Show more reactions
+     Comment
+     Share
+     8 8
+     Comments
+     ￼
+     大黒 寛仁 「俺たちは雰囲気で」云々
+     1
+     Manage
+     LikeShow more reactions · Reply · See Translation · 15h
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     ￼
+     Wei Chuan Chen added 2 new photos — with Ariel Marissa.
+     5 hrs · Taito-ku ·
+     Ariel is in Tokyo!!! ￼😍
+     ￼
+     ￼
+     Like
+     Show more reactions
+     Comment
+     40 40
+     Comments
+     ￼
+     Chris Michael Kelly Ok this is a VERY small world. I did a few musicals with her back home in New York lolol our hometowns are super close!
+     1
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     Laura Floyd Sharp Hay Wei, we missed you at Christmas. Auntie La loves you and very proud of your accomplishments with school and work.
+     Manage
+     LikeShow more reactions · Reply · 4h
+     ￼
+     Wei Chuan Chen replied · 1 Reply
+     ￼
+     ￼
+     Write a comment...
+     ￼￼Choose File
+     More Stories
+     Chat with friends
+     CONTACT PAGES
+     SEE ALL
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     ￼
+     CONTACTS
+     ￼
+     Ritvik Choudhary
+     ￼
+     Eugene Huang
+     ￼
+     Jana Thompson
+     ￼
+     Yoovraj Shinde
+     ￼
+     1h
+     Shawn YS Tan
+     ￼
+     6h
+     Chris Nicholson
+     ￼
+     1m
+     Suzana Ilić
+     ￼
+     HongJoon Kim
+     ￼
+     Erin Akinci
+     ￼
+     Ahyoung Park
+     ￼
+     Tan Zu Puayen
+     ￼
+     Zain Abiddin
+     ￼
+     Lev Sixteenletters
+     ￼
+     Anthony Seungwook Paek
+     ￼
+     Lee SangHoon
+     NEARBY
+     ￼
+     3h
+     Takeshi Izaki
+     永田町
+     MORE CONTACTS (21)
+     ￼
+     Alexander Strunkin
+     ￼
+     Angela Tyson
+     ￼
+     Charles Muguru
+     ￼
+     Cho Sung Kwang
+     ￼
+     Ivan Novikov
+     ￼
+     Jeongyeol Choe
+     ￼
+     Johnathan Davis
+     ￼
+     Jonny Lee
+     ￼
+     Kabjin Kwon
+     ￼
+     Leah Zinn
+     ￼
+     Li Xia
+     ￼
+     Mohit Agrawal
+     ￼
+     Parthojit Chakraborty
+     ￼
+     Robert Haidari
+     ￼
+     Shuntaro Tamura
+     ￼
+     Vicente Vial
+
+     ￼
+     Yohhei Someya
+
+     ';LKJHGFCXDCVFGHJO=-098TRFYUI90-098YTFD78
+     Yoonchul Shin
+     ￼
+     Yusuke Kurishima
+     ￼
+     Yuta Flipper Nishimura
+     ￼
+     강신동
+     ￼
+     Search
+
+     Yohhei Someya
+     ￼
+     Yoonchul Shin
+     ￼
+     Yusuke Kurishima
+     ￼
+     Yuta Flipper Nishimura
+     ￼
+     강신동
+     ￼
+     Search
+
+     ￼
+     Yohhei Someya
+     ￼
+     Yoonchul Shin
+     ￼
+     Yusuke Kurishima
+     ￼
+     Yuta Flipper Nishimura
+     ￼
+     강신동
+     ￼
+     Search
+     specified for resolution.
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String,INDArray> arrays) {
@@ -3909,33 +5445,37 @@ public class SameDiff {
                 throw new ND4JIllegalStateException("Illegal variable " + entry.getKey() + " passed in. Variable found not to be a place holder variable");
             }
 
+            val specifiedShape = getOriginalShapeForPlaceHolder(entry.getKey());
+            //whole shape was specified: validate whether the input array shape is equal
+            if(!Shape.isPlaceholderShape(specifiedShape)) {
+                if(!Arrays.equals(specifiedShape,entry.getValue().shape()))  {
+                    throw new ND4JIllegalStateException("Place holder shape specified was " + Arrays.toString(specifiedShape) + " but array shape was " + Arrays.toString(entry.getValue().shape()));
+                }
+            }
+
+
+
             updateShapeForVarName(entry.getKey(),entry.getValue().shape());
             associateArrayWithVariable(entry.getValue(),getVariable(entry.getKey()));
             updateArrayForVarName(entry.getKey(),entry.getValue());
 
         }
 
-        //extra init after we know aray shape
-     /*   for(val func : functionInstancesById.values()) {
-            func.initWithArrays(arrays);
-        }*/
-/*
 
-        //propagate variable names, sometimes shapes depend on  variables
-        //that have place holders
-        for(val func : placeHolderFunctions) {
-            getFunctionById(func).outputVariables();
-            val calcOutputShape = getFunctionById(func).calculateOutputShape();
-            val outputs = getOutputVariablesForFunction(getFunctionById(func));
-            for(int i = 0; i < calcOutputShape.size(); i++) {
-                if(getShapeForVarName(outputs[i].getVarName()) == null)
-                    putShapeForVarName(outputs[i].getVarName(),calcOutputShape.get(i));
-                if(getArrForVarName(outputs[i].getVarName()) == null)
-                    outputs[i].storeAndAllocateNewArray();
+
+
+        for(val funcName : propertiesToResolve.keySet()) {
+            val func = functionInstancesById.get(funcName);
+            if(!functionInstancesById.containsKey(funcName)) {
+                throw new ND4JIllegalStateException("Unable to resolve function name " + funcName);
             }
-        }
-*/
 
+            if(func instanceof CustomOp) {
+                CustomOp customOp = (CustomOp) func;
+                customOp.populateInputsAndOutputsFromSameDiff();
+            }
+
+        }
 
 
         //declare resolved
@@ -4096,6 +5636,9 @@ public class SameDiff {
                 continue;
 
             DifferentialFunction differentialFunction = funcs.get(i);
+            if(differentialFunction instanceof SDVariable) {
+                continue;
+            }
 
             if(differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;
@@ -4195,11 +5738,13 @@ public class SameDiff {
 
 
             }
+
             else if(differentialFunction instanceof CustomOp) {
                 DynamicCustomOp customOp = (DynamicCustomOp) differentialFunction;
                 customOp.populateInputsAndOutputsFromSameDiff();
                 customOp.assertValidForExecution();
                 Nd4j.getExecutioner().exec(customOp);
+
                 ops.add(customOp);
             }
 
@@ -4215,8 +5760,13 @@ public class SameDiff {
                     int[] axes = differentialFunction.getDimensions();
                     if(differentialFunction instanceof Accumulation) {
                         Accumulation accumulation = (Accumulation) differentialFunction;
-                        Nd4j.getExecutioner().exec(accumulation,axes);
 
+                        Nd4j.getExecutioner().exec(accumulation,axes);
+                        if(differentialFunction.outputVariables()[0].getArr() == null) {
+                            val var = differentialFunction.outputVariables()[0];
+                            updateArrayForVarName(var.getVarName(),accumulation.z());
+                            updateShapeForVarName(var.getVarName(),accumulation.z().shape());
+                        }
                     }
 
                     else if(differentialFunction instanceof BroadcastOp) {
@@ -4248,6 +5798,9 @@ public class SameDiff {
 
 
     public void printFunction(DifferentialFunction differentialFunction) {
+        if(differentialFunction instanceof SDVariable)
+            return;
+
         StringBuilder argShapes = new StringBuilder();
         for(val arg : differentialFunction.args()) {
             argShapes.append(" Variable " + arg.getVarName() +
@@ -4275,6 +5828,59 @@ public class SameDiff {
 
 
         log.info(realShapes.toString());
+    }
+
+
+    /**
+     * Permute indices for the samediff/dl4j format.
+     * Due to the dl4j format being NCHW, this is a
+     * simple routine for returning permute indices.
+     * This is typically used for model import.
+     *
+     * @param dataFormat the data format to permute
+     * @return the permuted indices
+     */
+    public static int[] permuteDataFormatForSameDiff(String dataFormat,boolean weights) {
+        val dl4jFormat = "NCHW";
+        dataFormat = dataFormat.toUpperCase();
+        //TF: filter_height, filter_width, in_channels, out_channels
+        /**
+         * N: filter_height
+         * H: filter_width
+         * W: in_channels
+         * C: out_channels
+         */
+
+
+        /**
+         *
+         *
+         */
+        //DL4J: filter_height,out_channels,filter_width,in_channels
+        // Weights should be: out channels, in channels, height,width
+        int[] ret = new int[4];
+        if(weights) {
+            ret[0] = dataFormat.indexOf('W');
+            ret[1] = dataFormat.indexOf('C');
+            ret[2] = dataFormat.indexOf('N');
+            ret[3] = dataFormat.indexOf('H');
+            return ret;
+        }
+
+
+        //NHWC
+        //DL4J: NCHW
+        for(int i = 0; i < dataFormat.length(); i++) {
+            if(dl4jFormat.indexOf(dataFormat.charAt(i)) < 0) {
+                throw new ND4JIllegalStateException("Illegal convolution data format string passed in " + dataFormat + " must be some variant of NCHW");
+            }
+        }
+
+        for(int i = 0; i < dl4jFormat.length(); i++)  {
+            ret[i] = dl4jFormat.indexOf(dataFormat.charAt(i));
+        }
+
+        return ret;
     }
 
     /**
@@ -4370,6 +5976,7 @@ public class SameDiff {
 
         val inPaired = new ArrayList<Integer>();
 
+
         val outputVertexId = node.outputVariables();
         val outputIds = new int[outputVertexId.length];
         for(int i = 0; i < outputIds.length; i++) {
@@ -4457,8 +6064,11 @@ public class SameDiff {
         int idx = 0;
         for (val variable: variables()) {
             log.info("Exporting variable: [{}]", variable.getVarName());
-            if(variable.getArr() == null || variable.getShape() == null)
-                continue;
+            if(variable.getArr() == null || variable.getShape() == null) {
+                putArrayForVarName(variable.getVarName(),Nd4j.scalar(1.0));
+                addAsPlaceHolder(variable.getVarName());
+            }
+
 
             val pair = parseVariable(variable.getVarName());
             reverseMap.put(pair.getFirst(), ++idx);
@@ -4486,7 +6096,13 @@ public class SameDiff {
             val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
             // converting all ops from node
             for (val node: scope.getValue().variables()) {
-                val arr = node.getArr();
+                INDArray arr = node.getArr();
+                if(arr == null) {
+                    val otherArr = Nd4j.scalar(1.0);
+                    scope.getValue().putArrayForVarName(node.getVarName(),otherArr);
+                    log.warn("Adding placeholder for export for var name {}",node.getVarName());
+                    arr = otherArr;
+                }
 
                 int name = bufferBuilder.createString(node.getVarName());
                 int array = arr.toFlatArray(bufferBuilder);
@@ -4777,6 +6393,8 @@ public class SameDiff {
                 return OpType.INDEX_ACCUMULATION;
             case RANDOM:
                 return OpType.RANDOM;
+            case CONDITIONAL:
+                return OpType.LOGIC;
             case LOOP:
                 return OpType.LOGIC;
             case RETURN:

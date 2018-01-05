@@ -323,6 +323,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                 }
             }
         }
+        else if(zVertexId != null && sameDiff != null && sameDiff.getArrForVarName(zVertexId) == null && z != null) {
+            sameDiff.putArrayForVarName(zVertexId,z);
+        }
 
         return z;
     }
@@ -383,6 +386,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
         return new SDVariable[]{sameDiff.getVariable(zVertexId)};
     }
+
 
 
     @Override

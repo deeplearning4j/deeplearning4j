@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
+import org.nd4j.imports.descriptors.onnx.OpDescriptor;
+import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
@@ -11,6 +14,7 @@ import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+import org.tensorflow.framework.OpDef;
 
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -22,6 +26,44 @@ public class DifferentialFunctionClassHolder {
     private Map<String,DifferentialFunction> tensorFlowNames = new HashMap<>();
     private Map<String,DifferentialFunction> onnxNames = new HashMap<>();
     private List<String> missingOps = new ArrayList<>();
+
+    private Map<String,OpDescriptor> onnxOpDescriptors;
+    private Map<String,OpDef> tensorflowOpDescriptors;
+
+
+    /**
+     * Get the op definition of a given
+     * tensorflow op.
+     *
+     * Note that if the name does not exist,
+     * an {@link ND4JIllegalStateException} will be thrown
+     * @param name the name of the op
+     * @return the op definition for a given op
+     */
+    public OpDef getOpDefByTensorflowName(String name) {
+        if(!tensorflowOpDescriptors.containsKey(name)) {
+            throw new ND4JIllegalStateException("No op found with name " + name);
+        }
+
+        return tensorflowOpDescriptors.get(name);
+    }
+
+    /**
+     * Get the op definition of a given
+     * onnx op
+     * Note that if the name does not exist,
+     * an {@link ND4JIllegalStateException}
+     * will be thrown.
+     * @param name the name of the op
+     * @return the op definition for a given op
+     */
+    public OpDescriptor getOpDescriptorForOnnx(String name) {
+        if(!onnxOpDescriptors.containsKey(name)) {
+            throw new ND4JIllegalStateException("No op found with name " + name);
+        }
+
+        return onnxOpDescriptors.get(name);
+    }
 
     /**
      * Get the
@@ -87,6 +129,17 @@ public class DifferentialFunctionClassHolder {
         }
 
 
+
+        //get the op descriptors for onnx and tensorflow
+        //this is used when validating operations
+        try {
+            tensorflowOpDescriptors = TensorflowDescriptorParser.opDescs();
+            onnxOpDescriptors = OnnxDescriptorParser.onnxOpDescriptors();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
         val map = Nd4j.getExecutioner().getCustomOperations();
         val set = map.keySet();
         set.removeAll(nodeConverters.keySet());
@@ -97,6 +150,32 @@ public class DifferentialFunctionClassHolder {
     }
 
 
+    /***
+     * Returns the missing onnx ops
+     * @return
+     */
+    public Set<String> missingOnnxOps() {
+        Set<String> copy = new HashSet<>(onnxOpDescriptors.keySet());
+        copy.removeAll(onnxNames.keySet());
+        return copy;
+    }
+
+
+    /***
+     * Returns the missing tensorflow ops
+     * @return
+     */
+    public Set<String> missingTensorflowOps() {
+        Set<String> copy = new HashSet<>(tensorflowOpDescriptors.keySet());
+        copy.removeAll(tensorFlowNames.keySet());
+        return copy;
+    }
+
+    /**
+     * Returns the missing ops
+     * for c++ vs java.
+     * @return
+     */
     public List<String> missingOps() {
         return missingOps;
     }

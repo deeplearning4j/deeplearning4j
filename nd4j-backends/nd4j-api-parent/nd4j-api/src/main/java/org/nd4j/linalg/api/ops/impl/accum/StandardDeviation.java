@@ -75,12 +75,24 @@ public class StandardDeviation extends Variance {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        int inputs = f().getInputLength(i_v1.get(0));
-        SDVariable g =  f().doRepeat(outputVariables()[0],i_v1.get(0));
-        SDVariable ret = f().div(f().sub(f().mul(g,arg()),f().mean(arg(),dimensions)),f().mul(f()
-                .one(g.getShape()),inputs));
+        //Here: calculating dL/dIn given dL/dOut (i.e., i_v1) and input/output
+        //If out = stdev(in) then:
+        //dL/dIn = dL/dOut * dOut/dIn
+        //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
+        int n = f().getReductionLength(this);
+        SDVariable stdevOut = outputVariables()[0];
+        SDVariable mean = f().mean(arg(), dimensions);
+        SDVariable diff = arg().sub(mean);
 
-        return Collections.singletonList(ret);
+        SDVariable dOutdIn = diff.div(stdevOut);
+        if(this.biasCorrected){
+            dOutdIn = dOutdIn.div(n-1);
+        } else {
+            dOutdIn = dOutdIn.div(n);
+        }
+
+        SDVariable dLdIn = dOutdIn.mul(i_v1.get(0));
+        return Collections.singletonList(dLdIn);
     }
 
 }

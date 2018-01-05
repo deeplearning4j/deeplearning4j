@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -29,7 +28,9 @@ import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Calculate the index
@@ -79,6 +80,14 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("compare",compare);
+        ret.put("eps",eps);
+        ret.put("mode",mode);
+        return ret;
+    }
 
 
     @Override

@@ -26,7 +26,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -64,22 +63,6 @@ public class Rank extends DynamicCustomOp {
             initWith.putArrayForVarName(thisResultId,resultLength);
             initWith.putShapeForVarName(thisResultId,new int[]{1,1});
         }
-    }
-
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        val outputVertex = args()[0].getVarName();
-        val arr = sameDiff.getArrForVarName(outputVertex);
-        if(arr != null) {
-            val inputShape = sameDiff.getShapeForVarName(arg().getVarName());
-            val outputVar = sameDiff.getArrForVarName(outputVariables()[0].getVarName());
-            outputVar.assign(inputShape.length);
-
-        }
-
-        if(sameDiff.getShapeForVarName(outputVariables()[0].getVarName()) == null)
-            sameDiff.putShapeForVarName(outputVariables()[0].getVarName(),new int[]{1,1});
-
     }
 
     @Override

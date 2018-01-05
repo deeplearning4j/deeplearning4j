@@ -80,10 +80,13 @@ public class Sum extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable repeat =  f().doRepeat(
-                i_v1.get(0),
-                arg());
-        return Collections.singletonList(repeat);
+        //Out = sum(in)
+        // dL/dIn = dL/dOut * dOut/dIn
+        //        = dL/dOut * 1
+        // But broadcast to shape of the input
+
+        SDVariable ret = f().one(arg().getShape()).mul(i_v1.get(0));
+        return Collections.singletonList(ret);
     }
 
 

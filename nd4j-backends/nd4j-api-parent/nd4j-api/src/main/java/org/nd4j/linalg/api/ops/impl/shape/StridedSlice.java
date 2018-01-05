@@ -24,19 +24,21 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Reshape function
+ * Strided Slice function
  *
  * @author Adam Gibson
  */
@@ -63,6 +65,17 @@ public class StridedSlice extends DynamicCustomOp {
         return "StridedSlice";
     }
 
+
+    @Override
+    public void assertValidForExecution() {
+        if(numInputArguments() != 1 && numInputArguments() != 3 && numInputArguments() != 4) {
+            throw new ND4JIllegalStateException("Num input arguments must be 1 3 or 4.");
+        }
+
+        if(numIArguments() < 5) {
+            throw new ND4JIllegalStateException("Number of integer arguments must >= 5");
+        }
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -132,8 +145,83 @@ public class StridedSlice extends DynamicCustomOp {
     }
 
 
+
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        val beginMapping = PropertyMapping.builder()
+                .tfInputPosition(1)
+                .propertyNames(new String[]{"begin"})
+                .build();
+
+        val end = PropertyMapping.builder()
+                .tfInputPosition(2)
+                .propertyNames(new String[]{"end"})
+                .build();
+
+
+        val strides = PropertyMapping.builder()
+                .tfInputPosition(3)
+                .propertyNames(new String[]{"strides"})
+                .build();
+
+
+
+
+        val beginMask = PropertyMapping.builder()
+                .tfAttrName("begin_mask")
+                .propertyNames(new String[]{"beginMask"})
+                .build();
+
+
+        val ellipsisMask = PropertyMapping.builder()
+                .tfAttrName("ellipsis_mask")
+                .propertyNames(new String[]{"ellipsisMask"})
+                .build();
+
+
+
+        val endMask = PropertyMapping.builder()
+                .tfAttrName("end_mask")
+                .propertyNames(new String[]{"endMask"})
+                .build();
+
+
+
+        val newAxisMask = PropertyMapping.builder()
+                .tfAttrName("new_axis_mask")
+                .propertyNames(new String[]{"newAxisMask"})
+                .build();
+
+        val shrinkAxisMask = PropertyMapping.builder()
+                .tfAttrName("shrink_axis_mask")
+                .propertyNames(new String[]{"shrinkAxisMask"})
+                .build();
+
+
+
+        map.put("begin",beginMapping);
+        map.put("end",end);
+        map.put("strides",strides);
+        map.put("beginMask",beginMask);
+        map.put("ellipsisMask",ellipsisMask);
+        map.put("endMask",endMask);
+        map.put("newAxisMask",newAxisMask);
+        map.put("shrinkAxisMask",shrinkAxisMask);
+
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
+
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return super.propertiesForFunction();
     }
 
     @Override

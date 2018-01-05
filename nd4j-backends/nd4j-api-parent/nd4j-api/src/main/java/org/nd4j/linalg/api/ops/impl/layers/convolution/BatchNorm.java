@@ -5,13 +5,12 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -48,6 +47,22 @@ public class BatchNorm extends DynamicCustomOp {
 
     public BatchNorm() {}
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("training",training);
+        ret.put("isLockGammaBeta",isLockGammaBeta);
+        ret.put("isMiniBatch",isMiniBatch);
+        return ret;
+    }
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        return ret;
+    }
 
     @Override
     public String opName() {
@@ -61,7 +76,7 @@ public class BatchNorm extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "batch_norm";
+        return "FusedBatchNorm";
     }
 
     @Override

@@ -5,10 +5,8 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -120,60 +118,6 @@ public class Range extends DynamicCustomOp {
     }
 
 
-
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initWithArrays(arrayMap);
-        val start = sameDiff.getVariable(fromVertexId).getArr();
-        val end = sameDiff.getVariable(toVertexId).getArr();
-        val delta = sameDiff.getVariable(deltaVertexId).getArr();
-        val outputVars = outputVariables();
-        if(outputVariables() == null)
-            throw new ND4JIllegalStateException("Output variables should not be null.");
-        if(start != null && end != null && delta != null) {
-            this.from = start.getDouble(0);
-            this.to = end.getDouble(0);
-            this.delta = delta.getDouble(0);
-            addTArgument(this.from,this.to,this.delta);
-            val calcShape = calculateOutputShape();
-            /**
-             * Possibly need to specify shape for each input variable with respect
-             * to input variable? (Example: you have 2 inputs and 1 output, what is the
-             * output shape for the second input given a function?
-             *
-             * That *seems* like it should be the same shape, but it's also obviously op
-             * and vertex id dependent.
-             *
-             * The main problem here is the Range op but this seems like a larger problem
-             * that should be investigated.
-             *
-             *
-             */
-
-            for(int i = 0; i < outputVars.length; i++) {
-                if(sameDiff.getArrForVarName(outputVars[i].getVarName()) == null) {
-                    if(outputVars[i].getShape() == null) {
-                        sameDiff.putShapeForVarName(outputVars[i].getVarName(),calcShape.get(0));
-                    }
-
-                    val arr = Nd4j.create(outputVars[i].getShape());
-                    sameDiff.putArrayForVarName(outputVars[i].getVarName(), arr);
-                    addOutputArgument(arr);
-                }
-            }
-
-
-        }
-        else {
-            StringBuilder errorMessage = new StringBuilder();
-            errorMessage.append("Not all values of range mapped. ");
-            errorMessage.append("Start status is null " + (start == null));
-            errorMessage.append("End status is null " + (end == null));
-            errorMessage.append("Delta status is null " + (delta == null));
-            throw new ND4JIllegalStateException(errorMessage.toString());
-        }
-
-    }
 
 
     @Override

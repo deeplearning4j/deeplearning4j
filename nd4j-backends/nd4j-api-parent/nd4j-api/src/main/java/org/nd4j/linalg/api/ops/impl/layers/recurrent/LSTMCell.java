@@ -31,6 +31,11 @@ public class LSTMCell extends DynamicCustomOp {
     }
 
     @Override
+    public Map<String, Object> propertiesForFunction() {
+        return configuration.toProperties();
+    }
+
+    @Override
     public String opName() {
         return "lstmCell";
     }

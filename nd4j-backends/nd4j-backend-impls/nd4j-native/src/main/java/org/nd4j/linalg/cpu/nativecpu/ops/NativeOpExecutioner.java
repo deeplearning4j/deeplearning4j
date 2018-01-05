@@ -1501,7 +1501,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     public void exec(@NonNull CustomOp op) {
         if (op.numOutputArguments() == 0 && !op.isInplaceCall())
-            throw new ND4JIllegalStateException("You can't execute non-inplace CustomOp without outputs being specified");
+            throw new ND4JIllegalStateException("Op name " + op.opName() +  " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
 
         val hash = op.opHash();
 
@@ -1575,7 +1575,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         iArgs, op.numIArguments(),
                         op.isInplaceCall()));
             }catch(Exception e) {
-                log.error("Failed to execute. Please see above message (printed out from c++) for a possible cause of error.");
+                 log.error("Failed to execute. Please see above message (printed out from c++) for a possible cause of error.");
                 throw e;
             }
 
@@ -1619,7 +1619,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val inputArgs = op.inputArguments();
         int cnt= 0;
         for (val in: inputArgs) {
-            inputBuffers.put(cnt++, in.data().addressPointer());
+            inputBuffers.put(cnt, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }
 

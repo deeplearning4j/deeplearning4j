@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
 import java.util.List;
@@ -75,9 +76,12 @@ public class Mean extends Sum {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().div(f().doRepeat(outputVariables()[0],i_v1.get(0)),
-                f().mul(f().one(i_v1.get(0).getShape()),
-                        f().getInputLength(i_v1.get(0))));
+        //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
+        //Note that N differs for "along dimension" vs. "whole array" reduce cases
+        int n = f().getReductionLength(this);
+
+        SDVariable ret = f().one(arg().getShape()).div(n);      //1/N with shape equal to input
+        ret = ret.mul(i_v1.get(0));
 
         return Collections.singletonList(ret);
     }
@@ -89,6 +93,6 @@ public class Mean extends Sum {
 
     @Override
     public String tensorflowName() {
-        return "reduce_mean";
+        return "Mean";
     }
 }

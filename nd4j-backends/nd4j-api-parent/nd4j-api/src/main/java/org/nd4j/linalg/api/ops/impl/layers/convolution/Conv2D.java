@@ -8,20 +8,17 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -42,7 +39,7 @@ public class Conv2D extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.conv2DConfig = conv2DConfig;
         addArgs();
-        sameDiff.putFunctionForId(this.getInstanceId(),this);;    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
+        sameDiff.putFunctionForId(this.getOwnName(),this);;    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
         sameDiff.addArgsFor(inputFunctions, this);
     }
 
@@ -63,36 +60,8 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        val var = sameDiff.getVariable(args()[1].getVarName());
-        //place holder variable
-        if (var.getArr() == null) {
-            //assuming the array hasn't been initialized, setup the config
-            //resolving the place holder variable.
-            INDArray array = arrayMap.get(var.getVarName());
-            if(array == null) {
-                throw new ND4JIllegalStateException("Array for variable " + var.getVarName() + " was null!");
-            }
-            array = (array.permute(3, 2, 0, 1).dup('c'));
-            sameDiff.updateVariable(var.getVarName(), array);
-            conv2DConfig.setKh(array.size(0));
-            conv2DConfig.setKw(array.size(1));
-        }
-
-
-
-        val inputs = args();
-        for(val func : inputs) {
-            INDArray arr = sameDiff.getArrForVarName(func.getVarName());
-            if(arr == null) {
-                val var2 = sameDiff.getVariable(func.getVarName());
-                arr = var2.storeAndAllocateNewArray();
-            }
-
-            addInputArgument(arr);
-        }
-
-
+    public Map<String, Object> propertiesForFunction() {
+        return conv2DConfig.toProperties();
     }
 
     @Override
@@ -112,34 +81,35 @@ public class Conv2D extends DynamicCustomOp {
         INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
         if(arr == null) {
             arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
+            // TODO: arguable. it might be easier to permute weights once
+            //arr = (arr.permute(3, 2, 0, 1).dup('c'));
+            val  varForOp = initWith.getVariable(args[1].getVarName());
+            if(arr != null)
+                initWith.associateArrayWithVariable(arr, varForOp);
+
+
         }
 
-        String data_format = "nhwc";
+        String dataFormat = "nhwc";
         if (nodeDef.containsAttr("data_format")) {
             val attr = nodeDef.getAttrOrThrow("data_format");
-
-            data_format = attr.getS().toStringUtf8().toLowerCase();
+            dataFormat = attr.getS().toStringUtf8().toLowerCase();
         }
 
 
-        if (data_format.equalsIgnoreCase("nhwc")) {
-            sY = tfStrides.get(1).intValue();
-            sX = tfStrides.get(2).intValue();
-
-            kY = arr.size(0);
-            kX = arr.size(1);
-        } else {
+        if (dataFormat.equalsIgnoreCase("nchw")) {
             sY = tfStrides.get(2).intValue();
             sX = tfStrides.get(3).intValue();
 
             kY = arr.size(2);
             kX = arr.size(3);
-        }
+        } else {
+            sY = tfStrides.get(1).intValue();
+            sX = tfStrides.get(2).intValue();
 
-        // TODO: arguable. it might be easier to permute weights once
-        //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-        val  varForOp = initWith.getVariable(args[1].getVarName());
-        initWith.associateArrayWithVariable(arr, varForOp);
+            kY = arr.size(0);
+            kX = arr.size(1);
+        }
 
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
@@ -149,13 +119,12 @@ public class Conv2D extends DynamicCustomOp {
                 .sx(sX)
                 .sy(sY)
                 .isSameMode(isSameMode)
-                .isNHWC(data_format.equalsIgnoreCase("nhwc"))
+                //c++ check checks for nchw
+                .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))
                 .build();
         this.conv2DConfig = conv2DConfig;
 
         addArgs();
-
-        addOutputArgument(arr);
 
 
     }
@@ -199,6 +168,62 @@ public class Conv2D extends DynamicCustomOp {
 
         addOutputArgument(arr);
     }
+
+
+
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+        val strideMapping = PropertyMapping.builder()
+                .tfAttrName("strides")
+                .onnxAttrName("strides")
+                .build();
+
+
+
+        val kernelMapping = PropertyMapping.builder()
+                .propertyNames(new String[]{"kh","kw"})
+                .tfInputPosition(1)
+                .onnxAttrName("kernel_shape")
+                .build();
+
+        val dilationMapping = PropertyMapping.builder()
+                .onnxAttrName("dilations")
+                .propertyNames(new String[]{"dw","dh"})
+                .tfAttrName("rates")
+                .build();
+
+
+
+        val sameMode = PropertyMapping.builder()
+                .onnxAttrName("auto_pad")
+                .propertyNames(new String[]{"isSameMode"})
+                .tfAttrName("padding")
+                .build();
+
+        val paddingWidthHeight = PropertyMapping.builder()
+                .onnxAttrName("padding")
+                .propertyNames(new String[]{"ph","pw"})
+                .build();
+
+
+        map.put("sx", strideMapping);
+        map.put("sy", strideMapping);
+        map.put("kh", kernelMapping);
+        map.put("kw", kernelMapping);
+        map.put("dw", dilationMapping);
+        map.put("dh", dilationMapping);
+        map.put("isSameMode",sameMode);
+        map.put("ph", paddingWidthHeight);
+        map.put("pw", paddingWidthHeight);
+
+        ret.put(onnxName(),map);
+        ret.put(tensorflowName(),map);
+        return ret;
+    }
+
 
     @Override
     public String opName() {

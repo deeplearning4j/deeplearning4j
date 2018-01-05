@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -46,6 +47,10 @@ public class Im2col extends DynamicCustomOp {
     }
 
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return conv2DConfig.toProperties();
+    }
 
     @Override
     public String opName() {

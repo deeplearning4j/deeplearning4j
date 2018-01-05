@@ -24,19 +24,15 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Reshape function
@@ -123,29 +119,14 @@ public class Reshape extends DynamicCustomOp {
 
     }
 
+
     @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initWithArrays(arrayMap);
-        if(numIArguments() == 0) {
-            if(args().length > 1) {
-                val arr = sameDiff.getArrForVarName(args()[1].getVarName());
-                if(arr == null) {
-                    throw new ND4JIllegalStateException("Unable to infer shape for reshape. No array found for getting shape data from!");
-                }
-
-                this.shape = arr.data().asInt();
-                addIArgument('c');
-                addIArgument(this.shape);
-
-            }
-            else if(this.shape != null) {
-                addIArgument('c');
-                addIArgument(this.shape);
-            }
-            else
-                throw new ND4JIllegalStateException("Unable to map shape for reshape. No shape found!");
-        }
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("shape",shape);
+        return ret;
     }
+
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
@@ -153,6 +134,28 @@ public class Reshape extends DynamicCustomOp {
         this.shape = shape;
 
     }
+
+
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+
+        val shapeMapping = PropertyMapping.builder()
+                .onnxAttrName("shape")
+                .tfInputPosition(-1)
+                .propertyNames(new String[]{"shape"})
+                .build();
+
+        map.put("shape",shapeMapping);
+
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+
+        return ret;
+    }
+
 
     @Override
     public List<int[]> calculateOutputShape() {

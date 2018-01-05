@@ -98,9 +98,12 @@ public class Min extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().doGradChoose(outputVariables()[0],i_v1.get(0));
+        //TODO do we need to handle the "multiple equal minimums" case?
 
-        return Collections.singletonList(ret);
+        SDVariable repeatOut = f().doRepeat(outputVariables()[0], arg());
+        SDVariable argMaxLoc = f().eq(repeatOut, arg());
+        SDVariable out = argMaxLoc.mul(i_v1.get(0));
+        return Collections.singletonList(out);
     }
 
 

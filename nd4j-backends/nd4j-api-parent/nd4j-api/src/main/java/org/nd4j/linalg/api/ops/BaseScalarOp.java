@@ -24,6 +24,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -74,6 +75,9 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         if (i_v != null) {
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
+            if(Shape.isPlaceholderShape(i_v.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v.getVarName());
+            }
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {
             throw new IllegalArgumentException("Input not null variable.");

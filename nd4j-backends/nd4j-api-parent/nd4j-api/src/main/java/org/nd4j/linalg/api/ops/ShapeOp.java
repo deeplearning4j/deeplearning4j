@@ -8,7 +8,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Shape manipulation ops
@@ -72,17 +71,6 @@ public abstract class ShapeOp extends BaseOp {
         return ret;
     }
 
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initWithArrays(arrayMap);
-        val shapeOutput = calculateOutputShape();
-        val vertexId = outputVariables()[0].getVarName();
-        if(!shapeOutput.isEmpty() && sameDiff.shapeAlreadyExistsForVarName(vertexId))
-            sameDiff.updateShapeForVarName(vertexId,shapeOutput.get(0));
-        else if(!shapeOutput.isEmpty())
-            sameDiff.putShapeForVarName(vertexId,shapeOutput.get(0));
-
-    }
 
     @Override
     public Type opType() {

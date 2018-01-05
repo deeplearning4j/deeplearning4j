@@ -36,6 +36,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -58,11 +59,17 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
+            if(dimensions == null || dimensions.length < 1)
+                dimensions = new int[] {Integer.MAX_VALUE};
+
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
             this.xVertexId = i_v.getVarName();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
+            if(Shape.isPlaceholderShape(i_v.getShape())) {
+                sameDiff.addPropertyToResolve(this,i_v.getVarName());
+            }
 
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -76,7 +83,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
                             int[] dimensions,boolean keepDims) {
         super(sameDiff,new Object[]{dimensions});
         if (i_v != null) {
+            if(dimensions == null || dimensions.length < 1)
+                dimensions = new int[] {Integer.MAX_VALUE};
+
             this.dimensions = dimensions;
+
             this.xVertexId = i_v.getVarName();
             this.yVertexId = i_v2.getVarName();
             f().validateDifferentialFunctionsameDiff(i_v);
@@ -175,6 +186,9 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
 
+        if(arg().getShape() == null)
+            return Collections.emptyList();
+
         List<int[]> ret = new ArrayList<>(1);
         val reducedShape = Shape.getReducedShape(arg().getShape(),dimensions);
         ret.add(reducedShape);
@@ -242,12 +256,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             val dims = Ints.toArray(map.get("axes").getIntsList());
             this.dimensions = dims;
         }
-    }
-
-
-    @Override
-    public void initWithArrays(Map<String, INDArray> arrayMap, Object... extraArgs) {
-        super.initWithArrays(arrayMap);
     }
 
     @Override

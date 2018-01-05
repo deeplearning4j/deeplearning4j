@@ -8,13 +8,10 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.graph.FlatProperties;
-import org.nd4j.graph.FlatResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 @Data
 @Slf4j
@@ -23,6 +20,7 @@ import java.util.List;
 @Builder
 public class FunctionProperties {
     private String name;
+    @Builder.Default private Map<String,Object> fieldNames = new LinkedHashMap<>();
     @Builder.Default private List<Integer> i = new ArrayList<>();
     @Builder.Default private List<Long> l = new ArrayList<>();
     @Builder.Default private List<Double> d = new ArrayList<>();

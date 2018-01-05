@@ -7,6 +7,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
@@ -15,10 +16,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -50,6 +48,10 @@ public class MaxPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return config.toProperties();
+    }
 
     private void addArgs() {
         addIArgument(
@@ -184,6 +186,57 @@ public class MaxPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
+        Map<String,PropertyMapping> map = new HashMap<>();
+        val strideMapping = PropertyMapping.builder()
+                .tfAttrName("strides")
+                .onnxAttrName("strides")
+                .build();
+
+        val paddingMapping = PropertyMapping.builder()
+                .onnxAttrName("padding")
+                .tfAttrName("padding")
+                .propertyNames(new String[]{"px","py"})
+                .build();
+
+        val kernelMapping = PropertyMapping.builder()
+                .propertyNames(new String[]{"kh","kw"})
+                .tfInputPosition(1)
+                .onnxAttrName("ksize")
+                .build();
+
+        val dilationMapping = PropertyMapping.builder()
+                .onnxAttrName("dilations")
+                .propertyNames(new String[]{"dw","dh"})
+                .tfAttrName("rates")
+                .build();
+
+
+        //data_format
+        val dataFormatMapping = PropertyMapping.builder()
+                .propertyNames(new String[]{"isNHWC"})
+                .tfAttrName("data_format")
+                .build();
+
+        map.put("sx", strideMapping);
+        map.put("sy", strideMapping);
+        map.put("kh", kernelMapping);
+        map.put("kw", kernelMapping);
+        map.put("dw", dilationMapping);
+        map.put("dh", dilationMapping);
+        map.put("ph",paddingMapping);
+        map.put("pw",paddingMapping);
+        map.put("isNHWC",dataFormatMapping);
+
+        ret.put(onnxName(),map);
+        ret.put(tensorflowName(),map);
+
+
+        return ret;
+    }
 
 
     @Override

@@ -99,10 +99,8 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().div(f().doRepeat(
-                outputVariables()[0],
-                i_v1.get(0)),f().mul(f().one(outputVariables()[0].getShape()),f()
-                .getInputLength(i_v1.get(0))));
+        SDVariable prod = outputVariables()[0];
+        SDVariable ret = prod.div(arg()).mul(i_v1.get(0));
 
         return Collections.singletonList(ret);
     }

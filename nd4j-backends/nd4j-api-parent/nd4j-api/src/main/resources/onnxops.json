@@ -1,0 +1,3422 @@
+{
+   "descriptors" : [
+      {
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(int32)"
+               ],
+               "typeStr" : "tensor(int32)",
+               "name" : "reduced"
+            }
+         ],
+         "name" : "ArgMax"
+      },
+      {
+         "name" : "ReduceLogSumExp",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "reduced"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ],
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         }
+      },
+      {
+         "name" : "ReduceLogSum",
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "axes" : "AttrType.INTS",
+            "keepdims" : "AttrType.INT"
+         }
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "ReduceProd",
+         "attrs" : {
+            "axes" : "AttrType.INTS",
+            "keepdims" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Pad",
+         "attrs" : {
+            "mode" : "AttrType.STRING",
+            "pads" : "AttrType.INTS",
+            "value" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "C",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "typeStr" : "T1"
+            }
+         ],
+         "name" : "Equal",
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "A",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "LRN",
+         "attrs" : {
+            "beta" : "AttrType.FLOAT",
+            "size" : "AttrType.INT",
+            "alpha" : "AttrType.FLOAT",
+            "bias" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "alpha" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y"
+            }
+         ],
+         "name" : "Elu"
+      },
+      {
+         "name" : "RandomNormal",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ],
+         "attrs" : {
+            "scale" : "AttrType.FLOAT",
+            "seed" : "AttrType.FLOAT",
+            "mean" : "AttrType.FLOAT",
+            "shape" : "AttrType.INTS",
+            "dtype" : "AttrType.INT"
+         }
+      },
+      {
+         "outputs" : [
+            {
+               "typeStr" : "T1",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "name" : "C"
+            }
+         ],
+         "name" : "Less",
+         "attrs" : {
+            "axis" : "AttrType.INT",
+            "broadcast" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "A"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "B"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "name" : "A"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "name" : "B"
+            }
+         ],
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "name" : "Xor",
+         "outputs" : [
+            {
+               "name" : "C",
+               "typeStr" : "T1",
+               "types" : [
+                  "tensor(bool)"
+               ]
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "typeStr" : "Tind",
+               "types" : [
+                  "tensor(int32)",
+                  "tensor(int64)"
+               ],
+               "name" : "indices"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "Gather"
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "name" : "A"
+            },
+            {
+               "name" : "B",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "name" : "And",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "typeStr" : "T1",
+               "name" : "C"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "to" : "AttrType.STRING"
+         },
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T1"
+            }
+         ],
+         "outputs" : [
+            {
+               "typeStr" : "T2",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ],
+         "name" : "Cast"
+      },
+      {
+         "name" : "ReduceSum",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "reduced"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         }
+      },
+      {
+         "attrs" : {
+            "scale" : "AttrType.INTS",
+            "border" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "name" : "Crop"
+      },
+      {
+         "attrs" : {
+            "pads" : "AttrType.INTS",
+            "kernel_shape" : "AttrType.INTS",
+            "strides" : "AttrType.INTS",
+            "p" : "AttrType.INT",
+            "auto_pad" : "AttrType.STRING"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "LpPool"
+      },
+      {
+         "attrs" : {
+            "dilations" : "AttrType.INTS",
+            "auto_pad" : "AttrType.STRING",
+            "pads" : "AttrType.INTS",
+            "kernel_shape" : "AttrType.INTS",
+            "group" : "AttrType.INT",
+            "strides" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "name" : "W",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "B",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y"
+            }
+         ],
+         "name" : "Conv"
+      },
+      {
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ],
+         "name" : "Relu",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "beta" : "AttrType.FLOAT",
+            "alpha" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "HardSigmoid"
+      },
+      {
+         "name" : "Min",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "min"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data_0"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "ReduceL1",
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ]
+      },
+      {
+         "name" : "ImageScaler",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {
+            "bias" : "AttrType.FLOATS",
+            "scale" : "AttrType.FLOAT"
+         }
+      },
+      {
+         "attrs" : {
+            "axis" : "AttrType.INT",
+            "keepdims" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "types" : [
+                  "tensor(int32)"
+               ],
+               "typeStr" : "tensor(int32)"
+            }
+         ],
+         "name" : "ArgMin"
+      },
+      {
+         "name" : "DepthToSpace",
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {
+            "blocksize" : "AttrType.INT"
+         }
+      },
+      {
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "name" : "RandomNormalLike",
+         "attrs" : {
+            "scale" : "AttrType.FLOAT",
+            "seed" : "AttrType.FLOAT",
+            "mean" : "AttrType.FLOAT",
+            "dtype" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ]
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Exp"
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {},
+         "name" : "GlobalMaxPool",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "perm" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "transposed",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Transpose"
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "Scale",
+         "attrs" : {
+            "scale" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ]
+      },
+      {
+         "name" : "ReduceMin",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "reduced"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         }
+      },
+      {
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "ReduceMean"
+      },
+      {
+         "name" : "GlobalLpPool",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "p" : "AttrType.INT"
+         }
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "RandomUniformLike",
+         "attrs" : {
+            "dtype" : "AttrType.INT",
+            "high" : "AttrType.FLOAT",
+            "seed" : "AttrType.FLOAT",
+            "low" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y"
+            }
+         ],
+         "name" : "MaxPool",
+         "attrs" : {
+            "auto_pad" : "AttrType.STRING",
+            "strides" : "AttrType.INTS",
+            "pads" : "AttrType.INTS",
+            "kernel_shape" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "data_0"
+            }
+         ],
+         "attrs" : {},
+         "name" : "Sum",
+         "outputs" : [
+            {
+               "name" : "sum",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "alpha" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "ThresholdedRelu"
+      },
+      {
+         "name" : "GRUUnit",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "hidden"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "hidden_prev",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "gates"
+            },
+            {
+               "name" : "seq_lengths",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "t",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "drop_states" : "AttrType.INT"
+         }
+      },
+      {
+         "attrs" : {
+            "axis_w" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "W",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "B",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "FC"
+      },
+      {
+         "name" : "RandomUniform",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "attrs" : {
+            "low" : "AttrType.FLOAT",
+            "seed" : "AttrType.FLOAT",
+            "shape" : "AttrType.INTS",
+            "dtype" : "AttrType.INT",
+            "high" : "AttrType.FLOAT"
+         }
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Floor"
+      },
+      {
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(double)",
+                  "tensor(int64)",
+                  "tensor(int32)",
+                  "tensor(float16)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {},
+         "name" : "ATen",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(double)",
+                  "tensor(int64)",
+                  "tensor(int32)",
+                  "tensor(float16)"
+               ],
+               "name" : "output"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "MeanVarianceNormalization",
+         "attrs" : {
+            "normalize_variance" : "AttrType.INT",
+            "across_channels" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {
+            "max" : "AttrType.FLOAT",
+            "min" : "AttrType.FLOAT"
+         },
+         "name" : "Clip",
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "axis" : "AttrType.INT",
+            "broadcast" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "A",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "B",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "C",
+               "typeStr" : "T1",
+               "types" : [
+                  "tensor(bool)"
+               ]
+            }
+         ],
+         "name" : "Greater"
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "strides" : "AttrType.INTS",
+            "pads" : "AttrType.INTS",
+            "kernel_shape" : "AttrType.INTS",
+            "auto_pad" : "AttrType.STRING"
+         },
+            "name" : "AveragePool",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "name" : "InstanceNormalization",
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "name" : "scale",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            }
+         ],
+         "attrs" : {
+            "epsilon" : "AttrType.FLOAT"
+         }
+      },
+      {
+         "attrs" : {
+            "beta" : "AttrType.FLOAT",
+            "alpha" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "ParametricSoftplus"
+      },
+      {
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "C"
+            }
+         ],
+         "name" : "Mul",
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "A"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "B"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "input",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "p" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "name" : "LpNormalization",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ]
+      },
+      {
+         "name" : "Ceil",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ],
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "attrs" : {
+            "ratio" : "AttrType.FLOAT",
+            "is_test" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "mask"
+            }
+         ],
+         "name" : "Dropout"
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(double)",
+                  "tensor(int64)",
+                  "tensor(int32)",
+                  "tensor(float16)"
+               ]
+            }
+         ],
+         "name" : "Upsample",
+         "attrs" : {
+            "width_scale" : "AttrType.FLOAT",
+            "mode" : "AttrType.STRING",
+            "height_scale" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(double)",
+                  "tensor(int64)",
+                  "tensor(int32)",
+                  "tensor(float16)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "beta" : "AttrType.FLOAT",
+            "alpha" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ],
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ],
+         "name" : "Affine"
+      },
+      {
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(int64)"
+               ],
+               "typeStr" : "tensor(int64)",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {
+            "weights" : "AttrType.TENSOR",
+            "output_dim" : "AttrType.INT",
+            "input_dim" : "AttrType.INT"
+         },
+         "name" : "Embedding",
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "name" : "A",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ]
+            },
+            {
+               "name" : "B",
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "typeStr" : "T1",
+               "name" : "C"
+            }
+         ],
+         "name" : "Or"
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Y"
+            }
+         ],
+         "name" : "GlobalAveragePool"
+      },
+      {
+         "name" : "Reshape",
+         "outputs" : [
+            {
+               "name" : "reshaped",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ],
+         "attrs" : {
+            "shape" : "AttrType.INTS"
+         }
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ],
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         },
+         "name" : "Hardmax",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ]
+      },
+      {
+         "name" : "Identity",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "Z"
+            }
+         ],
+         "name" : "Pow",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(bool)"
+               ]
+            }
+         ],
+         "name" : "Not",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(bool)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "attrs" : {},
+         "name" : "Neg",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "alpha" : "AttrType.FLOAT",
+            "beta" : "AttrType.FLOAT"
+         },
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "ScaledTanh"
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "input",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         },
+         "name" : "LogSoftmax",
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "A",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            }
+         ],
+         "attrs" : {},
+         "name" : "MatMul",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y_h"
+            }
+         ],
+         "name" : "LSTM",
+         "attrs" : {
+            "direction" : "AttrType.STRING",
+            "activations" : "AttrType.STRINGS",
+            "activation_alpha" : "AttrType.FLOATS",
+            "clip" : "AttrType.FLOAT",
+            "output_sequence" : "AttrType.INT",
+            "input_forget" : "AttrType.INT",
+            "hidden_size" : "AttrType.INT",
+            "activation_beta" : "AttrType.FLOATS"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "W"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "R"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            },
+            {
+               "name" : "sequence_lens",
+               "typeStr" : "T1",
+               "types" : [
+                  "tensor(int32)"
+               ]
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "initial_h"
+            },
+            {
+               "name" : "initial_c",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "P",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "W"
+            },
+            {
+               "name" : "B",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "group" : "AttrType.INT",
+            "strides" : "AttrType.INTS",
+            "pads" : "AttrType.INTS",
+            "output_shape" : "AttrType.INTS",
+            "kernel_shape" : "AttrType.INTS",
+            "dilations" : "AttrType.INTS",
+            "auto_pad" : "AttrType.STRING"
+         },
+         "name" : "ConvTranspose",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "attrs" : {
+            "value" : "AttrType.FLOAT",
+            "input_as_shape" : "AttrType.INT",
+            "extra_shape" : "AttrType.INTS",
+            "dtype" : "AttrType.INT",
+            "shape" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(int32)",
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(int64)"
+               ],
+               "typeStr" : "T1",
+               "name" : "input"
+            }
+         ],
+         "outputs" : [
+            {
+               "typeStr" : "T2",
+               "types" : [
+                  "tensor(int32)",
+                  "tensor(bool)",
+                  "tensor(float)",
+                  "tensor(int64)"
+               ],
+               "name" : "output"
+            }
+         ],
+         "name" : "ConstantFill"
+      },
+      {
+         "name" : "GRU",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "name" : "Y_h",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "W"
+            },
+            {
+               "name" : "R",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "B"
+            },
+            {
+               "types" : [
+                  "tensor(int32)"
+               ],
+               "typeStr" : "T1",
+               "name" : "sequence_lens"
+            },
+            {
+               "name" : "initial_h",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "activations" : "AttrType.STRINGS",
+            "hidden_size" : "AttrType.INT",
+            "activation_beta" : "AttrType.FLOATS",
+            "activation_alpha" : "AttrType.FLOATS",
+            "output_sequence" : "AttrType.INT",
+            "direction" : "AttrType.STRING",
+            "clip" : "AttrType.FLOAT"
+         }
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "inputs",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         },
+         "name" : "Concat",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "concat_result"
+            }
+         ]
+      },
+      {
+         "name" : "Slice",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "axes" : "AttrType.INTS",
+            "starts" : "AttrType.INTS",
+            "ends" : "AttrType.INTS"
+         }
+      },
+      {
+         "attrs" : {
+            "axes" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "squeezed",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Squeeze"
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "SpaceToDepth",
+         "attrs" : {
+            "blocksize" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "Tile",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "tiles"
+            },
+            {
+               "name" : "axis",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "rois"
+            }
+         ],
+         "attrs" : {
+            "spatial_scale" : "AttrType.FLOAT",
+            "pooled_shape" : "AttrType.INTS"
+         },
+         "name" : "MaxRoiPool",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "C"
+            }
+         ],
+         "name" : "Add",
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "A"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "B"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "C",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "Div",
+         "attrs" : {
+            "broadcast" : "AttrType.INT",
+            "axis" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "A"
+            },
+            {
+               "name" : "B",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "name" : "Abs",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y"
+            }
+         ],
+         "name" : "Reciprocal",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "reduced"
+            }
+         ],
+         "name" : "ReduceL2",
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "data"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "name" : "Sqrt",
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "shape",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "values" : "AttrType.FLOATS",
+            "shape" : "AttrType.INTS",
+            "input_as_shape" : "AttrType.INT",
+            "extra_shape" : "AttrType.INTS"
+         },
+         "name" : "GivenTensorFill",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "X"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "alpha" : "AttrType.FLOAT"
+         },
+         "name" : "LeakyRelu",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "name" : "Selu",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "attrs" : {
+            "gamma" : "AttrType.FLOAT",
+            "alpha" : "AttrType.FLOAT"
+         }
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "C",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Sub",
+         "attrs" : {
+            "axis" : "AttrType.INT",
+            "broadcast" : "AttrType.INT"
+         },
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "A"
+            },
+            {
+               "name" : "B",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "inputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "input"
+            }
+         ],
+         "attrs" : {},
+         "name" : "Log",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "output"
+            }
+         ]
+      },
+      {
+         "name" : "Tanh",
+         "outputs" : [
+            {
+               "name" : "output",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "name" : "Flatten",
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "input",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         }
+      },
+      {
+         "name" : "PRelu",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "X",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "slope"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            },
+            {
+               "name" : "scale",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            },
+            {
+               "name" : "mean",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "name" : "var",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "momentum" : "AttrType.FLOAT",
+            "epsilon" : "AttrType.FLOAT",
+            "is_test" : "AttrType.INT",
+            "spatial" : "AttrType.INT"
+         },
+         "name" : "BatchNormalization",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "mean",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "name" : "var",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "saved_mean"
+            },
+            {
+               "name" : "saved_var",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ]
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "Y"
+            }
+         ],
+         "name" : "Sigmoid"
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "data_0",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "max"
+            }
+         ],
+         "name" : "Max"
+      },
+      {
+         "outputs" : [
+            {
+               "name" : "outputs",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Split",
+         "attrs" : {
+            "axis" : "AttrType.INT",
+            "split" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "input"
+            }
+         ]
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "data_0",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "mean",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "Mean"
+      },
+      {
+         "attrs" : {
+            "keepdims" : "AttrType.INT",
+            "axes" : "AttrType.INTS"
+         },
+         "inputs" : [
+            {
+               "name" : "data",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "reduced",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "ReduceSumSquare"
+      },
+      {
+         "name" : "Softmax",
+         "outputs" : [
+            {
+               "name" : "output",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "attrs" : {
+            "axis" : "AttrType.INT"
+         }
+      },
+      {
+         "attrs" : {},
+         "inputs" : [
+            {
+               "name" : "input",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ],
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "name" : "Softsign"
+      },
+      {
+         "name" : "Softplus",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "inputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "X"
+            }
+         ],
+         "attrs" : {}
+      },
+      {
+         "inputs" : [
+            {
+               "name" : "A",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "B",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "C"
+            }
+         ],
+         "attrs" : {
+            "transB" : "AttrType.INT",
+            "alpha" : "AttrType.FLOAT",
+            "broadcast" : "AttrType.INT",
+            "beta" : "AttrType.FLOAT",
+            "transA" : "AttrType.INT"
+         },
+         "name" : "Gemm",
+         "outputs" : [
+            {
+               "name" : "Y",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            }
+         ]
+      },
+      {
+         "outputs" : [
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "output"
+            }
+         ],
+         "name" : "Constant",
+         "attrs" : {
+            "value" : "AttrType.TENSOR"
+         }
+      },
+      {
+         "attrs" : {
+            "activation_beta" : "AttrType.FLOATS",
+            "hidden_size" : "AttrType.INT",
+            "output_sequence" : "AttrType.INT",
+            "clip" : "AttrType.FLOAT",
+            "direction" : "AttrType.STRING",
+            "activation_alpha" : "AttrType.FLOATS",
+            "activations" : "AttrType.STRINGS"
+         },
+         "inputs" : [
+            {
+               "name" : "X",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "W"
+            },
+            {
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "typeStr" : "T",
+               "name" : "R"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "B"
+            },
+            {
+               "typeStr" : "T1",
+               "types" : [
+                  "tensor(int32)"
+               ],
+               "name" : "sequence_lens"
+            },
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "initial_h"
+            }
+         ],
+         "outputs" : [
+            {
+               "name" : "Y",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            },
+            {
+               "name" : "Y_h",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "name" : "RNN"
+      },
+      {
+         "name" : "ReduceMax",
+         "outputs" : [
+            {
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ],
+               "name" : "reduced"
+            }
+         ],
+         "inputs" : [
+            {
+               "name" : "data",
+               "typeStr" : "T",
+               "types" : [
+                  "tensor(double)",
+                  "tensor(float16)",
+                  "tensor(float)"
+               ]
+            }
+         ],
+         "attrs" : {
+            "axes" : "AttrType.INTS",
+            "keepdims" : "AttrType.INT"
+         }
+      }
+   ]
+}

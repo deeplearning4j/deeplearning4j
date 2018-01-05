@@ -160,23 +160,14 @@ public class Convolution {
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
-        Im2col im2col =  Im2col.builder()
-                .inputArrays(new INDArray[]{img})
-                .conv2DConfig(Conv2DConfig.builder()
-                        .kh(kh)
-                        .pw(pw)
-                        .ph(ph)
-                        .sy(sy)
-                        .sx(sx)
-                        .kw(kw)
-                        .kh(kh)
-                        .dw(1)
-                        .dh(1)
-                        .isSameMode(isSameMode)
-                        .build()).build();
+        //Input: NCHW format
+        int outH = outputSize(img.size(2), kh, sy, ph, dh, isSameMode);
+        int outW = outputSize(img.size(3), kw, sx, pw, dw, isSameMode);
 
-        Nd4j.getExecutioner().exec(im2col);
-        return im2col.outputArguments()[0];
+        //[miniBatch,depth,kH,kW,outH,outW]
+        INDArray out = Nd4j.create(new int[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
+
+        return im2col(img, kh, kw, sy, sx, ph, pw, dh, dw, isSameMode, out);
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, boolean isSameMode,
@@ -214,8 +205,8 @@ public class Convolution {
                         .sx(sx)
                         .kw(kw)
                         .kh(kh)
-                        .dw(dH)
-                        .dh(dW)
+                        .dw(dW)
+                        .dh(dH)
                         .isSameMode(isSameMode)
                         .build()).build();
 
@@ -329,6 +320,7 @@ public class Convolution {
      * @param coverAll
      * @return
      */
+    @Deprecated
     public static int outSize(int size, int k, int s, int p, int dilation, boolean coverAll) {
         k = effectiveKernelSize(k, dilation);
 
@@ -336,6 +328,16 @@ public class Convolution {
             return (size + p * 2 - k + s - 1) / s + 1;
         else
             return (size + p * 2 - k) / s + 1;
+    }
+
+    public static int outputSize(int size, int k, int s, int p, int dilation, boolean isSameMode){
+        k = effectiveKernelSize(k, dilation);
+
+        if(isSameMode) {
+            return (int) Math.ceil(size * 1.f / s);
+        } else {
+            return (size - k + 2 * p)/s + 1;
+        }
     }
 
     public static int effectiveKernelSize(int kernel, int dilation){

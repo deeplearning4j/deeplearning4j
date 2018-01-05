@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.controlflow;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.Op;
 
 /**
@@ -68,5 +69,10 @@ public class WhileDerivative extends While {
     @Override
     public Op.Type opType() {
         return Op.Type.CONDITIONAL;
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflow name for while backprop");
     }
 }

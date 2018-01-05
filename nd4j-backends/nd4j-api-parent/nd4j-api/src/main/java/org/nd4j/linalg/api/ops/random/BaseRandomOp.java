@@ -11,6 +11,7 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public abstract class BaseRandomOp extends BaseOp implements RandomOp {
+
     @Override
     public Type opType() {
         return Type.RANDOM;

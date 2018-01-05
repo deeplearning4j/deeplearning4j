@@ -37,26 +37,32 @@ public class LeakyReLUDerivative extends BaseTransformOp {
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double alpha) {
         super(sameDiff, i_v1, i_v2);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
+
     }
 
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double alpha) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
         super(sameDiff, i_v, inPlace);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, extraArgs);
         this.alpha = alpha;
+        this.extraArgs = new Object[] {alpha};
     }
 
     public LeakyReLUDerivative() {}

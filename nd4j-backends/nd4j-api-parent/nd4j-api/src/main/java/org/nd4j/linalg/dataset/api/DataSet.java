@@ -253,7 +253,7 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
     void setColumnNames(List<String> columnNames);
 
     /**
-     * Split the DataSet into two DataSets randomly
+     * SplitV the DataSet into two DataSets randomly
      * @param percentTrain    Percentage of examples to be returned in the training DataSet object
      */
     SplitTestAndTrain splitTestAndTrain(double percentTrain);

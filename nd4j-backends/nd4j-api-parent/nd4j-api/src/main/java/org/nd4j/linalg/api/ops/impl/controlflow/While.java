@@ -12,6 +12,8 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -115,7 +117,7 @@ public class While extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.blockName = blockName;
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new int[]{1,1},new ZeroInitScheme('f'));
-        parent.putFunctionForId(getInstanceId(),this);
+        parent.putFunctionForId(getOwnName(),this);
 
         parent.addArgsFor(inputVars,this);
         parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
@@ -165,61 +167,88 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
 
-
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        //note that we initialize startPosition possibly from a parent context, the default should start from
-        //
-        // the passed in node, but we might be farther along in the import loop.
+        doImport(nodeDef,initWith,attributesForNode,graph,new LinkedHashSet<String>(),new AtomicInteger(0));
+    }
 
-        val startPosition = this.startPosition == null ? new AtomicInteger(graph.getNodeList().indexOf(nodeDef)) : this.startPosition;
-        this.startPosition = startPosition;
-        this.sameDiff = initWith;
+
+    private  void doImport(NodeDef nodeDef,SameDiff initWith,Map<String,AttrValue> attributesForNode,GraphDef graph,Set<String> skipSet,AtomicInteger currIndex) {
         val uniqueId = java.util.UUID.randomUUID().toString();
-        this.blockName = uniqueId;
+
+        val scopeCondition = SameDiff.create();
+        val scopeLoop = SameDiff.create();
+        initWith.putSubFunction("condition-" + uniqueId,scopeCondition);
+        initWith.putSubFunction("loopbody-" + uniqueId,scopeLoop);
+        this.loopBodyExecution = scopeLoop;
+        this.predicateExecution = scopeCondition;
+        this.startPosition = currIndex;
+
+        log.info("Adding 2 new scopes for WHILE {}");
 
 
-        // parsing declarations first. they all come as Expose ops
-        int enterCnt = 0;
+        val nodes = graph.getNodeList();
 
-        Set<String> skipSet = new HashSet<>();
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        /**
+         * Plan is simple:
+         * 1) we read all declarations of variables used within loop
+         * 2) we set up conditional scope
+         * 3) we set up body scope
+         * 4) ???
+         * 5) PROFIT!
+         */
+
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("enter")) {
-                skipSet.add(tfNode.getName());
+                //skipSet.add(tfNode.getName());
                 break;
             }
 
+//            if (skipSet.contains(tfNode.getName()))
+//                continue;
+
             skipSet.add(tfNode.getName());
 
+            val vars = new SDVariable[tfNode.getInputCount()];
+            for (int e = 0; e < tfNode.getInputCount(); e++) {
+                val input = TFGraphMapper.getInstance().getNodeName(tfNode.getInput(e));
+                vars[e] = initWith.getVariable(input) == null ? initWith.var(input,null,new ZeroInitScheme('f')) : initWith.getVariable(input);
+                scopeCondition.var(vars[e]);
+                scopeLoop.var(vars[e]);
+            }
+
+            this.inputVars = vars;
         }
-        // now we're skipping Merge step, since we've already captured variables at Expose step
+
+
+        // now we're skipping Merge step, since we've already captured variables at Enter step
         int mergedCnt = 0;
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("merge")) {
+                scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'));
                 break;
             }
 
             skipSet.add(tfNode.getName());
-
+            val var = scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'));
+            scopeCondition.var(var);
+            initWith.var(var);
             mergedCnt++;
         }
 
 
-        this.predicate = new SameDiff.DefaultSameDiffConditional();
-
         // now, we're adding conditional scope
-        val conditional = SameDiff.create();
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             // we're parsing up to condition
             if (tfNode.getOp().equalsIgnoreCase("LoopCond")) {
                 skipSet.add(tfNode.getName());
-                startPosition.incrementAndGet();
+                currIndex.incrementAndGet();
                 break;
             }
 
@@ -229,14 +258,11 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = conditional.var(tfNode.getName(),TFGraphMapper.getInstance().getArrayFrom(tfNode,graph));
-                log.info("Adding body var [{}:{}]", var.getVarName(), var.getVarName());
+                val var = scopeCondition.var(tfNode.getName(),null,new ZeroInitScheme('f'));
+                scopeLoop.var(var);
+                initWith.var(var);
+                log.info("Adding condition var [{}]", var.getVarName());
 
-            } else {
-                log.info("starting on [{}]: {}", tfNode.getName(), tfNode.getOp());
-                val func = DifferentialFunctionClassHolder.getInstance().getInstance(TFGraphMapper.getInstance().getMappedOp(tfNode.getOp()).opName());
-                val varOutput = conditional.var(tfNode.getName(),sameDiff.getShapeForVarName(func.outputVariables()[0].getVarName()));
-                func.initFromTensorFlow(tfNode,conditional,nodeDef.getAttrMap(),graph);
             }
 
             skipSet.add(tfNode.getName());
@@ -246,21 +272,21 @@ public class While extends DifferentialFunction implements CustomOp {
 
         // time to skip some Switch calls
         int switchCnt = 0;
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             // we're parsing up to condition
             if (!tfNode.getOp().equalsIgnoreCase("Switch"))
                 break;
 
+            switchCnt++;
             skipSet.add(tfNode.getName());
-
         }
 
         // now we're parsing Identity step
         int identityCnt = 0;
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
 
             if (!tfNode.getOp().equalsIgnoreCase("Identity")) {
@@ -269,18 +295,23 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             val func = DifferentialFunctionClassHolder.getInstance().getInstance(TFGraphMapper.getInstance().getMappedOp(tfNode.getOp()).opName());
-            val varOutput = conditional.var(tfNode.getName(),initWith.getShapeForVarName(func.outputVariables()[0].getVarName()));
             func.initFromTensorFlow(tfNode,initWith,nodeDef.getAttrMap(),graph);
-            identityCnt++;
+            func.setSameDiff(scopeLoop);
+            val variables = new SDVariable[tfNode.getInputCount()];
+            for(int i = 0; i < tfNode.getInputCount(); i++) {
+                variables[i] = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
+                scopeCondition.var(variables[i]);
+                scopeLoop.var(variables[i]);
+            }
 
-
+            scopeLoop.addArgsFor(variables,func);
             skipSet.add(tfNode.getName());
         }
 
 
         // parsing body scope
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             if (skipSet.contains(tfNode.getName())) {
                 log.info("Skipping: {}", tfNode.getName());
@@ -288,7 +319,7 @@ public class While extends DifferentialFunction implements CustomOp {
             }
 
             if (tfNode.getOp().equalsIgnoreCase("NextIteration")) {
-                skipSet.add(tfNode.getName());
+//                skipSet.add(tfNode.getName());
                 break;
             }
 
@@ -305,36 +336,43 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = initWith.var(tfNode.getName(),TFGraphMapper.getInstance().getArrayFrom(tfNode,graph));
-                log.info("Adding body var [{}:{}]", var.getVarName(), var.getVarName());
+                val var = scopeLoop.var(tfNode.getName(), null,new ZeroInitScheme('f'));
+                log.info("Adding body var [{}]",var.getVarName());
+
             } else {
                 log.info("starting on [{}]: {}", tfNode.getName(), tfNode.getOp());
 
-                boolean isNewLoop = false;
-                SameDiff potentialNewLoop = null;
                 if (tfNode.getOp().equalsIgnoreCase("enter")) {
-                    val frame_name = attributesForNode.get("frame_name").getS().toStringUtf8();
-                    if (initWith.getFunction(frame_name) == null) {
-                        potentialNewLoop = SameDiff.create();
-                        initWith.putSubFunction(frame_name,potentialNewLoop);
-                        isNewLoop = true;
-                    }
-
-                    this.loopBodyExecution = potentialNewLoop;
-
-                }
-
-                if (isNewLoop) {
                     log.info("NEW LOOP ----------------------------------------");
-                    val func = new While(startPosition);
-                    val varOutput = conditional.var(tfNode.getName(),initWith.getShapeForVarName(func.outputVariables()[0].getVarName()));
-                    func.initFromTensorFlow(tfNode,initWith,nodeDef.getAttrMap(),graph);
-
+                    val func = new While(currIndex);
+                    func.doImport(nodeDef,initWith,attributesForNode,graph,skipSet,currIndex);
+                    func.setSameDiff(initWith);
                     log.info("END LOOP ----------------------------------------");
                 } else {
                     val func = DifferentialFunctionClassHolder.getInstance().getInstance(TFGraphMapper.getInstance().getMappedOp(tfNode.getOp()).opName());
-                    val varOutput = conditional.var(tfNode.getName(),initWith.getShapeForVarName(func.outputVariables()[0].getVarName()));
+
                     func.initFromTensorFlow(tfNode,initWith,nodeDef.getAttrMap(),graph);
+
+
+                    func.setSameDiff(scopeCondition);
+
+                    val variables = new SDVariable[tfNode.getInputCount()];
+                    for(int i = 0; i < tfNode.getInputCount(); i++) {
+                        val name = TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i));
+                        variables[i] = scopeCondition.getVariable(name);
+                        if(variables[i] == null) {
+                            if(scopeLoop.getVariable(name) == null)
+                                variables[i] = scopeCondition.var(initWith.getVariable(name));
+                            else if(scopeLoop.getVariable(name) != null)
+                                variables[i] = scopeLoop.getVariable(name);
+                            else
+                                variables[i] = scopeLoop.var(name, Nd4j.scalar(1.0));
+                        }
+                    }
+
+                    scopeLoop.addArgsFor(variables,func);
+
+
                 }
             }
 
@@ -342,34 +380,46 @@ public class While extends DifferentialFunction implements CustomOp {
         }
 
 
+        val returnInputs = new ArrayList<SDVariable>();
+        val returnOutputs = new ArrayList<SDVariable>();
+
         // mapping NextIterations, to Return op
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("NextIteration"))
                 break;
 
             skipSet.add(tfNode.getName());
 
-
+            val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme('f')) : initWith.getVariable(inputName) ;
+            returnInputs.add(input);
         }
+
+
+        this.outputVars = returnOutputs.toArray(new SDVariable[returnOutputs.size()]);
+        this.inputVars = returnInputs.toArray(new SDVariable[returnInputs.size()]);
+        initWith.addArgsFor(inputVars,this);
+        initWith.addOutgoingFor(outputVars,this);
 
         // we should also map While/Exit to libnd4j while
         int exitCnt = 0;
-        for (; startPosition.get() < graph.getNodeCount(); startPosition.incrementAndGet()) {
-            val tfNode = graph.getNode(startPosition.get());
+        for (; currIndex.get() < nodes.size(); currIndex.incrementAndGet()) {
+            val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("Exit")) {
-                skipSet.add(tfNode.getName());
+                //skipSet.add(tfNode.getName());
                 break;
             }
 
             skipSet.add(tfNode.getName());
+            val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme('f')) : initWith.getVariable(inputName) ;
         }
 
 
         log.info("-------------------------------------------");
-
 
     }
 
@@ -509,7 +559,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
     @Override
     public CustomOpDescriptor getDescriptor() {
-        return null;
+        return CustomOpDescriptor.builder().build();
     }
 
     @Override
@@ -530,6 +580,17 @@ public class While extends DifferentialFunction implements CustomOp {
 
     @Override
     public String tensorflowName() {
-        return "while_loop";
+        throw new NoOpNameFoundException("No *singular (eg: use tensorflowNames() found for this op " + opName());
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        return new String[] {"Enter","Expose"};
+    }
+
+
+    @Override
+    public Op.Type opType() {
+        return Op.Type.LOOP;
     }
 }

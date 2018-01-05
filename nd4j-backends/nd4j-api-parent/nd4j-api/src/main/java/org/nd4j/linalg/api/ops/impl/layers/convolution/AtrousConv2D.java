@@ -94,6 +94,10 @@ public class AtrousConv2D extends Conv2D {
 
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return conv2DConfig.toProperties();
+    }
 
     @Override
     public String opName() {
@@ -108,6 +112,6 @@ public class AtrousConv2D extends Conv2D {
 
     @Override
     public String tensorflowName() {
-        return "atrous_conv2d";
+        return "Dilation2D";
     }
 }

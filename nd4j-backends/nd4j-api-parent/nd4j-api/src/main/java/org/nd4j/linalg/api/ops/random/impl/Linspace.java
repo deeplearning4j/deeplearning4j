@@ -7,7 +7,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Linspace/arange Op implementation, generates from..to distribution within Z
@@ -32,6 +34,15 @@ public class Linspace extends BaseRandomOp {
         init(null, null, z, z.lengthLong());
         this.extraArgs = new Object[] {from, to};
     }
+
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("from",from);
+        ret.put("to",to);
+        return ret;
+    }
+
 
     @Override
     public int opNum() {

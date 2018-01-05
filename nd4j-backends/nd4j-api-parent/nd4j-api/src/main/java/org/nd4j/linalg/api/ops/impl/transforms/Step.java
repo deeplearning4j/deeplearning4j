@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -39,60 +38,73 @@ public class Step extends BaseTransformOp {
     public Step(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, inPlace);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
+
     }
 
     public Step(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v, extraArgs);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step() {
         cutoff = 0.0;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray z) {
         super(x, z);
         cutoff = 0.0;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray z, long n) {
         super(x, z, n);
         cutoff = 0.0;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         cutoff = 0.0;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x) {
         super(x);
         cutoff = 0.0;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray z, double cutoff) {
         super(x, z);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray z, long n, double cutoff) {
         super(x, z, n);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, INDArray y, INDArray z, long n, double cutoff) {
         super(x, y, z, n);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     public Step(INDArray x, double cutoff) {
         super(x);
         this.cutoff = cutoff;
+        this.extraArgs = new Object[] {cutoff};
     }
 
     @Override

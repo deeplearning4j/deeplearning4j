@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 @Builder
 @AllArgsConstructor
 @Data
@@ -23,5 +26,24 @@ public class Pooling2DConfig {
     @Builder.Default private int dw = 1;
     @Builder.Default private boolean isNHWC = false;
 
+
+    public Map<String,Object> toProperties() {
+        Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("kh",kh);
+        ret.put("kw",kw);
+        ret.put("sy",sy);
+        ret.put("sx",sx);
+        ret.put("ph",ph);
+        ret.put("pw",pw);
+        ret.put("virtualHeight",virtualHeight);
+        ret.put("virtualWidth",virtualWidth);
+        ret.put("extra",extra);
+        ret.put("type",type.toString());
+        ret.put("isSameMode",isSameMode);
+        ret.put("dh",dh);
+        ret.put("dw",dw);
+        ret.put("isNHWC",isNHWC);
+        return ret;
+    }
 
 }
