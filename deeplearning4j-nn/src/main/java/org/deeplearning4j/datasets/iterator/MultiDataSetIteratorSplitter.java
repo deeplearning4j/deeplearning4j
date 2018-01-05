@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * This iterator virtually splits given MultiDataSetIterator into Train and Test parts.
  *
  * PLEASE NOTE: You can't use Test iterator twice in a row.
+ * PLEASE NOTE: You can't use this iterator, if underlying iterator uses randomization/shuffle between epochs.
  *
  * @author raver119@gmail.com
  */
