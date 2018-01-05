@@ -273,6 +273,9 @@ fi
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
     CHIP_EXTENSION="avx512"
     ARCH="skylake-avx512"
+elif [ "$CHIP_EXTENSION" == "avx2" ] || [ "$ARCH" == "avx2" ]; then
+    CHIP_EXTENSION="avx2"
+    ARCH="x86-64"
 elif [ "$CHIP_EXTENSION" == "x86_64" ] || [ "$ARCH" == "x86_64" ]; then
     CHIP_EXTENSION="x86_64"
     ARCH="x86-64"
@@ -327,7 +330,7 @@ if [ "$EXPERIMENTAL" == "yes" ]; then
     EXPERIMENTAL_ARG="-DEXPERIMENTAL=yes"
 fi
 
-ARCH_ARG="-DARCH=$ARCH"
+ARCH_ARG="-DARCH=$ARCH -DEXTENSION=$CHIP_EXTENSION"
 
 CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
 
