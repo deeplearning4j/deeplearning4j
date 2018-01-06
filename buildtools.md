@@ -39,7 +39,7 @@ You can use Deeplearning4j with SBT by adding the following to your build.sbt:
 
 You can use Deeplearning4j with Gradle by adding the following to your build.gradle in the dependencies block:
 
-    provided "org.deeplearning4j:deeplearning4j-core:${FIND THE VERSION FROM OUR EXAMPLES http://github.com/deeplearning4j/dl4j-examples}"
+    compile "org.deeplearning4j:deeplearning4j-core:${FIND THE VERSION FROM OUR EXAMPLES http://github.com/deeplearning4j/dl4j-examples}"
 
 ## Leiningen
 
