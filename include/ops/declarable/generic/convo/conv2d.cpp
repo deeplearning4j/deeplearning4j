@@ -111,7 +111,8 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> permutedW(weights->permute({3, 2, 1, 0}));
             std::unique_ptr<NDArray<T>> reshapedW(permutedW.get()->reshape('f', {kX * kY * inDepth, outDepth}));
 
-            output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
+            //output->reshapei('f', {im2col2d.get()->rows(), reshapedW.get()->columns()});
+            output->enforce({im2col2d.get()->rows(), reshapedW.get()->columns()}, 'f');
 
             NDArrayFactory<T>::mmulHelper(im2col2d.get(), reshapedW.get(), output, 1.0, 0.0);
 
@@ -124,7 +125,8 @@ namespace nd4j {
                 output->addiRowVector(bias);
             }
 
-            output->reshapei('f', {oX, oY, input->sizeAt(0),outDepth});
+            output->reshapei('f', {oX, oY, batchSize, outDepth});
+
             output->permutei({2, 3, 1, 0});
 
             if (nd4j::Environment::getInstance()->isDebugAndVerbose())

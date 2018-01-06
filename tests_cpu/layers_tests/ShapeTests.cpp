@@ -4,6 +4,7 @@
 
 #include <helpers/shape.h>
 #include "testlayers.h"
+#include <NDArrayFactory.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -200,4 +201,31 @@ TEST_F(ShapeTests, Test_Transpose_4) {
     shape::transposeInplace(shape);
 
     ASSERT_TRUE(shape::equalsStrict(exp, shape));
+}
+
+TEST_F(ShapeTests, Test_Edge_1) {
+    NDArray<float> x('f', {1, 4, 1, 4});
+    NDArrayFactory<float>::linspace(1, x);
+
+    x.reshapei('c', {4, 4});
+
+    x.printShapeInfo("reshape0");
+    x.printIndexedBuffer("x i");
+    x.printBuffer("x r");
+
+    x.reshapei({4, 1, 1, 4});
+
+    x.printShapeInfo("reshape1");
+}
+
+TEST_F(ShapeTests, Test_Edge_2) {
+    NDArray<float> x('c', {1, 4, 1, 3});
+
+    x.reshapei('f', {3, 4});
+
+    x.printShapeInfo("reshape0");
+
+    x.reshapei({3, 1, 1, 4});
+
+    x.printShapeInfo("reshape1");
 }

@@ -293,6 +293,13 @@ namespace nd4j {
         */ 
         T meanNumber() const;
 
+
+        /**
+         * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
+         */
+        void enforce(const std::initializer_list<int> &dimensions, char order = 'a');
+        void enforce(std::vector<int> &dimensions, char order = 'a');
+
         /**
         *  calculates sum along dimension(s) in this array and save it to created reduced array
         *  dimensions - array of dimensions to calculate sum over
@@ -575,6 +582,9 @@ namespace nd4j {
         */
 		bool reshapei(const char order, const std::initializer_list<int>& shape);		
 		bool reshapei(const char order, const std::vector<int>& shape);
+
+        bool reshapei(const std::initializer_list<int>& shape);		
+		bool reshapei(const std::vector<int>& shape);
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array

@@ -971,6 +971,7 @@ template <typename T>
             printf("%s: [", msg);
         else
             printf("[");
+
         for (Nd4jIndex e = 0; e < limit; e++) {
             printf("%f", (float) this->_buffer[e]);
             if (e < limit - 1)
@@ -1372,39 +1373,42 @@ template <typename T>
     bool NDArray<T>::reshapei(const char order, const std::initializer_list<int>& shape) {
         std::vector<int> vShape(shape);
         return reshapei(order, vShape);
-/*
-    int rank = shape.size();
-    int arrLength = 1;
-    for(const auto& item : shape)
-        arrLength *= item;
-
-    if(_buffer==nullptr || arrLength != lengthOf())
-        return false;
-
-    int shapeLength = rank*2 + 4;
-    // remember old values
-
-    int elemWiseStride = _shapeInfo[rankOf()*2 + 2];
-    // if rank is different then delete and resize _shapeInfo appropriately
-    // also check if current object is _shapeInfo owner
-    if(rank != rankOf() || !_isShapeAlloc) {
-        if(_isShapeAlloc)
-            delete []_shapeInfo;
-        _shapeInfo = new int[shapeLength];
-        _shapeInfo[0] = rank;
-        _isShapeAlloc = true;
-    }
-    // copy new dimensions to _shapeInfo
-    int i = 1;
-    for(const auto& item : shape)
-        _shapeInfo[i++] = item;                 // exclude first element -> rank
-    // set strides in correspondence to dimensions and order
-	updateStrides(order);
-
-    return true;
-        */
 }
 
+template <typename T>
+bool NDArray<T>::reshapei(const std::initializer_list<int>& shape) {
+    return reshapei('c', shape);
+}	
+
+template <typename T>
+bool NDArray<T>::reshapei(const std::vector<int>& shape) {
+    return reshapei('c', shape);
+}
+
+    template <typename T>
+    void NDArray<T>::enforce(const std::initializer_list<int> &dimensions, char order) {
+        std::vector<int> dims(dimensions);
+        enforce(dims, order);
+    }
+
+    template <typename T>
+    void NDArray<T>::enforce(std::vector<int> &dimensions, char o) {
+        int *newShape;
+        ALLOCATE(newShape, _workspace, shape::shapeInfoLength(dimensions.size()), int);
+
+        char order = o == 'a' ? this->ordering() : o;
+
+        if (o == 'c')
+            shape::shapeBuffer(dimensions.size(), dimensions.data(), newShape);
+        else
+            shape::shapeBufferFortran(dimensions.size(), dimensions.data(), newShape);
+
+        if (_isShapeAlloc)
+            RELEASE(_shapeInfo, _workspace);
+
+        _shapeInfo = newShape;
+        _isShapeAlloc = true;
+    }
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length 
