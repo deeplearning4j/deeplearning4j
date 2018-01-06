@@ -1393,6 +1393,18 @@ bool NDArray<T>::reshapei(const std::vector<int>& shape) {
 
     template <typename T>
     void NDArray<T>::enforce(std::vector<int> &dimensions, char o) {
+
+        Nd4jIndex prod = 1;
+        for (int e = 0; e < dimensions.size(); e++)
+            prod *= dimensions[e];
+
+        if (prod != this->lengthOf()) {
+            std::string current = ShapeUtils<T>::shapeAsString(*this);
+            std::string enforced = ShapeUtils<T>::shapeAsString(dimensions);
+            nd4j_printf("Can't enforce new shape, lengths mismatch. Original shape: %s; Requested shape: %s\n", current.c_str(), enforced.c_str());
+            throw "Incompatible shape";
+        }
+
         int *newShape;
         ALLOCATE(newShape, _workspace, shape::shapeInfoLength(dimensions.size()), int);
 

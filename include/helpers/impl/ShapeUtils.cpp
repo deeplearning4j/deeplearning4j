@@ -522,9 +522,19 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
 
     template<typename T>
     std::string ShapeUtils<T>::shapeAsString(NDArray<T> &array) {
-        auto vec = array.getShapeAsVector();
-        return shapeAsString(vec);
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < array.rankOf(); e++) {
+            result += flatbuffers::NumToString(array.sizeAt(e));
+            if (e < array.rankOf() - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
     }
+
     template<typename T>
     std::string ShapeUtils<T>::shapeAsString(std::vector<int>& shape) {
         std::string result;
