@@ -10,7 +10,8 @@ Contents
 * [Introduction to Snapshots](#Introduction)
 * [Setup Instructions](#Setup_Instructions)
 * [Limitations](#Limitations)
-* [Confiiguration of ND4J Backend](#ND4J_Backend)
+* [Configuration of ND4J Backend](#ND4J_Backend)
+* [Note to Gradle Users](#Note_to_gradle_users)
 
 ## <a name="Introduction">Overview/Introduction</a>
 
@@ -52,9 +53,9 @@ Primary limitation when using snapshots, is absence of `-platform` artifacts. So
 
 If your pom.xml has a dependency for `nd4j-native-platform` and you switch to using snapshots to get access to a recent feature you will have to switch your `nd4j-backend` to `nd4j-native`
 
-## <a name="Note to gradle users">Note to gradle users</a>
+## <a name="Note_to_gradle_users">Note to gradle users</a>
 
-Snapshots will not work with gradle.
+Snapshots will not work with gradle. You will have to use maven to download the files. After that you may try using your local maven repository with mavenLocal().
 
 A bare minimum file like
 
