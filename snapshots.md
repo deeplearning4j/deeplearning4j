@@ -51,4 +51,40 @@ Primary limitation when using snapshots, is absence of `-platform` artifacts. So
 ## <a name="ND4J_Backend">ND4J_Backend</a>
 
 If your pom.xml has a dependency for `nd4j-native-platform` and you switch to using snapshots to get access to a recent feature you will have to switch your `nd4j-backend` to `nd4j-native`
+
+## <a name="Note to gradle users">Note to gradle users</a>
+
+Snapshots will not work with gradle.
+
+A bare minimum file like
+
+```Gradle
+version '1.0-SNAPSHOT'
+ 
+apply plugin: 'java'
+ 
+sourceCompatibility = 1.8
+ 
+repositories {
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    mavenCentral()
+}
+ 
+dependencies {
+    compile group: 'org.deeplearning4j', name: 'deeplearning4j-core', version: '0.9.2-SNAPSHOT'
+    compile group: 'org.deeplearning4j', name: 'deeplearning4j-modelimport', version: '0.9.2-SNAPSHOT'
+//  also tried:
+//  compile group: 'org.nd4j', name: 'nd4j-native', version: '0.9.2-SNAPSHOT'
+    compile "org.nd4j:nd4j-native:0.9.2-SNAPSHOT"
+    compile "org.nd4j:nd4j-native:0.9.2-SNAPSHOT:macosx-x86_64"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+ 
+}
+```
+
+should work but does not. This is due to [a bug in gradle](https://github.com/gradle/gradle/issues/2882)
+
+
+Gradle with snapshots *and* maven classifiers appears to be a problem. 
+
  
