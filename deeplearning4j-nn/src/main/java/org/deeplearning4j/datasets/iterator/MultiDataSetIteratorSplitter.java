@@ -30,6 +30,7 @@ public class MultiDataSetIteratorSplitter {
     protected AtomicLong counter = new AtomicLong(0);
 
     protected AtomicBoolean resetPending = new AtomicBoolean(false);
+    protected org.nd4j.linalg.dataset.MultiDataSet firstTrain;
 
     /**
      *
@@ -53,6 +54,8 @@ public class MultiDataSetIteratorSplitter {
         this.ratio = ratio;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;
+
+        log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
     }
 
     public MultiDataSetIterator getTrainIterator() {
@@ -108,7 +111,21 @@ public class MultiDataSetIteratorSplitter {
             @Override
             public MultiDataSet next() {
                 counter.incrementAndGet();
-                return backedIterator.next();
+                val p = backedIterator.next();
+
+                if (counter.get() == 1 && firstTrain == null) {
+                    // first epoch ever, we'll save first dataset and will use it to check for equality later
+                    firstTrain = (org.nd4j.linalg.dataset.MultiDataSet) p.copy();
+                    firstTrain.detach();
+                } else if (counter.get() == 1) {
+                    // epoch > 1, comparing first dataset to previously stored dataset. they should be equal
+                    int cnt = 0;
+                    for (val c: p.getFeatures())
+                        if (!c.equalsWithEps(firstTrain.getFeatures()[cnt++], 1e-5))
+                            throw new ND4JIllegalStateException("First examples do not match. Randomization was used?");
+                }
+
+                return p;
             }
 
             @Override

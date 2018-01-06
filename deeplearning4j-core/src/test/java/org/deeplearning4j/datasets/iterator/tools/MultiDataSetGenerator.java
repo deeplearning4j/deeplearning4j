@@ -27,6 +27,10 @@ public class MultiDataSetGenerator implements MultiDataSetIterator {
         this.totalBatches = numBatches;
     }
 
+    public void shift() {
+        counter.incrementAndGet();
+    }
+
     @Override
     public MultiDataSet next(int num) {
         throw new UnsupportedOperationException();
