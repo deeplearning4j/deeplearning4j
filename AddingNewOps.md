@@ -150,6 +150,20 @@ x.applyPairwiseLambda(&y, lambda);
 
 In this simple example, each element of NDArray `x` will get values set to `x[e] = (x[e] + y[e]) * 2`.
 
+## Tests
+
+For tests libnd4j uses Google Tests suit. All tests are located at `tests_cpu/layers_tests` folder. Here's simple way to run those from command line:
+```
+cd tests_cpu
+cmake -G "Unix Makefiles"
+make -j 4
+./layers_tests/runtests
+```
+
+You can also use your IDE (i.e. Jetbrains CLion) to run tests via GUI.
+
+**PLEASE NOTE:** if you're considering submitting your new op to libnd4j repository via pull request - consider adding tests for it. Ops without tests won't be approved.
+
 ## Backend-specific operation
 
 GPU/MPI/whatever to be added soon.
