@@ -516,3 +516,53 @@ TEST_F(DeclarableOpsTests4, Test_Stack_4) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Squeeze_args_1) {
+    NDArray<float> x('c', {2, 1, 1, 1, 2}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {2, 1, 2}, {1, 2, 3, 4});
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {1, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_Squeeze_args_2) {
+    NDArray<float> x('c', {2, 1, 1, 1, 2}, {1, 2, 3, 4});
+    NDArray<float> y('c', {2}, {1.f, 3.f});
+    NDArray<float> exp('c', {2, 1, 2}, {1, 2, 3, 4});
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests4, Test_Squeeze_args_3) {
+    NDArray<float> x('c', {2, 1, 1, 1, 2}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {2, 1, 2}, {1, 2, 3, 4});
+
+    nd4j::ops::squeeze<float> op;
+    auto result = op.execute({&x}, {}, {-2, -3});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
