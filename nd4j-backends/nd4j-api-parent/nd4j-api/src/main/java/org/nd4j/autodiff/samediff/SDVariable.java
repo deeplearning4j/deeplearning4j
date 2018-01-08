@@ -120,12 +120,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
 
-    @Override
-    public boolean isVariable() {
-        return true;
-    }
-
-
 
 
     @Override

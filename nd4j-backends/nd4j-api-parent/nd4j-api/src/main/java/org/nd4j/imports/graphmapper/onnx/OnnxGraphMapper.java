@@ -7,8 +7,10 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -56,9 +58,92 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public String getTargetMappingForOp(DifferentialFunction function) {
-        return null;
+    public String getTargetMappingForOp(DifferentialFunction function, OnnxProto3.NodeProto node) {
+        return function.opName();
     }
+
+
+    @Override
+    public void mapProperty(String name, DifferentialFunction on, OnnxProto3.NodeProto node, OnnxProto3.GraphProto graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
+        val mapping = propertyMappingsForFunction.get(name).get(getTargetMappingForOp(on, node));
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
+        /**
+         * Map  ints and the like. Need to figure out how attribute mapping should work.
+         *
+         *
+         */
+
+        val propsForFunction = on.propertiesForFunction();
+
+        if(mapping.getTfAttrName() == null) {
+            int tfMappingIdx = mapping.getTfInputPosition();
+            if(tfMappingIdx < 0)
+                tfMappingIdx += node.getInputCount();
+
+            val input = node.getInput(tfMappingIdx);
+            val inputNode = getInstance().getNodeWithNameFromGraph(graph,input);
+            INDArray arr = sameDiff.getArrForVarName(input);
+            val field = fields.get(mapping.getPropertyNames()[0]);
+            val type = field.getType();
+            if(type.equals(int[].class)) {
+                try {
+                    field.set(arr.data().asInt(),on);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(type.equals(int.class) || type.equals(long.class) || type.equals(Long.class) || type.equals(Integer.class)) {
+                try {
+                    field.set(arr.getInt(0),on);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+            else if(type.equals(float.class) || type.equals(double.class) || type.equals(Float.class) || type.equals(Double.class)) {
+                try {
+                    field.set(arr.getDouble(0),on);
+                } catch (IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+
+            /**
+             * Figure out whether it's an int array
+             * or a double array, or maybe a scalar.
+             */
+
+        }
+        else {
+            val tfMappingAttrName = mapping.getOnnxAttrName();
+            val attr = getAttrMap(node).get(tfMappingAttrName);
+            val type = attr.getType();
+            val field = fields.get(mapping.getPropertyNames()[0]);
+
+            Object valueToSet = null;
+            switch(type) {
+                case INT:
+                    valueToSet = attr.getI();
+                    break;
+                case FLOAT:
+                    valueToSet = attr.getF();
+                    break;
+                case STRING:
+                    valueToSet = attr.getF();
+                    break;
+
+            }
+
+            try {
+                field.set(valueToSet,on);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
 
     @Override
     public OnnxProto3.NodeProto getNodeWithNameFromGraph(OnnxProto3.GraphProto graph, String name) {
@@ -200,6 +285,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             newInstance.setSameDiff(importState.getSameDiff());
 
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+            mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
 
         }
         catch (Exception e) {

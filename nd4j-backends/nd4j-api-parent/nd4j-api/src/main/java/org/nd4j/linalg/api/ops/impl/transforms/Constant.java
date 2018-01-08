@@ -38,10 +38,6 @@ public class Constant extends BaseTransformOp {
                     int[] shape) {
         this(sameDiff,i_v,shape,false);
     }
-    @Override
-    public boolean isConstant() {
-        return true;
-    }
 
 
     @Override

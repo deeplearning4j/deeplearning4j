@@ -44,21 +44,18 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
     @Override
     public void mapProperties(DifferentialFunction on, NODE_TYPE node, GRAPH_TYPE graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappings) {
-         val props = on.mappingsForFunction();
-         for(val entry : props.entrySet()) {
-             mapProperty(entry.getKey(),on,node,graph,sameDiff,propertyMappings);
-         }
+        val mappings = propertyMappings.get(getOpType(node));
+        if(mappings == null || mappings.isEmpty()) {
+            return;
+        }
+
+
+        for(val entry : mappings.entrySet()) {
+            mapProperty(entry.getKey(),on,node,graph,sameDiff,propertyMappings);
+        }
     }
 
-    @Override
-    public void mapProperty(String name, DifferentialFunction on, NODE_TYPE node, GRAPH_TYPE graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
-        val mapping = propertyMappingsForFunction.get(name).get(getTargetMappingForOp(on));
-        /**
-         * Map  ints and the like. Need to figure out how attribute mapping should work.
-         *
-         *
-         */
-    }
+
 
     /**
      *

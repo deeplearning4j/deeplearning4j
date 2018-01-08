@@ -28,34 +28,59 @@ public class TFGraphTestList {
 
     public static String[] modelNames = new String[]{
 //            "add_n",
-            //"ae_00",
             //"ae",
+            //"ae_00",
 //            "bias_add",
-//            "add_n",
-//            "bias_add",
-           // "conv_0",
-           // "concat"
+            // "concat"
+            // "conv_0",
+            // "conv_1",
+            // "conv_2",
+            // "conv_3",
             //"deep_mnist", //NOTE THIS ONE WILL FAIL because it is expecting a placeholder value for dropout % which we tie to 1.0 in inference
             //"deep_mnist_no_dropout", //Takes way too long since there are a lot of nodes, would skip for now
-           // "simple_cond"
+            // "expand_dim",
 
-           // "expand_dim",
-           // "g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
-         //   "g_01",
-            "lstm_mnist",
-           // "math_mul_order",
+            // "g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
+            //   "g_01",
+            //   "g_01",
+               "g_02",
+            //   "g_03",
+           //   "g_04",
+             //  "g_05",
+           //   "gru_mnist",
+            //"lstm_mnist",
+            // "math_mul_order",
             //"mlp_00",
-            //"mnist_00",i
-          //  "node_multiple_out",// -> Need to map multiple out values to graph node output values
-          //  "primitive_lstm",
-          //  "stack",
-          //  "stack_1d",
-            //"stack_scalar"
+            //"mnist_00",
+            //  "node_multiple_out",// -> Need to map multiple out values to graph node output values
+            //  "norm_tests",
+            //  "pool_0",
+           //   "pool_1",
+            //  "primitive_gru",
+           //   "primitive_gru_dynamic",
+             // "primitive_lstm",
+            //  "stack",
+            //  "stack_1d",
+            //"stack_scalar",
+          //   "simple_cond"
             //"transform_0",
             //"transpose",
-       //     "transpose_00",
-          //  "unstack"
+            //"transpose_00",
+             // "unstack"
     };
+
+    /**
+     * Failures:
+     * transpose
+     * simple_cond
+     * primitive_gru_dynamic (while loop related)
+     * pool_1 (attributes related)
+     * pool_0: (attributes related)
+     * norm_tests: invalid test (missing resources)
+     * g_05: Gather related
+     * g_04: assertion failure
+     */
+
     //change this to SAMEDIFF for samediff
     public static TFGraphTestAllHelper.ExecuteWith executeWith = ExecuteWith.SAMEDIFF;
     //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;

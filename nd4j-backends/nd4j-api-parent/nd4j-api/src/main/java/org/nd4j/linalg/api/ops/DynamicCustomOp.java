@@ -542,6 +542,9 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
         }
 
+        //ensure that properties are resolved as well
+        super.resolvePropertiesFromSameDiffBeforeExecution();
+
     }
 
 

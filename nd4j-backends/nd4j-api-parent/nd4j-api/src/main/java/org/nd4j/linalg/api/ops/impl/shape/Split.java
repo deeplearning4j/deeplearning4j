@@ -77,7 +77,6 @@ public class Split extends DynamicCustomOp {
         map.put("splitDim",splitDim);
 
         ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
 
         return ret;
     }

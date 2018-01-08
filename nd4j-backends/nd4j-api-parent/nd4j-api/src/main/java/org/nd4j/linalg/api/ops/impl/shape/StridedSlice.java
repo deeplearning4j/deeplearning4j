@@ -44,7 +44,7 @@ import java.util.Map;
  */
 @Slf4j
 public class StridedSlice extends DynamicCustomOp {
-
+    private int[] begin,strides,end,beginMask,endMask,ellipsisMask,newAxisMask,shrinkAxisMask;
 
     public StridedSlice() {}
 
@@ -79,14 +79,6 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-         /*
-            strided slice typically takes 4 tensor arguments:
-            0) input, it's shape determines number of elements in other arguments
-            1) begin indices
-            2) end indices
-            3) strides
-         */
-
         val inputBegin = nodeDef.getInput(1);
         val inputEnd = nodeDef.getInput(2);
         val inputStrides = nodeDef.getInput(3);
@@ -213,7 +205,6 @@ public class StridedSlice extends DynamicCustomOp {
 
 
         ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
 
         return ret;
     }

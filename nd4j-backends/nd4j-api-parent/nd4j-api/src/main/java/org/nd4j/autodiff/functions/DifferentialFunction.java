@@ -9,6 +9,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -18,6 +19,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 
@@ -51,13 +53,6 @@ public abstract class DifferentialFunction {
     @JsonIgnore
     protected Object[] extraArgs;
 
-    //array initialized method being called
-    @JsonIgnore
-    protected boolean isArrayInit = false;
-
-    //array already initialized
-    @JsonIgnore
-    protected  boolean arrayInitialized = false;
 
     @Getter
     @Setter
@@ -113,8 +108,145 @@ public abstract class DifferentialFunction {
      * @return
      */
     public Map<String,Object> propertiesForFunction() {
-        return Collections.emptyMap();
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        Map<String,Object> ret = new LinkedHashMap<>();
+
+        for(val entry : fields.entrySet()) {
+            try {
+                ret.put(entry.getKey(),fields.get(entry.getKey()).get(this));
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return ret;
     }
+
+
+    /**
+     * Set the value for this function.
+     * Note that if value is null an {@link ND4JIllegalStateException}
+     * will be thrown.
+     * @param target the target field
+     * @param value the value to set
+     */
+    public void setValueFor(Field target, Object value) {
+        if(value == null) {
+            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
+        }
+
+        value = ensureProperType(target,value);
+
+        try {
+            target.set(this,value);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private Object ensureProperType(Field targetType,Object value) {
+        val firstClass = targetType.getType();
+        val valueType = value.getClass();
+        if(!firstClass.equals(valueType)) {
+            if(firstClass.equals(int[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.intValue();
+                }
+
+                int otherValue = (int) value;
+                int[] setValue = new int[] {otherValue};
+                return setValue;
+            }
+            else if(firstClass.equals(Integer[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.intValue();
+                }
+
+                Integer otherValue = (Integer) value;
+                Integer[] setValue = new Integer[] {otherValue};
+                return setValue;
+            }
+            else if(firstClass.equals(long[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.longValue();
+                }
+
+                long otherValue = (long) value;
+                long[] setValue = new long[] {otherValue};
+                return setValue;
+
+            }
+            else if(firstClass.equals(Long[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.longValue();
+                }
+
+                Long otherValue = (Long) value;
+                Long[] setValue = new Long[] {otherValue};
+                return setValue;
+
+            }
+            else if(firstClass.equals(double[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.doubleValue();
+                }
+
+
+                double otherValue = (double) value;
+                double[] setValue = new double[] {otherValue};
+                return setValue;
+
+            }
+            else if(firstClass.equals(Double[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.doubleValue();
+                }
+
+
+                Double otherValue = (Double) value;
+                Double[] setValue = new Double[] {otherValue};
+                return setValue;
+
+            }
+            else if(firstClass.equals(float[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.floatValue();
+                }
+
+
+                float otherValue = (float) value;
+                float[] setValue = new float[] {otherValue};
+                return setValue;
+
+            }
+            else if(firstClass.equals(Float[].class)) {
+                if(value instanceof Number) {
+                    Number number = (Number) value;
+                    value = number.floatValue();
+                }
+
+
+
+                Float otherValue = (Float) value;
+                Float[] setValue = new Float[] {otherValue};
+                return setValue;
+
+            }
+        }
+
+        return value;
+    }
+
+
+
 
 
     /**
@@ -156,10 +288,23 @@ public abstract class DifferentialFunction {
 
     }
 
+    /**
+     *
+     * @param sameDiff
+     * @param args
+     */
     public DifferentialFunction(SameDiff sameDiff, SDVariable[] args) {
         this(sameDiff,false,args);
     }
 
+
+    /**
+     * Add the various arguments for
+     * this function
+     * @param sameDiff
+     * @param inPlace
+     * @param args
+     */
     public DifferentialFunction(SameDiff sameDiff, boolean inPlace, SDVariable[] args) {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
@@ -197,18 +342,6 @@ public abstract class DifferentialFunction {
 
 
 
-    @JsonIgnore
-    public  boolean isVariable() {
-        return false;
-    }
-
-
-
-
-
-
-
-
     /**
      * The actual implementation for automatic differentiation.
      *
@@ -225,10 +358,6 @@ public abstract class DifferentialFunction {
         return sameDiff.f();
     }
 
-
-
-
-
     /**
      * Returns true if this
      * function has place holder inputs
@@ -242,14 +371,6 @@ public abstract class DifferentialFunction {
         return false;
     }
 
-    @Override
-    public abstract String toString();
-
-
-
-    public boolean isConstant() {
-        return false;
-    }
 
     /**
      * Return the arguments for a given function
@@ -260,17 +381,74 @@ public abstract class DifferentialFunction {
     }
 
 
-
-
+    /**
+     * Resolve properties and arguments right before execution of
+     * this operation.
+     */
     public void resolvePropertiesFromSameDiffBeforeExecution() {
+        val properties = sameDiff.propertiesToResolveForFunction(this);
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
+        val currentFields = this.propertiesForFunction();
+
+        for(val property : properties) {
+            //property maybe a variable which is only an array
+            //just skip  if this is the case
+            if(!fields.containsKey(property))
+                continue;
+
+            val var = sameDiff.getVarNameForFieldAndFunction(this,property);
+            val fieldType = fields.get(property);
+            val varArr = sameDiff.getArrForVarName(var);
+            //already defined
+            if(currentFields.containsKey(property)) {
+                continue;
+            }
+
+            /**
+             * Possible cause:
+             * Might be related to output name alignment.
+             *
+             */
+            if(varArr == null) {
+                 throw new ND4JIllegalStateException("Unable to set null array!");
+            }
+
+            if(fieldType.getType().equals(int[].class)) {
+                setValueFor(fieldType,varArr.data().asInt());
+            }
+
+            else if(fieldType.equals(double[].class)) {
+                setValueFor(fieldType,varArr.data().asDouble());
+            }
+
+            else if(fieldType.equals(int.class)) {
+                setValueFor(fieldType,varArr.getInt(0));
+            }
+
+            else if(fieldType.equals(double.class)) {
+                setValueFor(fieldType,varArr.getDouble(0));
+            }
+
+        }
 
     }
 
+    /**
+     * Return the first argument
+     * @return
+     */
     public SDVariable arg() {
         return args()[0];
     }
 
 
+    /**
+     * Perform automatic differentiation
+     * wrt the input variables
+     * @param i_v1 the input variables
+     * @return the differentiated output
+     * wrt each input variable
+     */
     public List<SDVariable> diff(List<SDVariable> i_v1) {
         List<SDVariable> vals = doDiff(i_v1);
         val outputVars = args();
@@ -314,16 +492,30 @@ public abstract class DifferentialFunction {
         }
     }
 
+
+    /**
+     * The name of the op
+     * @return
+     */
     public String opName() {
         throw new UnsupportedOperationException();
     }
 
 
+    /**
+     * The type of the op
+     * @return
+     */
     public Op.Type opType() {
         throw new UnsupportedOperationException();
     }
 
 
+    /**
+     * The number of the op (mainly for old legacy XYZ ops
+     * like {@link Op})
+     * @return
+     */
     public int opNum() {
         throw new UnsupportedOperationException();
     }
@@ -350,20 +542,6 @@ public abstract class DifferentialFunction {
         SDVariable opId = outputVariables()[0];
         INDArray ret = opId.getArr();
         return ret;
-    }
-
-
-    public void fillInArrays() {
-        if(this instanceof Op) {
-            Op op = (Op) this;
-            op.setX(getX());
-            //y is often optional for many problems
-            if(args().length > 1)
-                op.setY(getY());
-            op.setZ(getZ());
-        }
-        else
-            throw new IllegalStateException("Unable to fill in arrays. Type must be an operation.");
     }
 
 
@@ -431,7 +609,8 @@ public abstract class DifferentialFunction {
 
 
     /**
-     * Calculate the output shape for this op
+     * Calculate
+     * the output shape for this op
      * @return
      */
     public List<int[]> calculateOutputShape() {
@@ -449,8 +628,6 @@ public abstract class DifferentialFunction {
         DifferentialFunction that = (DifferentialFunction) o;
 
         if (inPlace != that.inPlace) return false;
-        if (isArrayInit != that.isArrayInit) return false;
-        if (arrayInitialized != that.arrayInitialized) return false;
         if (scalarValue != null ? !scalarValue.equals(that.scalarValue) : that.scalarValue != null) return false;
         if (!Arrays.equals(dimensions, that.dimensions)) return false;
         return ownName != null ? ownName.equals(that.ownName) : that.ownName == null;
@@ -462,8 +639,6 @@ public abstract class DifferentialFunction {
         result = 31 * result + (inPlace ? 1 : 0);
         result = 31 * result + (scalarValue != null ? scalarValue.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(dimensions);
-        result = 31 * result + (isArrayInit ? 1 : 0);
-        result = 31 * result + (arrayInitialized ? 1 : 0);
         result = 31 * result + (ownName != null ? ownName.hashCode() : 0);
         return result;
     }

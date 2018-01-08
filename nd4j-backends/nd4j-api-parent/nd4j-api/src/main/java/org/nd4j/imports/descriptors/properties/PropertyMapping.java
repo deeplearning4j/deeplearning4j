@@ -10,7 +10,7 @@ import java.io.Serializable;
 public class PropertyMapping implements Serializable {
 
     private String[] propertyNames;
-    private int tfInputPosition;
+    private Integer tfInputPosition;
     private String onnxAttrName;
     private String tfAttrName;
 

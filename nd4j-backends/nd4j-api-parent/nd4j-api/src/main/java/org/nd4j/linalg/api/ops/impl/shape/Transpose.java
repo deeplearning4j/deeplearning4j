@@ -24,6 +24,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -50,6 +51,28 @@ public class Transpose extends DynamicCustomOp {
 
     public Transpose() {}
 
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        super.resolvePropertiesFromSameDiffBeforeExecution();
+    }
+
+    @Override
+    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
+        Map<String, Map<String, PropertyMapping>> ret = new LinkedHashMap<>();
+        Map<String,PropertyMapping> map = new LinkedHashMap<>();
+
+        val mapping = PropertyMapping.builder()
+                .onnxAttrName("perm")
+                .propertyNames(new String[]{"permuteDims"})
+                .tfInputPosition(1)
+                .build();
+
+
+        map.put("permuteDims",mapping);
+        ret.put(tensorflowName(),map);
+        ret.put(onnxName(),map);
+        return ret;
+    }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
@@ -99,7 +122,7 @@ public class Transpose extends DynamicCustomOp {
 
         //handle once properly mapped
         if(arg().getShape() == null) {
-           return;
+            return;
         }
 
 
@@ -112,6 +135,9 @@ public class Transpose extends DynamicCustomOp {
 
         addInputArgument(arr);
 
+        if(arr != null && permuteDims == null) {
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arr.rank()));
+        }
 
         if(permuteDims != null && permuteDims.length < arg().getShape().length)
             throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");

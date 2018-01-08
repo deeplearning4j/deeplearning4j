@@ -53,7 +53,7 @@ public class Slice extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "stridedslice";
+        return "slice";
     }
 
 

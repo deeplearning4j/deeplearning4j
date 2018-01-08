@@ -6,7 +6,9 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -82,8 +84,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     }
 
     @Override
-    public String getTargetMappingForOp(DifferentialFunction function) {
-        return null;
+    public String getTargetMappingForOp(DifferentialFunction function, NodeDef node) {
+        return function.opName();
     }
 
     @Override
@@ -96,6 +98,94 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         return null;
     }
+
+    @Override
+    public void mapProperty(String name, DifferentialFunction on, NodeDef node, GraphDef graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
+        val mapping = propertyMappingsForFunction.get(getOpType(node)).get(name);
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
+
+
+        val propsForFunction = on.propertiesForFunction();
+
+        if(mapping.getTfInputPosition() != null) {
+            int tfMappingIdx = mapping.getTfInputPosition();
+            if(tfMappingIdx < 0)
+                tfMappingIdx += node.getInputCount();
+
+            val input = node.getInput(tfMappingIdx);
+            val inputNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,input);
+            INDArray arr = getArrayFrom(inputNode,graph);
+            if(arr == null) {
+                arr = sameDiff.getArrForVarName(input);
+            }
+
+            if(arr == null) {
+                sameDiff.addPropertyToResolve(on,name);
+                sameDiff.addVariableMappingForField(on,name,inputNode.getName());
+                return;
+            }
+
+            val field = fields.get(name);
+            val type = field.getType();
+            if(type.equals(int[].class)) {
+                on.setValueFor(field,arr.data().asInt());
+            }
+            else if(type.equals(int.class) || type.equals(long.class) || type.equals(Long.class) || type.equals(Integer.class)) {
+                on.setValueFor(field,arr.getInt(0));
+
+            }
+            else if(type.equals(float.class) || type.equals(double.class) || type.equals(Float.class) || type.equals(Double.class)) {
+                on.setValueFor(field,arr.getDouble(0));
+            }
+
+
+        }
+        else {
+            val tfMappingAttrName = mapping.getTfAttrName();
+            val attr = node.getAttrOrThrow(tfMappingAttrName);
+            val type = attr.getType();
+            val field = fields.get(mapping.getPropertyNames()[0]);
+
+            Object valueToSet = null;
+            switch(type) {
+                case DT_BOOL:
+                    valueToSet = attr.getB();
+                    break;
+                case DT_INT8:
+                    valueToSet = attr.getI();
+                    break;
+                case DT_INT16:
+                    valueToSet = attr.getI();
+                    break;
+                case DT_INT32:
+                    valueToSet = attr.getI();
+                    break;
+                case DT_FLOAT:
+                    valueToSet = attr.getF();
+                    break;
+                case DT_DOUBLE:
+                    valueToSet = attr.getF();
+                    break;
+                case DT_STRING:
+                    valueToSet = attr.getS();
+                    break;
+                case DT_INT64:
+                    valueToSet = attr.getI();
+                    break;
+
+
+            }
+
+            if(field != null && valueToSet != null)
+                on.setValueFor(field,valueToSet);
+
+
+        }
+
+    }
+
+
+
 
     /**
      * {@inheritDoc}
@@ -351,6 +441,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 newInstance.setSameDiff(importState.getSameDiff());
 
                 newInstance.initFromTensorFlow(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
+                mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
                 importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
                 //ensure we can track node name to function instance later.
                 diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);

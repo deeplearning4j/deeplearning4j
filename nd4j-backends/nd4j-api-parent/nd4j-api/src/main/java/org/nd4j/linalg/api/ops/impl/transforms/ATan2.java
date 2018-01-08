@@ -19,63 +19,62 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Tanh elementwise function
+ * Arc Tangent elementwise function
  *
- * @author raver119@gmail.com
+ * @author Adam Gibson
  */
-public class Tan extends BaseTransformOp {
-    public Tan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+public class ATan2 extends BaseTransformOp {
+    public ATan2(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Tan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public ATan2(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Tan(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public ATan2(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Tan() {}
+    public ATan2() {}
 
-    public Tan(INDArray x, INDArray z) {
+    public ATan2(INDArray x, INDArray z) {
         super(x, z);
     }
 
-    public Tan(INDArray x, INDArray z, long n) {
+    public ATan2(INDArray x, INDArray z, long n) {
         super(x, z, n);
     }
 
-    public Tan(INDArray x, INDArray y, INDArray z, long n) {
+    public ATan2(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Tan(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
-    public Tan(INDArray x) {
+    public ATan2(INDArray x) {
         super(x);
     }
 
     @Override
     public int opNum() {
-        return 65;
+        return 69;
     }
 
     @Override
     public String opName() {
-        return "tan";
+        return "atan2";
     }
+
 
     @Override
     public String onnxName() {
@@ -84,13 +83,17 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Tan";
+        return "Atan2";
     }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        val shape = outputVariables()[0].getShape();
+
+        SDVariable ret = f().div(f().one(shape),
+                f().sqrt(f().sub(f().one(shape),f().pow(arg(),2))));
+
+        return Collections.singletonList(ret);
     }
-
-
 }

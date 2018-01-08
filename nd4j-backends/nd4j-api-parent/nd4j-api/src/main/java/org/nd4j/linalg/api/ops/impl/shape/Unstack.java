@@ -74,7 +74,6 @@ public class Unstack extends DynamicCustomOp {
         map.put("axis",axisMapping);
 
         ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
 
         return ret;
     }
