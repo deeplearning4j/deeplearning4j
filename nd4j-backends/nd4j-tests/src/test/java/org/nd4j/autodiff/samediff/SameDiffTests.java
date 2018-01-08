@@ -2101,5 +2101,28 @@ public class SameDiffTests {
         INDArray exp = arr.rdiv(p);
         assertEquals(exp, dLdIn);
     }
+
+
+    @Test
+    public void testSquare(){
+        Nd4j.getRandom().setSeed(12345);
+
+        int mb = 5;
+        int nOut = 4;
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.rand(mb, nOut));
+        SDVariable label = sd.var("label", Nd4j.rand(mb, nOut));
+        SDVariable diff = in.sub(label);
+        SDVariable sqDiff = sd.square(diff);
+
+        INDArray expOut = in.getArr().sub(label.getArr());
+        expOut.muli(expOut);
+
+        System.out.println("About to exec");
+        INDArray out = sd.execAndEndResult();   //JVM crash
+
+        assertEquals(out, expOut);
+    }
 }
 

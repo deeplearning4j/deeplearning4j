@@ -40,16 +40,19 @@ public class Pow extends BaseTransformOp {
     public Pow(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
         super(sameDiff, i_v, inPlace);
         this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, extraArgs);
         this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public Pow(INDArray x, INDArray z, double pow) {
