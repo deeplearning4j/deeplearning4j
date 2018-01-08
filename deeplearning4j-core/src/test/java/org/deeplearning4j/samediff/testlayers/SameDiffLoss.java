@@ -35,7 +35,12 @@ public class SameDiffLoss extends BaseSameDiffLossLayer {
     }
 
     public Pair<String,String> lossKeys() {
-        return new Pair<>("lossPerEx", "score");
+        return new Pair<>(lossPerExampleVar(), "score");
+    }
+
+    @Override
+    public String lossPerExampleVar(){
+        return "lossPerEx";
     }
 
     @Override

@@ -23,6 +23,8 @@ public abstract class BaseSameDiffLossLayer extends NoParamSameDiffLayer {
 
     public abstract void defineLayer(SameDiff sameDiff, SDVariable layerInput, SDVariable label);
 
+    public abstract String lossPerExampleVar();
+
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         SameDiffLossLayer ret = new SameDiffLossLayer(conf);

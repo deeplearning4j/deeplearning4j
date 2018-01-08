@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.samediff;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
@@ -60,7 +61,21 @@ public class SameDiffLossLayer implements IOutputLayer {
 
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Preconditions.checkNotNull(input, "Input cannot be null when calculating score for examples");
+        Preconditions.checkNotNull(labels, "Labels cannot be null when calculating score for exapmles");
+
+        sameDiff.associateArrayWithVariable(input, inVar);
+        sameDiff.associateArrayWithVariable(labels, labelVar);
+
+        sameDiff.exec();
+
+        //Next: need to determine name of the "score for each example" component...
+        String key = ((BaseSameDiffLossLayer)conf().getLayer()).lossPerExampleVar();
+        INDArray out = sameDiff.getVariable(key).getArr();
+        if(fullNetworkL1 > 0 || fullNetworkL2 > 0){
+            out.addi(fullNetworkL1 + fullNetworkL2);
+        }
+        return out;
     }
 
 
