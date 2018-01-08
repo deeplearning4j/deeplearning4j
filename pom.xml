@@ -664,6 +664,8 @@
                         <include>META-INF/services/**</include>
                         <include>org.*</include>
                         <include>**/*.properties</include>
+                        <include>**/*.json</include>
+                        <include>**/*.proto</include>
                         <include>**/*.class</include>
                         <include>**/*.dll</include>
                         <include>**/*.dylib</include>
