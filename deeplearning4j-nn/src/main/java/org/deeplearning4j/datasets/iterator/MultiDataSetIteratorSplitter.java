@@ -13,8 +13,9 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This iterator virtually splits given MultiDataSetIterator into Train and Test parts.
+ * I.e. you have 100000 examples. Your batch size is 32. That means you have 3125 total batches. With split ratio of 0.7 that will give you 2187 training batches, and 938 test batches.
  *
- * PLEASE NOTE: You can't use Test iterator twice in a row.
+ * PLEASE NOTE: You can't use Test iterator twice in a row. Train iterator should be used before Test iterator use.
  * PLEASE NOTE: You can't use this iterator, if underlying iterator uses randomization/shuffle between epochs.
  *
  * @author raver119@gmail.com
@@ -35,14 +36,14 @@ public class MultiDataSetIteratorSplitter {
     /**
      *
      * @param baseIterator
-     * @param totalExamples - total number of examples in underlying iterator. this value will be used to determine number of test/train examples
+     * @param totalBatches - total number of batches in underlying iterator. this value will be used to determine number of test/train batches
      * @param ratio - this value will be used as splitter. should be between in range of 0.0 > X < 1.0. I.e. if value 0.7 is provided, then 70% of total examples will be used for training, and 30% of total examples will be used for testing
      */
-    public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, long totalExamples, double ratio) {
+    public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, long totalBatches, double ratio) {
         if (!(ratio > 0.0 && ratio < 1.0))
             throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");
 
-        if (totalExamples < 0)
+        if (totalBatches < 0)
             throw new ND4JIllegalStateException("totalExamples number should be positive value");
 
         if (!baseIterator.resetSupported())
@@ -50,7 +51,7 @@ public class MultiDataSetIteratorSplitter {
 
 
         this.backedIterator = baseIterator;
-        this.totalExamples = totalExamples;
+        this.totalExamples = totalBatches;
         this.ratio = ratio;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;
@@ -58,6 +59,11 @@ public class MultiDataSetIteratorSplitter {
         log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
     }
 
+    /**
+     * This method returns train iterator instance
+     *
+     * @return
+     */
     public MultiDataSetIterator getTrainIterator() {
         return new MultiDataSetIterator() {
             @Override
@@ -135,6 +141,11 @@ public class MultiDataSetIteratorSplitter {
         };
     }
 
+    /**
+     * This method returns test iterator instance
+     *
+     * @return
+     */
     public MultiDataSetIterator getTestIterator() {
         return new MultiDataSetIterator() {
             @Override
