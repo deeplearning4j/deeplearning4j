@@ -112,7 +112,9 @@ namespace nd4j {
         NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         /**
-        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        * This constructor creates new array with elements copied from data and using shape information stored in shape
+        *
+        * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
         NDArray(const char order, const std::vector<int> &shape, const std::vector<T> &data, nd4j::memory::Workspace* workspace = nullptr);
 
