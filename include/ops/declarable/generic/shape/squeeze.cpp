@@ -125,6 +125,17 @@ namespace nd4j {
                 }
             }
 
+            if (shape.size() == 0) {
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
+                newShape[0] = 0;
+                newShape[1] = 0;
+                newShape[2] = 1;
+                newShape[3] = 99;
+
+                shapeList->push_back(newShape);
+                return shapeList;
+            }
+
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
             if (order == 'c')
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);
