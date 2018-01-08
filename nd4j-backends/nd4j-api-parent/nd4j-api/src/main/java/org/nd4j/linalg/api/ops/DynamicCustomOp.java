@@ -771,17 +771,17 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * @param iargs
          * @return
          */
-        public DynamicCustomOpsBuilder addIntegerArguments(Integer... iargs) {
+        public DynamicCustomOpsBuilder addIntegerArguments(List<Integer> iargs) {
             if (numIArguments >= 0) {
                 if (iargs == null)
                     throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects " + numIArguments + " integer arguments. Null was passed instead.");
 
-                if (numIArguments > iargs.length)
-                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but " + iargs.length + " was passed to constructor");
+                if (numIArguments > iargs.size())
+                    throw new ND4JIllegalStateException("CustomOp [" + opName + "] expects at least " + numIArguments + " integer arguments, but "
+                            + iargs.size() + " was passed to constructor");
             }
 
-            for (val in: iargs)
-                iArguments.add(in);
+            iArguments.addAll(iargs);
 
             return this;
         }

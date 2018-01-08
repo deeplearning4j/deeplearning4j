@@ -53,7 +53,7 @@ public class ScatterUpdate implements CustomOp {
         this.op = DynamicCustomOp.builder("scatter_update")
                 .addInputs(original, updates)
                 .callInplace(true)
-                .addIntegerArguments(iargs.toArray(new Integer[0]))
+                .addIntegerArguments(iargs)
                 .build();
     }
 
