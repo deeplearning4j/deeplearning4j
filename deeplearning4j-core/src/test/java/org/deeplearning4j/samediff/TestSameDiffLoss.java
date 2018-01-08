@@ -16,6 +16,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -194,6 +195,9 @@ public class TestSameDiffLoss {
     @Test
     public void testSameDiffLossVsDl4j() {
 
+        double[] l1s = new double[]{0.0, 0.0, 0.4, 0.4};
+        double[] l2s = new double[]{0.0, 0.3, 0.0, 0.3};
+
         for (int minibatch : new int[]{5, 1}) {
             int nIn = 3;
             int nOut = 4;
@@ -211,70 +215,88 @@ public class TestSameDiffLoss {
             };
 
             for (int i = 0; i < lossFns.length; i++) {
-                LossFunctions.LossFunction lf = lossFns[i];
-                log.info("Starting test - " + lf);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.TANH).build())
-                        .layer(new SameDiffLoss.Builder()
-                                .lossFunction(lf)
-                                .build())
-                        .build();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+                for( int j=0; j<l1s.length; j++ ) {
+                    double l1 = l1s[j];
+                    double l2 = l2s[j];
 
-                assertNotNull(net.paramTable());
+                    LossFunctions.LossFunction lf = lossFns[i];
+                    String msg = "Starting test - " + lf + ", minibatch=" + minibatch + ", l1=" + l1 + ", l2=" + l2;
+                    log.info(msg);
 
-                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.TANH).build())
-                        .layer(new LossLayer.Builder()
-                                .lossFunction(lf)
-                                .activation(Activation.IDENTITY)
-                                .build())
-                        .build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .list()
+                            .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.TANH).build())
+                            .layer(new SameDiffLoss.Builder()
+                                    .lossFunction(lf)
+                                    .build())
+                            .build();
 
-                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-                net2.init();
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
 
-                net.params().assign(net2.params());
+                    assertNotNull(msg, net.paramTable());
 
-                //Check params:
-                assertEquals(net2.params(), net.params());
-                Map<String, INDArray> params1 = net.paramTable();
-                Map<String, INDArray> params2 = net2.paramTable();
-                assertEquals(params2, params1);
+                    MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                            .list()
+                            .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.TANH).build())
+                            .layer(new LossLayer.Builder()
+                                    .lossFunction(lf)
+                                    .activation(Activation.IDENTITY)
+                                    .build())
+                            .build();
 
-                INDArray in = Nd4j.rand(minibatch, nIn);
-                INDArray out = net.output(in);
-                INDArray outExp = net2.output(in);
+                    MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                    net2.init();
 
-                assertEquals(outExp, out);
+                    net.params().assign(net2.params());
 
-                //Check scores:
-                INDArray label = Nd4j.rand(minibatch, nOut);
-                net.setLabels(label);
-                net2.setLabels(label);
+                    //Check params:
+                    assertEquals(msg, net2.params(), net.params());
+                    Map<String, INDArray> params1 = net.paramTable();
+                    Map<String, INDArray> params2 = net2.paramTable();
+                    assertEquals(msg, params2, params1);
 
-                net.computeGradientAndScore();
-                net2.computeGradientAndScore();
+                    INDArray in = Nd4j.rand(minibatch, nIn);
+                    INDArray out = net.output(in);
+                    INDArray outExp = net2.output(in);
 
-                double scoreExp = net2.score();
-                double scoreAct = net.score();
-                assertTrue(scoreExp > 0);
-                assertEquals(scoreExp, scoreAct, 1e-6);
+                    assertEquals(msg, outExp, out);
 
-                INDArray gradExp = net2.getFlattenedGradients();
-                INDArray gradAct = net.getFlattenedGradients();
+                    //Check scores:
+                    INDArray label = Nd4j.rand(minibatch, nOut);
+                    net.setLabels(label);
+                    net2.setLabels(label);
 
-                assertEquals(gradExp, gradAct);
+                    net.computeGradientAndScore();
+                    net2.computeGradientAndScore();
 
-                //Also check serialization:
-                MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
-                INDArray outLoaded = netLoaded.output(in);
+                    double scoreExp = net2.score();
+                    double scoreAct = net.score();
+                    assertTrue(msg, scoreExp > 0);
+                    assertEquals(msg, scoreExp, scoreAct, 1e-6);
 
-                assertEquals(outExp, outLoaded);
+                    //Test: computeScoreForExamples
+                    for(boolean includeReg : new boolean[]{true, false}) {
+                        INDArray expScoreForEx = net2.scoreExamples(new DataSet(in, label), true);
+                        INDArray actScoreForEx = net.scoreExamples(new DataSet(in, label), true);
+
+                        String msg2 = msg + ", addRegTerms=" + includeReg;
+                        assertEquals(msg2, expScoreForEx, actScoreForEx);
+                    }
+
+                    //TODO GRADIENTS NEED FIXING - maybe related: https://github.com/deeplearning4j/nd4j/issues/2485
+                    INDArray gradExp = net2.getFlattenedGradients();
+                    INDArray gradAct = net.getFlattenedGradients();
+
+                    assertEquals(gradExp, gradAct);
+
+                    //Also check serialization:
+                    MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                    INDArray outLoaded = netLoaded.output(in);
+
+                    assertEquals(outExp, outLoaded);
+                }
             }
         }
     }
