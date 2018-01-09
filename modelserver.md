@@ -6,7 +6,7 @@ redirect_from: machine-learning-modelserver
 
 # Model Server for Machine Learning and AI
 
-Deeplearning4j serves machine-learning models for inference in production using the free developer edition of SKIL, the [Skymind Intelligence Layer](https://skymind.ai/products). 
+Deeplearning4j serves machine-learning models for inference in production using the free community edition of SKIL, the [Skymind Intelligence Layer CE](https://skymind.ai/products). 
 
 A model server serves the parametric machine-learning models that makes decisions about data. It is used for the inference stage of a machine-learning workflow, after data pipelines and model training. A model server is the tool that allows data science research to be deployed in a real-world production environment.
 
@@ -14,7 +14,7 @@ What a Web server is to the Internet, [a model server is to AI](https://docs.goo
 
 ![Alt text](./img/AI_modelserver.png)
 
-The SKIL model server is able to import models from Python frameworks such as Tensorflow, Keras, Theano and CNTK, overcoming a major barrier in deploying deep learning models to production environments.
+The SKIL machine learning model server is able to import models from Python frameworks such as Tensorflow, Keras, Theano and CNTK, overcoming a major barrier in deploying machine learning models to production environments.
 
 Production-grade model servers have a few important features. They should be:
 
