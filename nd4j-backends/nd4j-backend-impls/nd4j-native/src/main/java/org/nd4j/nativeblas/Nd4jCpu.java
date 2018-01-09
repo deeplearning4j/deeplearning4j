@@ -6288,7 +6288,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(char order, @StdVector int[] shape);
 
         /**
-        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        * This constructor creates new array with elements copied from data and using shape information stored in shape
+        *
+        * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
         public FloatNDArray(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @StdVector FloatPointer data, Workspace workspace/*=nullptr*/);
@@ -7309,7 +7311,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(char order, @StdVector int[] shape);
 
         /**
-        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        * This constructor creates new array with elements copied from data and using shape information stored in shape
+        *
+        * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
         public HalfNDArray(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @Cast("float16*") @StdVector ShortPointer data, Workspace workspace/*=nullptr*/);
@@ -8330,7 +8334,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(char order, @StdVector int[] shape);
 
         /**
-        *  this constructor creates new array with elements copied from data and using shape information stored in shape
+        * This constructor creates new array with elements copied from data and using shape information stored in shape
+        *
+        * PLEASE NOTE: data will be copied AS IS, without respect to specified order. You must ensure order match here.
         */
         public DoubleNDArray(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/) { super((Pointer)null); allocate(order, shape, data, workspace); }
         private native void allocate(char order, @StdVector IntPointer shape, @StdVector DoublePointer data, Workspace workspace/*=nullptr*/);

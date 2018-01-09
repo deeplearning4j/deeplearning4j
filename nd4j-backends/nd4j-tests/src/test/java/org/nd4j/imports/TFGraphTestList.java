@@ -30,7 +30,7 @@ public class TFGraphTestList {
 //            "add_n",
             //"ae",
             //"ae_00",
-//            "bias_add",
+            "bias_add",
             // "concat"
             // "conv_0",
             // "conv_1",
@@ -43,7 +43,7 @@ public class TFGraphTestList {
             // "g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
             //   "g_01",
             //   "g_01",
-               "g_02",
+               //"g_02",
             //   "g_03",
            //   "g_04",
              //  "g_05",
