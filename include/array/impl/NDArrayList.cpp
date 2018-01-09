@@ -98,10 +98,10 @@ namespace nd4j {
     template <typename T>
     NDArray<T>* NDArrayList<T>::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        nd4j::ops::stack<T> op;
+        nd4j::ops::concat<T> op;
         std::vector<NDArray<T>*> inputs;
         std::vector<T> targs;
-        std::vector<int> iargs;
+        std::vector<int> iargs({0});
 
         for (int e = 0; e < _elements.load(); e++)
             inputs.emplace_back(_chunks[e]);

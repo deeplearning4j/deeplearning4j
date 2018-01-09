@@ -28,6 +28,8 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
         
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
+            nd4j_debug("Executing LegacyReduceOp: [%i]\n", opNum);
+
             bool allAxes = false;
 
             if (block.width() == 1) {
