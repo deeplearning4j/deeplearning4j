@@ -88,6 +88,41 @@ public class ByteOrderTests  extends BaseNd4jTest {
         assertArrayEquals(new int[]{25, 5, 1}, strides);
     }
 
+    @Test
+    public void testScalarEncoding() {
+        val scalar = Nd4j.trueScalar(2.0f);
+
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
+        val fb = scalar.toFlatArray(bufferBuilder);
+        bufferBuilder.finish(fb);
+        val db = bufferBuilder.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+
+
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(scalar, restored);
+    }
+
+
+    @Test
+    public void testVectorEncoding() {
+        val scalar = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5});
+
+        FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
+        val fb = scalar.toFlatArray(bufferBuilder);
+        bufferBuilder.finish(fb);
+        val db = bufferBuilder.dataBuffer();
+
+        val flat = FlatArray.getRootAsFlatArray(db);
+
+
+        val restored = Nd4j.createFromFlatArray(flat);
+
+        assertEquals(scalar, restored);
+    }
+
     @Override
     public char ordering() {
         return 'c';

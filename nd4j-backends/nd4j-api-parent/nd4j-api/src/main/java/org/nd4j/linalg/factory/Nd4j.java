@@ -4562,15 +4562,16 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
+        if (data.length == 1 && shape.length == 0)
+            return trueScalar(data[0]);
+
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
         }
 
         if (shape.length == 1) {
-            if (shape[0] == data.length) {
-                shape = new int[] {1, data.length};
-            } else
+            if (shape[0] != data.length)
                 throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
                         + " doesn't match data length: " + data.length);
         }
@@ -6695,7 +6696,7 @@ public class Nd4j {
 
         val _dtype = SameDiff.getDataTypeFromByte(dtype);
         val _order = SameDiff.getOrderFromByte(order);
-        val prod = ArrayUtil.prod(shapeOf);
+        val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
         val doubles = new double[prod];
 
         val bb = array.bufferAsByteBuffer();
