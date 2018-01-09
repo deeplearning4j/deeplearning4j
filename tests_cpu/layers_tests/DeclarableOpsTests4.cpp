@@ -584,3 +584,21 @@ TEST_F(DeclarableOpsTests4, Test_VectorScalar_Concat_1) {
 
     delete result;
 }
+
+
+TEST_F(DeclarableOpsTests4, Test_BiasAdd_1) {
+    NDArray<float> x('c', {2, 3});
+    NDArray<float> row('c', {3}, {1, 2, 3});
+    NDArray<float> exp('c', {2, 3}, {1, 2, 3, 1, 2, 3});
+
+    nd4j::ops::biasadd<float> op;
+    auto result = op.execute({&x, &row}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}

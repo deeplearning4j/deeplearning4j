@@ -276,3 +276,13 @@ TEST_F(NDArrayTest2, Test_Enforce_1) {
     ASSERT_TRUE(exp.isSameShapeStrict(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
 }
+
+TEST_F(NDArrayTest2, TestVector_1) {
+    NDArray<float> x('c', {2, 3});
+    NDArray<float> row('c', {3}, {1, 2, 3});
+    NDArray<float> exp('c', {2, 3}, {1, 2, 3, 1, 2, 3});
+
+    x.addiRowVector(&row);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
+}

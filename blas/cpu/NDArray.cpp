@@ -1182,7 +1182,7 @@ template <typename T>
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
     void NDArray<T>::addRowVector(const NDArray<T> *row, NDArray<T>* target) const {
-        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
             throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
 
         int dimension[1] = {1};
@@ -1253,7 +1253,7 @@ template<typename T>
 // This method adds given row to all rows in this NDArray, this array becomes affected
     template<typename T>
     void NDArray<T>::addiRowVector(const NDArray<T> *row) {
-    if (rankOf() != 2 || !row->isRowVector() || columns() != row->columns())
+    if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
         throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
         int dimension[1] = {1};
@@ -1271,7 +1271,7 @@ template<typename T>
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
     void NDArray<T>::addColumnVector(const NDArray<T> *column, NDArray<T>* target) const {
-        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->rows())
+        if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
 
         int dimension[1] = {0};
@@ -1289,7 +1289,7 @@ template<typename T>
 // This method adds given column to all columns in this NDArray, this array becomes affected
     template<typename T>
     void NDArray<T>::addiColumnVector(const NDArray<T> *column) {
-        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->rows())
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
         int dimension[1] = {0};
@@ -1307,7 +1307,7 @@ template<typename T>
 // This method multiplies each column of this array by given argument-column, this array becomes affected
     template<typename T>
     void NDArray<T>::muliColumnVector(const NDArray<T> *column) {
-        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->rows())
+        if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
             throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
         int dimension[1] = {0};
