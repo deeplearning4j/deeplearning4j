@@ -1,9 +1,10 @@
 ---
-title: Model Server for Deep Learning and AI 
+title: Model Server for Machine Learning and AI 
 layout: default
+redirect_from: linear-regression
 ---
 
-# Model Server for Deep Learning and AI
+# Model Server for Machine Learning and AI
 
 Deeplearning4j serves machine-learning models for inference in production using the free developer edition of SKIL, the [Skymind Intelligence Layer](https://skymind.ai/products). 
 
