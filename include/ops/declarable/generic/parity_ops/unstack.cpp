@@ -29,7 +29,7 @@ namespace nd4j {
                 auto outE = OUTPUT_VARIABLE(e);
                 auto tadAtE = tads->at(e);
 
-                outE->assign(tads->at(e));
+                outE->assign(tadAtE);
 
                 this->storeResult(block, e, *outE);
             }
@@ -55,14 +55,23 @@ namespace nd4j {
             shape::TAD tad(inShape, dims.data(), (int) dims.size());
             tad.createTadOnlyShapeInfo();
             Nd4jIndex numTads = shape::length(inShape) / shape::tadLength(inShape, dims.data(), (int) dims.size());
+            
+            std::vector<int> shape(shape::rank(tad.tadOnlyShapeInfo));
+            for (int e = 0; e < shape::rank(tad.tadOnlyShapeInfo); e++)
+                shape[e] = shape::shapeOf(tad.tadOnlyShapeInfo)[e];
+
+            // remove leading 1
+            if (shape.size() == 2 && shape[0] == 1)
+                shape.erase(shape.begin());
+            
             auto result = new ShapeList();
             for (int e = 0; e < numTads; e++) {
                 int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), int);
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
                 if (shape::order(inShape) == 'c')
-                    shape::shapeBuffer(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBuffer(shape.size(), shape.data(), newShape);
                 else
-                    shape::shapeBufferFortran(shape::rank(tad.tadOnlyShapeInfo), shape::shapeOf(tad.tadOnlyShapeInfo), newShape);
+                    shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
                 result->push_back(newShape);
             }
 

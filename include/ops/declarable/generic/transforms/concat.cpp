@@ -88,12 +88,10 @@ namespace nd4j {
             { // special cases for 0D concat
                 bool allScalars = true;
                 bool hasScalars = false;
-                bool oldScalars = true;
                 for (int e = 0; e < elements; e++) {
                     auto c = inputShape->at(e);
                     allScalars &= shape::rank(c) == 0;
                     hasScalars |= shape::rank(c) == 0;
-                    oldScalars &= shape::rank(c) == 2 && shape::isScalar(c);
                 }
 
                 // all scalars
@@ -113,14 +111,6 @@ namespace nd4j {
                     }
 
                     shape::shapeBuffer(1, &length, newShape);
-                    return new ShapeList(newShape);
-                }
-
-                if (oldScalars) {
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-
-                    std::array<int, 2> arr= {{1, elements}};
-                    shape::shapeBuffer(2, arr.data(), newShape);
                     return new ShapeList(newShape);
                 }
             }

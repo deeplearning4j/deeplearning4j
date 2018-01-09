@@ -436,12 +436,14 @@ namespace nd4j {
             nd4j_printv("shape after shrink: ", shape);
             
             // scalar edge case
+            /*
             if (shape.empty()) {
                 shape.emplace_back(1);
                 shape.emplace_back(1);
             } else if (shape.size() == 1) {
                 shape.insert(shape.begin(), 1);
             }
+             */
 
             nd4j_printv("shape after normalization: ", shape);
 

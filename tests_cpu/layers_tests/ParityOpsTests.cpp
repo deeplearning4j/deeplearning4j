@@ -108,6 +108,9 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
     ASSERT_EQ(10, result->size());
 
+    result->at(0)->printShapeInfo("rz");
+    tads->at(0)->printShapeInfo("re");
+
     for (int e = 0; e < result->size(); e++)
         ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
 

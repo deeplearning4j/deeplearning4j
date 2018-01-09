@@ -117,6 +117,22 @@ TEST_F(TadTests, TadEdgeCase_1) {
     delete tad;
 }
 
+/*
+ // FIXME: we want this test passing eventually
+TEST_F(TadTests, Tad_1D_1) {
+    NDArray<float> x('c', {5, 4});
+
+    std::vector<int> dims({1});
+    shape::TAD tad(x.shapeInfo(), dims.data(), dims.size());
+    tad.createTadOnlyShapeInfo();
+    tad.createOffsets();
+
+    auto shapeRank = shape::rank(tad.tadOnlyShapeInfo);
+    auto shapeLength = shape::length(tad.tadOnlyShapeInfo);
+
+    ASSERT_EQ(1, shapeRank);   
+}
+*/
 
 // ///////////////////////////////////////////////////////////////////
 // TEST_F(TadTests, TestShapeTad_2) {

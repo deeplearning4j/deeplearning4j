@@ -1972,6 +1972,9 @@ __device__ INLINEDEF int *cuMalloc(int *buffer, long size) {
     __host__ __device__
 #endif
     INLINEDEF int computeElementWiseStride(int rank, int *shape, int *stride, int isFOrder) {
+        if (rank == 0)
+            return 1;
+
         if(shape::isVector(shape,rank)) {
             return stride[rank - 1];
         }
@@ -2825,6 +2828,9 @@ __host__ __device__
 #endif
 
     INLINEDEF int isVector(int *shape, int rank) {
+        if (rank == 0)
+            return 0;
+
         if (rank == 1)
             return 1;
 

@@ -234,7 +234,7 @@ TEST_F(IndexingTests, MaskedSlice_1) {
         tads->at(e)->assign((float) (e+1));
     }
 
-    NDArray<float> exp('c', {1, 5});
+    NDArray<float> exp({5});
     exp.assign(2.0f);
 
     nd4j::ops::strided_slice<float> op;
@@ -307,7 +307,7 @@ TEST_F(IndexingTests, MaskedSlice_4) {
     matrix.setBuffer(_buff);
 
     float _expB[] = { 4.f,   4.2f,  4.3f};
-    NDArray<float> exp('c', {1, 3});
+    NDArray<float> exp({3});
     exp.setBuffer(_expB);
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
@@ -428,7 +428,7 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
     NDArray<float> a('c', {1, 1}, {0});
     NDArray<float> b('c', {1, 1}, {1});
     NDArray<float> c('c', {1, 1}, {1});
-    NDArray<float> exp('c', {1, 1}, {5.0});
+    NDArray<float> exp(5.0f);
 
     nd4j::ops::strided_slice<float> op;
     auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1, 0, 1, 1});

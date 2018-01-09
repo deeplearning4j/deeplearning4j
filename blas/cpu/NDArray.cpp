@@ -1177,7 +1177,10 @@ template <typename T>
         if (lengthOf() != other->lengthOf())
             return false;
 
-        if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
+        // we need to be able to compare [1, len] to [len]
+        if ((rankOf() == 1 && other->rankOf() == 2) || (rankOf() == 2 && other->rankOf() == 1)) {
+            // FIXME: do something here?
+        } else if (!shape::equalsSoft(_shapeInfo, other->_shapeInfo))
             return false;
 
         T *extras = new T[1]{eps};

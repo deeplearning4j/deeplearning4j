@@ -265,7 +265,8 @@
         (21, simdOps::FloorMod) ,\
         (22, simdOps::SquaredSubtract) ,\
         (23, simdOps::ReverseMod),\
-        (24, simdOps::SafeDivide)        
+        (24, simdOps::SafeDivide), \
+        (92, simdOps::PowDerivative)
 
 
 

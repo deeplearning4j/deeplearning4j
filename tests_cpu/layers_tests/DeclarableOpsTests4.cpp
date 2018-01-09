@@ -602,3 +602,20 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_1) {
 
     delete result;
 }
+
+
+TEST_F(DeclarableOpsTests4, Test_1D_1) {
+    NDArray<float> x('c', {2, 3});
+
+    nd4j::ops::unstack<float> op;
+    auto result = op.execute({&x}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++)
+        ASSERT_EQ(1, result->at(e)->rankOf());
+
+    delete result;
+}
