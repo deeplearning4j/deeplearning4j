@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Atan2Op;
+import org.nd4j.linalg.api.ops.impl.transforms.OldAtan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
@@ -117,7 +117,7 @@ public class Transforms {
      */
     public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
         return Nd4j.getExecutioner()
-                        .execAndReturn(new Atan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
+                        .execAndReturn(new OldAtan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
     }
 
     /**

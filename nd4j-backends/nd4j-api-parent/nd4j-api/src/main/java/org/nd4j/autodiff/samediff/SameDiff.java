@@ -581,11 +581,6 @@ public class SameDiff {
      */
     public void updateShapeForVarName(String varName, int[] shape) {
         if(shape == null) {
-            throw new ND4JIllegalStateException("Shape must not be null!");
-        }
-
-
-        if(shape == null) {
             throw new ND4JIllegalStateException("Null shapes not allowed!");
         }
 
@@ -939,7 +934,7 @@ public class SameDiff {
      * @return the resolve variable name if any
      */
     public String getVarNameForFieldAndFunction(DifferentialFunction function,String fieldName) {
-       return fieldVariableResolutionMapping.get(function.getOwnName(),fieldName);
+        return fieldVariableResolutionMapping.get(function.getOwnName(),fieldName);
     }
 
 
@@ -1305,13 +1300,9 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable zero(String name, int[] shape) {
-        return var(name,shape,new ZeroInitScheme('f'));
+        return var(name,shape,new ZeroInitScheme());
 
     }
-
-
-
-
 
 
     /**
@@ -1360,7 +1351,7 @@ public class SameDiff {
      * @return the created variable
      */
     public SDVariable var(String name, int[] shape) {
-        return var(name,shape,new ZeroInitScheme('f'));
+        return var(name,shape,new ZeroInitScheme());
 
     }
 
@@ -1411,6 +1402,8 @@ public class SameDiff {
                     }
                 }))
                 .build();
+
+
         variableMap.put(arr.getVarName(),ret);
         return ret;
 
@@ -1537,6 +1530,7 @@ public class SameDiff {
         if(variable == null) {
             throw new ND4JIllegalStateException("Unable to set null gradient for variable name " + variableName);
         }
+
         gradients.put(variableName,variable);
     }
 
@@ -3449,12 +3443,16 @@ public class SameDiff {
      * @return the new generated name
      */
     public String generateNewVarName(String  baseName,int argIndex) {
+        if(getVariable(baseName) == null && argIndex == 0) {
+            return baseName;
+        }
+
         //need to find a new name
         int count = 1;
         String name = baseName + "_" + count   + (argIndex > 0 ? ":" + argIndex : "");
         while(getVariable(name) != null) {
-            count++;
             name = baseName + "_" + count   + (argIndex > 0 ? ":" + argIndex : "");
+            count++;
         }
 
         if(getVariable(name) != null) {
@@ -3490,7 +3488,7 @@ public class SameDiff {
 
 
     /**
-     * Simiple recurrent  unit
+     * Simple recurrent  unit
      * @param configuration the configuration for the sru
      * @return
      */
@@ -3568,14 +3566,21 @@ public class SameDiff {
                     throw new ND4JIllegalStateException("No output variables found!");
                 }
                 else {
+
+                    char ordering = 'c';
+                    if(function.args()[0].getArr() != null) {
+                        ordering = function.args()[0].getArr().ordering();
+                    }
+
+
                     SDVariable[] ret = new SDVariable[descriptor.getNumOutputs()];
                     //dynamic shapes
                     for(int i = 0; i < ret.length; i++) {
                         SDVariable checkGet = getVariable(baseName);
                         if(checkGet == null) {
-                            checkGet = var(generateNewVarName(baseName,i),null,new ZeroInitScheme('f'));
+                            checkGet = var(generateNewVarName(baseName,i),null,new ZeroInitScheme(ordering));
                         }
-                        else if(!importedVarName.contains(baseName)) {
+                        else if(i > 0 && !importedVarName.contains(baseName)) {
                             //need to find a new name
                             String newName  = generateNewVarName(baseName,i);
                             checkGet = getVariable(newName);
@@ -3584,7 +3589,7 @@ public class SameDiff {
 
                         if(checkGet == null) {
                             String newName  = generateNewVarName(baseName,i);
-                            checkGet = var(newName,null,new ZeroInitScheme('f'));
+                            checkGet = var(newName,null,new ZeroInitScheme(ordering));
                         }
 
 
@@ -3596,22 +3601,26 @@ public class SameDiff {
                 }
             }
 
-            //this is for unresolved shapes, we know xyz is always 1 outputu
+            //this is for unresolved shapes, we know xyz is always 1 output
             else if(function instanceof BaseOp && outputShape.isEmpty()) {
                 SDVariable[] ret = new SDVariable[1];
                 SDVariable checkGet = getVariable(baseName);
+                char ordering = 'c';
+                if(function.args()[0].getArr() != null) {
+                    ordering = function.args()[0].getArr().ordering();
+                }
                 if(checkGet == null) {
-                    checkGet = var(baseName ,null,new ZeroInitScheme('f'));
+                    checkGet = var(baseName ,null,new ZeroInitScheme(ordering));
                 }
                 else if(!importedVarName.contains(baseName)) {
                     //need to find a new name
                     String newName  = generateNewVarName(baseName,0);
-                    checkGet = var(newName,null,new ZeroInitScheme('f'));
+                    checkGet = var(newName,null,new ZeroInitScheme(ordering));
                 }
 
 
                 if(checkGet == null) {
-                    checkGet = var(baseName,null,new ZeroInitScheme('f'));
+                    checkGet = var(baseName,null,new ZeroInitScheme(ordering));
                 }
 
                 ret[0] = checkGet;
@@ -3621,7 +3630,10 @@ public class SameDiff {
         }
 
 
-
+        char ordering = 'c';
+        if(function.args()[0].getArr() != null) {
+            ordering = function.args()[0].getArr().ordering();
+        }
 
         SDVariable[] ret = new SDVariable[outputShape.size()];
 
@@ -3635,7 +3647,7 @@ public class SameDiff {
             SDVariable checkGet = getVariable(baseName);
             if (checkGet == null) {
                 // obviously - there's no such var, just add it
-                checkGet = var(baseName, shape);
+                checkGet = var(baseName, shape,new ZeroInitScheme(ordering));
             } else if (shape != null && !shapeAlreadyExistsForVarName(checkGet.getVarName())) {
                 // var exists, let's update its shape
                 putShapeForVarName(checkGet.getVarName(), shape);
@@ -3644,7 +3656,7 @@ public class SameDiff {
                 // TODO: maybe we should check shapes equality here?
                 // it's either var that already exist, or something bad happening
             } else if(!importedVarName.contains(baseName)) {
-                // FIXME: dead end.  it's impossble to get here with null as shape
+                // FIXME: dead end.  it's impossible to get here with null as shape
                 //need to find a new name
                 int count = 1;
                 String name = baseName + "_" + count   + (i > 0 ? ":" +  i : "");
@@ -3658,11 +3670,11 @@ public class SameDiff {
                 }
 
 
-                checkGet = var(name,shape);
+                checkGet = var(name,shape,new ZeroInitScheme(ordering));
             }
 
             if(checkGet == null) {
-                checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape);
+                checkGet = var(baseName + (i > 0 ? ":" +  i : ""),shape,new ZeroInitScheme(ordering));
             }
 
 
@@ -4414,6 +4426,9 @@ public class SameDiff {
             if(differentialFunction instanceof SDVariable) {
                 continue;
             }
+
+
+            differentialFunction.resolvePropertiesFromSameDiffBeforeExecution();
 
             if(differentialFunction instanceof If) {
                 If ifOp = (If) differentialFunction;

@@ -299,9 +299,20 @@ public class While extends DifferentialFunction implements CustomOp {
             func.setSameDiff(scopeLoop);
             val variables = new SDVariable[tfNode.getInputCount()];
             for(int i = 0; i < tfNode.getInputCount(); i++) {
-                variables[i] = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
-                scopeCondition.var(variables[i]);
-                scopeLoop.var(variables[i]);
+                val testVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
+                if(testVar == null) {
+                    variables[i] = initWith.var(tfNode.getInput(i),null,new ZeroInitScheme());
+                    scopeCondition.var(variables[i]);
+                    scopeLoop.var(variables[i]);
+                    continue;
+                }
+                else {
+
+                    variables[i] = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
+                    scopeCondition.var(variables[i]);
+                    scopeLoop.var(variables[i]);
+                }
+
             }
 
             scopeLoop.addArgsFor(variables,func);

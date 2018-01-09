@@ -101,13 +101,16 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public void mapProperty(String name, DifferentialFunction on, NodeDef node, GraphDef graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
+        if(node == null) {
+            throw new ND4JIllegalStateException("No node found for name " + name);
+        }
+
+
         val mapping = propertyMappingsForFunction.get(getOpType(node)).get(name);
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
 
 
-        val propsForFunction = on.propertiesForFunction();
-
-        if(mapping.getTfInputPosition() != null) {
+        if(mapping.getTfInputPosition() != null && mapping.getTfInputPosition() < node.getInputCount()) {
             int tfMappingIdx = mapping.getTfInputPosition();
             if(tfMappingIdx < 0)
                 tfMappingIdx += node.getInputCount();
@@ -142,8 +145,25 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
         else {
             val tfMappingAttrName = mapping.getTfAttrName();
+            if(tfMappingAttrName == null) {
+               return;
+            }
+
+            if(!node.containsAttr(tfMappingAttrName)) {
+                return;
+            }
+
+
             val attr = node.getAttrOrThrow(tfMappingAttrName);
             val type = attr.getType();
+            if(fields == null) {
+                throw new ND4JIllegalStateException("No fields found for op " + mapping);
+            }
+
+            if(mapping.getPropertyNames() == null) {
+                throw new ND4JIllegalStateException("no property found for " + name + " and op " + on.opName());
+            }
+
             val field = fields.get(mapping.getPropertyNames()[0]);
 
             Object valueToSet = null;

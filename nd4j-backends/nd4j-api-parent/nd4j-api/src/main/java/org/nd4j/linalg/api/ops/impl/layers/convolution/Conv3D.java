@@ -44,23 +44,26 @@ public class Conv3D extends DynamicCustomOp {
 
     private void addArgs() {
         addIArgument(new int[]{getConfig().getDT(),
-        getConfig().getDW(),
-        getConfig().getDH(),
-        getConfig().getPT(),
-        getConfig().getPW(),
-        getConfig().getPH(),
-        getConfig().getDilationT(),
-        getConfig().getDilationW(),
-        getConfig().getDilationH(),
-        getConfig().getAT(),
-        getConfig().getAW(),
-        getConfig().getAH(),
-        ArrayUtil.fromBoolean(getConfig().isBiasUsed())});
+                getConfig().getDW(),
+                getConfig().getDH(),
+                getConfig().getPT(),
+                getConfig().getPW(),
+                getConfig().getPH(),
+                getConfig().getDilationT(),
+                getConfig().getDilationW(),
+                getConfig().getDilationH(),
+                getConfig().getAT(),
+                getConfig().getAW(),
+                getConfig().getAH(),
+                ArrayUtil.fromBoolean(getConfig().isBiasUsed())});
 
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(config == null) {
+            return Collections.emptyMap();
+        }
         return config.toProperties();
     }
 
@@ -69,6 +72,8 @@ public class Conv3D extends DynamicCustomOp {
         return "conv3d";
     }
 
+
+
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
@@ -76,6 +81,7 @@ public class Conv3D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
+                .propertyNames(new String[]{"sx","sy"})
                 .build();
 
 
@@ -130,7 +136,7 @@ public class Conv3D extends DynamicCustomOp {
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         Conv3DDerivative conv3DDerivative = Conv3DDerivative.derivativeBuilder()
-               .conv3DConfig(config)
+                .conv3DConfig(config)
                 .inputFunctions(args())
                 .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))

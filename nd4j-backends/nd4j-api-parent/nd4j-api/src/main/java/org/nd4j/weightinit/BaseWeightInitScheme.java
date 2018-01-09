@@ -18,6 +18,13 @@ import java.util.Arrays;
 public abstract class BaseWeightInitScheme implements WeightInitScheme {
     private char order;
 
+    /**
+     * Initialize with c weight ordering by default
+     */
+    public BaseWeightInitScheme() {
+        this('c');
+    }
+
     public BaseWeightInitScheme(char order) {
         this.order = order;
     }

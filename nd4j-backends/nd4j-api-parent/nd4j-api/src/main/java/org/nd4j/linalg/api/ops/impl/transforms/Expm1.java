@@ -80,7 +80,7 @@ public class Expm1 extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Exp1m";
+        return "Expm1";
     }
 
 

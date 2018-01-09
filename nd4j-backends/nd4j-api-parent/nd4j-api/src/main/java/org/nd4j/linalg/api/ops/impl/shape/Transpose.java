@@ -166,7 +166,7 @@ public class Transpose extends DynamicCustomOp {
             return Arrays.asList(permutedShape);
         }
 
-        throw new ND4JIllegalStateException("Unable to compute shape!");
+        return Collections.emptyList();
     }
 
 

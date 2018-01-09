@@ -194,6 +194,7 @@ public class MaxPooling2D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
+                .propertyNames(new String[]{"sx","sy"})
                 .build();
 
         val paddingMapping = PropertyMapping.builder()

@@ -61,7 +61,39 @@ public class SameDiffTests {
     }
 
 
+    @Test
+    public void testScalarMul() {
+        int d0 = 2;
+        int d1 = 3;
+        int d2 = 4;
 
+        int n = d0 * d1 * d2;
+
+        for (char inOrder : new char[]{'c', 'f'}) {
+            String msg = "Order: " + inOrder + ", Nd4J order: " + Nd4j.order();
+
+            SameDiff sd = SameDiff.create();
+
+            INDArray inArr = Nd4j.linspace(1, n, n).reshape(inOrder, d0, d1, d2);
+            INDArray inMul2Exp = inArr.mul(2);
+
+            SDVariable in = sd.var("in", inArr);
+            SDVariable inMul2 = in.mul(2.0);
+
+            sd.exec();
+
+            System.out.println("*** Expected ***");
+            System.out.println(inMul2Exp.shapeInfoToString());
+            System.out.println(Arrays.toString(inMul2Exp.data().asFloat()));
+
+            System.out.println("*** Actual ***");
+            System.out.println(inMul2.getArr().shapeInfoToString());
+            System.out.println(Arrays.toString(inMul2.getArr().data().asFloat()));
+
+            assertEquals(msg, inArr, in.getArr());
+            assertEquals(msg, inMul2Exp, inMul2.getArr());
+        }
+    }
 
 
 

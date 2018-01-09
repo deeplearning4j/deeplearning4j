@@ -500,18 +500,22 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 //clear just in case
                 val args = args();
                 inputArguments.clear();
+                boolean nullArr = false;
                 for(val arg : args()) {
                     //we should not attempt to resolve
                     //outputs when null inputs exist
                     if(arg.getArr() == null) {
+                        nullArr = true;
                         log.warn("No input found for " + arg.getVarName() + " and op name " + opName());
-                        return;
+                        continue;
                     }
                 }
 
 
-                for(val arg : args) {
-                    inputArguments.add(arg.getArr());
+                if(!nullArr) {
+                    for (val arg : args) {
+                        inputArguments.add(arg.getArr());
+                    }
                 }
             }
 
@@ -542,9 +546,6 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 }
             }
         }
-
-        //ensure that properties are resolved as well
-        super.resolvePropertiesFromSameDiffBeforeExecution();
 
     }
 

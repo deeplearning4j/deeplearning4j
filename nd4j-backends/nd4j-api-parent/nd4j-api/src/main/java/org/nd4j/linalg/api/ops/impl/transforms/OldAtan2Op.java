@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -32,46 +32,46 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class Atan2Op extends BaseTransformOp {
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
+public class OldAtan2Op extends BaseTransformOp {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public Atan2Op(SameDiff sameDiff) {
+    public OldAtan2Op(SameDiff sameDiff) {
         super(sameDiff);
     }
 
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs) {
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Atan2Op(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
+    public OldAtan2Op(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Atan2Op() {}
+    public OldAtan2Op() {}
 
-    public Atan2Op(INDArray x, INDArray y, INDArray z, long n) {
+    public OldAtan2Op(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
     }
 
-    public Atan2Op(INDArray x, INDArray y) {
+    public OldAtan2Op(INDArray x, INDArray y) {
         super(x, y, x, x.lengthLong());
     }
 
-    public Atan2Op(INDArray x, INDArray y, INDArray z) {
+    public OldAtan2Op(INDArray x, INDArray y, INDArray z) {
         super(x, y, z, x.lengthLong());
     }
 
@@ -82,7 +82,7 @@ public class Atan2Op extends BaseTransformOp {
 
     @Override
     public String opName() {
-        return "atan2";
+        return "old_atan2";
     }
 
     @Override
@@ -92,7 +92,7 @@ public class Atan2Op extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "atan2";
+        return "ATan2";
     }
 
 

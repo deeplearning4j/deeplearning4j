@@ -8,6 +8,7 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -179,6 +180,7 @@ public class Conv2D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
+                .propertyNames(new String[]{"sx","sy"})
                 .build();
 
 
@@ -205,6 +207,7 @@ public class Conv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
+                .tfAttrName("padding")
                 .propertyNames(new String[]{"ph","pw"})
                 .build();
 
@@ -218,9 +221,19 @@ public class Conv2D extends DynamicCustomOp {
         map.put("isSameMode",sameMode);
         map.put("ph", paddingWidthHeight);
         map.put("pw", paddingWidthHeight);
+        try {
+            ret.put(onnxName(), map);
+        }catch(NoOpNameFoundException e) {
+            //ignore
+        }
 
-        ret.put(onnxName(),map);
-        ret.put(tensorflowName(),map);
+
+        try {
+            ret.put(tensorflowName(),map);
+        }catch(NoOpNameFoundException e) {
+            //ignore
+        }
+
         return ret;
     }
 
@@ -254,5 +267,10 @@ public class Conv2D extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "Conv2D";
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        return new String[] {"Conv2D","Dilation2D"};
     }
 }

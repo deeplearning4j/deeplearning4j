@@ -1,6 +1,7 @@
 package org.nd4j.weightinit.impl;
 
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -11,6 +12,7 @@ import org.nd4j.weightinit.WeightInit;
  * Initialize the weight to zero.
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class ZeroInitScheme extends BaseWeightInitScheme {
 
     @Builder
