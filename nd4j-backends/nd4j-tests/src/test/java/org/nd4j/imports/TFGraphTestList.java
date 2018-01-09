@@ -30,7 +30,8 @@ public class TFGraphTestList {
 //            "add_n",
             //"ae",
             //"ae_00",
-            //"bias_add",
+            "bias_add",
+            //"norm_tests/norm_0",
             // "concat"
             // "conv_0",
             // "conv_1",
@@ -40,7 +41,7 @@ public class TFGraphTestList {
             //"deep_mnist_no_dropout", //Takes way too long since there are a lot of nodes, would skip for now
              //"expand_dim",
 
-            // "g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
+             //"g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
             //   "g_01",
             //   "g_01",
                //"g_02",
@@ -53,7 +54,6 @@ public class TFGraphTestList {
             //"mlp_00",
             //"mnist_00",
             //  "node_multiple_out",// -> Need to map multiple out values to graph node output values
-            //  "norm_tests",
             //  "pool_0",
            //   "pool_1",
             //  "primitive_gru",
@@ -64,9 +64,9 @@ public class TFGraphTestList {
             //"stack_scalar",
           //   "simple_cond"
             //"transform_0",
-            //"transpose",
-            //"transpose_00",
-              "unstack"
+            "transpose_00",
+            "non2d_0"
+             // "unstack"
     };
 
     /**
@@ -76,9 +76,10 @@ public class TFGraphTestList {
      * primitive_gru_dynamic (while loop related)
      * pool_1 (attributes related)
      * pool_0: (attributes related)
-     * norm_tests: invalid test (missing resources)
      * g_05: Gather related
      * g_04: assertion failure
+     *
+     * Note: norm_tests have to be run with "norm_tests/norm_0" or to run all the tests under a directory run with TFGraphTestSubDir
      */
 
     //change this to SAMEDIFF for samediff
