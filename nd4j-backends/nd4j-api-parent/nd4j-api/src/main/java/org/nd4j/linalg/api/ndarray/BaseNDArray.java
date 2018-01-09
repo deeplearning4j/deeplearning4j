@@ -405,8 +405,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     public BaseNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
         this.data = Nd4j.createBuffer(data, offset, ArrayUtil.prodLong(shape));
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
-                        Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order()));
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset, Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'), Nd4j.order()));
         init(shape, stride);
         //  Shape.setElementWiseStride(this.shapeInfo(),Shape.elementWiseStride(shape, stride, Nd4j.order() == 'f'));
 
@@ -1743,7 +1742,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 indices[i] += rank();
         }
         if (indices.length == 1) {
-            if (isRowVector())
+            if (rank() == 1)
+                return Shape.getDouble(this, indices[0]);
+            else if (isRowVector())
                 return Shape.getDouble(this, 0, indices[0]);
             else if (isColumnVector())
                 return Shape.getDouble(this, indices[0], 0);
@@ -1771,7 +1772,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isScalar() {
-        if (Shape.rank(javaShapeInformation) > 2) {
+        if (Shape.rank(javaShapeInformation) == 0) {
+            return true;
+        } else if (Shape.rank(javaShapeInformation) > 2) {
             return false;
         } else if (Shape.rank(javaShapeInformation) == 1) {
             return shapeOf().getInt(0) == 1;
@@ -2849,7 +2852,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mmul(INDArray other) {
-        int[] shape = {rows(), other.columns()};
+        // FIXME: for 1D case, we probably want vector output here?
+        int[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(shape, 'f');
         if (result.isScalar())
             return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other));
@@ -3040,7 +3044,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray temp = create(result.shape(), Nd4j.getStrides(result.shape(), 'f'));
             temp.setOrder('f');
 
-            if (other.columns() == 1) {
+            if (other.columns() == 1 || other.rank() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(BlasBufferUtil.getCharForTranspose(result),
                                 BlasBufferUtil.getCharForTranspose(this), 1.0, this, other, 0.0, temp);
             }
@@ -3078,7 +3082,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 gemmResultArr = result;
             }
 
-            if (other.columns() == 1) {
+            if (other.columns() == 1 || other.rank() == 1) {
                 Nd4j.getBlasWrapper().level2().gemv(
                         ordering(),
                         BlasBufferUtil.getCharForTranspose(other),
@@ -3104,6 +3108,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 result.assign(gemmResultArr);
             }
         }
+
+        // 1D edge case: reshape back to vector
+        if (other.rank() == 1)
+            result = result.reshape(result.length());
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
             Nd4j.clearNans(result);
@@ -3809,12 +3817,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray reshape(char order, int... newShape) {
         Nd4j.getCompressor().autoDecompress(this);
 
-        if (newShape == null || newShape.length < 2)
+        if (newShape == null || newShape.length < 1)
             throw new ND4JIllegalStateException(
                             "Can't reshape(int...) without shape arguments. Got empty shape instead.");
 
+        // TODO: maybe toFlatten() makes more sense here?
+        // reshape(-1) special case
+        if (newShape.length == 1 && newShape[0] == -1)
+            newShape[0] = this.length();
+
         int numberNegativesOnes = 0;
         int[] shape = ArrayUtil.copy(newShape);
+
+
         for (int i = 0; i < shape.length; i++) {
             if (shape[i] < 0) {
                 if (numberNegativesOnes >= 1)
@@ -3845,8 +3860,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long prod = ArrayUtil.prodLong(newShape);
         if(numberNegativesOnes > 0)
             prod = Math.abs(prod);
+
         if (prod != this.lengthLong())
-            throw new ND4JIllegalStateException("New shape length doesn't match original length");
+            throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.lengthLong() + "]");
 
 
 
@@ -4929,6 +4945,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isVector() {
+        if (Shape.rank(javaShapeInformation) == 1)
+            return true;
+
         return isRowVector() || isColumnVector();
     }
 
@@ -4943,7 +4962,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isRowVector() {
-        return rank() == 2 && rows() == 1;
+        return (rank() == 2 && rows() == 1) || rank() == 1;
     }
 
     /**

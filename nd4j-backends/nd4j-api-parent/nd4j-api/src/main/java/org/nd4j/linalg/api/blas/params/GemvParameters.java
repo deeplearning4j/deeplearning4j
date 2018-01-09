@@ -41,7 +41,9 @@ public @Data class GemvParameters {
         }
 
 
-        if (x.isColumnVector()) {
+        if (x.rank() == 1) {
+            incx = 1;
+        } else if (x.isColumnVector()) {
             incx = x.stride(0);
         } else {
             incx = x.stride(1);

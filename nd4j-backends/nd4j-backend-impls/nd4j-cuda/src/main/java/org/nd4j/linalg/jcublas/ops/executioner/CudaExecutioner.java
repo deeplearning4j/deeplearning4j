@@ -581,6 +581,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                 ret = Nd4j.create(xT, yT);
             } else {
+                if (op.y() != null) {
+                    val xT = op.x().tensorAlongDimension(0, dimension).lengthLong();
+                    val yT = op.y().lengthLong();
+
+                    if (xT != yT)
+                        throw new ND4JIllegalStateException("Number of TADs along dimension doesn't match");
+                }
+
+
                 if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
                     ret = Nd4j.zeros(retShape);
                 } else {

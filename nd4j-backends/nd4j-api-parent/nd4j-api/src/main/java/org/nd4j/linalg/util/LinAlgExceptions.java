@@ -85,6 +85,11 @@ public class LinAlgExceptions {
         if (nd1.rank() == 2 && nd2.rank() == 2 && nd1.columns() == nd2.rows()) {
             return;
         }
+
+        // 1D edge case
+        if (nd1.rank() == 2 && nd2.rank() == 1 && nd1.columns() == nd2.length())
+            return;
+
         throw new ND4JIllegalStateException("Cannot execute matrix multiplication: " + Arrays.toString(nd1.shape())
                         + "x" + Arrays.toString(nd2.shape())
                         + (nd1.rank() != 2 || nd2.rank() != 2 ? ": inputs are not matrices"

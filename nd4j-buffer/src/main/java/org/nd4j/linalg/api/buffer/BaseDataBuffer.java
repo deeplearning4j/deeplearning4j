@@ -132,8 +132,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param offset the offset for the view
      */
     protected BaseDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
-        if (length < 1)
+        if (length < 0)
             throw new IllegalArgumentException("Length must be >= 1");
+
+        if (length == 0)
+            length = 1;
+
+
+
         initTypeAndSize();
         this.length = length;
         this.offset = offset;

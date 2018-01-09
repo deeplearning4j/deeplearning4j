@@ -76,6 +76,12 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
     //  TODO ->
 
+
+    @Override
+    public INDArray trueScalar(Number value) {
+        throw new UnsupportedOperationException();
+    }
+
     @Override
     public IComplexFloat createFloat(float real, float imag) {
         return null;

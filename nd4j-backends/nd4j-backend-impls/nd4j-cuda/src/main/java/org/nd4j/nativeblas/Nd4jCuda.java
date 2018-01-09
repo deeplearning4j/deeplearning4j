@@ -5791,6 +5791,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray permute(@Const int[] dimensions, int rank);
 
         /**
+         * This method streamlines given view or permuted array, and reallocates buffer
+         */
+        public native void streamline(char order/*='a'*/);
+        public native void streamline();
+
+        /**
         *  permutes the dimensions in target according to "dimensions" array
         */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef FloatNDArray target);
@@ -5860,6 +5866,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns mean number of array
         */ 
         public native float meanNumber();
+
+
+        /**
+         * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
+         */
+        public native void enforce(@StdVector IntPointer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntPointer dimensions);
+        public native void enforce(@StdVector IntBuffer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntBuffer dimensions);
+        public native void enforce(@StdVector int[] dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector int[] dimensions);
 
         /**
         *  calculates sum along dimension(s) in this array and save it to created reduced array
@@ -6096,7 +6113,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
+		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
@@ -6792,6 +6812,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray permute(@Const int[] dimensions, int rank);
 
         /**
+         * This method streamlines given view or permuted array, and reallocates buffer
+         */
+        public native void streamline(char order/*='a'*/);
+        public native void streamline();
+
+        /**
         *  permutes the dimensions in target according to "dimensions" array
         */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef HalfNDArray target);
@@ -6861,6 +6887,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns mean number of array
         */ 
         public native @Cast("float16") short meanNumber();
+
+
+        /**
+         * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
+         */
+        public native void enforce(@StdVector IntPointer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntPointer dimensions);
+        public native void enforce(@StdVector IntBuffer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntBuffer dimensions);
+        public native void enforce(@StdVector int[] dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector int[] dimensions);
 
         /**
         *  calculates sum along dimension(s) in this array and save it to created reduced array
@@ -7097,7 +7134,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
+		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
@@ -7793,6 +7833,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray permute(@Const int[] dimensions, int rank);
 
         /**
+         * This method streamlines given view or permuted array, and reallocates buffer
+         */
+        public native void streamline(char order/*='a'*/);
+        public native void streamline();
+
+        /**
         *  permutes the dimensions in target according to "dimensions" array
         */
         public native void permute(@Const IntPointer dimensions, int rank, @ByRef DoubleNDArray target);
@@ -7862,6 +7908,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  returns mean number of array
         */ 
         public native double meanNumber();
+
+
+        /**
+         * This method explicitly enforces new shape for this NDArray, old shape/stride information is lost
+         */
+        public native void enforce(@StdVector IntPointer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntPointer dimensions);
+        public native void enforce(@StdVector IntBuffer dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector IntBuffer dimensions);
+        public native void enforce(@StdVector int[] dimensions, char order/*='a'*/);
+        public native void enforce(@StdVector int[] dimensions);
 
         /**
         *  calculates sum along dimension(s) in this array and save it to created reduced array
@@ -8098,7 +8155,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
+		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array

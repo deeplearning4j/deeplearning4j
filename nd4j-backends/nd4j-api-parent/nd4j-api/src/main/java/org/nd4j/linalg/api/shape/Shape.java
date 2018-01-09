@@ -1118,6 +1118,13 @@ public class Shape {
      * @return
      */
     public static int elementWiseStride(int[] shape, int[] stride, boolean isFOrder) {
+        // 0D edge case
+        if (shape.length == 0 && stride.length == 0)
+            return 1;
+
+        if (shape.length == 1 && stride.length == 1)
+            return 1;
+
         int oldnd;
         int[] olddims = ArrayUtil.copy(shape);
         int[] oldstrides = ArrayUtil.copy(stride);
@@ -1536,6 +1543,8 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2sub(INDArray arr, long index) {
+        if (arr.rank() == 1)
+            return new int[]{(int) index};
         return ind2sub(arr.shape(), index, ArrayUtil.prodLong(arr.shape()));
     }
 
@@ -1589,6 +1598,8 @@ public class Shape {
      * @return the mapped indexes along each dimension
      */
     public static int[] ind2subC(INDArray arr, long index) {
+        if (arr.rank() == 1)
+            return new int[]{(int) index};
         return ind2subC(arr.shape(), index, ArrayUtil.prodLong(arr.shape()));
     }
 
