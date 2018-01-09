@@ -1,7 +1,7 @@
 ---
 title: Model Server for Machine Learning and AI 
 layout: default
-redirect_from: linear-regression
+redirect_from: machine-learning-modelserver
 ---
 
 # Model Server for Machine Learning and AI
