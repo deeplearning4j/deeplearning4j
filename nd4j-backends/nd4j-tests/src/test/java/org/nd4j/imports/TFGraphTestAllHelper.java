@@ -223,14 +223,14 @@ public class TFGraphTestAllHelper {
             String[] varNameArr = fileName.split("\\.");
             String varName = String.join(".", Arrays.copyOfRange(varNameArr, 0, varNameArr.length - 2));
             int[] varShape = Nd4j.readNumpy(new ClassPathResource(varPath).getInputStream(), ",").data().asInt();
-            if (varShape.length == 1) {
+            /*if (varShape.length == 1) {
                 if (varShape[0] == 0) {
                     varShape = new int[]{1, 1}; //scalars are mapped to a 1,1 INDArray
                 } else {
                     int vectorSize = varShape[0];
                     varShape = new int[]{1, vectorSize}; //vectors are mapped to a row vector
                 }
-            }
+            }*/
             INDArray varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
             if (varName.contains("____")) {
                 //these are intermediate node outputs
