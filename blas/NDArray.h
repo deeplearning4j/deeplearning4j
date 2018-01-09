@@ -70,6 +70,8 @@ namespace nd4j {
         *  default constructor, do not allocate memory, memory for array is passed from outside 
         */
         NDArray(T *buffer = nullptr, int *shapeInfo = nullptr, nd4j::memory::Workspace* workspace = nullptr);
+
+        NDArray(std::initializer_list<int> shape, nd4j::memory::Workspace* workspace = nullptr);
         
         /**
          * Constructor for scalar NDArray

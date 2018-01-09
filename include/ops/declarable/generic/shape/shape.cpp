@@ -21,11 +21,11 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(shape_of) {
             auto inShape = inputShape->at(0);
-            std::vector<int> shape({1, shape::rank(inShape)});
 
             int *newshape;
-            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            shape::shapeBuffer(2, shape.data(), newshape);
+            ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            nd4j::ShapeBuilder::shapeVector(shape::rank(inShape), newshape);
+
             return new ShapeList(newshape);
         };
     }

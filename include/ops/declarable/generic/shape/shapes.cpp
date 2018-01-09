@@ -24,11 +24,10 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
-                std::vector<int> shape({1, shape::rank(inShape)});
 
                 int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-                shape::shapeBuffer(2, shape.data(), newshape);
+                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+                nd4j::ShapeBuilder::shapeVector(shape::rank(inShape), newshape);
 
                 shapeList->push_back(newshape);
             }

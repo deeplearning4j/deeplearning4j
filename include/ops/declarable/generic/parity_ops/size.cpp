@@ -18,16 +18,9 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(size) {
             int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
 
-            newShape[0] = 2;
-            newShape[1] = 1;
-            newShape[2] = 1;
-            newShape[3] = 1;
-            newShape[4] = 1;
-            newShape[5] = 0;
-            newShape[6] = 1;
-            newShape[7] = 99;
+            nd4j::ShapeBuilder::shapeScalar(newShape);
 
             return new ShapeList(newShape);
         }

@@ -82,7 +82,7 @@ namespace nd4j {
                     }
                 }
 
-                auto array = new nd4j::NDArray<T>(1, data.size(), 'c', block.getWorkspace());
+                auto array = new nd4j::NDArray<T>({(int) data.size()}, block.getWorkspace());
                 memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
 
                 //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
@@ -95,7 +95,7 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(range) {
             int *newShape;
-            std::vector<int> shape({1});
+            std::vector<int> shape;
             if (block.getIArguments()->size() > 0) {
                 int start = INT_ARG(0);
                 int stop = INT_ARG(1);
@@ -141,8 +141,9 @@ namespace nd4j {
                 shape.emplace_back(119);
             }
             
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-            shape::shapeBuffer(2, shape.data(), newShape);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
+            //shape::shapeBuffer(1, shape.data(), newShape);
+            nd4j::ShapeBuilder::shapeVector(shape[0], newShape);
 
             return new ShapeList(newShape);
         }

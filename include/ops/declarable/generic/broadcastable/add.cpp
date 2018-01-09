@@ -19,9 +19,7 @@ namespace nd4j {
                 OVERWRITE_RESULT(tZ);
             }
 
-            tZ->printShapeInfo("tz");
-    
-			return ND4J_STATUS_OK;
+    		return ND4J_STATUS_OK;
         }
 
         DECLARE_SHAPE_FN(add) {

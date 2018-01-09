@@ -3216,10 +3216,14 @@ __host__ __device__
 #endif
 
     INLINEDEF Nd4jIndex length(int *shapeInfo) {
-        if (shape::rank(shapeInfo) == 0)
+        int rank = shape::rank(shapeInfo);
+        if (rank == 0)
             return 1L;
+        if (rank == 1)
+            return shapeInfo[1];
 
-        return shape::prodLong(shape::shapeOf(shapeInfo), shape::rank(shapeInfo));
+
+        return shape::prodLong(shape::shapeOf(shapeInfo), rank);
     }
 
 #ifdef __CUDACC__

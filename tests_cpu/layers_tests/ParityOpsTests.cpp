@@ -279,7 +279,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
 
 TEST_F(ParityOpsTests, Test_Shape_1) {
     NDArray<float> x('c', {3, 4, 5, 6});
-    NDArray<float> exp('c', {1, 4}, {3, 4, 5, 6});
+    NDArray<float> exp('c', {4}, {3, 4, 5, 6});
 
     nd4j::ops::shape_of<float> op;
     auto result = op.execute({&x}, {}, {});

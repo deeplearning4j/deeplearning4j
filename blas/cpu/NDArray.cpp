@@ -110,6 +110,22 @@ NDArray<T>::NDArray(const Nd4jIndex length, const char order, nd4j::memory::Work
     delete[] shape;
 }
 
+    template <typename T>
+    NDArray<T>::NDArray(std::initializer_list<int> s, nd4j::memory::Workspace* workspace) {
+        std::vector<int> shape(s);
+        int rank = (int) shape.size();
+
+
+        ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(rank), int);
+
+        shape::shapeBuffer(rank, shape.data(), _shapeInfo);
+
+        ALLOCATE(_buffer, workspace, shape::length(_shapeInfo), T);
+
+        _isShapeAlloc = true;
+        _isBuffAlloc = true;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 // this constructor creates 2D NDArray, memory for array is allocated in this constructor 
 template <typename T>

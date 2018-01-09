@@ -3303,7 +3303,7 @@ TEST_F(DeclarableOpsTests1, Stack_6) {
 }
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
-    NDArray<float> exp('c', {1, 4});
+    NDArray<float> exp({4});
     NDArrayFactory<float>::linspace(1, exp);
 
     nd4j::ops::range<float> op;
@@ -3323,7 +3323,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_1) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
-    NDArray<float> exp('c', {1, 4});
+    NDArray<float> exp({4});
     NDArrayFactory<float>::linspace(1, exp);
 
     NDArray<float> start('c', {1, 1});
@@ -3342,6 +3342,8 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
     auto array = result->at(0);
 
+    array->printShapeInfo("z");
+
     ASSERT_TRUE(exp.isSameShape(array));
     ASSERT_TRUE(exp.equalsTo(array));
 
@@ -3350,7 +3352,7 @@ TEST_F(DeclarableOpsTests1, Test_Range_Integer_2) {
 
 
 TEST_F(DeclarableOpsTests1, Test_Range_Integer_3) {
-    NDArray<float> exp('c', {1, 4});
+    NDArray<float> exp({4});
     NDArrayFactory<float>::linspace(1, exp);
 
     nd4j::ops::range<float> op;

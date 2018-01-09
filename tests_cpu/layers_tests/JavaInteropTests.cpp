@@ -54,7 +54,7 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
 
 TEST_F(JavaInteropTests, TestShapeExposure2) {
     NDArray<float> input('c', {1, 2, 5, 4});
-    NDArray<float> exp('c', {1, 4}, {1, 2, 5, 4});
+    NDArray<float> exp('c', {4}, {1, 2, 5, 4});
 
 
     NativeOps nativeOps;
@@ -73,7 +73,6 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
 
     ASSERT_EQ(exp.rankOf(), shape::rank((int *)shapeList->at(0)));
     ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((int *)shapeList->at(0))[0]);
-    ASSERT_EQ(exp.sizeAt(1), shape::shapeOf((int *)shapeList->at(0))[1]);
 
     nativeOps.deleteShapeList((Nd4jPointer) shapeList);
 }
