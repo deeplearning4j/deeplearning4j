@@ -235,7 +235,7 @@ public class TFGraphTestAllHelper {
             else {
                 varValue = Nd4j.create(varContents,varShape);
             }
-            INDArray varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
+            //varValue = Nd4j.readNumpy(new ClassPathResource(varPath.replace(".shape", ".csv")).getInputStream(), ",").reshape(varShape);
             if (varName.contains("____")) {
                 //these are intermediate node outputs
                 varMap.put(varName.replaceAll("____", "/"), varValue);

@@ -29,8 +29,8 @@ public class TFGraphTestList {
     public static String[] modelNames = new String[]{
 //            "add_n",
             //"ae",
-            //"ae_00",
-            "bias_add",
+            "ae_00",
+            //"bias_add",
             // "concat"
             // "conv_0",
             // "conv_1",
