@@ -2705,11 +2705,12 @@ public class WordVectorSerializer {
                 VocabWord element = new VocabWord(1.0, word);
                 element.setIndex(idxCounter.getAndIncrement());
 
-
                 float[] vector = new float[vectorLength];
                 for (int i = 0; i < vectorLength; i++) {
                     vector[i] = readFloat(stream);
                 }
+
+                stream.readByte();
 
                 return Pair.makePair(element, vector);
             } catch (Exception e) {
