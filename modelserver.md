@@ -22,3 +22,5 @@ Production-grade model servers have a few important features. They should be:
 * Scalable. That data traffic may surge, and predictions should be made with low latency.
 * Stable and debuggable. SKIL is based on the enterprise-hardened JVM.
 * Certified. Deeplearning4j works with CDH and HDP.
+
+SKIL is all of those. Visit [SKIL's Machine Learning Model Server Quickstart](https://skymind.readme.io/v1.0.1/docs/quickstart) to test it out. 
