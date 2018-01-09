@@ -226,13 +226,15 @@ TEST_F(ScalarTests, Test_Stack_2) {
     NDArray<float> u('c', {1, 1}, {2.0f});
     NDArray<float> v('c', {1, 1}, {3.0f});
     NDArray<float> w('c', {1, 1}, {4.0f});
-    NDArray<float> exp('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {4, 1, 1}, {1, 2, 3, 4});
 
     nd4j::ops::stack<float> op;
     auto result = op.execute({&t, &u, &v, &w}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
+
+    z->printShapeInfo("z shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

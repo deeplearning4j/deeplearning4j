@@ -5,7 +5,6 @@
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <vector>
-#include <array>
 
 namespace nd4j {
     namespace ops {
@@ -18,33 +17,31 @@ namespace nd4j {
     			dim += input->rankOf() + 1;
 
 			// input validation
-			// check whether shapes of all input array are the same		
-			bool allScalars = true;
-			auto first = INPUT_VARIABLE(0);
-			for (int i = 0; i < (int) block.width(); ++i) {
-				auto array = INPUT_VARIABLE(i);
-				REQUIRE_TRUE(shape::equalsSoft(array->getShapeInfo(), first->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
-				allScalars &= array->isScalar();
+			// check whether shapes of all input array are the same				
+			for (int i = 0; i < (int) block.width() - 1; ++i)
+				REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
+
+   			if(input->rankOf() > 1)
+   				REQUIRE_TRUE(dim < input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input arrays shapes !");
+
+			if(input->rankOf() == 0) {
+				for(int i=0; i < block.width(); ++i)
+					(*output)(i) = (*INPUT_VARIABLE(i))(0);
+
+				STORE_RESULT(*output);
 			}
+			else {
 
-			// scalar is special case, that produces row vector
-			if (allScalars) {
-				for (int e = 0; e < block.width(); e++) {
-					auto arr = INPUT_VARIABLE(e);
-					output->putScalar(e, arr->getScalar(0));
-				}
-			
-				return ND4J_STATUS_OK;
+				std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {dim});	
+				ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(output, dimsToExclude);		// list.size() == block.width()
+
+				for(int i=0; i<list->size(); ++i)
+					list->at(i)->assign(INPUT_VARIABLE(i));
+
+				STORE_RESULT(*output);
+
+				delete list;
 			}
-
-   			REQUIRE_TRUE(dim < input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input input arrays shapes !");
-
-			std::vector<int> dimsToExclude = ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {dim});	
-			ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(output, dimsToExclude);		// list.size() == block.width()
-
-			for(int i=0; i<list->size(); ++i)
-				list->at(i)->assign(INPUT_VARIABLE(i));
-	
 			// remove unity from output shape if input arrays are vectors 
 			// if(input->isVector())	{
 			// 	std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());		
@@ -55,59 +52,35 @@ namespace nd4j {
 			// 	output->getShapeInfo()[output->rankOf()*2 + 2] = 1;		
 			// }
 	
-
-    		STORE_RESULT(*output);
-			delete list;
     		return ND4J_STATUS_OK;
 		}
 		DECLARE_SYN(pack, stack);
 		DECLARE_SYN(Pack, stack);
 
 		DECLARE_SHAPE_FN(stack) {
-
+	
 			// check whether input dimension is within rank range
 			int* inShapeInfo = inputShape->at(0);
 			int rank = inShapeInfo[0];
 			int dim = INT_ARG(0);
-
-			int elements = inputShape->size();
 			if(dim < 0 ) dim += rank + 1;
 
-			{ // special cases for 0D concat
-                bool allScalars = true;
-                bool realScalars = false;
-				int *newShape;
-                for (int e = 0; e < elements; e++) {
-                    allScalars &= shape::isScalar(inputShape->at(e));
-                    realScalars |= shape::rank(inputShape->at(e)) == 0;
-                }
-
-
-				// any scalar
-                if (allScalars && realScalars) {
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
-                    int length = shape::length(inputShape->at(0));
-                    for (int i = 1; i < elements; i++) {
-                       length += 1;
-                    }
-
-					std::array<int, 1> shape = {{length}};
-                    shape::shapeBuffer(1, shape.data(), newShape);
-                    return new ShapeList(newShape);
-                } else if (allScalars) {
-					// all scalars
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-
-                    std::array<int, 2> shape = {{1, elements}};
-                    shape::shapeBuffer(2, shape.data(), newShape);
-                    return new ShapeList(newShape);
-                }
-            }
+			if(rank == 0) {
+				int* outShapeInfo = nullptr;
+    			ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(1), int);
+    			outShapeInfo[0] = 1;
+    			outShapeInfo[1] = block.width();
+    			outShapeInfo[2] = 1;
+    			outShapeInfo[3] = 1;
+    			outShapeInfo[4] = 0;
+    			outShapeInfo[5] = (int)shape::order(inShapeInfo);
+    			return new ShapeList(outShapeInfo);
+			}
 
 			//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-			// insert (int) block.width() at dim position of input shape to get output shape
-			outShape.insert(outShape.begin() + dim, (int) block.width());				
+			// insert (int) block.width() at dim position of input shape to get output shape	
+			outShape.insert(outShape.begin() + dim, (int) block.width());						
 
 			// evaluate output ShapeInfo
 			int newRank = outShape.size();
@@ -116,8 +89,8 @@ namespace nd4j {
     		outShapeInfo[0] = newRank;
     		for(int i=1; i <= newRank; ++i)
     			outShapeInfo[i] = outShape[i-1];
-
-    		shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
+	
+    		shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));    
 
     		return new ShapeList(outShapeInfo);
 		}
