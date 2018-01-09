@@ -3214,7 +3214,7 @@ TEST_F(DeclarableOpsTests1, Stack_3) {
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
     int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+    int expShape[]  = {3, 2, 1, 12, 12, 12, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3222,7 +3222,7 @@ TEST_F(DeclarableOpsTests1, Stack_3) {
 
     nd4j::ops::stack<float> op;
     nd4j::ResultSet<float>*  results = op.execute({&input1, &input2}, {}, {0});
-    NDArray<float>* output = results->at(0);
+    NDArray<float>* output = results->at(0);    
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -3238,7 +3238,7 @@ TEST_F(DeclarableOpsTests1, Stack_4) {
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
     int shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
     int shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
-    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+    int expShape[]  = {3, 1, 2, 12, 24, 12, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3246,7 +3246,7 @@ TEST_F(DeclarableOpsTests1, Stack_4) {
 
     nd4j::ops::stack<float> op;
     nd4j::ResultSet<float>*  results = op.execute({&input1, &input2}, {}, {1});
-    NDArray<float>* output = results->at(0);
+    NDArray<float>* output = results->at(0);    
 
     ASSERT_TRUE(expected.isSameShapeStrict(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -3262,7 +3262,7 @@ TEST_F(DeclarableOpsTests1, Stack_5) {
     float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
     int shape1[]    = {2, 12, 1, 1,  1, 0, 1, 99};
     int shape2[]    = {2, 12, 1, 1,  1, 0, 1, 99};
-    int expShape[]  = {2, 2, 12, 12, 1, 0, 1, 99};
+    int expShape[]  = {3, 2, 12, 1, 12, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3286,7 +3286,7 @@ TEST_F(DeclarableOpsTests1, Stack_6) {
     float expBuff[] = {1 ,13 ,2 ,14 ,3 ,16 ,4 ,16 ,5 ,17 ,6 ,18 ,7 ,19 ,8 ,20 ,9 ,21 ,10 ,22 ,11 ,23 ,12 ,24};
     int shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
     int shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
-    int expShape[]  = {2, 12, 2, 2,  1, 0, 1, 99};
+    int expShape[]  = {3, 12, 2, 1, 2, 1, 1, 0, 1, 99};
 
     NDArray<float> input1(buff1, shape1);
     NDArray<float> input2(buff2, shape2);
@@ -3417,14 +3417,14 @@ TEST_F(DeclarableOpsTests1, Test_Stack_Edge_1) {
 
     NDArray<float> input(inBuff, 'c', {1, 3});
 
-    NDArray<float> exp(expBuff, 'c', {1, 3});
+    NDArray<float> exp(expBuff, 'c', {1, 1, 3});
 
     nd4j::ops::stack<float> op;
 
     auto result = op.execute({&input}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);
+    auto z = result->at(0);    
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -3461,7 +3461,7 @@ TEST_F(DeclarableOpsTests1, Test_Stack_Edge_3) {
 
     NDArray<float> input(inBuff, 'c', {1, 3});
 
-    NDArray<float> exp(expBuff, 'c', {3, 1});
+    NDArray<float> exp(expBuff, 'c', {1, 1, 3});
 
     nd4j::ops::stack<float> op;
 

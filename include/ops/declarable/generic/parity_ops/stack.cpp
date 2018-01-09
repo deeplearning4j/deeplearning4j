@@ -46,14 +46,14 @@ namespace nd4j {
 				list->at(i)->assign(INPUT_VARIABLE(i));
 	
 			// remove unity from output shape if input arrays are vectors 
-			if(input->isVector())	{
-				std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());		
-				outShape.erase(find(outShape.begin(), outShape.end(), 1));
-				output->reshapei(output->ordering(), outShape);
-				if(dim != 0 && (int)block.width() == 1)			// such is implemented by tensorFlow
-					output->permutei({1, 0});
-				output->getShapeInfo()[output->rankOf()*2 + 2] = 1;		
-			}
+			// if(input->isVector())	{
+			// 	std::vector<int> outShape(output->shapeOf(), output->shapeOf() + output->rankOf());		
+			// 	outShape.erase(find(outShape.begin(), outShape.end(), 1));
+			// 	output->reshapei(output->ordering(), outShape);
+			// 	if(dim != 0 && (int)block.width() == 1)			// such is implemented by tensorFlow
+			// 		output->permutei({1, 0});
+			// 	output->getShapeInfo()[output->rankOf()*2 + 2] = 1;		
+			// }
 	
 
     		STORE_RESULT(*output);
@@ -107,9 +107,7 @@ namespace nd4j {
 			//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 			std::vector<int> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
 			// insert (int) block.width() at dim position of input shape to get output shape
-
-			outShape.insert(outShape.begin() + dim, (int) block.width());
-			// if input arrays are vectors remove unity from shape			
+			outShape.insert(outShape.begin() + dim, (int) block.width());				
 
 			// evaluate output ShapeInfo
 			int newRank = outShape.size();
