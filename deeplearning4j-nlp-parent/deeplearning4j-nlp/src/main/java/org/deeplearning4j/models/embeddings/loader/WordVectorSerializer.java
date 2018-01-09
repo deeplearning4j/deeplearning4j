@@ -2630,7 +2630,7 @@ public class WordVectorSerializer {
                 log.debug("Trying BinaryReader...");
                 vocabCache = new AbstractCache.Builder<VocabWord>().build();
                 storage.clear();
-                try (Reader reader = new BinaryReader(file)) {
+                try (BinaryReader reader = new BinaryReader(file)) {
                     while (reader.hasNext()) {
                         Pair<VocabWord, float[]> pair = reader.next();
                         VocabWord word = pair.getFirst();
@@ -2639,7 +2639,7 @@ public class WordVectorSerializer {
 
                         vocabCache.addToken(word);
                         vocabCache.addWordToIndex(word.getIndex(), word.getLabel());
-
+                        reader.readByte();
                         Nd4j.getMemoryManager().invokeGcOccasionally();
                     }
                 } catch (Exception ez) {
@@ -2712,6 +2712,14 @@ public class WordVectorSerializer {
                 }
 
                 return Pair.makePair(element, vector);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public byte readByte() {
+            try {
+                return stream.readByte();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
