@@ -49,6 +49,7 @@ public class ExpandDims extends DynamicCustomOp {
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
         this.axis = axis;
+        addIArgument(this.axis);
     }
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args) {
