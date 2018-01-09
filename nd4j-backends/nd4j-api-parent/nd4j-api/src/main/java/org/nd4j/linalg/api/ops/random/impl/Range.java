@@ -145,7 +145,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new int[]{1,cnt});
+            return Arrays.asList(new int[]{cnt});
         }
 
         else if (tArgs.length > 0) {
@@ -166,7 +166,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new int[]{1,cnt});
+            return Arrays.asList(new int[]{cnt});
         }
 
         else if(inputArgs.length > 0) {
@@ -187,7 +187,7 @@ public class Range extends DynamicCustomOp {
                 }
             }
 
-            return Arrays.asList(new int[]{1,cnt});
+            return Arrays.asList(new int[]{cnt});
         }
 
 

@@ -5123,6 +5123,9 @@ public class Nd4j {
      * @return the instance
      */
     public static INDArray createUninitialized(int[] shape, char ordering) {
+        if (shape.length == 0)
+            return trueScalar(0.0);
+
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};
@@ -5148,6 +5151,9 @@ public class Nd4j {
      * @return
      */
     public static INDArray createUninitializedDetached(int[] shape, char ordering) {
+        if (shape.length == 0)
+            return trueScalar(0.0);
+
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {
             shape = new int[] {1, 1};

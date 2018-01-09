@@ -29,7 +29,7 @@ public class TFGraphTestList {
     public static String[] modelNames = new String[]{
 //            "add_n",
             //"ae",
-            "ae_00",
+            //"ae_00",
             //"bias_add",
             // "concat"
             // "conv_0",
@@ -38,7 +38,7 @@ public class TFGraphTestList {
             // "conv_3",
             //"deep_mnist", //NOTE THIS ONE WILL FAIL because it is expecting a placeholder value for dropout % which we tie to 1.0 in inference
             //"deep_mnist_no_dropout", //Takes way too long since there are a lot of nodes, would skip for now
-            // "expand_dim",
+             //"expand_dim",
 
             // "g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
             //   "g_01",
@@ -66,7 +66,7 @@ public class TFGraphTestList {
             //"transform_0",
             //"transpose",
             //"transpose_00",
-             // "unstack"
+              "unstack"
     };
 
     /**

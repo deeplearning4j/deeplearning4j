@@ -15767,6 +15767,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/loss.h>
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
+// #include <helpers/ShapeBuilder.h>
 // #include <dll.h>
     @Namespace("nd4j") public static class _loader extends Pointer {
         static { Loader.load(); }

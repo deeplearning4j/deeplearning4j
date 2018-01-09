@@ -88,7 +88,7 @@ public class Rank extends DynamicCustomOp {
     @Override
     public List<int[]> calculateOutputShape() {
         List<int[]> ret = new ArrayList<>();
-        ret.add(new int[]{1,1});
+        ret.add(new int[]{});
         return ret;
     }
 

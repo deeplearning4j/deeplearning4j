@@ -70,7 +70,7 @@ public class Shape {
      * @return true if the shape is null,empty, or contains a -1 element
      */
     public static boolean isPlaceholderShape(int[] shape) {
-        if(shape == null || shape.length < 1)
+        if(shape == null)
             return true;
         else {
             for(int i = 0; i < shape.length; i++) {

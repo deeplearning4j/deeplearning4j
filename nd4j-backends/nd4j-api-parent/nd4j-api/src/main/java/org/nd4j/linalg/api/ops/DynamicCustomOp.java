@@ -213,6 +213,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         if(Shape.isPlaceholderShape(var.getShape())) {
             if(var.getShape() == null) {
                 val shape = calculateOutputShape();
+
                 if(!shape.isEmpty()) {
                     if(currShape != null && !Shape.isPlaceholderShape(currShape)) {
                         sameDiff.putShapeForVarName(var.getVarName(),currShape);
