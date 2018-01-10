@@ -277,3 +277,4 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [A Glossary of Deep-Learning Terms](./glossary.html)
 * [Word2vec, Doc2vec & GloVe](./word2vec)
 * [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
