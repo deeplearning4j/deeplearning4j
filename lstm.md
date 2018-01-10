@@ -218,6 +218,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Neural Networks & Regression](./logistic-regression)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
 
 ### Footnotes
 
