@@ -101,7 +101,6 @@ public class SameDiffTests {
     public void testAddArgsAndOutput() {
         SameDiff sameDiff = SameDiff.create();
         val varOne = sameDiff.var("one",Nd4j.ones(2));
-
     }
 
 
@@ -2134,7 +2133,6 @@ public class SameDiffTests {
         assertEquals(exp, dLdIn);
     }
 
-
     @Test
     public void testSquare(){
         Nd4j.getRandom().setSeed(12345);
@@ -2159,27 +2157,70 @@ public class SameDiffTests {
 
 
     @Test
-    public void testExpandDims(){
-        for( int i=0; i<=2; i++ ) {
+    public void testExpandDims() {
+        for (int i = 0; i <= 2; i++) {
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", Nd4j.create(2, 3));
             SDVariable expanded = sd.f().expandDims(in, i);
 
             INDArray out = sd.execAndEndResult();
-            switch (i){
+            switch (i) {
                 case 0:
-                    assertArrayEquals(new int[]{1,2,3}, out.shape());
+                    assertArrayEquals(new int[]{1, 2, 3}, out.shape());
                     break;
                 case 1:
-                    assertArrayEquals(new int[]{2,1,3}, out.shape());
+                    assertArrayEquals(new int[]{2, 1, 3}, out.shape());
                     break;
                 case 2:
-                    assertArrayEquals(new int[]{2,3,1}, out.shape());
+                    assertArrayEquals(new int[]{2, 3, 1}, out.shape());
                     break;
                 default:
                     throw new RuntimeException();
             }
         }
+    }
+
+    @Test
+    public void testZerosLike(){
+        SameDiff sd = SameDiff.create();
+        SDVariable var0 = sd.var("in", new int[]{3,4});
+        SDVariable out = sd.zerosLike("out", var0);
+
+        INDArray out1 = sd.execAndEndResult();
+        assertEquals(Nd4j.zeros(3,4), out1);
+
+        sd.associateArrayWithVariable(Nd4j.create(4,5), var0);
+        INDArray out2 = sd.execAndEndResult();
+        assertEquals(Nd4j.zeros(4,5), out2);
+    }
+
+    @Test
+    public void testOnesLike(){
+        SameDiff sd = SameDiff.create();
+        SDVariable var0 = sd.var("in", new int[]{3,4});
+        SDVariable out = sd.onesLike("out", var0);
+
+        INDArray out1 = sd.execAndEndResult();
+        assertEquals(Nd4j.ones(3,4), out1);
+
+        sd.associateArrayWithVariable(Nd4j.create(4,5), var0);
+        INDArray out2 = sd.execAndEndResult();
+        assertEquals(Nd4j.ones(4,5), out2);
+    }
+
+    @Test
+    public void testOnesLikeBackprop(){
+        SameDiff sd = SameDiff.create();
+        SDVariable var0 = sd.var("in", new int[]{3,4});
+        SDVariable ones = sd.onesLike("ones", var0);
+        SDVariable out = sd.sum("oun", ones);
+
+        INDArray outArr = sd.execAndEndResult();
+        assertEquals(Nd4j.valueArrayOf(1, 12.0), outArr);
+
+        sd.execBackwards();
+
+        assertEquals(Nd4j.create(3,4), sd.grad("in").getArr());
     }
 }
 

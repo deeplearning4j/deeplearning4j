@@ -164,6 +164,7 @@ public class SameDiff {
     private boolean resolvedVariables = false;
 
 
+    @Getter @Setter boolean logExecution = true;
 
 
 
@@ -1288,7 +1289,26 @@ public class SameDiff {
      */
     public SDVariable one(String name, int[] shape) {
         return var(name,shape,new ConstantInitScheme('f',1.0));
+    }
 
+    /**
+     * Return a variable of all 1s, with the same shape as the input
+     *
+     * @param input
+     * @return
+     */
+    public SDVariable onesLike(SDVariable input){
+        return onesLike(null, input);
+    }
+
+    /**
+     * Return a variable of all 1s, with the same shape as the input
+     *
+     * @param input
+     * @return
+     */
+    public SDVariable onesLike(String name, SDVariable input){
+        return f().onesLike(name, input);
     }
 
 
@@ -1301,9 +1321,27 @@ public class SameDiff {
      */
     public SDVariable zero(String name, int[] shape) {
         return var(name,shape,new ZeroInitScheme());
-
     }
 
+    /**
+     * Return a variable of all 0s with the same shape as the input
+     *
+     * @param input
+     * @return
+     */
+    public SDVariable zerosLike(SDVariable input){
+        return zerosLike(null, input);
+    }
+
+    /**
+     * Return a variable of all 0s, with the same shape as the input
+     *
+     * @param input
+     * @return
+     */
+    public SDVariable zerosLike(String name, SDVariable input){
+        return f().zerosLike(name, input);
+    }
 
     /**
      * Variable initialization
@@ -1769,6 +1807,15 @@ public class SameDiff {
         return or(null,iX,iy);
     }
 
+    public SDVariable abs(SDVariable ix){
+        return abs(null, ix);
+    }
+
+    public SDVariable abs(String name, SDVariable ix){
+        SDVariable result = f().abs(ix);
+        return updateVariableNameAndReference(result, name);
+    }
+
     /**
      *
      * @param iX
@@ -1972,6 +2019,24 @@ public class SameDiff {
         return softmax(null,iX);
     }
 
+    public SDVariable logSoftmax(SDVariable iX){
+        return logSoftmax(null, iX);
+    }
+
+    public SDVariable logSoftmax(String name, SDVariable iX){
+        SDVariable ret = f().logSoftmax(iX);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable selu(SDVariable iX){
+        return selu(null, iX);
+    }
+
+    public SDVariable selu(String name, SDVariable iX){
+        SDVariable ret = f().selu(iX);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      *
      * @param iX
@@ -2021,6 +2086,15 @@ public class SameDiff {
         return sigmoidDerivative(null,iX,wrt);
     }
 
+    public SDVariable logSigmoid(SDVariable iX){
+        return logSigmoid(null, iX);
+    }
+
+    public SDVariable logSigmoid(String name, SDVariable iX){
+        SDVariable ret = f().logSigmoid(iX);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      *
      * @param iX
@@ -2055,6 +2129,15 @@ public class SameDiff {
      */
     public SDVariable softplus(SDVariable iX) {
         return softplus(null,iX);
+    }
+
+    public SDVariable swish(SDVariable iX){
+        return swish(null, iX);
+    }
+
+    public SDVariable swish(String name, SDVariable iX){
+        SDVariable ret = f().swish(iX);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -3107,6 +3190,21 @@ public class SameDiff {
 
     }
 
+    public SDVariable norm1(String name, SDVariable ix, int... dimensions){
+        SDVariable result = f().norm1(ix, dimensions);
+        return updateVariableNameAndReference(result,name);
+    }
+
+    public SDVariable norm2(String name, SDVariable ix, int... dimensions){
+        SDVariable result = f().norm2(ix, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    public SDVariable normmax(String name, SDVariable ix, int... dimensions){
+        SDVariable result = f().normmax(ix, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
 
     /**
      *
@@ -3168,7 +3266,6 @@ public class SameDiff {
      */
     public SDVariable mmul(String name,SDVariable x, SDVariable y) {
         return mmul(name,x,y,MMulTranspose.allFalse());
-
     }
 
     /**
@@ -3184,7 +3281,6 @@ public class SameDiff {
                                  int[][] dimensions) {
         SDVariable result = functionFactory.tensorMmul(x,y, dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
 
@@ -3201,7 +3297,6 @@ public class SameDiff {
                 i_y,
                 dimensions);
         return updateVariableNameAndReference(cosim,name);
-
     }
 
     /**
@@ -3214,7 +3309,6 @@ public class SameDiff {
     public SDVariable euclideanDistance(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.euclideanDistance(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3227,7 +3321,6 @@ public class SameDiff {
     public SDVariable manhattanDistance(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.manhattanDistance(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3240,7 +3333,6 @@ public class SameDiff {
     public SDVariable lossBinaryXENT(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossBinaryXENT(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3253,7 +3345,6 @@ public class SameDiff {
     public SDVariable lossCosineSimilarity(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossCosineSimilarity(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3266,7 +3357,6 @@ public class SameDiff {
     public SDVariable lossHinge(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossHinge(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3279,7 +3369,6 @@ public class SameDiff {
     public SDVariable lossKLD(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossKLD(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3292,7 +3381,6 @@ public class SameDiff {
     public SDVariable lossL1(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossL1(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3305,7 +3393,6 @@ public class SameDiff {
     public SDVariable lossL2(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossL2(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3318,7 +3405,6 @@ public class SameDiff {
     public SDVariable lossMAE(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossMAE(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
 
@@ -3333,7 +3419,6 @@ public class SameDiff {
     public SDVariable lossMSE(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossMSE(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3346,7 +3431,6 @@ public class SameDiff {
     public SDVariable lossMCXENT(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossMCXENT(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3359,7 +3443,6 @@ public class SameDiff {
     public SDVariable lossMSLE(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossMSLE(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3372,7 +3455,6 @@ public class SameDiff {
     public SDVariable lossNegativeLogLikelihood(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossNegativeLogLikelihood(iX, i_y, dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
     /**
@@ -3385,7 +3467,6 @@ public class SameDiff {
     public SDVariable lossPoisson(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossPoisson(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
 
@@ -3399,9 +3480,17 @@ public class SameDiff {
     public SDVariable lossSquaredHinge(String name,SDVariable iX, SDVariable i_y, int...dimensions) {
         SDVariable result = functionFactory.lossSquaredHinge(iX,i_y,dimensions);
         return updateVariableNameAndReference(result,name);
-
     }
 
+
+    public SDVariable expandDims(SDVariable ix, int axis){
+        return expandDims(null, ix, axis);
+    }
+
+    public SDVariable expandDims(String name, SDVariable ix, int axis){
+        SDVariable result = f().expandDims(ix, axis);
+        return updateVariableNameAndReference(result, name);
+    }
 
     /**
      *
@@ -4591,6 +4680,8 @@ public class SameDiff {
      * @param differentialFunction the function to print
      */
     public void printFunction(DifferentialFunction differentialFunction) {
+        if(!logExecution)
+            return;
         if(differentialFunction instanceof SDVariable)
             return;
 

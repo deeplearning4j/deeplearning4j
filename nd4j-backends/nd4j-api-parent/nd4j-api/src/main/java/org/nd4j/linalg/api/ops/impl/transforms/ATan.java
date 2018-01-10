@@ -89,10 +89,9 @@ public class ATan extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
-
-        SDVariable ret = f().div(f().one(shape),
-                f().sqrt(f().sub(f().one(shape),f().pow(arg(),2))));
+        //d(atan(x))/dx = 1/(x^2+1)
+        SDVariable xSqPlus1 = f().square(arg()).add(1.0);
+        SDVariable ret = xSqPlus1.rdiv(1.0).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

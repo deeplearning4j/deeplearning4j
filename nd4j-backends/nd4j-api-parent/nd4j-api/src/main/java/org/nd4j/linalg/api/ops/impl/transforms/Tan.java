@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -89,7 +90,11 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        //d(tan(x))/dx = (sec(x))^2 = 1 / (cos(x))^2
+
+        SDVariable oneDivCos2 = sameDiff.square(arg()).rdiv(1.0);
+        SDVariable ret = oneDivCos2.mul(i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 

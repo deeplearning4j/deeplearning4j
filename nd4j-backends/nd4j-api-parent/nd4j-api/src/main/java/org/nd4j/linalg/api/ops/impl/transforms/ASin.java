@@ -88,9 +88,10 @@ public class ASin extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
-        SDVariable ret = f().div(f().one(shape),
-                f().sqrt(f().sub(f().one(shape),f().pow(arg(),2))));
+        //d(asin(x))/dx = 1/sqrt(1-x^2)
+        SDVariable oneSubSq = sameDiff.square(arg()).rsub(1.0);
+        SDVariable ret = sameDiff.sqrt(oneSubSq).rdiv(1.0).mul(i_v.get(0));
+
         return Collections.singletonList(ret);
     }
 

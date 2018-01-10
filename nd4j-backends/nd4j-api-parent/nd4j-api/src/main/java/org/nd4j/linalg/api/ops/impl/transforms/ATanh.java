@@ -90,10 +90,10 @@ public class ATanh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
+        //d(atanh(x))/dx = 1 / (1-x^2)
 
-        SDVariable ret = f().div(f().one(shape),f().sub(f()
-                .one(shape),f().pow(arg(),2)));
+        SDVariable oneMinusX2 = sameDiff.pow(arg(), 2).rsub(1.0);
+        SDVariable ret = oneMinusX2.rdiv(1.0).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

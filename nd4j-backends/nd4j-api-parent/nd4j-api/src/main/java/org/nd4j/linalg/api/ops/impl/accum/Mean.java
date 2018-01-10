@@ -80,7 +80,7 @@ public class Mean extends Sum {
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
         int n = f().getReductionLength(this);
 
-        SDVariable ret = f().one(arg().getShape()).div(n);      //1/N with shape equal to input
+        SDVariable ret = sameDiff.onesLike(arg()).div(n);      //1/N with shape equal to input
         ret = ret.mul(i_v1.get(0));
 
         return Collections.singletonList(ret);

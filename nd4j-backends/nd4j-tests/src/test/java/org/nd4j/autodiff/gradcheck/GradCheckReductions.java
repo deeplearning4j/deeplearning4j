@@ -9,7 +9,10 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertTrue;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.Assert.*;
 
 @Slf4j
 public class GradCheckReductions {
@@ -20,11 +23,11 @@ public class GradCheckReductions {
     }
 
     @Test
-    public void testReductionGradientsSimple(){
+    public void testReductionGradientsSimple() {
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 10; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -63,6 +66,18 @@ public class GradCheckReductions {
                     loss = sd.prod("loss", input);
                     name = "prod";
                     break;
+                case 7:
+                    loss = sd.norm1("loss", input);
+                    name = "norm1";
+                    break;
+                case 8:
+                    loss = sd.norm2("loss", input);
+                    name = "norm2";
+                    break;
+                case 9:
+                    loss = sd.normmax("loss", input);
+                    name = "normmax";
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -81,13 +96,15 @@ public class GradCheckReductions {
     }
 
     @Test
-    public void testReductionGradients1(){
+    public void testReductionGradients1() {
         //Test reductions: final, but *not* the only function
         Nd4j.getRandom().setSeed(12345);
 
-        for(int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
+        List<String> allFailed = new ArrayList<>();
 
-            for (int i = 0; i < 7; i++) {
+        for (int dim : new int[]{0, Integer.MAX_VALUE}) {    //These two cases are equivalent here
+
+            for (int i = 0; i < 10; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -131,12 +148,24 @@ public class GradCheckReductions {
                         loss = sd.prod("loss", msePerEx, dim);
                         name = "prod";
                         break;
+                    case 7:
+                        loss = sd.norm1("loss", msePerEx, dim);
+                        name = "norm1";
+                        break;
+                    case 8:
+                        loss = sd.norm2("loss", msePerEx, dim);
+                        name = "norm2";
+                        break;
+                    case 9:
+                        loss = sd.normmax("loss", msePerEx, dim);
+                        name = "normmax";
+                        break;
                     default:
                         throw new RuntimeException();
                 }
 
 
-                String msg = "test: " + i + " - " + name + ", dimension=" + dim;
+                String msg = "(test " + i + " - " + name + ", dimension=" + dim + ")";
                 log.info("*** Starting test: " + msg);
 
                 INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
@@ -145,12 +174,25 @@ public class GradCheckReductions {
                 sd.associateArrayWithVariable(inputArr, input);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                boolean ok = GradCheckUtil.checkGradients(sd);
+                try {
+                    INDArray out = sd.execAndEndResult();
+                    assertNotNull(out);
+                    assertArrayEquals(new int[]{1, 1}, out.shape());
 
+//                    System.out.println(sd.asFlatPrint());
 
-                assertTrue(msg, ok);
+                    boolean ok = GradCheckUtil.checkGradients(sd);
+                    if(!ok){
+                        allFailed.add(msg);
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                    allFailed.add(msg + " - EXCEPTION");
+                }
             }
         }
+
+        assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
 
     @Test
@@ -158,20 +200,25 @@ public class GradCheckReductions {
         //Test reductions: NON-final function
         Nd4j.getRandom().setSeed(12345);
 
-        int d0 = 10;
+        int d0 = 3;
         int d1 = 4;
-        int d2 = 8;
+        int d2 = 5;
 
+        List<String> allFailed = new ArrayList<>();
         for (int reduceDim : new int[]{0, 1, 2}) {
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 10; i++) {
+
+                if(i != 6){
+                    continue;
+                }
 
                 int[] outShape;
-                switch(reduceDim){
+                switch (reduceDim) {
                     case 0:
-                        outShape = new int[]{d1,d2};
+                        outShape = new int[]{d1, d2};
                         break;
                     case 1:
-                        outShape = new int[]{d0,d2};
+                        outShape = new int[]{d0, d2};
                         break;
                     case 2:
                         outShape = new int[]{d0, d1};
@@ -181,6 +228,7 @@ public class GradCheckReductions {
                 }
 
                 SameDiff sd = SameDiff.create();
+                sd.setLogExecution(false);
 
 
                 SDVariable in = sd.var("in", new int[]{-1, d1, d2});
@@ -220,6 +268,18 @@ public class GradCheckReductions {
                         reduced = sd.prod("reduced", second, reduceDim);
                         name = "prod";
                         break;
+                    case 7:
+                        reduced = sd.norm1("reduced", second, reduceDim);
+                        name = "norm1";
+                        break;
+                    case 8:
+                        reduced = sd.norm2("reduced", second, reduceDim);
+                        name = "norm2";
+                        break;
+                    case 9:
+                        reduced = sd.normmax("reduced", second, reduceDim);
+                        name = "normmax";
+                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -231,18 +291,40 @@ public class GradCheckReductions {
                 SDVariable mseLoss = sd.mean("loss", sqDiff);
 
 
-                String msg = "test: " + i + " - " + name + ", dimension=" + reduceDim;
+                String msg = "(test " + i + " - " + name + ", dimension=" + reduceDim + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray inputArr = Nd4j.randn(new int[]{d0,d1,d2}).muli(100);
-                INDArray labelArr = Nd4j.randn(outShape).muli(100);
+                INDArray inputArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(1000);
+                INDArray labelArr = Nd4j.randn(outShape).muli(1000);
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
-                boolean ok = GradCheckUtil.checkGradients(sd);
-
-                assertTrue(msg, ok);
+                try {
+                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                    if(!ok){
+                        allFailed.add(msg);
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                    allFailed.add(msg + " - EXCEPTION");
+                }
             }
         }
+
+        assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
+
+
+    @Test
+    public void testReduce3(){
+        /*
+        cosineSimilarity
+        euclideanDistance
+        manhattanDistance
+         */
+        fail("Not yet implemented");
+    }
+
+
+
 }

@@ -27,6 +27,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -48,6 +49,9 @@ public class ExpandDims extends DynamicCustomOp {
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
+        if(axis == Integer.MAX_VALUE){
+            throw new ND4JIllegalArgumentException("Cannot perform ExpandDims with axis == Integer.MAX_VALUE");
+        }
         this.axis = axis;
         addIArgument(this.axis);
     }

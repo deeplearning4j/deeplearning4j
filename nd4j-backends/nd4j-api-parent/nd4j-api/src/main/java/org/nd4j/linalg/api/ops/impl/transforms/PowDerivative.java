@@ -40,26 +40,19 @@ public class PowDerivative extends BaseTransformOp {
     public PowDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double pow) {
         super(sameDiff, i_v1, i_v2);
         this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public PowDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double pow) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public PowDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
         super(sameDiff, i_v, inPlace);
         this.pow = pow;
-    }
-
-    public PowDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-        this.pow = pow;
-    }
-
-    public PowDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
-        super(sameDiff, i_v, extraArgs);
-        this.pow = pow;
+        this.extraArgs = new Object[] {pow};
     }
 
     public PowDerivative() {}
@@ -67,21 +60,25 @@ public class PowDerivative extends BaseTransformOp {
     public PowDerivative(INDArray x, INDArray z, double pow) {
         super(x, z);
         this.pow = pow;
+        init(x, null, z, x.lengthLong());
     }
 
     public PowDerivative(INDArray x, INDArray z, long n, double pow) {
         super(x, z, n);
         this.pow = pow;
+        init(x, null, z, x.lengthLong());
     }
 
     public PowDerivative(INDArray x, INDArray y, INDArray z, long n, double pow) {
         super(x, y, z, n);
         this.pow = pow;
+        init(x, null, z, x.lengthLong());
     }
 
     public PowDerivative(INDArray x, double pow) {
         super(x);
         this.pow = pow;
+        init(x, null, z, x.lengthLong());
     }
 
     @Override

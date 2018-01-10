@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
 import java.util.List;
@@ -99,11 +100,18 @@ public class Min extends BaseAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //TODO do we need to handle the "multiple equal minimums" case?
+        //TODO code duplication (min/max)
 
-        SDVariable repeatOut = f().doRepeat(outputVariables()[0], arg());
-        SDVariable argMaxLoc = f().eq(repeatOut, arg());
-        SDVariable out = argMaxLoc.mul(i_v1.get(0));
-        return Collections.singletonList(out);
+        SDVariable out = outputVariables()[0];
+
+        int origRank = Shape.rankFromShape(arg().getShape());
+        SDVariable expandedOut = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, out);
+        expandedOut = sameDiff.onesLike("temp0", arg()).mul("tempmul", expandedOut);
+        SDVariable expandedGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+
+        SDVariable eq = sameDiff.eq(arg(), expandedOut);
+        SDVariable ret = eq.mul(expandedGrad);
+        return Collections.singletonList(ret);
     }
 
 

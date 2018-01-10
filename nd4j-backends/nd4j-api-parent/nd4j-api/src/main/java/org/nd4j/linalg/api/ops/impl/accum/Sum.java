@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
 import java.util.List;
@@ -85,7 +86,9 @@ public class Sum extends BaseAccumulation {
         //        = dL/dOut * 1
         // But broadcast to shape of the input
 
-        SDVariable ret = f().one(arg().getShape()).mul(i_v1.get(0));
+        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
+        SDVariable broadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+        SDVariable ret = sameDiff.onesLike(arg()).mul(broadcastable);
         return Collections.singletonList(ret);
     }
 

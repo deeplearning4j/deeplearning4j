@@ -87,7 +87,7 @@ public class Sin extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().cos(arg());
+        SDVariable ret = f().cos(arg()).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

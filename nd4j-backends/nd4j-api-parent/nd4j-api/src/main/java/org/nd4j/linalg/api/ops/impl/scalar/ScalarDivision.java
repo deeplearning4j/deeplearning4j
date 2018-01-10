@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -83,7 +84,7 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().div(f().mul(i_v1.get(0),scalarValue.doubleValue()),f().pow(arg(),2.0));
-        return Arrays.asList(ret);
+        SDVariable ret = i_v1.get(0).div(scalarValue.doubleValue());
+        return Collections.singletonList(ret);
     }
 }

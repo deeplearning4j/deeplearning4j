@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -113,7 +114,7 @@ public class Pow extends BaseTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable g = f().powDerivative(arg(), i_v1.get(0), this.pow);
 
-        return Arrays.asList(g);
+        return Collections.singletonList(g);
     }
 
 }

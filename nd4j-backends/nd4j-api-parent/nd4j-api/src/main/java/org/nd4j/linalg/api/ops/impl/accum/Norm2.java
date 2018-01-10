@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collections;
@@ -80,7 +81,12 @@ public class Norm2 extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable ret = f().doNormGrad(outputVariables()[0],i_v1.get(0),"norm2",dimensions);
+        //d norm2(in)/dx = x / norm2(in)
+
+        SDVariable norm2 = outputVariables()[0];
+        int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
+        SDVariable norm2bc = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, norm2);
+        SDVariable ret = arg().div(norm2bc).mul(i_v1.get(0));
 
         return Collections.singletonList(ret);
     }

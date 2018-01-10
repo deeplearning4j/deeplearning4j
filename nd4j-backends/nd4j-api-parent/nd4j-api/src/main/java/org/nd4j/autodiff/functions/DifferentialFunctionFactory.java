@@ -96,10 +96,22 @@ public class DifferentialFunctionFactory   {
         return sameDiff.zero("one-" + UUID.randomUUID().toString(),shape);
     }
 
+    public SDVariable zerosLike(String name, SDVariable input){
+        validateDifferentialFunctionsameDiff(input);
+        return new ZerosLike(name, sameDiff(),input).outputVariables()[0];
+    }
+
 
     public SDVariable one(int[] shape) {
         return sameDiff.one("one-" + UUID.randomUUID().toString(),shape);
     }
+
+    public SDVariable onesLike(String name, SDVariable input){
+        validateDifferentialFunctionsameDiff(input);
+        return new OnesLike(name, sameDiff(),input).outputVariables()[0];
+    }
+
+
 
 
     public SDVariable tile(SDVariable iX, int[] repeat) {
@@ -173,37 +185,32 @@ public class DifferentialFunctionFactory   {
     }
 
     /**
-     * Handls gradient calculation
-     * for all nor types
-     * @param func
-     * @param input
-     * @param type
-     * @param axes
-     * @return
+     * Add 1s as required to the array make an array possible to be broadcast with the original (pre-reduce) array.
+     *
+     * Example: if doing [a,b,c].sum(1), result is [a,c]. To 'undo' this in a way that can be auto-broadcast,
+     * we want to expand as required - i.e., [a,c] -> [a,1,c] which can be auto-broadcast with the original [a,b,c].
+     * This is typically only used with reduction operations backprop.
+     *
+     * @param origRank   Rank of the original array, before the reduction was executed
+     * @param reduceDims Dimensions that the original array was reduced from
+     * @param toExpand   Array to add 1s to the shape to (such that it can be
+     * @return Reshaped array.
      */
-    public SDVariable doNormGrad(SDVariable func,
-                                 SDVariable input,
-                                 String type,
-                                 int... axes) {
-
-        validateDifferentialFunctionsameDiff(func);
-        validateDifferentialFunctionsameDiff(input);
-        SDVariable result;
-        if(Shape.isWholeArray(axes)) {
-            result = input;
-        }
-        else if(axes.length > 1) {
-            if(axes[0] > axes[1]) {
-                axes[0]--;
+    public SDVariable reductionBroadcastableWithOrigShape(int origRank, int[] reduceDims, SDVariable toExpand){
+        if(Shape.isWholeArray(origRank, reduceDims)){
+            //Output is [1,1] which is already broadcastable
+            return toExpand;
+        } else if(origRank == 2 && reduceDims.length == 1){
+            //In this case: [a,b] -> [1,b] or [a,b] -> [a,1]
+            //both are already broadcastable
+            return toExpand;
+        } else {
+            //Example: [a,b,c].sum(1) -> [a,c]... want [a,1,c]
+            for(int d : reduceDims){
+                toExpand = sameDiff().expandDims(toExpand, d);
             }
-
-            result = expandDims(expandDims(mul(div(func,input),func.args()[0]),axes[0]),axes[1]);
+            return toExpand;
         }
-        else {
-            result = expandDims(mul(div(func,input),func.args()[0]),axes[0]);
-        }
-
-        return result;
     }
 
 
@@ -353,7 +360,7 @@ public class DifferentialFunctionFactory   {
 
 
     public SDVariable pow(SDVariable iX, double i_y) {
-        return new ScalarMultiplication(  sameDiff(),iX,i_y).outputVariables()[0];
+        return new Pow(sameDiff(),iX,false,i_y).outputVariables()[0];
 
     }
 
@@ -370,24 +377,20 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable cube(SDVariable iX) {
         return new Cube(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
     public SDVariable cubeDerivative(SDVariable iX) {
         return new CubeDerivative(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
 
     public SDVariable floor(SDVariable iX) {
         return new Floor(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifedLinear(sameDiff(),iX,false,cutoff).outputVariables()[0];
-
     }
 
 
@@ -395,13 +398,11 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable softmax(SDVariable iX) {
         return new SoftMax(sameDiff(),new SDVariable[]{iX}).outputVariables()[0];
-
     }
 
 
     public SDVariable hardTanh(SDVariable iX) {
         return new HardTanh(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
 
@@ -409,13 +410,11 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable hardTanhDerivative(SDVariable iX) {
         return new HardTanhDerivative(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
 
     public SDVariable sigmoid(SDVariable iX) {
         return new Sigmoid(sameDiff(),iX,null).outputVariables()[0];
-
     }
 
 
