@@ -23,9 +23,9 @@ Production-grade model servers have a few important features. They should be:
 * Stable and debuggable. SKIL is based on the enterprise-hardened JVM.
 * Certified. Deeplearning4j works with CDH and HDP.
 
-SKIL is all of those. Visit [SKIL's Machine Learning Model Server Quickstart](https://skymind.readme.io/v1.0.1/docs/quickstart) to test it out. 
+## Skymind Intelligence Layer (SKIL)
 
-SKIL is a:
+SKIL meets all of those criteria. Visit [SKIL's Machine Learning Model Server Quickstart](https://skymind.readme.io/v1.0.1/docs/quickstart) to test it out. Briefly, SKIL is a:
 
 ### Machine Learning Solution Platform
 
