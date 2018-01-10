@@ -74,3 +74,4 @@ So you could apply the same definition to deep learning that Arthur Samuel did t
 * [Neural Networks & Regression](./logistic-regression)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./modelserver)
