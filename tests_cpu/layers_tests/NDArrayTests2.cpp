@@ -286,3 +286,38 @@ TEST_F(NDArrayTest2, TestVector_1) {
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, Operator_Plus_Test_5)
+{    
+
+    NDArray<double> x('c', {8, 8, 8});
+    NDArray<double> y('c', {8, 1, 8});
+    NDArray<double> expected('c', {8, 8, 8});
+
+    x = 1.;
+    y = 2.;
+    expected = 3.;    
+
+    NDArray<double> result = x + y;
+
+    ASSERT_TRUE(expected.isSameShape(&result));
+    ASSERT_TRUE(expected.equalsTo(&result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, Operator_Plus_Test_6)
+{    
+
+    NDArray<double> x('c', {3, 3, 3});
+    NDArray<double> y('c', {3, 1, 3});
+    NDArray<double> expected('c', {3, 3, 3}, {2., 4., 6., 5., 7., 9., 8.,10.,12., 14.,16.,18.,17.,19.,21.,20.,22.,24., 26.,28.,30.,29.,31.,33.,32.,34.,36.});
+    NDArrayFactory<double>::linspace(1, x);
+    NDArrayFactory<double>::linspace(1, y);
+
+    NDArray<double> result = x + y;
+    
+    ASSERT_TRUE(expected.isSameShape(&result));
+    ASSERT_TRUE(expected.equalsTo(&result));
+}
+
