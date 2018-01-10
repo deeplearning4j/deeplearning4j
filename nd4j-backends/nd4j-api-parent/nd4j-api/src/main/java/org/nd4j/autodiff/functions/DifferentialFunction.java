@@ -309,11 +309,12 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
         setInstanceId();
-        if(sameDiff != null)
-            sameDiff.addArgsFor(args,this);
-        for(int i = 0; i < args.length; i++) {
-            if(args[i].isPlaceHolder()) {
-                sameDiff.addPropertyToResolve(this,args[i].getVarName());
+        if(sameDiff != null) {
+            sameDiff.addArgsFor(args, this);
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].isPlaceHolder()) {
+                    sameDiff.addPropertyToResolve(this, args[i].getVarName());
+                }
             }
         }
     }
