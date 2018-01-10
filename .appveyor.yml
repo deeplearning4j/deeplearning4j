@@ -8,14 +8,14 @@ cache:
 clone_depth: 50
 environment:
   matrix:
-    - CUDA: 8.0
-      CUDNN: 6
+    - EXT: avx2
       SCALA: 2.10
-      EXT:
-    - CUDA: 9.0
-      CUDNN: 7
+    - EXT: avx512
       SCALA: 2.11
-      EXT: avx2
+    - CUDA: 8.0
+      SCALA: 2.10
+    - CUDA: 9.0
+      SCALA: 2.11
 
 init:
   - wmic computersystem set AutomaticManagedPagefile=False

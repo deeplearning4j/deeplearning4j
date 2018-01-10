@@ -15,22 +15,32 @@ if %ERRORLEVEL% neq 0 (
 )
 
 if "%CUDA%" == "8.0" (
-    curl -L -o cuda.exe "https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_windows-exe"
-) else (
-    curl -L -o cuda.exe "https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_windows-exe"
+    set "CUDA_URL=https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_windows-exe"
 )
-cuda.exe -s
-set CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%
-set CUDA_PATH_V%CUDA:.=_%=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%
-set PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\libnvvp;^
-C:\msys64\usr\bin\core_perl;C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%
+if "%CUDA%" == "9.0" (
+    set "CUDA_URL=https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_windows-exe"
+)
+if not "%CUDA_URL%" == "" (
+    curl --retry 10 -L -o cuda.exe %CUDA_URL%
+    cuda.exe -s
+    set "CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%"
+    set "CUDA_PATH_V%CUDA:.=_%=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%"
+    set "PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v%CUDA%\libnvvp;%PATH%"
+)
 
+set "PATH=C:\msys64\usr\bin\core_perl;C:\msys64\mingw64\bin;C:\msys64\usr\bin;%PATH%"
 bash -lc "pacman -Syu --noconfirm"
 bash -lc "pacman -Su --noconfirm"
 bash -lc "pacman -S --needed --noconfirm base-devel make mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc"
 
 bash -c "cd ../libnd4j/; MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT"
-bash -c "cd ../libnd4j/; MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30"
-bash -c "source change-cuda-versions.sh $CUDA"
+if not "%CUDA%" == "" (
+    bash -c "cd ../libnd4j/; MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30"
+    bash -c "source change-cuda-versions.sh $CUDA"
+    set "EXTRA_OPTIONS="
+) else (
+    set "EXTRA_OPTIONS=-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests"
+)
 bash -c "source change-scala-versions.sh $SCALA"
-call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype -Djavacpp.extension=%EXT%
+call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype ^
+    -Djavacpp.extension=%EXT% %EXTRA_OPTIONS%

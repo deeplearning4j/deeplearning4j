@@ -23,21 +23,32 @@ brew link --overwrite gcc
 /usr/local/bin/gcc-? --version
 mvn -version
 
-if [[ $CUDA == "8.0" ]]; then
-    curl --retry 10 -L https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg -o $HOME/cuda.dmg
-else
-    curl --retry 10 -L https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_mac-dmg -o $HOME/cuda.dmg
+if [[ "${CUDA:-}" == "8.0" ]]; then
+    CUDA_URL=https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg
+elif [[ "${CUDA:-}" == "9.0" ]]; then
+    CUDA_URL=https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_mac-dmg
 fi
-hdiutil mount $HOME/cuda.dmg
-sleep 5
-sudo /Volumes/CUDAMacOSXInstaller/CUDAMacOSXInstaller.app/Contents/MacOS/CUDAMacOSXInstaller --accept-eula --no-window
+if [[ -n ${CUDA_URL:-} ]]; then
+    curl --retry 10 -L -o $HOME/cuda.dmg $CUDA_URL
+    hdiutil mount $HOME/cuda.dmg
+    sleep 5
+    sudo /Volumes/CUDAMacOSXInstaller/CUDAMacOSXInstaller.app/Contents/MacOS/CUDAMacOSXInstaller --accept-eula --no-window
+fi
 
 cd $TRAVIS_BUILD_DIR/../libnd4j/
 sed -i="" /cmake_minimum_required/d CMakeLists.txt
-MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT
-MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30
+MAKEJ=2 bash buildnativeoperations.sh -c cpu -e ${EXT:-}
+if [[ -n "${CUDA:-}" ]]; then
+    MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30
+fi
 cd $TRAVIS_BUILD_DIR/
-source change-cuda-versions.sh $CUDA
+if [[ -n "${CUDA:-}" ]]; then
+    source change-cuda-versions.sh $CUDA
+    EXTRA_OPTIONS=
+else
+    EXTRA_OPTIONS='-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
+fi
 source change-scala-versions.sh $SCALA
-mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype -Djavacpp.extension=$EXT
+mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype \
+    -Djavacpp.extension=${EXT:-} $EXTRA_OPTIONS
 
