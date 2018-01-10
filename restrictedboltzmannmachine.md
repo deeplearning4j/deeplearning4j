@@ -209,3 +209,4 @@ Next, we'll show you how to implement a [deep-belief network](./deepbeliefnetwor
 * [Word2vec and Natural-Language Processing](./word2vec.html)
 * [Reinforcement Learning](./reinforcementlearning)
 * [DL4J Programming Guide](https://deeplearning4j.org/programmingguide/01_intro)
+* [Inference: Machine Learning Model Server](./modelserver)
