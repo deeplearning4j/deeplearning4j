@@ -433,8 +433,8 @@ public class DifferentialFunctionFactory   {
         return new LogSigmoidDerivative(sameDiff(),iX,wrt).outputVariables()[0];
     }
 
-    public SDVariable powDerivative(SDVariable iX, SDVariable wrt, double pow) {
-        return new PowDerivative(sameDiff(),iX,wrt, pow).outputVariables()[0];
+    public SDVariable powDerivative(SDVariable iX, double pow) {
+        return new PowDerivative(sameDiff(),iX,false,pow).outputVariables()[0];
     }
 
 

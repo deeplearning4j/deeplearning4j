@@ -37,18 +37,6 @@ import java.util.List;
 public class PowDerivative extends BaseTransformOp {
     private double pow;
 
-    public PowDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double pow) {
-        super(sameDiff, i_v1, i_v2);
-        this.pow = pow;
-        this.extraArgs = new Object[] {pow};
-    }
-
-    public PowDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double pow) {
-        super(sameDiff, i_v1, i_v2, inPlace);
-        this.pow = pow;
-        this.extraArgs = new Object[] {pow};
-    }
-
     public PowDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
         super(sameDiff, i_v, inPlace);
         this.pow = pow;

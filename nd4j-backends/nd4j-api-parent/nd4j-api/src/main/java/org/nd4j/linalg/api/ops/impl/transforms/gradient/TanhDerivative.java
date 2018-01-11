@@ -76,17 +76,14 @@ public class TanhDerivative extends BaseGradientOp  {
 
     @Override
     public void exec() {
-        INDArray tanh = Nd4j.getExecutioner().execAndReturn(new Tanh(x));
-        INDArray tanhTimesTanh = tanh.mul(tanh).rsubi(1.0).muli(y);
-        this.z.assign(tanhTimesTanh);
-
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.TanhDerivative(x,z));
+        z.muli(wrt());
     }
 
     @Override
     public void exec(int... dimensions) {
         super.exec(dimensions);
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

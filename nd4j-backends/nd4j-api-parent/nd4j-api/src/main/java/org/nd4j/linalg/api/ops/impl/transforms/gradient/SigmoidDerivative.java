@@ -74,12 +74,8 @@ public class SigmoidDerivative extends BaseGradientOp  {
 
     @Override
     public void exec() {
-        INDArray sigmoid = Nd4j.getExecutioner().execAndReturn(new Sigmoid(x));
-        INDArray rsubbed = sigmoid.rsub(1);
-        INDArray mulled = y.mul(sigmoid).muli(rsubbed);
-        if(mulled != z)
-            z.assign(mulled);
-
+        Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative(x,z));
+        z.muli(wrt());
     }
 
     @Override
@@ -87,13 +83,8 @@ public class SigmoidDerivative extends BaseGradientOp  {
         super.exec(dimensions);
     }
 
-
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException();
     }
-
-
 }
