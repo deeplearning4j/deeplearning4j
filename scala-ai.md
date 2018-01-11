@@ -33,6 +33,6 @@ layout: default
 
 * [Breeze](https://github.com/scalanlp/breeze) is a numerical computing library written in Scala. Unlike ND4J/ND4S, it does not support n-dimensional arrays, or tensors. 
 
-# See Also
+## See Also
 
 * [Artificial Intelligence (AI) for Java](./java-ai)
