@@ -51,6 +51,10 @@ namespace nd4j {
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
 
+                char order = 'c';
+                if (block.numI() > 0)
+                    order = (char) INT_ARG(0);
+
                 std::vector<int> shapeNew;
                 for (int e = 0; e < (int) s->lengthOf(); e++)
                     shapeNew.push_back((int) s->getIndexedScalar(e));
@@ -60,13 +64,13 @@ namespace nd4j {
                 }
 
                 if (block.isInplace()) {
-                    if (x->reshapei(x->ordering(), shapeNew)) {
+                    if (x->reshapei(order, shapeNew)) {
                         OVERWRITE_RESULT(x);
                         return ND4J_STATUS_OK;
                     }
                 } else {
                     auto ret = new NDArray<T>(*x);
-                    if (ret->reshapei(x->ordering(), shapeNew)) {
+                    if (ret->reshapei(order, shapeNew)) {
                         OVERWRITE_RESULT(ret);
                         return ND4J_STATUS_OK;
                     }
