@@ -15,7 +15,7 @@ layout: default
 
 * [Skymind Intelligence Layer CE](https://skymind.readme.io/v1.0.1/docs/quickstart) is a free machine learning platform that offers Scala notebooks with Zeppelin, which rely on Apache Spark for distributed training. 
 
-* SMILE
+* [SMILE](https://haifengl.github.io/smile/), Haifeng Li's Statistical Machine Intelligence and Learning Engine, includes a Scala API and relies on ND4J/ND4S for numerical computation. 
 
 * [Cortex](https://cortex.twitter.com/) - Twitter uses Scala for much of its big data stack.
 
