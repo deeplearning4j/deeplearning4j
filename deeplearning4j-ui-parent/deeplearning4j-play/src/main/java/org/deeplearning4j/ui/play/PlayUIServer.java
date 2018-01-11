@@ -22,6 +22,7 @@ import org.deeplearning4j.ui.module.tsne.TsneModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
+import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.nd4j.linalg.primitives.Pair;
@@ -32,6 +33,7 @@ import play.api.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,12 +81,18 @@ public class PlayUIServer extends UIServer {
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private Thread uiEventRoutingThread;
-    @Parameter(names = {"-r", "-enableRemote"}, description = "Whether to enable remote or not", arity = 1)
+
+    @Parameter(names = {"-r", "--enableRemote"}, description = "Whether to enable remote or not", arity = 1)
     private boolean enableRemote;
 
-
-    @Parameter(names = {"--uiPort"}, description = "Whether to enable remote or not", arity = 1)
+    @Parameter(names = {"-p", "--uiPort"}, description = "Whether to enable remote or not", arity = 1)
     private int port = DEFAULT_UI_PORT;
+
+    @Parameter(names = {"-fs", "--enableFileStorage"}, description = "Use file-based stats storage", arity = 1)
+    private boolean enableFileStorage;
+
+    @Parameter(names = {"--customStatsFile"}, description = "Path to create custom stats file", arity = 1)
+    private String customStatsFile;
 
     public PlayUIServer() {
         this(DEFAULT_UI_PORT);
@@ -222,7 +230,20 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
-        if (enableRemote)
+        if (enableFileStorage && customStatsFile != null) {
+            enableRemoteListener(new FileStatsStorage(new File(customStatsFile)), true);
+        }
+        else if(enableFileStorage) {
+            try {
+                File tempStatsFile = File.createTempFile("dl4j", "UIstats");
+                tempStatsFile.deleteOnExit();
+                enableRemoteListener(new FileStatsStorage(tempStatsFile), true);
+            } catch(Exception e) {
+                System.out.println("Failed to create temporary file for stats storage");
+                System.exit(0);
+            }
+        }
+        else if(enableRemote)
             enableRemoteListener();
     }
 
