@@ -5,11 +5,15 @@ layout: default
 
 ## Artificial Intelligence (AI) for Scala
 
-### Deep Neural Networks
+### Deep Learning/Neural Networks
 
 * [ScalNet](https://github.com/deeplearning4j/scalnet) is the Keras-like Scala API for Deeplearning4j. 
 
 * Deeplearning.scala - ThoughtWorks built a simple library for creating complex neural networks called [Deeplearning.scala](https://github.com/ThoughtWorksInc/DeepLearning.scala), which uses Skymind's [scientific computing library ND4J](https://nd4j.org/).
+
+<p align="center">
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
 
 ### Machine Learning 
 
