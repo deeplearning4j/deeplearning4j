@@ -85,3 +85,4 @@ For people just getting started with deep learning, the following tutorials and 
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Artificial Intelligence (AI) for Scala](./scala-ai)
