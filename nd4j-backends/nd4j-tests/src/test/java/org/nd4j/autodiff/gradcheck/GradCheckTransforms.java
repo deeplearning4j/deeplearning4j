@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -378,6 +379,8 @@ public class GradCheckTransforms {
                     Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
                     break;
                 case 12:
+                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.or(in1, in2);
                     expOut = Transforms.or(ia, ib);
                     break;
@@ -433,7 +436,5 @@ public class GradCheckTransforms {
             log.error("All failed transforms: " + allFailed);
             fail(allFailed.size() + " transforms failed");
         }
-
-        fail("Need to implement all cases!");
     }
 }
