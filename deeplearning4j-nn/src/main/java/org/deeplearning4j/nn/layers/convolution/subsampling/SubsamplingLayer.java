@@ -171,7 +171,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         a[5] = pad[1];
         a[6] = dilation[0];
         a[7] = dilation[1];
-        a[8] = layerConf().getConvolutionMode() == ConvolutionMode.Same ? 0 : 1;
+        a[8] = layerConf().getConvolutionMode() == ConvolutionMode.Same ? 1 : 0;
 
         Double[] d = new Double[nTArgs];
 
