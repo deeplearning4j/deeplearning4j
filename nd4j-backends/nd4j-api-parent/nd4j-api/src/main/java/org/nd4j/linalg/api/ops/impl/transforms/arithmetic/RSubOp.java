@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,36 +33,21 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class RSubOp extends BaseTransformOp {
+public class RSubOp extends BaseDynamicTransformOp {
+
+    public RSubOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace){
+        super(sameDiff, args, inPlace);
+    }
+
     public RSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
+        this(sameDiff, new SDVariable[]{i_v1, i_v2}, false);
     }
 
     public RSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
+        this(sameDiff, new SDVariable[]{i_v1, i_v2}, inPlace);
     }
 
     public RSubOp() {}
-
-    public RSubOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public RSubOp(INDArray x) {
-        super(x);
-    }
-
-    public RSubOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public RSubOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public RSubOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
 
     @Override
     public String opName() {
@@ -78,22 +64,15 @@ public class RSubOp extends BaseTransformOp {
         return "sub";
     }
 
-
-
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to subtract");
+    public RSubOp( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
-
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradWrtX = f().div(i_v.get(0),rarg());
-        SDVariable gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
+        SDVariable gradWrtX = sameDiff.neg(i_v.get(0));
+        SDVariable gradWrtY = i_v.get(0);
         List<SDVariable> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);

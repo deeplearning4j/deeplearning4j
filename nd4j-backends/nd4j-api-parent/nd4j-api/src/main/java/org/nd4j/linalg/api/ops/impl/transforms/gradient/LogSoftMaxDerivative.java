@@ -6,6 +6,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseGradientOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
@@ -80,8 +82,11 @@ public class LogSoftMaxDerivative extends BaseGradientOp  {
 
     @Override
     public void exec() {
-        this.z =  Transforms.exp(y).muli(x.sum(1)).rsubi(x);
-
+        //TODO add dimension arg. For now: hardcoded along dimension 1...
+        INDArray softmax = Transforms.softmax(x, true);
+        INDArray mul = softmax.mul(y);
+        INDArray summed = mul.sum(1);
+        Nd4j.getExecutioner().exec(new BroadcastSubOp(y,summed,z,0));
     }
 
     @Override

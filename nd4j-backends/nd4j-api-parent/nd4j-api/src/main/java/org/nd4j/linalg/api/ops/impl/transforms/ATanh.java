@@ -68,7 +68,7 @@ public class ATanh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 15;
+        return 93;
     }
 
     @Override

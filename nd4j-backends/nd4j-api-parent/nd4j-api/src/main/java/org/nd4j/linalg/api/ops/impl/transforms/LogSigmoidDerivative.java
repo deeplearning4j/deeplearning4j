@@ -23,7 +23,10 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseGradientOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.List;
 
@@ -32,25 +35,13 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class LogSigmoidDerivative extends BaseTransformOp {
+public class LogSigmoidDerivative extends BaseGradientOp {
     public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);
     }
 
     public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
-    }
-
-    public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
-
-    public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public LogSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
     }
 
     public LogSigmoidDerivative() {}
@@ -89,6 +80,12 @@ public class LogSigmoidDerivative extends BaseTransformOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+    @Override
+    public void exec(){
+        Nd4j.getExecutioner().exec(new Sigmoid(x,z));
+        z.muli(Transforms.exp(x.neg(),false)).muli(y);
     }
 
        @Override

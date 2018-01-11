@@ -9,6 +9,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -270,7 +274,10 @@ public class GradCheckTransforms {
             sd.exec();
             INDArray out = t.getArr();
 
-            assertEquals(msg, expOut, out);
+            if(!expOut.equals(out)){
+                allFailed.add(msg + " - FAILED ON FORWARD");
+                continue;
+            }
 
             boolean ok;
             try{
@@ -297,33 +304,96 @@ public class GradCheckTransforms {
     public void testPairwiseTransforms(){
         /*
         add, sub, mul, div, rsub, rdiv
-        or, eq, neq, gt, lt, gte, lte,
+        eq, neq, gt, lt, gte, lte, or,
+        min, max
         mmul
         tensormmul
-
          */
         //Test transforms (pairwise)
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 1; i++) {
-
+        for (int i = 0; i < 16; i++) {
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
             int minibatch = 5;
-            SDVariable in = sd.var("in", new int[]{-1, nOut});
+            SDVariable in1 = sd.var("in1", new int[]{-1, nOut});
+            SDVariable in2 = sd.var("in2", new int[]{-1, nOut});
 
             INDArray ia = Nd4j.randn(minibatch, nOut);
+            INDArray ib = Nd4j.randn(minibatch, nOut);
 
             SDVariable t;
             INDArray expOut;
             switch (i) {
                 case 0:
-                    t = in.add(5.0);
-                    expOut = ia.add(5.0);
+                    t = in1.add(in2);
+                    expOut = ia.add(ib);
                     break;
-
+                case 1:
+                    t = in1.sub(in2);
+                    expOut = ia.sub(ib);
+                    break;
+                case 2:
+                    t = in1.mul(in2);
+                    expOut = ia.mul(ib);
+                    break;
+                case 3:
+                    t = in1.div(in2);
+                    expOut = ia.div(ib);
+                    break;
+                case 4:
+                    t = in1.rsub(in2);
+                    expOut = ia.rsub(ib);
+                    break;
+                case 5:
+                    t = in1.rdiv(in2);
+                    expOut = ia.rdiv(ib);
+                    break;
+                case 6:
+                    t = sd.eq(in1, in2);
+                    expOut = ia.eq(ib);
+                    break;
+                case 7:
+                    t = sd.neq(in1, in2);
+                    expOut = ia.neq(ib);
+                    break;
+                case 8:
+                    t = sd.gt(in1, in2);
+                    expOut = ia.gt(ib);
+                    break;
+                case 9:
+                    t = sd.lt(in1, in2);
+                    expOut = ia.lt(ib);
+                    break;
+                case 10:
+                    t = sd.gte(in1, in2);
+                    expOut = ia.dup();
+                    Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    break;
+                case 11:
+                    t = sd.lte(in1, in2);
+                    expOut = ia.dup();
+                    Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    break;
+                case 12:
+                    t = sd.or(in1, in2);
+                    expOut = Transforms.or(ia, ib);
+                    break;
+                case 13:
+                    ib = Nd4j.randn(nOut, nOut);
+                    t = sd.mmul(in1, in2);
+                    expOut = ia.mmul(ib);
+                    break;
+                case 14:
+                    t = sd.max(in1, in2);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMax(ia, ib, ia.dup(), ia.length()));
+                    break;
+                case 15:
+                    t = sd.min(in1, in2);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length()));
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -338,7 +408,8 @@ public class GradCheckTransforms {
 
             SDVariable loss = sd.mean("loss", t);
 
-            sd.associateArrayWithVariable(ia, in);
+            sd.associateArrayWithVariable(ia, in1);
+            sd.associateArrayWithVariable(ib, in2);
             sd.exec();
             INDArray out = t.getArr();
 
@@ -353,7 +424,6 @@ public class GradCheckTransforms {
                 ok = false;
             }
 
-//            assertTrue(msg, ok);
             if(!ok){
                 allFailed.add(msg);
             }

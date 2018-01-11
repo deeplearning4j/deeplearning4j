@@ -5899,6 +5899,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, out);
     }
 
+    @Test
+    public void testAtanh(){
+        //http://www.wolframalpha.com/input/?i=atanh(x)
+
+        INDArray in = Nd4j.linspace(-0.9, 0.9, 10);
+        INDArray out = Transforms.atanh(in, true);
+
+        INDArray exp = Nd4j.create(in.shape());
+        for( int i=0; i<10; i++ ){
+            double x = in.getDouble(i);
+            //Using "alternative form" from: http://www.wolframalpha.com/input/?i=atanh(x)
+            double y = 0.5 * Math.log(x+1.0) - 0.5 * Math.log(1.0-x);
+            exp.putScalar(i, y);
+        }
+
+        assertEquals(exp, out);
+    }
+
 
     @Override
     public char ordering() {

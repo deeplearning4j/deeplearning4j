@@ -62,6 +62,7 @@ public class LessThanOrEqual extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(outputVariables()[0]);
+        //2 inputs, not continuously differentiable but 0s almost everywhere
+        return Arrays.asList(sameDiff.zerosLike(args()[0]), sameDiff.zerosLike(args()[1]));
     }
 }

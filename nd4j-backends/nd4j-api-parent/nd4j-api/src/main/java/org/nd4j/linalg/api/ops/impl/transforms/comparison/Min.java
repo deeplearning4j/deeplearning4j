@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.comparison;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,6 +35,10 @@ import java.util.List;
  */
 public class Min extends BaseDynamicTransformOp {
     public Min() {}
+
+    public Min(SameDiff sameDiff, @NonNull SDVariable first, @NonNull SDVariable second){
+        this(sameDiff, new SDVariable[]{first, second}, false);
+    }
 
     public Min( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
@@ -62,6 +67,10 @@ public class Min extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(outputVariables()[0]);
+        SDVariable min = outputVariables()[0];
+        SDVariable eq1 = sameDiff.eq(larg(), min);
+        SDVariable eq2 = sameDiff.eq(rarg(), min);
+
+        return Arrays.asList(eq1.mul(f1.get(0)), eq2.mul(f1.get(0)));
     }
 }
