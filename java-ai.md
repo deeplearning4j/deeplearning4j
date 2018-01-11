@@ -14,7 +14,7 @@ Deep learning usually refers to deep artificial neural networks. [Neural network
 [Deeplearning4j](deeplearning4j.org) is the most widely used open source deep learning library for Java and the JVM. It also has a Scala API and uses Keras as its Python API for neural network configuration. The official website provides many tutorials and simple theoretical explanations for deep learning and neural networks.
 
 <p align="center">
-<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 ### Neuroph
