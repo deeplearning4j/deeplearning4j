@@ -146,7 +146,7 @@ public class LeakyReLU extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().leakyReluDerivative(arg(),i_v.get(0) , alpha);
+        SDVariable ret = f().leakyReluDerivative(arg(),i_v.get(0), alpha);
 
         return Collections.singletonList(ret);
     }

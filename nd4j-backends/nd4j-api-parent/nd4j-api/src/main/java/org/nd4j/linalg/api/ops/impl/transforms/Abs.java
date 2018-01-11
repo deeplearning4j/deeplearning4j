@@ -88,9 +88,7 @@ public class Abs extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(arg(),f().abs(arg()));
+        SDVariable ret = f().sign(arg()).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
-
-
 }

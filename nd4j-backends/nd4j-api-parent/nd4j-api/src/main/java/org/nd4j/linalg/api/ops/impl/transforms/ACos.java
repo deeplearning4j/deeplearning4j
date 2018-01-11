@@ -88,8 +88,10 @@ public class ACos extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(f().one(outputVariables()[0].getShape()),
-                f().sqrt(f().sub(f().one(outputVariables()[0].getShape()),f().pow(arg(),2))));
+        //dacos(x)/dx = -1 / sqrt(1-x^2)
+        SDVariable oneSubSq = f().square(arg()).rsub(1.0);
+        SDVariable sqrt = f().sqrt(oneSubSq);
+        SDVariable ret = sqrt.rdiv(-1.0).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

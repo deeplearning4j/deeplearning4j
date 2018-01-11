@@ -87,9 +87,9 @@ public class ASinh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
-        SDVariable ret = f().div(f().one(shape),f().sqrt(f().add(f().pow(arg(),2),
-                f().one(shape))));
+        //dasinh(x)/dx = 1 / sqrt(x^2+1)
+        SDVariable xSqPlus1 = f().square(arg()).add(1.0);
+        SDVariable ret = i_v.get(0).div(f().sqrt(xSqPlus1));
 
         return Collections.singletonList(ret);
     }

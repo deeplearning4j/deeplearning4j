@@ -88,7 +88,7 @@ public class Sign extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = outputVariables()[0];
+        SDVariable ret = sameDiff.zerosLike(arg());
         return Collections.singletonList(ret);
     }
 

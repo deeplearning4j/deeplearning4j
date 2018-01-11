@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Log elementwise function
+ * Sinh function
  *
  * @author Adam Gibson
  */
@@ -87,7 +87,7 @@ public class Sinh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().cosh(arg());
+        SDVariable ret = f().cosh(arg()).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

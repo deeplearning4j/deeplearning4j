@@ -88,7 +88,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().sinh(arg());
+        SDVariable ret = f().sinh(arg()).mul(i_v.get(0));
 
         return Collections.singletonList(ret);
     }

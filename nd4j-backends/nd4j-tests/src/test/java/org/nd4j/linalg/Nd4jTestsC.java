@@ -5865,6 +5865,40 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, vector);
     }
 
+    @Test
+    public void testACosh(){
+        //http://www.wolframalpha.com/input/?i=acosh(x)
+
+        INDArray in = Nd4j.linspace(1, 3, 20);
+        INDArray out = Nd4j.getExecutioner().execAndReturn(new ACosh(in.dup()));
+
+        INDArray exp = Nd4j.create(in.shape());
+        for( int i=0; i<in.length(); i++ ){
+            double x = in.getDouble(i);
+            double y = Math.log(x + Math.sqrt(x-1) * Math.sqrt(x+1));
+            exp.putScalar(i, y);
+        }
+
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testCosh(){
+        //http://www.wolframalpha.com/input/?i=cosh(x)
+
+        INDArray in = Nd4j.linspace(-2, 2, 20);
+        INDArray out = Transforms.cosh(in, true);
+
+        INDArray exp = Nd4j.create(in.shape());
+        for( int i=0; i<in.length(); i++ ){
+            double x = in.getDouble(i);
+            double y = 0.5 * (Math.exp(-x) + Math.exp(x));
+            exp.putScalar(i, y);
+        }
+
+        assertEquals(exp, out);
+    }
+
 
     @Override
     public char ordering() {

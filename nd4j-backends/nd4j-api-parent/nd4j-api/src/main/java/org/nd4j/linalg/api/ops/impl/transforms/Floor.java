@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -85,7 +86,8 @@ public class Floor extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new RuntimeException("not allowed");
+        //Floor op: non-continuous at integers, but 0 gradient otherwise
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
 }

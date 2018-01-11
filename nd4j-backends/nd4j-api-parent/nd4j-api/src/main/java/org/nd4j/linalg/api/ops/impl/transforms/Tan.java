@@ -92,7 +92,7 @@ public class Tan extends BaseTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //d(tan(x))/dx = (sec(x))^2 = 1 / (cos(x))^2
 
-        SDVariable oneDivCos2 = sameDiff.square(arg()).rdiv(1.0);
+        SDVariable oneDivCos2 = sameDiff.square(sameDiff.cos(arg())).rdiv(1.0);
         SDVariable ret = oneDivCos2.mul(i_v.get(0));
         return Collections.singletonList(ret);
     }

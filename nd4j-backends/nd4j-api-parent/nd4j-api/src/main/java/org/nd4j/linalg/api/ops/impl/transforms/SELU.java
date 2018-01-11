@@ -88,7 +88,7 @@ public class SELU extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(arg(),f().selu(arg()));
+        SDVariable ret = f().seluDerivative(arg()).mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

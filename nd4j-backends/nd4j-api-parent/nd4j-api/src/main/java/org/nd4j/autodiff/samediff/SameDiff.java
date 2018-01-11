@@ -1683,7 +1683,6 @@ public class SameDiff {
      */
     public SDVariable lte(SDVariable iX, double iy) {
         return lte(null,iX,iy);
-
     }
 
 
@@ -1695,8 +1694,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gt(SDVariable iX, double iy) {
-        return lt(null,iX,iy);
-
+        return gt(null,iX,iy);
     }
 
     /**
@@ -1706,7 +1704,6 @@ public class SameDiff {
      */
     public SDVariable lt(SDVariable iX, double iy) {
         return lt(null,iX,iy);
-
     }
 
 
@@ -1729,12 +1726,6 @@ public class SameDiff {
         return eq(null,iX,iy);
     }
 
-
-
-
-
-
-
     /**
      *
      * @param iX
@@ -1742,7 +1733,6 @@ public class SameDiff {
      */
     public SDVariable gte(SDVariable iX, SDVariable iy) {
         return gte(null,iX,iy);
-
     }
 
     /**
@@ -1752,10 +1742,7 @@ public class SameDiff {
      */
     public SDVariable lte(SDVariable iX, SDVariable iy) {
         return lte(null,iX,iy);
-
     }
-
-
 
 
     /**
@@ -1764,7 +1751,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable gt(SDVariable iX, SDVariable iy) {
-        return lt(null,iX,iy);
+        return gt(null,iX,iy);
 
     }
 
@@ -1775,9 +1762,7 @@ public class SameDiff {
      */
     public SDVariable lt(SDVariable iX, SDVariable iy) {
         return lt(null,iX,iy);
-
     }
-
 
 
     /**
@@ -1923,7 +1908,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable asinh(SDVariable iX) {
-        return asin(null,iX);
+        return asinh(null,iX);
     }
 
     /**
@@ -2045,8 +2030,6 @@ public class SameDiff {
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
         return gradientBackwardsMarker(generateNewVarName(new GradientBackwardsMarker().opName(),0),iX);
     }
-
-
 
 
     /**

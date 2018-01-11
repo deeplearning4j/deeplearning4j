@@ -131,7 +131,8 @@ public class RectifedLinear extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = new Step(sameDiff,arg(),false,cutoff).outputVariables()[0];
+        SDVariable step = new Step(sameDiff,arg(),false,cutoff).outputVariables()[0];
+        SDVariable ret = step.mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 }

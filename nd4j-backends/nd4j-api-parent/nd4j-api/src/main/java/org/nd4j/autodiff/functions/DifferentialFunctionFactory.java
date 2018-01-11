@@ -677,7 +677,7 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable logSoftmaxDerivative(SDVariable arg, SDVariable wrt) {
         validateDifferentialFunctionsameDiff(arg);
-        return new SoftMaxDerivative(sameDiff(),arg,wrt).outputVariables()[0];
+        return new LogSoftMaxDerivative(sameDiff(),arg,wrt).outputVariables()[0];
     }
 
 
