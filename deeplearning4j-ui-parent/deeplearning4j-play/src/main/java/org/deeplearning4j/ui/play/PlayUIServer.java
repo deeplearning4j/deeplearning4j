@@ -85,13 +85,10 @@ public class PlayUIServer extends UIServer {
     @Parameter(names = {"-r", "--enableRemote"}, description = "Whether to enable remote or not", arity = 1)
     private boolean enableRemote;
 
-    @Parameter(names = {"-p", "--uiPort"}, description = "Whether to enable remote or not", arity = 1)
+    @Parameter(names = {"-p", "--uiPort"}, description = "Custom HTTP port for UI", arity = 1)
     private int port = DEFAULT_UI_PORT;
 
-    @Parameter(names = {"-fs", "--enableFileStorage"}, description = "Use file-based stats storage", arity = 1)
-    private boolean enableFileStorage;
-
-    @Parameter(names = {"--customStatsFile"}, description = "Path to create custom stats file", arity = 1)
+    @Parameter(names = {"-f", "--customStatsFile"}, description = "Path to create custom stats file (remote only)", arity = 1)
     private String customStatsFile;
 
     public PlayUIServer() {
@@ -230,10 +227,10 @@ public class PlayUIServer extends UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
-        if (enableFileStorage && customStatsFile != null) {
+        if (enableRemote && customStatsFile != null) {
             enableRemoteListener(new FileStatsStorage(new File(customStatsFile)), true);
         }
-        else if(enableFileStorage) {
+        else if(enableRemote) {
             try {
                 File tempStatsFile = File.createTempFile("dl4j", "UIstats");
                 tempStatsFile.deleteOnExit();
@@ -243,8 +240,6 @@ public class PlayUIServer extends UIServer {
                 System.exit(0);
             }
         }
-        else if(enableRemote)
-            enableRemoteListener();
     }
 
     @Override
