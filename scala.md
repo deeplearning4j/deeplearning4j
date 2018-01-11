@@ -5,7 +5,7 @@ layout: default
 
 # Scala, Apache Spark and Deeplearning4j
 
-Scala programmers seeking to build deep learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. 
+Scala programmers seeking to build machine learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. 
 
 Skymind's numerical computing library, [ND4J](http://nd4j.org/) (n-dimensional arrays for the JVM), comes with a Scala API, [ND4S](https://github.com/deeplearning4j/nd4s). Our full walkthrough of Deeplearning4j's Apache Spark integration is [here](https://deeplearning4j.org/spark). Our examples include a number of tutorials using [Scala notebooks with Zepellin](https://github.com/deeplearning4j/deeplearning4j/blob/master/dl4j-examples/tutorials/README.md).
 
@@ -29,6 +29,7 @@ Deeplearning4j depends on Apache Spark for fast ETL. While many machine-learning
 
 ### See also
 
+* [Artificial Intelligence (AI) for Scala](./scala-ai)
 * [Docs: Deeplearning4j on Spark](./spark.html)
 * [Course: Atomic Scala](http://www.atomicscala.com/) - a recommended beginner's course
 * [Martin Odersky's Coursera course on Scala](https://www.coursera.org/learn/progfun1)
