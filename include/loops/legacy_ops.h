@@ -132,7 +132,8 @@
         (89,simdOps::LogSigmoidDerivative) ,\
         (90,simdOps::Erfc) ,\
         (91,simdOps::Expm1), \
-        (92, simdOps::PowDerivative)
+        (92, simdOps::PowDerivative), \
+        (93,simdOps::ATanh)
 
 
 
