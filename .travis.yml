@@ -43,7 +43,7 @@ matrix:
       install: true
       script: bash ./ci/build-macosx-x86_64.sh
     - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode9.2
       env: OS=macosx-x86_64 EXT=avx512 SCALA=2.11
       install: true
       script: bash ./ci/build-macosx-x86_64.sh
