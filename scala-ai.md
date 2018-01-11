@@ -17,6 +17,8 @@ layout: default
 
 * [Cortex](https://cortex.twitter.com/) - Twitter uses Scala for much of its big data stack.
 
+* MxNet has a [Scala API](https://mxnet.incubator.apache.org/api/scala/index.html).
+
 ### NLP
 
 * For natural language processing in Scala, see [Scala NLP](http://www.scalanlp.org/).
