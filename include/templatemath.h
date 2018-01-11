@@ -897,7 +897,7 @@ template<typename T>
 
 		template<>
 		math_def inline double nd4j_acosh<double>(double val) {
-			return acos(val);
+			return acosh(val);
 		}
 
 		template<>
