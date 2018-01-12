@@ -20,7 +20,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NonNull;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,6 +35,10 @@ import java.util.List;
 public class Xor extends BaseTransformOp {
 
     protected double comparable = 0.0;
+
+    public Xor(SameDiff sameDiff, SDVariable ix, SDVariable iy){
+        super(sameDiff, ix, iy);
+    }
 
     public Xor(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);

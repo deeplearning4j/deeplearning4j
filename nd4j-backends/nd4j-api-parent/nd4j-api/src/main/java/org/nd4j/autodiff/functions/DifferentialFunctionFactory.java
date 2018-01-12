@@ -329,6 +329,13 @@ public class DifferentialFunctionFactory   {
         return new Or(sameDiff(),iX,i_y).outputVariables()[0];
     }
 
+    public SDVariable and(SDVariable ix, SDVariable iy){
+        return new And(sameDiff(),ix,iy).outputVariables()[0];
+    }
+
+    public SDVariable xor(SDVariable ix, SDVariable iy){
+        return new Xor(sameDiff(),ix,iy).outputVariables()[0];
+    }
 
 
     public SDVariable eq(SDVariable iX, SDVariable i_y) {

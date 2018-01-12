@@ -1792,6 +1792,24 @@ public class SameDiff {
         return or(null,iX,iy);
     }
 
+    public SDVariable and(SDVariable iX, SDVariable iY){
+        return and(null, iX, iY);
+    }
+
+    public SDVariable and(String name, SDVariable ix, SDVariable iy){
+        SDVariable result = f().and(ix, iy);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    public SDVariable xor(SDVariable ix, SDVariable iy){
+        return xor(null, ix, iy);
+    }
+
+    public SDVariable xor(String name, SDVariable ix, SDVariable iy){
+        SDVariable result = f().xor(ix, iy);
+        return updateVariableNameAndReference(result, name);
+    }
+
     public SDVariable abs(SDVariable ix){
         return abs(null, ix);
     }

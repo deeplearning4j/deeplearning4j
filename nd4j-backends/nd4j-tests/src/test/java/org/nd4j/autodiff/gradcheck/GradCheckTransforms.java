@@ -305,7 +305,7 @@ public class GradCheckTransforms {
     public void testPairwiseTransforms(){
         /*
         add, sub, mul, div, rsub, rdiv
-        eq, neq, gt, lt, gte, lte, or,
+        eq, neq, gt, lt, gte, lte, or, and, xor
         min, max
         mmul
         tensormmul
@@ -314,7 +314,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 18; i++) {
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
@@ -396,6 +396,18 @@ public class GradCheckTransforms {
                 case 15:
                     t = sd.min(in1, in2);
                     expOut = Nd4j.getExecutioner().execAndReturn(new OldMin(ia, ib, ia.dup(), ia.length()));
+                    break;
+                case 16:
+                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
+                    t = sd.and(in1, in2);
+                    expOut = Transforms.and(ia, ib);
+                    break;
+                case 17:
+                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
+                    t = sd.xor(in1, in2);
+                    expOut = Transforms.xor(ia, ib);
                     break;
                 default:
                     throw new RuntimeException();
