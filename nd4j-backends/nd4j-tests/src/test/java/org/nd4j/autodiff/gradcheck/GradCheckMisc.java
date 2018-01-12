@@ -7,7 +7,9 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,12 +46,123 @@ public class GradCheckMisc {
         int[] origShape = new int[]{3,4,5};
 
         for( int[] toShape : new int[][]{{3,4*5}, {3*4,5}, {1,3*4*5}, {3*4*5,1}}){
-            for( char order : new char[]{'c','f'}){
+            for(Pair<INDArray,String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)){
+                INDArray inArr = p.getFirst().muli(100);
 
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", inArr);
+                SDVariable reshape = sd.reshape(in, toShape);
+                //Using stdev here: mean/sum would backprop the same gradient for each input...
+                SDVariable stdev = sd.standardDeviation("out", reshape,true );
+
+                INDArray out = sd.execAndEndResult();
+                INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
+                assertEquals(expOut, out);
+
+                String msg = "toShape=" + Arrays.toString(toShape) + ", source=" + p.getSecond();
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                assertTrue(msg, ok);
             }
         }
+    }
 
-        fail();
+    @Test
+    public void testPermuteGradient(){
+        int[] origShape = new int[]{3,4,5};
+
+        for( int[] perm : new int[][]{{0,1,2}, {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0}}){
+            for(Pair<INDArray,String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)){
+                INDArray inArr = p.getFirst().muli(100);
+
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", inArr);
+                SDVariable permute = sd.f().permute(in, perm);
+                //Using stdev here: mean/sum would backprop the same gradient for each input...
+                SDVariable stdev = sd.standardDeviation("out", permute,true );
+
+                INDArray out = sd.execAndEndResult();
+                INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
+                assertEquals(expOut, out);
+
+                String msg = "permute=" + Arrays.toString(perm) + ", source=" + p.getSecond();
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                assertTrue(msg, ok);
+            }
+        }
+    }
+
+    @Test
+    public void testExpandDimsGradient(){
+        int[] origShape = new int[]{3,4};
+
+        for( int i=0; i<3; i++ ) {
+            for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(origShape[0], origShape[1], 12345)) {
+                INDArray inArr = p.getFirst().muli(100);
+
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", inArr);
+                SDVariable expand = sd.f().expandDims(in, i);
+                //Using stdev here: mean/sum would backprop the same gradient for each input...
+                SDVariable stdev = sd.standardDeviation("out", expand, true);
+
+                INDArray out = sd.execAndEndResult();
+                INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
+                assertEquals(expOut, out);
+
+                String msg = "expandDim=" + i + ", source=" + p.getSecond();
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                assertTrue(msg, ok);
+            }
+        }
+    }
+
+    @Test
+    public void testSqueezeGradient(){
+        int[] origShape = new int[]{3,4,5};
+
+        for( int i=0; i<3; i++ ) {
+
+            int[] shape = origShape.clone();
+            shape[i] = 1;
+
+            for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, shape)) {
+                INDArray inArr = p.getFirst().muli(100);
+
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", inArr);
+                SDVariable squeeze = sd.f().squeeze(in, i);
+                //Using stdev here: mean/sum would backprop the same gradient for each input...
+                SDVariable stdev = sd.standardDeviation("out", squeeze, true);
+
+                int[] expShapePostSqueeze;
+                switch(i){
+                    case 0:
+                        expShapePostSqueeze = new int[]{4,5};
+                        break;
+                    case 1:
+                        expShapePostSqueeze = new int[]{3,5};
+                        break;
+                    case 2:
+                        expShapePostSqueeze = new int[]{3,4};
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                sd.execAndEndResult();
+
+                INDArray squeezed = squeeze.getArr();
+                assertArrayEquals(expShapePostSqueeze, squeezed.shape());
+
+                INDArray out = sd.execAndEndResult();
+                INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
+                assertEquals(expOut, out);
+
+                String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                assertTrue(msg, ok);
+            }
+        }
     }
 
     @Test

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
@@ -34,9 +35,15 @@ import java.util.Map;
  */
 public class Permute extends Transpose {
 
+    private int[] reverseDims;
+
     public Permute(SameDiff sameDiff, SDVariable i_v, int[] permuteDims) {
         super(sameDiff,i_v);
         this.permuteDims = permuteDims;
+        this.reverseDims = new int[permuteDims.length];
+        for( int i=0; i<reverseDims.length; i++ ){
+            reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
+        }
     }
 
     public Permute() {}
@@ -46,15 +53,9 @@ public class Permute extends Transpose {
         return "permute";
     }
 
-
-
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(outputVariables()[0]);
+        SDVariable ret = f().permute(i_v.get(0), reverseDims);
+        return Collections.singletonList(ret);
     }
-
-
-
 }

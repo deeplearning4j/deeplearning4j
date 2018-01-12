@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -8,9 +9,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  *
@@ -18,6 +17,14 @@ import java.util.Map;
 public class Squeeze extends DynamicCustomOp {
 
     private int[] squeezeDims;
+
+    public Squeeze(){
+    }
+
+    public Squeeze(SameDiff sameDiff, SDVariable arg, int[] squeezeDims){
+        super(null, sameDiff, new SDVariable[]{arg});
+        this.squeezeDims = squeezeDims;
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -55,5 +62,18 @@ public class Squeeze extends DynamicCustomOp {
         mapping.put("squeezeDims",squeezeDims);
         ret.put(tensorflowName(),mapping);
         return ret;
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v){
+        if(squeezeDims == null){
+            //TODO Strictly speaking this *is* possible by inspecting the input array
+            throw new IllegalStateException("Cannot do Squeeze backprop with no dimensions");
+        }
+        SDVariable ret = i_v.get(0);
+        for(int d : squeezeDims){
+            ret = sameDiff.expandDims(ret, d);
+        }
+        return Collections.singletonList(ret);
     }
 }

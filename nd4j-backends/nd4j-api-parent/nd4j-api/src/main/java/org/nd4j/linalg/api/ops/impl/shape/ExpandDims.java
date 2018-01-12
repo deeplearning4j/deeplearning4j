@@ -144,7 +144,8 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(arg(),f().abs(arg()));
+        //Simply need a reshape to remove the dimension...
+        SDVariable ret = sameDiff.squeeze(i_v.get(0), axis);
         return Collections.singletonList(ret);
     }
 

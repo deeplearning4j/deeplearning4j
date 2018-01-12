@@ -208,10 +208,6 @@ public class GradCheckReductions {
         for (int reduceDim : new int[]{0, 1, 2}) {
             for (int i = 0; i < 10; i++) {
 
-                if(i != 6){
-                    continue;
-                }
-
                 int[] outShape;
                 switch (reduceDim) {
                     case 0:

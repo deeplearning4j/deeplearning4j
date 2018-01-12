@@ -451,6 +451,10 @@ public class DifferentialFunctionFactory   {
         return new ExpandDims(sameDiff(),new SDVariable[]{iX},axis).outputVariables()[0];
     }
 
+    public SDVariable squeeze(SDVariable iX, int... axis){
+        return new Squeeze(sameDiff(), iX, axis).outputVariables()[0];
+    }
+
 
     public SDVariable broadcast(SDVariable iX, int... shape) {
         return new Broadcast(sameDiff(),iX,shape).outputVariables()[0];

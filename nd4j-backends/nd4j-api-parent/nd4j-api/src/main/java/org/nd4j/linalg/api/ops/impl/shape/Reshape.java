@@ -28,6 +28,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -185,7 +186,12 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = outputVariables()[0];
+        int[] origShape = arg().getShape();
+        if(origShape == null){
+            //TODO need a more robust way to do this
+            throw new ND4JIllegalStateException("Cannot reshape: original array input shape is null");
+        }
+        SDVariable ret = f().reshape(i_v.get(0), origShape);
         return Collections.singletonList(ret);
     }
 

@@ -104,8 +104,8 @@ public class Prod extends BaseAccumulation {
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
         SDVariable broadcastableGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
         SDVariable broadcastableProd = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, prod);
-        SDVariable mul = broadcastableGrad.div(broadcastableProd);
-        SDVariable ret = arg().mul(mul);
+        SDVariable mul = broadcastableGrad.div(arg());
+        SDVariable ret = broadcastableProd.mul(mul);
 
         return Collections.singletonList(ret);
     }
