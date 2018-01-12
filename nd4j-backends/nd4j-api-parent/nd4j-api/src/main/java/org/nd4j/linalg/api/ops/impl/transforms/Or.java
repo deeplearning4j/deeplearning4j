@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Boolean AND pairwise transform
+ * Boolean OR pairwise transform
  *
  * @author raver119@gmail.com
  */
@@ -43,21 +43,25 @@ public class Or extends BaseTransformOp {
 
     public Or(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
         super(sameDiff, i_v1, i_v2, inPlace);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Or(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
         super(sameDiff, i_v, inPlace);
         this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Or(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Or(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
         super(sameDiff, i_v, extraArgs);
         this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public Or() {}

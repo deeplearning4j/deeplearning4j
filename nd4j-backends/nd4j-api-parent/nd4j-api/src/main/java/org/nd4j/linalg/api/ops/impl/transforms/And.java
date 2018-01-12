@@ -40,14 +40,35 @@ public class And extends BaseTransformOp {
 
     public And(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public And(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public And(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
         super(sameDiff, i_v, extraArgs);
+        this.extraArgs = new Object[] {this.comparable};
+    }
+
+    public And(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double comparable) {
+        super(sameDiff, i_v, inPlace);
+        this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
+    }
+
+    public And(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double comparable) {
+        super(sameDiff, i_v, shape, inPlace, extraArgs);
+        this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
+    }
+
+    public And(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double comparable) {
+        super(sameDiff, i_v, extraArgs);
+        this.comparable = comparable;
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public And() {}

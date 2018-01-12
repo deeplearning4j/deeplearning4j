@@ -3488,6 +3488,15 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    public SDVariable squeeze(SDVariable ix, int axis){
+        return squeeze(null, ix, axis);
+    }
+
+    public SDVariable squeeze(String name, SDVariable ix, int axis){
+        SDVariable result = f().squeeze(ix, axis);
+        return updateVariableNameAndReference(result, name);
+    }
+
     /**
      *
      * @param variable
