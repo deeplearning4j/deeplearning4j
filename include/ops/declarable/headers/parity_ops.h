@@ -388,5 +388,13 @@ namespace nd4j {
          *
          */
         DECLARE_CUSTOM_OP(space_to_depth, 1, 1, false, 0, 2);
+
+        /**
+         * This op calculates cross-product between input arguments
+         * Input arguments
+         * 0 - vector or tensor A
+         * 1 - vector or tensor B
+         */
+        DECLARE_OP(cross, 2, 1, false);
     }
 }
