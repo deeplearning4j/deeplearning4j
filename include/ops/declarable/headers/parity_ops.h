@@ -373,5 +373,20 @@ namespace nd4j {
          * 0 - optional argument, isNHWC. false by default.
          */
         DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, -2, -2);
+
+
+        /**
+         * 
+         * 
+         *
+         */
+        DECLARE_CUSTOM_OP(depth_to_space, 1, 1, false, 0, 2);
+
+        /**
+         * 
+         * 
+         *
+         */
+        DECLARE_CUSTOM_OP(space_to_depth, 1, 1, false, 0, 2);
     }
 }
