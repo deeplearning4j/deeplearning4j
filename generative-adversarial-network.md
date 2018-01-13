@@ -18,7 +18,12 @@ To understand GANs, you should know how generative algorithms work, and contrast
 
 For example, given all the words in an email, a discriminative algorithm could predict whether the message is `spam` or `not_spam`. `spam` is one of the labels, and the bad of words are the features that constitute the input data. When this problem is expressed mathematically, the label is called `y` and the features are called `x`. The formula `p(y|x)` is used to mean "the probability of y given x", which in this particular case would translate to "the probability that an email is spam given the words it contains."
 
-So discriminative algorithms map features to labels. They are concerned with that correlation. One way to think about generative algorithms is that they do the opposite. Instead of predicting a label given certain features, they attempt to predict features given a label. The question a generative algorithm tries to answer is: Assuming this email is spam, how likely are these features?
+So discriminative algorithms map features to labels. They are concerned with that correlation. One way to think about generative algorithms is that they do the opposite. Instead of predicting a label given certain features, they attempt to predict features given a label. The question a generative algorithm tries to answer is: Assuming this email is spam, how likely are these features? While discriminative models care about the relation between `y` and `x`, generative models care about "how you get x." They allow you to capture `p(x|y)`, the probability of `x` given `y`, or the probability of features given a class. (That said, generative algorithms can also be used as classifiers. It just so happens that they do more than that.)
+
+Another way to think about it is to distinguish discriminative from generative like this:
+
+* Discriminative models learn the boundary between classes
+* Generative models model the distribution of individual classes
 
 ## How GANs Work
 
