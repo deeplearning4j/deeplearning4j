@@ -54,6 +54,7 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 ## Resources for Generative Networks
 
 * ["Generative Learning algorithms" - Andrew Ng's Stanford notes](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
+* [On Discriminative vs. Generative classifiers: A comparison of logistic regression and naive Bayes, by Andrew Ng and Michael I. Jordan](http://papers.nips.cc/paper/2020-on-discriminative-vs-generative-classifiers-a-comparison-of-logistic-regression-and-naive-bayes.pdf) 
 
 ## GAN Use Cases
 
