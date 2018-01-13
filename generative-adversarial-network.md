@@ -53,7 +53,7 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 
 ## Resources for Generative Networks
 
-* [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
+* ["Generative Learning algorithms" - Andrew Ng's Stanford notes](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
 
 ## GAN Use Cases
 
