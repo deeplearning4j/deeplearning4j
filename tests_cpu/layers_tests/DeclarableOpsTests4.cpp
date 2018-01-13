@@ -116,7 +116,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_5) {
     
 
     nd4j::ops::avgpool2d<float> op;
-    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1});
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 0, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -175,7 +175,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_8) {
 
 
     nd4j::ops::avgpool2d<float> op;
-    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 1, 0});
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -196,7 +196,7 @@ TEST_F(DeclarableOpsTests4, Test_Pooling_Parity_9) {
 
 
     nd4j::ops::avgpool2d<float> op;
-    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 0, 0});
+    auto result = op.execute({&x}, {}, {2, 2, 2, 2, 1, 1, 1, 1, 0, 1, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
