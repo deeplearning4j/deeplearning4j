@@ -51,6 +51,10 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 
 **Note:** Deeplearning4j's latest release on Maven does not include GANs, but it will soon be possible to build and use them via auto-differentiation and model import from Keras and Tensorflow, all of which are currently available in the master repository on Github.
 
+## Resources for Generative Networks
+
+* [Generative Learning algorithms](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
+
 ## GAN Use Cases
 
 * [Text to Image Generation](https://arxiv.org/abs/1605.05396)
