@@ -10,6 +10,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -2222,5 +2226,98 @@ public class SameDiffTests {
 
         assertEquals(Nd4j.create(3,4), sd.grad("in").getArr());
     }
-}
 
+
+    @Test
+    public void testReduce3(){
+
+        /*
+        cosineSimilarity
+        euclideanDistance
+        manhattanDistance
+         */
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int d0 = 3;
+        int d1 = 4;
+        int d2 = 5;
+
+        List<String> allFailed = new ArrayList<>();
+        for (int[] reduceDims : new int[][]{{0}, {1}, {2}, {Integer.MAX_VALUE}, {0,1}, {0,2}, {1,2}, {0,1,2}}) {
+            for (int i = 0; i < 3; i++) {
+
+                SameDiff sd = SameDiff.create();
+                sd.setLogExecution(false);
+
+                INDArray a = Nd4j.rand(d0, d1, d2);
+                INDArray b = Nd4j.rand(d0, d1, d2);
+
+
+                SDVariable in = sd.var("in", a);
+                SDVariable in2 = sd.var("in2", b);
+
+                INDArray expOut;
+                SDVariable reduced;
+                String name;
+                switch (i) {
+                    case 0:
+                        reduced = sd.manhattanDistance(in, in2, reduceDims);
+                        name = "manhattan";
+                        expOut = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(a,b,reduceDims)).z();
+                        break;
+                    case 1:
+                        reduced = sd.euclideanDistance(in, in2, reduceDims);
+                        name = "euclidean";
+                        expOut = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(a,b,reduceDims)).z();
+                        break;
+                    case 2:
+                        reduced = sd.cosineSimilarity(in, in2, reduceDims);
+                        name = "cosine";
+                        expOut = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(a,b,reduceDims)).z();
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                int[] expShape;
+                if(Arrays.equals(new int[]{0}, reduceDims)){
+                    expShape = new int[]{4,5};
+                } else if(Arrays.equals(new int[]{1}, reduceDims)){
+                    expShape = new int[]{3,5};
+                } else if(Arrays.equals(new int[]{2}, reduceDims)){
+                    expShape = new int[]{3,4};
+                } else if(Arrays.equals(new int[]{Integer.MAX_VALUE}, reduceDims)){
+                    expShape = new int[]{1,1};
+                } else if(Arrays.equals(new int[]{0,1}, reduceDims)){
+                    expShape = new int[]{1,5};
+                } else if(Arrays.equals(new int[]{0,2}, reduceDims)){
+                    expShape = new int[]{1,4};
+                } else if(Arrays.equals(new int[]{1,2}, reduceDims)){
+                    expShape = new int[]{3,1};
+                } else if(Arrays.equals(new int[]{0,1,2}, reduceDims)){
+                    expShape = new int[]{1,1};
+                } else {
+                    throw new RuntimeException();
+                }
+
+                String  msg = name + " - dims=" + Arrays.toString(reduceDims);
+
+                INDArray out = sd.execAndEndResult();
+
+                log.info(msg + " - expected shape: " + Arrays.toString(expShape) + ", out=" + Arrays.toString(out.shape())
+                        + ", outExp=" + Arrays.toString(expOut.shape()));
+
+                assertArrayEquals(msg, expShape, out.shape());
+                assertArrayEquals(msg, expShape, expOut.shape());
+
+                assertEquals(msg, out, expOut);
+            }
+        }
+
+        if(allFailed.size() > 0){
+            log.error("All failed cases: " + allFailed);
+        }
+        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+    }
+}

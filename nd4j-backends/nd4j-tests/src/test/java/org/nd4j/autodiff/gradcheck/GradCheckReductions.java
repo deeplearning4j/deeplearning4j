@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -232,7 +233,6 @@ public class GradCheckReductions {
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
 
-
                 SDVariable reduced;
                 String name;
                 switch (i) {
@@ -318,7 +318,67 @@ public class GradCheckReductions {
         euclideanDistance
         manhattanDistance
          */
-        fail("Not yet implemented");
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int d0 = 3;
+        int d1 = 4;
+        int d2 = 5;
+
+        List<String> allFailed = new ArrayList<>();
+        for (int[] reduceDims : new int[][]{{0}, {1}, {2}, {Integer.MAX_VALUE}, {0,1}, {0,2}, {1,2}, {0,1,2}}) {
+            for (int i = 1; i < 2; i++) {
+
+                SameDiff sd = SameDiff.create();
+                sd.setLogExecution(false);
+
+
+                SDVariable in = sd.var("in", new int[]{-1, d1, d2});
+                SDVariable in2 = sd.var("in2", new int[]{-1,d1,d2});
+
+                SDVariable reduced;
+                String name;
+                switch (i) {
+                    case 0:
+                        reduced = sd.manhattanDistance(in, in2, reduceDims);
+                        name = "manhattan";
+                        break;
+                    case 1:
+                        reduced = sd.euclideanDistance(in, in2, reduceDims);
+                        name = "euclidean";
+                        break;
+                    case 2:
+                        reduced = sd.cosineSimilarity(in, in2, reduceDims);
+                        name = "cosine";
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                SDVariable sum = sd.sum(reduced, Integer.MAX_VALUE);
+
+
+                String msg = "(test " + i + " - " + name + ", dimensions=" + Arrays.toString(reduceDims) + ")";
+                log.info("*** Starting test: " + msg);
+
+                INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
+                INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
+                sd.associateArrayWithVariable(inArr, in);
+                sd.associateArrayWithVariable(in2Arr, in2);
+
+                try {
+                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                    if(!ok){
+                        allFailed.add(msg);
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                    allFailed.add(msg + " - EXCEPTION");
+                }
+            }
+        }
+
+        assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
 
 
