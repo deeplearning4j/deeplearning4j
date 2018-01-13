@@ -12,6 +12,14 @@ Generative adversarial networks (GANs) are deep neural net architectures compris
 
 GANs' potential is huge, because they can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are robot artists in a sense, and their [output is impressive](https://www.nytimes.com/2017/08/14/arts/design/google-how-ai-creates-new-music-and-new-artists-project-magenta.html) -- poignant even. 
 
+## Generative vs. Discriminative Algorithms
+
+To understand GANs, you should know how generative algorithms work, and contrast them with discriminative algorithms. Discriminative algorithms try to classify input data; that is, given the features of a data instance, they predict a label or category to which that data belongs. 
+
+For example, given all the words in an email, a discriminative algorithm could predict whether the message is `spam` or `not_spam`. `spam` is one of the labels, and the bad of words are the features that constitute the input data. When this problem is expressed mathematically, the label is called `y` and the features are called `x`. The formula `p(y|x)` is used to mean "the probability of y given x", which in this particular case would translate to "the probability that an email is spam given the words it contains."
+
+So discriminative algorithms map features to labels. They are concerned with that correlation. One way to think about generative algorithms is that they do the opposite. Instead of predicting a label given certain features, they attempt to predict features given a label. The question a generative algorithm tries to answer is: Assuming this email is spam, how likely are these features?
+
 ## How GANs Work
 
 One neural network, called the *generator*, generates new data instances, while the other, the *discriminator*, evaluates them for authenticity; i.e. the discriminator decides whether each instance of data it reviews belongs to the actual training dataset or not. 
