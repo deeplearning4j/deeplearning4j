@@ -39,6 +39,7 @@ public class And extends BaseTransformOp {
 
     public And(SameDiff sameDiff, SDVariable ix, SDVariable iy){
         super(sameDiff, ix, iy);
+        this.extraArgs = new Object[] {this.comparable};
     }
 
     public And(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
