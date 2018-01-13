@@ -37,11 +37,11 @@ public class Pooling2D extends DynamicCustomOp {
     /**
      * Divisor mode for average pooling only. 3 modes are supported:
      * MODE_0:
-     * MODE_1:
+     * EXCLUDE_PADDING:
      * INCLUDE_PADDING: Always do sum(window) / (kH*kW) even if padding is present.
      */
     public enum Divisor {
-        MODE_0, MODE_1, INCLUDE_PADDING
+        EXCLUDE_PADDING, INCLUDE_PADDING
     }
 
     public Pooling2D() {}
