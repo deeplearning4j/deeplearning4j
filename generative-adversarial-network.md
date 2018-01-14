@@ -14,11 +14,13 @@ GANs' potential is huge, because they can learn to mimic any distribution of dat
 
 ## Generative vs. Discriminative Algorithms
 
-To understand GANs, you should know how generative algorithms work, and contrast them with discriminative algorithms. Discriminative algorithms try to classify input data; that is, given the features of a data instance, they predict a label or category to which that data belongs. 
+To understand GANs, you should know how generative algorithms work, and for that, contrasting them with discriminative algorithms is instructive. Discriminative algorithms try to classify input data; that is, given the features of a data instance, they predict a label or category to which that data belongs. 
 
-For example, given all the words in an email, a discriminative algorithm could predict whether the message is `spam` or `not_spam`. `spam` is one of the labels, and the bad of words are the features that constitute the input data. When this problem is expressed mathematically, the label is called `y` and the features are called `x`. The formula `p(y|x)` is used to mean "the probability of y given x", which in this particular case would translate to "the probability that an email is spam given the words it contains."
+For example, given all the words in an email, a discriminative algorithm could predict whether the message is `spam` or `not_spam`. `spam` is one of the labels, and the bag of words gathered from the email are the features that constitute the input data. When this problem is expressed mathematically, the label is called `y` and the features are called `x`. The formulation `p(y|x)` is used to mean "the probability of y given x", which in this case would translate to "the probability that an email is spam given the words it contains."
 
-So discriminative algorithms map features to labels. They are concerned with that correlation. One way to think about generative algorithms is that they do the opposite. Instead of predicting a label given certain features, they attempt to predict features given a label. The question a generative algorithm tries to answer is: Assuming this email is spam, how likely are these features? While discriminative models care about the relation between `y` and `x`, generative models care about "how you get x." They allow you to capture `p(x|y)`, the probability of `x` given `y`, or the probability of features given a class. (That said, generative algorithms can also be used as classifiers. It just so happens that they do more than that.)
+So discriminative algorithms map features to labels. They are concerned solely with that correlation. One way to think about generative algorithms is that they do the opposite. Instead of predicting a label given certain features, they attempt to predict features given a certain label. 
+
+The question a generative algorithm tries to answer is: Assuming this email is spam, how likely are these features? While discriminative models care about the relation between `y` and `x`, generative models care about "how you get x." They allow you to capture `p(x|y)`, the probability of `x` given `y`, or the probability of features given a class. (That said, generative algorithms can also be used as classifiers. It just so happens that they can do more than categorize input data.)
 
 Another way to think about it is to distinguish discriminative from generative like this:
 
@@ -56,12 +58,18 @@ If you want to learn more about generating images, Brandon Amos wrote a great po
 
 It may be useful to compare generative adversarial networks to other neural networks, such as autoencoders and variational autoencoders. 
 
-Autoencoders *encode* input data as vectors. They create a hidden representation of the raw data. They are useful in dimensionality reduction; that is, the vector serving as a hidden representation compresses the raw data into a smaller number of salient dimensions. Autoencoders can be paired with a so-called decoder, which allows you to reconstruct input data based on its hidden representation, much as you would with a [restricted Boltzmann machine](./restrictedboltzmannmachine). 
+Autoencoders *encode* input data as vectors. They create a hidden, or compressed, representation of the raw data. They are useful in dimensionality reduction; that is, the vector serving as a hidden representation compresses the raw data into a smaller number of salient dimensions. Autoencoders can be paired with a so-called decoder, which allows you to reconstruct input data based on its hidden representation, much as you would with a [restricted Boltzmann machine](./restrictedboltzmannmachine). 
 
 ![Alt text](./img/autoencoder_schema.jpg)
 [Credit: Keras blog](https://blog.keras.io/building-autoencoders-in-keras.html)
 
 Variational autoencoders are generative algorithm that add an additional constraint to encoding the input data, namely that the hidden representations are normalized. Variational autoencoders are capable of both compressing data like an autoencoder and synthesizing data like a GAN. However, while GANs generate data in fine, granular detail, images generated by VAEs tend to be more blurred. Deeplearning4j's examples include both [autoencoders and variational autoencoders](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised).
+
+You can bucket generative algorithms into one of three types:
+
+* Given a label, they predict the associated features (Naive Bayes)
+* Given a hidden representation, they predict the associated features (VAE, GAN)
+* Given some of the features, they predict the rest (inpainting, imputation)
 
 ## Tips in Training a GAN
 
