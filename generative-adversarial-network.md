@@ -46,6 +46,9 @@ So you have a double feedback loop:
 * The discriminator is in a feedback loop with the ground truth of the images, which we know. 
 * The generator is in a feedback loop with the discriminator.
 
+![Alt text](./img/gan_schema.jpg)
+Credit: O'Reilly
+
 You can think of a GAN as the combination of a counterfeiter and a cop in a game of cat and mouse, where the counterfeiter is learning to pass false notes, and the cop is learning to detect them. Both are dynamic; i.e. the cop is in training, too (maybe the central bank is flagging bills that slipped through), and each side comes to learn the other's methods in a constant escalation. 
 
 The discriminator network is a standard convolutional network that can categorize the images fed to it, a binomial classifier labeling images as real or fake. The generator is an inverse convolutional network, in a sense: While a standard convolutional classifier takes an image and downsamples it to produce a probability, the generator takes a vector of random noise and upsamples it to an image. The first throws away data through downsampling techniques like maxpooling, and the second generates new data. 
