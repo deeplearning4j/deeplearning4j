@@ -17,6 +17,7 @@
 package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
@@ -337,6 +338,28 @@ public class SVMLightRecordReaderTest {
             i++;
         }
         assertEquals(i, correct.size());
+    }
+
+    @Test
+    public void testNextRecord() throws IOException, InterruptedException {
+        SVMLightRecordReader rr = new SVMLightRecordReader();
+        Configuration config = new Configuration();
+        config.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
+        config.setInt(SVMLightRecordReader.NUM_FEATURES, 10);
+        config.setBoolean(SVMLightRecordReader.APPEND_LABEL, false);
+        rr.initialize(config, new FileSplit(new ClassPathResource("svmlight/basic.txt").getFile()));
+
+        Record record = rr.nextRecord();
+        List<Writable> recordList = record.getRecord();
+        assertEquals(new DoubleWritable(1.0), recordList.get(1));
+        assertEquals(new DoubleWritable(3.0), recordList.get(5));
+        assertEquals(new DoubleWritable(4.0), recordList.get(7));
+
+        record = rr.nextRecord();
+        recordList = record.getRecord();
+        assertEquals(new DoubleWritable(0.1), recordList.get(0));
+        assertEquals(new DoubleWritable(6.6), recordList.get(5));
+        assertEquals(new DoubleWritable(80.0), recordList.get(7));
     }
 
     @Test(expected = NoSuchElementException.class)

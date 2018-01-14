@@ -277,13 +277,10 @@ public class SVMLightRecordReader extends LineRecordReader {
      */
     @Override
     public Record nextRecord() {
-        throw new UnsupportedOperationException("nextRecord has not been implemented for SVMLightRecordReader");
-        /*
         List<Writable> next = next();
         URI uri = (locations == null || locations.length < 1 ? null : locations[splitIndex]);
         RecordMetaData meta = new RecordMetaDataLine(this.lineIndex - 1, uri, SVMLightRecordReader.class); //-1 as line number has been incremented already...
         return new org.datavec.api.records.impl.Record(next, meta);
-        */
     }
 
     @Override
