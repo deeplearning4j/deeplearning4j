@@ -46,7 +46,7 @@ So you have a double feedback loop:
 * The discriminator is in a feedback loop with the ground truth of the images, which we know. 
 * The generator is in a feedback loop with the discriminator.
 
-![Alt text](./img/gan_schema.jpg)
+![Alt text](./img/gan_schema.png)
 Credit: O'Reilly
 
 You can think of a GAN as the combination of a counterfeiter and a cop in a game of cat and mouse, where the counterfeiter is learning to pass false notes, and the cop is learning to detect them. Both are dynamic; i.e. the cop is in training, too (maybe the central bank is flagging bills that slipped through), and each side comes to learn the other's methods in a constant escalation. 
