@@ -9,6 +9,8 @@ if [[ $TRAVIS_PULL_REQUEST == "false" ]]; then
 else
     BRANCH=$TRAVIS_PULL_REQUEST_BRANCH
     MAVEN_PHASE="install"
+    echo Skipping Mac OS X builds on pull request because of limited resources
+    exit 0
 fi
 
 if ! git -C $TRAVIS_BUILD_DIR/.. clone https://github.com/deeplearning4j/libnd4j/ --depth=50 --branch=$BRANCH; then
