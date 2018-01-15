@@ -75,11 +75,6 @@ public class EuclideanDistance extends BaseAccumulation {
         extraArgs[1] = 0.0f;
     }
 
-    public EuclideanDistance(INDArray x, INDArray y, int[] dimensions){
-        this(x,y);
-        this.dimensions = dimensions;
-    }
-
     public EuclideanDistance(INDArray x, INDArray y, boolean allDistances) {
         this(x, y);
         this.isComplex = allDistances;

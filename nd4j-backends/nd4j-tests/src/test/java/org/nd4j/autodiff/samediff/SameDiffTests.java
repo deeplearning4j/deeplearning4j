@@ -10,10 +10,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -2231,21 +2228,14 @@ public class SameDiffTests {
     @Test
     public void testReduce3(){
 
-        /*
-        cosineSimilarity
-        euclideanDistance
-        manhattanDistance
-         */
-
         Nd4j.getRandom().setSeed(12345);
 
         int d0 = 3;
         int d1 = 4;
         int d2 = 5;
 
-        List<String> allFailed = new ArrayList<>();
-        for (int[] reduceDims : new int[][]{{0}, {1}, {2}, {Integer.MAX_VALUE}, {0,1}, {0,2}, {1,2}, {0,1,2}}) {
-            for (int i = 0; i < 3; i++) {
+        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0,1,2}, {0}, {1}, {2}, {0,1}, {0,2}, {1,2}}) {
+            for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
@@ -2264,17 +2254,32 @@ public class SameDiffTests {
                     case 0:
                         reduced = sd.manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        expOut = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(a,b,reduceDims)).z();
+                        expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a,b),reduceDims);
                         break;
                     case 1:
                         reduced = sd.euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        expOut = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(a,b,reduceDims)).z();
+                        expOut = Nd4j.getExecutioner().exec(new EuclideanDistance(a,b),reduceDims);
                         break;
                     case 2:
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        expOut = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(a,b,reduceDims)).z();
+                        expOut = Nd4j.getExecutioner().exec(new CosineSimilarity(a,b),reduceDims);
+                        break;
+                    case 3:
+                        reduced = sd.jaccardDistance(in, in2, reduceDims);
+                        name = "jaccard";
+                        expOut = Nd4j.getExecutioner().exec(new JaccardDistance(a,b),reduceDims);
+                        break;
+                    case 4:
+                        reduced = sd.hammingDistance(in, in2, reduceDims);
+                        name = "hamming";
+                        expOut = Nd4j.getExecutioner().exec(new HammingDistance(a,b),reduceDims);
+                        break;
+                    case 5:
+                        reduced = sd.cosineDistance(in, in2, reduceDims);
+                        name = "reduced";
+                        expOut = Nd4j.getExecutioner().exec(new CosineDistance(a,b),reduceDims);
                         break;
                     default:
                         throw new RuntimeException();
@@ -2314,12 +2319,23 @@ public class SameDiffTests {
                 assertEquals(msg, out, expOut);
             }
         }
-
-        if(allFailed.size() > 0){
-            log.error("All failed cases: " + allFailed);
-        }
-        assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
+
+
+    @Test
+    public void testManhattanAlongDim0(){
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray a = Nd4j.rand(new int[]{3,4,5});
+        INDArray b = Nd4j.rand(new int[]{3,4,5});
+
+        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a,b), 0);
+
+        int[] expShape = new int[]{4,5};
+
+        assertArrayEquals(expShape, expOut.shape());
+    }
+
 
 
     @Test

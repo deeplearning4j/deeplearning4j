@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Strided Slice function
+ * Slice function
  *
  * @author Adam Gibson
  */

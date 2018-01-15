@@ -85,11 +85,6 @@ public class CosineDistance extends BaseAccumulation {
         extraArgs[1] = 0.0f;
     }
 
-    public CosineDistance(INDArray x, INDArray y, int[] dimensions){
-        this(x,y);
-        this.dimensions = dimensions;
-    }
-
     public CosineDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
         this.isComplex = allDistances;

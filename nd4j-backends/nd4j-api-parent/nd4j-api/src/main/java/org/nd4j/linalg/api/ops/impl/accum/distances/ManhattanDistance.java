@@ -81,11 +81,6 @@ public class ManhattanDistance extends BaseAccumulation {
         this.isComplex = allDistances;
     }
 
-    public ManhattanDistance(INDArray x, INDArray y, int[] dimensions){
-        this(x,y);
-        this.dimensions = dimensions;
-    }
-
     public ManhattanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
         this(x, y, z, x.lengthLong());
         this.isComplex = allDistances;
