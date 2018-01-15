@@ -8,16 +8,11 @@
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(matmul, 2, 1, false, -2, -2) {
-            // FIXME: we might want to have gemv/dot fallback here
-            REQUIRE_OK(this->validateInput2D(block));
-
-
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
             NDArray<T> *z = OUTPUT_VARIABLE(0);
 
-            //x->printShapeInfo("x shape");
-            //y->printShapeInfo("y shape");
+            REQUIRE_TRUE(x->rankOf() <= 2 && y->rankOf() <= 2 && z->rankOf() <= 2, 0, "MatMul: Input and Output NDArrays should have rank less or equal to 2");
 
             int iSize = (int) block.getIArguments()->size();
             int transA = 0;
@@ -51,8 +46,20 @@ namespace nd4j {
                 transB = 112;
 
             REQUIRE_TRUE((transA == 111 || transA == 112) && (transB == 111 || transB == 112), 0, "BatchedGemm: valid values for transA and transB are: 0/1 or 111/112, for NoTrans/Trans respectively")
+            if (x->rankOf() == 1 && y->isMatrix()) {
+                NDArray<T> *_x = x->reshape(x->ordering(), {1, (int) x->lengthOf()});
+                NDArray<T> *_y = transB == 111 ? y : y->transpose();
+                //NDArray<T> *_z = z->reshape(z->ordering(), {1, (int) z->lengthOf()});
+        
+                // gemm
+                nd4j::NDArrayFactory<T>::mmulHelper(_x, _y, z, alpha, beta);
 
-            if (x->isMatrix() && y->isVector()) {
+                delete _x;
+                //delete _z;
+
+                if (transB == 112)
+                    delete _y;
+            } else if (x->isMatrix() && y->isVector()) {
                 NDArray<T> *_x = transA == 111 ? x : x->transpose();
                 NDArray<T> *_y = transB == 111 ? y : y->transpose();
                 // gemv
@@ -162,14 +169,30 @@ namespace nd4j {
             if (transB == 112)
                 shape::transposeInplace(tmpB);
 
-            if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
+            if (shape::rank(tmpA) == 1 && shape::isMatrix(tmpB)) {
+                // special case here
+                int *newShape;
+                shape[0] = 1;
+                shape[1] = tmpB[2];
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                shape::shapeBufferFortran(2, shape, newShape);
+                return new ShapeList(newShape);
+            } else if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
                 // just scalar vs scalar
                 shape[0] = 1;
                 shape[1] = 1;
             }  else if (shape::isMatrix(tmpA) && shape::isVector(tmpB)) {
                 // gemv case
-                shape[0] = tmpA[1];
-                shape[1] = tmpB[2];
+                if (shape::rank(tmpB) == 2) {
+                    shape[0] = tmpA[1];
+                    shape[1] = tmpB[2];
+                } else {
+                    // we have new 1D shape here
+                    int *newShape;
+                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
+                    ShapeBuilder::shapeVector(tmpA[1], newShape);
+                    return new ShapeList(newShape);
+                }
             } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {
                 // gemm case
                 shape[0] = tmpA[1];
