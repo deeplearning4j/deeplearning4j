@@ -333,13 +333,25 @@ template <typename T>
 bool ShapeUtils<T>::areShapesBroadcastable(int *arr1, int *arr2) {
     int minRank = shape::rank(arr1) < shape::rank(arr2) ? shape::rank(arr1) : shape::rank(arr2);
        
-    for (int i = -1; i >= -minRank; --i) {
+    for (int i = -1; i >= -minRank; --i) 
         if (shape::sizeAt(arr1, i) != shape::sizeAt(arr2, i) && shape::sizeAt(arr1, i) != 1 && shape::sizeAt(arr2, i) != 1) return false;
-    }
     
     return true;
 }
 
+template <typename T>
+bool ShapeUtils<T>::areShapesBroadcastable(const std::vector<int>& shape1, const std::vector<int>& shape2) {
+    
+    const int rank1 = shape1.size();
+    const int rank2 = shape2.size();
+    const int minRank = rank1 < rank2 ? rank1 : rank2;
+    
+    for (int i = 1; i <= minRank; ++i) 
+        if (shape1[rank1-i] != shape2[rank2-i] && shape1[rank1-i] != 1 && shape2[rank2-i] != 1) 
+            return false;
+    
+    return true;
+}
 
 //////////////////////////////////////////////////////////////////////////
 // check the possibility of broadcast operation, if true then return shapeInfo of resulting array

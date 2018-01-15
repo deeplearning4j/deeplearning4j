@@ -48,6 +48,7 @@ namespace nd4j {
         // shape comparison starts from the end
         static bool areShapesBroadcastable(const NDArray<T> &arr1, const NDArray<T> &arr2);
         static bool areShapesBroadcastable(int* shapeX, int * shapeY);
+        static bool areShapesBroadcastable(const std::vector<int>& shape1, const std::vector<int>& shape2);
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
         // if evalMinMax == false then array with larger rank has to be passed as first argument

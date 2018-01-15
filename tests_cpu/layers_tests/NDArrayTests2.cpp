@@ -306,8 +306,7 @@ TEST_F(NDArrayTest2, Operator_Plus_Test_5)
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest2, Operator_Plus_Test_6)
-{    
+TEST_F(NDArrayTest2, Operator_Plus_Test_6) {    
 
     NDArray<double> x('c', {3, 3, 3});
     NDArray<double> y('c', {3, 1, 3});
@@ -319,5 +318,29 @@ TEST_F(NDArrayTest2, Operator_Plus_Test_6)
     
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, tileToShape_test1) {    
+
+    NDArray<double> x('c', {2, 2}, {1,2,3,4});
+    NDArray<double> exp('c', {2, 2, 2}, {1,2,3,4,1,2,3,4});
+    
+    x.tileToShape({2,2,2});        
+    
+    ASSERT_TRUE(x.isSameShape(&exp));
+    ASSERT_TRUE(x.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, tileToShape_test2) {    
+
+    NDArray<double> x('c', {2, 1, 2}, {1,2,3,4});
+    NDArray<double> exp('c', {2, 3, 2}, {1,2,1,2,1,2,3,4,3,4,3,4});
+    
+    x.tileToShape({2,3,2});        
+    
+    ASSERT_TRUE(x.isSameShape(&exp));
+    ASSERT_TRUE(x.equalsTo(&exp));
 }
 

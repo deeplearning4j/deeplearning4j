@@ -2784,6 +2784,40 @@ void NDArray<T>::streamline(char o) {
 }
 
 
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray<T>::tileToShape(const std::vector<int>& shape) {
+
+    std::vector<int> thisShape(rankOf());
+    for(int i = 0; i < rankOf(); ++i)
+        thisShape[i] = sizeAt(i);
+
+    if(!ShapeUtils<T>::areShapesBroadcastable(shape, thisShape))
+        throw "NDArray::tileToShape method: the shape of this array and input shape are not suitable for broadcast operation !" ;
+
+    const int newRank = shape.size();
+    std::vector<int> repeats(newRank);
+
+    for(int i = 1; i <= newRank; ++i) {
+        if(i > rankOf())
+            repeats[newRank-i] = shape[newRank - i];
+        else
+            repeats[newRank-i] = shape[newRank - i] / thisShape[rankOf() - i];
+    }
+
+    tilei(repeats);
+}
+
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray<T>::tileToShape(const std::initializer_list<int>& shape) {
+
+    const std::vector<int> shapeV(shape);
+    tileToShape(shapeV);
+}
+
+
+
 template class ND4J_EXPORT NDArray<float>;
 template class ND4J_EXPORT NDArray<float16>;
 template class ND4J_EXPORT NDArray<double>;

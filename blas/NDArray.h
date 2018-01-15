@@ -831,6 +831,13 @@ namespace nd4j {
         void setIdentity();
 
         /**
+        *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
+        *  shape - contains new shape to broadcast array to 
+        */
+        void tileToShape(const std::vector<int>& shape);
+        void tileToShape(const std::initializer_list<int>& shape);
+
+        /**
         *  default destructor
         */        
         ~NDArray(); 
