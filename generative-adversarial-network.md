@@ -91,6 +91,17 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 * ["Generative Learning algorithms" - Andrew Ng's Stanford notes](http://cs229.stanford.edu/notes/cs229-notes2.pdf)
 * [On Discriminative vs. Generative classifiers: A comparison of logistic regression and naive Bayes, by Andrew Ng and Michael I. Jordan](http://papers.nips.cc/paper/2020-on-discriminative-vs-generative-classifiers-a-comparison-of-logistic-regression-and-naive-bayes.pdf) 
 
+### <a name="beginner">Other Machine Learning Tutorials</a>
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Recurrent Networks and LSTMs](./lstm)
+* [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Neural Networks & Regression](./logistic-regression)
+* [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+
 ## GAN Use Cases
 
 * [Text to Image Generation](https://arxiv.org/abs/1605.05396)
