@@ -812,3 +812,20 @@ TEST_F(DeclarableOpsTests4, Test_Add_119) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests4, Test_Reshape_Negative_1) {
+    NDArray<float> x('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    NDArray<float> shape('c', {2}, {-1, 2});
+    NDArray<float> exp('c', {4, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+
+    nd4j::ops::reshape<float> op;
+    auto result = op.execute({&x, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

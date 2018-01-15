@@ -146,9 +146,54 @@ namespace nd4j {
                 return new ShapeList(newShape);
             } else {
                 // or, with second input "as shape"
+                auto y = INPUT_VARIABLE(1);
+
+                std::vector<int> shapeNew(y->lengthOf());
+                int numberNegativesOnes = 0;
+
+                for (int e = 0; e < (int) y->lengthOf(); e++)
+                    shapeNew[e] = (int) y->getIndexedScalar(e);
+
+                int *shape_ = shapeNew.data();
+                for (int i = 0; i < (int) shapeNew.size(); i++) {
+                    if (shapeNew[i] < 0) {
+                        if (numberNegativesOnes >= 1)
+                            throw "Only one dimension can be negative ones";
+
+                        numberNegativesOnes++;
+
+                        int shapeLength = 1;
+                        for (int j = 0; j < (int) shapeNew.size(); j++)
+                            if (shape_[j] >= 1)
+                                shapeLength *= shape_[j];
+
+                        // FIXME: use workspace here
+                        int realShape = nd4j::math::nd4j_abs<int>((int) shape::length(inp) / shapeLength);
+                        int *thisNewShape = new int[shapeNew.size()];
+
+                        for (int j = 0; j < (int) shapeNew.size(); j++) {
+                            if (i != j) {
+                                thisNewShape[j] = shape_[j];
+                            } else
+                                thisNewShape[j] = realShape;
+                        }
+
+                        shape_ = thisNewShape;
+                        break;
+                    }
+                }
+
+                for (int e = 0; e < (int) shapeNew.size(); e++) {
+                    shapeNew[e] = shape_[e];
+                }
+
+                if (numberNegativesOnes > 0)
+                    delete[] shape_;
+
                 int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
-                memcpy(newShape, inp, shape::shapeInfoByteLength(inp));
+                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shapeNew.size()), int);
+
+                shape::shapeBuffer(shapeNew.size(), shapeNew.data(), newShape);
 
                 return new ShapeList(newShape);
             }
