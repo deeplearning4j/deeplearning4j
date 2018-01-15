@@ -30,6 +30,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
@@ -2362,5 +2363,37 @@ public class SameDiffTests {
         assertEquals(1, out.length());
 
         assertEquals(jd, out.getDouble(0), 1e-6);
+    }
+
+
+    @Test
+    public void testSlice2d(){
+        INDArray inArr = Nd4j.linspace(1,12,12).reshape('c',3,4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice_full = sd.slice(in, new int[]{0,0}, new int[]{3,4});
+        SDVariable subPart = sd.slice(in, new int[]{1,2}, new int[]{2,2});
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr, slice_full.getArr());
+        assertEquals(inArr.get(interval(1,3), interval(2,4)), subPart.getArr());
+    }
+
+
+    @Test
+    public void testSlice3d(){
+        INDArray inArr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice_full = sd.slice(in, new int[]{0,0,0}, new int[]{3,4,5});
+        SDVariable subPart = sd.slice(in, new int[]{1,2,3}, new int[]{2,2,1});
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr, slice_full.getArr());
+        assertEquals(inArr.get(interval(1,3), interval(2,4), interval(3,4)), subPart.getArr());
     }
 }

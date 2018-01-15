@@ -967,6 +967,10 @@ public class DifferentialFunctionFactory   {
         return new ScalarEquals(sameDiff(),iX,i_y,true).outputVariables()[0];
     }
 
+    public SDVariable slice(SDVariable input, int[] begin, int[] size){
+        return new Slice(sameDiff(), input, begin, size).outputVariables()[0];
+    }
+
 
     /**
      *

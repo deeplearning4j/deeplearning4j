@@ -318,4 +318,14 @@ public class GradCheckMisc {
         assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
 
+    @Test
+    public void testSlice(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape('c',3,4));
+        SDVariable slice = sd.slice(in, new int[]{0,1}, new int[]{3,2});
+        SDVariable stdev = sd.standardDeviation(slice, true);
+
+        GradCheckUtil.checkGradients(sd);
+    }
+
 }

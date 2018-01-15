@@ -3697,6 +3697,16 @@ public class SameDiff {
     }
 
 
+    public SDVariable slice(SDVariable input, int[] begin, int[] size){
+        return slice(null, input, begin, size);
+    }
+
+    public SDVariable slice(String name, SDVariable input, int[] begin, int[] size){
+        SDVariable ret = f().slice(input, begin, size);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
     /**
      * Generate the variables based on the given input op
      * and return the output variable names.
