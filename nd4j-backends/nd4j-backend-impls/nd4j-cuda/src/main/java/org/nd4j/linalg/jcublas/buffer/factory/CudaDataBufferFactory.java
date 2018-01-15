@@ -28,10 +28,7 @@ import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -764,5 +761,31 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
         return new CudaHalfDataBuffer(data, copy, workspace);
+    }
+
+
+    @Override
+    public Class<? extends DataBuffer> intBufferClass() {
+        return CudaIntDataBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> longBufferClass() {
+        return CudaLongDataBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> halfBufferClass() {
+        return CudaHalfDataBuffer.class;    //Not yet supported
+    }
+
+    @Override
+    public Class<? extends DataBuffer> floatBufferClass() {
+        return CudaFloatDataBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> doubleBufferClass() {
+        return CudaDoubleDataBuffer.class;
     }
 }

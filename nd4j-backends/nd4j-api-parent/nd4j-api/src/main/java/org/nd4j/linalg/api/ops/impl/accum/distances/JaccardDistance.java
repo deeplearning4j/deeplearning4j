@@ -25,8 +25,10 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -35,22 +37,16 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class JaccardDistance extends BaseAccumulation {
-    private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
-    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
-        super(sameDiff, i_v, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
-    }
-
-    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
+    public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
+        extraArgs = new Object[2];
+        extraArgs[0] = 0.0f;
+        extraArgs[1] = 0.0f;
     }
 
     public JaccardDistance() {
-        passThrough = true;
+        passThrough = false;
     }
 
     public JaccardDistance(INDArray x, INDArray y, INDArray z, long n) {
@@ -106,22 +102,29 @@ public class JaccardDistance extends BaseAccumulation {
         return "jaccarddistance";
     }
 
-
-    @Override
-    public void exec() {
-        this.constantNormalizedByNorm2X = x.norm2Number();
-        this.constantNormalizedByNorm2Y = y.norm2Number();
-        this.extraArgs = new Object[] {0.0, constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
-        double dot = Nd4j.getBlasWrapper().dot(x, y);
-        this.finalResult = dot / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
-    }
-
-
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //Jaccard distance: https://en.wikipedia.org/wiki/Jaccard_index#Generalized_Jaccard_similarity_and_distance
+        //J(x,y) = 1 - sum_i min(x_i, y_i) / sum_i max(x_i, y_i)
+
+        int rank = Shape.rankFromShape(larg().getShape());
+
+        SDVariable jSim = outputVariables()[0].rsub(1.0);   //jaccard similarity = 1 - jaccard distance
+        SDVariable min = f().min(larg(), rarg());
+        SDVariable max = f().max(larg(), rarg());
+        SDVariable sumMax = f().sum(max, dimensions);
+        SDVariable broadcastableSumMax = f().reductionBroadcastableWithOrigShape(rank, dimensions, sumMax);
+        SDVariable broadcastableJSim = f().reductionBroadcastableWithOrigShape(rank, dimensions, jSim);
+
+        SDVariable xIsMin = f().eq(min, larg());
+        SDVariable xIsMax = f().eq(max, larg());
+        SDVariable yIsMin = f().eq(min, rarg());
+        SDVariable yIsMax = f().eq(max, rarg());
+
+        SDVariable dldx = xIsMax.mul(broadcastableJSim).sub(xIsMin).div(broadcastableSumMax);
+        SDVariable dldy = yIsMax.mul(broadcastableJSim).sub(yIsMin).div(broadcastableSumMax);
+
+        return Arrays.asList(dldx.mul(f1.get(0)), dldy.mul(f1.get(0)));
     }
 
     @Override

@@ -760,4 +760,15 @@ public interface DataBufferFactory {
      */
     DataBuffer createHalf(byte[] data, int length);
 
+
+    Class<? extends DataBuffer> intBufferClass();
+
+    Class<? extends DataBuffer> longBufferClass();
+
+    Class<? extends DataBuffer> halfBufferClass();
+
+    Class<? extends DataBuffer> floatBufferClass();
+
+    Class<? extends DataBuffer> doubleBufferClass();
+
 }

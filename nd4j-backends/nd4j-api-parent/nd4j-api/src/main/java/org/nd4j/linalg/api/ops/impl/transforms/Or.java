@@ -121,8 +121,6 @@ public class Or extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(
-                sameDiff.zerosLike(larg()),
-                sameDiff.zerosLike(rarg()));
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 }

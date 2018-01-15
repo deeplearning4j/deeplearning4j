@@ -15,10 +15,12 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.FunctionProperties;
+import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -47,6 +49,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.impl.*;
@@ -187,7 +190,23 @@ public class SameDiff {
         IFastCloner fc = new INDArrayFastCloner();
         cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
         cloner.registerFastCloner(Nd4j.getBackend().getComplexNDArrayClass(), fc);
+
+        //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
+        // buffer classes, not just the interface
+        IFastCloner fc2 = new DataBufferFastCloner();
+        DataBufferFactory d = Nd4j.getDataBufferFactory();
+        doReg(cloner, fc2, d.intBufferClass());
+        doReg(cloner, fc2, d.longBufferClass());
+        doReg(cloner, fc2, d.halfBufferClass());
+        doReg(cloner, fc2, d.floatBufferClass());
+        doReg(cloner, fc2, d.doubleBufferClass());
+        doReg(cloner, fc2, CompressedDataBuffer.class);
         return cloner;
+    }
+
+    private static void doReg(Cloner cl, IFastCloner fc, Class<?> c){
+        if(c != null)
+            cl.registerFastCloner(c, fc);
     }
 
 
@@ -2354,7 +2373,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return cosineSimilarity(generateNewVarName(new CosineSimilarity().opName(),0),iX,i_y,dimensions);
+        return cosineSimilarity(generateNewVarName(CosineSimilarity.OP_NAME,0),iX,i_y,dimensions);
     }
 
     /**
@@ -2365,7 +2384,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return euclideanDistance(generateNewVarName(new EuclideanDistance().opName(),0),iX,i_y,dimensions);
+        return euclideanDistance(generateNewVarName(EuclideanDistance.OP_NAME,0),iX,i_y,dimensions);
     }
 
     /**
@@ -2376,7 +2395,34 @@ public class SameDiff {
      * @return
      */
     public SDVariable manhattanDistance(SDVariable iX, SDVariable i_y, int...dimensions) {
-        return manhattanDistance(generateNewVarName(new ManhattanDistance().opName(),0),iX,i_y,dimensions);
+        return manhattanDistance(generateNewVarName(ManhattanDistance.OP_NAME,0),iX,i_y,dimensions);
+    }
+
+    public SDVariable cosineDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return cosineDistance(null, ix, iy, dimensions);
+    }
+
+    public SDVariable cosineDistance(String name, SDVariable ix, SDVariable iy, int... dimensions){
+        SDVariable result = functionFactory.cosineDistance(ix, iy, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    public SDVariable hammingDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return hammingDistance(null, ix, iy, dimensions);
+    }
+
+    public SDVariable hammingDistance(String name, SDVariable ix, SDVariable iy, int... dimensions){
+        SDVariable result = functionFactory.hammingDistance(ix, iy, dimensions);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    public SDVariable jaccardDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return jaccardDistance(null, ix, iy, dimensions);
+    }
+
+    public SDVariable jaccardDistance(String name, SDVariable ix, SDVariable iy, int... dimensions){
+        SDVariable result = functionFactory.jaccardDistance(ix, iy, dimensions);
+        return updateVariableNameAndReference(result, name);
     }
 
     /**

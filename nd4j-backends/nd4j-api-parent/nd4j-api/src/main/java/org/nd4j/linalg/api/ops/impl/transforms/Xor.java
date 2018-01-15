@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -115,6 +116,6 @@ public class Xor extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 }

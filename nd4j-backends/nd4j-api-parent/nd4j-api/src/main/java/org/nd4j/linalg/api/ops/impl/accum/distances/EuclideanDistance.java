@@ -35,6 +35,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class EuclideanDistance extends BaseAccumulation {
+    public static final String OP_NAME = "euclidean";
+
     public EuclideanDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);
     }
@@ -96,7 +98,7 @@ public class EuclideanDistance extends BaseAccumulation {
 
     @Override
     public String opName() {
-        return "euclidean";
+        return OP_NAME;
     }
 
 

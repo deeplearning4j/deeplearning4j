@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -183,10 +184,10 @@ public class GradCheckReductions {
 //                    System.out.println(sd.asFlatPrint());
 
                     boolean ok = GradCheckUtil.checkGradients(sd);
-                    if(!ok){
+                    if (!ok) {
                         allFailed.add(msg);
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     allFailed.add(msg + " - EXCEPTION");
                 }
@@ -297,10 +298,10 @@ public class GradCheckReductions {
 
                 try {
                     boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                    if(!ok){
+                    if (!ok) {
                         allFailed.add(msg);
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     allFailed.add(msg + " - EXCEPTION");
                 }
@@ -312,12 +313,7 @@ public class GradCheckReductions {
 
 
     @Test
-    public void testReduce3(){
-        /*
-        cosineSimilarity
-        euclideanDistance
-        manhattanDistance
-         */
+    public void testReduce3() {
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -326,15 +322,18 @@ public class GradCheckReductions {
         int d2 = 5;
 
         List<String> allFailed = new ArrayList<>();
-        for (int[] reduceDims : new int[][]{{0}, {1}, {2}, {Integer.MAX_VALUE}, {0,1}, {0,2}, {1,2}, {0,1,2}}) {
-            for (int i = 1; i < 2; i++) {
+        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0,1,2}, {0}, {1}, {2}, {0,1}, {0,2}, {1,2}}) {
+            for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
 
                 SDVariable in = sd.var("in", new int[]{-1, d1, d2});
-                SDVariable in2 = sd.var("in2", new int[]{-1,d1,d2});
+                SDVariable in2 = sd.var("in2", new int[]{-1, d1, d2});
+
+                INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
+                INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
 
                 SDVariable reduced;
                 String name;
@@ -351,27 +350,42 @@ public class GradCheckReductions {
                         reduced = sd.cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
                         break;
+                    case 3:
+                        reduced = sd.cosineDistance(in, in2, reduceDims);
+                        name = "cosinedistance";
+                        break;
+                    case 4:
+                        reduced = sd.hammingDistance(in, in2, reduceDims);
+                        name = "hamming";
+                        break;
+                    case 5:
+                        name = "jaccard";
+                        reduced = sd.jaccardDistance(name, in, in2, reduceDims);
+                        inArr.divi(100).addi(0.1);
+                        in2Arr.divi(100).addi(0.1);
+                    break;
                     default:
                         throw new RuntimeException();
                 }
 
+                //Sum: note that this should be a no-op for the full array cases
                 SDVariable sum = sd.sum(reduced, Integer.MAX_VALUE);
 
 
                 String msg = "(test " + i + " - " + name + ", dimensions=" + Arrays.toString(reduceDims) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
-                INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
                 sd.associateArrayWithVariable(inArr, in);
                 sd.associateArrayWithVariable(in2Arr, in2);
 
+                sd.execAndEndResult();
+
                 try {
                     boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
-                    if(!ok){
+                    if (!ok) {
                         allFailed.add(msg);
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     allFailed.add(msg + " - EXCEPTION");
                 }
@@ -380,7 +394,6 @@ public class GradCheckReductions {
 
         assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
-
 
 
 }

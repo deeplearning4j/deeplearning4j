@@ -8,9 +8,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
-import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
-import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
-import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -94,6 +92,10 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable zero(int[] shape) {
         return sameDiff.zero("one-" + UUID.randomUUID().toString(),shape);
+    }
+
+    public SDVariable zerosLike(SDVariable input){
+        return zerosLike(null, input);
     }
 
     public SDVariable zerosLike(String name, SDVariable input){
@@ -529,6 +531,10 @@ public class DifferentialFunctionFactory   {
         return new CosineSimilarity(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
     }
 
+    public SDVariable cosineDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return new CosineDistance(sameDiff(), ix, iy, dimensions).outputVariables()[0];
+    }
+
 
     public SDVariable euclideanDistance(SDVariable iX, SDVariable i_y, int... dimensions) {
         return new EuclideanDistance(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
@@ -539,6 +545,13 @@ public class DifferentialFunctionFactory   {
         return new ManhattanDistance(sameDiff(),iX,i_y,dimensions).outputVariables()[0];
     }
 
+    public SDVariable hammingDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return new HammingDistance(sameDiff(), ix, iy, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable jaccardDistance(SDVariable ix, SDVariable iy, int... dimensions){
+        return new JaccardDistance(sameDiff(), ix, iy, dimensions).outputVariables()[0];
+    }
 
     public SDVariable lossBinaryXENT(SDVariable iX,
                                      SDVariable i_y,

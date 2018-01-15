@@ -26,6 +26,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -131,6 +132,6 @@ public class And extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 }

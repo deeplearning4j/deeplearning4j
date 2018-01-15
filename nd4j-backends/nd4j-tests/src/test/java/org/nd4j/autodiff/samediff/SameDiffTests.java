@@ -2320,4 +2320,31 @@ public class SameDiffTests {
         }
         assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
+
+
+    @Test
+    public void testJaccardDistance(){
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray a = Nd4j.rand(new int[]{3,4}).addi(0.1);
+        INDArray b = Nd4j.rand(new int[]{3,4}).addi(0.1);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in1 = sd.var("in1", a);
+        SDVariable in2 = sd.var("in2", b);
+
+        SDVariable jaccard = sd.jaccardDistance("out", in1, in2);
+
+        INDArray min = Transforms.min(a,b);
+        INDArray max = Transforms.max(a,b);
+
+        double minSum = min.sumNumber().doubleValue();
+        double maxSum = max.sumNumber().doubleValue();
+        double jd = 1.0 - minSum / maxSum;
+
+        INDArray out = sd.execAndEndResult();
+        assertEquals(1, out.length());
+
+        assertEquals(jd, out.getDouble(0), 1e-6);
+    }
 }

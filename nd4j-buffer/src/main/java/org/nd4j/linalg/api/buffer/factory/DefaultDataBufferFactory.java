@@ -27,10 +27,7 @@ import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -755,5 +752,30 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
         throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public Class<? extends DataBuffer> intBufferClass() {
+        return IntBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> longBufferClass() {
+        return LongBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> halfBufferClass() {
+        return null;    //Not yet supported
+    }
+
+    @Override
+    public Class<? extends DataBuffer> floatBufferClass() {
+        return FloatBuffer.class;
+    }
+
+    @Override
+    public Class<? extends DataBuffer> doubleBufferClass() {
+        return DoubleBuffer.class;
     }
 }

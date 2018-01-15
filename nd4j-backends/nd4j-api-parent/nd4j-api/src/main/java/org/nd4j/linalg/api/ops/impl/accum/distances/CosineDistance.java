@@ -25,8 +25,10 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,18 +40,13 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class CosineDistance extends BaseAccumulation {
-    private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
     public CosineDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
         super(sameDiff, i_v, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
     }
 
-    public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
+    public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
     }
 
     public CosineDistance() {
@@ -117,19 +114,12 @@ public class CosineDistance extends BaseAccumulation {
 
 
     @Override
-    public void exec() {
-        this.constantNormalizedByNorm2X = x.norm2Number();
-        this.constantNormalizedByNorm2Y = y.norm2Number();
-        this.extraArgs = new Object[] {0.0, constantNormalizedByNorm2X, constantNormalizedByNorm2Y};
-        double dot = Nd4j.getBlasWrapper().dot(x, y);
-        this.finalResult = dot / (constantNormalizedByNorm2X.doubleValue() * constantNormalizedByNorm2Y.doubleValue());
-    }
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+        //Cosine distance = 1 - cosine similarity
+        //Therefore: just need to negate gradients from cosine similarity...
 
-
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException();
+        List<SDVariable> diff = CosineSimilarity.doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), dimensions);
+        return Arrays.asList(f().neg(diff.get(0)), f().neg(diff.get(1)));
     }
 
     @Override

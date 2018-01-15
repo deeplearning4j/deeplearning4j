@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -35,18 +36,10 @@ import java.util.List;
  * @author raver119@gmail.com
  */
 public class HammingDistance extends BaseAccumulation {
-    private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
-    public HammingDistance(SameDiff sameDiff, SDVariable i_v, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
-        super(sameDiff, i_v, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
-    }
 
-    public HammingDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int[] dimensions, Number constantNormalizedByNorm2X, Number constantNormalizedByNorm2Y) {
+    public HammingDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {
         super(sameDiff, i_v, i_v2, dimensions);
-        this.constantNormalizedByNorm2X = constantNormalizedByNorm2X;
-        this.constantNormalizedByNorm2Y = constantNormalizedByNorm2Y;
     }
 
     public HammingDistance() {
@@ -108,7 +101,11 @@ public class HammingDistance extends BaseAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //Hamming distance: "the Hamming distance between two strings of equal length is the number of positions at
+        // which the corresponding symbols are different."
+        //Consequently: it's not continuously differentiable, and gradients are 0 almost everywhere (but undefined
+        // when x_i == y_i)
+        return Arrays.asList(sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }
 
 

@@ -179,7 +179,7 @@ public class GradCheckUtil {
                 //This is not an input to the graph
                 continue;
             }
-            SDVariable g = sd.grad(v.getVarName()).dup();
+            SDVariable g = sd.grad(v.getVarName());
             if(g == null){
                 throw new IllegalStateException("Null gradient variable for \"" + v.getVarName() + "\"");
             }
