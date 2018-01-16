@@ -20,20 +20,22 @@ package org.deeplearning4j.eval;
 
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.writable.FloatWritable;
+import org.datavec.api.writable.Writable;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
+import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -59,7 +61,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.*;
-import java.util.zip.ZipFile;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -250,7 +251,7 @@ public class EvalTest {
         //Assert the two implementations give same f1 and accuracy (since one batch)
         assertTrue(eval1F1 == eval2F1 && eval1Acc == eval2Acc);
 
-        Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator(Collections.singletonList(test)));
+        Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator<>(Collections.singletonList(test)));
         checkEvaluationEquality(eval, evalViaMethod);
 
         System.out.println(eval.getConfusionMatrix().toString());
@@ -1063,5 +1064,32 @@ public class EvalTest {
         }
     }
 
+    @Test
+    public void testEvalSplitting2(){
+        List<List<Writable>> seqFeatures = new ArrayList<>();
+        List<Writable> step = Arrays.<Writable>asList(new FloatWritable(0), new FloatWritable(0), new FloatWritable(0));
+        for( int i=0; i<30; i++ ){
+            seqFeatures.add(step);
+        }
+        List<List<Writable>> seqLabels = Collections.singletonList(Collections.<Writable>singletonList(new FloatWritable(0)));
+
+        SequenceRecordReader fsr = new CollectionSequenceRecordReader(Collections.singletonList(seqFeatures));
+        SequenceRecordReader lsr = new CollectionSequenceRecordReader(Collections.singletonList(seqLabels));
+
+
+        DataSetIterator testData = new SequenceRecordReaderDataSetIterator(fsr, lsr, 1, -1, true,
+                SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(123)
+                .list()
+                .layer(0, new LSTM.Builder().activation(Activation.TANH).nIn(3).nOut(3).build())
+                .layer(1, new RnnOutputLayer.Builder().activation(Activation.IDENTITY).nIn(3).nOut(1).build())
+                .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(10).tBPTTBackwardLength(10)
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        net.evaluate(testData);
+    }
 
 }

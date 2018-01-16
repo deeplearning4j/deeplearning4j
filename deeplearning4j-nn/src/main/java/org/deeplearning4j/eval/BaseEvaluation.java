@@ -65,6 +65,10 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
         Pair<INDArray, INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, labelsMask);
+        if(pair == null){
+            //No non-masked steps
+            return;
+        }
         INDArray labels2d = pair.getFirst();
         INDArray predicted2d = pair.getSecond();
 
