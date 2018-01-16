@@ -233,11 +233,12 @@ public class PlayUIServer extends UIServer {
         else if(enableRemote) {
             try {
                 File tempStatsFile = File.createTempFile("dl4j", "UIstats");
+                tempStatsFile.delete();
                 tempStatsFile.deleteOnExit();
                 enableRemoteListener(new FileStatsStorage(tempStatsFile), true);
             } catch(Exception e) {
-                System.out.println("Failed to create temporary file for stats storage");
-                System.exit(0);
+                log.error("Failed to create temporary file for stats storage",e);
+                System.exit(1);
             }
         }
     }

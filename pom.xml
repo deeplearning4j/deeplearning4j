@@ -111,6 +111,8 @@
         <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
         <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
+        <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
+        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
         <mockito.version>2.2.6</mockito.version>
     </properties>
 
@@ -609,6 +611,10 @@
         <developer>
             <id>emmjaykay</id>
             <name>emmjaykay</name>
+        </developer>
+        <developer>
+            <id>crockpotveggies</id>
+            <name>Justin Long</name>
         </developer>
     </developers>
 
