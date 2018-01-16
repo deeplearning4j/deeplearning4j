@@ -5,7 +5,7 @@ layout: default
 
 # ディープラーニングネットワークの作成
 
-多層ネットワークとは積層した[単層ニューラルネットワーク](./singlelayernetwork.html)です。ニューラルネットワークの最初の層と[順伝播型ネットワーク](./glossary.html#feedforward)に入力層が付加されています。入力層に後続する各層はその前の層の出力を入力として使用します。
+多層ネットワークとは積層した[単層ニューラルネットワーク](../singlelayernetwork.html)です。ニューラルネットワークの最初の層と[順伝播型ネットワーク](../glossary.html#feedforward)に入力層が付加されています。入力層に後続する各層はその前の層の出力を入力として使用します。
 
 多層ネットワークは、単層ネットワークと同種類の入力を受け入れます。パラメータも一般に単層ネットワークのものと同じです。
 
@@ -47,5 +47,5 @@ L2は[こちら](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algori
 
 その他の種類の多層ネットワークには次のようなものがあります。
 
-* [積層ノイズ除去オートエンコーダ](./stackeddenoisingautoencoder.html)
-* [ディープ・ビリーフ・ネットワーク](./deepbeliefnetwork.html)
+* [積層ノイズ除去オートエンコーダ](../stackeddenoisingautoencoder.html)
+* [ディープ・ビリーフ・ネットワーク](../deepbeliefnetwork.html)

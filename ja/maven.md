@@ -15,7 +15,7 @@ layout: default
 
 Mavenは動的にJavaライブラリとMavenプラグインをMavenの中央リポジトリからダウンロードします。これらはPOM.xmlにあり、プロジェクト・オブジェクト・モデルを保管するXMLファイル内で指定されています。 
 
-![Alt text](./img/maven_schema.png)
+![Alt text](../img/maven_schema.png)
 
 *Maven:The Complete Reference* から引用 
 
@@ -45,4 +45,4 @@ IntelliJとMavenの両方をインストールしていれば、IntelliJはIDE�
 
 * [Maven by Example](https://books.sonatype.com/mvnex-book/reference/public-book.html)（サンプルを使ったMavenの解説）
 * [Maven:The Complete Reference](https://books.sonatype.com/mvnref-book/reference/public-book.html)（Mavenの完全ガイド）
-* [Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)（EclipseとMaveを使った開発）
+* [Developing with Eclipse and Maven](https://books.sonatype.com/m2eclipse-book/reference/)（EclipseとMavenを使った開発）
