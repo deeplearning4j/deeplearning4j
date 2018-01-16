@@ -1,9 +1,9 @@
 ---
-title: "Word2vec: Neural Word Embeddings in Java"
+title: "Word2vec: Neural Word Embeddings in Java and Scala"
 layout: default
 ---
 
-# Word2Vec
+# Word2Vec: Neural Word Embeddings in Java and Scala
 
 Contents
 
@@ -30,7 +30,7 @@ Why? Because words are simply discrete states like the other data mentioned abov
 The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention. 
 
 <p align="center">
-<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
+<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, [sentiment analysis](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java) and recommendations in such diverse fields as scientific research, legal discovery, e-commerce and customer relationship management. 
@@ -469,14 +469,20 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Mikolov's Original Word2vec Code @Google](https://code.google.com/p/word2vec/)
 * [word2vec Explained: Deriving Mikolov et al.’s Negative-Sampling Word-Embedding Method](http://arxiv.org/pdf/1402.3722v1.pdf); Yoav Goldberg and Omer Levy
 * [Bag of Words & Term Frequency-Inverse Document Frequency (TF-IDF)](./bagofwords-tf-idf.html)
+* [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Introduction to Neural Networks](./neuralnet-overview)
+### <a name="beginner">Other Deep Learning Tutorials</a>
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./linear-regression)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
 * [Convolutional Networks](./convolutionalnets)
+* [Deeplearning4j Quickstart Examples](./quickstart)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Reinforcement Learning](./reinforcementlearning)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 

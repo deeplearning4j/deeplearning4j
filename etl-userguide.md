@@ -189,7 +189,7 @@ From the `RecordReader` data typically travels to a dataset iterator that traver
 | ND4J DataSet PreProcessors | Use                                                                                                                                           |
 |----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
 | ImagePreProcessingScaler   | Applies min max scaling Can take a range . Pixel values can be scaled from 0->255 to minRange->maxRange default minRange = 0 and maxRange = 1 |
-| NormalizerMinMaxScaler     | Applies min max scaling Can take a range X -> (X - min/(max-min)) * (given_max - given_min) + given_mi                                        |
+| NormalizerMinMaxScaler     | Applies min max scaling Can take a range X -> ((X - min)/(max-min)) * (given_max - given_min) + given_mi                                        |
 | NormalizerStandardize      | Standard scaler calculates a moving column wise variance and mean                                                                             |
 {: .table}
 

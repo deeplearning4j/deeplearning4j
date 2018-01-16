@@ -43,6 +43,8 @@ Now, with terminology and basics defined, let’s discuss performance tuning.
 
 # Performance Tuning
 
+ND4J comes with optional artifacts containing binaries for AVX2 and AVX512. If your processor supports these instructions set, by including them in your dependencies, you may get a performance boost of 2 or 4x for some workloads. More information on the [ND4J Installation](http://nd4j.org/getstarted) page.
+
 ## OMP_NUM_THREADS
 
 `OMP_NUM_THREADS` environment variable defines how many OpenMP threads will be used for BLAS calls and other native calls. ND4J tries to guess the best possible value for this parameter but in some cases, custom values for this parameter might perform better. The general rule for the «best value» here is the number of physical cores for 1 CPU. However, please note this parameter defines the maximum number and actual number of threads launched. For any individual op might (and probably will) be lower then this value.
@@ -66,7 +68,7 @@ NativeOpsHolder.getInstance().getDeviceNativeOps().setTADThreshold(64)
 
 ## Intel MKL
 
-By default, OpenBLAS is used with ND4J, but there’s an option to use the first-class high-performance Intel MKL library together with ND4J/DL4J. That happens automatically. If you have MKL libraries on `$PATH`, they will be used for BLAS operations. [Intel MKL](https://software.intel.com/sites/campaigns/nest/) is available for Linux, OSX and Windows. It’s also possible to compile ND4J with Intel MKL pre-linked if you have Intel MKL installed. MKL is available free of charge under community licensing Intel. 
+By default, OpenBLAS is used with ND4J, but there’s an option to use the first-class high-performance Intel MKL library together with ND4J/DL4J. That happens automatically. If you have MKL libraries on `$PATH`, they will be used for BLAS operations. [Intel MKL](https://software.intel.com/en-us/mkl) is available for Linux, OSX and Windows. It’s also possible to compile ND4J with Intel MKL pre-linked if you have Intel MKL installed. MKL is available free of charge under community licensing Intel.
 
 ## Spark environment
 
@@ -100,6 +102,8 @@ If you have an unusual BLAS environment, or you have trouble around the `Nd4jBla
 Recently, we’ve discovered that on some platforms, popular BLAS-libraries can be unstable, causing crashes under different circumstances. To address that (and possible future issues as well), we’ve provided optional «fallback mode», which will cause ND4J to use in-house solutions as a workaround for possible issues. It acts as a «safe mode», well known for any modern-OS user.
 
 To activate fallback mode you only need to set special environment variable: **ND4J_FALLBACK**. Set it to «**true**» or to **1** before launching your app. It’s possible to use this variable in an Apache Spark environment, as well as in a standalone app.
+
+It is also possible to lower the level of optimization used by OpenBLAS, which is sometimes known to cause problems, by setting the **OPENBLAS_CORETYPE** environment variable to a value such as **Athlon** (for AMD processors) or **Core2** (for Intel processors).
 
 
 ## How it works after all?

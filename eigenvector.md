@@ -230,6 +230,7 @@ You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob
 * [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
 * [Convolutional Networks](./convolutionalnets)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
-* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
+* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
 
 <a name="ref">1)</a> *In some cases, matrices may not have a full set of eigenvectors; they can have at most as many linearly independent eigenvectors as their respective order, or number of dimensions.*

@@ -11,3 +11,5 @@ Named after a subatomic particle, Gluon is an API over Amazon's MxNet that was [
 * Zachary Lipton's [MxNet Gluon Tutorial](https://github.com/zackchase/gluon-slides/blob/master/sept18-gluon.pdf) (PDF)
 
 To contrast Gluon with other frameworks, please see this [deep learning framework comparison page](https://deeplearning4j.org/compare-dl4j-torch7-pylearn).
+
+Amazon's Gluon should not be confused with [Gluon, the company, which helps developers deploy mobile apps](http://gluonhq.com/). 

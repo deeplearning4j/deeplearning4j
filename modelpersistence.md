@@ -4,14 +4,14 @@ layout: default
 ---
 
 # Saving and Loading a Neural Network
-The ModelSerializer is a class which handles loading and saving models. There are 2 methods for saving (in the examples below)
-The first example saves a normal multi layer network, the second one saves a [computation graph](https://deeplearning4j.org/compgraph)
 
-Here is a [basic Example](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving) that provides the code to save a computation graph using the ModelSerializer class, and also an example of using ModelSerializer to save a Neural Net built using MultiLayer Configuration.  
+The `ModelSerializer` is a class which handles loading and saving models. There are two methods for saving models shown in the examples through the link. The first example saves a normal multilayer network, the second one saves a [computation graph](https://deeplearning4j.org/compgraph).
+
+Here is a [basic example](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving) with code to save a computation graph using the `ModelSerializer` class, as well as an example of using ModelSerializer to save a neural net built using MultiLayer configuration.
 
 ## RNG Seed
 
-If your model uses probabilities (i.e. DropOut/DropConnect), it might have sense to save it separately, and apply it after model is restored. I.e:
+If your model uses probabilities (i.e. DropOut/DropConnect), it may make sense to save it separately, and apply it after model is restored; i.e:
 
 ```bash
  Nd4j.getRandom().setSeed(12345);

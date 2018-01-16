@@ -6,14 +6,14 @@ redirect_from: compare-dl4j-torch7-pylearn
 
 # Comparing Top Deep Learning Frameworks: Deeplearning4j, PyTorch, TensorFlow, Caffe, Keras, MxNet, Gluon & CNTK
 
-Skymind bundles Deeplearning4j and Python deep learning libraries such as Tensorflow and Keras (using a managed Conda environment) in the Skymind Intelligence Layer (SKIL), which offers ETL, training and one-click deployment on a managed GPU cluster. The SKIL Community Edition is [free and downloadable here](https://skymind.ai/platform), and its [Quickstart is here](https://skymind.ai/quickstart). 
+Skymind bundles Deeplearning4j and Python deep learning libraries such as Tensorflow and Keras (using a managed Conda environment) in the Skymind Intelligence Layer (SKIL), which offers ETL, training and one-click deployment on a managed GPU cluster. The SKIL Community Edition is [free and downloadable here](https://skymind.readme.io/v1.0.1/docs/quickstart). 
 
 [Eclipse Deeplearning4j](https://projects.eclipse.org/proposals/deeplearning4j) is distinguished from other frameworks in its API languages, intent and integrations. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** that solves problems involving massive amounts of data in a reasonable amount of time. It integrates with Kafka, Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks.
 
 DL4J is portable and platform neutral, rather than being optimized on a specific cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and faster than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. Deeplearning4j has Java, [Scala](https://github.com/deeplearning4j/scalnet) and [Python APIs, the latter using Keras](./keras). 
 
 <p align="center">
-<a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING</a>
 </p>
 
 ### Content
@@ -28,7 +28,8 @@ Python Frameworks
 * <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
-* <a href="#dsstne">DyNet</a>
+* <a href="#dynet">DyNet</a>
+* <a href="#gensim">Gensim</a>
 * <a href="#gluon">Gluon</a>
 * <a href="#keras">Keras</a>
 * <a href="#mxnet">Mxnet</a>
@@ -178,6 +179,10 @@ Amazon's Deep Scalable Sparse Tensor Network Engine, or [DSSTNE](https://github.
 * (+) Dynamic computation graph
 * (-) Small user community
 
+### <a name="gensim">Gensim</a>
+
+[Gensim](https://rare-technologies.com/word2vec-tutorial/) is a fast implementation of word2vec implemented in Python. While Gensim is not a general purpose ML platform, for word2vec, it is at least an order of magnitude faster than TensorFlow. It is supported by the NLP consulting firm Rare Technologies. 
+
 ### <a name="gluon">Gluon</a>
 
 Named after a subatomic particle, Gluon is an API over Amazon's MxNet that was [introduced](http://www.businesswire.com/news/home/20171012005742/en/AWS-Microsoft-Announce-Gluon-Making-Deep-Learning) by Amazon and Microsoft in October 2017. It will also integrate with Microsoft's CNTK. While it is similar to Keras in its intent and place in the stack, it is distinguished by its dynamic computation graph, similar to Pytorch and Chainer, and unlike TensorFlow or Caffe. On a business level, Gluon is an attempt by Amazon and Microsoft to carve out a user base separate from TensorFlow and Keras, as both camps seek to control the API that mediates UX and neural net training.    
@@ -271,3 +276,5 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Eigenvectors, PCA and Entropy](./eigenvector.html)
 * [A Glossary of Deep-Learning Terms](./glossary.html)
 * [Word2vec, Doc2vec & GloVe](./word2vec)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./modelserver)

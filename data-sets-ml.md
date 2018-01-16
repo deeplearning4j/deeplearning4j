@@ -5,7 +5,11 @@ layout: default
 
 # DataSets and Machine Learning
 
-One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the right data in the right format. 
+One of the hardests problems to solve in deep learning has nothing to do with neural nets: it's the problem of getting the *right data* in the *right format*. 
+
+Getting the right data means gathering or identifying the data that correlates with the outcomes you want to predict; i.e. data that contains a signal about events you care about. The data needs to be aligned with the problem you're trying to solve. Kitten pix are not very useful when you're building a facial identification system. Verifying that the data is aligned with the problem you seek to solve must be done by a data scientist. If you do not have the right data, then you efforts to build an AI solution must return to the data collection stage. 
+
+The right format for deep learning is generally a tensor, or a multi-dimensional array. So data pipelines built for deep learning will generally convert all data -- be it images, video, sound, voice, text or time series -- into vectors and tensors that linear algebra operations can be applied to. That data frequently needs to be normalized, standardized and cleaned to increase its usefulness, and those are all steps in machine-learning ETL. Deeplearning4j offers the [DataVec ETL tool](https://deeplearning4j.org/datavec) to perform those data preprocessing tasks. 
 
 Deep learning, and machine learning more generally, needs a good training set to work properly. Collecting and constructing the training set -- a sizable body of known data -- takes time and domain-specific knowledge of where and how to gather relevant information. The training set acts as the benchmark against which deep-learning nets are trained. That is what they learn to reconstruct before they're unleashed on data they haven't seen before. 
 

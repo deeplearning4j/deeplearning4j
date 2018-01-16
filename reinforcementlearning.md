@@ -1,5 +1,5 @@
 ---
-title: A Beginner's Guide to Reinforcement Learning (for Java)
+title: A Beginner's Guide to Reinforcement Learning (for Java and Scala)
 layout: default
 ---
 
@@ -17,17 +17,18 @@ In time, we expect reinforcement learning to perform better in more ambiguous, r
 <a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING4J</a>
 </p>
 
-## Reinforcement Learning
+## Reinforcement Learning Definitions
 
 Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. 
 
-An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. 
-
-A **state** is the situation in which the agent finds itself; i.e. a specific place and moment, a configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. 
-
-An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
-
-A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards.
+* Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithms is the agent. 
+* Action (A): All possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
+* Environment: The black box of the world in which the agent moves. It takes your current state and action as input, and returns as output your reward and next state. 
+* State (S): A **state** is the situation in which the agent finds itself; i.e. a specific place and moment, a configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. 
+* Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards. An immediate return send back from the environment to evaluate the last action. 
+* Policy (π): The strategy that the agent employs to determine next action based on the current state.
+* Value (V): The expected long-term return with discount, as opposed to the short-term reward R. Vπ(s) is defined as the expected long-term return of the current state sunder policy π.
+* Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. Qπ(s, a) refers to the long-term return of the current state s, taking action a under policy π.
 
 ![Alt text](./img/simple_RL_schema.png)
 
@@ -105,3 +106,16 @@ Like human beings, the Q function is recursive. Just as calling the wetware meth
 * [Reinforcement Learning and DQN, learning to play from pixels](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
 * Video: [Richard Sutton on Temporal Difference Learning](https://www.youtube.com/watch?v=EeMCEQa85tw)
 * [A Brief Survey of Deep Reinforcement Learning](https://arxiv.org/pdf/1708.05866.pdf)
+
+### <a name="beginner">Other Deep Learning Tutorials</a>
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Convolutional Networks](./convolutionalnets)
+* [Deeplearning4j Quickstart Examples](./quickstart)
+* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Word2vec and Natural-Language Processing](./word2vec.html)

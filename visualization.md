@@ -13,6 +13,7 @@ Contents
 * [Deeplearning4J UI and Spark Training](#sparkui)
 * [Using the UI to Tune Your Network](#usingui)
 * [TSNE and Word2Vec](#tsne)
+* [Fixing UI Issue: "No configuration setting" exception](#issues)
 
 ## <a name="ui">Visualizing Network Training with the Deeplearning4j Training UI</a>
 
@@ -229,3 +230,85 @@ We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionalit
                 .usePca(false)
                 .build();
         vec.lookupTable().plotVocab(tsne);
+
+
+## <a name="issues">Fixing UI Issue: "No configuration setting" exception</a>
+
+A possible exception that can occur with the DL4J UI is the following:
+```
+com.typesafe.config.ConfigException$Missing: No configuration setting found for key 'play.crypto.provider'
+        at com.typesafe.config.impl.SimpleConfig.findKeyOrNull(SimpleConfig.java:152)
+        at com.typesafe.config.impl.SimpleConfig.findOrNull(SimpleConfig.java:170)
+        ...
+        at play.server.Server.forRouter(Server.java:96)
+        at org.deeplearning4j.ui.play.PlayUIServer.runMain(PlayUIServer.java:206)
+        at org.deeplearning4j.ui.api.UIServer.getInstance(UIServer.java:27)
+```
+
+This exception is not due to DL4J directly, but is due to a missing application.conf file, required by the Play framework (the library that DL4J's UI is based on). This is originally present in the deeplearning4j-play dependency: however, if an uber-jar (i.e., a JAR file with dependencies) is built (say, via ```mvn package```), it may not be copied over correctly. For example, using the ```maven-assembly-plugin``` has caused this exception for some users.
+
+The recommended solution (for Maven) is to use the Maven Shade plugin to produce an uber-jar, configured as follows:
+```
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <configuration>
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <!--<exclude>org/datanucleus/**</exclude>-->
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+                                    <resource>reference.conf</resource>
+                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" />
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        <plugins>
+    <build>
+```
+
+Then, create your uber-jar with ```mvn package``` and run via ```cd target && java -cp dl4j-examples-0.9.1-bin.jar org.deeplearning4j.examples.userInterface.UIExample```. Note the "-bin" suffix for the generated JAR file: this includes all dependencies.
+
+Note also that this Maven Shade approach is configured for DL4J's examples repository.

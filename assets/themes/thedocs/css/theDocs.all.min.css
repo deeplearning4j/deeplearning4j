@@ -13893,7 +13893,7 @@ body[data-spy]
 .site-header .navbar-brand > img
 {
     display: inline-block;
-    max-height: 36px;
+    max-height: 50px;
     -webkit-transition: .2s ease;
          -o-transition: .2s ease;
             transition: .2s ease;
@@ -14591,7 +14591,7 @@ body[data-spy]
 
 .sidebar-boxed .sidebar-brand > img
 {
-    max-height: 82px;
+    max-height: 60px;
 }
 
 .sidebar-boxed .sidenav a.active:before,

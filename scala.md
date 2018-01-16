@@ -5,7 +5,7 @@ layout: default
 
 # Scala, Apache Spark and Deeplearning4j
 
-Scala programmers seeking to build deep learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. 
+Scala programmers seeking to build machine learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. 
 
 Skymind's numerical computing library, [ND4J](http://nd4j.org/) (n-dimensional arrays for the JVM), comes with a Scala API, [ND4S](https://github.com/deeplearning4j/nd4s). Our full walkthrough of Deeplearning4j's Apache Spark integration is [here](https://deeplearning4j.org/spark). Our examples include a number of tutorials using [Scala notebooks with Zepellin](https://github.com/deeplearning4j/deeplearning4j/blob/master/dl4j-examples/tutorials/README.md).
 
@@ -16,19 +16,20 @@ Scala is one of the most exciting languages to be created in the 21st century. I
 Scala works on the JVM and has access to the riches of the Java ecosystem, but it is less verbose than Java. As we employ it for ND4J, its syntax is strikingly similar to Python, a language that many data scientists are comfortable with. Like Python, Scala makes programmers happy, but like Java, it is quite fast. 
 
 <p align="center">
-<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 Finally, [Apache Spark](./spark.html) is written in Scala, and any library that purports to work on distributed run times should at the very least be able to interface with Spark. Deeplearning4j and ND4J go a step further, because they work in a Spark cluster, and boast Scala APIs called ScalNet and ND4S. 
 
 We believe Scala's many strengths will lead it to dominate numerical computing, as well as deep learning. We think that will happen on Spark. And we have tried to build the tools to make it happen now. 
 
-## Spark
+## Apache Spark
 
 Deeplearning4j depends on Apache Spark for fast ETL. While many machine-learning tools rely on Spark for computation, this is in fact quite inefficient, and slows down neural net training. The trick to using Apache Spark is pushing the computation to a numerical computing library like ND4J, and its underlying C++ code. 
 
 ### See also
 
+* [Artificial Intelligence (AI) for Scala](./scala-ai)
 * [Docs: Deeplearning4j on Spark](./spark.html)
 * [Course: Atomic Scala](http://www.atomicscala.com/) - a recommended beginner's course
 * [Martin Odersky's Coursera course on Scala](https://www.coursera.org/learn/progfun1)
