@@ -56,6 +56,7 @@
         <module>deeplearning4j-ui-remote-iterationlisteners</module>
         <module>deeplearning4j-ui-resources</module>
         <module>deeplearning4j-play</module>
+        <module>deeplearning4j-ui-server</module>
     </modules>
 
     <profiles>

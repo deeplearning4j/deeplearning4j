@@ -142,7 +142,7 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <skip>false</skip>
+                            <!--<skip>false</skip>-->
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
                         </configuration>
@@ -195,7 +195,6 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui</artifactId>
-            <version>${jackson.version}</version>
         </dependency>
 
 
