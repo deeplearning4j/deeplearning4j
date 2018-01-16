@@ -101,7 +101,6 @@
         <maven-compiler-plugin.version>3.5.1</maven-compiler-plugin.version>
         <maven-scala-plugin.version>3.3.1</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
-        <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0-beta8</sbt-compiler-maven-plugin.version>
         <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
         <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
@@ -112,6 +111,8 @@
         <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
         <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
+        <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
+        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
         <mockito.version>2.2.6</mockito.version>
     </properties>
 
@@ -611,6 +612,10 @@
             <id>emmjaykay</id>
             <name>emmjaykay</name>
         </developer>
+        <developer>
+            <id>crockpotveggies</id>
+            <name>Justin Long</name>
+        </developer>
     </developers>
 
     <build>
@@ -654,6 +659,26 @@
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <includes>
+                        <include>**/*.so</include>
+                        <include>**/*.so.*</include>
+                        <include>META-INF/*</include>
+                        <include>META-INF/services/**</include>
+                        <include>org.*</include>
+                        <include>**/*.properties</include>
+                        <include>**/*.json</include>
+                        <include>**/*.proto</include>
+                        <include>**/*.class</include>
+                        <include>**/*.dll</include>
+                        <include>**/*.dylib</include>
+                        <include>lib/*</include>
+                    </includes>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-source-plugin</artifactId>
