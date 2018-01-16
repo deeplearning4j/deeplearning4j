@@ -24,9 +24,7 @@
         <plugins>
 
             <!--
-            Use Maven Shade plugin to add a shaded version of the Jackson dependencies, that can be imported by
-            including this module (org.deeplearning4j.jackson) as a dependency.
-            The standard com.fasterxml.jackson dependencies will be provided, though are prefixed by org.deeplearning4j.ui.server
+            Use Maven Shade plugin to create an uber-jar of the UI and all dependencies (and specify entry point to make runnable jar)
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -96,7 +94,6 @@
                             <goal>jar</goal>
                         </goals>
                         <configuration>
-                            <!--<skip>false</skip>-->
                             <classifier>javadoc</classifier>
                             <classesDirectory>${basedir}/javadoc</classesDirectory>
                         </configuration>
