@@ -157,7 +157,7 @@ namespace nd4j {
             if (!dense_spec.buildDenseSpec(sparse_spec))
                 return false;
 
-            nd4j_printv("Input shape: ", input_shape);
+            //nd4j_printv("Input shape: ", input_shape);
 
             for (int e = 0; e < (int) input_shape.size(); e++) {
                 int begin_idx = begin[e];
@@ -258,7 +258,7 @@ namespace nd4j {
 
 
             std::vector<int> postshape;
-            nd4j_printv("Preshape: ", preshape);
+            //nd4j_printv("Preshape: ", preshape);
 
             final_shape->clear();
             for (auto gather_index : dense_spec.final_shape_gather_indices) {
@@ -269,8 +269,8 @@ namespace nd4j {
                 }
             }
 
-            nd4j_printv("Preshape: ", preshape);
-            nd4j_printv("Postshape: ", *final_shape);
+            //nd4j_printv("Preshape: ", preshape);
+            //nd4j_printv("Postshape: ", *final_shape);
 
             return true;
         }
@@ -433,7 +433,7 @@ namespace nd4j {
             vectorize(input_shape);
             bool result = _preprocess_strided_slice(nullptr, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
 
-            nd4j_printv("shape after shrink: ", shape);
+            //nd4j_printv("shape after shrink: ", shape);
             
             // scalar edge case
             /*
@@ -445,7 +445,7 @@ namespace nd4j {
             }
              */
 
-            nd4j_printv("shape after normalization: ", shape);
+            //nd4j_printv("shape after normalization: ", shape);
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
