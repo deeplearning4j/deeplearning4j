@@ -72,9 +72,6 @@
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
 
-
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
                     <filters>
                         <filter>
                             <artifact>*:*</artifact>
@@ -117,34 +114,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-dependency-plugin</artifactId>
-              <version>3.0.0</version>
-              <executions>
-                <execution>
-                  <id>unpack</id>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>unpack</goal>
-                  </goals>
-                  <configuration>
-                    <artifactItems>
-                      <artifactItem>
-                        <groupId>org.deeplearning4j</groupId>
-                        <artifactId>jackson</artifactId>
-                        <version>${project.version}</version>
-                        <type>jar</type>
-                        <overWrite>false</overWrite>
-                        <outputDirectory>${project.build.directory}/classes/</outputDirectory>
-                        <includes>**/*.class,**/*.xml</includes>
-                      </artifactItem>
-                    </artifactItems>
-                  </configuration>
-                </execution>
-              </executions>
-            </plugin>
         </plugins>
     </build>
 
@@ -154,9 +123,6 @@
             <artifactId>deeplearning4j-ui_2.11</artifactId>
             <version>${deeplearning4j.version}</version>
         </dependency>
-
-
-
     </dependencies>
 
 </project>
