@@ -250,7 +250,8 @@ public abstract class Nd4jBackend {
         String[] jarUris;
         if (System.getProperties().containsKey(DYNAMIC_LOAD_CLASSPATH_PROPERTY) && !triedDynamicLoad) {
             jarUris = System.getProperties().getProperty(DYNAMIC_LOAD_CLASSPATH_PROPERTY).split(";");
-        } else if (System.getenv().containsKey(DYNAMIC_LOAD_CLASSPATH) && !triedDynamicLoad) {
+        // Do not call System.getenv(): Accessing all variables requires higher security privileges
+        } else if (System.getenv(DYNAMIC_LOAD_CLASSPATH) != null && !triedDynamicLoad) {
             jarUris = System.getenv(DYNAMIC_LOAD_CLASSPATH).split(";");
         }
 

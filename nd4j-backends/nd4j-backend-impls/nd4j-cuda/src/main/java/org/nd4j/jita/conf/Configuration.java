@@ -209,96 +209,96 @@ public class Configuration implements Serializable {
 
 
     private void parseEnvironmentVariables() {
-        Map<String, String> env = System.getenv();
 
-        if (env.containsKey(MAX_BLOCK_SIZE)) {
+        // Do not call System.getenv(): Accessing all variables requires higher security privileges
+        if (System.getenv(MAX_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MAX_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(MAX_BLOCK_SIZE));
                 setMaximumBlockSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, env.get(MAX_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_BLOCK_SIZE, System.getenv(MAX_BLOCK_SIZE));
             }
         }
 
-        if (env.containsKey(MIN_BLOCK_SIZE)) {
+        if (System.getenv(MIN_BLOCK_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MIN_BLOCK_SIZE));
+                int var = Integer.parseInt(System.getenv(MIN_BLOCK_SIZE));
                 setMinimumBlockSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, env.get(MIN_BLOCK_SIZE));
+                log.error("Can't parse {}: [{}]", MIN_BLOCK_SIZE, System.getenv(MIN_BLOCK_SIZE));
             }
         }
 
-        if (env.containsKey(MAX_GRID_SIZE)) {
+        if (System.getenv(MAX_GRID_SIZE) != null) {
             try {
-                int var = Integer.parseInt(env.get(MAX_GRID_SIZE));
+                int var = Integer.parseInt(System.getenv(MAX_GRID_SIZE));
                 setMaximumGridSize(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_GRID_SIZE, env.get(MAX_GRID_SIZE));
+                log.error("Can't parse {}: [{}]", MAX_GRID_SIZE, System.getenv(MAX_GRID_SIZE));
             }
         }
 
-        if (env.containsKey(DEBUG_ENABLED)) {
+        if (System.getenv(DEBUG_ENABLED) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(DEBUG_ENABLED));
+                boolean var = Boolean.parseBoolean(System.getenv(DEBUG_ENABLED));
                 enableDebug(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, env.get(DEBUG_ENABLED));
+                log.error("Can't parse {}: [{}]", DEBUG_ENABLED, System.getenv(DEBUG_ENABLED));
             }
         }
 
-        if (env.containsKey(FORCE_SINGLE_GPU)) {
+        if (System.getenv(FORCE_SINGLE_GPU) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(FORCE_SINGLE_GPU));
+                boolean var = Boolean.parseBoolean(System.getenv(FORCE_SINGLE_GPU));
                 allowMultiGPU(!var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, env.get(FORCE_SINGLE_GPU));
+                log.error("Can't parse {}: [{}]", FORCE_SINGLE_GPU, System.getenv(FORCE_SINGLE_GPU));
             }
         }
 
-        if (env.containsKey(VERBOSE)) {
+        if (System.getenv(VERBOSE) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(VERBOSE));
+                boolean var = Boolean.parseBoolean(System.getenv(VERBOSE));
                 setVerbose(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", VERBOSE, env.get(VERBOSE));
+                log.error("Can't parse {}: [{}]", VERBOSE, System.getenv(VERBOSE));
             }
         }
 
-        if (env.containsKey(USE_PREALLOCATION)) {
+        if (System.getenv(USE_PREALLOCATION) != null) {
             try {
-                boolean var = Boolean.parseBoolean(env.get(USE_PREALLOCATION));
+                boolean var = Boolean.parseBoolean(System.getenv(USE_PREALLOCATION));
                 allowPreallocation(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", USE_PREALLOCATION, env.get(USE_PREALLOCATION));
+                log.error("Can't parse {}: [{}]", USE_PREALLOCATION, System.getenv(USE_PREALLOCATION));
             }
         }
 
-        if (env.containsKey(MAX_DEVICE_CACHE)) {
+        if (System.getenv(MAX_DEVICE_CACHE) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_DEVICE_CACHE));
+                long var = Long.parseLong(System.getenv(MAX_DEVICE_CACHE));
                 setMaximumDeviceCache(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, env.get(MAX_DEVICE_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_CACHE, System.getenv(MAX_DEVICE_CACHE));
             }
         }
 
 
-        if (env.containsKey(MAX_HOST_CACHE)) {
+        if (System.getenv(MAX_HOST_CACHE) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_HOST_CACHE));
+                long var = Long.parseLong(System.getenv(MAX_HOST_CACHE));
                 setMaximumHostCache(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_HOST_CACHE, env.get(MAX_HOST_CACHE));
+                log.error("Can't parse {}: [{}]", MAX_HOST_CACHE, System.getenv(MAX_HOST_CACHE));
             }
         }
 
-        if (env.containsKey(MAX_DEVICE_ALLOCATION)) {
+        if (System.getenv(MAX_DEVICE_ALLOCATION) != null) {
             try {
-                long var = Long.parseLong(env.get(MAX_DEVICE_ALLOCATION));
+                long var = Long.parseLong(System.getenv(MAX_DEVICE_ALLOCATION));
                 setMaximumSingleDeviceAllocation(var);
             } catch (Exception e) {
-                log.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, env.get(MAX_DEVICE_ALLOCATION));
+                log.error("Can't parse {}: [{}]", MAX_DEVICE_ALLOCATION, System.getenv(MAX_DEVICE_ALLOCATION));
             }
         }
 
