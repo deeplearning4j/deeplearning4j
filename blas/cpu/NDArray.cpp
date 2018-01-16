@@ -1653,6 +1653,22 @@ void NDArray<T>::tile(const std::vector<int>& reps, NDArray<T>& target) const {
 }
 
 //////////////////////////////////////////////////////////////////////////
+template <typename T>
+void NDArray<T>::tile(NDArray<T>& target) const {
+        
+    if(rankOf() > target.rankOf())
+        throw "NDArray::tile method - rank of target array must be bigger or equal to the rank of this array !";
+    
+    if(!ShapeUtils<T>::areShapesBroadcastable(*this, target))         
+        throw "NDArray::tile method - shapeInfo of target array is not suitable for tile operation !";
+
+    // fill newBuff, loop through all elements of newBuff 
+    // looping through _buffer goes automatically by means of getSubArrayIndex applying
+    for(int i=0;  i<target.lengthOf(); ++i)        
+        target.putIndexedScalar(i, this->getIndexedScalar(ShapeUtils<T>::getSubArrayIndex(target._shapeInfo, _shapeInfo, i)));
+}
+
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     int NDArray<T>::sizeAt(int dim) const {
         if (dim >= this->rankOf() || dim < -this->rankOf())
@@ -2786,7 +2802,12 @@ void NDArray<T>::streamline(char o) {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray<T>::tileToShape(const std::vector<int>& shape) {
+void NDArray<T>::tileToShape(const std::vector<int>& shape, NDArray<T>* target) {
+
+    if(target != nullptr) {
+        this->tile(*target);
+        return;
+    }
 
     std::vector<int> thisShape(rankOf());
     for(int i = 0; i < rankOf(); ++i)
@@ -2810,10 +2831,10 @@ void NDArray<T>::tileToShape(const std::vector<int>& shape) {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray<T>::tileToShape(const std::initializer_list<int>& shape) {
+void NDArray<T>::tileToShape(const std::initializer_list<int>& shape, NDArray<T>* target) {
 
     const std::vector<int> shapeV(shape);
-    tileToShape(shapeV);
+    tileToShape(shapeV, target);
 }
 
 

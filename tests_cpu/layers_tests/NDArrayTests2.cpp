@@ -344,3 +344,29 @@ TEST_F(NDArrayTest2, tileToShape_test2) {
     ASSERT_TRUE(x.equalsTo(&exp));
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, tileToShape_test3) {    
+
+    NDArray<double> x('c', {2, 2}, {1,2,3,4});
+    NDArray<double> result('c', {2, 2, 2});
+    NDArray<double> exp('c', {2, 2, 2}, {1,2,3,4,1,2,3,4});
+    
+    x.tileToShape({2,2,2}, &result);
+    // result.printIndexedBuffer();
+    
+    ASSERT_TRUE(result.isSameShape(&exp));
+    ASSERT_TRUE(result.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, tileToShape_test4) {
+
+    NDArray<double> x('c', {2, 1, 2}, {1,2,3,4});
+    NDArray<double> result('c', {2, 3, 2});
+    NDArray<double> exp('c', {2, 3, 2}, {1,2,1,2,1,2,3,4,3,4,3,4});
+    
+    x.tileToShape({2,3,2}, &result);
+    
+    ASSERT_TRUE(result.isSameShape(&exp));
+    ASSERT_TRUE(result.equalsTo(&exp));
+}

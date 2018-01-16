@@ -621,6 +621,12 @@ namespace nd4j {
         *  target - where to store result
         */
         void tile(const std::vector<int>& repeats, NDArray<T>& target) const;
+
+        /**
+        *  change an array by repeating it the number of times to acquire the new shape which is the same as target shape        
+        *  target - where to store result
+        */
+        void tile(NDArray<T>& target) const;
         
         /**
         *  returns an array which is result of broadcasting of this and other arrays 
@@ -832,10 +838,12 @@ namespace nd4j {
 
         /**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
-        *  shape - contains new shape to broadcast array to 
+        *
+        *  shape  - contains new shape to broadcast array to 
+        *  target - optional argument, if target != nullptr the resulting array will be placed it target, in opposite case tile operation is done in place
         */
-        void tileToShape(const std::vector<int>& shape);
-        void tileToShape(const std::initializer_list<int>& shape);
+        void tileToShape(const std::vector<int>& shape, NDArray<T>* target = nullptr);
+        void tileToShape(const std::initializer_list<int>& shape, NDArray<T>* target = nullptr);
 
         /**
         *  default destructor
