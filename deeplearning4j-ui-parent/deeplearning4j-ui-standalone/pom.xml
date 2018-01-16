@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-ui-server</artifactId>
+    <artifactId>deeplearning4j-ui-standalone</artifactId>
 
     <profiles>
         <profile>
