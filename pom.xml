@@ -661,26 +661,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
             <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven-jar-plugin.version}</version>
-                <configuration>
-                    <includes>
-                        <include>**/*.so</include>
-                        <include>**/*.so.*</include>
-                        <include>META-INF/*</include>
-                        <include>META-INF/services/**</include>
-                        <include>org.*</include>
-                        <include>**/*.properties</include>
-                        <include>**/*.json</include>
-                        <include>**/*.proto</include>
-                        <include>**/*.class</include>
-                        <include>**/*.dll</include>
-                        <include>**/*.dylib</include>
-                        <include>lib/*</include>
-                    </includes>
-                </configuration>
-            </plugin>
-            <plugin>
                 <artifactId>maven-source-plugin</artifactId>
             </plugin>
             <plugin>

@@ -12,55 +12,12 @@
     <artifactId>deeplearning4j-ui-server</artifactId>
 
     <profiles>
-      <profile>
-        <id>custom-lifecycle</id>
-
-        <activation>
-          <property><name>!skip.custom.lifecycle</name></property>
-        </activation>
-        <build>
-          <plugins>
-
-            <plugin>
-              <groupId>org.apache.portals.jetspeed-2</groupId>
-              <artifactId>jetspeed-mvn-maven-plugin</artifactId>
-              <version>2.3.1</version>
-              <executions>
-                <execution>
-                  <id>compile-and-pack</id>
-                  <phase>compile</phase>
-                  <goals>
-                    <goal>mvn</goal>
-                  </goals>
-                </execution>
-              </executions>
-              <dependencies>
-                <dependency>
-                  <groupId>org.apache.maven.shared</groupId>
-                  <artifactId>maven-invoker</artifactId>
-                  <version>2.2</version>
-                </dependency>
-              </dependencies>
-              <configuration>
-                <targets combine.children="merge">
-
-                  <target>
-                    <id>create-shaded-jars</id>
-                    <dir>@rootdir@/deeplearning4j-ui-parent/deeplearning4j-ui-server/</dir>
-                    <goals>clean,compile,package</goals>
-                    <properties>
-                      <skip.custom.lifecycle>true</skip.custom.lifecycle>
-                    </properties>
-                  </target>
-
-                </targets>
-                <defaultTarget>create-shaded-jars</defaultTarget>
-              </configuration>
-            </plugin>
-
-          </plugins>
-        </build>
-      </profile>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-8.0</id>
+        </profile>
     </profiles>
 
     <build>
@@ -115,21 +72,20 @@
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
 
-                    <artifactSet>
-                        <includes>
-                            <include>com.fasterxml.jackson:*</include>
-                            <include>com.fasterxml.jackson.*:*</include>
-                        </includes>
-                    </artifactSet>
 
-                    <relocations>
-                        <!-- Jackson dependencies -->
-                        <relocation>
-                            <pattern>com.fasterxml.jackson</pattern>
-                            <shadedPattern>org.deeplearning4j.ui.server</shadedPattern>
-                        </relocation>
-                    </relocations>
-
+                    <shadedArtifactAttached>true</shadedArtifactAttached>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>org/datanucleus/**</exclude>
+                                <exclude>META-INF/*.SF</exclude>
+                                <exclude>META-INF/*.DSA</exclude>
+                                <exclude>META-INF/*.RSA</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
                 </configuration>
             </plugin>
             <plugin>
