@@ -18,6 +18,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -2396,4 +2397,96 @@ public class SameDiffTests {
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1,3), interval(2,4), interval(3,4)), subPart.getArr());
     }
+
+    @Test
+    public void testStridedSlice2dBasic(){
+        INDArray inArr = Nd4j.linspace(1,12,12).reshape('c',3,4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice_full = sd.stridedSlice(in, new int[]{0,0}, new int[]{3,4}, new int[]{1,1});
+        SDVariable subPart = sd.stridedSlice(in, new int[]{1,2}, new int[]{3,4}, new int[]{1,1});
+        SDVariable subPart2 = sd.stridedSlice(in, new int[]{0,0}, new int[]{4,5}, new int[]{2,2});
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr, slice_full.getArr());
+        assertEquals(inArr.get(interval(1,3), interval(2,4)), subPart.getArr());
+        assertEquals(inArr.get(interval(0,2,4), interval(0,2,5)), subPart2.getArr());
+    }
+
+
+    @Test
+    public void testStridedSliceBeginEndMask(){
+        INDArray inArr = Nd4j.linspace(1,12,12).reshape('c',3,4);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice1 = sd.stridedSlice(in, new int[]{-999,0}, new int[]{2,4}, new int[]{1,1}, 1<<1, 0, 0, 0, 0);
+        SDVariable slice2 = sd.stridedSlice(in, new int[]{1,0}, new int[]{-999,4}, new int[]{1,1}, 0, 1, 0, 0, 0);
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr.get(NDArrayIndex.interval(0,2),NDArrayIndex.all()), slice1.getArr());
+        assertEquals(inArr.get(NDArrayIndex.interval(1,3),NDArrayIndex.all()), slice2.getArr());
+    }
+
+    @Test
+    public void testStridedSliceEllipsisMask(){
+        INDArray inArr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+
+        //[1:3,...] -> [1:3,:,:]
+        SDVariable slice = sd.stridedSlice(in, new int[]{1}, new int[]{3}, new int[]{1}, 0, 0, 1<<1, 0, 0);
+        //[1:3,...,1:4] -> [1:3,:,1:4]
+        SDVariable slice2 = sd.stridedSlice(in, new int[]{1,1}, new int[]{3,4}, new int[]{1,1}, 0, 0, 1<<1, 0, 0);
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr.get(interval(1,3), all(), all()), slice.getArr());
+        assertEquals(inArr.get(interval(1,3), all(), all()), slice2.getArr());
+    }
+
+    @Test
+    public void testStridedSliceNewAxisMask(){
+        INDArray inArr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice = sd.stridedSlice(in, new int[]{-999,0,0,0},new int[]{-999,3,4,5}, new int[]{-999,1,1,1}, 0, 0, 0, 1, 0);
+
+        INDArray out = sd.execAndEndResult();
+
+        assertArrayEquals(new int[]{1,3,4,5}, inArr.shape());
+        assertEquals(inArr, out.get(point(0), all(), all(), all()));
+    }
+
+    @Test
+    public void testStridedSliceNewAxisMask2(){
+        INDArray inArr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice = sd.stridedSlice(in, new int[]{1,1,-999,1},new int[]{3,3,-999,4}, new int[]{1,1,-999,1}, 0, 0, 0, 1<<2, 0);
+        INDArray out = sd.execAndEndResult();
+
+        assertArrayEquals(new int[]{2,2,1,3}, slice.getArr().shape());
+    }
+
+    @Test
+    public void testStridedSliceShrinkAxisMask(){
+
+        INDArray inArr = Nd4j.linspace(1,60,60).reshape('c',3,4,5);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable slice = sd.stridedSlice(in, new int[]{0,0,0},new int[]{-999,4,5}, new int[]{1,1,1}, 0, 0, 0, 0, 1);
+        SDVariable slice2 = sd.stridedSlice(in, new int[]{2,0,0},new int[]{-999,4,5}, new int[]{1,1,1}, 0, 0, 0, 0, 1);
+        SDVariable slice3 = sd.stridedSlice(in, new int[]{1,2,1},new int[]{-999,-999,5}, new int[]{1,1,1}, 0, 0, 0, 0, 1 | 1<<1);
+
+        sd.execAndEndResult();
+
+        assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
+        assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
+        assertEquals(inArr.get(point(1),point(2), interval(1,5)), slice3.getArr());
+    }
+
 }

@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -44,9 +45,43 @@ import java.util.Map;
  */
 @Slf4j
 public class StridedSlice extends DynamicCustomOp {
-    private int[] begin,strides,end,beginMask,endMask,ellipsisMask,newAxisMask,shrinkAxisMask;
+    private int[] begin;
+    private int[] end;
+    private int[] strides;
+    private int beginMask;
+    private int endMask;
+    private int ellipsisMask;
+    private int newAxisMask;
+    private int shrinkAxisMask;
 
     public StridedSlice() {}
+
+    public StridedSlice(SameDiff sameDiff, SDVariable in, int[] begin, int[] end, int[] strides){
+        this(sameDiff, in, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
+    public StridedSlice(SameDiff sameDiff, SDVariable in, @NonNull int[] begin, @NonNull int[] end, @NonNull int[] strides,
+                        int beginMask, int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
+        super(null, sameDiff, new SDVariable[]{in});
+        this.begin = begin;
+        this.end = end;
+        this.strides = strides;
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+
+        //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
+        addIArgument(beginMask);
+        addIArgument(ellipsisMask);
+        addIArgument(endMask);
+        addIArgument(newAxisMask);
+        addIArgument(shrinkAxisMask);
+        addIArgument(begin);
+        addIArgument(end);
+        addIArgument(strides);
+    }
 
 
     @Override
@@ -217,9 +252,7 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = outputVariables()[0];
-
-        return Collections.singletonList(ret);
+        throw new UnsupportedOperationException("Not yet supported/implemented");
     }
 
 }

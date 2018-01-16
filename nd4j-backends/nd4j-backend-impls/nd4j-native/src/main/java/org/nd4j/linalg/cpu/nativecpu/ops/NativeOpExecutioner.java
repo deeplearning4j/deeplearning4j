@@ -1519,6 +1519,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int cnt= 0;
         val inputArgs = op.inputArguments();
         for (val in: inputArgs) {
+            if(in == null){
+                throw new NullPointerException("Input argument is null");
+            }
             inputBuffers.put(cnt, in.data().addressPointer());
             inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
         }

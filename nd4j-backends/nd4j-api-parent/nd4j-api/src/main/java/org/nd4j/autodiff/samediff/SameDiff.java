@@ -3706,6 +3706,25 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable stridedSlice(SDVariable input, int[] begin, int[] end, int[] strides){
+        return stridedSlice(null, input, begin, end, strides);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable input, int[] begin, int[] end, int[] strides){
+        return stridedSlice(name, input, begin, end, strides, 0, 0, 0, 0, 0);
+    }
+
+    public SDVariable stridedSlice(SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
+        return stridedSlice(null, in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    public SDVariable stridedSlice(String name, SDVariable in, int[] begin, int[] end, int[] strides, int beginMask,
+                                   int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask){
+        SDVariable ret = f().stridedSlice(in, begin, end, strides, beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     /**
      * Generate the variables based on the given input op
