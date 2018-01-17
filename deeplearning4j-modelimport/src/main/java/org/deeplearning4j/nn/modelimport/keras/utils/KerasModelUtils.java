@@ -127,9 +127,9 @@ public class KerasModelUtils {
         String kerasBackend = null;
         if (!modelConfig.containsKey(config.getFieldBackend())) {
             // TODO: H5 files unfortunately do not seem to have this property, only the json files.
-//            log.warn("Could not read keras backend used (no "
-//                    + config.getFieldBackend() + " field found) \n"
-//            );
+            log.warn("Could not read keras backend used (no "
+                    + config.getFieldBackend() + " field found) \n"
+            );
         } else {
             kerasBackend = (String) modelConfig.get(config.getFieldBackend());
         }
@@ -167,7 +167,7 @@ public class KerasModelUtils {
      * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
     public static void importWeights(Hdf5Archive weightsArchive, String weightsRoot, Map<String, KerasLayer> layers,
-                                     int kerasVersion)
+                                     int kerasVersion, String backend)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         // check to ensure naming scheme doesn't include forward slash
         boolean includesSlash = false;

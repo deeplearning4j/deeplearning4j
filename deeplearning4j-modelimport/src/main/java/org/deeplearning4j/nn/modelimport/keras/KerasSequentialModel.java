@@ -130,7 +130,7 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Store weights in layers. */
         if (weightsArchive != null)
-            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion);
+            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion, kerasBackend);
     }
 
     public KerasSequentialModel() {

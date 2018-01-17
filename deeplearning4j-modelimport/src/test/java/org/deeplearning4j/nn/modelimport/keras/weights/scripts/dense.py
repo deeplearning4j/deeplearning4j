@@ -1,5 +1,5 @@
 import keras
-from keras.models import Sequential
+from keras.models import Sequential, save_model
 from keras.layers import Dense
 import keras.backend as K
 import numpy as np
@@ -19,6 +19,8 @@ model = Sequential()
 model.add(Dense(n_out, input_shape=(n_in,)))
 
 model.set_weights([weights, bias])
+
+model.compile(loss='mse', optimizer='adam')
 
 print("Saving model with single dense layer for backend {} and keras major version {}".format(backend, major_version))
 model.save("{}dense_{}_{}.h5".format(base_path, backend, major_version))
