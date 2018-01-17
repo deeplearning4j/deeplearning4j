@@ -232,7 +232,8 @@ public class KerasModelUtils {
                         // TODO: find a better way to do this
                         if (layerName.contains("dense") || layerName.contains("conv") || layerName.contains("lstm")
                                 || layerName.contains("rnn") || layerName.contains("gru")
-                                || layerName.contains("embedding")) {
+                                || layerName.contains("embedding") || layerName.contains("batch")
+                                || layerName.contains("locally")) {
                             layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
                         } else {
                             layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
