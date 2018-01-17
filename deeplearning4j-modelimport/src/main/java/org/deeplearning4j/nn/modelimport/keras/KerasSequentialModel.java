@@ -130,7 +130,7 @@ public class KerasSequentialModel extends KerasModel {
 
         /* Store weights in layers. */
         if (weightsArchive != null)
-            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers);
+            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion);
     }
 
     public KerasSequentialModel() {
@@ -181,9 +181,11 @@ public class KerasSequentialModel extends KerasModel {
                         listBuilder.inputPreProcessor(layerIndex, preprocessor);
                 }
                 listBuilder.layer(layerIndex++, layer.getLayer());
-                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer))
-                    log.warn("Model cannot be trained: output layer " + layer.getLayerName()
-                            + " is not an IOutputLayer (no loss function specified)");
+                if (this.outputLayerNames.contains(layer.getLayerName()) && !(layer.getLayer() instanceof IOutputLayer)) {
+                    // TODO: since this is always true right now, it just clutters the output.
+//                    log.warn("Model cannot be trained: output layer " + layer.getLayerName()
+//                            + " is not an IOutputLayer (no loss function specified)");
+                }
             } else if (layer.getVertex() != null)
                 throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name "
                         + layer.getClassName() + ", layer name " + layer.getLayerName() + ")");
