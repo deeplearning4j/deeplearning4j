@@ -26,6 +26,8 @@ public class TFGraphTestAllLibnd4j {
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
+            "ssd_mobilenet_v1_coco",
+            "yolov2_608x608",
             "inception_v3_with_softmax"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
