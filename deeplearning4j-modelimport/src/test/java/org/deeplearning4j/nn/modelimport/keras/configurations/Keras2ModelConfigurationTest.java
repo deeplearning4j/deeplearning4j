@@ -39,6 +39,12 @@ public class Keras2ModelConfigurationTest {
     ClassLoader classLoader = getClass().getClassLoader();
 
     @Test
+    public void l1l2RegularizerDenseTfConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/l1l2_regularizer_dense_tf_keras_2_config.json");
+    }
+
+
+    @Test
     public void dgaClassifierTfConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/keras2_dga_classifier_tf_config.json");
     }
