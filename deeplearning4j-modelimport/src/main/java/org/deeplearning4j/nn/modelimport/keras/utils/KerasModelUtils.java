@@ -88,7 +88,7 @@ public class KerasModelUtils {
      * Determine Keras major version
      *
      * @param modelConfig parsed model configuration for keras model
-     * @param config basic model configuration (KerasModelConfiguration)
+     * @param config      basic model configuration (KerasModelConfiguration)
      * @return Major Keras version (1 or 2)
      * @throws InvalidKerasConfigurationException
      */
@@ -107,7 +107,7 @@ public class KerasModelUtils {
                 kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
             } else {
                 throw new InvalidKerasConfigurationException(
-                        "Keras version was not readable (" +  config.getFieldKerasVersion() + " provided)"
+                        "Keras version was not readable (" + config.getFieldKerasVersion() + " provided)"
                 );
             }
         }
@@ -118,7 +118,7 @@ public class KerasModelUtils {
      * Determine Keras backend
      *
      * @param modelConfig parsed model configuration for keras model
-     * @param config basic model configuration (KerasModelConfiguration)
+     * @param config      basic model configuration (KerasModelConfiguration)
      * @return Keras backend string
      * @throws InvalidKerasConfigurationException
      */
@@ -126,20 +126,19 @@ public class KerasModelUtils {
             throws InvalidKerasConfigurationException {
         String kerasBackend = null;
         if (!modelConfig.containsKey(config.getFieldBackend())) {
-            log.warn("Could not read keras backend used (no "
-                    + config.getFieldBackend() + " field found) \n"
-            );
+            // TODO: H5 files unfortunately do not seem to have this property, only the json files.
+//            log.warn("Could not read keras backend used (no "
+//                    + config.getFieldBackend() + " field found) \n"
+//            );
         } else {
             kerasBackend = (String) modelConfig.get(config.getFieldBackend());
-            }
+        }
         return kerasBackend;
     }
 
-    public static String findParameterName(String parameter, String[] fragmentList) {
+    private static String findParameterName(String parameter, String[] fragmentList) {
         Matcher layerNameMatcher =
                 Pattern.compile(fragmentList[fragmentList.length - 1]).matcher(parameter);
-        if (!(layerNameMatcher.find()))
-            log.warn("Unable to match layer parameter name " + parameter + " for stored weights.");
         String parameterNameFound = layerNameMatcher.replaceFirst("");
 
         /* Usually layer name is separated from parameter name by an underscore. */
@@ -164,10 +163,11 @@ public class KerasModelUtils {
      * Store weights to import with each associated Keras layer.
      *
      * @param weightsArchive Hdf5Archive
-     * @param weightsRoot
-     * @throws InvalidKerasConfigurationException
+     * @param weightsRoot    root of weights in HDF5 archive
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
-    public static void importWeights(Hdf5Archive weightsArchive, String weightsRoot, Map<String, KerasLayer> layers)
+    public static void importWeights(Hdf5Archive weightsArchive, String weightsRoot, Map<String, KerasLayer> layers,
+                                     int kerasVersion)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         // check to ensure naming scheme doesn't include forward slash
         boolean includesSlash = false;
@@ -225,7 +225,23 @@ public class KerasModelUtils {
                 if (foundTfGroups) {
                     layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
                 } else {
-                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                    if (kerasVersion == 2) {
+                        // For theano in keras 2 the weights are nested, but for parameterless layers this
+                        // next line will throw an HDF5 group error. This is inessential, as the model still
+                        // runs, but might lead to confusion to end users. So we try to catch this here.
+                        // TODO: find a better way to do this
+                        if (layerName.contains("dense") || layerName.contains("conv") || layerName.contains("lstm")
+                                || layerName.contains("rnn") || layerName.contains("gru")
+                                || layerName.contains("embedding") || layerName.contains("batch")
+                                || layerName.contains("locally")) {
+                            layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                        } else {
+                            layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                        }
+
+                    } else {
+                        layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                    }
 
                 }
             }
@@ -239,7 +255,7 @@ public class KerasModelUtils {
                 throw new InvalidKerasConfigurationException(
                         "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
                                 + " trainable params (named " + layerName + ")");
-            Map<String, INDArray> weights = new HashMap<String, INDArray>();
+            Map<String, INDArray> weights = new HashMap<>();
 
             for (String layerParamName : layerParamNames) {
                 String paramName = KerasModelUtils.findParameterName(layerParamName, layerFragments);
@@ -251,7 +267,11 @@ public class KerasModelUtils {
                         paramValue = weightsArchive.readDataSet(
                                 layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
                     } else {
-                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                        if (kerasVersion == 2) {
+                            paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                        } else {
+                            paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                        }
                     }
                 }
                 weights.put(paramName, paramValue);

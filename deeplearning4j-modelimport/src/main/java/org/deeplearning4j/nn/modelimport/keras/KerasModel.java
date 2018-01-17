@@ -166,7 +166,7 @@ public class KerasModel {
 
         /* Store weights in layers. */
         if (weightsArchive != null)
-            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers);
+            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion);
     }
 
     /**
