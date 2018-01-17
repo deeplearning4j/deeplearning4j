@@ -20,8 +20,11 @@ package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -112,20 +115,26 @@ public class KerasBidirectional extends KerasLayer {
 
         innerRnnConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasMajorVersion);
 
-        Layer rnnLayer;
         rnnClass = (String) innerRnnConfig.get("class_name");
         if (rnnClass.equals("LSTM")) {
             kerasRnnlayer =  new KerasLstm(innerRnnConfig, enforceTrainingConfig);
-            rnnLayer = ( (KerasLstm) kerasRnnlayer).getLSTMLayer();
+            try {
+                LSTM rnnLayer = (LSTM) ((KerasLstm) kerasRnnlayer).getLSTMLayer();
+                this.layer = new Bidirectional(mode, rnnLayer);
+
+            } catch (Exception e) {
+                LastTimeStep rnnLayer = (LastTimeStep) ((KerasLstm) kerasRnnlayer).getLSTMLayer();
+                this.layer = new Bidirectional(mode, rnnLayer);
+            }
         } else if (rnnClass.equals("SimpleRNN")) {
             kerasRnnlayer = new KerasSimpleRnn(innerRnnConfig, enforceTrainingConfig);
-            rnnLayer = ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
+            SimpleRnn rnnLayer = (SimpleRnn) ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
+            this.layer = new Bidirectional(mode, rnnLayer);
         } else {
             throw new UnsupportedKerasConfigurationException("Currently only two types of recurrent Keras layers are" +
                     "supported, 'LSTM' and 'SimpleRNN'. You tried to load a layer of class:" + rnnClass );
         }
 
-       this.layer = new Bidirectional(mode, rnnLayer);
     }
 
     /**
@@ -169,7 +178,7 @@ public class KerasBidirectional extends KerasLayer {
      * @return number of trainable parameters
      */
     @Override
-    public int getNumParams() { return  kerasRnnlayer.getNumParams(); }
+    public int getNumParams() { return 2 * kerasRnnlayer.getNumParams(); }
 
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.

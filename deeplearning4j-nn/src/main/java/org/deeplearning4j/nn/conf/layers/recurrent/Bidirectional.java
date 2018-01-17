@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
@@ -73,7 +74,7 @@ public class Bidirectional extends Layer {
      * @param layer layer to wrap
      */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer){
-        if(!(layer instanceof BaseRecurrentLayer)){
+        if(!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep)){
             throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
                     "Got class: " + layer.getClass());
         }
@@ -119,11 +120,21 @@ public class Bidirectional extends Layer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         InputType outOrig = fwd.getOutputType(layerIndex, inputType);
-        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent)outOrig;
-        if(mode == Mode.CONCAT){
-            return InputType.recurrent(2 * r.getSize());
+
+        if (fwd instanceof LastTimeStep) {
+            InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) outOrig;
+            if(mode == Mode.CONCAT){
+                return InputType.feedForward(2 * ff.getSize());
+            } else {
+                return ff;
+            }
         } else {
-            return r;
+            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outOrig;
+            if (mode == Mode.CONCAT) {
+                return InputType.recurrent(2 * r.getSize());
+            } else {
+                return r;
+            }
         }
     }
 
