@@ -954,6 +954,7 @@ public class TestComputationGraphNetwork {
                         .addLayer("dense", new DenseLayer.Builder().nIn(1).nOut(1).build(), "drop")
                         .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                 .build(), "dense")
+                        .allowDisconnected(true)
                         .setOutputs("loss").build();
 
         ComputationGraph g = new ComputationGraph(c);

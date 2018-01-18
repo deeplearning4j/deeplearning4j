@@ -255,7 +255,7 @@ public class WorkspaceTests {
                 }
 
                 b.layer(new RnnOutputLayer.Builder().nIn(10).nOut(10).build());
-                gb.addLayer("out", new RnnOutputLayer.Builder().nIn(10).nOut(10).build(), "in");
+                gb.addLayer("out", new RnnOutputLayer.Builder().nIn(10).nOut(10).build(), "1");
                 gb.setOutputs("out");
 
                 MultiLayerConfiguration conf = b.build();
