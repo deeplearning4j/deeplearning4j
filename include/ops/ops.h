@@ -535,6 +535,10 @@ namespace simdOps {
 		}
 		 */
 
+		op_def static T op(T d1, T d2) {
+            return (int)d1 % (int)d2;
+        }
+
 		op_def static T op(T d1, T d2, T *params) {
 			return (int)d1 % (int)d2;
 		}

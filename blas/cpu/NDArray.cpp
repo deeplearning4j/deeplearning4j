@@ -253,12 +253,59 @@ template <typename T>
 ////////////////////////////////////////////////////////////////////////
 #ifndef __JAVACPP_HACK__
     template<typename T>
+    void NDArray<T>::applyTriplewiseLambda(NDArray<T>* second, NDArray<T> *third, const std::function<T(T, T, T)>& func, NDArray<T>* target) {
+        if (target == nullptr)
+            target = this;
+
+        if (second == nullptr) {
+            nd4j_printf("applyTriplewiseLambda requires three operands to be valid NDArrays, but Second is NULL\n","");
+            throw "second is null";
+        }
+
+        if (third == nullptr) {
+            nd4j_printf("applyTriplewiseLambda requires three operands to be valid NDArrays, but Third is NULL\n","");
+            throw "third is null";
+        }
+
+        if (this->lengthOf() != second->lengthOf() || this->lengthOf() != third->lengthOf() || !this->isSameShape(second) || !this->isSameShape(third)) {
+            nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
+            throw "Shapes mismach";
+        }        
+
+        if (this->ordering() == second->ordering() && this->ordering() == third->ordering()  && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == second->ews() && this->ews() == third->ews()) {
+#pragma omp parallel for simd schedule(guided)
+            for (int e = 0; e < this->lengthOf(); e++)
+                target->_buffer[e] = func(this->_buffer[e], second->_buffer[e], third->_buffer[e]);
+        } else {
+            int tCoord[MAX_RANK];
+            int uCoord[MAX_RANK];
+            int vCoord[MAX_RANK];
+            int zCoord[MAX_RANK]; 
+
+            #pragma omp parallel for schedule(guided) private(tCoord, uCoord, vCoord, zCoord)
+            for (int e = 0; e < this->lengthOf(); e++) {
+                shape::ind2subC(this->rankOf(), this->shapeOf(), e, tCoord);
+                shape::ind2subC(second->rankOf(), second->shapeOf(), e, uCoord);
+                shape::ind2subC(third->rankOf(), third->shapeOf(), e, vCoord);
+                shape::ind2subC(target->rankOf(), target->shapeOf(), e, zCoord);
+
+                Nd4jIndex tOffset = shape::getOffset(0, this->shapeOf(), this->stridesOf(), tCoord, this->rankOf());
+                Nd4jIndex uOffset = shape::getOffset(0, second->shapeOf(), second->stridesOf(), uCoord, second->rankOf());
+                Nd4jIndex vOffset = shape::getOffset(0, third->shapeOf(), third->stridesOf(), vCoord, third->rankOf());
+                Nd4jIndex zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), zCoord, target->rankOf());
+
+                target->_buffer[zOffset] = func(this->_buffer[tOffset], second->_buffer[uOffset], third->_buffer[vOffset]);
+            }
+        }
+    }
+
+    template<typename T>
     void NDArray<T>::applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target) {
         if (target == nullptr)
             target = this;
 
         if (other == nullptr) {
-            nd4j_printf("applyPairwiseLambda requires both operands to be valid NDArrays, both Y is NULL\n","");
+            nd4j_printf("applyPairwiseLambda requires both operands to be valid NDArrays, but Y is NULL\n","");
             throw "Other is null";
         }
 

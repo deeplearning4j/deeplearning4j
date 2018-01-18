@@ -589,6 +589,49 @@ int* ShapeUtils<T>::evalDiagShapeInfo(const NDArray<T>& arr){
     return outputShapeInfo;
 }
 
+template<typename T>
+std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(int *operand, int *result) {
+    const int xRank = shape::rank(operand);
+    const int zRank = shape::rank(result);
+    std::vector<int> axis;
+
+    int *xShape = shape::shapeOf(operand);
+    int *zShape = shape::shapeOf(result);
+
+    int minRank = nd4j::math::nd4j_min<int>(xRank, zRank);
+    int maxRank = nd4j::math::nd4j_max<int>(xRank, zRank);
+
+    if (xRank == zRank) {
+        for (int e = -1; e > -minRank; e--) {
+            int o = shape::sizeAt(operand, e);
+            int r = shape::sizeAt(result, e);
+
+            if (o != r)
+                axis.emplace_back(e + maxRank);
+        } 
+    } else if (xRank < zRank) {
+        for (int e = -1; e > -minRank; e--) {
+            int o = shape::sizeAt(operand, e);
+            int r = shape::sizeAt(result, e);
+
+            if (o != r)
+                axis.emplace_back(e + maxRank);
+        } 
+
+        // adding inner dimensions
+        for (int e = 0; e < zRank - xRank; e++) 
+            axis.emplace_back(e);
+    } else {
+        // this isn't possible
+    }
+
+    // FIXME: eventually we'd like to get rid of sort 
+    if (axis.size() > 1)
+        std::sort(axis.begin(), axis.end());
+
+    return axis;
+}
+
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;

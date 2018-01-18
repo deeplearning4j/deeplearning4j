@@ -396,5 +396,17 @@ namespace nd4j {
          * 1 - vector or tensor B
          */
         DECLARE_OP(cross, 2, 1, false);
+
+        /**
+         * 
+         * 
+         */
+        DECLARE_CUSTOM_OP(space_to_batch, 3, 1, false, 0, -2);
+
+        /**
+         * 
+         * 
+         */
+        DECLARE_CUSTOM_OP(batch_to_space, 3, 1, false, 0, -2);
     }
 }

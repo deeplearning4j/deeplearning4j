@@ -19,18 +19,27 @@ namespace nd4j {
             REQUIRE_TRUE(weights->rankOf() == 5, 0, "Weights should be 5D, got %i instead", weights->rankOf());
             REQUIRE_TRUE(input->rankOf() == 5, 0, "Input should be 5D, got %i instead", input->rankOf());
 
+            // strides
             int dT = INT_ARG(0);
             int dW = INT_ARG(1);
             int dH = INT_ARG(2);
+
+            // padding
             int pT = INT_ARG(3);
             int pW = INT_ARG(4);
             int pH = INT_ARG(5);
+
+            // dilation
             int dilationT = INT_ARG(6);
             int dilationW = INT_ARG(7);
             int dilationH = INT_ARG(8);
+
+            // output padding
             int aT = INT_ARG(9);
             int aW = INT_ARG(10);
             int aH = INT_ARG(11);
+
+            // bias
             bool biasUsed = INT_ARG(12) != 0;
 
 
@@ -116,18 +125,27 @@ namespace nd4j {
             int* input = inputShape->at(0);
             int* weights = inputShape->at(1);
 
+            // strides
             int dT = INT_ARG(0);
             int dW = INT_ARG(1);
             int dH = INT_ARG(2);
+
+            // padding 
             int pT = INT_ARG(3);
             int pW = INT_ARG(4);
             int pH = INT_ARG(5);
+
+            // dilation
             int dilationT = INT_ARG(6);
             int dilationW = INT_ARG(7);
             int dilationH = INT_ARG(8);
+
+            // output padding
             int aT = INT_ARG(9);
             int aW = INT_ARG(10);
             int aH = INT_ARG(11);
+
+            // bias
             bool biasUsed = INT_ARG(12) != 0;
 
             int *shapeOf;

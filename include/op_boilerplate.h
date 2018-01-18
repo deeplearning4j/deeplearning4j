@@ -1556,12 +1556,15 @@ struct __registratorDouble_##NAME {\
 
 #define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
 #define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
+#define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
 
 #define LAMBDA_F(X, ...) [__VA_ARGS__] (float X) -> float
 #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
+#define LAMBDA_FFF(t, u, v, ...) [__VA_ARGS__] (float t, float u, float v) -> float
 
 #define LAMBDA_T(X, ...) [__VA_ARGS__] (T X) -> T
 #define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
+#define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
 
 
 #endif

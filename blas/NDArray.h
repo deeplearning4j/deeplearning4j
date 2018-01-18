@@ -464,6 +464,8 @@ namespace nd4j {
         *  target - where to store result
         */ 
         void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+
+        void applyTriplewiseLambda(NDArray<T>* second, NDArray<T> *third, const std::function<T(T, T, T)>& func, NDArray<T>* target = nullptr);
 #endif
 
         /**

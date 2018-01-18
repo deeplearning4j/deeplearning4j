@@ -86,5 +86,95 @@ namespace nd4j {
 
             return shapeList;
         }
+
+
+        CUSTOM_OP_IMPL(divide_bp, 3, 2, false, 0, 0) {
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto epsNext = INPUT_VARIABLE(2);
+
+            auto gradX = OUTPUT_VARIABLE(0);
+            auto gradY = OUTPUT_VARIABLE(1);
+
+            auto lambdaX = LAMBDA_TT(_e, _y) {
+                return _e / _y;
+            };
+
+            auto lambdaY = LAMBDA_TTT(_e, _x, _y) {
+                return _e * -_x / (_y * _y);
+            };
+
+
+            if (x->isSameShape(y)) {
+                // PWT case case
+
+                // X gradient
+                epsNext->applyPairwiseLambda(y, lambdaX, gradX);
+
+                // Y gradient
+                epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+
+            } else if (y->isScalar()) {
+                // scalar case
+                T _y = y->getScalar(0);
+                auto lambdaS = LAMBDA_T(_e, _y) {
+                    return _e / _y;
+                };
+
+                T tmp = epsNext->template reduceNumber<simdOps::Sum<T>>();
+                T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
+                gradY->assign(tmp * -tmpX / (_y * _y));
+                
+                epsNext->applyLambda(lambdaS, gradX);
+            } else {
+                // broadcast case
+
+                auto preX = *epsNext / *y;
+
+                NDArray<T> negX(*x);
+                x->template applyTransform<simdOps::Neg<T>>(&negX);
+                auto preY = *epsNext * negX / ((*y) * (*y));
+
+                auto axisX = ShapeUtils<T>::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
+                auto axisY = ShapeUtils<T>::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
+
+                if (axisX.size() > 0) {
+                    auto sum = preX.template reduceAlongDimension<simdOps::Sum<T>>(axisX);
+                    gradX->assign(sum);
+                    delete sum;
+                } else 
+                    gradX->assign(preX);
+
+                if (axisY.size() > 0) {
+                    auto sum = preY.template reduceAlongDimension<simdOps::Sum<T>>(axisY);
+                    gradY->assign(sum);
+                    delete sum;
+                } else
+                    gradY->assign(preY);
+            }
+
+            return Status::OK();
+        }
+
+        DECLARE_SHAPE_FN(divide_bp) {
+            auto x = inputShape->at(0);
+            auto y = inputShape->at(1);
+            auto e = inputShape->at(2);
+
+            // eps always has shape of x
+            // grad always has shape of y
+
+            int *shapeE;
+            int *shapeG;
+            ALLOCATE(shapeE, block.getWorkspace(), shape::shapeInfoLength(x), int);
+            ALLOCATE(shapeG, block.getWorkspace(), shape::shapeInfoLength(y), int);
+
+            REPLICATE_SHAPE(x, shapeE);
+            REPLICATE_SHAPE(y, shapeG);
+
+            auto shapeList = new ShapeList({shapeE, shapeG});
+
+            return shapeList;
+        }
     }
 }

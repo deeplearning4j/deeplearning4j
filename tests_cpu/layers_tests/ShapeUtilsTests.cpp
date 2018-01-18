@@ -199,3 +199,33 @@ TEST_F(ShapeUtilsTests, Test_Strings_1) {
     ASSERT_EQ(exp, s);
 }
 
+TEST_F(ShapeUtilsTests, Test_Backward_Axis_1) {
+    NDArray<float> x('c', {2, 4, 3});
+    NDArray<float> y('c', {4, 3});
+    std::vector<int> exp({0});
+
+    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+
+    ASSERT_EQ(exp, z);
+}
+
+TEST_F(ShapeUtilsTests, Test_Backward_Axis_2) {
+    NDArray<float> x('c', {2, 4, 4, 3});
+    NDArray<float> y('c', {4, 1, 3});
+    std::vector<int> exp({0, 2});
+
+    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+
+    ASSERT_EQ(exp, z);
+}
+
+
+TEST_F(ShapeUtilsTests, Test_Backward_Axis_3) {
+    NDArray<float> x('c', {2, 4, 4, 3});
+    NDArray<float> y('c', {2, 1, 1, 3});
+    std::vector<int> exp({1, 2});
+
+    std::vector<int> z = ShapeUtils<float>::evalBroadcastBackwardAxis(y.shapeInfo(), x.shapeInfo());
+
+    ASSERT_EQ(exp, z);
+}

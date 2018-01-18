@@ -85,5 +85,41 @@ namespace nd4j {
 
             return shapeList;
         }
+
+        CUSTOM_OP_IMPL(reversemod_bp, 3, 2, false, 0, 0) {
+            // PLEASE NOTE: we're just passing eps down the line here
+            auto x = INPUT_VARIABLE(0);
+            auto y = INPUT_VARIABLE(1);
+            auto epsNext = INPUT_VARIABLE(2);
+
+            auto gradX = OUTPUT_VARIABLE(0);
+            auto gradY = OUTPUT_VARIABLE(1);
+
+            gradY->assign((T) 0.0f);
+            gradX->assign((T) 0.0f);
+
+            return Status::OK();
+        }
+
+        DECLARE_SHAPE_FN(reversemod_bp) {
+            auto x = inputShape->at(0);
+            auto y = inputShape->at(1);
+            auto e = inputShape->at(2);
+
+            // eps always has shape of x
+            // grad always has shape of y
+
+            int *shapeE;
+            int *shapeG;
+            ALLOCATE(shapeE, block.getWorkspace(), shape::shapeInfoLength(x), int);
+            ALLOCATE(shapeG, block.getWorkspace(), shape::shapeInfoLength(y), int);
+
+            REPLICATE_SHAPE(x, shapeE);
+            REPLICATE_SHAPE(y, shapeG);
+
+            auto shapeList = new ShapeList({shapeE, shapeG});
+
+            return shapeList;
+        }
     }
 }

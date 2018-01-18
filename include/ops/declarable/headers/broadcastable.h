@@ -18,6 +18,7 @@ namespace nd4j {
          * This operation returns Z = Max(X, Y)
          */
         DECLARE_CUSTOM_OP(maximum, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(maximum_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -29,6 +30,7 @@ namespace nd4j {
          * This operation returns Z = Min(X, Y)
          */
         DECLARE_CUSTOM_OP(minimum, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(minimum_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -40,6 +42,7 @@ namespace nd4j {
          * This operation returns Z = Add(X, Y)
          */
         DECLARE_CUSTOM_OP(add, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(add_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -51,6 +54,7 @@ namespace nd4j {
          * This operation returns Z = Subtract(X, Y)
          */
         DECLARE_CUSTOM_OP(subtract, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(subtract_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -62,6 +66,7 @@ namespace nd4j {
          * This operation returns Z = Subtract(Y, X)
          */
         DECLARE_CUSTOM_OP(reversesubtract, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(reversesubtract_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -73,6 +78,8 @@ namespace nd4j {
          * This operation returns Z = ReverseMod(X, Y) == Mod(Y, X)
          */
         DECLARE_CUSTOM_OP(reversemod, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(reversemod_bp, 3, 2, true, 0, 0);
+        
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -84,6 +91,7 @@ namespace nd4j {
          * This operation returns Z = Subtract(X, Y) * Subtract(X, Y)
          */
         DECLARE_CUSTOM_OP(squaredsubtract, 2, 1, true, 0, 0)
+        DECLARE_CUSTOM_OP(squaredsubtract_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -95,6 +103,7 @@ namespace nd4j {
          * This operation returns Z = Multiply(X, Y)
          */
         DECLARE_CUSTOM_OP(multiply, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(multiply_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -106,6 +115,7 @@ namespace nd4j {
          * This operation returns Z = Divide(X, Y)
          */
         DECLARE_CUSTOM_OP(divide, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(divide_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -117,6 +127,7 @@ namespace nd4j {
          * This operation returns Z = Divide(Y, x)
          */
         DECLARE_CUSTOM_OP(reversedivide, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(reversedivide_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -128,6 +139,10 @@ namespace nd4j {
          * This operation returns Z = FloorMod(X, Y)
          */
         DECLARE_CUSTOM_OP(floormod, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(floormod_bp, 3, 2, true, 0, 0);
+
+        DECLARE_CUSTOM_OP(mod, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(mod_bp, 3, 2, true, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -139,6 +154,7 @@ namespace nd4j {
          * This operation returns Z = FloorDiv(X, Y)
          */
         DECLARE_CUSTOM_OP(floordiv, 2, 1, true, 0, 0)
+        DECLARE_CUSTOM_OP(floordiv_bp, 2, 1, true, 0, 0)
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -150,6 +166,7 @@ namespace nd4j {
          * This operation returns Z = Divide(X, Y)
          */
         DECLARE_CUSTOM_OP(realdiv, 2, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(realdiv_bp, 3, 2, false, 0, 0);
 
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
@@ -161,5 +178,6 @@ namespace nd4j {
          * This operation returns Z = Assign(X, Y)
          */
         DECLARE_CUSTOM_OP(assign, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(assign_bp, 3, 2, false, 0, 0);
     }
 }

@@ -14,5 +14,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(squeeze, 1, 1, true, 0, -2);
         DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, 1);
         DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -2);
+        DECLARE_CUSTOM_OP(tile_to_shape, 1, 1, true, 0, -1);
     }
 }

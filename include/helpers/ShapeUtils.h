@@ -75,6 +75,8 @@ namespace nd4j {
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
         static int* evalDiagShapeInfo(const NDArray<T>& arr);
+
+        static std::vector<int> evalBroadcastBackwardAxis(int *operand, int *result);
     };
 
 

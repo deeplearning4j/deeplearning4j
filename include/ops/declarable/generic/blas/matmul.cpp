@@ -176,6 +176,11 @@ namespace nd4j {
                 shape[1] = tmpB[2];
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                 shape::shapeBufferFortran(2, shape, newShape);
+
+                RELEASE(shape, block.getWorkspace());
+                RELEASE(tmpA, block.getWorkspace());
+                RELEASE(tmpB, block.getWorkspace());
+
                 return new ShapeList(newShape);
             } else if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
                 // just scalar vs scalar
@@ -191,6 +196,11 @@ namespace nd4j {
                     int *newShape;
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
                     ShapeBuilder::shapeVector(tmpA[1], newShape);
+
+                    RELEASE(shape, block.getWorkspace());
+                    RELEASE(tmpA, block.getWorkspace());
+                    RELEASE(tmpB, block.getWorkspace());
+
                     return new ShapeList(newShape);
                 }
             } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {

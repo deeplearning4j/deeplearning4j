@@ -21,5 +21,6 @@
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ShapeList.h>
+#include <Status.h>
 
 #endif
