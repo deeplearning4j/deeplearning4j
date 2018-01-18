@@ -86,13 +86,13 @@ public class ShiftVertexTest {
                         .addLayer("identityshiftvertex",
                                         new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "shiftvertex")
-                        .setOutputs("identityshiftvertex").build();
+                        .setOutputs("identityshiftvertex", "denselayer").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
 
         // We can call outputSingle, because we only have a single output layer. It has nothing to do with minibatches.
-        INDArray output = cg.outputSingle(true, input);
+        INDArray output = cg.output(true, input)[0];
         INDArray target = Nd4j.zeros(input.shape());
         target.addi(input);
         target.addi(sf);

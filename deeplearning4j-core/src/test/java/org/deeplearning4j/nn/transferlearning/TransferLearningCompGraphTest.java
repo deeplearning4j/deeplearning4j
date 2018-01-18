@@ -277,7 +277,7 @@ public class TransferLearningCompGraphTest {
                                                         .activation(Activation.SOFTMAX)
                                                         .build(),
                                                 "layer5")
-                                        .setOutputs("layer5").backprop(true).pretrain(false).build());
+                                        .setOutputs("layer6").backprop(true).pretrain(false).build());
         modelToFineTune.init();
 
         //this will override the learning configuration set in the model

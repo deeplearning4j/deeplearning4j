@@ -157,7 +157,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 nTArgs = 1;
                 break;
             case SUM:
-            case NONE:
             default:
                 throw new RuntimeException("Not supported: " + layerConf().getPoolingType());
         }
@@ -281,8 +280,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                                 (double) pnorm, outH, outW, output);
 
                 break;
-            case NONE:
-                return input;
             default:
                 throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
                                 + " " + layerId());

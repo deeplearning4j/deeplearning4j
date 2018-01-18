@@ -151,6 +151,7 @@ public class TestMemoryReports {
             }
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs(inputs)
+                            .allowDisconnected(true)
                             .addVertex("gv", p.getFirst(), layerInputs).setOutputs("gv").build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());

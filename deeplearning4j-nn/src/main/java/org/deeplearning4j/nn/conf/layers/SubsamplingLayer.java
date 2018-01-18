@@ -42,7 +42,7 @@ public class SubsamplingLayer extends Layer {
     protected double eps;
 
     public enum PoolingType {
-        MAX, AVG, SUM, PNORM, NONE;
+        MAX, AVG, SUM, PNORM;
 
         public org.deeplearning4j.nn.conf.layers.PoolingType toPoolingType() {
             switch (this) {
@@ -54,8 +54,6 @@ public class SubsamplingLayer extends Layer {
                     return org.deeplearning4j.nn.conf.layers.PoolingType.SUM;
                 case PNORM:
                     return org.deeplearning4j.nn.conf.layers.PoolingType.PNORM;
-                case NONE:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.NONE;
             }
             throw new UnsupportedOperationException("Unknown/not supported pooling type: " + this);
         }

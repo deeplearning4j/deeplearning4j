@@ -72,8 +72,6 @@ public class MaskedReductionUtil {
                 INDArray pNorm = abs.sum(2);
 
                 return Transforms.pow(pNorm, 1.0 / pnorm);
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -152,8 +150,6 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, 0, 2)); //Apply mask
 
                 return numerator;
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -204,8 +200,6 @@ public class MaskedReductionUtil {
                 INDArray pNorm = abs.sum(2, 3);
 
                 return Transforms.pow(pNorm, 1.0 / pnorm);
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -281,8 +275,6 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, dimensions)); //Apply mask
 
                 return numerator;
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
 

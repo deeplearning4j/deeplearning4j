@@ -69,7 +69,7 @@ public class ElementWiseVertexTest {
                                         "input2", "input3")
                         .addLayer("Add", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseAdd")
-                        .setOutputs("Add").build();
+                        .setOutputs("Add", "denselayer").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -81,7 +81,7 @@ public class ElementWiseVertexTest {
 
         INDArray target = input1.dup().addi(input2).addi(input3);
 
-        INDArray output = cg.outputSingle(input1, input2, input3);
+        INDArray output = cg.output(input1, input2, input3)[0];
         INDArray squared = output.sub(target);
         double rms = squared.mul(squared).sumNumber().doubleValue();
         Assert.assertEquals(0.0, rms, this.epsilon);
@@ -110,7 +110,7 @@ public class ElementWiseVertexTest {
                                         "input2", "input3")
                         .addLayer("Product", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseProduct")
-                        .setOutputs("Product").build();
+                        .setOutputs("Product", "denselayer").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -122,7 +122,7 @@ public class ElementWiseVertexTest {
 
         INDArray target = input1.dup().muli(input2).muli(input3);
 
-        INDArray output = cg.outputSingle(input1, input2, input3);
+        INDArray output = cg.output(input1, input2, input3)[0];
         INDArray squared = output.sub(target);
         double rms = squared.mul(squared).sumNumber().doubleValue();
         Assert.assertEquals(0.0, rms, this.epsilon);
@@ -151,7 +151,7 @@ public class ElementWiseVertexTest {
                                         "input1", "input2")
                         .addLayer("Subtract", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "elementwiseSubtract")
-                        .setOutputs("Subtract").build();
+                        .setOutputs("Subtract", "denselayer").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
@@ -162,7 +162,7 @@ public class ElementWiseVertexTest {
 
         INDArray target = input1.dup().subi(input2);
 
-        INDArray output = cg.outputSingle(input1, input2);
+        INDArray output = cg.output(input1, input2)[0];
         INDArray squared = output.sub(target);
         double rms = Math.sqrt(squared.mul(squared).sumNumber().doubleValue());
         Assert.assertEquals(0.0, rms, this.epsilon);
