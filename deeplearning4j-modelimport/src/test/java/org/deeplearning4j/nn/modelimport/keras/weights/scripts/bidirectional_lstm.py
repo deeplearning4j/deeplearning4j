@@ -12,7 +12,7 @@ n_in = 4
 n_out = 6
 
 model = Sequential()
-model.add(Bidirectional(LSTM(10, return_sequences=False),
+model.add(Bidirectional(LSTM(10, return_sequences=True),
                         input_shape=(n_in, 10)))
 
 model.compile(loss='mse', optimizer='adam')

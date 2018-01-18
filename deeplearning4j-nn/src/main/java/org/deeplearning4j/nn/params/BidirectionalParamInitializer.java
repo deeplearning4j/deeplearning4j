@@ -163,7 +163,7 @@ public class BidirectionalParamInitializer implements ParamInitializer {
 
     private BaseRecurrentLayer underlying(Layer layer){
         Bidirectional b = (Bidirectional)layer;
-        return (BaseRecurrentLayer)b.getFwd();
+        return (BaseRecurrentLayer) b.getFwd();
     }
 
     private List<String> withPrefixes(List<String> orig){

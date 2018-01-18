@@ -195,12 +195,11 @@ public class KerasLstm extends KerasLayer {
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null) {
             if (returnSequences) {
-                return  preProcessor.getOutputType(inputType[0]);
+                return preProcessor.getOutputType(inputType[0]);
             } else {
                 return this.getLSTMLayer().getOutputType(-1, preProcessor.getOutputType(inputType[0]));
             }
-        }
-        else
+        } else
             return this.getLSTMLayer().getOutputType(-1, inputType[0]);
 
     }

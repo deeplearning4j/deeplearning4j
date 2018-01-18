@@ -31,9 +31,13 @@ public class KerasWeightSettingTests {
                 importLstm(lstmPath);
                 System.out.println("***** Successfully imported " + lstmPath);
 
-//                String bidirectionalLstmPath = "weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
-//                importBidirectionalLstm(bidirectionalLstmPath);
-//                System.out.println("***** Successfully imported " + bidirectionalLstmPath);
+                String simpleRnnPath = "weights/simple_rnn_" + backend + "_" + version + ".h5";
+                importSimpleRnn(simpleRnnPath);
+                System.out.println("***** Successfully imported " + simpleRnnPath);
+
+                String bidirectionalLstmPath = "weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
+                importBidirectionalLstm(bidirectionalLstmPath);
+                System.out.println("***** Successfully imported " + bidirectionalLstmPath);
             }
         }
     }
@@ -65,6 +69,11 @@ public class KerasWeightSettingTests {
     }
 
     private static void importLstm(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+        // TODO: check weights
+    }
+
+    private static void importSimpleRnn(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         // TODO: check weights
     }

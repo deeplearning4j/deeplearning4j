@@ -1,15 +1,15 @@
 package org.deeplearning4j.nn.conf.layers.recurrent;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.AbstractLSTM;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -60,6 +60,10 @@ public class Bidirectional extends Layer {
     private Mode mode;
     private BidirectionalParamInitializer initializer;
 
+    private Bidirectional(Bidirectional.Builder builder) {
+        super(builder);
+    }
+
     /**
      * Create a Bidirectional wrapper, with the default Mode (CONCAT) for the specified layer
      * @param layer layer to wrap
@@ -74,7 +78,7 @@ public class Bidirectional extends Layer {
      * @param layer layer to wrap
      */
     public Bidirectional(@NonNull Mode mode, @NonNull Layer layer){
-        if(!(layer instanceof BaseRecurrentLayer || layer instanceof LastTimeStep)){
+        if(!(layer instanceof BaseRecurrentLayer || layer instanceof BaseWrapperLayer)){
             throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
                     "Got class: " + layer.getClass());
         }
@@ -179,6 +183,7 @@ public class Bidirectional extends Layer {
 
     @Override
     public void setLayerName(String layerName){
+        this.layerName = layerName;
         fwd.setLayerName(layerName);
         bwd.setLayerName(layerName);
     }
@@ -188,5 +193,31 @@ public class Bidirectional extends Layer {
         LayerMemoryReport lmr = fwd.getMemoryReport(inputType);
         lmr.scale(2);   //Double all memory use
         return lmr;
+    }
+
+    @AllArgsConstructor
+    public static class Builder extends Layer.Builder<Bidirectional.Builder> {
+
+        private Mode mode;
+        private Layer layer;
+
+        public Builder mode(Mode mode) {
+            this.mode = mode;
+            return this;
+        }
+
+        public Builder rnnLayer(Layer layer) {
+            if(!(layer instanceof BaseRecurrentLayer || layer instanceof BaseWrapperLayer)){
+                throw new IllegalArgumentException("Cannot wrap a non-recurrent layer: config must extend BaseRecurrentLayer. " +
+                        "Got class: " + layer.getClass());
+            }
+            this.layer = layer;
+            return this;
+        }
+
+        @SuppressWarnings("unchecked")
+        public Bidirectional build() {
+            return new Bidirectional(this);
+        }
     }
 }
