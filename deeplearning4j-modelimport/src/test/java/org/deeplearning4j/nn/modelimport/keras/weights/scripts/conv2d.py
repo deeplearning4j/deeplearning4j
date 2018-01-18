@@ -29,5 +29,7 @@ else:
 
 model.set_weights([weights, bias])
 
+model.compile(loss='mse', optimizer='adam')
+
 print("Saving model with single 2D convolution layer for backend {} and keras major version {}".format(backend, major_version))
 model.save("{}conv2d_{}_{}.h5".format(base_path, backend, major_version))

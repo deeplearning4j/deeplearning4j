@@ -30,12 +30,20 @@ public class KerasWeightSettingTests {
                 String lstmPath = "weights/lstm_" + backend + "_" + version + ".h5";
                 importLstm(lstmPath);
                 System.out.println("***** Successfully imported " + lstmPath);
+
+                String simpleRnnPath = "weights/simple_rnn_" + backend + "_" + version + ".h5";
+                importSimpleRnn(simpleRnnPath);
+                System.out.println("***** Successfully imported " + simpleRnnPath);
+
+                String bidirectionalLstmPath = "weights/bidirectional_lstm_" + backend + "_" + version + ".h5";
+                importBidirectionalLstm(bidirectionalLstmPath);
+                System.out.println("***** Successfully imported " + bidirectionalLstmPath);
             }
         }
     }
 
     private static void importDense(String modelPath) throws Exception {
-        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath);
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, true);
 
         INDArray weights = model.getLayer(0).getParam("W");
         int[] weightShape = weights.shape();
@@ -47,7 +55,7 @@ public class KerasWeightSettingTests {
     }
 
     private static void importConv2D(String modelPath) throws Exception {
-        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath);
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
         INDArray weights = model.getLayer(0).getParam("W");
         int[] weightShape = weights.shape();
@@ -61,17 +69,27 @@ public class KerasWeightSettingTests {
     }
 
     private static void importLstm(String modelPath) throws Exception {
-        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath);
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         // TODO: check weights
     }
 
-        private static MultiLayerNetwork loadMultiLayerNetwork(String modelPath) throws Exception {
+    private static void importSimpleRnn(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+        // TODO: check weights
+    }
+
+    private static void importBidirectionalLstm(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+        // TODO: check weights
+    }
+
+    private static MultiLayerNetwork loadMultiLayerNetwork(String modelPath, boolean training) throws Exception {
         ClassPathResource modelResource = new ClassPathResource(modelPath,
                 KerasWeightSettingTests.class.getClassLoader());
         File modelFile = File.createTempFile("temp", ".h5");
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         return new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
+                .enforceTrainingConfig(training).buildSequential().getMultiLayerNetwork();
     }
 
 }

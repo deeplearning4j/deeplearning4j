@@ -127,7 +127,9 @@ public class KerasLayerUtils {
         if (regularizerConfig != null) {
             for (String field : regularizerConfig.keySet()) {
                 if (!field.equals(conf.getREGULARIZATION_TYPE_L1()) && !field.equals(conf.getREGULARIZATION_TYPE_L2())
-                        && !field.equals(conf.getLAYER_FIELD_NAME())) {
+                        && !field.equals(conf.getLAYER_FIELD_NAME())
+                        && !field.equals(conf.getLAYER_FIELD_CLASS_NAME())
+                        && !field.equals(conf.getLAYER_FIELD_CONFIG())) {
                     if (enforceTrainingConfig)
                         throw new UnsupportedKerasConfigurationException("Unknown regularization field " + field);
                     else

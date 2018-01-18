@@ -104,6 +104,10 @@ public class KerasFlatten extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
-        return getInputPreprocessor(inputType).getOutputType(inputType[0]);
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType);
+        if (preprocessor != null) {
+            return preprocessor.getOutputType(inputType[0]);
+        }
+        return inputType[0];
     }
 }

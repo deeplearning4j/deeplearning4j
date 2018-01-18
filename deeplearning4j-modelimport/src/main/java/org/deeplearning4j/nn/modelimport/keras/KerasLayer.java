@@ -251,6 +251,10 @@ public class KerasLayer {
         //no op
     }
 
+    public Map<String, INDArray> getWeights() throws InvalidKerasConfigurationException {
+        return this.weights;
+    }
+
     /**
      * Copy Keras layer weights to DL4J Layer.
      *
@@ -264,7 +268,7 @@ public class KerasLayer {
             String msg = "Error when attempting to copy weights from Keras layer " + kerasLayerName + " to DL4J layer "
                     + dl4jLayerName;
 
-            if (this.weights == null)
+            if (getWeights() == null)
                 throw new InvalidKerasConfigurationException(msg + "(weights is null)");
 
             Set<String> paramsInLayer = new HashSet<>(layer.paramTable().keySet());
