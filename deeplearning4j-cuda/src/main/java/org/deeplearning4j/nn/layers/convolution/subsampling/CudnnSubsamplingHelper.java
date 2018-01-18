@@ -141,8 +141,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             case MAX:
                 poolingMode = CUDNN_POOLING_MAX;
                 break;
-            case NONE:
-                return new Pair<>(retGradient, epsilon);
             default:
                 return null;
         }
@@ -233,8 +231,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             case MAX:
                 poolingMode = CUDNN_POOLING_MAX;
                 break;
-            case NONE:
-                return input;
             default:
                 return null;
         }
