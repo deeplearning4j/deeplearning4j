@@ -22,6 +22,7 @@ package org.nd4j.linalg.api.ops.impl.accum;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Collections;
 import java.util.List;
@@ -79,19 +80,23 @@ public class StandardDeviation extends Variance {
         //If out = stdev(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         //dOut/dIn_i = (in_i-mean)/(stdev * (n-1))
+        int origRank = Shape.rankFromShape(arg().getShape());
         int n = f().getReductionLength(this);
-        SDVariable stdevOut = outputVariables()[0];
-        SDVariable mean = f().mean(arg(), dimensions);
-        SDVariable diff = arg().sub(mean);
+        SDVariable broadcastableStdevOut = f().reductionBroadcastableWithOrigShape(origRank, dimensions, outputVariables()[0]);
+        SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
+        SDVariable diff = arg().sub(broadcastableMean);
 
-        SDVariable dOutdIn = diff.div(stdevOut);
+        SDVariable dOutdIn = diff.div(broadcastableStdevOut);
         if(this.biasCorrected){
             dOutdIn = dOutdIn.div(n-1);
         } else {
             dOutdIn = dOutdIn.div(n);
         }
 
-        SDVariable dLdIn = dOutdIn.mul(i_v1.get(0));
+
+        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+
+        SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
         return Collections.singletonList(dLdIn);
     }
 

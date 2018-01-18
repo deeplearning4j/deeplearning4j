@@ -86,11 +86,13 @@ public class NormMax extends BaseAccumulation {
         SDVariable absIn = sameDiff.abs(arg());
         SDVariable maxnorm = outputVariables()[0];
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable maxnormBc = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, maxnorm);
+        SDVariable maxnormBc = f().reductionBroadcastableWithOrigShape(origRank, dimensions, maxnorm);
         maxnormBc = sameDiff.onesLike(arg()).mul(maxnormBc);
         SDVariable eq = sameDiff.eq(absIn, maxnormBc);
         SDVariable dAbsXdX = sameDiff.sign(arg());
-        SDVariable ret = eq.mul(dAbsXdX);
+        SDVariable dNormmaxDx = eq.mul(dAbsXdX);
+        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+        SDVariable ret = dNormmaxDx.mul(broadcastableGrad);
 
         return Collections.singletonList(ret);
     }

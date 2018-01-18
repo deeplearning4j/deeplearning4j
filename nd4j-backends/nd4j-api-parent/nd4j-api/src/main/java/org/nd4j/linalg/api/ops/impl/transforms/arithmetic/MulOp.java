@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -68,10 +69,7 @@ public class MulOp  extends BaseDynamicTransformOp {
         SDVariable g = sameDiff.setupFunction(i_v.get(0));
         SDVariable gradWrtX = f().mul(g,rarg());
         SDVariable gradWrtY = f().mul(g,larg());
-        List<SDVariable> ret = new ArrayList<>(2);
-        ret.add(gradWrtX);
-        ret.add(gradWrtY);
-        return ret;
+        return Arrays.asList(gradWrtX, gradWrtY);
     }
 
 

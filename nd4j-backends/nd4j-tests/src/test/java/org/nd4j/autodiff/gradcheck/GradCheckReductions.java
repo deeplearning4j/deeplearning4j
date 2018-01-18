@@ -2,16 +2,23 @@ package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -208,7 +215,7 @@ public class GradCheckReductions {
 
         List<String> allFailed = new ArrayList<>();
         for (int reduceDim : new int[]{0, 1, 2}) {
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 12; i++) {
 
                 int[] outShape;
                 switch (reduceDim) {
@@ -230,10 +237,13 @@ public class GradCheckReductions {
 
 
                 SDVariable in = sd.var("in", new int[]{-1, d1, d2});
-//                SDVariable in = sd.var("in", new int[]{d0, d1, d2});
                 SDVariable label = sd.var("label", outShape);
                 SDVariable second = in.mul(2);
 
+                double maxRelError = 1e-5;
+                double minAbsError = 1e-4;
+                INDArray inputArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(1000);
+                INDArray labelArr = Nd4j.randn(outShape).muli(1000);
                 SDVariable reduced;
                 String name;
                 switch (i) {
@@ -258,10 +268,18 @@ public class GradCheckReductions {
                         name = "max";
                         break;
                     case 5:
+                        //Variance is a bit finniky for gradient checks, due to huge score/output...
+                        maxRelError = 1e-3;
+                        minAbsError = 1;        //Most gradients ane in the range 1k to >100k
+                        inputArr.divi(10);
+                        labelArr.divi(100);
+                        BooleanIndexing.replaceWhere(inputArr, Nd4j.rand(inputArr.shape()).muli(100).addi(100), Conditions.absLessThan(1.0));
                         reduced = sd.variance("reduced", second, true, reduceDim);
                         name = "variance";
                         break;
                     case 6:
+                        inputArr.divi(1000);
+                        labelArr.divi(1000);
                         reduced = sd.prod("reduced", second, reduceDim);
                         name = "prod";
                         break;
@@ -274,8 +292,18 @@ public class GradCheckReductions {
                         name = "norm2";
                         break;
                     case 9:
+                        inputArr = Nd4j.rand(new int[]{d0, d1, d2});
+                        labelArr = Nd4j.rand(outShape);
                         reduced = sd.normmax("reduced", second, reduceDim);
                         name = "normmax";
+                        break;
+                    case 10:
+                        reduced = sd.argmax("reduced", second, reduceDim);
+                        name = "argmax";
+                        break;
+                    case 11:
+                        reduced = sd.argmin("reduced", second, reduceDim);
+                        name = "argmin";
                         break;
                     default:
                         throw new RuntimeException();
@@ -291,13 +319,11 @@ public class GradCheckReductions {
                 String msg = "(test " + i + " - " + name + ", dimension=" + reduceDim + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray inputArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(1000);
-                INDArray labelArr = Nd4j.randn(outShape).muli(1000);
                 sd.associateArrayWithVariable(inputArr, in);
                 sd.associateArrayWithVariable(labelArr, label);
 
                 try {
-                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, 1e-5, 1e-4, true, false);
+                    boolean ok = GradCheckUtil.checkGradients(sd, 1e-5, maxRelError, minAbsError, true, false);
                     if (!ok) {
                         allFailed.add(msg);
                     }
@@ -322,7 +348,7 @@ public class GradCheckReductions {
         int d2 = 5;
 
         List<String> allFailed = new ArrayList<>();
-        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0,1,2}, {0}, {1}, {2}, {0,1}, {0,2}, {1,2}}) {
+        for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
             for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
@@ -363,7 +389,7 @@ public class GradCheckReductions {
                         reduced = sd.jaccardDistance(name, in, in2, reduceDims);
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
-                    break;
+                        break;
                     default:
                         throw new RuntimeException();
                 }
@@ -394,6 +420,4 @@ public class GradCheckReductions {
 
         assertEquals("Failed: " + allFailed, 0, allFailed.size());
     }
-
-
 }

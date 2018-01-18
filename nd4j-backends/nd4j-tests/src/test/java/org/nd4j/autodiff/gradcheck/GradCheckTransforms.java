@@ -121,7 +121,7 @@ public class GradCheckTransforms {
                     break;
                 case 16:
                     t = sd.acosh(in);
-                    ia = Nd4j.rand(minibatch, nOut);
+                    ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
                     expOut = Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup()));
                     break;
                 case 17:

@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -212,25 +213,34 @@ public class GradCheckUtil {
                 log.info("Starting test for variable \"{}\" with {} values", s.getVarName(), n);
             }
 
-            for( int i=0; i<n; i++ ){
+            NdIndexIterator iter = new NdIndexIterator('c',a.shape());
+
+            int i=0;
+            while(iter.hasNext()){
+                int[] idx = iter.next();
+                String strIdx = null;
+                if(print){
+                    strIdx = Arrays.toString(idx).replaceAll(" ","");
+                }
+
                 totalCount++;
-                double orig = a.getDouble(i);
-                a.putScalar(i, orig+eps);
+                double orig = a.getDouble(idx);
+                a.putScalar(idx, orig+eps);
                 double scorePlus = sd.execAndEndResult().getDouble(0);
-                a.putScalar(i, orig-eps);
+                a.putScalar(idx, orig-eps);
                 double scoreMinus = sd.execAndEndResult().getDouble(0);
-                a.putScalar(i, orig);
+                a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
-                double analyticGrad = grad.get(s.getVarName()).getDouble(i);
+                double analyticGrad = grad.get(s.getVarName()).getDouble(idx);
 
                 if (Double.isInfinite(numericalGrad) || Double.isNaN(numericalGrad)) {
                     throw new IllegalStateException("Numerical gradient was " + numericalGrad + " for variable \"" + name
-                            + "\", parameter " + i + " of " + n);
+                            + "\", parameter " + i + " of " + n + " (position: " + strIdx + ")");
                 }
                 if (Double.isInfinite(analyticGrad) || Double.isNaN(analyticGrad)) {
                     throw new IllegalStateException("Analytic (SameDiff) gradient was " + analyticGrad + " for variable \"" + name
-                            + "\", parameter " + i + " of " + n);
+                            + "\", parameter " + i + " of " + n + " (position: " + strIdx + ")");
                 }
 
 
@@ -248,13 +258,13 @@ public class GradCheckUtil {
                     double absError = Math.abs(analyticGrad - numericalGrad);
                     if (absError < minAbsError) {
                         if(print) {
-                            log.info("Param " + i + " (" + name + ") passed: grad= " + analyticGrad
+                            log.info("Param " + i + " (" + name + strIdx + ") passed: grad= " + analyticGrad
                                     + ", numericalGrad= " + numericalGrad + ", relError= " + relError
                                     + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsError);
                         }
                     } else {
                         if (print)
-                            log.info("Param " + i + " (" + name + ") FAILED: grad= " + analyticGrad
+                            log.info("Param " + i + " (" + name + strIdx + ") FAILED: grad= " + analyticGrad
                                     + ", numericalGrad= " + numericalGrad + ", relError= " + relError
                                     + ", absError=" + absError
                                     + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
@@ -263,9 +273,10 @@ public class GradCheckUtil {
                         totalNFailures++;
                     }
                 } else if (print) {
-                    log.info("Param " + i + " (" + name + ") passed: grad= " + analyticGrad + ", numericalGrad= "
+                    log.info("Param " + i + " (" + name + strIdx + ") passed: grad= " + analyticGrad + ", numericalGrad= "
                             + numericalGrad + ", relError= " + relError);
                 }
+                i++;
             }
         }
 

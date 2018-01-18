@@ -1,5 +1,7 @@
 package org.nd4j.autodiff.gradcheck;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -10,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,35 +28,31 @@ public class GradCheckMisc {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
-    @Test
-    public void testMiscFunctions(){
+    /*
+    To test:
+    tile
+    reshape
+    permute
+    expandDims
+    repeat
+    rollAxis
+    doRepeat
+     */
 
-        /*
-        To test:
-        tile
-        reshape
-        permute
-        expandDims
-        repeat
-        rollAxis
-        doRepeat
-         */
-
-    }
 
     @Test
-    public void testReshapeGradient(){
-        int[] origShape = new int[]{3,4,5};
+    public void testReshapeGradient() {
+        int[] origShape = new int[]{3, 4, 5};
 
-        for( int[] toShape : new int[][]{{3,4*5}, {3*4,5}, {1,3*4*5}, {3*4*5,1}}){
-            for(Pair<INDArray,String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)){
+        for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
+            for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
                 INDArray inArr = p.getFirst().muli(100);
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
                 SDVariable reshape = sd.reshape(in, toShape);
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
-                SDVariable stdev = sd.standardDeviation("out", reshape,true );
+                SDVariable stdev = sd.standardDeviation("out", reshape, true);
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
@@ -67,18 +66,18 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testPermuteGradient(){
-        int[] origShape = new int[]{3,4,5};
+    public void testPermuteGradient() {
+        int[] origShape = new int[]{3, 4, 5};
 
-        for( int[] perm : new int[][]{{0,1,2}, {0,2,1}, {1,0,2}, {1,2,0}, {2,0,1}, {2,1,0}}){
-            for(Pair<INDArray,String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)){
+        for (int[] perm : new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}) {
+            for (Pair<INDArray, String> p : NDArrayCreationUtil.getAll3dTestArraysWithShape(12345, origShape)) {
                 INDArray inArr = p.getFirst().muli(100);
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
                 SDVariable permute = sd.f().permute(in, perm);
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
-                SDVariable stdev = sd.standardDeviation("out", permute,true );
+                SDVariable stdev = sd.standardDeviation("out", permute, true);
 
                 INDArray out = sd.execAndEndResult();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
@@ -92,10 +91,27 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testExpandDimsGradient(){
-        int[] origShape = new int[]{3,4};
+    public void testExpandDimsGradient() {
+        int[] origShape = new int[]{3, 4};
 
-        for( int i=0; i<3; i++ ) {
+        boolean first = true;
+        for (int i = 0; i < 3; i++) {
+
+            int[] expExpandShape;
+            switch (i) {
+                case 0:
+                    expExpandShape = new int[]{1, 3, 4};
+                    break;
+                case 1:
+                    expExpandShape = new int[]{3, 1, 4};
+                    break;
+                case 2:
+                    expExpandShape = new int[]{3, 4, 1};
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
             for (Pair<INDArray, String> p : NDArrayCreationUtil.getAllTestMatricesWithShape(origShape[0], origShape[1], 12345)) {
                 INDArray inArr = p.getFirst().muli(100);
 
@@ -109,7 +125,12 @@ public class GradCheckMisc {
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
                 assertEquals(expOut, out);
 
+                assertArrayEquals(expExpandShape, expand.getArr().shape());
+                INDArray expExpand = inArr.dup('c').reshape(expExpandShape);
+                assertEquals(expExpand, expand.getArr());
+
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
+                log.info("Starting: " + msg);
                 boolean ok = GradCheckUtil.checkGradients(sd);
                 assertTrue(msg, ok);
             }
@@ -117,10 +138,10 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testSqueezeGradient(){
-        int[] origShape = new int[]{3,4,5};
+    public void testSqueezeGradient() {
+        int[] origShape = new int[]{3, 4, 5};
 
-        for( int i=0; i<3; i++ ) {
+        for (int i = 0; i < 3; i++) {
 
             int[] shape = origShape.clone();
             shape[i] = 1;
@@ -135,15 +156,15 @@ public class GradCheckMisc {
                 SDVariable stdev = sd.standardDeviation("out", squeeze, true);
 
                 int[] expShapePostSqueeze;
-                switch(i){
+                switch (i) {
                     case 0:
-                        expShapePostSqueeze = new int[]{4,5};
+                        expShapePostSqueeze = new int[]{4, 5};
                         break;
                     case 1:
-                        expShapePostSqueeze = new int[]{3,5};
+                        expShapePostSqueeze = new int[]{3, 5};
                         break;
                     case 2:
-                        expShapePostSqueeze = new int[]{3,4};
+                        expShapePostSqueeze = new int[]{3, 4};
                         break;
                     default:
                         throw new RuntimeException();
@@ -166,7 +187,7 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testGradientAutoBroadcast1(){
+    public void testGradientAutoBroadcast1() {
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -174,14 +195,14 @@ public class GradCheckMisc {
 
         for (int dim_sz1 : new int[]{0, 1, 2}) {
 
-            int[] in2Shape = {3,4,5};
+            int[] in2Shape = {3, 4, 5};
             in2Shape[dim_sz1] = 1;
 
             for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
 
-                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3,4,5}));
+                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3, 4, 5}));
                 SDVariable in2 = sd.var("in2", in2Shape);
 
                 SDVariable bcOp;
@@ -213,7 +234,7 @@ public class GradCheckMisc {
                 String msg = "(test " + i + ", dimension=" + dim_sz1 + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(new int[]{3,4,5}).muli(100);
+                INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
                 INDArray in2Arr = Nd4j.randn(in2Shape).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
@@ -227,10 +248,10 @@ public class GradCheckMisc {
 //                    System.out.println(sd.asFlatPrint());
 
                     boolean ok = GradCheckUtil.checkGradients(sd);
-                    if(!ok){
+                    if (!ok) {
                         allFailed.add(msg);
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     allFailed.add(msg + " - EXCEPTION");
                 }
@@ -241,15 +262,15 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testGradientAutoBroadcast2(){
+    public void testGradientAutoBroadcast2() {
 
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
 
-        for (int[] dim_sz1s : new int[][]{{0,1}, {0,2}, {1,2}}) {
+        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}}) {
 
-            int[] in1Shape = {3,4,5};
+            int[] in1Shape = {3, 4, 5};
             in1Shape[dim_sz1s[0]] = 1;
             in1Shape[dim_sz1s[1]] = 1;
 
@@ -259,7 +280,7 @@ public class GradCheckMisc {
 
                 int nOut = 4;
                 int minibatch = 10;
-                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3,4,5}));
+                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3, 4, 5}));
                 SDVariable in2 = sd.var("in2", in1Shape);
 
                 SDVariable bcOp;
@@ -305,10 +326,10 @@ public class GradCheckMisc {
 //                    System.out.println(sd.asFlatPrint());
 
                     boolean ok = GradCheckUtil.checkGradients(sd);
-                    if(!ok){
+                    if (!ok) {
                         allFailed.add(msg);
                     }
-                } catch (Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                     allFailed.add(msg + " - EXCEPTION");
                 }
@@ -319,13 +340,111 @@ public class GradCheckMisc {
     }
 
     @Test
-    public void testSlice(){
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1,12,12).reshape('c',3,4));
-        SDVariable slice = sd.slice(in, new int[]{0,1}, new int[]{3,2});
-        SDVariable stdev = sd.standardDeviation(slice, true);
+    public void testSliceGradient() {
+        Nd4j.getRandom().setSeed(12345);
 
-        GradCheckUtil.checkGradients(sd);
+        //Order here: original shape, begin, size
+        List<Triple<int[], int[], int[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{0, 0}, new int[]{3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 1}, new int[]{3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4}, new int[]{1, 2}, new int[]{2, 3}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{0, 0, 0}, new int[]{3, 4, 5}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 1, 1}, new int[]{2, 3, 4}));
+        testCases.add(new Triple<>(new int[]{3, 4, 5}, new int[]{1, 0, 2}, new int[]{3, 3, 4}));
+
+        for (int i = 0; i < testCases.size(); i++) {
+            Triple<int[], int[], int[]> t = testCases.get(i);
+            int[] os = t.getFirst();
+            int[] b = t.getSecond();
+            int[] e = t.getThird();
+            INDArray arr = Nd4j.rand(os);
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", arr);
+            SDVariable slice = sd.slice(in, b, e);
+            SDVariable stdev = sd.standardDeviation(slice, true);
+
+            String msg = "i=" + i + ": inShape=" + Arrays.toString(os) + ", begin=" + Arrays.toString(b) + ", end=" + Arrays.toString(e);
+            log.info("Starting test: " + msg);
+            GradCheckUtil.checkGradients(sd);
+        }
     }
 
+
+    @Builder(builderClassName = "Builder")
+    @Data
+    private static class SSCase {
+        private int[] shape;
+        private int[] begin;
+        private int[] end;
+        private int[] strides;
+        private int beginMask;
+        private int endMask;
+        private int ellipsisMask;
+        private int newAxisMask;
+        private int shrinkAxisMask;
+
+        public static class Builder {
+
+            public Builder shape(int... shape) {
+                this.shape = shape;
+                return this;
+            }
+
+            public Builder begin(int... begin) {
+                this.begin = begin;
+                return this;
+            }
+
+            public Builder end(int... end) {
+                this.end = end;
+                return this;
+            }
+
+            public Builder strides(int... strides) {
+                this.strides = strides;
+                return this;
+            }
+        }
+    }
+
+    @Test
+    public void testStridedSliceGradient() {
+        Nd4j.getRandom().setSeed(12345);
+
+        //Order here: original shape, begin, size
+        List<SSCase> testCases = new ArrayList<>();
+        testCases.add(SSCase.builder().shape(3, 4).begin(0, 0).end(3, 4).strides(1, 1).build());
+        testCases.add(SSCase.builder().shape(3, 4).begin(1, 1).end(2, 3).strides(1, 1).build());
+        testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(3, 4).strides(1, 1).beginMask(1).build());
+        testCases.add(SSCase.builder().shape(3, 4).begin(1, 1).end(3, -999).strides(1, 1).endMask(1 << 1).build());
+        testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0).end(-999, 4).strides(1, 1).beginMask(1).endMask(1).build());
+        testCases.add(SSCase.builder().shape(3, 4).begin(-999, 0, 0).end(-999, 3, 4).strides(1, 1).newAxisMask(1).build());
+
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(0, 0, 0).end(3, 4, 5).strides(1, 1, 1).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 2, 3).end(3, 4, 5).strides(1, 1, 1).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(0, 0, 0).end(3, 3, 5).strides(1, 2, 2).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, -999, 1).end(3, 3, 4).strides(1, 1, 1).beginMask(1 << 1).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, -999, 1).end(3, 3, -999).strides(1, 1, 1).beginMask(1 << 1).endMask(1 << 2).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 2).end(3, 4).strides(1, 1).ellipsisMask(1 << 1).build());   //[1:3,...,2:4]
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, -999, 1, 2).end(3, -999, 3, 4).strides(1, -999, 1, 2).newAxisMask(1 << 1).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 0, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
+        testCases.add(SSCase.builder().shape(3, 4, 5).begin(1, 1, 1).end(3, -999, 4).strides(1, 1, 1).shrinkAxisMask(1 << 1).build());
+
+
+        for (int i = 0; i < testCases.size(); i++) {
+            SSCase t = testCases.get(i);
+            INDArray arr = Nd4j.rand(t.getShape());
+
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", arr);
+            SDVariable slice = sd.stridedSlice(in, t.getBegin(), t.getEnd(), t.getStrides(), t.getBeginMask(),
+                    t.getEndMask(), t.getEllipsisMask(), t.getNewAxisMask(), t.getShrinkAxisMask());
+            SDVariable stdev = sd.standardDeviation(slice, true);
+
+            String msg = "i=" + i + ": " + t;
+            log.info("Starting test: " + msg);
+            GradCheckUtil.checkGradients(sd);
+        }
+    }
 }

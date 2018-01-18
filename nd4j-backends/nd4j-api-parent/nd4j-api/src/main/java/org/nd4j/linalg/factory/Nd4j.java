@@ -681,7 +681,12 @@ public class Nd4j {
      * @return
      */
     public static INDArray argMax(INDArray arr, int... dimension) {
-        return Nd4j.getExecutioner().exec(new IMax(arr), dimension);
+        IMax imax = new IMax(arr);
+        if(dimension == null || dimension.length == 0){
+            return Nd4j.getExecutioner().exec(imax, Integer.MAX_VALUE);
+        } else {
+            return Nd4j.getExecutioner().exec(imax, dimension);
+        }
     }
 
     /**

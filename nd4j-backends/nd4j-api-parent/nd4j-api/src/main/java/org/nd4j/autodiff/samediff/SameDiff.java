@@ -583,8 +583,6 @@ public class SameDiff {
             return variableNameToArr.get(varName).shape();
         }
 
-
-
         return variableNameToShape.get(varName);
     }
 
@@ -2276,7 +2274,6 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
-
     /**
      *
      * @param iX
@@ -2296,6 +2293,23 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    public SDVariable argmax(SDVariable in, int... dimensions){
+        return argmax(null, in, dimensions);
+    }
+
+    public SDVariable argmax(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().argmax(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable argmin(SDVariable in, int... dimensions){
+        return argmin(null, in, dimensions);
+    }
+
+    public SDVariable argmin(String name, SDVariable in, int... dimensions){
+        SDVariable ret = f().argmin(in, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      *
@@ -3126,11 +3140,11 @@ public class SameDiff {
     /**
      *
      * @param iX
-     * @param cutoff
+     * @param alpha
      * @return
      */
-    public SDVariable leakyRelu(String name,SDVariable iX, double cutoff) {
-        SDVariable result = functionFactory.leakyRelu(iX,cutoff);
+    public SDVariable leakyRelu(String name,SDVariable iX, double alpha) {
+        SDVariable result = functionFactory.leakyRelu(iX,alpha);
         return updateVariableNameAndReference(result,name);
 
     }
@@ -3138,12 +3152,11 @@ public class SameDiff {
     /**
      *
      * @param iX
-     * @param wrt
-     * @param cutoff
+     * @param alpha
      * @return
      */
-    public SDVariable leakyReluDerivative(String name,SDVariable iX,double cutoff) {
-        SDVariable result = functionFactory.leakyReluDerivative(iX, cutoff);
+    public SDVariable leakyReluDerivative(String name,SDVariable iX,double alpha) {
+        SDVariable result = functionFactory.leakyReluDerivative(iX, alpha);
         return updateVariableNameAndReference(result,name);
     }
 
@@ -4252,9 +4265,7 @@ public class SameDiff {
                             grads.add(grad);
                         }
 
-                        currFunction.diff(grads);
-
-
+                        List<SDVariable> currFnGrads = currFunction.diff(grads);
                     }
 
 
@@ -4573,12 +4584,18 @@ public class SameDiff {
      * @return the passed in variable
      */
     public SDVariable updateVariableNameAndReference(SDVariable varToUpdate,String newVarName) {
-        if(newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
-            return varToUpdate;
+        if(varToUpdate == null) {
+            throw new NullPointerException("Null input: No variable found for updating!");
         }
 
-        if(varToUpdate == null) {
-            throw new ND4JIllegalStateException("No variable found for updating!");
+        if(newVarName == null && variableMap.containsKey(varToUpdate.getVarName())){
+            //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
+            // "mean" and consequently a new variable name needs to be generated
+            newVarName = generateNewVarName(varToUpdate.getVarName(), 0);
+        }
+
+        if(newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
+            return varToUpdate;
         }
 
         val oldVarName = varToUpdate.getVarName();

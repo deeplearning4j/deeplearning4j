@@ -85,8 +85,9 @@ public class Norm2 extends BaseAccumulation {
 
         SDVariable norm2 = outputVariables()[0];
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
-        SDVariable norm2bc = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, norm2);
-        SDVariable ret = arg().div(norm2bc).mul(i_v1.get(0));
+        SDVariable broadcastableNorm2 = f().reductionBroadcastableWithOrigShape(origRank, dimensions, norm2);
+        SDVariable broadcastableGradOut = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+        SDVariable ret = arg().div(broadcastableNorm2).mul(broadcastableGradOut);
 
         return Collections.singletonList(ret);
     }

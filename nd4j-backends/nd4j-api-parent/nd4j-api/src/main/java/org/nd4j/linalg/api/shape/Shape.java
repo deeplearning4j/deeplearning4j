@@ -239,8 +239,8 @@ public class Shape {
      * {@link Integer#MAX_VALUE}
      */
     public static boolean isWholeArray(int rank, int... dimension){
-        return rank == 0 || dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE)
-                || dimension.length == rank;
+        return rank == 0 || dimension == null || dimension.length == 0 ||
+                (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE) || dimension.length == rank;
     }
 
     /**

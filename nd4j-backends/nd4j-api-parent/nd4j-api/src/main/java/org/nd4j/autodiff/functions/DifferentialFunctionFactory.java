@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -173,6 +175,14 @@ public class DifferentialFunctionFactory   {
     public SDVariable min(SDVariable first, SDVariable second){
         return new org.nd4j.linalg.api.ops.impl.transforms.comparison.Min(sameDiff(), first, second)
                 .outputVariables()[0];
+    }
+
+    public SDVariable argmax(SDVariable in, int... dimensions){
+        return new IMax(sameDiff(), in, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable argmin(SDVariable in, int... dimensions){
+        return new IMin(sameDiff(), in, dimensions).outputVariables()[0];
     }
 
 

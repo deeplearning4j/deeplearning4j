@@ -137,8 +137,6 @@ public class LeakyReLUDerivative extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().zero(outputVariables()[0].getShape());
-
-        return Arrays.asList(ret);
+        throw new UnsupportedOperationException("Not supported");
     }
 }

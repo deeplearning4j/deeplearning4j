@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -151,11 +152,13 @@ public class Variance extends BaseAccumulation {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        int n = f().getInputLength(arg());
-        SDVariable mean = f().mean(arg(), dimensions);
-        SDVariable dOutdIn = arg().sub(mean).mul(2.0 / (biasCorrected ? (n-1) : n));
+        int n = f().getReductionLength(this);
+        int origRank = Shape.rankFromShape(arg().getShape());
+        SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
+        SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
+        SDVariable dOutdIn = arg().sub(broadcastableMean).mul(2.0 / (biasCorrected ? (n-1) : n));
 
-        SDVariable dLdIn = i_v1.get(0).mul(dOutdIn);
+        SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
 
         return Collections.singletonList(dLdIn);
     }

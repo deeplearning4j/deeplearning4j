@@ -82,7 +82,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
      */
     public BaseIndexAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
-        init();
+        init(x,y,z,n);
     }
 
     public BaseIndexAccumulation(INDArray x, INDArray y, long n) {

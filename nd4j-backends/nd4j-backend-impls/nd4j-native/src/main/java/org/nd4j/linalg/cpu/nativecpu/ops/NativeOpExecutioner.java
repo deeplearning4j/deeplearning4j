@@ -168,13 +168,20 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        INDArray ret;
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        else
-            ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+        if(op.z() == null) {
+            INDArray ret;
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            else
+                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
 
-        op.setZ(ret);
+            op.setZ(ret);
+        } else if(!Arrays.equals(retShape, op.z().shape())){
+            throw new IllegalStateException("Z array shape does not match expected return type for op " + op
+                    + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(op.z().shape()));
+        }
+
+
         //do op along all dimensions
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};

@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -70,7 +71,7 @@ public class AddOp extends BaseDynamicTransformOp {
         for(int i = 0; i < 2; i++)
             ret.add(g);
 
-        return ret;
+        return Arrays.asList(g,g);
     }
 
 
