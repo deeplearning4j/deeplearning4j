@@ -15,7 +15,7 @@ namespace nd4j {
                 // all at once case
                 nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input->buffer(), input->shapeInfo(), output->buffer(), output->shapeInfo());
             } else {
-                std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), *(block.getIArguments()));
+                std::vector<int> dims =  *(block.getIArguments());
 
                 nd4j::ops::helpers::_prefix<T, simdOps::Multiply<T>>(input, output, dims);
             }

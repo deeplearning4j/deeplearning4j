@@ -282,6 +282,22 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
     NDArray<float> exp('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
 
     nd4j::ops::cumsum<float> op;
+    auto result = op.execute({&x}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests3, Test_CumSum_3) {
+    NDArray<float> x('c', {2, 4}, {1, 2, 3, 4, 1, 2, 3, 4});
+    NDArray<float> exp('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
+
+    nd4j::ops::cumsum<float> op;
     auto result = op.execute({&x}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
