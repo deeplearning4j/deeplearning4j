@@ -25,4 +25,8 @@ matrix:
       env: OS=linux-x86_64 CUDA=9.0 CUDNN=7 SCALA=2.11 SPARK=2
       install: true
       script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 CUDA=9.1 CUDNN=7 SCALA=2.11 SPARK=2
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
 
