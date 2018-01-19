@@ -5,6 +5,7 @@
 #ifndef ND4J_STATUS_H
 #define ND4J_STATUS_H
 
+#include <pointercast.h>
 #include <op_boilerplate.h>
 #include <dll.h>
 #include <helpers/logger.h>
