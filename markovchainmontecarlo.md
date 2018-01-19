@@ -5,7 +5,9 @@ layout: default
 
 # Monte Carlo Methods, Markov Chains and Machine Learning
 
-Markov Chain Monte Carlo is a technique to solve the problem of sampling from a complicated distribution. A mathematical method used to predict the probability of something you care about: future events or an unknown distribution of states. (In this case, the distribution of land and water.) MCMC methods help gauge the distribution of a number you're trying to predict, by randomly sampling from a complex probabilistic space.
+Markov Chain Monte Carlo is a method to sample from a complicated distribution. 
+
+A mathematical method used to predict the probability of something you care about: future events or an unknown distribution of states. (In this case, the distribution of land and water.) MCMC methods help gauge the distribution of a number you're trying to predict, by randomly sampling from a complex probabilistic space.
 
 With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's James Bond math. 
 
