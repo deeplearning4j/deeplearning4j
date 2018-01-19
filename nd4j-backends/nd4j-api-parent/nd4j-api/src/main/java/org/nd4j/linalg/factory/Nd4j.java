@@ -95,6 +95,7 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
+import org.nd4j.tools.PropertyParser;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -6320,8 +6321,9 @@ public class Nd4j {
             Nd4j.backend = backend;
             updateNd4jContext();
             props = Nd4jContext.getInstance().getConf();
+            PropertyParser pp = new PropertyParser(props);
 
-            String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
+            String otherDtype = pp.toString(DTYPE);
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
                     : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
 
@@ -6333,57 +6335,57 @@ public class Nd4j {
                 DataTypeUtil.setDTypeForContext(dtype);
             }
 
-            compressDebug = Boolean.parseBoolean(props.getProperty(COMPRESSION_DEBUG, "false"));
-            copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
-            shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
-            resourceManagerOn = Boolean.parseBoolean(props.getProperty(RESOURCE_MANGER_ON, "false"));
-            executionMode = props.getProperty(EXECUTION_MODE, "java").equals("java") ? OpExecutioner.ExecutionMode.JAVA
-                            : OpExecutioner.ExecutionMode.NATIVE;
-            ORDER = System.getProperty(ORDER_KEY, props.getProperty(ORDER_KEY, "c").toString()).charAt(0);
+            compressDebug = pp.toBoolean(COMPRESSION_DEBUG);
+            copyOnOps = pp.toBoolean(COPY_OPS, true);
+            shouldInstrument = pp.toBoolean(INSTRUMENTATION);
+            resourceManagerOn = pp.toBoolean(RESOURCE_MANGER_ON);
+            executionMode = pp.toString(EXECUTION_MODE, "java").equals("java") ? OpExecutioner.ExecutionMode.JAVA
+                    : OpExecutioner.ExecutionMode.NATIVE;
+            ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
 
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
-                            .forName(System.getProperty(AFFINITY_MANAGER, props.get(AFFINITY_MANAGER).toString()));
+                            .forName(pp.toString(AFFINITY_MANAGER));
             affinityManager = affinityManagerClazz.newInstance();
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                            System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
-            sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(System.getProperty(
-                            SPARSE_NDARRAY_FACTORY_CLASS, props.getProperty(SPARSE_NDARRAY_FACTORY_CLASS).toString()));
+                            pp.toString(NDARRAY_FACTORY_CLASS));
+            sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
+                            pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
-                            .forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
+                            .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+            String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class
-                            .forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
+                            .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
-                            .forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
+                            .forName(pp.toString(SHAPEINFO_PROVIDER));
             sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                            System.getProperty(SPARSEINFO_PROVIDER, props.get(SPARSEINFO_PROVIDER).toString()));
+                            pp.toString(SPARSEINFO_PROVIDER));
 
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
-                            .forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
+                            .forName(pp.toString(CONSTANT_PROVIDER));
 
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class
-                            .forName(System.getProperty(MEMORY_MANAGER, props.get(MEMORY_MANAGER).toString()));
+                            .forName(pp.toString(MEMORY_MANAGER));
 
             allowsOrder = backend.allowsOrder();
-            String rand = props.getProperty(RANDOM_PROVIDER, DefaultRandom.class.getName());
+            String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
             randomFactory = new RandomFactory(randomClazz);
 
             workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
-                            .forName(System.getProperty(WORKSPACE_MANAGER, props.get(WORKSPACE_MANAGER).toString()));
+                            .forName(pp.toString(WORKSPACE_MANAGER));
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class
-                            .forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
+                            .forName(pp.toString(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
 
             opFactoryClazz = (Class<? extends OpFactory>) Class
-                            .forName(System.getProperty(OP_FACTORY, DefaultOpFactory.class.getName()));
+                            .forName(pp.toString(OP_FACTORY, DefaultOpFactory.class.getName()));
 
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                            .forName(System.getProperty(BLAS_OPS, props.get(BLAS_OPS).toString()));
+                            .forName(pp.toString(BLAS_OPS));
             sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                            .forName(System.getProperty(SPARSE_BLAS_OPS, props.get(SPARSE_BLAS_OPS).toString()));
-            String clazzName = props.getProperty(DISTRIBUTION, DefaultDistributionFactory.class.getName());
+                            .forName(pp.toString(SPARSE_BLAS_OPS));
+            String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
 
@@ -6394,7 +6396,7 @@ public class Nd4j {
             workspaceManager = workspaceManagerClazz.newInstance();
 
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class
-                            .forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+                            .forName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
@@ -6411,8 +6413,7 @@ public class Nd4j {
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
-            ENFORCE_NUMERICAL_STABILITY =
-                            Boolean.parseBoolean(System.getProperty(NUMERICAL_STABILITY, String.valueOf(false)));
+            ENFORCE_NUMERICAL_STABILITY = pp.toBoolean(NUMERICAL_STABILITY);                            
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
 
