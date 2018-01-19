@@ -686,6 +686,21 @@ TEST_F(DeclarableOpsTests4, Test_DepthToSpace_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests4, Test_DepthToSpace_3) {
+    NDArray<float> x('c', {4, 4, 16, 16});
+    NDArray<float> exp('c', {4, 16, 64, 1});
+
+    nd4j::ops::depth_to_space<float> op;
+    auto result = op.execute({&x}, {}, {4, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}
+
 
 TEST_F(DeclarableOpsTests4, Test_Cross_1) {
     NDArray<float> a('c', {3}, {1, 2, 3});

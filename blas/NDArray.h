@@ -1052,7 +1052,8 @@ namespace nd4j {
         */ 
         FORCEINLINE T& operator()(const int i, const int j, const int k);
 
-
+        template <typename T2>
+        FORCEINLINE std::vector<T2> asVectorT();
     };
 
 
@@ -1061,6 +1062,18 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+
+template <typename T>
+template <typename T2>
+FORCEINLINE std::vector<T2> NDArray<T>::asVectorT() {
+    std::vector<T2> result(this->lengthOf());
+
+#pragma omp parallel for simd
+    for (int e = 0; e < this->lengthOf(); e++)
+        result[e] = (T2) this->getIndexedScalar(e);
+
+    return result;
+}
 
 
 //////////////////////////////////////////////////////////////////////////

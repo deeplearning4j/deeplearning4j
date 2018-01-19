@@ -146,3 +146,135 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
+    NDArray<float> x('c', {2, 1, 3});
+    NDArray<float> eps('c', {2, 4, 3});
+
+
+    nd4j::ops::tile_to_shape_bp<float> op;
+    auto result = op.execute({&x, &eps}, {}, {2, 4, 3});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(x.isSameShape(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
+    NDArray<float> x('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 0, 0});
+
+    NDArray<float> exp('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+
+    nd4j::ops::space_to_batch<float> op;
+    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_2) {
+    NDArray<float> x('c', {1, 2, 2, 1}, {1, 2, 3, 4});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 0, 0});
+
+    NDArray<float> exp('c', {4, 1, 1, 1}, {1, 2, 3, 4});
+
+    nd4j::ops::space_to_batch<float> op;
+    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
+    NDArray<float> x('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> paddings('c', {2, 2}, {0, 0, 2, 0});
+
+    NDArray<float> exp('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
+
+    nd4j::ops::space_to_batch<float> op;
+    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
+    NDArray<float> x('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    NDArray<float> exp('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> crops('c', {2, 2}, {0, 0, 0, 0});
+
+    nd4j::ops::batch_to_space<float> op;
+    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
+    NDArray<float> x('c', {4, 1, 1, 1}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {1, 2, 2, 1}, {1, 2, 3, 4});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> crops('c', {2, 2}, {0, 0, 0, 0});
+
+    nd4j::ops::batch_to_space<float> op;
+    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
+    NDArray<float> x('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
+    NDArray<float> exp('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    NDArray<float> blocks('c', {2}, {2, 2});
+    NDArray<float> crops('c', {2, 2}, {0, 0, 2, 0});
+
+    nd4j::ops::batch_to_space<float> op;
+    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
