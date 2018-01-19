@@ -39,7 +39,8 @@
        (18, simdOps::FloorMod),\
        (19, simdOps::FloorDiv),\
        (20, simdOps::ReverseMod),\
-       (21, simdOps::SafeDivide)
+       (21, simdOps::SafeDivide),\
+       (22, simdOps::Mod)
 
 
 
