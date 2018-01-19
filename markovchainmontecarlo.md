@@ -5,31 +5,15 @@ layout: default
 
 # Monte Carlo Methods, Markov Chains and Machine Learning
 
-Let's say you're a horrific alien looking for the perfect planet to colonize. 
+Markov Chain Monte Carlo is a technique to solve the problem of sampling from a complicated distribution. A mathematical method used to predict the probability of something you care about: future events or an unknown distribution of states. (In this case, the distribution of land and water.) MCMC methods help gauge the distribution of a number you're trying to predict, by randomly sampling from a complex probabilistic space.
 
-You have been instructed by your distant galactic empress to find a tolerable orb covered with water and dirt, but which has more of the first than the second. Round and juicy. 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's James Bond math. 
 
-Your space ship comes to hover over the planet Earth, somewhere in the stratosphere, but the planet is covered in clouds... You peer through the cloud cover onto humanity's modest ball of mud and waves, squinting to see if it is suitable for conquest. 
+*Sampling* permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large or complex to compute. Randomly sending down socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
 
-That's where the socks come in. 
+We're often stuck behind a veil of ignorance, unable to gauge reality around us with much precision. So we sample.  
 
-You have no way of calculating precisely how much of the Earth's surface is water, and how much is dirt, because you can't see all of it. So instead of attempting to plot the geometry of the oceans and continents, you decide you're just going to drop a bunch of socks randomly all over the planet and haul them back up. The ratio of wet, salty socks to dry will represent the ratio of sea water to land, and give you a rough approximation of the total surface area of each. You drop 100,000 socks, randomly zipping your space ship around the earth, and you get 70,573 sopping, salty socks back. 
-
-It's time to prepare the invasion. 
-
-## Monte Carlo Methods
-
-That's Monte Carlo: A mathematical method used to predict the probability of something you care about: future events or an unknown distribution of states. (In this case, the distribution of land and water.) MCMC methods help gauge the distribution of a number you're trying to predict, by randomly sampling from a complex probabilistic space.
-
-With a little more jargon, you might say it's a simulation using a pseudo-random number generator (which creates the coordinates for the dropping of the socks) to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's James Bond math. 
-
-You can drop a sock on anything. That's *sampling*, which permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large or complex to compute. Randomly sending down socks over a bounded set of possibilities, which together add up to 100% of the earth's surface, is an example of the Monte Carlo method. 
-
-Like the alien, we're often stuck behind a veil of ignorance (the clouds), unable to gauge reality around us with much precision. So we sample. 
-
-Or forget aliens. 
-
-You're a gambler in the saloon of a Gold Rush town and you roll a suspicious die without knowing if it is fair or loaded. You roll that enigmatic, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
+Let's say you're a gambler in the saloon of a Gold Rush town and you roll a suspicious die without knowing if it is fair or loaded. You roll that enigmatic, six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
 Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is an inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
 
