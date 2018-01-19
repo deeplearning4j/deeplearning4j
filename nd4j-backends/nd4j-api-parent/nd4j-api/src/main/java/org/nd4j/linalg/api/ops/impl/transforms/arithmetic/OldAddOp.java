@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Division operation
+ * Add operation for two operands
  *
  * @author Adam Gibson
  */
@@ -89,7 +89,7 @@ public class OldAddOp extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
-            throw new IllegalArgumentException("No components to divide");
+            throw new IllegalArgumentException("No components to add");
     }
 
 

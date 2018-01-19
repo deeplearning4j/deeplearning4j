@@ -65,7 +65,7 @@ public class GradCheckTransforms {
                     break;
                 case 3:
                     t = in.div(4.0);
-                    expOut = ia.div(4);
+                    expOut = ia.div(4.0);
                     break;
                 case 4:
                     t = in.rsub(5.0);
@@ -348,7 +348,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -452,6 +452,10 @@ public class GradCheckTransforms {
                     t = sd.atan2(in1, in2);
                     expOut = Transforms.atan2(ib, ia);    //Note: y,x order for samediff; x,y order for transforms
                     break;
+                case 20:
+                    t = sd.mergeAdd(in1, in2, in2);
+                    expOut = ia.add(ib).add(ib);
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -459,7 +463,6 @@ public class GradCheckTransforms {
 
             DifferentialFunction[] funcs = sd.functions();
             String name = funcs[0].opName();
-
 
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);

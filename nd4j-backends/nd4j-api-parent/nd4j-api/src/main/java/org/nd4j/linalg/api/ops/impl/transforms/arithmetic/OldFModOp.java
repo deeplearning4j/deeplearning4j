@@ -21,7 +21,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import java.util.List;
 
 /**
- * Multiplication operation
+ * Floating point remainder
  *
  * @author raver119@gmail.com
  */
@@ -101,7 +101,7 @@ public class OldFModOp extends BaseTransformOp {
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
         if (y == null)
-            throw new IllegalArgumentException("No components to multiply");
+            throw new IllegalArgumentException("No components to divide");
     }
 
     @Override

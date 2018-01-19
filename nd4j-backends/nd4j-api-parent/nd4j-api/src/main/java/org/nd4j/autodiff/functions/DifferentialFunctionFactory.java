@@ -785,6 +785,12 @@ public class DifferentialFunctionFactory   {
 
     }
 
+    public SDVariable mergeadd(SDVariable[] differentialFunctions) {
+        for (SDVariable df: differentialFunctions)
+            validateDifferentialFunctionsameDiff(df);
+        return new MergeAddOp(sameDiff(), differentialFunctions,false).outputVariables()[0];
+
+    }
 
     public SDVariable addi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);

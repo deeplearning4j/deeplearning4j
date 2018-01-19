@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2018 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -24,44 +24,49 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Addition operation
+ * Addition operation for n operands, called "mergeadd" in libnd4j
  *
- * @author Adam Gibson
+ * @author Max Pumperla
  */
-public class AddOp extends BaseDynamicTransformOp {
+public class MergeAddOp extends BaseDynamicTransformOp {
 
-    public AddOp() {
+    public MergeAddOp() {
     }
 
-    public AddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public MergeAddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
-    public AddOp(INDArray[] inputs, INDArray[] outputs) {
+    public MergeAddOp(INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
 
     @Override
     public String opName() {
-        return "add";
+        return "mergeadd";
     }
 
     @Override
     public String onnxName() {
-        return "Add";
+        return "mergeadd";
     }
 
     @Override
     public String tensorflowName() {
-        return "Add";
+        return "add_n";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().addBp(larg(), rarg(), i_v.get(0));
+        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
+        List<SDVariable> ret = new ArrayList<>();
+        for (int i = 0; i < args().length; i++)
+            ret.add(gradient);
+        return ret;
     }
 
 
