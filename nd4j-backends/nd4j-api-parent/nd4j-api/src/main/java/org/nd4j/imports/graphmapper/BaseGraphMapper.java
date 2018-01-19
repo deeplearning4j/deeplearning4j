@@ -16,6 +16,7 @@ import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -126,6 +127,16 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         return ret;
     }
 
+    @Override
+    public Map<String, NODE_TYPE> nodesByName(GRAPH_TYPE graph) {
+        val nodeTypes = getNodeList(graph);
+        Map<String,NODE_TYPE> ret = new LinkedHashMap<>();
+        for(int i = 0; i < nodeTypes.size(); i++) {
+            ret.put(getName(nodeTypes.get(i)),nodeTypes.get(i));
+        }
+        return ret;
+    }
+
     /**
      * This method converts given TF
      * @param tfGraph
@@ -204,7 +215,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
 
         val tfNodesList = getNodeList(tfGraph);
         for (NODE_TYPE tfNode : tfNodesList) {
-            if(!opsToIgnore().contains(getOpType(tfNode)))
+            if(!opsToIgnore().contains(getOpType(tfNode)) || isOpIgnoreException(tfNode))
                 mapNodeType(tfNode,importState);
         }
 

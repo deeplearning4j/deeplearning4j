@@ -38,6 +38,24 @@ public class ArrayUtil {
 
     private ArrayUtil() {}
 
+
+    /**
+     * Returns true if any array elements are negative.
+     * If the array is null, it returns false
+     * @param arr the array to test
+     * @return
+     */
+    public static boolean containsAnyNegative(int[] arr) {
+        if(arr == null)
+            return false;
+
+        for(int i = 0; i < arr.length; i++) {
+            if(arr[i] < 0)
+                return true;
+        }
+        return false;
+    }
+
     /**
      *
      * @param arrs

@@ -58,6 +58,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
+    public boolean isOpIgnoreException(OnnxProto3.NodeProto node) {
+        return false;
+    }
+
+    @Override
     public String getTargetMappingForOp(DifferentialFunction function, OnnxProto3.NodeProto node) {
         return function.opName();
     }

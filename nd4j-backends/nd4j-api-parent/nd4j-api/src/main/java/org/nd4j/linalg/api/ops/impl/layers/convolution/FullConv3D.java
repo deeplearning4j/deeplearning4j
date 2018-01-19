@@ -5,12 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.FullConv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 
@@ -20,12 +23,12 @@ import java.util.*;
 @Slf4j
 public class FullConv3D extends DynamicCustomOp {
 
-    protected FullConv3DConfig conv3DConfig;
+    protected FullConv3DConfig config;
 
     @Builder(builderMethodName = "builder")
-    public FullConv3D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs, FullConv3DConfig conv3DConfig) {
+    public FullConv3D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs, FullConv3DConfig config) {
         super(null,sameDiff, inputFunctions, false);
-        this.conv3DConfig = conv3DConfig;
+        this.config = config;
         if(inputs != null) {
             addInputArgument(inputs);
         }
@@ -42,44 +45,138 @@ public class FullConv3D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return conv3DConfig.toProperties();
+        return config.toProperties();
+    }
+
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+        config.setValueFor(target,value);
+    }
+
+
+    @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "config";
+    }
+
+    @Override
+    public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
+        Map<String,Map<String,AttributeAdapter>> ret = new LinkedHashMap<>();
+        Map<String,AttributeAdapter> tfAdapters = new LinkedHashMap<>();
+
+        tfAdapters.put("dT", new IntArrayIntIndexAdpater(1));
+        tfAdapters.put("dW",  new IntArrayIntIndexAdpater(2));
+        tfAdapters.put("dH",new IntArrayIntIndexAdpater(3));
+
+
+        tfAdapters.put("pT", new IntArrayIntIndexAdpater(1));
+        tfAdapters.put("pW",  new IntArrayIntIndexAdpater(2));
+        tfAdapters.put("pH",new IntArrayIntIndexAdpater(3));
+
+        ret.put(tensorflowName(),tfAdapters);
+
+        return ret;
     }
 
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        val axisMapping = PropertyMapping.builder()
-                .tfInputPosition(1)
-                .propertyNames(new String[]{"axis"})
-                .build();
+        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
         Map<String,PropertyMapping> map = new HashMap<>();
-        map.put("axis",axisMapping);
 
+
+
+        val strideMapping = PropertyMapping.builder()
+                .tfAttrName("strides")
+                .onnxAttrName("strides")
+                .propertyNames(new String[]{"dT","dW","dH"})
+                .build();
+
+
+
+        val dilationMapping = PropertyMapping.builder()
+                .onnxAttrName("dilations")
+                .propertyNames(new String[]{"dilationT","dilationH","dilationW"})
+                .tfAttrName("rates")
+                .build();
+
+
+
+        val sameMode = PropertyMapping.builder()
+                .onnxAttrName("auto_pad")
+                .propertyNames(new String[]{"isSameMode"})
+                .tfAttrName("padding")
+                .build();
+
+        val paddingWidthHeight = PropertyMapping.builder()
+                .onnxAttrName("padding")
+                .propertyNames(new String[]{"pT","pW","pH"})
+                .build();
+
+        val dataFormat = PropertyMapping.builder()
+                .onnxAttrName("data_format")
+                .tfAttrName("data_format")
+                .propertyNames(new String[]{"dataFormat"})
+                .build();
+
+
+        val outputPadding = PropertyMapping.builder()
+                .propertyNames(new String[]{"aT","aH","aW"})
+                .build();
+
+
+        val biasUsed = PropertyMapping.builder()
+                .propertyNames(new String[]{"biasUsed"})
+                .build();
+
+
+
+
+        for(val propertyMapping : new PropertyMapping[] {
+                strideMapping,
+                dilationMapping,
+                sameMode,
+                paddingWidthHeight,
+                dataFormat,
+                outputPadding,biasUsed}) {
+            for(val keys : propertyMapping.getPropertyNames())
+                map.put(keys,propertyMapping);
+
+        }
+
+
+        ret.put(onnxName(),map);
         ret.put(tensorflowName(),map);
         return ret;
     }
 
-
-
     private void addArgs() {
         addIArgument(new int[]{
-                conv3DConfig.getDT(),
-                conv3DConfig.getDW(),
-                conv3DConfig.getDH(),
-                conv3DConfig.getPT(),
-                conv3DConfig.getPW(),
-                conv3DConfig.getPH(),
-                conv3DConfig.getDilationT(),
-                conv3DConfig.getDilationW(),
-                conv3DConfig.getDilationH(),
-                conv3DConfig.getAT(),
-                conv3DConfig.getAW(),
-                conv3DConfig.getAH(),
-                ArrayUtil.fromBoolean(conv3DConfig.isBiasUsed())});
+                config.getDT(),
+                config.getDW(),
+                config.getDH(),
+                config.getPT(),
+                config.getPW(),
+                config.getPH(),
+                config.getDilationT(),
+                config.getDilationW(),
+                config.getDilationH(),
+                config.getAT(),
+                config.getAW(),
+                config.getAH(),
+                ArrayUtil.fromBoolean(config.isBiasUsed())});
 
 
     }
+
+
+
 
     @Override
     public String opName() {
@@ -94,7 +191,7 @@ public class FullConv3D extends DynamicCustomOp {
         inputs.addAll(f1);
         List<SDVariable> ret = new ArrayList<>();
         FullConv3DDerivative fullConv3DDerivative = FullConv3DDerivative.derivativeBuilder()
-                .conv3DConfig(conv3DConfig)
+                .conv3DConfig(config)
                 .sameDiff(sameDiff)
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();

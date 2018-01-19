@@ -29,6 +29,7 @@ import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -44,11 +45,12 @@ import java.util.*;
 public class Reshape extends DynamicCustomOp {
 
     private int[] shape;
+    private String arrName;
 
     public Reshape(SameDiff sameDiff, SDVariable i_v,int[] shape) {
         super(null,sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
-        addIArgument('f');
+        addIArgument('c');
         addIArgument(shape);
     }
 
@@ -62,7 +64,7 @@ public class Reshape extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         if(!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
-            this.shape = new int[] {1,1};
+            this.shape = new int[] {};
             return;
         }
         else if(nodeDef.getInputCount() > 1) {
@@ -80,7 +82,12 @@ public class Reshape extends DynamicCustomOp {
                 this.shape = arr.data().asInt();
                 //all TF is c
                 addIArgument('c');
-                addIArgument(this.shape);
+                if(!ArrayUtil.containsAnyNegative(this.shape))
+                    addIArgument(this.shape);
+                else {
+                    arrName = nodeDef.getName();
+                }
+
             }
         }
         else {
@@ -120,6 +127,25 @@ public class Reshape extends DynamicCustomOp {
 
     }
 
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        super.resolvePropertiesFromSameDiffBeforeExecution();
+        if(arrName != null) {
+            val args = args();
+            val firstInputShape = args[0].getShape();
+            val shapeInput = args[1].getArr().data().asInt();
+            for(int i = 0; i < shapeInput.length; i++) {
+                if(shapeInput[i] < 0) {
+                    shapeInput[i] = firstInputShape[i];
+                }
+            }
+
+            this.shape = shapeInput;
+            addIArgument(shapeInput);
+        }
+
+
+    }
 
     @Override
     public Map<String, Object> propertiesForFunction() {

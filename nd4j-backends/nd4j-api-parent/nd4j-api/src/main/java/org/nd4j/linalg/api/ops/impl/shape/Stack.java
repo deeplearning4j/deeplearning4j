@@ -6,6 +6,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -21,6 +22,7 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class Stack  extends DynamicCustomOp {
+    private int axis;
 
     @Override
     public String onnxName() {
@@ -54,8 +56,7 @@ public class Stack  extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val attrAxis = nodeDef.getAttrOrThrow("axis");
-        int axis = (int) attrAxis.getI();
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
         addIArgument(axis);
     }
 
@@ -78,7 +79,8 @@ public class Stack  extends DynamicCustomOp {
 
         map.put("axis",axisMapping);
 
-        ret.put(tensorflowName(),map);
+        for(val name : tensorflowNames())
+            ret.put(name,map);
 
         return ret;
     }

@@ -19,13 +19,15 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NoArgsConstructor;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.ShapeOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -37,31 +39,35 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class Repeat extends ShapeOp {
+@NoArgsConstructor
+public class Repeat extends DynamicCustomOp {
     private int axis;
 
-    public Repeat(SameDiff sameDiff, SDVariable i_v, int axis) {
-        super(sameDiff, i_v, false);
+    public Repeat(int axis) {
         this.axis = axis;
     }
 
-    public Repeat() {}
-
-    public Repeat(INDArray x, INDArray z) {
-        super(x, z);
+    public Repeat(SameDiff sameDiff, SDVariable[] args, int axis) {
+        super(null, sameDiff, args);
+        this.axis = axis;
     }
 
-    public Repeat(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+    public Repeat(INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments, int axis) {
+        super(null, inputs, outputs, tArguments, iArguments);
+        this.axis = axis;
     }
 
-    public Repeat(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
+    public Repeat(INDArray[] inputs, INDArray[] outputs, int axis) {
+        super(null, inputs, outputs);
+        this.axis = axis;
     }
 
-    public Repeat(INDArray x) {
-        super(x);
+    public Repeat(SameDiff sameDiff, SDVariable[] args, boolean inPlace, int axis) {
+        super(null, sameDiff, args, inPlace);
+        this.axis = axis;
     }
+
+
 
     @Override
     public Map<String, Object> propertiesForFunction() {
@@ -71,31 +77,6 @@ public class Repeat extends ShapeOp {
     }
 
 
-    @Override
-    public void exec(int... dimensions) {
-        exec();
-    }
-
-    @Override
-    public boolean isExecSpecial() {
-        return true;
-    }
-
-    @Override
-    public void exec() {
-        if(x != z) {
-            z.assign(x.transpose());
-        }
-        else {
-            this.z = x.transpose();
-        }
-
-    }
-
-    @Override
-    public int opNum() {
-        return 0;
-    }
 
     @Override
     public String opName() {
@@ -125,12 +106,22 @@ public class Repeat extends ShapeOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+        addIArgument(axis);
     }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        if(numOutputArguments() < getDescriptor().getNumOutputs()) {
+            for(val output : outputVariables()) {
+                addOutputArgument(output.getArr());
+            }
+        }
     }
 
     @Override

@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Builder
 @Data
-public class DeConv2DConfig {
+public class DeConv2DConfig extends BaseConvolutionConfig {
     private int kY,kX,sY,sX,pY,pX,dY,dX;
     private boolean isSameMode;
     @Builder.Default private boolean isNHWC = false;

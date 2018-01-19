@@ -119,35 +119,11 @@ public class Mmul extends DynamicCustomOp {
         return "mmul";
     }
 
+
+
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        /**
-         * name: "MatMul"
-         op: "MatMul"
-         input: "input"
-         input: "Variable/read"
-         attr {
-         key: "transpose_b"
-         value {
-         b: false
-         }
-         }
-         attr {
-         key: "transpose_a"
-         value {
-         b: false
-         }
-         }
-         attr {
-         key: "T"
-         value {
-         type: DT_FLOAT
-         }
-         }
-
-         */
-
         val isTransposeA = attributesForNode.get("transpose_a").getB();
         val isTransposeB = attributesForNode.get("transpose_b").getB();
         MMulTranspose mMulTranspose = MMulTranspose.builder()

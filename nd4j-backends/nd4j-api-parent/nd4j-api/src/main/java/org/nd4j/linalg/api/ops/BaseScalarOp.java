@@ -138,6 +138,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
     @Override
     public Number scalar() {
+        if(scalarValue == null && y() != null && y().isScalar())
+            return y().getDouble(0);
         return scalarValue;
     }
 

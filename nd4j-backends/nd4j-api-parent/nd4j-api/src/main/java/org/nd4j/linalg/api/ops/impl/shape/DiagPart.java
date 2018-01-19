@@ -2,28 +2,24 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Map;
 
-/**
- * Stack op conversion
- *
- * @author raver119@gmail.com
- */
-public class Pack extends Stack {
-
+public class DiagPart extends DynamicCustomOp {
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op name found for  " + opName());
+    public String opName() {
+        return "diag_part";
     }
+
+
 
     @Override
     public String tensorflowName() {
-        return  "Pack";
+        return "DiagPart";
     }
 
     @Override
@@ -36,8 +32,4 @@ public class Pack extends Stack {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
 
-    @Override
-    public String opName() {
-        return "pack";
-    }
 }

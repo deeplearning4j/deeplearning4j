@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +43,22 @@ public class Pooling3D extends DynamicCustomOp {
             addOutputArgument(outputs);
         }
         addArgs();
+    }
+
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+        config.setValueFor(target,value);
+    }
+
+    @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "config";
     }
 
     @Override

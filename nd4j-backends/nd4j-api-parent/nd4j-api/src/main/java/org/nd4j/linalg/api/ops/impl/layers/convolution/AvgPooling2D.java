@@ -105,6 +105,16 @@ public class AvgPooling2D extends DynamicCustomOp {
     }
 
     @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "config";
+    }
+
+    @Override
     public Map<String, Object> propertiesForFunction() {
         return config.toProperties();
     }

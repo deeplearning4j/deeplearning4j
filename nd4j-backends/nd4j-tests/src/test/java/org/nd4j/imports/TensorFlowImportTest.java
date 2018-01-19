@@ -13,9 +13,11 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.graph.FlatGraph;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
@@ -45,6 +47,70 @@ public class TensorFlowImportTest {
     }
 
 
+    @Test
+    public void testClassHolder() {
+        DifferentialFunctionClassHolder.getInstance();
+    }
+
+
+    @Test
+    public void testIfStatementNodes() throws Exception {
+        // /home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/examples/simple_cond/frozen_graph.pbtxt
+        val resourceInputStream = new ClassPathResource("/tf_graphs/examples/simple_cond/frozen_model.pb").getInputStream();
+        val mapper = TFGraphMapper.getInstance();
+        val readGraph = TFGraphMapper.getInstance().parseGraphFrom(resourceInputStream);
+        val nodes = mapper.nodesByName(readGraph);
+        /**
+         * Work backwards starting fom the condition id (usually a name containing condid/pred_id:
+
+         */
+
+        val firstInput = nodes.get("cond5/Merge");
+        val ifNodes = mapper.nodesForIf(firstInput,readGraph);
+        assertEquals(5,ifNodes.getFalseNodes().size());
+        assertEquals(5,ifNodes.getTrueNodes().size());
+        assertEquals(10,ifNodes.getCondNodes().size());
+
+
+        val secondInput = nodes.get("cond6/Merge");
+        val ifNodesTwo = mapper.nodesForIf(secondInput,readGraph);
+        assertEquals(5,ifNodesTwo.getFalseNodes().size());
+        assertEquals(5,ifNodesTwo.getTrueNodes().size());
+        assertEquals(6,ifNodesTwo.getCondNodes().size());
+
+
+        val parentContext = SameDiff.create();
+        val ifStatement = new If();
+        ifStatement.initFromTensorFlow(firstInput,parentContext,Collections.emptyMap(),readGraph);
+        assertNotNull(ifStatement.getLoopBodyExecution());
+        assertNotNull(ifStatement.getFalseBodyExecution());
+        assertNotNull(ifStatement.getPredicateExecution());
+
+    }
+
+    @Test
+    public void testIfIgnoreWhileMerge() throws Exception {
+        val resourceInputStream = new ClassPathResource("/tf_graphs/examples/simple_while/frozen_model.pb").getInputStream();
+        val mapper = TFGraphMapper.getInstance();
+        val readGraph = TFGraphMapper.getInstance().parseGraphFrom(resourceInputStream);
+        val nodes = mapper.nodesByName(readGraph);
+        val firstInput = nodes.get("output/Merge");
+        assertNotNull(firstInput);
+        assertFalse(mapper.isOpIgnoreException(firstInput));
+
+        val resourceInputStreamIf = new ClassPathResource("/tf_graphs/examples/simple_cond/frozen_model.pb").getInputStream();
+        val readGraphIf = TFGraphMapper.getInstance().parseGraphFrom(resourceInputStreamIf);
+        val nodesif = mapper.nodesByName(readGraphIf);
+        /**
+         * Work backwards starting fom the condition id (usually a name containing condid/pred_id:
+
+         */
+
+        val secondInput = nodesif.get("cond5/Merge");
+        assertNotNull(secondInput);
+        assertTrue(mapper.isOpIgnoreException(secondInput));
+
+    }
 
 
     @Test
@@ -347,7 +413,7 @@ public class TensorFlowImportTest {
         assertEquals(2, graph.nodes(0).inputPairedLength());
         assertEquals(2, graph.nodes(1).inputPairedLength());
 
-     //   tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/nested_while.fb"));
+        //   tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/nested_while.fb"));
     }
 
 
@@ -448,7 +514,7 @@ public class TensorFlowImportTest {
      /*   assertEquals("strided_slice", graph.nodes(0).name());
         assertEquals("TensorArray", graph.nodes(1).name());
 */
-     //   assertEquals(4, graph.nodes(0).inputPairedLength());
+        //   assertEquals(4, graph.nodes(0).inputPairedLength());
 
         //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/tensor_array.fb"));
     }

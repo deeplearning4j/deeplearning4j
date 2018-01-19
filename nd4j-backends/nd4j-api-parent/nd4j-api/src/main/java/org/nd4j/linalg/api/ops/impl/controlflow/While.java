@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
@@ -175,7 +176,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
     private  void doImport(NodeDef nodeDef,SameDiff initWith,Map<String,AttrValue> attributesForNode,GraphDef graph,Set<String> skipSet,AtomicInteger currIndex) {
         val uniqueId = java.util.UUID.randomUUID().toString();
-
+        skipSet.add(nodeDef.getName());
         val scopeCondition = SameDiff.create();
         val scopeLoop = SameDiff.create();
         initWith.putSubFunction("condition-" + uniqueId,scopeCondition);
@@ -214,7 +215,7 @@ public class While extends DifferentialFunction implements CustomOp {
             val vars = new SDVariable[tfNode.getInputCount()];
             for (int e = 0; e < tfNode.getInputCount(); e++) {
                 val input = TFGraphMapper.getInstance().getNodeName(tfNode.getInput(e));
-                vars[e] = initWith.getVariable(input) == null ? initWith.var(input,null,new ZeroInitScheme('f')) : initWith.getVariable(input);
+                vars[e] = initWith.getVariable(input) == null ? initWith.var(input,null,new ZeroInitScheme()) : initWith.getVariable(input);
                 scopeCondition.var(vars[e]);
                 scopeLoop.var(vars[e]);
             }
@@ -229,12 +230,12 @@ public class While extends DifferentialFunction implements CustomOp {
             val tfNode = nodes.get(currIndex.get());
 
             if (!tfNode.getOp().equalsIgnoreCase("merge")) {
-                scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'));
+                scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme());
                 break;
             }
 
             skipSet.add(tfNode.getName());
-            val var = scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme('f'));
+            val var = scopeLoop.var(TFGraphMapper.getInstance().getNodeName(tfNode.getName()),null,new ZeroInitScheme());
             scopeCondition.var(var);
             initWith.var(var);
             mergedCnt++;
@@ -258,10 +259,16 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = scopeCondition.var(tfNode.getName(),null,new ZeroInitScheme('f'));
+                val var = scopeCondition.var(tfNode.getName(),null,new ZeroInitScheme());
                 scopeLoop.var(var);
                 initWith.var(var);
                 log.info("Adding condition var [{}]", var.getVarName());
+
+            }
+            else if(!skipSet.contains(tfNode.getName())) {
+                val func = DifferentialFunctionClassHolder.getInstance().getInstance(TFGraphMapper.getInstance().getMappedOp(tfNode.getOp()).opName());
+                func.initFromTensorFlow(tfNode,scopeCondition,nodeDef.getAttrMap(),graph);
+                func.setSameDiff(scopeLoop);
 
             }
 
@@ -297,6 +304,8 @@ public class While extends DifferentialFunction implements CustomOp {
             val func = DifferentialFunctionClassHolder.getInstance().getInstance(TFGraphMapper.getInstance().getMappedOp(tfNode.getOp()).opName());
             func.initFromTensorFlow(tfNode,initWith,nodeDef.getAttrMap(),graph);
             func.setSameDiff(scopeLoop);
+
+
             val variables = new SDVariable[tfNode.getInputCount()];
             for(int i = 0; i < tfNode.getInputCount(); i++) {
                 val testVar = initWith.getVariable(TFGraphMapper.getInstance().getNodeName(tfNode.getInput(i)));
@@ -347,7 +356,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
 
             if (isConst || isVar || isPlaceholder) {
-                val var = scopeLoop.var(tfNode.getName(), null,new ZeroInitScheme('f'));
+                val var = scopeLoop.var(tfNode.getName(), null,new ZeroInitScheme());
                 log.info("Adding body var [{}]",var.getVarName());
 
             } else {
@@ -404,7 +413,7 @@ public class While extends DifferentialFunction implements CustomOp {
             skipSet.add(tfNode.getName());
 
             val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
-            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme('f')) : initWith.getVariable(inputName) ;
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
             returnInputs.add(input);
         }
 
@@ -426,9 +435,17 @@ public class While extends DifferentialFunction implements CustomOp {
 
             skipSet.add(tfNode.getName());
             val inputName = TFGraphMapper.getInstance().getNodeName(tfNode.getName());
-            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme('f')) : initWith.getVariable(inputName) ;
+            val input = initWith.getVariable(inputName) == null ? initWith.var(inputName,null,new ZeroInitScheme()) : initWith.getVariable(inputName) ;
         }
 
+
+        //the output of the condition should always be a singular scalar
+        //this is a safe assumption
+        val conditionVars = scopeCondition.functions();
+        if(conditionVars.length < 1) {
+            throw new ND4JIllegalArgumentException("No functions found!");
+        }
+        this.targetBoolean = conditionVars[conditionVars.length - 1].outputVariables()[0];
 
         log.info("-------------------------------------------");
 

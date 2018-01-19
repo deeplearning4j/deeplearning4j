@@ -88,7 +88,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -4138,6 +4137,13 @@ public class Nd4j {
         return create(shape, stride, order());
     }
 
+
+    /**
+     *
+     * @param shape
+     * @param stride
+     * @return
+     */
     public static INDArray zeros(int[] shape, int[] stride) {
         return create(shape, stride);
     }
@@ -4520,6 +4526,12 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     *
+     * @param shape
+     * @param dataType
+     * @return
+     */
     public static INDArray create(int[] shape, DataBuffer.Type dataType) {
         //ensure shapes that wind up being scalar end up with the write shape
         if (shape.length == 1 && shape[0] == 0) {

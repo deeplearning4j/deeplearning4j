@@ -25,12 +25,14 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tile function
@@ -48,34 +50,7 @@ public class Tile extends DynamicCustomOp {
 
     public Tile() {}
 
-    @Override
-    public List<int[]> calculateOutputShape() {
-        val inputShape = args()[0].getShape();
-        val shape = ArrayUtil.copy(inputShape);
-        if(axis == null || inputShape == null)
-            return Collections.emptyList();
 
-        if(axis.length == inputShape.length){
-            for(int i = 0; i < axis.length; i++) {
-                shape[i] = inputShape[i] * axis[i];
-            }
-        }
-
-        else if(org.nd4j.linalg.api.shape.Shape.isVector(shape)) {
-            if(inputShape[0] == 1) {
-                inputShape[1] *= axis[0];
-            }
-            else if(inputShape[1] == 1) {
-                inputShape[0] *= axis[0];
-            }
-        }
-        else if(axis.length == 1) {
-            shape[shape.length - 1] = axis[0];
-        }
-
-
-        return Arrays.asList(shape);
-    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -95,6 +70,12 @@ public class Tile extends DynamicCustomOp {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("axis",axis);
         return ret;
+    }
+
+
+    @Override
+    public void resolvePropertiesFromSameDiffBeforeExecution() {
+        populateInputsAndOutputsFromSameDiff();
     }
 
 

@@ -11,7 +11,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @Data
-public class Pooling2DConfig {
+public class Pooling2DConfig extends BaseConvolutionConfig {
 
     private int kh, kw, sy, sx, ph, pw, virtualHeight,virtualWidth;
     /**

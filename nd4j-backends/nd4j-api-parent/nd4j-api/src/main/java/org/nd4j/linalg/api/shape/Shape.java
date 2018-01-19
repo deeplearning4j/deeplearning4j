@@ -61,7 +61,7 @@ public class Shape {
      * @return
      */
     public static boolean shapeIsScalar(int[] shape) {
-        return ArrayUtil.prod(shape) == 1;
+        return shape.length == 0 || ArrayUtil.prod(shape) == 1;
     }
 
     /**
@@ -254,7 +254,7 @@ public class Shape {
      */
     public static int[] getReducedShape(int[] wholeShape, int[] dimensions) {
         if (isWholeArray(wholeShape, dimensions))
-            return new int[] {1, 1};
+            return new int[] {};
         else if (dimensions.length == 1 && wholeShape.length == 2) {
             int[] ret = new int[2];
             if (dimensions[0] == 1) {
@@ -302,8 +302,19 @@ public class Shape {
             if(right[i] < 1)
                 throw new ND4JIllegalStateException("Right shape contained value < 0 at index " + i);
         }
-        if (left[1] != right[0])
+
+
+        if (left.length > 1 && left[1] != right[0])
             throw new IllegalArgumentException("Columns of left not equal to rows of right");
+
+        if(left.length < right.length) {
+            if(left[0] == right[0]) {
+                return new int[] {1, right[1]};
+            }
+        }
+
+
+
 
         int[] shape = {left[0], right[1]};
         return shape;
@@ -1018,6 +1029,18 @@ public class Shape {
             int[] shape2Comp = squeeze(shape2);
             return Arrays.equals(shape1Comp, shape2Comp);
         }
+
+        //scalars
+        if(shape1.length == 0 || shape2.length == 0) {
+            if(shape1.length == 0 && shapeIsScalar(shape2)) {
+                return true;
+            }
+
+            if(shape2.length == 0 && shapeIsScalar(shape1)) {
+                return true;
+            }
+        }
+
 
         shape1 = squeeze(shape1);
         shape2 = squeeze(shape2);

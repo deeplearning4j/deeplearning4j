@@ -8,9 +8,12 @@ import java.util.Map;
 
 @Builder
 @Data
-public class FullConv3DConfig {
+public class FullConv3DConfig extends BaseConvolutionConfig {
     private int dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH,aT,aW,aH;
     private boolean biasUsed;
+    private String dataFormat;
+
+
 
 
     public Map<String,Object> toProperties() {
@@ -28,6 +31,7 @@ public class FullConv3DConfig {
         ret.put("aW",aW);
         ret.put("aH",aH);
         ret.put("biasUsed",biasUsed);
+        ret.put("dataFormat",dataFormat);
         return ret;
     }
 }

@@ -18,8 +18,8 @@ import java.util.List;
 public class Conv2DDerivative extends Conv2D {
 
     @Builder(builderMethodName = "derivativeBuilder")
-    public Conv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
+    public Conv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig config) {
+        super(sameDiff, inputFunctions, inputArrays, outputs, config);
     }
 
     public Conv2DDerivative() {}
@@ -34,6 +34,11 @@ public class Conv2DDerivative extends Conv2D {
     @Override
     public String tensorflowName() {
        throw new NoOpNameFoundException("No op name found for backwards");
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        throw new NoOpNameFoundException("No op name found for backwards");
     }
 
     @Override

@@ -235,10 +235,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             arr = var.getArr();
         }
 
-        if(arr != null)
+        if(arr != null) {
+            sameDiff.associateArrayWithVariable(arr,var);
             addOutputArgument(arr);
+        }
 
-        sameDiff.associateArrayWithVariable(arr,var);
+
         return arr;
     }
 
@@ -372,6 +374,14 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         return inputArguments.get(index);
     }
 
+    public void setInputArgument(int index,INDArray input) {
+        inputArguments.set(index,input);
+    }
+
+    public void setOutputArgument(int index,INDArray output) {
+        outputArguments.set(index,output);
+    }
+
     @Override
     public int numInputArguments() {
         return inputArguments.size();
@@ -425,6 +435,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
+        val descriptor = getDescriptor();
         for(val arg : args()) {
             if(sameDiff.isPlaceHolder(arg.getVarName()) && !sameDiff.shapeAlreadyExistsForVarName(arg.getVarName()))
                 return Collections.emptyList();
@@ -432,6 +443,18 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
         if(outputShapes != null)
             return outputShapes;
+
+
+        //not fully initialized
+        if(descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs()) {
+            return Collections.emptyList();
+        }
+
+
+        //not fully initialized
+        if(descriptor.getNumTArgs() >= 0 && numTArguments() < descriptor.getNumTArgs()) {
+            return Collections.emptyList();
+        }
 
 
         /**

@@ -30,7 +30,10 @@ SConv2DDerivative extends SConv2D {
         return "sconv2d_bp";
     }
 
-
+    @Override
+    public String[] tensorflowNames() {
+        throw new NoOpNameFoundException("No op name found for backwards");
+    }
 
     @Override
     public String onnxName() {

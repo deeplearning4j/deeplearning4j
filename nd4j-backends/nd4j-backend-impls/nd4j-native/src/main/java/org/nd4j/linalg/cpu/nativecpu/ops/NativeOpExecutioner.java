@@ -1577,6 +1577,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
+
+
             OpStatus status = OpStatus.ND4J_STATUS_OK;
             try {
                 status = OpStatus.byNumber(loop.execCustomOpDouble(

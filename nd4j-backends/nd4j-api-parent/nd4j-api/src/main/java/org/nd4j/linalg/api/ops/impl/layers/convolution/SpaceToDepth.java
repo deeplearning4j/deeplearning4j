@@ -13,8 +13,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class DepthToSpace extends DynamicCustomOp {
-    private String dataFormat = "NHWC";
+/**
+ * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from HW dimensions to C dimension.
+ *
+ * @author raver119@gmail.com
+ */
+public class SpaceToDepth extends DynamicCustomOp {
+    private String dataFormat;
     private int blockSize;
 
     @Override
@@ -23,8 +28,6 @@ public class DepthToSpace extends DynamicCustomOp {
         boolean isNHWC = dataFormat.equals("NHWC");
         addIArgument(blockSize,isNHWC ? 1 : 0);
     }
-
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -47,21 +50,18 @@ public class DepthToSpace extends DynamicCustomOp {
         return ret;
     }
 
-
-
-
     @Override
     public String opName() {
-        return "depth_to_space";
+        return "space_to_depth";
     }
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"DepthToSpace"};
+        return new String[] {"SpaceToDepth"};
     }
 
     @Override
     public String tensorflowName() {
-        return "DepthToSpace";
+        return "SpaceToDepth";
     }
 }

@@ -1,5 +1,6 @@
 package org.nd4j.imports.graphmapper.tf;
 
+import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -8,11 +9,13 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -49,6 +52,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
          * public interface ImportOpHandler
          */
         add("LoopCond");
+        /**
+         * We should skip this for the sake of while..but not if.
+         * Need to be a bit more flexible here.
+         */
         add("Merge");
         add("Exit");
         add("NextIteration");
@@ -81,6 +88,34 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public boolean isOpIgnoreException(NodeDef node) {
+        //if statements should not be ignored
+        if(node.getOp().equals("Merge")) {
+            boolean ret = false;
+            for(int i = 0; i < node.getInputCount(); i++) {
+                //while loop
+                ret = ret || !node.getInput(i).endsWith("/Enter") || !node.getInput(i).endsWith("/NextIteration");
+
+            }
+
+            return ret;
+        }
+
+        else if(node.getOp().equals("Switch")) {
+            boolean ret = false;
+            for(int i = 0; i < node.getInputCount(); i++) {
+                //while loop
+                ret = ret || !node.getInput(i).endsWith("/Merge") || !node.getInput(i).endsWith("/LoopCond");
+
+            }
+
+            return ret;
+        }
+
+        return false;
     }
 
     @Override
@@ -122,9 +157,13 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 arr = sameDiff.getArrForVarName(input);
             }
 
-            if(arr == null) {
+            if(arr == null && inputNode != null) {
                 sameDiff.addPropertyToResolve(on,name);
                 sameDiff.addVariableMappingForField(on,name,inputNode.getName());
+                return;
+            }
+            else if(inputNode == null) {
+                sameDiff.addAsPlaceHolder(input);
                 return;
             }
 
@@ -146,7 +185,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         else {
             val tfMappingAttrName = mapping.getTfAttrName();
             if(tfMappingAttrName == null) {
-               return;
+                return;
             }
 
             if(!node.containsAttr(tfMappingAttrName)) {
@@ -198,13 +237,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
             if(field != null && valueToSet != null)
                 on.setValueFor(field,valueToSet);
-
-
         }
-
     }
-
-
 
 
     /**
@@ -284,6 +318,10 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public INDArray getArrayFrom(NodeDef nodeDef, GraphDef graph) {
+        if(nodeDef == null) {
+            return null;
+        }
+
         return getNDArrayFromTensor(nodeDef.getName(),nodeDef, graph);
     }
 
@@ -475,6 +513,163 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
     }
 
+
+    /**
+     * Calls {@link #initFunctionFromProperties(DifferentialFunction, Map, NodeDef, GraphDef)}
+     * using {@link DifferentialFunction#tensorflowName()}
+     * @param on the function to use init on
+     * @param attributesForNode the attributes for the node
+     * @param node
+     * @param graph
+     */
+    public void initFunctionFromProperties(DifferentialFunction on, Map<String, AttrValue> attributesForNode, NodeDef node, GraphDef graph) {
+        initFunctionFromProperties(on.tensorflowName(),on,attributesForNode,node,graph);
+    }
+
+    /**
+     * Init a function's attributes
+     * @param mappedTfName the tensorflow name to pick (sometimes ops have multiple names
+     * @param on the function to map
+     * @param attributesForNode the attributes for the node
+     * @param node
+     * @param graph
+     */
+    public void initFunctionFromProperties(String mappedTfName, DifferentialFunction on, Map<String, AttrValue> attributesForNode, NodeDef node, GraphDef graph) {
+        val properties = on.mappingsForFunction();
+        val tfProperties = properties.get(mappedTfName);
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
+        val attributeAdapters = on.attributeAdaptersForFunction();
+        for(val entry : tfProperties.entrySet()) {
+            val tfAttrName = entry.getValue().getTfAttrName();
+            val currentField = fields.get(entry.getKey());
+
+            AttributeAdapter adapter = null;
+            if(tfAttrName != null) {
+                if(currentField == null) {
+                    continue;
+                }
+                if(attributeAdapters != null && !attributeAdapters.isEmpty()) {
+                    val mappers = attributeAdapters.get(on.tensorflowName());
+                    val adapterFor = mappers.get(entry.getKey());
+                    adapter = adapterFor;
+                }
+
+
+                if(attributesForNode.containsKey(tfAttrName)) {
+                    val attr = attributesForNode.get(tfAttrName);
+                    switch (attr.getValueCase()) {
+                        case B:
+                            break;
+                        case F: break;
+                        case FUNC: break;
+                        case S:
+                            val setString = attr.getS().toStringUtf8();
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(setString,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,setString);
+                            break;
+                        case I:
+                            val setInt = (int) attr.getI();
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(setInt,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,setInt);
+                            break;
+                        case SHAPE:
+                            val shape = attr.getShape().getDimList();
+                            int[] dimsToSet = new int[shape.size()];
+                            for(int i = 0; i < dimsToSet.length; i++) {
+                                dimsToSet[i] = (int) shape.get(i).getSize();
+                            }
+
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(dimsToSet,currentField,on);
+                            }
+
+                            else
+                                on.setValueFor(currentField,dimsToSet);
+                            break;
+                        case VALUE_NOT_SET:break;
+                        case PLACEHOLDER: break;
+                        case LIST:
+                            val setList = attr.getList();
+                            if(!setList.getIList().isEmpty()) {
+                                val intList = Ints.toArray(setList.getIList());
+                                if(adapter != null) {
+                                    adapter.mapAttributeFor(intList,currentField,on);
+                                }
+                                else
+                                    on.setValueFor(currentField,intList);
+                            }
+                            else if(!setList.getBList().isEmpty()) {
+                                break;
+                            }
+                            else if(!setList.getFList().isEmpty()) {
+                                val floats = Floats.toArray(setList.getFList());
+                                if(adapter != null) {
+                                    adapter.mapAttributeFor(floats,currentField,on);
+                                }
+
+                                else
+                                    on.setValueFor(currentField,floats);
+                                break;
+                            }
+                            else if(!setList.getFuncList().isEmpty()) {
+                                break;
+                            }
+                            else if(!setList.getTensorList().isEmpty()) {
+                                break;
+                            }
+                            break;
+                        case TENSOR:
+                            val tensorToGet = TFGraphMapper.getInstance().mapTensorProto(attr.getTensor());
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(tensorToGet,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,tensorToGet);
+                            break;
+                        case TYPE: break;
+                    }
+                }
+            }
+
+            else if(entry.getValue().getTfInputPosition() != null) {
+                int position = entry.getValue().getTfInputPosition();
+                if(position < 0) {
+                    position += node.getInputCount();
+                }
+
+                val inputFromNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,node.getInput(position));
+                val tensor = inputFromNode != null ? TFGraphMapper.getInstance().getNDArrayFromTensor("value",inputFromNode,graph) : null;
+                if(tensor != null) {
+                    if(currentField.getType().equals(int[].class)) {
+                        on.setValueFor(currentField,tensor.data().asInt());
+                    }
+                    else if(currentField.getType().equals(double[].class)) {
+                        on.setValueFor(currentField,tensor.data().asDouble());
+
+                    }
+                    else if(currentField.getType().equals(float[].class)) {
+                        on.setValueFor(currentField,tensor.data().asFloat());
+
+                    }
+                    else if(currentField.getType().equals(INDArray.class)) {
+                        on.setValueFor(currentField,tensor);
+                    }
+                }
+
+                else {
+                    on.getSameDiff().addPropertyToResolve(on,entry.getKey());
+                }
+            }
+        }
+    }
+
+
     @Override
     public DataBuffer.Type dataTypeForTensor(NodeDef tensorProto) {
         if(!tensorProto.containsAttr("dtype") && !tensorProto.containsAttr("Tidx") && !tensorProto.containsAttr("T"))
@@ -517,21 +712,27 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
     @Override
     public  INDArray getNDArrayFromTensor(String tensorName, NodeDef node, GraphDef graph) {
-        int[] arrayShape = null;
-        List<Integer> dimensions = new ArrayList<>();
         //placeholder of some kind
         if(!node.getAttrMap().containsKey("value")) {
             return null;
         }
+
         val tfTensor = node.getAttrOrThrow("value").getTensor();
+        return mapTensorProto(tfTensor);
+    }
+
+
+
+    public INDArray mapTensorProto(TensorProto tfTensor) {
         // building shape first
         int dims = tfTensor.getTensorShape().getDimCount();
-
+        int[] arrayShape = null;
+        List<Integer> dimensions = new ArrayList<>();
         // we allow vectors now
         //if(dims == 1) {
         //    dimensions.add(1);
         //    dimensions.add( (int) Math.max(1,tfTensor.getTensorShape().getDim(0).getSize()));
-       // }
+        // }
 
         for (int e = 0; e < dims; e++) {
             // TODO: eventually we want long shapes :(
@@ -727,5 +928,104 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         return shape;
     }
+
+
+    /**
+     * Returns the node for an if statement
+     * @param from the starting node (a merge node that represents a conditional)
+     * @param graph the graph to search
+     * @return an import state representing the nodes for each scope
+     */
+    public IfImportState nodesForIf(NodeDef from, GraphDef graph) {
+        //Assume we start with a switch statement
+        int currNodeIndex = graph.getNodeList().indexOf(from);
+        val trueDefName = from.getInput(1);
+        val falseDefName = from.getInput(0);
+        val scopeId = UUID.randomUUID().toString();
+        val scopeName = scopeId + "-" + trueDefName.substring(0,trueDefName.indexOf("/"));
+        val trueDefScopeName = scopeName + "-true-scope";
+        val falseDefScopeName = scopeName + "-false-scope";
+
+
+        boolean onFalseDefinition = true;
+        //start with the true
+        boolean onTrueDefinition = false;
+
+        List<NodeDef> falseBodyNodes = new ArrayList<>();
+        List<NodeDef> trueBodyNodes = new ArrayList<>();
+        List<NodeDef> conditionNodes = new ArrayList<>();
+        Set<String> seenNames = new LinkedHashSet<>();
+        /**
+         * Accumulate a list backwards to get proper ordering.
+         *
+         */
+        for(int i = currNodeIndex; i >= 0; i--) {
+            //switch to false names
+            if(graph.getNode(i).getName().equals(trueDefName)) {
+                onFalseDefinition = false;
+                onTrueDefinition = true;
+            }
+
+            //on predicate now
+            if(graph.getNode(i).getName().contains("pred_id")) {
+                onTrueDefinition = false;
+            }
+            //don't readd the same node, this causes a stackoverflow
+            if(onTrueDefinition  && !graph.getNode(i).equals(from)) {
+                trueBodyNodes.add(graph.getNode(i));
+            }
+            else if(onFalseDefinition && !graph.getNode(i).equals(from)) {
+                falseBodyNodes.add(graph.getNode(i));
+            }
+            //condition scope now
+            else {
+                val currNode = graph.getNode(i);
+                if(currNode.equals(from))
+                    continue;
+
+                //break only after bootstrapping the first node (the predicate id node)
+                if(!seenNames.contains(graph.getNode(i).getName()) && !graph.getNode(i).getName().contains("pred_id")) {
+                    break;
+                }
+
+                /**
+                 * Continuously add inputs seen for each node in the sub graph that occurs.
+                 * Starting from the predicate id, any node that has inputs in the condition scope
+                 * are by definition within the scope. Any node not encountered after that is considered out of scope.
+                 * This means we break.
+                 */
+                for(int inputIdx = 0; inputIdx < currNode.getInputCount(); inputIdx++) {
+                    seenNames.add(currNode.getInput(inputIdx));
+                }
+
+
+
+                //ensure the "current node" is added as well
+                seenNames.add(graph.getNode(i).getName());
+                conditionNodes.add(graph.getNode(i));
+            }
+        }
+
+        /**
+         * Since we are going over the graph backwards,
+         * we need to reverse the nodes to ensure proper ordering.
+         */
+        Collections.reverse(falseBodyNodes);
+        Collections.reverse(trueBodyNodes);
+        Collections.reverse(conditionNodes);
+
+
+        return IfImportState.builder()
+                .condNodes(conditionNodes)
+                .falseNodes(falseBodyNodes)
+                .trueNodes(trueBodyNodes)
+                .conditionBodyScopeName(falseDefScopeName)
+                .falseBodyScopeName(falseDefScopeName)
+                .trueBodyScopeName(trueDefScopeName)
+                .conditionBodyScopeName(scopeName)
+                .build();
+    }
+
+
 
 }

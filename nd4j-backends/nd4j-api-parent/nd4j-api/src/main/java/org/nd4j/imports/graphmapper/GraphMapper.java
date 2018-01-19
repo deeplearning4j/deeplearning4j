@@ -29,6 +29,25 @@ public interface GraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE> {
 
 
     /**
+     * Returns true if this node is a special case
+     * (maybe because of name or other scenarios)
+     * that should override {@link #opsToIgnore()}
+     * in certain circumstances
+     * @param node the node to check
+     * @return true if this node is an exception false otherwise
+     */
+    boolean isOpIgnoreException(NODE_TYPE node);
+
+    /**
+     * Get the nodes sorted by n ame
+     * from a given graph
+     * @param graph the graph to get the nodes for
+     * @return the map of the nodes by name
+     * for a given graph
+     */
+    Map<String,NODE_TYPE> nodesByName(GRAPH_TYPE graph);
+
+    /**
      * Get the target mapping key (usually based on the node name)
      * for the given function
      * @param function the function

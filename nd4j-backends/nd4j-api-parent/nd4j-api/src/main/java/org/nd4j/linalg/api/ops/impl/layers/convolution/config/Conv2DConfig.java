@@ -12,7 +12,7 @@ import java.util.Map;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Conv2DConfig {
+public class Conv2DConfig extends BaseConvolutionConfig  {
     private int kh, kw, sy, sx, ph, pw;
     @Builder.Default private int dh = 1;
     @Builder.Default private int dw = 1;
@@ -33,5 +33,6 @@ public class Conv2DConfig {
         ret.put("isNWHC",isNHWC);
         return ret;
     }
+
 
 }

@@ -27,72 +27,65 @@ import static org.nd4j.imports.TFGraphTestAllHelper.*;
 public class TFGraphTestList {
 
     public static String[] modelNames = new String[]{
-//            "add_n",
-            //"ae",
-            //"ae_00",
+            "add_n",
+            "ae",
+            "ae_00",
             "bias_add",
-            //"norm_tests/norm_0",
-            // "concat"
-            // "conv_0",
-            // "conv_1",
-            // "conv_2",
-            // "conv_3",
-            //"deep_mnist", //NOTE THIS ONE WILL FAIL because it is expecting a placeholder value for dropout % which we tie to 1.0 in inference
-            //"deep_mnist_no_dropout", //Takes way too long since there are a lot of nodes, would skip for now
-             //"expand_dim",
+            "norm_tests/norm_0",
+            "concat",
+            "conv_0",
+            "conv_1", //Raver is working on this
+            "conv_2", //missing SpaceToBatchND
+            "conv_3", //fails due to 4d input: this seems to be related to Conv2d being mapped to Dilation2D which takes 3d input
+            "deep_mnist", //broadcast bug? double check with raver
+            "deep_mnist_no_dropout",
+            "expand_dim",
+            "g_00",
+            "g_01",
+            "g_01",
+            "g_02",
+            "g_03", //op missing?
+            "g_04",
+            "g_05",
+            "gru_mnist",
+            "lstm_mnist",
+            "math_mul_order",
+            "mlp_00",
+            "mnist_00",
+            "node_multiple_out",
+            "non2d_0",
+            "non2d_0A",
 
-             //"g_00", //This has no placeholders in the graph - not sure how to exec as it gives a NPE
-            //   "g_01",
-            //   "g_01",
-               //"g_02",
-            //   "g_03",
-           //   "g_04",
-             //  "g_05",
-           //   "gru_mnist",
-            //"lstm_mnist",
-            // "math_mul_order",
-            //"mlp_00",
-            //"mnist_00",
-            //  "node_multiple_out",// -> Need to map multiple out values to graph node output values
-            //  "pool_0",
-           //   "pool_1",
-            //  "primitive_gru",
-           //   "primitive_gru_dynamic",
-             // "primitive_lstm",
-            //  "stack",
-            //  "stack_1d",
-            //"stack_scalar",
-          //   "simple_cond"
-            //"transform_0",
+            "pool_0",
+            "pool_1",
+            "primitive_gru",
+            "primitive_gru_dynamic", //while loop related NullPointer, double check import here
+            "primitive_lstm",
+          //  "ssd_mobilenet_v1_coco",
+            "stack",
+            "stack_1d",
+            "stack_scalar",
+         //     "simple_cond", //JVM crash
+            "simple_while",  //Functions not being added: Need to finish while import
+            "transform_0",
             "transpose_00",
-            "non2d_0"
-             // "unstack"
+            "unstack",
+           // "yolov2_608x608"
     };
 
-    /**
-     * Failures:
-     * transpose
-     * simple_cond
-     * primitive_gru_dynamic (while loop related)
-     * pool_1 (attributes related)
-     * pool_0: (attributes related)
-     * g_05: Gather related
-     * g_04: assertion failure
-     *
-     * Note: norm_tests have to be run with "norm_tests/norm_0" or to run all the tests under a directory run with TFGraphTestSubDir
-     */
+
 
     //change this to SAMEDIFF for samediff
     public static TFGraphTestAllHelper.ExecuteWith executeWith = ExecuteWith.SAMEDIFF;
     //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
-    //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
+    // public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
 
     public static String modelDir = TFGraphTestAllHelper.COMMON_BASE_DIR; //this is for later if we want to check in models separately for samediff and libnd4j
 
     private String modelName;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> data() throws IOException {
+    public static Collection<Object[]> data() {
         List<Object[]> modelNamesParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
             Object[] currentParams = new String[]{modelNames[i]};

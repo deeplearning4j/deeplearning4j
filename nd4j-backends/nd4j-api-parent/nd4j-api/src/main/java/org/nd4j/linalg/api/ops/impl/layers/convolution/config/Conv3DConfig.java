@@ -13,21 +13,26 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Conv3DConfig {
+public class Conv3DConfig extends BaseConvolutionConfig {
+    //strides
     private int dT;
     private int dW;
     private int dH;
+    //padding
     private int pT;
     private int pW;
     private int pH;
+    //dilations
     private int dilationT;
     private int dilationW;
     private int dilationH;
+    //output padding
     private int aT;
     private int aW;
     private int aH;
     private boolean biasUsed;
-
+    @Builder.Default
+    private String dataFormat = "NDHWC";
 
     public Map<String,Object> toProperties() {
         Map<String,Object> ret = new LinkedHashMap<>();
@@ -44,7 +49,11 @@ public class Conv3DConfig {
         ret.put("aW",aW);
         ret.put("aH",aH);
         ret.put("biasUsed",biasUsed);
+        ret.put("dataFormat",dataFormat);
         return ret;
     }
+
+
+
 
 }

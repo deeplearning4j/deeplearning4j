@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.FullConv3DConfig;
 
@@ -26,6 +27,16 @@ public class FullConv3DDerivative extends FullConv3D {
     @Override
     public String opName() {
         return "fullconv3d_bp";
+    }
+
+    @Override
+    public String tensorflowName() {
+        throw new NoOpNameFoundException("No tensorflwo op name found for conv3d derivative");
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        throw new NoOpNameFoundException("No tensorflwo op name found for conv3d derivative");
     }
 
 

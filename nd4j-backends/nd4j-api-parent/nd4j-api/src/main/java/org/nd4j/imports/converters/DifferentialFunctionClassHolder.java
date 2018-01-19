@@ -7,6 +7,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.reflections.Reflections;
@@ -33,7 +34,16 @@ public class DifferentialFunctionClassHolder {
     private Map<String,Map<String,Field>> fieldsForFunction;
 
     private  Set<String>  fieldNamesOpsIgnore;
-
+    private Set<String> classesWithConfig = new LinkedHashSet<String>(){{
+        add(AvgPooling2D.class.getName());
+        add(Conv2D.class.getName());
+        add(Conv3D.class.getName());
+        add(FullConv3D.class.getName());
+        add(LocalResponseNormalization.class.getName());
+        add(MaxPooling2D.class.getName());
+        add(Pooling2D.class.getName());
+        add(Pooling3D.class.getName());
+    }};
     /**
      * Get the fields for a given {@link DifferentialFunction}
      * @param function the function to get the fields for
@@ -152,18 +162,40 @@ public class DifferentialFunctionClassHolder {
                     //accumulate the field names for a given function
                     //this is mainly used in import
                     Map<String,Field> fieldNames = new LinkedHashMap<>();
-                    Class<?> current = node.getClass();
+                    Class<? extends DifferentialFunction> current = node.getClass();
                     val fields = new ArrayList<Field>();
                     while(current.getSuperclass() != null) {
-                        for(val field : current.getDeclaredFields()) {
-                            if(!fieldNamesOpsIgnore.contains(field.getName())) {
-                                fields.add(field);
-                                field.setAccessible(true);
-                                fieldNames.put(field.getName(),field);
+                        if(classesWithConfig.contains(current.getName())) {
+
+                            val fieldName = "config";
+
+                            val configField = current.getDeclaredField(fieldName);
+                            if(configField ==  null) {
+                                continue;
+                            }
+
+                            val configFieldClass = configField.getType();
+
+                            for(val field : configFieldClass.getDeclaredFields()) {
+                                if(!fieldNamesOpsIgnore.contains(field.getName())) {
+                                    fields.add(field);
+                                    field.setAccessible(true);
+                                    fieldNames.put(field.getName(),field);
+                                }
                             }
                         }
+                        else {
+                            for(val field : current.getDeclaredFields()) {
+                                if(!fieldNamesOpsIgnore.contains(field.getName())) {
+                                    fields.add(field);
+                                    field.setAccessible(true);
+                                    fieldNames.put(field.getName(),field);
+                                }
+                            }
+                        }
+
                         // do something with current's fields
-                        current = current.getSuperclass();
+                        current = (Class<? extends DifferentialFunction>) current.getSuperclass();
 
                     }
 
@@ -174,7 +206,7 @@ public class DifferentialFunctionClassHolder {
                 log.trace("Skipping function  " + clazz);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
-            } catch (InstantiationException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }

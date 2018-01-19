@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Data
 @Builder
-public class LocalResponseNormalizationConfig {
+public class LocalResponseNormalizationConfig extends BaseConvolutionConfig {
 
     private double alpha,beta,bias,depth;
 

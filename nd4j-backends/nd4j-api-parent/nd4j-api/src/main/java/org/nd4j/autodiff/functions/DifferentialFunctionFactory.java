@@ -514,7 +514,7 @@ public class DifferentialFunctionFactory   {
 
 
     public SDVariable repeat(SDVariable iX, int axis) {
-        return new Repeat(sameDiff(),iX,axis).outputVariables()[0];
+        return new Repeat(sameDiff(), new SDVariable[]{iX},axis).outputVariables()[0];
 
     }
 
