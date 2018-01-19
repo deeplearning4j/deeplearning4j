@@ -39,6 +39,16 @@ public class GradCheckMisc {
     doRepeat
      */
 
+    @Test
+    public void testConcat(){
+
+        int[] concatDim = new int[]{0,0,0,1,1,1,2,2,2};
+        List<List<int[]>> origShapes = new ArrayList<>();
+        origShapes.add(Arrays.asList(new int[]{3,4}, new int[]{5,4}));
+
+
+        fail("not yet implemented");
+    }
 
     @Test
     public void testReshapeGradient() {
@@ -198,7 +208,7 @@ public class GradCheckMisc {
             int[] in2Shape = {3, 4, 5};
             in2Shape[dim_sz1] = 1;
 
-            for (int i = 0; i < 6; i++) {
+            for (int i = 2; i < 3; i++) {
 
                 SameDiff sd = SameDiff.create();
 
@@ -206,24 +216,39 @@ public class GradCheckMisc {
                 SDVariable in2 = sd.var("in2", in2Shape);
 
                 SDVariable bcOp;
+                String name;
                 switch (i) {
                     case 0:
                         bcOp = in3.add(in2);
+                        name = "add";
                         break;
                     case 1:
                         bcOp = in3.sub(in2);
+                        name = "sub";
                         break;
                     case 2:
                         bcOp = in3.mul(in2);
+                        name = "mul";
                         break;
                     case 3:
                         bcOp = in3.div(in2);
+                        name = "div";
                         break;
                     case 4:
                         bcOp = in3.rsub(in2);
+                        name = "rsub";
                         break;
                     case 5:
                         bcOp = in3.rdiv(in2);
+                        name = "rdiv";
+                        break;
+                    case 6:
+                        bcOp = sd.f().floorDiv(in3, in2);
+                        name = "floordiv";
+                        break;
+                    case 7:
+                        bcOp = sd.f().floorMod(in3, in2);
+                        name = "floormod";
                         break;
                     default:
                         throw new RuntimeException();
@@ -231,7 +256,7 @@ public class GradCheckMisc {
 
                 SDVariable outVar = sd.sum(bcOp);
 
-                String msg = "(test " + i + ", dimension=" + dim_sz1 + ")";
+                String msg = "(test " + i + ": " + name + ", dimension=" + dim_sz1 + ")";
                 log.info("*** Starting test: " + msg);
 
                 INDArray in3Arr = Nd4j.randn(new int[]{3, 4, 5}).muli(100);
@@ -268,40 +293,56 @@ public class GradCheckMisc {
 
         List<String> allFailed = new ArrayList<>();
 
-        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}}) {
+        for (int[] dim_sz1s : new int[][]{{0, 1}, {0, 2}, {1, 2}, {0,1,2}}) {
 
-            int[] in1Shape = {3, 4, 5};
-            in1Shape[dim_sz1s[0]] = 1;
-            in1Shape[dim_sz1s[1]] = 1;
+            int[] otherShape = {3, 4, 5};
+            otherShape[dim_sz1s[0]] = 1;
+            otherShape[dim_sz1s[1]] = 1;
+            if(dim_sz1s.length == 3){
+                otherShape[dim_sz1s[2]] = 1;
+            }
 
             for (int i = 0; i < 6; i++) {
 
                 SameDiff sd = SameDiff.create();
 
-                int nOut = 4;
-                int minibatch = 10;
-                SDVariable in3 = sd.var("in3", Nd4j.rand(new int[]{3, 4, 5}));
-                SDVariable in2 = sd.var("in2", in1Shape);
+                SDVariable in3 = sd.var("in3", new int[]{3, 4, 5});
+                SDVariable in2 = sd.var("inToBc", otherShape);
 
+                String name;
                 SDVariable bcOp;
                 switch (i) {
                     case 0:
                         bcOp = in3.add(in2);
+                        name = "add";
                         break;
                     case 1:
                         bcOp = in3.sub(in2);
+                        name = "sub";
                         break;
                     case 2:
                         bcOp = in3.mul(in2);
+                        name = "mul";
                         break;
                     case 3:
                         bcOp = in3.div(in2);
+                        name = "div";
                         break;
                     case 4:
                         bcOp = in3.rsub(in2);
+                        name = "rsub";
                         break;
                     case 5:
                         bcOp = in3.rdiv(in2);
+                        name = "rdiv";
+                        break;
+                    case 6:
+                        bcOp = sd.f().floorDiv(in3, in2);
+                        name = "floordiv";
+                        break;
+                    case 7:
+                        bcOp = sd.f().floorMod(in3, in2);
+                        name = "floormod";
                         break;
                     default:
                         throw new RuntimeException();
@@ -309,11 +350,11 @@ public class GradCheckMisc {
 
                 SDVariable outVar = sd.sum(bcOp);
 
-                String msg = "(test " + i + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
+                String msg = "(test " + i + ": " + name + ", dimensions=" + Arrays.toString(dim_sz1s) + ")";
                 log.info("*** Starting test: " + msg);
 
-                INDArray in3Arr = Nd4j.randn(minibatch, nOut).muli(100);
-                INDArray in2Arr = Nd4j.randn(minibatch, nOut).muli(100);
+                INDArray in3Arr = Nd4j.randn(new int[]{3,4,5}).muli(100);
+                INDArray in2Arr = Nd4j.randn(otherShape).muli(100);
 
                 sd.associateArrayWithVariable(in3Arr, in3);
                 sd.associateArrayWithVariable(in2Arr, in2);
@@ -322,6 +363,114 @@ public class GradCheckMisc {
                     INDArray out = sd.execAndEndResult();
                     assertNotNull(out);
                     assertArrayEquals(new int[]{1, 1}, out.shape());
+
+//                    System.out.println(sd.asFlatPrint());
+
+                    boolean ok = GradCheckUtil.checkGradients(sd);
+                    if (!ok) {
+                        allFailed.add(msg);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    allFailed.add(msg + " - EXCEPTION");
+                }
+            }
+        }
+
+        assertEquals("Failed: " + allFailed, 0, allFailed.size());
+    }
+
+    @Test
+    public void testGradientAutoBroadcast3() {
+        //These tests: output size > input sizes
+
+        Nd4j.getRandom().setSeed(12345);
+
+        List<String> allFailed = new ArrayList<>();
+
+        //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
+        List<Triple<int[],int[], int[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new int[]{3,1}, new int[]{1,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,1}, new int[]{3,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,4}, new int[]{1,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{1,1,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{3,1,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,1}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{3,4,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,1,1}, new int[]{1,4,5,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,1,1,6}, new int[]{3,4,5,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,4,5,1}, new int[]{3,1,1,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,6}, new int[]{3,4,5,1}, new int[]{3,4,5,6}));
+
+        for (Triple<int[],int[],int[]> p : testCases) {
+
+            for (int i = 0; i < 6; i++) {
+
+                SameDiff sd = SameDiff.create();
+
+                SDVariable in3 = sd.var("in1", p.getFirst());
+                SDVariable in2 = sd.var("in2", p.getSecond());
+
+                String name;
+                SDVariable bcOp;
+                switch (i) {
+                    case 0:
+                        bcOp = in3.add(in2);
+                        name = "add";
+                        break;
+                    case 1:
+                        bcOp = in3.sub(in2);
+                        name = "sub";
+                        break;
+                    case 2:
+                        bcOp = in3.mul(in2);
+                        name = "mul";
+                        break;
+                    case 3:
+                        bcOp = in3.div(in2);
+                        name = "div";
+                        break;
+                    case 4:
+                        bcOp = in3.rsub(in2);
+                        name = "rsub";
+                        break;
+                    case 5:
+                        bcOp = in3.rdiv(in2);
+                        name = "rdiv";
+                        break;
+                    case 6:
+                        bcOp = sd.f().floorDiv(in3, in2);
+                        name = "floordiv";
+                        break;
+                    case 7:
+                        bcOp = sd.f().floorMod(in3, in2);
+                        name = "floormod";
+                        break;
+                    default:
+                        throw new RuntimeException();
+                }
+
+                SDVariable outVar = sd.sum(bcOp);
+
+                String msg = "(test " + i + ": " + name + ", array 1 size =" + Arrays.toString(p.getFirst())
+                        + ", array 2 size = " + Arrays.toString(p.getSecond()) + ")";
+                log.info("*** Starting test: " + msg);
+
+                INDArray in3Arr = Nd4j.randn(p.getFirst()).muli(100);
+                INDArray in2Arr = Nd4j.randn(p.getSecond()).muli(100);
+
+                sd.associateArrayWithVariable(in3Arr, in3);
+                sd.associateArrayWithVariable(in2Arr, in2);
+
+                try {
+                    INDArray out = sd.execAndEndResult();
+                    assertNotNull(out);
+                    assertArrayEquals(new int[]{1, 1}, out.shape());
+
+                    INDArray bcOut = bcOp.getArr();
+                    assertNotNull(bcOp);
+                    assertArrayEquals(p.getThird(), bcOut.shape());
 
 //                    System.out.println(sd.asFlatPrint());
 

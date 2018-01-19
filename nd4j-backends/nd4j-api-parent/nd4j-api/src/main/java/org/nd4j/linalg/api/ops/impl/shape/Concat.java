@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -20,6 +21,15 @@ import java.util.Map;
 @Slf4j
 public class Concat extends DynamicCustomOp {
     private int concatDimension;
+
+    public Concat(){
+
+    }
+
+    public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){
+        super(null, sameDiff, inputs);
+        addIArgument(concatDimension);
+    }
 
     @Override
     public String opName() {

@@ -66,10 +66,7 @@ public class MulOp  extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable g = sameDiff.setupFunction(i_v.get(0));
-        SDVariable gradWrtX = f().mul(g,rarg());
-        SDVariable gradWrtY = f().mul(g,larg());
-        return Arrays.asList(gradWrtX, gradWrtY);
+        return f().mulBp(larg(), rarg(), i_v.get(0));
     }
 
 

@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -45,12 +46,13 @@ public abstract class BaseDynamicTransformOp extends DynamicCustomOp {
             return Collections.emptyList();
         }
 
+        if(Arrays.equals(firstArgShape, secondArgShape)){
+            return Collections.singletonList(firstArgShape);
+        }
+        //Handle broadcast shape: [1,4]+[3,1] = [3,4]
+        Shape.assertBroadcastable(firstArgShape, secondArgShape);
+        int[] outShape = Shape.broadcastOutputShape(firstArgShape, secondArgShape);
 
-        val firstLength = ArrayUtil.prod(firstArgShape);
-        val secondLength = ArrayUtil.prod(secondArgShape);
-        if(firstLength > secondLength)
-            return Arrays.asList(args[0].getShape());
-        else
-            return Arrays.asList(args[1].getShape());
+        return Collections.singletonList(outShape);
     }
 }

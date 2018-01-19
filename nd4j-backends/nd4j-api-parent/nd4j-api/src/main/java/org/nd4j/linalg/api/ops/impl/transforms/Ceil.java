@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,8 +41,8 @@ public class Ceil extends BaseTransformOp {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
     }
 
-    public Ceil(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public Ceil(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, (Object[])null);
     }
 
     public Ceil() {}
@@ -86,6 +87,7 @@ public class Ceil extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
+        //not continuously differentiable, but dOut/dIn = 0 in most places
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 }

@@ -26,6 +26,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,16 +36,9 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ATan2 extends BaseTransformOp {
-    public ATan2(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
-    }
 
-    public ATan2(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public ATan2(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
+    public ATan2(SameDiff sameDiff, SDVariable y, SDVariable x) {
+        super(sameDiff, x, y );
     }
 
     public ATan2() {}
@@ -89,11 +83,19 @@ public class ATan2 extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        val shape = outputVariables()[0].getShape();
+        //Let z=atan2(r), with r=y/x
+        //dz/dr = 1/(r^2+1), dr/dy = 1/x, dr/dx = -y/x^2
+        SDVariable y = rarg();
+        SDVariable x = larg();
+        SDVariable r = y.div(x);
 
-        SDVariable ret = f().div(f().one(shape),
-                f().sqrt(f().sub(f().one(shape),f().pow(arg(),2))));
+        SDVariable dOutdr = f().square(r).add(1.0).rdiv(1.0);
+        SDVariable drdy = x.rdiv(1.0);
+        SDVariable drdx = f().neg(y).div(f().square(x));
 
-        return Collections.singletonList(ret);
+        SDVariable xGrad = dOutdr.mul(drdx).mul(i_v.get(0));
+        SDVariable yGrad = dOutdr.mul(drdy).mul(i_v.get(0));
+
+        return Arrays.asList(xGrad, yGrad);
     }
 }

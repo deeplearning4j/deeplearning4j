@@ -458,7 +458,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
 
         if(descriptor.getNumOutputs() > 0 && numOutputArguments() < descriptor.getNumOutputs())
-            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
+            throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumOutputs());
 
         //< 0 means dynamic size
         if(descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs())
@@ -567,7 +567,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Please extend DynamicCustomOp to run samediff graph operations.");
+        throw new UnsupportedOperationException("Please extend DynamicCustomOp.doDiff to run samediff graph operations.");
     }
 
     @Override

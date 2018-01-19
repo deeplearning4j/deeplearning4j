@@ -1901,6 +1901,15 @@ public class SameDiff {
         return atan(null,iX);
     }
 
+    public SDVariable atan2(SDVariable y, SDVariable x){
+        return atan2(null, y, x);
+    }
+
+    public SDVariable atan2(String name, SDVariable y, SDVariable x){
+        SDVariable ret = f().atan2(y, x);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      *
      * @param iX
@@ -2019,6 +2028,33 @@ public class SameDiff {
      */
     public SDVariable floor(SDVariable iX) {
         return floor(null,iX);
+    }
+
+    public SDVariable ceil(SDVariable x){
+        return ceil(null, x);
+    }
+
+    public SDVariable ceil(String name, SDVariable x){
+        SDVariable ret = f().ceil(x);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable clipByValue(SDVariable x, double clipValueMin, double clipValueMax){
+        return clipByValue(null, x, clipValueMin, clipValueMax);
+    }
+
+    public SDVariable clipByValue(String name, SDVariable x, double clipValueMin, double clipValueMax){
+        SDVariable ret = f().clipByValue(x, clipValueMin, clipValueMax);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable clipByNorm(SDVariable x, double clipValue){
+        return clipByNorm(null, x, clipValue);
+    }
+
+    public SDVariable clipByNorm(String name, SDVariable x, double clipValue){
+        SDVariable ret = f().clipByNorm(x, clipValue);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**
@@ -2320,6 +2356,15 @@ public class SameDiff {
     public SDVariable reshape(SDVariable iX,
                               int...shape) {
         return reshape(null,iX,shape);
+    }
+
+    public SDVariable assign(SDVariable x, SDVariable y){
+        return assign(null, x, y);
+    }
+
+    public SDVariable assign(String name, SDVariable x, SDVariable y){
+        SDVariable ret = f().assign(x,y);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**

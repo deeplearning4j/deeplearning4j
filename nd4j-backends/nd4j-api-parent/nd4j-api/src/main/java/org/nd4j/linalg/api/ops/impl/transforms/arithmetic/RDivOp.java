@@ -62,16 +62,6 @@ public class RDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        //If y=b/a,then:
-        //dy/db = 1/a
-        //dy/da = -b/a^2
-        SDVariable gradWrtX = f().neg(rarg().div(sameDiff.square(larg())).mul(i_v.get(0)));
-        SDVariable gradWrtY = i_v.get(0).div(larg());
-
-
-        List<SDVariable> ret = new ArrayList<>(2);
-        ret.add(gradWrtX);
-        ret.add(gradWrtY);
-        return ret;
+        return f().rdivBp(larg(), rarg(), i_v.get(0));
     }
 }

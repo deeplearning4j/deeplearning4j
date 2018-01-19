@@ -71,12 +71,7 @@ public class RSubOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradWrtX = sameDiff.neg(i_v.get(0));
-        SDVariable gradWrtY = i_v.get(0);
-        List<SDVariable> ret = new ArrayList<>(2);
-        ret.add(gradWrtX);
-        ret.add(gradWrtY);
-        return ret;
+        return f().rsubBp(larg(), rarg(), i_v.get(0));
     }
 
 }

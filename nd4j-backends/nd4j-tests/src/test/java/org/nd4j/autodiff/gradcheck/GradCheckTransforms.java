@@ -15,6 +15,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -36,7 +38,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 47; i++) {
+        for (int i = 0; i < 50; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -257,6 +259,38 @@ public class GradCheckTransforms {
                     ia = Nd4j.linspace(1,minibatch*nOut, minibatch*nOut).reshape('c', minibatch, nOut);
                     expOut = ia.neq(2.0);
                     break;
+                case 47:
+                    t = sd.ceil(in);
+                    expOut = Transforms.ceil(ia, true);
+                    break;
+                case 48:
+                    ia = Nd4j.randn(ia.shape()).muli(2);
+                    t = sd.clipByValue(in, -3, 2);
+                    expOut = ia.dup();
+                    BooleanIndexing.replaceWhere(expOut, -3, Conditions.lessThan(-3));
+                    BooleanIndexing.replaceWhere(expOut, 2, Conditions.greaterThan(2));
+                    break;
+                case 49:
+                    //Clip by norm, dimension 0, some below threshold, some above
+                    double clip = 2.0;
+                    ia = Nd4j.rand(ia.shape());
+                    ia.muliRowVector(ia.norm2(0).rdiv(clip));  //Exactly at threshold...
+                    System.out.println(ia.norm2(0));
+                    ia.muliRowVector(Nd4j.linspace(0.9,1.1, ia.size(1)));
+                    System.out.println(ia.norm2(0));
+
+                    expOut = Nd4j.create(ia.shape());
+                    for( int j=0; j<ia.columns(); j++ ){
+                        INDArray origCol = ia.getColumn(j);
+                        if(origCol.norm2Number().doubleValue() < clip){
+                            expOut.putColumn(j, origCol);
+                        } else {
+                            expOut.putColumn(j, origCol.mul(clip / origCol.norm2Number().doubleValue()));
+                        }
+                    }
+
+                    t = sd.clipByNorm(in, clip);
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -314,7 +348,8 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 18; i++) {
+        for (int i = 0; i < 20; i++) {
+
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
@@ -408,6 +443,14 @@ public class GradCheckTransforms {
                     ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.xor(in1, in2);
                     expOut = Transforms.xor(ia, ib);
+                    break;
+                case 18:
+                    t = sd.assign(in1,in2);
+                    expOut = ib;
+                    break;
+                case 19:
+                    t = sd.atan2(in1, in2);
+                    expOut = Transforms.atan2(ib, ia);    //Note: y,x order for samediff; x,y order for transforms
                     break;
                 default:
                     throw new RuntimeException();

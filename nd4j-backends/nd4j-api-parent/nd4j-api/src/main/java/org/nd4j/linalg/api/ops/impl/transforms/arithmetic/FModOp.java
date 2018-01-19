@@ -95,6 +95,6 @@ public class FModOp extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(outputVariables()[0]);
+        return f().floorModBp(larg(), rarg(), f1.get(0));
     }
 }

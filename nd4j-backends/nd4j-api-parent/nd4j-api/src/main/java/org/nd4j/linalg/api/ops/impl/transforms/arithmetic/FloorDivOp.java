@@ -35,6 +35,10 @@ import java.util.List;
 public class FloorDivOp extends BaseDynamicTransformOp {
     public FloorDivOp() {}
 
+    public FloorDivOp(SameDiff sameDiff, SDVariable x, SDVariable y){
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public FloorDivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
@@ -63,13 +67,6 @@ public class FloorDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradWrtX = f().div(i_v.get(0),rarg());
-        SDVariable gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
-        List<SDVariable> ret = new ArrayList<>(2);
-        ret.add(gradWrtX);
-        ret.add(gradWrtY);
-        return ret;
+        return f().floorDivBp(larg(), rarg(), i_v.get(0));
     }
-
-
 }

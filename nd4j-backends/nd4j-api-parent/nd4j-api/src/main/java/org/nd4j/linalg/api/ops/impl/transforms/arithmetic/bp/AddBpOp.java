@@ -17,7 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.api.ops.impl.transforms.arithmetic;
+package org.nd4j.linalg.api.ops.impl.transforms.arithmetic.bp;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -25,46 +25,24 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * Subtraction operation
+ * Addition backprop operation. Supports 'undoing' of auto broadcast as applied in add op forward pass
  *
- * @author Adam Gibson
+ * @author Alex Black
  */
-public class SubOp extends BaseDynamicTransformOp {
+public class AddBpOp extends BaseArithmeticBackpropOp {
 
-    public SubOp() {}
+    public AddBpOp() {}
 
-    public SubOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
+    public AddBpOp(SameDiff sameDiff, SDVariable x, SDVariable y, SDVariable eps) {
+        super(sameDiff, x,y,eps);
     }
-
-    public SubOp( INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
-    }
-
 
     @Override
     public String opName() {
-        return "subtract";
+        return "add_bp";
     }
-
-
-    @Override
-    public String onnxName() {
-        return "Sub";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "Sub";
-    }
-
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().subBp(larg(), rarg(), i_v.get(0));
-    }
-
 }

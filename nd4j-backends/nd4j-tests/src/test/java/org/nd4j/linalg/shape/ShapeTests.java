@@ -9,6 +9,10 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Triple;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -203,6 +207,32 @@ public class ShapeTests extends BaseNd4jTest {
         assertEquals(columnVectorSecond, baseArr.tensorAlongDimension(1, 0, 1));
     }
 
+    @Test
+    public void testBroadcastShapes(){
+        //Test cases: in1Shape, in2Shape, shapeOf(op(in1,in2))
+        List<Triple<int[],int[], int[]>> testCases = new ArrayList<>();
+        testCases.add(new Triple<>(new int[]{3,1}, new int[]{1,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,1}, new int[]{3,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,4}, new int[]{1,4}, new int[]{3,4}));
+        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{1,1,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,4,1}, new int[]{3,1,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,1}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{1,4,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,5}, new int[]{3,4,5}, new int[]{3,4,5}));
+        testCases.add(new Triple<>(new int[]{3,1,1,1}, new int[]{1,4,5,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,1,1,6}, new int[]{3,4,5,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,4,5,1}, new int[]{3,1,1,6}, new int[]{3,4,5,6}));
+        testCases.add(new Triple<>(new int[]{1,6}, new int[]{3,4,5,1}, new int[]{3,4,5,6}));
+
+        for(Triple<int[], int[], int[]> t : testCases){
+            int[] x = t.getFirst();
+            int[] y = t.getSecond();
+            int[] exp = t.getThird();
+
+            int[] act = Shape.broadcastOutputShape(x,y);
+            assertArrayEquals(exp,act);
+        }
+    }
 
 
     @Override

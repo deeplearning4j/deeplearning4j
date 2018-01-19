@@ -21,6 +21,7 @@ package org.nd4j.linalg.api.shape;
 
 
 import com.google.common.primitives.Ints;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -133,6 +134,7 @@ public class Shape {
      * @return
      */
     public static int[] broadcastOutputShape(int[] left,int[] right) {
+        assertBroadcastable(left, right);
         if(Arrays.equals(left,right))
             return left;
         int n = Math.max(left.length,right.length);
@@ -2436,5 +2438,29 @@ public class Shape {
             throw new ND4JIllegalStateException("Cannot get rank from null shape array");
         }
         return shape.length;
+    }
+
+    public static void assertBroadcastable(@NonNull INDArray x, @NonNull INDArray y){
+        assertBroadcastable(x.shape(), y.shape());
+    }
+
+    public static void assertBroadcastable(@NonNull int[] x, @NonNull int[] y){
+        if(!areShapesBroadcastable(x, y)){
+            throw new ND4JIllegalStateException("Arrays are different shape and are not broadcastable." +
+                    " Array 1 shape = " + Arrays.toString(x) + ", array 2 shape = " + Arrays.toString(y));
+        }
+    }
+
+    public static boolean areShapesBroadcastable(@NonNull int[] x, @NonNull int[] y){
+        //Ported from: https://github.com/deeplearning4j/libnd4j/blob/master/include/helpers/impl/ShapeUtils.cpp
+
+        int minRank = Math.min(x.length, y.length);
+        for( int i=-1; i>= -minRank; i--){
+            if(x[x.length + i] != y[y.length + i] && x[x.length + i] != 1 && y[y.length + i] != 1){
+                return false;
+            }
+        }
+
+        return true;
     }
 }
