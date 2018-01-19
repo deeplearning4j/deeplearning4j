@@ -62,7 +62,7 @@ namespace ops {
             return Status::OK();
         }
 
-        return Status::ERROR("Not implemented yet");
+        return Status::THROW("Not implemented yet");
     }
 
     DECLARE_SHAPE_FN(space_to_batch) {

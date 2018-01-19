@@ -22,7 +22,7 @@ namespace nd4j {
             return code;
         }
 
-        static FORCEINLINE Nd4jStatus ERROR(const char *message = nullptr) {
+        static FORCEINLINE Nd4jStatus THROW(const char *message = nullptr) {
             if (message != nullptr) {
                 nd4j_printf("%s\n", message);
             }
