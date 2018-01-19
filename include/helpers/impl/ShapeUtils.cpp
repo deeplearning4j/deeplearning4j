@@ -602,7 +602,7 @@ std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(int *operand, int *res
     int maxRank = nd4j::math::nd4j_max<int>(xRank, zRank);
 
     if (xRank == zRank) {
-        for (int e = -1; e > -minRank; e--) {
+        for (int e = -1; e >= -minRank; e--) {
             int o = shape::sizeAt(operand, e);
             int r = shape::sizeAt(result, e);
 
