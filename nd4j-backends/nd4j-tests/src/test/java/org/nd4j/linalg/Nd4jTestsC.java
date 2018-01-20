@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.primitives.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -5915,6 +5916,23 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
 
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testLastIndex(){
+
+        INDArray in = Nd4j.create(new double[][]{
+                {1,1,1,0},
+                {1,1,0,0}});
+
+        INDArray exp0 = Nd4j.create(new double[]{1,1,0,-1});
+        INDArray exp1 = Nd4j.create(new double[]{2,1}).transpose();
+
+        INDArray out0 = BooleanIndexing.lastIndex(in, Conditions.equals(1), 0);
+        INDArray out1 = BooleanIndexing.lastIndex(in, Conditions.equals(1), 1);
+
+        assertEquals(exp0, out0);
+        assertEquals(exp1, out1);
     }
 
 

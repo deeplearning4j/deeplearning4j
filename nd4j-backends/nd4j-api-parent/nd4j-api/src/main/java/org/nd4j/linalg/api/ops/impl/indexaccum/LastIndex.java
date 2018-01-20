@@ -68,7 +68,7 @@ public class LastIndex extends BaseIndexAccumulation {
     }
 
     public LastIndex(INDArray x, @NonNull Condition condition, double eps) {
-        super(x);
+        super(x,null,null,x.length());
 
         this.condition = condition;
         this.compare = condition.getValue();
