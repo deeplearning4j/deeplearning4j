@@ -38,6 +38,27 @@ TEST_F(DeclarableOpsTests2, Gather_test_1) {
 }
 
 
+TEST_F(DeclarableOpsTests2, Gather_test_1_I) {
+    
+    NDArray<float> input   ('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    //NDArray<float> indices ('c', {1,6},   {0,1, 2,2, 1,2});
+    NDArray<float> expected('c', {2,6,4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+
+    nd4j::ops::gather<float> op;
+
+    ResultSet<float>* result = op.execute({&input}, {}, {1, 0,1, 2,2, 1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, Gather_test_2) {
     
@@ -48,6 +69,26 @@ TEST_F(DeclarableOpsTests2, Gather_test_2) {
     nd4j::ops::gather<float> op;
 
     ResultSet<float>* result = op.execute({&input, &indices}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests2, Gather_test_2_I) {
+    
+    NDArray<float> input   ('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    //NDArray<float> indices ('c', {1,1},   {2});
+    NDArray<float> expected('c', {2,4}, {9,10,11,12,21,22,23,24});
+
+    nd4j::ops::gather<float> op;
+
+    ResultSet<float>* result = op.execute({&input}, {}, {1, 2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
