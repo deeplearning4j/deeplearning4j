@@ -10,6 +10,7 @@
 #include <Environment.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <dll.h>
 
 #ifndef __CUDA_ARCH__
 
@@ -30,7 +31,7 @@
 #endif
 
 namespace nd4j {
-    class Logger {
+    class ND4J_EXPORT Logger {
 
     public:
 
