@@ -7,7 +7,7 @@ else
     MAVEN_PHASE="install"
 fi
 
-source change-scala-versions.sh $SCALA
-source change-spark-versions.sh $SPARK
+bash change-scala-versions.sh $SCALA
+bash change-spark-versions.sh $SPARK
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype
 
