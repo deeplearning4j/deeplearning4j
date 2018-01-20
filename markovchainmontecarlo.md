@@ -13,7 +13,7 @@ OK, let's define some terms:
 * Population - The set of all things we want to know about; e.g. the outcome of all coin flips. Populations are often too large for us to study them in toto, so we sample. For example, we will never have a record of the outcome of all coin flips since the dawn of time. Since gathering information is expensive, in the name of efficiency we select subsets of the population and pretend they represent the whole. Flipping a coin 100 times would be a sample of the probability distribution of all coin flips. 
 * Distribution (or probability distribution) - You can think of a distribution as table that links outcomes with probabilities. A coin toss has two possible outcomes, heads (H) or tails (T). Flipping it twice can result in either HH, TT, HT or TH. So let's contruct a table that shows the outcomes of two coin tosses as measured by the number of heads that result. 
 
-| Number of Heads  |  " "  | Probability |
+| Number of Heads  |   | Probability |
 | :-------------: |:-------------:| :-----:| 
 | 0 | | 0.25 | 
 | 1 | | 0.50 | 
