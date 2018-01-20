@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class LossFunctionGradientCheck {
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     private static final boolean PRINT_RESULTS = true;

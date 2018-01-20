@@ -38,7 +38,7 @@ public class VaeGradientCheckTests {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @Test
