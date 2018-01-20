@@ -9,7 +9,7 @@ Markov Chain Monte Carlo is a method to sample from a population with a complica
 
 OK, let's define some terms:
 
-* Sample - A subset of data drawn from a larger population. (Also used as a verb; i.e. the act of selecting that subset.)
+* Sample - A subset of data drawn from a larger population. (Also used as a verb; i.e. the act of selecting that subset. Also, reusing a small piece of one song in another song, which is not so different but can lead to lawsuits.)
 * Population - The set of all things we want to know about or predict; e.g. the outcome of all coin flips. Populations are often too large for us to study them *in toto*, so we sample. For example, humans will never have a record of the outcome of all coin flips since the dawn of time. Gathering information is expensive. So in the name of efficiency, we select subsets of the population and pretend they represent the whole. Flipping a coin 100 times would be a sample of the population of all coin flips that would allow us to reason about all the coin flips we cannot see. 
 * Distribution (or probability distribution) - You can think of a distribution as table that links outcomes with probabilities. A coin toss has two possible outcomes, heads (H) or tails (T). Flipping it twice can result in either HH, TT, HT or TH. So let's contruct a table that shows the outcomes of two coin tosses as measured by the number of heads that result. 
 
@@ -19,7 +19,7 @@ OK, let's define some terms:
 | 1 | | 0.50 | 
 | 2 | | 0.25 | 
 
-That's simple distribution. There are few possible outcomes, and we assume H and T are equally likely. Another word for outcomes is *states*. Instead of attempting to measure the probability of of heads or tails, we could try to estimate the distribution of land and water over an unknown earth, where land and water would be states. Or the reading level of children in a school system, where each reading level is a state. 
+That's a simple distribution. There are just a few possible outcomes, and we assume H and T are equally likely. Another word for outcomes is *states*. Instead of attempting to measure the probability of of heads or tails, we could try to estimate the distribution of land and water over an unknown earth, where land and water would be states. Or the reading level of children in a school system, where each reading level is a state. 
 
 Markov Chain Monte Carlo is a mathematical method used to predict the probability of something: future events, coin tosses, or an unknown distribution of states. 
 
