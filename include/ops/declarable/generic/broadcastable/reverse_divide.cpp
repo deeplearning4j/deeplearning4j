@@ -132,7 +132,7 @@ namespace nd4j {
 
                 auto preY = (*epsNext) / (*x);
 
-                NDArray<T> negY(*x);
+                NDArray<T> negY(*y);
                 y->template applyTransform<simdOps::Neg<T>>(&negY);
                 auto preX = *epsNext * negY / ((*x) * (*x));
 

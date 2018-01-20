@@ -165,6 +165,31 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
 }
 
 
+TEST_F(DeclarableOpsTests5, Test_Rdiv_bp_1) {
+    NDArray<float> x('c', {3, 1}, {1, 2, 3});
+    NDArray<float> y('c', {1, 4}, {1, 2, 3, 4});
+    NDArray<float> eps('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+
+
+    nd4j::ops::reversedivide<float> op_ff;
+    auto result_ff = op_ff.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result_ff->status());
+
+    auto z_ff = result_ff->at(0);
+    ASSERT_TRUE(eps.isSameShape(z_ff));
+
+    nd4j::ops::reversedivide_bp<float> op_bp;
+    auto result_bp = op_bp.execute({&x, &y, &eps}, {}, {});
+    ASSERT_EQ(Status::OK(), result_bp->status());
+
+    auto z_bp = result_bp->at(0);
+    ASSERT_TRUE(x.isSameShape(z_bp));
+
+    delete result_ff;
+    delete result_bp;
+}
+
+
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
     NDArray<float> x('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     NDArray<float> blocks('c', {2}, {2, 2});
