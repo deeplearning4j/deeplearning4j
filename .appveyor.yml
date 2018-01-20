@@ -16,6 +16,8 @@ environment:
       SCALA: 2.10
     - CUDA: 9.0
       SCALA: 2.11
+    - CUDA: 9.1
+      SCALA: 2.11
 
 init:
   - wmic computersystem set AutomaticManagedPagefile=False

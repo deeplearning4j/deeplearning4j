@@ -29,6 +29,8 @@ if [[ "${CUDA:-}" == "8.0" ]]; then
     CUDA_URL=https://developer.nvidia.com/compute/cuda/8.0/Prod2/local_installers/cuda_8.0.61_mac-dmg
 elif [[ "${CUDA:-}" == "9.0" ]]; then
     CUDA_URL=https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_mac-dmg
+elif [[ "${CUDA:-}" == "9.1" ]]; then
+    CUDA_URL=https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda_9.1.85_mac
 fi
 if [[ -n ${CUDA_URL:-} ]]; then
     curl --retry 10 -L -o $HOME/cuda.dmg $CUDA_URL
@@ -45,12 +47,12 @@ if [[ -n "${CUDA:-}" ]]; then
 fi
 cd $TRAVIS_BUILD_DIR/
 if [[ -n "${CUDA:-}" ]]; then
-    source change-cuda-versions.sh $CUDA
+    bash change-cuda-versions.sh $CUDA
     EXTRA_OPTIONS=
 else
     EXTRA_OPTIONS='-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
 fi
-source change-scala-versions.sh $SCALA
+bash change-scala-versions.sh $SCALA
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype \
     -Djavacpp.extension=${EXT:-} $EXTRA_OPTIONS
 

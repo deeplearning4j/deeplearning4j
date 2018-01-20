@@ -11,7 +11,7 @@
 
     <properties>
         <openblas.version>0.2.20</openblas.version>
-        <mkl.version>2017.3</mkl.version>
+        <mkl.version>2018.1</mkl.version>
         <maven.compiler.target>1.7</maven.compiler.target>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
@@ -55,12 +55,12 @@
             <artifactId>mkl</artifactId>
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.bytedeco.javacpp-presets</groupId>-->
+<!--            <artifactId>mkl</artifactId>-->
+<!--            <version>${mkl.version}-${javacpp-presets.version}</version>-->
+<!--            <classifier>${dependency.platform}</classifier>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.nd4j</groupId>

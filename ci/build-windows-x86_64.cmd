@@ -20,6 +20,9 @@ if "%CUDA%" == "8.0" (
 if "%CUDA%" == "9.0" (
     set "CUDA_URL=https://developer.nvidia.com/compute/cuda/9.0/Prod/local_installers/cuda_9.0.176_windows-exe"
 )
+if "%CUDA%" == "9.1" (
+    set "CUDA_URL=https://developer.nvidia.com/compute/cuda/9.1/Prod/local_installers/cuda_9.1.85_windows"
+)
 if not "%CUDA_URL%" == "" (
     curl --retry 10 -L -o cuda.exe %CUDA_URL%
     cuda.exe -s
@@ -36,11 +39,11 @@ bash -lc "pacman -S --needed --noconfirm base-devel make mingw-w64-x86_64-cmake 
 bash -c "cd ../libnd4j/; MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT"
 if not "%CUDA%" == "" (
     bash -c "cd ../libnd4j/; MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30"
-    bash -c "source change-cuda-versions.sh $CUDA"
+    bash -c "change-cuda-versions.sh $CUDA"
     set "EXTRA_OPTIONS="
 ) else (
     set "EXTRA_OPTIONS=-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests"
 )
-bash -c "source change-scala-versions.sh $SCALA"
+bash -c "change-scala-versions.sh $SCALA"
 call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype ^
     -Djavacpp.extension=%EXT% %EXTRA_OPTIONS%
