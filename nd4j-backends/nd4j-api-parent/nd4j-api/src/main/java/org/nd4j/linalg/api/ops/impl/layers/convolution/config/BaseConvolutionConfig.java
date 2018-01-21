@@ -8,6 +8,23 @@ import java.lang.reflect.Field;
 public abstract  class BaseConvolutionConfig {
 
     /**
+     * Get the value for a given property
+     * for this function
+     * @param property the property to get
+     * @return the value for the function if it exists
+     */
+    public Object getValue(Field property) {
+        try {
+            return property.get(this);
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+
+    /**
      * Set the value for this function.
      * Note that if value is null an {@link ND4JIllegalStateException}
      * will be thrown.

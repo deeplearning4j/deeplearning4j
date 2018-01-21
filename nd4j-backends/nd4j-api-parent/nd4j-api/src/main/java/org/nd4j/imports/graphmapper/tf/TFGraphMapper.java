@@ -544,16 +544,17 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             val currentField = fields.get(entry.getKey());
 
             AttributeAdapter adapter = null;
+            if(attributeAdapters != null && !attributeAdapters.isEmpty()) {
+                val mappers = attributeAdapters.get(mappedTfName);
+                val adapterFor = mappers.get(entry.getKey());
+                adapter = adapterFor;
+            }
+
+
             if(tfAttrName != null) {
                 if(currentField == null) {
                     continue;
                 }
-                if(attributeAdapters != null && !attributeAdapters.isEmpty()) {
-                    val mappers = attributeAdapters.get(on.tensorflowName());
-                    val adapterFor = mappers.get(entry.getKey());
-                    adapter = adapterFor;
-                }
-
 
                 if(attributesForNode.containsKey(tfAttrName)) {
                     val attr = attributesForNode.get(tfAttrName);
@@ -638,28 +639,43 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
             }
 
             else if(entry.getValue().getTfInputPosition() != null) {
+
+
                 int position = entry.getValue().getTfInputPosition();
                 if(position < 0) {
                     position += node.getInputCount();
                 }
 
                 val inputFromNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,node.getInput(position));
-                val tensor = inputFromNode != null ? TFGraphMapper.getInstance().getNDArrayFromTensor("value",inputFromNode,graph) : null;
+                INDArray tensor = inputFromNode != null ? TFGraphMapper.getInstance().getNDArrayFromTensor("value",inputFromNode,graph) : null;
+                if(tensor == null) {
+                    tensor = on.getSameDiff().getArrForVarName(getNodeName(node.getInput(position)));
+                }
+
+
                 if(tensor != null) {
-                    if(currentField.getType().equals(int[].class)) {
-                        on.setValueFor(currentField,tensor.data().asInt());
+                    //use adapter instead of direct mapping just like above
+                    if(adapter != null) {
+                        adapter.mapAttributeFor(tensor,currentField,on);
                     }
-                    else if(currentField.getType().equals(double[].class)) {
-                        on.setValueFor(currentField,tensor.data().asDouble());
+                    else {
+                        if(currentField.getType().equals(int[].class)) {
+                            on.setValueFor(currentField,tensor.data().asInt());
+                        }
+                        else if(currentField.getType().equals(double[].class)) {
+                            on.setValueFor(currentField,tensor.data().asDouble());
 
-                    }
-                    else if(currentField.getType().equals(float[].class)) {
-                        on.setValueFor(currentField,tensor.data().asFloat());
+                        }
+                        else if(currentField.getType().equals(float[].class)) {
+                            on.setValueFor(currentField,tensor.data().asFloat());
 
+                        }
+                        else if(currentField.getType().equals(INDArray.class)) {
+                            on.setValueFor(currentField,tensor);
+                        }
                     }
-                    else if(currentField.getType().equals(INDArray.class)) {
-                        on.setValueFor(currentField,tensor);
-                    }
+
+
                 }
 
                 else {

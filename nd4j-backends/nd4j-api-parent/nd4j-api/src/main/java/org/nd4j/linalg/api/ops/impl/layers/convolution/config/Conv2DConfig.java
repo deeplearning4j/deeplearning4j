@@ -17,6 +17,8 @@ public class Conv2DConfig extends BaseConvolutionConfig  {
     @Builder.Default private int dh = 1;
     @Builder.Default private int dw = 1;
     private boolean isSameMode;
+    @Builder.Default
+    private String dataFormat = "NWHC";
     @Builder.Default private boolean isNHWC = false;
 
     public Map<String,Object> toProperties() {

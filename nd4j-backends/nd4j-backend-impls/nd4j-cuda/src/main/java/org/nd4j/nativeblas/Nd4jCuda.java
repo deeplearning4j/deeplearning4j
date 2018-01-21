@@ -6579,8 +6579,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
         */ 
         public native @ByRef @Name("operator ()") FloatPointer apply(int i, int j, int k);
-
-
     }
 
 
@@ -7621,8 +7619,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
         */ 
         public native @Cast("float16*") @ByRef @Name("operator ()") ShortPointer apply(int i, int j, int k);
-
-
     }
 
 
@@ -8663,8 +8659,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  inline modifying operator for 3D array, i - height, j - width, k - depth
         */ 
         public native @ByRef @Name("operator ()") DoublePointer apply(int i, int j, int k);
-
-
     }
 
 
@@ -8673,6 +8667,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+
+
 
 
 //////////////////////////////////////////////////////////////////////////

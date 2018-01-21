@@ -9,7 +9,14 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueIntIndexArrayAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueNDArrayShapeAdapter;
+import org.nd4j.imports.descriptors.properties.adapters.SizeThresholdIntArrayIntIndexAdpater;
+import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
+import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -62,6 +69,15 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     @Override
+    public Object getValue(Field property) {
+        if(config == null) {
+            config = Conv2DConfig.builder().build();
+        }
+
+        return config.getValue(property);
+    }
+
+    @Override
     public void setValueFor(Field target, Object value) {
         config.setValueFor(target,value);
     }
@@ -73,64 +89,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val aStrides = nodeDef.getAttrOrThrow("strides");
-        val tfStrides = aStrides.getList().getIList();
-        int sY = 1;
-        int sX = 1;
-        int kY = 1;
-        int kX = 1;
-
-        val aPadding = nodeDef.getAttrOrDefault("padding", null);
-
-        val paddingMode = aPadding.getS().toStringUtf8();
-
-        val args = args();
-        INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
-        if(arr == null) {
-            arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
-            // TODO: arguable. it might be easier to permute weights once
-            //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-            val  varForOp = initWith.getVariable(args[1].getVarName());
-            if(arr != null)
-                initWith.associateArrayWithVariable(arr, varForOp);
-
-
-        }
-
-        String dataFormat = "nhwc";
-        if (nodeDef.containsAttr("data_format")) {
-            val attr = nodeDef.getAttrOrThrow("data_format");
-            dataFormat = attr.getS().toStringUtf8().toLowerCase();
-        }
-
-
-        if (dataFormat.equalsIgnoreCase("nchw")) {
-            sY = tfStrides.get(2).intValue();
-            sX = tfStrides.get(3).intValue();
-
-            kY = arr.size(2);
-            kX = arr.size(3);
-        } else {
-            sY = tfStrides.get(1).intValue();
-            sX = tfStrides.get(2).intValue();
-
-            kY = arr.size(0);
-            kX = arr.size(1);
-        }
-
-
-        boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
-        Conv2DConfig config = Conv2DConfig.builder()
-                .kh(kY)
-                .kw(kX)
-                .sx(sX)
-                .sy(sY)
-                .isSameMode(isSameMode)
-                //c++ check checks for nchw
-                .isNHWC(dataFormat.equalsIgnoreCase("nhwc"))
-                .build();
-        this.config = config;
-
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
         addArgs();
 
 
@@ -148,46 +107,41 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        val autoPad = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
-        val dilations = attributesForNode.get("dilations");
-        val dilationY = dilations == null ? 1 : dilations.getIntsList().get(0).intValue();
-        val dilationX = dilations == null ? 1 : dilations.getIntsList().get(1).intValue();
-        val group = attributesForNode.get("group");
-
-        val kernelShape = attributesForNode.get("kernel_shape");
-        int kY = kernelShape.getIntsList().get(0).intValue();
-        int kX = kernelShape.getIntsList().size() < 2 ? kY : kernelShape.getIntsList().get(1).intValue();
-
-        val vertexId = args()[0];
-
-        INDArray arr = vertexId.getArr();
-        arr = (arr.permute(3, 2, 0, 1).dup('c'));
-        initWith.associateArrayWithVariable(arr, vertexId);
-
-
-
-        val strides = attributesForNode.get("strides");
-        val sY = strides.getIntsList().get(0);
-        val sX = strides.getIntsList().size() < 2 ? sY : strides.getIntsList().get(1);
-        boolean isSameMode = autoPad
-                .equalsIgnoreCase("SAME");
-        Conv2DConfig config = Conv2DConfig.builder()
-                .dh(dilationY)
-                .dw(dilationX)
-                .kh(kY)
-                .kw(kX)
-                .sx(sX.intValue())
-                .sy(sY.intValue())
-                .isSameMode(isSameMode)
-                .build();
-        this.config = config;
+        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode,node, graph);
         addArgs();
-
-        addOutputArgument(arr);
     }
 
 
+    @Override
+    public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
+        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
+        Map<String,AttributeAdapter> tfMappings = new LinkedHashMap<>();
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
+
+
+        tfMappings.put("kh",new ConditionalFieldValueNDArrayShapeAdapter("NCHW",2,0,fields.get("dataFormat")));
+        tfMappings.put("kw",new ConditionalFieldValueNDArrayShapeAdapter("NCHW",3,1,fields.get("dataFormat")));
+        tfMappings.put("sy",new ConditionalFieldValueIntIndexArrayAdapter("NCHW",2,1,fields.get("dataFormat")));
+        tfMappings.put("sx",new ConditionalFieldValueIntIndexArrayAdapter("NCHW",3,2,fields.get("dataFormat")));
+        tfMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
+        tfMappings.put("isNHWC",new StringEqualsAdapter("NHWC"));
+
+
+        Map<String,AttributeAdapter> onnxMappings = new HashMap<>();
+        onnxMappings.put("ky",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
+        onnxMappings.put("kx",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
+        onnxMappings.put("dh",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
+        onnxMappings.put("dw",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
+        onnxMappings.put("sy",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
+        onnxMappings.put("sx",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
+        onnxMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
+        onnxMappings.put("isNHWC",new StringEqualsAdapter("NHWC"));
+
+        ret.put(tensorflowName(),tfMappings);
+        ret.put(onnxName(),onnxMappings);
+        return ret;
+    }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -213,7 +167,17 @@ public class Conv2D extends DynamicCustomOp {
                 .tfAttrName("rates")
                 .build();
 
+        val dataFormat = PropertyMapping.builder()
+                .onnxAttrName("data_format")
+                .tfAttrName("data_format")
+                .propertyNames(new String[]{"dataFormat"})
+                .build();
 
+        val nhwc = PropertyMapping.builder()
+                .onnxAttrName("data_format")
+                .tfAttrName("data_format")
+                .propertyNames(new String[]{"isNHWC"})
+                .build();
 
         val sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
@@ -223,9 +187,10 @@ public class Conv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .tfAttrName("padding")
                 .propertyNames(new String[]{"ph","pw"})
                 .build();
+
+
 
 
         map.put("sx", strideMapping);
@@ -237,6 +202,9 @@ public class Conv2D extends DynamicCustomOp {
         map.put("isSameMode",sameMode);
         map.put("ph", paddingWidthHeight);
         map.put("pw", paddingWidthHeight);
+        map.put("dataFormat",dataFormat);
+        map.put("isNHWC",nhwc);
+
         try {
             ret.put(onnxName(), map);
         }catch(NoOpNameFoundException e) {

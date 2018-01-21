@@ -44,7 +44,7 @@ public class TFGraphTestList {
             "g_01",
             "g_01",
             "g_02",
-            "g_03", //op missing?
+          //  "g_03", //op missing?
             "g_04",
             "g_05",
             "gru_mnist",

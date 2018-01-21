@@ -1,5 +1,6 @@
 package org.nd4j.imports.graphmapper.onnx;
 
+import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
@@ -10,6 +11,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
+import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.BaseGraphMapper;
 import org.nd4j.imports.graphmapper.ImportState;
@@ -56,6 +58,96 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         }
     }
 
+
+
+    /**
+     * Init a function's attributes
+     * @param mappedTfName the onnx name to pick (sometimes ops have multiple names
+     * @param on the function to map
+     * @param attributesForNode the attributes for the node
+     * @param node
+     * @param graph
+     */
+    public void initFunctionFromProperties(String mappedTfName, DifferentialFunction on, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.NodeProto node, OnnxProto3.GraphProto graph) {
+        val properties = on.mappingsForFunction();
+        val tfProperties = properties.get(mappedTfName);
+        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
+        val attributeAdapters = on.attributeAdaptersForFunction();
+        for(val entry : tfProperties.entrySet()) {
+            val tfAttrName = entry.getValue().getTfAttrName();
+            val currentField = fields.get(entry.getKey());
+
+            AttributeAdapter adapter = null;
+            if(tfAttrName != null) {
+                if(currentField == null) {
+                    continue;
+                }
+                if(attributeAdapters != null && !attributeAdapters.isEmpty()) {
+                    val mappers = attributeAdapters.get(on.tensorflowName());
+                    val adapterFor = mappers.get(entry.getKey());
+                    adapter = adapterFor;
+                }
+
+
+                if(attributesForNode.containsKey(tfAttrName)) {
+                    val attr = attributesForNode.get(tfAttrName);
+                    switch (attr.getType()) {
+                        case STRING:
+                            val setString = attr.getS().toStringUtf8();
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(setString,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,setString);
+                            break;
+                        case INT:
+                            val setInt = (int) attr.getI();
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(setInt,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,setInt);
+                            break;
+                        case INTS:
+                            val setList = attr.getIntsList();
+                            if(!setList.isEmpty()) {
+                                val intList = Ints.toArray(setList);
+                                if(adapter != null) {
+                                    adapter.mapAttributeFor(intList,currentField,on);
+                                }
+                                else
+                                    on.setValueFor(currentField,intList);
+                            }
+                            break;
+                        case FLOATS:
+                            val floatsList = attr.getFloatsList();
+                            if(!floatsList.isEmpty()) {
+                                val floats = Floats.toArray(floatsList);
+                                if(adapter != null) {
+                                    adapter.mapAttributeFor(floats,currentField,on);
+                                }
+
+                                else
+                                    on.setValueFor(currentField,floats);
+                                break;
+                            }
+                            break;
+                        case TENSOR:
+                            val tensorToGet = mapTensorProto(attr.getT());
+                            if(adapter != null) {
+                                adapter.mapAttributeFor(tensorToGet,currentField,on);
+                            }
+                            else
+                                on.setValueFor(currentField,tensorToGet);
+                            break;
+
+                    }
+                }
+            }
+
+
+        }
+    }
 
     @Override
     public boolean isOpIgnoreException(OnnxProto3.NodeProto node) {
@@ -290,8 +382,10 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             newInstance.setSameDiff(importState.getSameDiff());
 
             newInstance.initFromOnnx(tfNode,diff,getAttrMap(tfNode),importState.getGraph());
-            mapProperties(newInstance,tfNode,importState.getGraph(),importState.getSameDiff(),newInstance.mappingsForFunction());
-
+            importState.getSameDiff().putFunctionForId(newInstance.getOwnName(),newInstance);
+            //ensure we can track node name to function instance later.
+            diff.setBaseNameForFunctionInstanceId(tfNode.getName(),newInstance);
+            diff.addVarNameForImport(tfNode.getName());
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -305,7 +399,17 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public DataBuffer.Type dataTypeForTensor( onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
-        switch (tensorProto.getElemType()) {
+       return nd4jTypeFromOnnxType(tensorProto.getElemType());
+    }
+
+
+    /**
+     * Convert an onnx type to the proper nd4j type
+     * @param dataType the data type to convert
+     * @return the nd4j type for the onnx type
+     */
+    public DataBuffer.Type nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
+        switch (dataType) {
             case DOUBLE: return DataBuffer.Type.DOUBLE;
             case FLOAT: return DataBuffer.Type.FLOAT;
             case FLOAT16: return DataBuffer.Type.HALF;
@@ -314,8 +418,6 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             default: return DataBuffer.Type.UNKNOWN;
         }
     }
-
-
 
     @Override
     public String getAttrValueFromNode(OnnxProto3.NodeProto nodeProto, String key) {
@@ -369,6 +471,24 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         return arr;
     }
 
+    public INDArray mapTensorProto(OnnxProto3.TensorProto tensor) {
+        if(tensor == null)
+            return null;
+
+
+        DataBuffer.Type type = nd4jTypeFromOnnxType(tensor.getDataType());
+
+        ByteString bytes = tensor.getRawData();
+        ByteBuffer byteBuffer = bytes.asReadOnlyByteBuffer().order(ByteOrder.nativeOrder());
+        ByteBuffer directAlloc = ByteBuffer.allocateDirect(byteBuffer.capacity()).order(ByteOrder.nativeOrder());
+        directAlloc.put(byteBuffer);
+        directAlloc.rewind();
+        int[] shape = getShapeFromTensor(tensor);
+        DataBuffer buffer = Nd4j.createBuffer(directAlloc,type, ArrayUtil.prod(shape));
+        INDArray arr = Nd4j.create(buffer).reshape(shape);
+        return arr;
+    }
+
     @Override
     public int[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
         val ret = new int[Math.max(2,tensorProto.getShape().getDimCount())];
@@ -381,6 +501,31 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
             ret[0] = 1;
             for(int i = 1; i < ret.length; i++) {
                 ret[i] = (int) tensorProto.getShape().getDim(i - 1).getDimValue();
+            }
+        }
+
+
+        return ret;
+    }
+
+
+    /**
+     * Get the shape from a tensor proto.
+     * Note that this is different from {@link #getShapeFromTensor(OnnxProto3.TensorProto)}
+     * @param tensorProto the tensor to get the shape from
+     * @return
+     */
+    public int[] getShapeFromTensor(OnnxProto3.TensorProto tensorProto) {
+        val ret = new int[Math.max(2,tensorProto.getDimsCount())];
+        int dimCount = tensorProto.getDimsCount();
+        if(dimCount >= 2)
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (int) tensorProto.getDims(i);
+            }
+        else {
+            ret[0] = 1;
+            for(int i = 1; i < ret.length; i++) {
+                ret[i] = (int) tensorProto.getDims(i - 1);
             }
         }
 
