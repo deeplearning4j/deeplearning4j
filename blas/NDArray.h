@@ -1052,6 +1052,16 @@ namespace nd4j {
         */ 
         FORCEINLINE T& operator()(const int i, const int j, const int k);
 
+        /**
+        *  inline modifying operator for 4D array, i - height, j - width, k - depth
+        */ 
+        FORCEINLINE T& operator()(const int t, const int u, const int v, const int w);
+
+        /**
+        *  inline accessing operator for 4D array, i - height, j - width, k - depth
+        */
+        FORCEINLINE T operator()(const int t, const int u, const int v, const int w) const;
+
         template <typename T2>
         FORCEINLINE std::vector<T2> asVectorT();
     };
@@ -1312,6 +1322,28 @@ FORCEINLINE T& NDArray<T>::operator()(const int i, const int j, const int k) {
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
     int coords[3] = {i, j, k};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+template<typename T>
+FORCEINLINE T NDArray<T>::operator()(const int t, const int u, const int v, const int w) const {
+    
+    if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
+       throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
+
+    int coords[4] = {t, u, v, w};
+    Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    return _buffer[xOffset];
+}
+
+template<typename T>
+FORCEINLINE T& NDArray<T>::operator()(const int t, const int u, const int v, const int w) {
+    
+    if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
+       throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
+
+    int coords[4] = {t, u, v, w};
     Nd4jIndex xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
     return _buffer[xOffset];
 }

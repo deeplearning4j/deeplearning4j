@@ -209,5 +209,13 @@ namespace nd4j {
          * 0: axis
          */
         DECLARE_CONFIGURABLE_OP(ismax, 1, 1, true, 0, -1);
+
+        /**
+         * Dilation2D op
+         * 
+         * Int args:
+         * 0: isSameMode
+         */
+        DECLARE_CUSTOM_OP(dilation2d, 2, 1, false, 0, 1);
     }
 }
