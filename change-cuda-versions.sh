@@ -21,11 +21,14 @@
 
 set -e
 
-VALID_VERSIONS=( 8.0 9.0 )
+VALID_VERSIONS=( 8.0 9.0 9.1 )
 CUDA_80_VERSION="8\.0"
 CUDA_90_VERSION="9\.0"
+CUDA_91_VERSION="9\.1"
 CUDNN_60_VERSION="6\.0"
 CUDNN_70_VERSION="7\.0"
+JAVACPP_13_VERSION="1\.3"
+JAVACPP_14_VERSION="1\.4"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -40,7 +43,7 @@ if [[ ($# -ne 1) || ( $1 == "--help") ||  $1 == "-h" ]]; then
   usage
 fi
 
-TO_VERSION=$1
+VERSION=$1
 
 check_cuda_version() {
   for i in ${VALID_VERSIONS[*]}; do [ $i = "$1" ] && return 0; done
@@ -49,23 +52,25 @@ check_cuda_version() {
 }
 
 
-check_cuda_version "$TO_VERSION"
+check_cuda_version "$VERSION"
 
-if [ $TO_VERSION = "9.0" ]; then
-  FROM_BINARY="-8\.0"
-  TO_BINARY="-9\.0"
-  FROM_VERSION=$CUDA_80_VERSION
-  TO_VERSION=$CUDA_90_VERSION
-  FROM_VERSION2=$CUDNN_60_VERSION
-  TO_VERSION2=$CUDNN_70_VERSION
-else
-  FROM_BINARY="-9\.0"
-  TO_BINARY="-8\.0"
-  FROM_VERSION=$CUDA_90_VERSION
-  TO_VERSION=$CUDA_80_VERSION
-  FROM_VERSION2=$CUDNN_70_VERSION
-  TO_VERSION2=$CUDNN_60_VERSION
-fi
+case $VERSION in
+  9.1)
+    VERSION=$CUDA_91_VERSION
+    VERSION2=$CUDNN_70_VERSION
+    VERSION3=$JAVACPP_14_VERSION
+    ;;
+  9.0)
+    VERSION=$CUDA_90_VERSION
+    VERSION2=$CUDNN_70_VERSION
+    VERSION3=$JAVACPP_13_VERSION
+    ;;
+  8.0)
+    VERSION=$CUDA_80_VERSION
+    VERSION2=$CUDNN_60_VERSION
+    VERSION3=$JAVACPP_13_VERSION
+    ;;
+esac
 
 sed_i() {
   sed -e "$1" "$2" > "$2.tmp" && mv "$2.tmp" "$2"
@@ -77,20 +82,24 @@ echo "Updating CUDA versions in pom.xml files to CUDA $1";
 
 BASEDIR=$(dirname $0)
 
-#Artifact ids, ending with "-8.0" or "-9.0". nd4j-cuda, deeplearning4j-cuda, etc.
+#Artifact ids, ending with "-8.0", "-9.0", etc. deeplearning4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
+  -exec bash -c "sed_i 's/\(artifactId>deeplearning4j-cuda-\)...<\/artifactId>/\1'$VERSION'<\/artifactId>/g' {}" \;
 
-#Artifact ids, ending with "-8.0-platform" or "-9.0-platform". nd4j-cuda-platform, etc.
+#Artifact ids, ending with "-8.0-platform", "-9.0-platform", etc. deeplearning4j-cuda-platform, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'-platform<\/artifactId>/\1'$TO_BINARY'-platform<\/artifactId>/g' {}" \;
+  -exec bash -c "sed_i 's/\(artifactId>deeplearning4j-cuda-\)...-platform<\/artifactId>/\1'$VERSION'-platform<\/artifactId>/g' {}" \;
 
-#CUDA versions, like <cuda.version>9.0</cuda.version>
+#CUDA versions, like <cuda.version>9.1</cuda.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(cuda.version>\)'$FROM_VERSION'<\/cuda.version>/\1'$TO_VERSION'<\/cuda.version>/g' {}" \;
+  -exec bash -c "sed_i 's/\(cuda.version>\)...<\/cuda.version>/\1'$VERSION'<\/cuda.version>/g' {}" \;
 
 #cuDNN versions, like <cudnn.version>7.0</cudnn.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(cudnn.version>\)'$FROM_VERSION2'<\/cudnn.version>/\1'$TO_VERSION2'<\/cudnn.version>/g' {}" \;
+  -exec bash -c "sed_i 's/\(cudnn.version>\)...<\/cudnn.version>/\1'$VERSION2'<\/cudnn.version>/g' {}" \;
+
+#JavaCPP versions, like <javacpp-presets.cuda.version>1.4</javacpp-presets.cuda.version>
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(javacpp-presets.cuda.version>\)...<\/javacpp-presets.cuda.version>/\1'$VERSION3'<\/javacpp-presets.cuda.version>/g' {}" \;
 
 echo "Done updating CUDA versions.";
