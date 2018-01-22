@@ -166,6 +166,7 @@ template <typename T>
     delete[] shapeOf;
 
     _shapeInfo[6] = 1;
+
     _isBuffAlloc = true; 
     _isShapeAlloc = true;
 }
@@ -584,6 +585,8 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 		_isBuffAlloc = true;
 		_isShapeAlloc = true;
 
+        shape::updateStrides(_shapeInfo, order);
+
         delete[] shapeOf;
     }
 
@@ -625,6 +628,8 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 		_isBuffAlloc = true; 
 		_isShapeAlloc = true;
 
+        shape::updateStrides(_shapeInfo, order);
+        
         delete[] shapeOf;
     }
 
@@ -1428,7 +1433,7 @@ template <typename T>
             _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
     }
 	// set last 3 elements in _shapeInfo
-	_shapeInfo[doubleRank + 1] = 0;                  
+	_shapeInfo[doubleRank + 1] = 0;
     _shapeInfo[doubleRank + 2] = 1;
     _shapeInfo[doubleRank + 3] = (int)order;
 }
@@ -2589,7 +2594,6 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
     }    
     
     ////////////////////////////////////////////////////////////////////////
-    // addition operator array1 += array2
     template<typename T>
     void NDArray<T>::operator+=(const NDArray<T>& other) {    
         if (!this->isScalar() && other.isScalar()) {
@@ -2600,6 +2604,14 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
             *this = this->template applyTrueBroadcast<simdOps::Add<T>>(other);
     }
 
+    template<typename T>
+    void NDArray<T>::operator-=(const NDArray<T>& other) {    
+
+        if (other.lengthOf() == lengthOf())
+            functions::pairwise_transforms::PairWiseTransform<T>::template exec<simdOps::Subtract<T>>(this->_buffer, this->_shapeInfo, other._buffer, other._shapeInfo, this->_buffer, this->_shapeInfo, nullptr);
+        else
+            *this = this->template applyTrueBroadcast<simdOps::Subtract<T>>(other);
+    }
 
     template<typename T>
     void NDArray<T>::operator+=(const T other) {
@@ -2782,30 +2794,134 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
         int* shape   = shapeOf();
         int* strides = stridesOf();
         int  minDim  = 100000000;
-        int* indices = new int[rank];        
-        Nd4jIndex offset;
+        int indices[MAX_RANK];
+        for(int j = 0; j < rank; ++j) 
+                indices[j] = 1;
+        
+        Nd4jIndex offset = shape::getOffset(0, shape, strides, indices, rank);
         
         for(int i = 0; i < rank; ++i) 
             if(minDim > shape[i])
                 minDim = shape[i];
 
 #pragma omp parallel for if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
-        for(int i = 0; i < minDim; ++i) {            
-            
-            for(int j = 0; j < rank; ++j) 
-                indices[j] = i;
+        for(int i = 0; i < minDim; ++i)
+            _buffer[i*offset] = (T)1.;                
+    }
 
-            offset = shape::getOffset(0, shape, strides, indices, rank);
-            _buffer[offset] = (T)1.;
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray<T>::swapUnsafe(NDArray<T>& other) {
+        
+        if(_buffer == nullptr || other._buffer == nullptr)
+            throw "NDArray::swapUnsafe method: input array should not be empty!";
+
+        if(_buffer == other._buffer)
+            throw "NDArray::swapUnsafe method: the buffers of input arrays should not point on the same address!";
+
+        if(lengthOf() != other.lengthOf())
+            throw "NDArray::swapUnsafe method: input arrays should have the same length!";
+
+        T temp;
+#pragma omp parallel for simd schedule(static) private(temp)
+        for (int i = 0; i < lengthOf(); ++i) {
+            temp = _buffer[i];
+            _buffer[i] = other._buffer[i];
+            other._buffer[i] = temp;            
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    NDArray<T>* NDArray<T>::diagonal(const char type) const {        
+        
+        const char order = ordering();
+        const int  rank  = rankOf();
+        int *outShapeInfo;
+        ALLOCATE(outShapeInfo, _workspace, 8, int);
+        outShapeInfo[0] = 2;
+        outShapeInfo[5] = 0;
+
+        if(isVector() || isScalar()) {
+            
+            outShapeInfo[1] = outShapeInfo[2] = outShapeInfo[3] = outShapeInfo[4] = 1;
+            outShapeInfo[6] = 1;
+            outShapeInfo[7] = (int)order;
+        }
+        else {            
+            
+            int diagSize  = 100000000;        
+            int indices[MAX_RANK];     
+                    
+            for(int i = 0; i < rank; ++i) {    
+                if(diagSize > shapeOf()[i])
+                    diagSize = shapeOf()[i];
+                indices[i] = 1;
+            }
+            
+            int step = (int)shape::getOffset(0, shapeOf(), stridesOf(), indices, rank);            
+                        
+            if(type == 'c') {
+                outShapeInfo[1] = diagSize;
+                outShapeInfo[2] = 1;
+            }
+            else {
+                outShapeInfo[1] = 1;
+                outShapeInfo[2] = diagSize;                            
+            }
+            shape::updateStrides(outShapeInfo, order);
+                        
+            outShapeInfo[3] *= step;
+            outShapeInfo[4] *= step;
+            outShapeInfo[6] =  -1;
         }
 
-        delete []indices;
+        NDArray<T>* result = new NDArray<T>(this->_buffer, outShapeInfo, this->_workspace);
+        result->_isShapeAlloc = true;
+        return result;
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void NDArray<T>::setZeros(const char* block) {
+
+        if(rankOf() != 2)
+            throw "NDArray::setZeros method: input array must have rank = 2 !";
+
+        const int rows = sizeAt(0);
+        const int cols = sizeAt(1);
+        
+        if(!strcmp(block, "trianUp")) {
+            
+            for(int i = 0; i < rows; ++i)
+                for(int j = i+1; j < cols; ++j)                                      
+                    (*this)(i, j) = 0.;
+        }
+        else if(!strcmp(block, "trianUpD")) {
+
+            for(int i = 0; i < rows; ++i)
+                for(int j = i; j < cols; ++j)                                      
+                    (*this)(i, j) = 0.;
+        }
+        else if(!strcmp(block, "trianLow")) {
+
+            for(int i = 0; i < rows; ++i)
+                for(int j = 0; j < i; ++j)                                      
+                    (*this)(i, j) = 0.;
+        }
+        else if(!strcmp(block, "trianLowD")) {
+
+            for(int i = 0; i < rows; ++i)
+                for(int j = 0; j <= i; ++j)                                      
+                    (*this)(i, j) = 0.;
+        }
+        else 
+            throw "NDArray::setZeros method: wrong argument !";            
     }
 
     ////////////////////////////////////////////////////////////////////////
     // default destructor
     template<typename T>
-
     NDArray<T>::~NDArray() {
         if (_isBuffAlloc && _workspace == nullptr && _buffer != nullptr)
             delete[] _buffer;

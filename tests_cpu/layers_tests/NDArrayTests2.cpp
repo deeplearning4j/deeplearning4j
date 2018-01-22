@@ -490,7 +490,11 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_4) {
 TEST_F(NDArrayTest2, Test_PermuteEquality_5) {
     NDArray<float> x('c', {1, 60});
     NDArrayFactory<float>::linspace(1, x);
-    NDArray<float> exp('c', {5, 4, 3}, {1.0, 21.0, 41.0, 6.0, 26.0, 46.0, 11.0, 31.0, 51.0, 16.0, 36.0, 56.0, 2.0, 22.0, 42.0, 7.0, 27.0, 47.0, 12.0, 32.0, 52.0, 17.0, 37.0, 57.0, 3.0, 23.0, 43.0, 8.0, 28.0, 48.0, 13.0, 33.0, 53.0, 18.0, 38.0, 58.0, 4.0, 24.0, 44.0, 9.0, 29.0, 49.0, 14.0, 34.0, 54.0, 19.0, 39.0, 59.0, 5.0, 25.0, 45.0, 10.0, 30.0, 50.0, 15.0, 35.0, 55.0, 20.0, 40.0, 60.0});
+    NDArray<float> exp('c', {5, 4, 3},
+                       {1.0, 21.0, 41.0, 6.0, 26.0, 46.0, 11.0, 31.0, 51.0, 16.0, 36.0, 56.0, 2.0, 22.0, 42.0, 7.0,
+                        27.0, 47.0, 12.0, 32.0, 52.0, 17.0, 37.0, 57.0, 3.0, 23.0, 43.0, 8.0, 28.0, 48.0, 13.0, 33.0,
+                        53.0, 18.0, 38.0, 58.0, 4.0, 24.0, 44.0, 9.0, 29.0, 49.0, 14.0, 34.0, 54.0, 19.0, 39.0, 59.0,
+                        5.0, 25.0, 45.0, 10.0, 30.0, 50.0, 15.0, 35.0, 55.0, 20.0, 40.0, 60.0});
     x.reshapei('c', {3, 4, 5});
 
     x.permutei({2, 1, 0});
@@ -501,4 +505,57 @@ TEST_F(NDArrayTest2, Test_PermuteEquality_5) {
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, setZeros_test1) {
+
+    NDArray<float> x  ('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
+    NDArray<float> exp('c', {4, 4}, {1,0,0,0,5,6,0,0,9,10,11,0 ,13,14,15,16});
+
+    x.setZeros("trianUp");
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));    
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, setZeros_test2) {
+
+    NDArray<float> x  ('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
+    NDArray<float> exp('c', {4, 4}, {0,0,0,0,5,0,0,0,9,10,0 ,0 ,13,14,15,0});
+
+    x.setZeros("trianUpD");
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));    
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, setZeros_test3) {
+
+    NDArray<float> x  ('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
+    NDArray<float> exp('c', {4, 4}, {1,2,3,4,0,6,7,8,0,0 ,11,12,0 ,0 , 0,16});
+
+    x.setZeros("trianLow");
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));    
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayTest2, setZeros_test4) {
+
+    NDArray<float> x  ('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
+    NDArray<float> exp('c', {4, 4}, {0,2,3,4,0,0,7,8,0,0 , 0,12, 0, 0, 0, 0});
+
+    x.setZeros("trianLowD");
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));    
+
 }

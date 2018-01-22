@@ -738,6 +738,12 @@ namespace nd4j {
         */
         void operator+=(const NDArray<T>& other);
 
+        /**
+        *  subtraction unary operator array -= other
+        *  other - input array to add
+        */
+        void operator-=(const NDArray<T>& other);
+
         void operator+=(const T other);
         void operator-=(const T other);
         
@@ -839,6 +845,29 @@ namespace nd4j {
         void setIdentity();
 
         /**
+        *  swaps the contents of tow arrays, 
+        *  PLEASE NOTE: method doesn't take into account the shapes of arrays, shapes may be different except one condition: arrays lengths must be the same 
+        */
+        void swapUnsafe(NDArray<T>& other);
+
+        /**
+        *  return vector with buffer which points on corresponding diagonal elements of array
+        *  type - means of vector to be returned: column ('c') or row ('r')
+        */
+        NDArray<T>* diagonal(const char type ) const;
+
+        /**
+        *  set zeros in specified array block, works only with 2D matrix
+        *
+        *  block - block of array where to put zeros. Possible values are:
+        *      "trianUp"   - upper triangular block excluding diagonal 
+        *      "trianUpD"  - upper triangular block including diagonal 
+        *      "trianLow"  - lower triangular block excluding diagonal
+        *      "trianLowD" - lower triangular block including diagonal
+        */
+        void setZeros(const char* block);
+
+		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
         *
         *  shape  - contains new shape to broadcast array to 
