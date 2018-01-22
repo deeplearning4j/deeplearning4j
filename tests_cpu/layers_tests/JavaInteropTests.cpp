@@ -494,3 +494,53 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     delete res_1;
     delete res_2;
 }
+
+
+TEST_F(JavaInteropTests, Test_Greater_1) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 1, 2});
+    NDArray<float> y('c', {2, 2}, {1, 2, 0, 0});
+    NDArray<float> o('c', {2, 2}, {3, 3, 3, 3});
+
+    NDArray<float> exp('c', {2, 2}, {0, 0, 1, 1});
+
+    nd4j::ops::greater<float> op;
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
+
+    NativeOps nativeOps;
+
+    nativeOps.execCustomOpFloat(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_TRUE(exp.equalsTo(&o));
+}
+
+
+TEST_F(JavaInteropTests, Test_Greater_2) {
+    NDArray<double> x('c', {2, 2}, {1, 2, 1, 2});
+    NDArray<double> y('c', {2, 2}, {1, 2, 0, 0});
+    NDArray<double> o('c', {2, 2}, {3, 3, 3, 3});
+
+    NDArray<double> exp('c', {2, 2}, {0, 0, 1, 1});
+
+    nd4j::ops::greater<double> op;
+
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
+
+    NativeOps nativeOps;
+
+    nativeOps.execCustomOpDouble(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+
+    ASSERT_TRUE(exp.equalsTo(&o));
+}
