@@ -39,11 +39,11 @@ bash -lc "pacman -S --needed --noconfirm base-devel make mingw-w64-x86_64-cmake 
 bash -c "cd ../libnd4j/; MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT"
 if not "%CUDA%" == "" (
     bash -c "cd ../libnd4j/; MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30"
-    bash -c "change-cuda-versions.sh $CUDA"
+    bash -c "bash change-cuda-versions.sh $CUDA"
     set "EXTRA_OPTIONS="
 ) else (
     set "EXTRA_OPTIONS=-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests"
 )
-bash -c "change-scala-versions.sh $SCALA"
+bash -c "bash change-scala-versions.sh $SCALA"
 call mvn clean %MAVEN_PHASE% -B -U --settings .\ci\settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype ^
     -Djavacpp.extension=%EXT% %EXTRA_OPTIONS%
