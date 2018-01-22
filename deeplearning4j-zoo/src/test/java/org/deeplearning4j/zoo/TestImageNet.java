@@ -5,6 +5,7 @@ import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG19;
@@ -93,9 +94,8 @@ public class TestImageNet {
         scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(image);
         INDArray outputs = initializedModel.outputSingle(image);
-        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer yout =
-                        (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer)initializedModel.getOutputLayer(0);
-        List<DetectedObject> objs = yout.getPredictedObjects(outputs, 0.6f);
+        List<DetectedObject> objs = YoloUtils.getPredictedObjects(Nd4j.create(TinyYOLO.priorBoxes), outputs, 0.6, 0.4);
+        assertEquals(1, objs.size());
 
         // check output labels of result
         labels = new VOCLabels();
