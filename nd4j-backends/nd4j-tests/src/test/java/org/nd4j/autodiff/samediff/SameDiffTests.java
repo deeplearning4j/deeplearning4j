@@ -28,6 +28,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 
@@ -687,6 +688,23 @@ public class SameDiffTests {
 
     }
 
+
+    @Test
+    public void testLinearModule2() {
+        Linear linear = Linear.execBuilder()
+                .nIn(3)
+                .nOut(2)
+                .weightInitScheme(new OneInitScheme('f'))
+                .biasWeightInitScheme(new ZeroInitScheme('f'))
+                .build();
+        linear.exec(Nd4j.linspace(1,6,6).reshape(2,3));
+        INDArray assertion = Nd4j.create(new double[][]{
+                {6, 6},
+                {15, 15}
+        });
+        assertEquals(assertion,linear.outputArguments()[0]);
+
+    }
 
 
     @Test
@@ -1964,6 +1982,7 @@ public class SameDiffTests {
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
         int[] outShape = outArr.shape();
         assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
+        sd.execBackwards(); // test if failing here
     }
 
     @Test
@@ -2748,4 +2767,16 @@ public class SameDiffTests {
             assertEquals(exp, out);
         }
     }
+
+
+    @Test  //*** Test is failing ***
+    public void testRollAxis(){
+        INDArray inArr = Nd4j.create(new int[] {2, 3, 4});
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable rolled = sd.rollAxis(in,2);
+        sd.execAndEndResult();
+        assertEquals(Nd4j.rollAxis(inArr, 2), rolled.getArr());
+    }
+
 }
