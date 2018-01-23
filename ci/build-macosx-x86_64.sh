@@ -48,9 +48,9 @@ fi
 cd $TRAVIS_BUILD_DIR/
 if [[ -n "${CUDA:-}" ]]; then
     bash change-cuda-versions.sh $CUDA
-    EXTRA_OPTIONS=
+    EXTRA_OPTIONS='-pl !nd4j-uberjar'
 else
-    EXTRA_OPTIONS='-pl !nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
+    EXTRA_OPTIONS='-pl !nd4j-uberjar,!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
 fi
 bash change-scala-versions.sh $SCALA
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype \

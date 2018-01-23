@@ -27,5 +27,5 @@ MAKEJ=2 bash buildnativeoperations.sh -platform $OS
 cd $TRAVIS_BUILD_DIR/
 bash change-scala-versions.sh $SCALA
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlocal.software.repository=sonatype \
-    -Djavacpp.platform=$OS -pl '!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
+    -Djavacpp.platform=$OS -pl '!nd4j-uberjar,!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests'
 
