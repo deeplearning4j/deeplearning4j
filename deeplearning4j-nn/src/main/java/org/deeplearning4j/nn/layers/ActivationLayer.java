@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -66,10 +67,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
-
-        if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
-        }
 
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
