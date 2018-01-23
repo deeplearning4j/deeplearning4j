@@ -18,15 +18,13 @@ public class ExtractKeysFunction implements PairFunction<List<Writable>, List<Wr
     @Override
     public Tuple2<List<Writable>, List<Writable>> call(List<Writable> writables) throws Exception {
 
-        Schema schema;
-
         List<Writable> keyValues;
         if (columnIndexes.length == 1) {
             keyValues = Collections.singletonList(writables.get(columnIndexes[0]));
         } else {
             keyValues = new ArrayList<>(columnIndexes.length);
             for (int i : columnIndexes) {
-                keyValues.add(writables.get(columnIndexes[i]));
+                keyValues.add(writables.get(i));
             }
         }
 

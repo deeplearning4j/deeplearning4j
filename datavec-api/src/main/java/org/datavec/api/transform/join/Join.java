@@ -82,14 +82,14 @@ public class Join implements Serializable {
         for (String leftCol : joinColumnsLeft) {
             if (!leftSchema.hasColumn(leftCol)) {
                 throw new IllegalArgumentException("Cannot perform join: left join column \"" + leftCol
-                                + "\" does not exist in left schema");
+                                + "\" does not exist in left schema. All columns in left schema: " + leftSchema.getColumnNames());
             }
         }
 
         for (String rightCol : joinColumnsRight) {
             if (!rightSchema.hasColumn(rightCol)) {
                 throw new IllegalArgumentException("Cannot perform join: right join column \"" + rightCol
-                                + "\" does not exist in right schema");
+                                + "\" does not exist in right schema. All columns in right schema: " + rightSchema.getColumnNames());
             }
         }
     }

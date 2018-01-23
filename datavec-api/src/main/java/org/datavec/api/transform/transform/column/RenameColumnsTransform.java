@@ -76,6 +76,16 @@ public class RenameColumnsTransform implements Transform, ColumnOp {
 
     @Override
     public Schema transform(Schema inputSchema) {
+        //Validate that all 'original' names exist:
+        for( int i=0; i<oldNames.size(); i++ ){
+            String s = oldNames.get(i);
+            if(!inputSchema.hasColumn(s)){
+                throw new IllegalStateException("Cannot rename from \"" + s + "\" to \"" + newNames.get(i)
+                        + "\": original column name \"" + s + "\" does not exist. All columns for input schema: "
+                        + inputSchema.getColumnNames());
+            }
+        }
+
         List<String> inputNames = inputSchema.getColumnNames();
 
         List<ColumnMetaData> outputMeta = new ArrayList<>();
