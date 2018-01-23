@@ -50,6 +50,15 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
     @Override
     public void setInputSchema(Schema schema) {
         super.setInputSchema(schema);
+        //Validate that all 'columns to be removed exist
+        for(String s : columnsToRemove){
+            if(!inputSchema.hasColumn(s)){
+                throw new IllegalStateException("Cannot remove column \"" + s + "\" to \": column does not exist. All " +
+                        "columns for input schema: " + inputSchema.getColumnNames());
+            }
+        }
+
+
         leftOverColumns = new String[schema.numColumns() - columnsToRemove.length];
 
         indicesToRemove = new HashSet<>();
