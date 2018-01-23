@@ -1,10 +1,10 @@
 ---
-title: Convolutional Networks in Java & Scala
+title: A Beginner's Guide to Convolutional Networks
 layout: default
 redirect_from: convolutionalnets
 ---
 
-# Convolutional Networks
+# A Beginner's Guide to Convolutional Networks
 
 Contents
 
