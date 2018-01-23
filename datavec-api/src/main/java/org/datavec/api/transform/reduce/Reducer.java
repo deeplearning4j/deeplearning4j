@@ -239,6 +239,8 @@ public class Reducer implements IAssociativeReducer {
             if (customReductions != null && customReductions.containsKey(colName)) {
                 AggregableColumnReduction reduction = customReductions.get(colName);
                 ops.add(reduction.reduceOp());
+                if (conditionalActive)
+                    conditions.add(new TrivialColumnCondition(colName));
                 continue;
             }
 

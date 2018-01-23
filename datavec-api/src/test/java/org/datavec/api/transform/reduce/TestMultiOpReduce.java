@@ -282,6 +282,57 @@ public class TestMultiOpReduce {
         }
     }
 
+    @Test
+    public void testCustomReductionsWithCondition() {
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(1), new Text("zero"),
+                new DoubleWritable(0)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(2), new Text("one"),
+                new DoubleWritable(1)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(3), new Text("two"),
+                new DoubleWritable(2)));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(4), new Text("three"),
+                new DoubleWritable(3)));
+
+        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new IntWritable(10), new IntWritable(3),
+                new DoubleWritable(1));
+
+
+        Schema schema = new Schema.Builder().addColumnString("key").addColumnInteger("intCol")
+                .addColumnString("textCol").addColumnString("doubleCol").build();
+
+        Reducer reducer = new Reducer.Builder(ReduceOp.Sum).keyColumns("key")
+                .conditionalReduction("textCol", "condTextCol",
+                        ReduceOp.Count, new StringColumnCondition("textCol", ConditionOp.NotEqual, "three"))
+                .customReduction("doubleCol", new CustomReduceTakeSecond()).build();
+
+        reducer.setInputSchema(schema);
+
+
+        IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+        for (int i = 0; i < inputs.size(); i++) {
+            accumulator.accept(inputs.get(i));
+        }
+        List<Writable> out = accumulator.get();
+
+        assertEquals(4, out.size());
+        assertEquals(expected, out);
+
+        //Check schema:
+        String[] expNames = new String[] {"key", "sum(intCol)", "condTextCol", "myCustomReduce(doubleCol)"};
+        ColumnType[] expTypes =
+                new ColumnType[] {ColumnType.String, ColumnType.Integer, ColumnType.Long, ColumnType.String};
+        Schema outSchema = reducer.transform(schema);
+
+        assertEquals(4, outSchema.numColumns());
+        for (int i = 0; i < 4; i++) {
+            assertEquals(expNames[i], outSchema.getName(i));
+            assertEquals(expTypes[i], outSchema.getType(i));
+        }
+    }
+
     private static class CustomReduceTakeSecond implements AggregableColumnReduction {
 
         @Override
