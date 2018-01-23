@@ -310,7 +310,7 @@ template <typename T>
             throw "Other is null";
         }
 
-        if (this->lengthOf() != other->lengthOf() || !this->isSameShape(other)) {
+        if (this->lengthOf() != other->lengthOf()) {
             nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
             throw "Shapes mismach";
         }

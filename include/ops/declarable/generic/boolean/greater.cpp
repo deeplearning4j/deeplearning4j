@@ -11,7 +11,7 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(y), 0, "Both inputs should have equal shape");
+            REQUIRE_TRUE(x->isSameShape(y) || (x->isScalar() && y->isScalar()) || (x->isVector() && y->isVector()), 0, "Both inputs should have equal shape");
 
             auto lambda = LAMBDA_TT(_x, _y) {
                 return _x > _y ? (T) 1.0f : (T) 0.0f;

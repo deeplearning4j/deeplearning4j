@@ -190,6 +190,18 @@ TEST_F(DeclarableOpsTests5, Test_Rdiv_bp_1) {
 }
 
 
+TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
+    NDArray<float> x('c', {1, 1}, {1.0f});
+    NDArray<float> y(2.0f);
+
+    nd4j::ops::less<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
     NDArray<float> x('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     NDArray<float> blocks('c', {2}, {2, 2});
