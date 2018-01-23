@@ -68,30 +68,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
-        if (maskArray != null) {
-            // Distinguish multiple cases
-            switch (maskArray.rank()) {
-                case 1:
-                    delta.muliColumnVector(maskArray);
-                    break;
-                case 2:
-                    if (delta.rank() == 2) {
-                        // Elementwise Masking
-                        delta.muli(maskArray);
-                    } else {
-                        // Time Series Data
-                        int minibatch = delta.size(0);
-                        delta = TimeSeriesUtils.reshape3dTo2d(delta);
-                        delta.muliColumnVector(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray));
-                        delta = TimeSeriesUtils.reshape2dTo3d(delta, minibatch);
-                    }
-                    break;
-                case 3:
-                    // Time Series Data; Elementwise Masking
-                    delta.muli(maskArray);
-            }
-        }
-
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
     }
