@@ -13,7 +13,6 @@
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
  */
-
 package org.datavec.image.recordreader.objdetect;
 
 import org.datavec.api.split.FileSplit;
@@ -91,7 +90,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
      * @param imageTransform ImageTransform - used to transform image and coordinates
      */
     public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW,
-                ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
+            ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
         super(height, width, channels, null);
         this.gridW = gridW;
         this.gridH = gridH;
@@ -124,8 +123,9 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
                 }
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
-        } else
+        } else {
             throw new IllegalArgumentException("No path locations found in the split.");
+        }
 
         if (split instanceof FileSplit) {
             //remove the root directory
@@ -151,7 +151,6 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
                 objects.add(labelProvider.getImageObjectsForPath(f.getPath()));
             }
         }
-
 
         int nClasses = labels.size();
 
@@ -184,22 +183,31 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     }
 
     private void label(Image image, List<ImageObject> objectsThisImg, INDArray outLabel, int exampleNum) {
-        double oW = image.getOrigW();
-        double oH = image.getOrigH();
+        int oW = image.getOrigW();
+        int oH = image.getOrigH();
+
+        int W = oW;
+        int H = oH;
 
         //put the label data into the output label array
         for (ImageObject io : objectsThisImg) {
             double cx = io.getXCenterPixels();
             double cy = io.getYCenterPixels();
-            double W = oW;
-            double H = oH;
             if (imageTransform != null) {
-                float[] pts = imageTransform.query(io.getX1(), io.getY1(), io.getX2(), io.getY2(), (float)oW, (float)oH);
-                io = new ImageObject(Math.round(pts[0]), Math.round(pts[1]), Math.round(pts[2]), Math.round(pts[3]), io.getLabel());
+                W = imageTransform.getCurrentImage().getWidth();
+                H = imageTransform.getCurrentImage().getHeight();
+
+                float[] pts = imageTransform.query(io.getX1(), io.getY1(), io.getX2(), io.getY2());
+
+                int minX = Math.round(Math.min(pts[0], pts[2]));
+                int maxX = Math.round(Math.max(pts[0], pts[2]));
+                int minY = Math.round(Math.min(pts[1], pts[3]));
+                int maxY = Math.round(Math.max(pts[1], pts[3]));
+
+                io = new ImageObject(minX, minY, maxX, maxY, io.getLabel());
                 cx = io.getXCenterPixels();
                 cy = io.getYCenterPixels();
-                W = pts[4];
-                H = pts[5];
+
                 if (cx < 0 || cx >= W || cy < 0 || cy >= H) {
                     continue;
                 }
@@ -256,6 +264,6 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
         List<Writable> list = next();
         URI uri = URIUtil.fileToURI(currentFile);
         return new org.datavec.api.records.impl.Record(list, new RecordMetaDataImageURI(uri, BaseImageRecordReader.class,
-                        currentImage.getOrigC(), currentImage.getOrigH(), currentImage.getOrigW()));
+                currentImage.getOrigC(), currentImage.getOrigH(), currentImage.getOrigW()));
     }
 }

@@ -70,4 +70,10 @@ public interface ImageTransform {
      */
     float[] query(float... coordinates);
 
+    /**
+     * Returns the last transformed image or null if none transformed yet.
+     * 
+     * @return Last transformed image or null
+     */
+    ImageWritable getCurrentImage();
 }

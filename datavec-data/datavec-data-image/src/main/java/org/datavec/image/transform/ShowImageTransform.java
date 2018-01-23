@@ -69,7 +69,7 @@ public class ShowImageTransform extends BaseImageTransform {
     }
 
     @Override
-    public ImageWritable transform(ImageWritable image, Random random) {
+    protected ImageWritable doTransform(ImageWritable image, Random random) {
         if (image == null) {
             canvas.dispose();
             return null;

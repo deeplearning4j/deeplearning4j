@@ -87,7 +87,7 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
      * @return transformed image
      */
     @Override
-    public ImageWritable transform(ImageWritable image, Random random) {
+    protected ImageWritable doTransform(ImageWritable image, Random random) {
         if (image == null) {
             return null;
         }

@@ -71,7 +71,7 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
     }
 
     @Override
-    public ImageWritable transform(ImageWritable image, Random random) {
+    protected ImageWritable doTransform(ImageWritable image, Random random) {
         if (image == null) {
             return null;
         }

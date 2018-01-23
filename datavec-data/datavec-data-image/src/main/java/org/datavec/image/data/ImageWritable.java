@@ -57,6 +57,18 @@ public class ImageWritable implements Writable {
     public void setFrame(Frame frame) {
         this.frame = frame;
     }
+    
+    public int getWidth() {
+        return frame.imageWidth;
+    }
+    
+    public int getHeight() {
+        return frame.imageHeight;
+    }
+    
+    public int getDepth() {
+        return frame.imageDepth;
+    }
 
     @Override
     public void write(DataOutput out) throws IOException {

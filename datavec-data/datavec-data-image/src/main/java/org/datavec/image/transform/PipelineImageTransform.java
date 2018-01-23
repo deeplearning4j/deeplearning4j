@@ -46,6 +46,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
     protected boolean shuffle;
     protected org.nd4j.linalg.api.rng.Random rng;
 
+    protected List<ImageTransform> currentTransforms = new ArrayList<>();
 
     public PipelineImageTransform(ImageTransform... transforms) {
         this(1234, false, transforms);
@@ -55,8 +56,9 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         super(null); // for perf reasons we ignore java Random, create our own
 
         List<Pair<ImageTransform, Double>> pipeline = new LinkedList<>();
-        for (int i = 0; i < transforms.length; i++)
+        for (int i = 0; i < transforms.length; i++) {
             pipeline.add(new Pair<>(transforms[i], 1.0));
+        }
 
         this.imageTransforms = pipeline;
         this.shuffle = shuffle;
@@ -81,7 +83,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
     }
 
     public PipelineImageTransform(Random random, long seed, List<Pair<ImageTransform, Double>> transforms,
-                    boolean shuffle) {
+            boolean shuffle) {
         super(random); // used by the transforms in the pipeline
         this.imageTransforms = transforms;
         this.shuffle = shuffle;
@@ -92,20 +94,24 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
     /**
      * Takes an image and executes a pipeline of combined transforms.
      *
-     * @param image  to transform, null == end of stream
+     * @param image to transform, null == end of stream
      * @param random object to use (or null for deterministic)
      * @return transformed image
      */
     @Override
-    public ImageWritable transform(ImageWritable image, Random random) {
-        if (shuffle)
+    protected ImageWritable doTransform(ImageWritable image, Random random) {
+        if (shuffle) {
             Collections.shuffle(imageTransforms);
+        }
+
+        currentTransforms.clear();
 
         // execute each item in the pipeline
         for (Pair<ImageTransform, Double> tuple : imageTransforms) {
             if (tuple.getSecond() == 1.0 || rng.nextDouble() < tuple.getSecond()) { // probability of execution
+                currentTransforms.add(tuple.getFirst());
                 image = random != null ? tuple.getFirst().transform(image, random)
-                                       : tuple.getFirst().transform(image);
+                        : tuple.getFirst().transform(image);
             }
         }
 
@@ -114,8 +120,8 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
 
     @Override
     public float[] query(float... coordinates) {
-        for (Pair<ImageTransform, Double> tuple : imageTransforms) {
-            coordinates = tuple.getFirst().query(coordinates);
+        for (ImageTransform transform : currentTransforms) {
+            coordinates = transform.query(coordinates);
         }
         return coordinates;
     }
@@ -124,6 +130,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
      * Optional builder helper for PipelineImageTransform
      */
     public static class Builder {
+
         protected List<Pair<ImageTransform, Double>> imageTransforms = new ArrayList<>();
         protected Long seed = null;
 
@@ -134,7 +141,7 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
          * @return
          */
         public Builder setSeed(long seed) {
-            this.seed = new Long(seed);
+            this.seed = seed;
             return this;
         }
 
@@ -156,10 +163,12 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
          * @return
          */
         public Builder addImageTransform(@NonNull ImageTransform transform, Double probability) {
-            if (probability < 0.0)
+            if (probability < 0.0) {
                 probability = 0.0;
-            if (probability > 1.0)
+            }
+            if (probability > 1.0) {
                 probability = 1.0;
+            }
 
             imageTransforms.add(Pair.makePair(transform, probability));
             return this;
@@ -167,13 +176,15 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
 
         /**
          * This method returns new PipelineImageTransform instance
+         *
          * @return
          */
         public PipelineImageTransform build() {
-            if (seed != null)
+            if (seed != null) {
                 return new PipelineImageTransform(seed, imageTransforms);
-            else
+            } else {
                 return new PipelineImageTransform(imageTransforms);
+            }
         }
     }
 }
