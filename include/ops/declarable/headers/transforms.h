@@ -34,5 +34,19 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(gather, 1, 1, false, 0, 1);
 
         DECLARE_CUSTOM_OP(pad, 2, 1, false, 0, 1);
+
+        /**
+         * creates identity 2D matrix or batch of identical 2D identity matrices
+         * 
+         * Input array:
+         * provide some array - in any case operation simply neglects it
+         * 
+         * Input integer arguments:
+         * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
+         * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
+         * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not provided then it is taken to be equal to number of rows
+         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
+         */
+        DECLARE_CUSTOM_OP(eye, 1, 1, false, 0, 2);
     }
 }

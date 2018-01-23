@@ -1420,22 +1420,7 @@ template<typename T>
 template <typename T>
     void NDArray<T>::updateStrides(const char order) {
 	
-	int rank = rankOf();	
-	int doubleRank = 2*rank;
-	if(order == 'c') {
-        _shapeInfo[doubleRank] = 1;          // set unity as last stride for c order
-        for(int j=1; j<rank; ++j)
-            _shapeInfo[doubleRank-j] = _shapeInfo[doubleRank-j+1]*_shapeInfo[rank+1-j];
-    }
-    else {
-        _shapeInfo[rank+1] = 1;             // set unity as first stride for f order
-        for(int j=rank+1; j<doubleRank; ++j)
-            _shapeInfo[j+1] = _shapeInfo[j]*_shapeInfo[j-rank];
-    }
-	// set last 3 elements in _shapeInfo
-	_shapeInfo[doubleRank + 1] = 0;
-    _shapeInfo[doubleRank + 2] = 1;
-    _shapeInfo[doubleRank + 3] = (int)order;
+	shape::updateStrides(_shapeInfo, order);
 }
 
 //////////////////////////////////////////////////////////////////////////

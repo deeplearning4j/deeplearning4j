@@ -303,3 +303,70 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
 
     delete result;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, eye_trest1) {
+    
+    NDArray<float> expected('c', {3, 3}, {1, 0, 0, 0, 1, 0, 0, 0, 1});
+
+    nd4j::ops::eye<float> op;
+    ResultSet<float>* results = op.execute({&expected}, {}, {99, 3});
+    NDArray<float>* output = results->at(0);
+    // output->printIndexedBuffer();
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, eye_trest2) {
+    
+    NDArray<float> expected('c', {3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+
+    nd4j::ops::eye<float> op;
+    ResultSet<float>* results = op.execute({&expected}, {}, {99, 3, 4});
+    NDArray<float>* output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, eye_trest3) {
+    
+    NDArray<float> expected('c', {2, 3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+
+    nd4j::ops::eye<float> op;
+    ResultSet<float>* results = op.execute({&expected}, {}, {99, 3, 4, 2});
+    NDArray<float>* output = results->at(0);
+    // output->printIndexedBuffer();
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, eye_trest4) {
+    
+    NDArray<float> expected('c', {2, 2, 3, 4}, {1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0., 1.,  0.,  0.,  0., 0.,  1.,  0.,  0., 0.,  0.,  1.,  0.});
+
+    nd4j::ops::eye<float> op;
+    ResultSet<float>* results = op.execute({&expected}, {}, {99, 3, 4, 2, 2});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
