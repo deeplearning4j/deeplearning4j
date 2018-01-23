@@ -53,7 +53,7 @@ public class RemoveColumnsTransform extends BaseTransform implements ColumnOp {
         //Validate that all 'columns to be removed exist
         for(String s : columnsToRemove){
             if(!inputSchema.hasColumn(s)){
-                throw new IllegalStateException("Cannot remove column \"" + s + "\" to \": column does not exist. All " +
+                throw new IllegalStateException("Cannot remove column \"" + s + "\": column does not exist. All " +
                         "columns for input schema: " + inputSchema.getColumnNames());
             }
         }
