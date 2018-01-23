@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -68,7 +69,27 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
-            delta.muliColumnVector(maskArray);
+            // Distinguish multiple cases
+            switch (maskArray.rank()) {
+                case 1:
+                    delta.muliColumnVector(maskArray);
+                    break;
+                case 2:
+                    if (delta.rank() == 2) {
+                        // Elementwise Masking
+                        delta.muli(maskArray);
+                    } else {
+                        // Time Series Data
+                        int minibatch = delta.size(0);
+                        delta = TimeSeriesUtils.reshape3dTo2d(delta);
+                        delta.muliColumnVector(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray));
+                        delta = TimeSeriesUtils.reshape2dTo3d(delta, minibatch);
+                    }
+                    break;
+                case 3:
+                    // Time Series Data; Elementwise Masking
+                    delta.muli(maskArray);
+            }
         }
 
         Gradient ret = new DefaultGradient();
