@@ -29,6 +29,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -671,8 +673,55 @@ public class TestComputationGraphNetwork {
 
     @Test
     public void testExternalErrors2(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        int nIn = 4;
+        int nOut = 3;
 
-        fail();
+//        for(WorkspaceMode ws : WorkspaceMode.values()) {
+//        for(WorkspaceMode ws : new WorkspaceMode[]{WorkspaceMode.SINGLE}) {
+        for(WorkspaceMode ws : new WorkspaceMode[]{WorkspaceMode.SEPARATE}) {
+            System.out.println("***** WORKSPACE: " + ws);
+
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam(0.01))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("features")
+                    .addVertex("rnn2ffn", new PreprocessorVertex(new RnnToFeedForwardPreProcessor()), "features")
+                    .addLayer("predict", new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.RELU).build(), "rnn2ffn")
+                    .addVertex("ffn2rnn", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "predict")
+                    .addLayer("output", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "ffn2rnn")
+                    .setOutputs("output")
+                    .build();
+
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            final int minibatch = 5;
+            final int seqLen = 6;
+
+            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
+            graph.setParams(param);
+
+            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);
+            INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
+
+            INDArray output = graph.outputSingle(false, false, input);
+            INDArray error = output.sub(expected);
+
+            for (org.deeplearning4j.nn.api.Layer l : graph.getLayers()) {
+                assertNotNull(l.input());
+                assertFalse(l.input().isAttached());
+            }
+
+            // Compute Gradient
+            Gradient gradient = graph.backpropGradient(error);
+            graph.getUpdater().update(gradient, 0, 0, minibatch);
+
+        }
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
     @Test

@@ -1574,13 +1574,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
                 break;
             case SEPARATE:
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
                 break;
             default:
                 throw new RuntimeException();
+        }
+
+        boolean wsExternalShouldExist = configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE;
+        if(wsExternalShouldExist && !Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)){
+            //workspaceExternal should exist so we can leverage things to it - but if it doesn't, create it here
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
         }
 
         //Do forward pass according to the topological ordering of the network
@@ -1599,7 +1605,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
                     // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal);
+                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal, wsExternalShouldExist);
 
 
                     layerActivations.put(current.getVertexName(), input);
@@ -1637,7 +1643,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (publicApi) {
                         out = current.doForward(train).detach();
                     } else {
-                        out = current.doForward(train).leverageTo(workspaceExternal);
+                        out = current.doForward(train).leverageTo(workspaceExternal,wsExternalShouldExist);
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {

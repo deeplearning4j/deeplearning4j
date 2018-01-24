@@ -140,6 +140,9 @@ public abstract class BaseGraphVertex implements GraphVertex {
                 }
             }
         }
+        if(epsilon != null){
+            epsilon = epsilon.migrate(true);
+        }
     }
 
     @Override
