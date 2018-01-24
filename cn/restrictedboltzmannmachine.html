@@ -74,15 +74,15 @@ redirect_from: /zh-restrictedboltzmannmachine
 <p>试想有这样一个RBM，其输入数据都是大象和狗的图片，RBM仅有两个输出节点，分别对应一种动物。RBM在正向传递中要回答的问题是：在输入这些像素时，权重应当向哪个节点发送更强的信号？大象的节点还是狗的节点？而RBM在反向传递中要回答的问题是：如果输出是大象，则应当预期出现怎样的像素分布？</p>
 <p>这就是联合概率：给定<em>a</em>时<em>x</em>的概率以及给定<em>x</em>时<em>a</em>的概率，用RBM两层之间的一个共用权重来表示。</p>
 <p>学习重构数据的过程在某种意义上即是学习一组特定图像中有哪些像素通常会同时出现。网络深处隐藏层节点产生的激活值代表了明显的同现关系，例如：&ldquo;非直线灰色管 + 大而松垂的耳朵 + 皱纹&rdquo;。</p>
-<p>在上面的两幅图中，可以看到用Deeplearning4j实施的RBM所学会的重构。这些重构数据代表了原始数据在RBM激活函数&ldquo;想象&rdquo;中的模样。Geoff Hinton称之为机器在&ldquo;做梦&rdquo;。在神经网络定型过程中，这类图像是非常有用的启发式方法，可以让人确信RBM的确是在学习。如果RBM没有在学习，则应当调整它的超参数，下文将会介绍这一概念。</p>
+<p>在上面的两幅图中，可以看到用Deeplearning4j实施的RBM所学会的重构。这些重构数据代表了原始数据在RBM激活函数&ldquo;想象&rdquo;中的模样。Geoff Hinton称之为机器在&ldquo;做梦&rdquo;。在神经网络训练过程中，这类图像是非常有用的示意性方法，可以让人确信RBM的确是在学习。如果RBM没有在学习，则应当调整它的超参数，下文将会介绍这一概念。</p>
 <p>最后一点：你会发现RBM有两个偏差值。这是RBM与其他自动编码器的区别所在。隐藏的偏差值帮助RBM在正向传递中生成激活值（因为偏差设定了下限，所以无论数据有多稀疏，至少有一部分节点会被激活），而<em>可见</em>层的偏差则帮助RBM通过反向传递学习重构数据。</p><br>
 
 <p><h2><a name="multilayer">多层结构</a></h2></p>
 <p>RBM根据第一个隐藏层的激活值学习了输入数据的结构之后，数据即在网络中继续向下传递一层。第一个隐藏层的作用现在相当于可见层。激活值实际上相当于输入，在第二个隐藏层的节点中与权重相乘，得到另一组激活值。</p>
 <p>将特征分组，再将特征组分组，由此连续生成多组激活值的过程是<em>特征层次</em>分析的基础，神经网络用这种方法来学习更为复杂且抽象的数据表达形式。</p>
-<p>每增加一个隐藏层，其权重都会反复进行调整，直到该层能较为准确地模拟出来自前一层的输入。这是无监督的逐层贪婪预定型方法，不需要标签就可以改进网络的权重，也就是说可以采用未标记、未经人工处理的数据来定型，而现实中大部分的数据都属于这一类别。一般的规律是，算法接触的数据越多，产生的结果越准确，这正是深度学习算法十分厉害的原因之一。</p>
+<p>每增加一个隐藏层，其权重都会反复进行调整，直到该层能较为准确地模拟出来自前一层的输入。这是无监督的逐层贪婪预训练方法，不需要标签就可以改进网络的权重，也就是说可以采用未标记、未经人工处理的数据来训练，而现实中大部分的数据都属于这一类别。一般的规律是，算法接触的数据越多，产生的结果越准确，这正是深度学习算法十分厉害的原因之一。</p>
 <p>权重能够近似模拟出数据的特征后，也就为下一步的学习奠定了良好基础，比如可以在随后的有监督学习阶段使用深度置信网络来对图像进行分类。</p>
-<p>RBM有许多用途，其中最强的功能之一就是对权重进行合理的初始化，为之后的学习和分类做好准备。从某种意义上来说，RBM的作用与反向传播相似：让权重能够有效地模拟数据。可以认为预定型和反向传播是实现同一个目的的不同方法，二者可以相互替代。</p>
+<p>RBM有许多用途，其中最强的功能之一就是对权重进行合理的初始化，为之后的学习和分类做好准备。从某种意义上来说，RBM的作用与反向传播相似：让权重能够有效地模拟数据。可以认为预训练和反向传播是实现同一个目的的不同方法，二者可以相互替代。</p>
 <p>下面这幅对称二分二向图综合显示了玻尔兹曼机的运作方式。</p>
 <img class="img-responsive center-block" src="../img/sym_bipartite_graph_RBM.png" alt="deeplearning4j">
 <p>深度RBM是一种<a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph" target="_blank">有向无环图（DAG）</a>，如有兴趣可点击链接了解其结构。</p><br>
@@ -98,7 +98,7 @@ redirect_from: /zh-restrictedboltzmannmachine
 <p>变量 'k' 是<a href="glossary.html#contrastivedivergence">对比散度</a>算法运行的次数。对比散度是用于计算梯度（代表网络权重与其误差之间关系的斜率）的方法，也是网络进行学习的必要条件。</p>
 <p>对比散度算法每运行一次，就是一个组成受限玻尔兹曼机的马尔可夫链的样本。k的值通常为1。</p>
 <p>在上文的示例中，可以看到如何用更为通用的<code>MultiLayerConfiguration</code>来创建多个RBM层。每个点后面都是一项调节深度神经网络结构和性能产生的额外参数。大多数参数的定义都可在本网站内找到。</p>
-<p><strong>weightInit</strong>或<code>weightInitialization</code>表示用于放大或削弱进入每个节点的输入的系数的初始值。合理的初始权重可以节约大量定型时间，因为网络定型无非是通过调整系数来传输最佳的信号，进而让网络能进行准确的分类。</p>
+<p><strong>weightInit</strong>或<code>weightInitialization</code>表示用于放大或削弱进入每个节点的输入的系数的初始值。合理的初始权重可以节约大量训练时间，因为网络训练无非是通过调整系数来传输最佳的信号，进而让网络能进行准确的分类。</p>
 <p><strong>activationFunction</strong>指一组确定节点信号传输阈值的函数，高于阈值则让信号通过节点，反之则阻拦信号。如果节点让信号通过，则该节点被&ldquo;激活&rdquo;。</p>
 <p><strong>optimizationAlgo</strong>指神经网络逐步调整系数，最小化误差或求取最小误差轨迹的方式。LBFGS是一种使用二阶导数来计算系数调整所依据的梯度斜率的算法，其名称中的每个字母都代表一位发明人的姓。</p>
 <p><strong>l2</strong>等<strong>regularization</strong>方法帮助神经网络防止过度拟合。常态化实质上就是惩罚较大的系数，因为较大的系数表明网络在学习过程中将结果与个别权重较大的输入联系起来。权重过大可能导致网络模型无法通用，难以适应新的数据。</p>
@@ -124,7 +124,7 @@ redirect_from: /zh-restrictedboltzmannmachine
 <ul>
   <li><a href="http://www.scholarpedia.org/article/Boltzmann_machine" target="_blank">Geoff Hinton谈玻尔兹曼机</a></li>
   <li><a href="http://deeplearning.net/tutorial/rbm.html" target="_blank">Deeplearning.net的受限玻尔兹曼机教程</a></li>
-  <li><a href="https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf" target="_blank">受限玻尔兹曼机定型实用指南</a>；Geoff Hinton</li>
+  <li><a href="https://www.cs.toronto.edu/~hinton/absps/guideTR.pdf" target="_blank">受限玻尔兹曼机训练实用指南</a>；Geoff Hinton</li>
 </ul>
 <br>
 
