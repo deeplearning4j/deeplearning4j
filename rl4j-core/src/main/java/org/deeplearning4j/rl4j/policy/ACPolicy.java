@@ -62,7 +62,7 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
                 rVal -= output.getFloat(i);
         }
 
-        throw new RuntimeException("Output from network is not a probability distribution");
+        throw new RuntimeException("Output from network is not a probability distribution: " + output);
     }
 
     public void save(String filename) throws IOException {
