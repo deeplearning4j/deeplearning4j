@@ -4,11 +4,14 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.List;
 
 public class KerasWeightSettingTests {
 
@@ -30,6 +33,10 @@ public class KerasWeightSettingTests {
                 String lstmPath = "weights/lstm_" + backend + "_" + version + ".h5";
                 importLstm(lstmPath);
                 System.out.println("***** Successfully imported " + lstmPath);
+
+                String embeddingLstmPath = "weights/embedding_lstm_" + backend + "_" + version + ".h5";
+                importEmbeddingLstm(embeddingLstmPath);
+                System.out.println("***** Successfully imported " + embeddingLstmPath);
 
                 String simpleRnnPath = "weights/simple_rnn_" + backend + "_" + version + ".h5";
                 importSimpleRnn(simpleRnnPath);
@@ -71,6 +78,26 @@ public class KerasWeightSettingTests {
     private static void importLstm(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
         // TODO: check weights
+    }
+
+    private static void importEmbeddingLstm(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        int nIn = 4;
+        int nOut = 6;
+        int outputDim = 5;
+        int inputLength = 10;
+        int mb = 42;
+
+        INDArray embeddingWeight = model.getLayer(0).getParam("W");
+        int[] embeddingWeightShape = embeddingWeight.shape();
+        assert (embeddingWeightShape[0] == nIn);
+        assert (embeddingWeightShape[1] == outputDim);
+
+        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray output = model.output(inEmbedding);
+        assert Arrays.equals(output.shape(), new int[] {mb, nOut, inputLength});
+
     }
 
     private static void importSimpleRnn(String modelPath) throws Exception {
