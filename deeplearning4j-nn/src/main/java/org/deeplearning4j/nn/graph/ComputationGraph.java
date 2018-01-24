@@ -1884,7 +1884,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
                 break;
             case SEPARATE:
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward,workspaceFeedForward);
@@ -1941,7 +1941,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         continue;
                     }
 
-                    epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
+                    //TODO we can't simply leverage to workspaceExternal, for two reasons:
+                    //1. If using SEPARATE mode, workspaceExternal may not be active at this point
+                    //2. If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
+                    //   and hence we aren't actually moving it out of the current workspace. Consequently, the
+                    //   epsilons will be invalidated at the end of the current vertex for loop
+                    epsilons[x] = epsilons[x].detach(); //.leverageTo(workspaceExternal);
                 }
 
                 //Inputs to the current GraphVertex:

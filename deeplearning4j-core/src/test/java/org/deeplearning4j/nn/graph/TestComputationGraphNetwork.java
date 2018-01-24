@@ -677,9 +677,7 @@ public class TestComputationGraphNetwork {
         int nIn = 4;
         int nOut = 3;
 
-//        for(WorkspaceMode ws : WorkspaceMode.values()) {
-//        for(WorkspaceMode ws : new WorkspaceMode[]{WorkspaceMode.SINGLE}) {
-        for(WorkspaceMode ws : new WorkspaceMode[]{WorkspaceMode.SEPARATE}) {
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
             System.out.println("***** WORKSPACE: " + ws);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
