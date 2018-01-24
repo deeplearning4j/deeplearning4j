@@ -2368,6 +2368,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      *
      * @param input
      */
+    @Override
     public void setInput(INDArray input) {
         this.input = input;
         if (this.layers == null) {
@@ -2379,6 +2380,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 throw new IllegalArgumentException(
                                 "Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) + ")");
             setInputMiniBatchSize(input.size(0));
+        }
+    }
+
+    @Override
+    public void migrateInput(){
+        if(input != null)
+            input = input.migrate(true);
+        if(mask != null)
+            mask = mask.migrate(true);
+        if(labels != null)
+            labels = labels.migrate(true);
+        for(Layer l : layers){
+            l.migrateInput();
         }
     }
 

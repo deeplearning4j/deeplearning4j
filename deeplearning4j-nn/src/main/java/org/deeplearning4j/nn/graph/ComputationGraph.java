@@ -1493,7 +1493,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train, boolean clearInputs){
         setInputs(input);
-        return feedForward(train, false, false, clearInputs);
+        Map<String,INDArray> out = feedForward(train, false, false, clearInputs);
+        if(!clearInputs) {
+            //Layer inputs could be in a workspace. If we aren't supposed to clear them, then we want to make sure
+            // they are detached - otherwise, they could leak out of scope and cause corruption or a crash...
+            for (Layer l : layers) {
+                l.migrateInput();
+            }
+        }
+        return out;
     }
 
     /**
@@ -1778,12 +1786,59 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations array
      */
     public INDArray outputSingle(boolean train, INDArray... input) {
+        return outputSingle(train, true, input);
+    }
+
+    /**
+     * Identical to {@link #outputSingle(boolean, boolean, INDArray...)} but has the option of not clearing the input
+     * arrays (useful when later backpropagating external errors). Most users should use {@link #outputSingle(boolean, INDArray...)}
+     * in preference to this method.
+     */
+    public INDArray outputSingle(boolean train, boolean clearInputs, INDArray... input){
         if (numOutputArrays != 1) {
             throw new IllegalStateException(
                     "Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: "
                             + numOutputArrays);
         }
-        return output(train, input)[0];
+        return output(train, clearInputs, input)[0];
+    }
+
+    public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
+        setInputs(input);
+        if(clearInputs){
+            //Don't need intermedite activations/inputs to be out of workspace -> use silent output
+            WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+            configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+            MemoryWorkspace workspace =
+                    configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                            : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                            workspaceConfigurationExternal, workspaceExternal);
+
+            try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                INDArray[] tmp = silentOutput(train, input);
+                for (int x = 0; x < tmp.length; x++)
+                    tmp[x] = tmp[x].detach();
+
+                configuration.setTrainingWorkspaceMode(cMode);
+                clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
+                return tmp;
+            }
+        } else {
+            //Want to keep intermediate activations/inputs out of workspaces, for later external gradients (etc) use
+            Map<String, INDArray> activations = feedForward(train, false, false, false);
+            INDArray[] outputs = new INDArray[numOutputArrays];
+            int i = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                outputs[i++] = activations.get(s).detach();
+            }
+            for (Layer l : layers) {
+                l.migrateInput();
+            }
+            for(GraphVertex gv : vertices){
+                gv.migrateInput();
+            }
+            return outputs;
+        }
     }
 
     /**

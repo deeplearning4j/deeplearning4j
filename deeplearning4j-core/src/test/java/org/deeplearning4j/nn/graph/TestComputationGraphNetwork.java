@@ -667,7 +667,12 @@ public class TestComputationGraphNetwork {
         int nParamsDense = 10 * 10 + 10;
         assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
                 extErrorGrad.gradient());
+    }
 
+    @Test
+    public void testExternalErrors2(){
+
+        fail();
     }
 
     @Test
@@ -1226,6 +1231,7 @@ public class TestComputationGraphNetwork {
                 }
             }
         }
-
     }
+
+
 }

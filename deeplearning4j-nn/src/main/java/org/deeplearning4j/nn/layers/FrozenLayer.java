@@ -400,6 +400,11 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
+    public void migrateInput() {
+        insideLayer.migrateInput();
+    }
+
+    @Override
     public void setInputMiniBatchSize(int size) {
         insideLayer.setInputMiniBatchSize(size);
     }
