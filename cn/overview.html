@@ -3,7 +3,7 @@ title: "Deeplearning4j概述"
 layout: cn-default
 ---
 <p><h1>DeepLearning4J是什么？</h1></p>
-<p>DeepLearning4J（DL4J）是一套基于Java语言的神经网络工具包，可以构建、定型和部署神经网络。</p><br>
+<p>DeepLearning4J（DL4J）是一套基于Java语言的神经网络工具包，可以构建、训练和部署神经网络。</p><br>
 
 
 <p><h2>DeepLearning4J的组件</h2></p>
@@ -11,7 +11,7 @@ layout: cn-default
 <ul>
   <li><strong>DataVec</strong>进行数据摄取，将数据标准化并转换为特征向量</li>
   <li><strong>DeepLearning4J</strong>提供配置神经网络、构建计算图的工具</li>
-  <li><strong>Keras Model Import</strong>（Keras模型导入）帮助用户将已定型的Python和Keras模型导入DeepLearning4J和Java环境。</li>
+  <li><strong>Keras Model Import</strong>（Keras模型导入）帮助用户将已训练的Python和Keras模型导入DeepLearning4J和Java环境。</li>
   <li><strong>ND4J</strong>让Java能够访问所需的原生库，使用多个CPU或GPU快速处理矩阵数据。</li>
   <li><strong>DL4J-Examples</strong>（DL4J示例）包含图像、时间序列及文本数据分类与聚类的工作示例。</li>
   <li><strong>ScalNet</strong>是受Keras启发而为Deeplearning4j开发的Scala语言包装。它通过Spark在多个GPU上运行。</li>
@@ -48,9 +48,9 @@ layout: cn-default
 <ul>
   <li><strong>Input Split</strong></li>
 </ul>
-<p>将数据分为测试集和定型集</p>
+<p>将数据分为测试集和训练集</p>
 <ul>
-  <li><strong>InputSplit.sample</strong>将数据分为测试集和定型集</li>
+  <li><strong>InputSplit.sample</strong>将数据分为测试集和训练集</li>
 </ul>
 <p>数据随机化</p>
 <ul>
@@ -106,8 +106,8 @@ layout: cn-default
   <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent">deeplearning4j-nlp-parent</a>：英语、日语、韩语文本分析以及UIMA等工具集的外部分词器和插件。UIMA原本即包括依赖解析、语义角色标记、关系提取和QA系统等功能。我们与UIMA等工具集进行集成，将数据传递给word2vec。</li>
   <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nlp-parent/deeplearning4j-nlp">nlp</a>：Word2vec、Doc2vec及其他相关工具。</li>
   <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-nn">deeplearning4j-nn</a> ：精简版的神经网络领域专用语言（DSL），依赖项较少。可配置多层网络，用一种构建器模式来设置超参数。</li>
-  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout">deeplearning4j-scaleout</a>：AWS预配置，用parallelwrapper进行桌面参数平均化（单机96核），不希望运行Spark时可不运行；一个版本采用参数服务器，另一个不用；streaming文件夹是基于Kafka和Spark的流式数据处理；spark文件夹是基于Spark的网络定型和自然语言处理：分布式Word2Vec</li>
-  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui-parent">deeplearning4j-ui-parent</a>：神经网络定型的启发式评估和可视化</li>
+  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout">deeplearning4j-scaleout</a>：AWS预配置，用parallelwrapper进行桌面参数平均化（单机96核），不希望运行Spark时可不运行；一个版本采用参数服务器，另一个不用；streaming文件夹是基于Kafka和Spark的流式数据处理；spark文件夹是基于Spark的网络训练和自然语言处理：分布式Word2Vec</li>
+  <li><a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-ui-parent">deeplearning4j-ui-parent</a>：神经网络训练的示意性评估和可视化</li>
 </ul><br>
 
 <p><h3>JavaDoc</h3>
@@ -125,11 +125,11 @@ layout: cn-default
   <li><strong>ComputationGraph</strong>构建计算图式网络</li>
   <li><strong>ComputationGraphConfiguration</strong>计算图配置</li>
   <li><strong>ComputationGraphConfiguration.GraphBuilder</strong>计算图配置的构建器接口</li>
-  <li><strong>UiServer</strong>添加一个基于网页的GUI界面，以便查看定型参数进展以及网络配置</li>
+  <li><strong>UiServer</strong>添加一个基于网页的GUI界面，以便查看训练参数进展以及网络配置</li>
 </ul><br>
 
 <p><h2>JavaDoc</h2>
-<p>如果您曾经用过Python的深度学习库Keras，希望将已定型的模型或模型配置导入DeepLearning4J，那么请使用“模型导入”功能。</p>
+<p>如果您曾经用过Python的深度学习库Keras，希望将已训练的模型或模型配置导入DeepLearning4J，那么请使用“模型导入”功能。</p>
 <br>
 <p><h3>Github代码库</h3></p>
 <p>模型导入其实是DeepLearning4J的一部分，但很有必要将其单独列为一段。Github文件夹请见<a href="https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport">此处</a>。</p>
@@ -149,7 +149,7 @@ layout: cn-default
 <p><h3>Github代码库</h3></p>
 <p>ND4J的Github代码库请见<a href="https://github.com/deeplearning4j/nd4j">此处</a>。ND4J是用于处理n维数组（NDArrays）的DSL。</p>
 <ul>
-  <li><a href="https://github.com/deeplearning4j/nd4j/tree/master/nd4j-parameter-server-parent">nd4j-parameter-server-parent</a>：用于分布式神经网络定型的强大的参数服务器，基于Aeron。</li>
+  <li><a href="https://github.com/deeplearning4j/nd4j/tree/master/nd4j-parameter-server-parent">nd4j-parameter-server-parent</a>：用于分布式神经网络训练的强大的参数服务器，基于Aeron。</li>
   <li><a href="https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends">nd4j-backends</a>：针对不同硬件的后端，为使用多个GPU和CPU运行而优化。</li>
 </ul><br>
 <p><h3>JavaDoc</h3></p>
