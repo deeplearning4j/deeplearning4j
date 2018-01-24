@@ -13,7 +13,6 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-// for explanations how this operation works please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/gather
 CUSTOM_OP_IMPL(gather, 1, 1, false, 0, 1) {
 
 	NDArray<T>* input   = INPUT_VARIABLE(0);

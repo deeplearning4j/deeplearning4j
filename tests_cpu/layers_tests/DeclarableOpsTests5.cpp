@@ -382,3 +382,118 @@ TEST_F(DeclarableOpsTests5, eye_trest4) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test1) {
+    
+    NDArray<float> input('c', {4, 3, 2});
+    NDArrayFactory<float>::linspace(1, input);    
+    NDArray<float> indices('c', {2,2,1}, {3,2,3,2});
+
+    NDArray<float> expected('c', {2,2,3,2}, {19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18});
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test2) {
+    
+    NDArray<float> input('c', {4, 3, 2});
+    NDArrayFactory<float>::linspace(1, input);    
+    NDArray<float> indices('c', {2,2,2}, {3,2,1,2, 0,1,0,1});
+
+    NDArray<float> expected('c', {2,2,2}, {23, 24, 11, 12, 3,  4, 3,  4});
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test3) {
+    
+    NDArray<float> input('c', {4, 3, 2});
+    NDArrayFactory<float>::linspace(1, input);    
+    NDArray<float> indices('c', {3}, {3,2,1});
+    NDArray<float> expected(24.);
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test4) {
+    
+    NDArray<float> input('c', {4, 3, 2});
+    NDArrayFactory<float>::linspace(1, input);    
+    NDArray<float> indices('c', {2,3}, {3,2,1,0,2,1});
+    NDArray<float> expected('c',{2}, {24., 6});
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test5) {
+    
+    NDArray<float> input('c', {4}, {1,2,3,4});
+    NDArray<float> indices('c', {5,1}, {3,2,0,1,1});
+    NDArray<float> expected('c',{5}, {4.,3,1,2,2});
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test6) {
+    
+    NDArray<float> input('c', {4}, {1,2,3,4});
+    std::vector<int> shape = {1};
+    NDArray<float> indices('c', shape, {2});
+    NDArray<float> expected(3.);
+
+    nd4j::ops::gatherNd<float> op;
+    ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+

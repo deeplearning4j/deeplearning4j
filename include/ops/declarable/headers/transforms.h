@@ -48,5 +48,7 @@ namespace nd4j {
          * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
          */
         DECLARE_CUSTOM_OP(eye, 1, 1, false, 0, 2);
+
+        DECLARE_CUSTOM_OP(gatherNd, 2, 1, false, 0, 0);
     }
 }

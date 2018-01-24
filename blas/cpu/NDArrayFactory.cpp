@@ -78,6 +78,9 @@ namespace nd4j {
     ResultSet<T>* NDArrayFactory<T>::allTensorsAlongDimension(const NDArray<T>* ndArray, const std::vector<int> &dimensions) {
         auto result = new ResultSet<T>();
 
+        if(dimensions.size() == 0)
+            return result;
+
         std::vector<int> copy(dimensions);
 
         // we need to sort dimensions (?)

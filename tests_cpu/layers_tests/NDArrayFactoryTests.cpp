@@ -197,6 +197,23 @@ TEST_F(NDArrayFactoryTests, Test_Concat_1) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(NDArrayFactoryTests, allTensorsAlongDimension_test1) {
+    
+    NDArray<float> x('c', {4}, {1, 2, 3, 4});
+    NDArray<float> exp('c', {4}, {1, 2, 3, 4});    
+
+    ResultSet<float>* set = NDArrayFactory<float>::allTensorsAlongDimension(&x, {0});    
+    // set->at(0)->printShapeInfo();
+    // set->at(0)->printIndexedBuffer();
+
+    ASSERT_TRUE(set->size() == 1);
+    ASSERT_TRUE(exp.isSameShape(set->at(0)));
+    ASSERT_TRUE(exp.equalsTo(set->at(0)));
+
+    delete set;    
+}
+
+////////////////////////////////////////////////////////////////////
 // TEST_F(NDArrayFactoryTests, mmulHelper_test_8) {
 
 //     NDArray<double> x('c', {2, 2}, {-0.063666, -0.997971, -0.997971,  0.063666});
