@@ -29,8 +29,10 @@ namespace nd4j {
         this->cblasDgemm = (CblasDgemm)functions[3];
         this->cblasSgemmBatch = (CblasSgemmBatch)functions[4];
         this->cblasDgemmBatch = (CblasDgemmBatch)functions[5];
-
-
+        this->lapackeSgesvd = (LapackeSgesvd)functions[6];
+        this->lapackeDgesvd = (LapackeDgesvd)functions[7];
+        this->lapackeSgesdd = (LapackeSgesdd)functions[8];
+        this->lapackeDgesdd = (LapackeDgesdd)functions[9];
     }
 
     void BlasHelper::initializeDeviceFunctions(Nd4jPointer *functions) {
@@ -46,6 +48,10 @@ namespace nd4j {
         this->cublasHgemmBatched = (CublasHgemmBatched)functions[6];
         this->cublasSgemmBatched = (CublasSgemmBatched)functions[7];
         this->cublasDgemmBatched = (CublasDgemmBatched)functions[8];
+        this->cusolverDnSgesvdBufferSize = (CusolverDnSgesvdBufferSize)functions[9];
+        this->cusolverDnDgesvdBufferSize = (CusolverDnDgesvdBufferSize)functions[10];
+        this->cusolverDnSgesvd = (CusolverDnSgesvd)functions[11];
+        this->cusolverDnDgesvd = (CusolverDnDgesvd)functions[12];
 	    */
     }
 
@@ -127,6 +133,22 @@ namespace nd4j {
 
     CblasDgemmBatch BlasHelper::dgemmBatched() {
         return this->cblasDgemmBatch;
+    }
+
+    LapackeSgesvd BlasHelper::sgesvd() {
+        return this->lapackeSgesvd;
+    }
+
+    LapackeDgesvd BlasHelper::dgesvd() {
+        return this->lapackeDgesvd;
+    }
+
+    LapackeSgesdd BlasHelper::sgesdd() {
+        return this->lapackeSgesdd;
+    }
+
+    LapackeDgesdd BlasHelper::dgesdd() {
+        return this->lapackeDgesdd;
     }
 
     BlasHelper* BlasHelper::_instance = 0;

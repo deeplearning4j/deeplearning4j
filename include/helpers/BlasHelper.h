@@ -12,8 +12,10 @@
 
 #ifdef _WIN32
 #define CUBLASWINAPI __stdcall
+#define CUSOLVERAPI __stdcall
 #else
 #define CUBLASWINAPI 
+#define CUSOLVERAPI 
 #endif
 
 namespace nd4j {
@@ -95,6 +97,27 @@ namespace nd4j {
                            int *lda_Array, double **B_Array, int* ldb_Array,
                            double *beta_Array, double **C_Array, int *ldc_Array,
                            int group_count, int *group_size);
+
+    enum LAPACK_LAYOUT { LAPACK_ROW_MAJOR=101, LAPACK_COL_MAJOR=102 };
+
+    typedef int (*LapackeSgesvd)(LAPACK_LAYOUT matrix_layout, char jobu, char jobvt,
+                           int m, int n, float* a, int lda,
+                           float* s, float* u, int ldu, float* vt,
+                           int ldvt, float* superb);
+
+    typedef int (*LapackeDgesvd)(LAPACK_LAYOUT matrix_layout, char jobu, char jobvt,
+                           int m, int n, double* a,
+                           int lda, double* s, double* u, int ldu,
+                           double* vt, int ldvt, double* superb);
+
+    typedef int (*LapackeSgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m,
+                           int n, float* a, int lda, float* s,
+                           float* u, int ldu, float* vt,
+                           int ldvt);
+    typedef int (*LapackeDgesdd)(LAPACK_LAYOUT matrix_layout, char jobz, int m,
+                           int n, double* a, int lda, double* s,
+                           double* u, int ldu, double* vt,
+                           int ldvt);
 
     typedef cublasStatus_t (CUBLASWINAPI *CublasSgemv)(cublasHandle_t handle, 
                                                       cublasOperation_t trans, 
@@ -233,6 +256,83 @@ namespace nd4j {
                                                           int ldc,
                                                           int batchCount);
 
+    typedef enum{
+        CUSOLVER_STATUS_SUCCESS=0,
+        CUSOLVER_STATUS_NOT_INITIALIZED=1,
+        CUSOLVER_STATUS_ALLOC_FAILED=2,
+        CUSOLVER_STATUS_INVALID_VALUE=3,
+        CUSOLVER_STATUS_ARCH_MISMATCH=4,
+        CUSOLVER_STATUS_MAPPING_ERROR=5,
+        CUSOLVER_STATUS_EXECUTION_FAILED=6,
+        CUSOLVER_STATUS_INTERNAL_ERROR=7,
+        CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED=8,
+        CUSOLVER_STATUS_NOT_SUPPORTED = 9,
+        CUSOLVER_STATUS_ZERO_PIVOT=10,
+        CUSOLVER_STATUS_INVALID_LICENSE=11
+    } cusolverStatus_t;
+
+    typedef enum {
+        CUSOLVER_EIG_TYPE_1=1,
+        CUSOLVER_EIG_TYPE_2=2,
+        CUSOLVER_EIG_TYPE_3=3
+    } cusolverEigType_t ;
+
+    typedef enum {
+        CUSOLVER_EIG_MODE_NOVECTOR=0,
+        CUSOLVER_EIG_MODE_VECTOR=1
+    } cusolverEigMode_t ;
+
+    struct cusolverDnContext;
+    typedef struct cusolverDnContext *cusolverDnHandle_t;
+
+    typedef cusolverStatus_t (CUSOLVERAPI *CusolverDnSgesvdBufferSize)(
+        cusolverDnHandle_t handle,
+        int m,
+        int n,
+        int *lwork);
+
+    typedef cusolverStatus_t (CUSOLVERAPI *CusolverDnDgesvdBufferSize)(
+        cusolverDnHandle_t handle,
+        int m,
+        int n,
+        int *lwork);
+
+    typedef cusolverStatus_t (CUSOLVERAPI *CusolverDnSgesvd)(
+        cusolverDnHandle_t handle, 
+        signed char jobu, 
+        signed char jobvt, 
+        int m, 
+        int n, 
+        float *A, 
+        int lda, 
+        float *S, 
+        float *U, 
+        int ldu, 
+        float *VT, 
+        int ldvt, 
+        float *work, 
+        int lwork, 
+        float *rwork, 
+        int  *info);
+
+    typedef cusolverStatus_t (CUSOLVERAPI *CusolverDnDgesvd)(
+        cusolverDnHandle_t handle, 
+        signed char jobu, 
+        signed char jobvt, 
+        int m, 
+        int n, 
+        double *A, 
+        int lda, 
+        double *S, 
+        double *U, 
+        int ldu, 
+        double *VT, 
+        int ldvt, 
+        double *work,
+        int lwork, 
+        double *rwork, 
+        int *info);
+
 
     enum BlasFunctions {
         GEMV = 0,
@@ -261,6 +361,10 @@ namespace nd4j {
         CblasDgemm cblasDgemm;
         CblasSgemmBatch cblasSgemmBatch;
         CblasDgemmBatch cblasDgemmBatch;
+        LapackeSgesvd lapackeSgesvd;
+        LapackeDgesvd lapackeDgesvd;
+        LapackeSgesdd lapackeSgesdd;
+        LapackeDgesdd lapackeDgesdd;
 
         CublasSgemv cublasSgemv;
         CublasDgemv cublasDgemv;
@@ -271,6 +375,10 @@ namespace nd4j {
         CublasHgemmBatched cublasHgemmBatched;
         CublasSgemmBatched cublasSgemmBatched;
         CublasDgemmBatched cublasDgemmBatched;
+        CusolverDnSgesvdBufferSize cusolverDnSgesvdBufferSize;
+        CusolverDnDgesvdBufferSize cusolverDnDgesvdBufferSize;
+        CusolverDnSgesvd cusolverDnSgesvd;
+        CusolverDnDgesvd cusolverDnDgesvd;
 
     public:
         static BlasHelper* getInstance();
@@ -295,6 +403,12 @@ namespace nd4j {
 
         CblasSgemmBatch sgemmBatched();
         CblasDgemmBatch dgemmBatched();
+
+        LapackeSgesvd sgesvd();
+        LapackeDgesvd dgesvd();
+
+        LapackeSgesdd sgesdd();
+        LapackeDgesdd dgesdd();
     };
 }
 
