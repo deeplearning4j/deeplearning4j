@@ -51,6 +51,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -5409,11 +5410,33 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray leverageTo(String id) {
+        return leverageTo(id, false);
+    }
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id.
+     * If enforceExistence == true, and no workspace with the specified ID exists, then an {@link Nd4jNoSuchWorkspaceException}
+     * is thrown. Otherwise, if enforceExistance == false and no workspace with the specified ID exists, then the current
+     * INDArray is returned unmodified (same as {@link #leverage()}
+     *
+     * @param id ID of the workspace to leverage to
+     * @param enforceExistence If true, and the specified workspace does not exist: an {@link Nd4jNoSuchWorkspaceException}
+     *                         will be thrown.
+     * @return The INDArray, leveraged to the specified workspace
+     * @see #leverageTo(String)
+     */
+    @Override
+    public INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException {
         if (!isAttached())
             return this;
 
-        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id))
-            return this;
+        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id)) {
+            if(enforceExistence){
+                throw new Nd4jNoSuchWorkspaceException(id);
+            } else {
+                return this;
+            }
+        }
 
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
@@ -5446,14 +5469,36 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *
      * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
      *
-     * @return
+     * @return Migrated INDArray or <i>this</i> if no current workspace
+     * @see #migrate(boolean)
      */
     @Override
     public INDArray migrate() {
+        return migrate(false);
+    }
+
+    /**
+     * This method pulls this INDArray into current Workspace, or optionally detaches if no workspace is present.<br>
+     * That is:<br>
+     * If current workspace is present/active, INDArray is migrated to it.<br>
+     * If no current workspace is present/active, one of two things occur:
+     * 1. If detachOnNoWs arg is true: if there is no current workspace, INDArray is detached
+     * 2. If detachOnNoWs arg is false: this INDArray is returned as-is (no-op) - equivalent to {@link #migrate()}
+     *
+     * @param detachOnNoWs If true: detach on no WS. If false and no workspace: return this.
+     * @return Migrated INDArray
+     */
+    @Override
+    public INDArray migrate(boolean detachOnNoWs){
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-        if (current == null)
-            return this;
+        if (current == null) {
+            if(detachOnNoWs){
+                return detach();
+            } else {
+                return this;
+            }
+        }
 
         INDArray copy = null;
 

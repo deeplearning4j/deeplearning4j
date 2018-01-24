@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -2639,21 +2640,51 @@ public interface INDArray extends Serializable {
     INDArray leverage();
 
     /**
-     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id - if a workspace
+     * with that ID exists. If no workspace with the specified ID exists, the current INDArray is returned unmodified.
      *
      * @param id ID of the workspace to leverage to
      * @return
+     * @see #leverageTo(String, boolean)
      */
     INDArray leverageTo(String id);
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id.
+     * If enforceExistence == true, and no workspace with the specified ID exists, then an {@link Nd4jNoSuchWorkspaceException}
+     * is thrown. Otherwise, if enforceExistance == false and no workspace with the specified ID exists, then the current
+     * INDArray is returned unmodified (same as {@link #leverage()}
+     *
+     * @param id ID of the workspace to leverage to
+     * @param enforceExistence If true, and the specified workspace does not exist: an {@link Nd4jNoSuchWorkspaceException}
+     *                         will be thrown.
+     * @return The INDArray, leveraged to the specified workspace
+     * @see #leverageTo(String)
+     */
+    INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException;
 
     /**
      * This method pulls this INDArray into current Workspace.
      *
      * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
      *
-     * @return
+     * @return Migrated INDArray or <i>this</i> if no current workspace
+     * @see #migrate(boolean)
      */
     INDArray migrate();
+
+    /**
+     * This method pulls this INDArray into current Workspace, or optionally detaches if no workspace is present.<br>
+     * That is:<br>
+     * If current workspace is present/active, INDArray is migrated to it.<br>
+     * If no current workspace is present/active, one of two things occur:
+     * 1. If detachOnNoWs arg is true: if there is no current workspace, INDArray is detached
+     * 2. If detachOnNoWs arg is false: this INDArray is returned as-is (no-op) - equivalent to {@link #migrate()}
+     *
+     * @param detachOnNoWs If true: detach on no WS. If false and no workspace: return this.
+     * @return Migrated INDArray
+     */
+    INDArray migrate(boolean detachOnNoWs);
 
     /**
        * This method returns percentile value for this INDArray

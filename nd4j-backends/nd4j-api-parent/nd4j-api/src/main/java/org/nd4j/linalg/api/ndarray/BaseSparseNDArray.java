@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
 import org.nd4j.linalg.api.ops.impl.accum.ShannonEntropy;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -1757,11 +1758,20 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray leverageTo(String id) {
+        return leverageTo(id, false);
+    }
+
+    public INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException {
         return null;
     }
 
     @Override
     public INDArray migrate() {
+        return migrate(false);
+    }
+
+    @Override
+    public INDArray migrate(boolean detachIfNoWs){
         return null;
     }
 
