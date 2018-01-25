@@ -1576,6 +1576,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
+/*
+            if(layerFeedForwardIdx >= 0 && i > layerFeedForwardIdx + 1) {
+                break;
+            }
+*/
+
+
+
             GraphVertex current = vertices[topologicalOrder[i]];
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
@@ -1652,7 +1660,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
             }
 
-            if(current.getVertexIndex() == layerFeedForwardIdx) break;
+            if(layerFeedForwardIdx > 0 && current.getVertexIndex() == layerFeedForwardIdx) break;
+
         }
 
         if (!train)
