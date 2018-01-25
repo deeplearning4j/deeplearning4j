@@ -1378,6 +1378,77 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
+
+
+
+
+
+    /**
+     * Conduct forward pass using a single input array. Note that this method can only be used with ComputationGraphs
+     * with a single input array.
+     *
+     * @param input The input array
+     * @param layerTillIndex the layer to feed forward to
+     * @param train If true: do forward pass at training time
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(INDArray input, int layerTillIndex,boolean train) {
+        if (numInputArrays != 1)
+            throw new UnsupportedOperationException("Cannot feedForward with single input for graph network with "
+                    + numInputArrays + " expected inputs");
+        setInput(0, input);
+        return feedForward(train,layerTillIndex);
+    }
+
+
+
+    /**
+     * Conduct forward pass using an array of inputs. This overload allows the forward pass to be conducted, optionally
+     * (not) clearing the layer input arrays.<br>
+     * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
+     * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
+     * workspaces in which they were defined - potentially causing a crash. See https://deeplearning4j.org/workspaces
+     * for more details
+     *
+     * @param input An array of ComputationGraph inputs
+     * @param layerTillIndex the index of the layer to feed forward to
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param clearInputs If true (default for other methods): clear the inputs of all layers after doing forward
+     *                    pass. False don't clear layer inputs.
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(INDArray[] input, int layerTillIndex,boolean train, boolean clearInputs) {
+        setInputs(input);
+        return feedForward(train, false, false, clearInputs,layerTillIndex);
+    }
+
+
+    /**
+     * Conduct forward pass using an array of inputs
+     *
+     * @param input An array of ComputationGraph inputs
+     * @param layerTillIndex the index of the layer to feed forward to
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(INDArray[] input, int layerTillIndex,boolean train) {
+        return feedForward(input, train, true);
+    }
+
+
+    /**
+     * Conduct forward pass using the stored inputs
+     *
+     * @param train If true: do forward pass at training time; false: do forward pass at test time
+     * @param layerTillIndex the index of the layer to feed forward to
+     * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
+     */
+    public Map<String, INDArray> feedForward(boolean train,int layerTillIndex) {
+        return feedForward(train, false, false, true,layerTillIndex);
+    }
+
+
+
     /**
      * Conduct forward pass using a single input array. Note that this method can only be used with ComputationGraphs
      * with a single input array.
@@ -1458,6 +1529,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return feedForward(train, excludeOutputLayers, includeNonLayerVertexActivations, true);
     }
 
+
     /**
      * PLEASE NEVER USE THIS METHOD IF YOU"RE NOT SURE WHAT YOU'll GET
      *
@@ -1469,6 +1541,22 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
                                                 boolean includeNonLayerVertexActivations, boolean publicApi) {
+        return feedForward(train,excludeOutputLayers,includeNonLayerVertexActivations,publicApi,-1);
+    }
+    /**
+     * PLEASE NEVER USE THIS METHOD IF YOU"RE NOT SURE WHAT YOU'll GET
+     *
+     * @param train
+     * @param excludeOutputLayers
+     * @param includeNonLayerVertexActivations
+     * @param publicApi
+     * @return
+     */
+    protected Map<String, INDArray> feedForward(boolean train,
+                                                boolean excludeOutputLayers,
+                                                boolean includeNonLayerVertexActivations,
+                                                boolean publicApi,
+                                                int layerFeedForwardIdx) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace;
@@ -1488,6 +1576,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
+/*
+            if(layerFeedForwardIdx >= 0 && i > layerFeedForwardIdx + 1) {
+                break;
+            }
+*/
+
+
+
             GraphVertex current = vertices[topologicalOrder[i]];
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
@@ -1563,6 +1659,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
             }
+
+            if(layerFeedForwardIdx > 0 && current.getVertexIndex() == layerFeedForwardIdx) break;
+
         }
 
         if (!train)
