@@ -18,7 +18,9 @@ package org.datavec.spark.transform;
 
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.transform.MathOp;
+import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.DoubleWritable;
@@ -115,6 +117,83 @@ public class ExecutionTest extends BaseSparkTest {
         expectedSequence.add(seq2e);
 
         assertEquals(expectedSequence, out);
+    }
+
+
+    @Test
+    public void testReductionGlobal(){
+
+        List<List<Writable>> in = Arrays.asList(
+                Arrays.<Writable>asList(new Text("first"), new DoubleWritable(3.0)),
+                Arrays.<Writable>asList(new Text("second"), new DoubleWritable(5.0))
+        );
+
+        JavaRDD<List<Writable>> inData = sc.parallelize(in);
+
+        Schema s = new Schema.Builder()
+                .addColumnString("textCol")
+                .addColumnDouble("doubleCol")
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .reduce(new Reducer.Builder(ReduceOp.TakeFirst)
+                        .takeFirstColumns("textCol")
+                        .meanColumns("doubleCol").build())
+                .build();
+
+        JavaRDD<List<Writable>> outRdd = SparkTransformExecutor.execute(inData, tp);
+
+        List<List<Writable>> out = outRdd.collect();
+
+        List<List<Writable>> expOut = Collections.singletonList(Arrays.<Writable>asList(new Text("first"), new DoubleWritable(4.0)));
+
+        assertEquals(expOut, out);
+    }
+
+    @Test
+    public void testReductionByKey(){
+
+        List<List<Writable>> in = Arrays.asList(
+                Arrays.<Writable>asList(new IntWritable(0), new Text("first"), new DoubleWritable(3.0)),
+                Arrays.<Writable>asList(new IntWritable(0), new Text("second"), new DoubleWritable(5.0)),
+                Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(30.0)),
+                Arrays.<Writable>asList(new IntWritable(1), new Text("s"), new DoubleWritable(50.0))
+        );
+
+        JavaRDD<List<Writable>> inData = sc.parallelize(in);
+
+        Schema s = new Schema.Builder()
+                .addColumnInteger("intCol")
+                .addColumnString("textCol")
+                .addColumnDouble("doubleCol")
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .reduce(new Reducer.Builder(ReduceOp.TakeFirst)
+                        .keyColumns("intCol")
+                        .takeFirstColumns("textCol")
+                        .meanColumns("doubleCol").build())
+                .build();
+
+        JavaRDD<List<Writable>> outRdd = SparkTransformExecutor.execute(inData, tp);
+
+        List<List<Writable>> out = outRdd.collect();
+
+        List<List<Writable>> expOut = Arrays.asList(
+                Arrays.<Writable>asList(new IntWritable(0), new Text("first"), new DoubleWritable(4.0)),
+                Arrays.<Writable>asList(new IntWritable(1), new Text("f"), new DoubleWritable(40.0)));
+
+        out = new ArrayList<>(out);
+        Collections.sort(
+                out, new Comparator<List<Writable>>() {
+                    @Override
+                    public int compare(List<Writable> o1, List<Writable> o2) {
+                        return Integer.compare(o1.get(0).toInt(), o2.get(0).toInt());
+                    }
+                }
+        );
+
+        assertEquals(expOut, out);
     }
 
 }

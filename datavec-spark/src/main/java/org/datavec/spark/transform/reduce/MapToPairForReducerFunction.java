@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.reduce;
 
+import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
@@ -28,26 +29,33 @@ import java.util.List;
 
 @AllArgsConstructor
 public class MapToPairForReducerFunction implements PairFunction<List<Writable>, String, List<Writable>> {
+    public static final String GLOBAL_KEY = "";
 
     private final IAssociativeReducer reducer;
 
     @Override
     public Tuple2<String, List<Writable>> call(List<Writable> writables) throws Exception {
         List<String> keyColumns = reducer.getKeyColumns();
-        Schema schema = reducer.getInputSchema();
-        String key;
-        if (keyColumns.size() == 1)
-            key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();
-        else {
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < keyColumns.size(); i++) {
-                if (i > 0)
-                    sb.append("_");
-                sb.append(writables.get(schema.getIndexOfColumn(keyColumns.get(i))).toString());
-            }
-            key = sb.toString();
-        }
 
-        return new Tuple2<>(key, writables);
+        if(keyColumns == null){
+            //Global reduction
+            return new Tuple2<>(GLOBAL_KEY, writables);
+        } else {
+            Schema schema = reducer.getInputSchema();
+            String key;
+            if (keyColumns.size() == 1)
+                key = writables.get(schema.getIndexOfColumn(keyColumns.get(0))).toString();
+            else {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < keyColumns.size(); i++) {
+                    if (i > 0)
+                        sb.append("_");
+                    sb.append(writables.get(schema.getIndexOfColumn(keyColumns.get(i))).toString());
+                }
+                key = sb.toString();
+            }
+
+            return new Tuple2<>(key, writables);
+        }
     }
 }
