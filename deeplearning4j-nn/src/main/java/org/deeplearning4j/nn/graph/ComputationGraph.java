@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -1707,6 +1708,35 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
+        return output(train, input, null, null);
+    }
+
+    /**
+     * Return an array of network outputs (predictions), given the specified network inputs
+     * Network outputs are for output layers only.
+     *
+     * @param train      If true: forward pass for training mode. False: test mode
+     * @param input      Input arrays to the netwonk
+     * @param inputMasks Optional input mask arrays (may be null)
+     * @return           Network output activations
+     */
+    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks){
+        return output(train, input, inputMasks, null);
+    }
+
+    /**
+     * Return an array of network outputs (predictions), given the specified network inputs
+     * Network outputs are for output layers only.
+     *
+     * @param train      If true: forward pass for training mode. False: test mode
+     * @param input      Input arrays to the netwonk
+     * @param inputMasks Optional input mask arrays (may be null)
+     * @param labelMasks Optional label mask arrays (may be null
+     * @return           Network output activations
+     */
+    public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks){
+        setLayerMaskArrays(inputMasks, labelMasks);
+
         WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
         configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
         MemoryWorkspace workspace =
@@ -1720,14 +1750,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 tmp[x] = tmp[x].detach();
 
             configuration.setTrainingWorkspaceMode(cMode);
-            clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
             return tmp;
+        } finally {
+            clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
+            clearLayerMaskArrays();
         }
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
         setInputs(input);
-        Map<String, INDArray> activations = feedForward(false, false, false, false);
+        Map<String, INDArray> activations = feedForward(train, false, false, false);
         INDArray[] outputs = new INDArray[numOutputArrays];
         int i = 0;
         for (String s : configuration.getNetworkOutputs()) {
