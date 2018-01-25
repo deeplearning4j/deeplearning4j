@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.reduce;
 
+import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
@@ -34,6 +35,9 @@ public class MapToPairForReducerFunction implements PairFunction<List<Writable>,
     @Override
     public Tuple2<String, List<Writable>> call(List<Writable> writables) throws Exception {
         List<String> keyColumns = reducer.getKeyColumns();
+        Preconditions.checkNotNull(keyColumns, "Key columns for reducing was null");
+        Preconditions.checkArgument(keyColumns.size() > 0, "Key columns for reducing was empty");
+
         Schema schema = reducer.getInputSchema();
         String key;
         if (keyColumns.size() == 1)
