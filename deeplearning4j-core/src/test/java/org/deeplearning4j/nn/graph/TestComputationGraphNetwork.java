@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -68,6 +69,36 @@ public class TestComputationGraphNetwork {
     private static int getNumParams() {
         //Number of parameters for both iris models
         return (4 * 5 + 5) + (5 * 3 + 3);
+    }
+
+
+    @Test
+    public void testFeedForwardToLayer() {
+
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
+
+        ComputationGraph graph = new ComputationGraph(configuration);
+        graph.init();
+
+        MultiLayerConfiguration mlc = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+
+        DataSetIterator iris = new IrisDataSetIterator(150, 150);
+        DataSet ds = iris.next();
+
+        graph.setInput(0, ds.getFeatureMatrix());
+        net.setParams(graph.params());
+        Map<String, INDArray> activations = graph.feedForward(false);
+
+        List<INDArray> feedForward = net.feedForward(ds.getFeatureMatrix());
+        assertEquals(activations.size(),feedForward.size());
+        assertEquals(activations.get("outputLayer"),feedForward.get(feedForward.size() - 1));
+
+        val graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
+        val networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
+        assertEquals(graphForward.get("firstLayer"),networkForward.get(1));
     }
 
     @Test
