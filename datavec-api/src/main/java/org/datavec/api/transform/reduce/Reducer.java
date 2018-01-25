@@ -40,7 +40,7 @@ import java.util.*;
  * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
  * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
- * on the same column, or use {@link Reducer.Builder.multipleOpColumns}
+ * on the same column, or use {@link Reducer.Builder#multipleOpColmumns(List, String...)}}
  * <p>
  * Uses are:
  * (1) Reducing examples by a key
