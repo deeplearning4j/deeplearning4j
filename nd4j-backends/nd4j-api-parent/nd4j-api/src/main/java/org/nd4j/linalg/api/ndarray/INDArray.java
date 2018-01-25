@@ -2664,6 +2664,18 @@ public interface INDArray extends Serializable {
     INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException;
 
     /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id, if a workspace
+     * with the given ID is open and active.
+     *
+     * If the workspace does not exist, or is not active, the array is detached from any workspaces.
+     *
+     * @param id ID of the workspace to leverage to
+     * @return The INDArray, leveraged to the specified workspace (if it exists and is active) otherwise the detached array
+     * @see #leverageTo(String)
+     */
+    INDArray leverageOrDetach(String id);
+
+    /**
      * This method pulls this INDArray into current Workspace.
      *
      * PLEASE NOTE: If there's no current Workspace - INDArray returned as is

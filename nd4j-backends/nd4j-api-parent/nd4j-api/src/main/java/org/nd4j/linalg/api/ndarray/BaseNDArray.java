@@ -5465,6 +5465,27 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id, if a workspace
+     * with the given ID is open and active.
+     *
+     * If the workspace does not exist, or is not active, the array is detached from any workspaces.
+     *
+     * @param id ID of the workspace to leverage to
+     * @return The INDArray, leveraged to the specified workspace (if it exists and is active) otherwise the detached array
+     * @see #leverageTo(String)
+     */
+    public INDArray leverageOrDetach(String id){
+        if(!isAttached()){
+            return this;
+        }
+
+        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(id)){
+            return detach();
+        }
+        return leverageTo(id);
+    }
+
+    /**
      * This method pulls this INDArray into current Workspace.
      *
      * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
