@@ -2403,7 +2403,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public Map<String, CustomOpDescriptor> getCustomOperations() {
+    public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
         String list = nativeOps.getAllCustomOps();
 
         val map = new HashMap<String, CustomOpDescriptor>();

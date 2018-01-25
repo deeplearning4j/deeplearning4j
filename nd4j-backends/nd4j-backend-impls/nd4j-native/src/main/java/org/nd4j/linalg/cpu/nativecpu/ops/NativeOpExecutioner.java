@@ -1484,7 +1484,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public Map<String, CustomOpDescriptor> getCustomOperations() {
+    public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
         if (customOps == null) {
             String list = loop.getAllCustomOps();
 
