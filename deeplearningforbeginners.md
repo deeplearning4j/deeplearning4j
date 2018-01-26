@@ -84,7 +84,8 @@ While individual courses have limits on what they can teach, the Internet does n
 ## DL4J Beginner's Guides
 
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Regression & Neural Networks](./linear-regression)
+* [Regression & Neural Networks](./logistic-regression)
+* [Generative Adversarial Networks (GANs)](/generative-adversarial-network)
 * [Word2vec: Extracting Relations From Raw Text With Neural Word Embeddings](./word2vec)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm)
