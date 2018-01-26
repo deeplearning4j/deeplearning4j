@@ -325,6 +325,7 @@ Here's a full 9x9 game with explanations that illustrate all these concepts in a
       <iframe   src="https://www.badukai.com/demos/static/play_mcts_55.html" height="700" width="700" style="border:2px solid grey; background-color: #f8f8f8;"></iframe>
     </div>
   </div>
+</div>
 
 ## Deep learning and the game of Go
 
