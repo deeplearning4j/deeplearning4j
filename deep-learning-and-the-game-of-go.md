@@ -28,7 +28,7 @@ If we've caught your attention and you want to learn more about this fascinating
 
 Readers of this newsletter get a 40% discount off of all formats when using the following code: "smpumperla40". Code for the book and other useful material is freely available in the following [GitHub repository](https://github.com/maxpumperla/deep_learning_and_the_game_of_go). The book itself is written with Python and does not use Eclipse DL4J, but in this article we tackle some aspects covered in detail in the book with Java and DL4J.
 
-PICTURE
+![Alt text](./img/eigen_matrix.png)
 
 ## Machine learning and deep learning
 
@@ -40,13 +40,13 @@ Traditionally, computer programming is about applying clear rules to structured 
 
 In contrast to the traditional programming paradigm, machine learning is a family of techniques for inferring a program or algorithm from example data, rather than implementing it directly. So, with machine learning, we still feed our computer data, but instead of imposing instructions and expecting output, we provide the expected output and let the machine find an algorithm by itself.
 
-PICTURE
+![Alt text](./img/eigen_matrix.png)
 
 To build a computer program that can identify who's in a photo, we can apply an algorithm that analyzes a large collection of images of your friends and generates a function that matches them. If we do this correctly, the generated function will also match new photos that we've never seen before. Of course, it will have no knowledge of its purpose; all it can do is identify things that are similar to the original images we fed it.
 
 In this situation, we call the images we provide the machine training data and the names of the people on the picture labels. Once we have trained an algorithm for our purpose, we can use it to predict labels on new data to test it. Figure <<figure-ml-schema>> displays this example alongside a schema of the machine learning paradigm.
 
-PICTURE
+![Alt text](./img/eigen_matrix.png)
 
 Machine learning comes in when rules aren't clear; it can solve problems of the "I'll know it when I see it" variety. Instead of programming the function directly, we provide data that indicates what the function should do and then methodically generate a function that matches our data.
 
@@ -60,7 +60,7 @@ Deep learning applies the same idea to machine learning. Deep learning is a subf
 
 The amazing thing about deep learning is that you do not need to know what the intermediate concepts are in advance. If you select a model with enough layers, and provide enough training data, the training process will gradually organize the raw data into increasingly high-level concepts. But how does the training algorithm know what concepts to use? It doesn't really; it just organizes the input in any way that helps it match the training examples better. So there is no guarantee this representation matches the way humans would think about the data.
 
-PICTURE
+![Alt text](./img/eigen_matrix.png)
 
 ## A lightning introducing to the Game of Go
 
@@ -70,18 +70,21 @@ The rules of Go are famously simple. In short, two players alternate placing bla
 
 A Go board is a square grid. Stones go on the intersections, not inside the squares. The standard board is 19×19, but sometimes players use a smaller board for a quick game. The most popular smaller options are 9×9 and 13×13 boards.
 
-PICTURE BOARD
+![Alt text](./img/eigen_matrix.png) 
+BOARD
 
 Placing and capturing stones
 One player plays with black stones and the other plays with white stones. The two players alternate placing stones on the board, starting with the black player. Stones don't move once they are on the board, although they can be captured and removed entirely. To capture your opponent's stones, you must completely surround them with your own. Here's how that works.
 
 Stones of the same color that are touching are considered connected together. For the purposes of connection, we only consider straight up, down, left, or right; diagonals don't count. Any empty point touching a connected group is called a liberty of that group. Every group needs at least one liberty to stay on the board. So you can capture your opponent's stones by filling their liberties.
 
-PICTURE STONES
+![Alt text](./img/eigen_matrix.png)
+STONES
 
 When you place a stone in the last liberty of an opponent's group, that group is captured and removed from the board. The newly empty points are then available for either player to play on (so long as the move is legal). On the flip side, you may not play a stone that would have zero liberties, unless you are completing a capture.
 
-PICTURE TWO GROUPS OF STONES
+![Alt text](./img/eigen_matrix.png)
+TWO GROUPS OF STONES
 
 There's an interesting consequence of the capturing rules. If a group of stones has two completely separate internal liberties, it can never be captured. See the figure above: black can't play at A, because that black stone would have no liberties. Nor can black play at B. So black has no way to fill the last two liberties of the white group. These internal liberties are called eyes. In contrast, black can play at C to capture five white stones. That white group has only one eye and is doomed to get captured at some point.
 
@@ -97,11 +100,13 @@ The most common counting method is territory scoring. In this case, you get one 
 
 Here's a full 9x9 game with explanations that illustrate all these concepts in a concrete example. Use the arrows below the Go board to navigate through the moves.
 
-PICTURE BLANK BOARD
+![Alt text](./img/eigen_matrix.png)
+BLANK BOARD
 
 If you want to play a game yourself, you can do this right now. Below is a playable demo of a 5x5 Go bot that we built and deployed for you.
 
-BOARD INTERACTIVE
+![Alt text](./img/eigen_matrix.png)
+INTERACTIVE
 
 ## Deep learning and the game of Go
 
@@ -123,7 +128,8 @@ In Go, rules-based approaches to move selection turn out to be mediocre at this 
 
 We start with a large collection of game records between strong human players; online gaming servers are a great resource here. Then we replay all the games on a computer, extracting each board position and the following move. That's our training set. With a suitably deep neural network, it's possible to predict the human move with better than 50% accuracy. You can build a bot that just plays the predicted human move, and it's already a credible opponent. Schematically, the application we're trying to build looks as follows:
 
-PICTURE OVERVIEW
+![Alt text](./img/eigen_matrix.png)
+OVERVIEW
 
 On a high level, to build a deep-learning-Go-move-prediction application, you need to address the following tasks:
 
