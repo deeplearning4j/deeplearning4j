@@ -8,6 +8,6 @@
  */
 
 
-jenkinsBuilder libnd4jTestsFilter: '--gtest_filter="DeclarableOpsTests5.gatherNd_test*"'
+jenkinsBuilder libnd4jTestsFilter: '--gtest_filter="*"'
 
 

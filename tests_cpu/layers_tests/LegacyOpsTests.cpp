@@ -52,6 +52,21 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     delete result;
 }
 
+TEST_F(LegacyOpsTests,  Reciprocal_1) {
+    NDArray<float> x('c', {5, 5});
+    x.assign(2.0f);
+
+    NDArray<float> ethalon('c', {5, 5});
+    ethalon.assign(0.5f);
+
+    nd4j::ops::LegacyTransformOp<float> op(94);
+    Nd4jStatus status = op.execute({&x}, {&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(ethalon.equalsTo(&x));
+    
+}
+
 TEST_F(LegacyOpsTests,  PWT_Tests_1) {
     NDArray<float> x('c', {5, 5});
     x.assign(2.0);

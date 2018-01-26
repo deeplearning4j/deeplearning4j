@@ -106,5 +106,10 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(crelu, 1, 1, false, 0, 0);        
         DECLARE_CUSTOM_OP(crelu_bp, 2, 1, false, 0, 0);
+        
+        /**
+         * x^2 + y operation
+         */
+        DECLARE_OP(polisq, 2, 1, true);
     }
 }

@@ -384,9 +384,9 @@ TEST_F(DeclarableOpsTests5, eye_trest4) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test1) {
-    
+
     NDArray<float> input('c', {4, 3, 2});
-    NDArrayFactory<float>::linspace(1, input);    
+    NDArrayFactory<float>::linspace(1, input);
     NDArray<float> indices('c', {2,2,1}, {3,2,3,2});
 
     NDArray<float> expected('c', {2,2,3,2}, {19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 13, 14, 15, 16, 17, 18});
@@ -394,7 +394,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test1) {
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
     NDArray<float>* output = results->at(0);
-    
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -404,17 +404,17 @@ TEST_F(DeclarableOpsTests5, gatherNd_test1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test2) {
-    
+
     NDArray<float> input('c', {4, 3, 2});
-    NDArrayFactory<float>::linspace(1, input);    
+    NDArrayFactory<float>::linspace(1, input);
     NDArray<float> indices('c', {2,2,2}, {3,2,1,2, 0,1,0,1});
 
     NDArray<float> expected('c', {2,2,2}, {23, 24, 11, 12, 3,  4, 3,  4});
 
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
-    NDArray<float>* output = results->at(0);    
-    
+    NDArray<float>* output = results->at(0);
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -424,16 +424,16 @@ TEST_F(DeclarableOpsTests5, gatherNd_test2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test3) {
-    
+
     NDArray<float> input('c', {4, 3, 2});
-    NDArrayFactory<float>::linspace(1, input);    
+    NDArrayFactory<float>::linspace(1, input);
     NDArray<float> indices('c', {3}, {3,2,1});
     NDArray<float> expected(24.);
 
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
     NDArray<float>* output = results->at(0);
-    
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -443,16 +443,16 @@ TEST_F(DeclarableOpsTests5, gatherNd_test3) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test4) {
-    
+
     NDArray<float> input('c', {4, 3, 2});
-    NDArrayFactory<float>::linspace(1, input);    
+    NDArrayFactory<float>::linspace(1, input);
     NDArray<float> indices('c', {2,3}, {3,2,1,0,2,1});
     NDArray<float> expected('c',{2}, {24., 6});
 
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
     NDArray<float>* output = results->at(0);
-    
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -462,7 +462,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test4) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test5) {
-    
+
     NDArray<float> input('c', {4}, {1,2,3,4});
     NDArray<float> indices('c', {5,1}, {3,2,0,1,1});
     NDArray<float> expected('c',{5}, {4.,3,1,2,2});
@@ -470,7 +470,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test5) {
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
     NDArray<float>* output = results->at(0);
-    
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -480,7 +480,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test5) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, gatherNd_test6) {
-    
+
     NDArray<float> input('c', {4}, {1,2,3,4});
     std::vector<int> shape = {1};
     NDArray<float> indices('c', shape, {2});
@@ -489,7 +489,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test6) {
     nd4j::ops::gatherNd<float> op;
     ResultSet<float>* results = op.execute({&input, &indices}, {}, {});
     NDArray<float>* output = results->at(0);
-    
+
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -497,3 +497,292 @@ TEST_F(DeclarableOpsTests5, gatherNd_test6) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests5, Test_TopK_1) {
+    NDArray<float> x('c', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
+    NDArray<float> expV('c', {2, 1}, {11.0f, 14.0f});
+    NDArray<float> expI('c', {2, 1}, {1.0f, 0.0f});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {1, 0}); // without sorting
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+
+    v->printShapeInfo("topK_1: shape v");
+    expV.printShapeInfo("topK_1: shape expV");
+
+    i->printShapeInfo("topK_1: shape I");
+    expI.printShapeInfo("topK_1: shape expI");
+
+    v->printIndexedBuffer("topK_1: v");
+    expV.printIndexedBuffer("topK_1: expV");
+    i->printIndexedBuffer("topK_1: i");
+    expI.printIndexedBuffer("topK_1: expI");
+
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_TopK_2) {
+    NDArray<float> x('c', {2, 3, 4}, {11.0,  3.0, 14.0, 5.0,
+                                      6.0,  9.0, 3.5, 7.0,
+                                      21.0, 3.0, 14.0, 15.0,
+                                      6.0, 9.0, 3.5, 7.0,
+                                      11.0, 13.0, 14.0, 5.0,
+                                      16.0, 9.0, 13.5, 7.0
+                     }
+    );
+// <<<14.>,<9.>>, <<21.>,<9.>>, <<14.>,<16.>>>
+    NDArray<float> expV('c', {2, 3, 1}, {14.0f, 9.0f,
+                                         21.0f,
+                                         9.0f, 14.0f,
+                                         16.0f
+                        }
+    );
+
+    NDArray<float> expI('c', {2, 3, 1 }, {2, 1, 0, 1, 2, 0});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+
+    v->printShapeInfo("shape v");
+    expV.printShapeInfo("shape expV");
+
+    i->printShapeInfo("shape I");
+    expI.printShapeInfo("shape expI");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+    i->printIndexedBuffer("i");
+    expI.printIndexedBuffer("expI");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_TopK_3) {
+    NDArray<float> x('c', {2, 3, 4}, {11.0,  3.0, 14.0, 5.0,
+                                      6.0,  9.0, 3.5, 7.0,
+                                      21.0, 3.0, 14.0, 15.0,
+                                      6.0, 9.0, 3.5, 7.0,
+                                      11.0, 13.0, 14.0, 5.0,
+                                      16.0, 9.0, 13.5, 7.0
+                     }
+    );
+
+    NDArray<float> expV('c', {2, 3, 2}, {14.0f, 11.0f, 9.0f,
+                                         7.0f, 21.0f, 15.0f,
+                                         9.0f, 7.0f, 14.0f,
+                                         13.0f, 16.0f, 13.5f
+                        }
+    );
+
+    NDArray<float> expI('c', {2, 3, 2 }, {2, 0, 1, 3, 0, 3, 1,  3, 2, 1, 0, 2});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {2, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+
+    v->printShapeInfo("shape v");
+    expV.printShapeInfo("shape expV");
+
+    i->printShapeInfo("shape I");
+    expI.printShapeInfo("shape expI");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+    i->printIndexedBuffer("i");
+    expI.printIndexedBuffer("expI");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_TopK_4) {
+    NDArray<float> x('c', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
+    NDArray<float> expV('c', {2, 2}, {11.0f, 3.0f, 14.0f, 6.0f});
+    NDArray<float> expI('c', {2, 2}, {1.0f, 2.0f, 0.0f, 2.0f});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {2, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto i = result->at(1);
+
+    v->printShapeInfo("shape v");
+    expV.printShapeInfo("shape expV");
+
+    i->printShapeInfo("shape I");
+    expI.printShapeInfo("shape expI");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+    i->printIndexedBuffer("i");
+    expI.printIndexedBuffer("expI");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_TopK_5) {
+    NDArray<float> x('f', {2, 3}, {1.0f, 11.0f, 3.0f, 14.0f, 5.0f, 6.0f});
+    NDArray<float> expV('f', {2, 2}, {5.0f, 14.0f, 3.0f, 11.0f});
+    NDArray<float> expI('f', {2, 2}, {2.0f, 1.0f, 1.0f, 0.0f});
+
+    nd4j::ops::top_k<float> op;
+    auto result = op.execute({&x}, {}, {2, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    NDArray<float>* v = result->at(0);
+    NDArray<float>* i = result->at(1);
+
+    x.printShapeInfo("shape of the source X");
+    v->printShapeInfo("shape v");
+    expV.printShapeInfo("shape expV");
+
+    i->printShapeInfo("shape I");
+    expI.printShapeInfo("shape expI");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+    i->printIndexedBuffer("i");
+    expI.printIndexedBuffer("expI");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    ASSERT_TRUE(expI.isSameShape(i));
+    ASSERT_TRUE(expI.equalsTo(i));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_InTopK_1) {
+    NDArray<float> x('c', {2, 3}, {1.0, 11.0, 3.0, 14.0, 5.0, 6.0});
+    NDArray<float> y('c', {2}, {1, 1});
+    NDArray<float> expV('c', {2}, {1, 0});
+
+    nd4j::ops::in_top_k<float> op;
+    auto result = op.execute({&x, &y}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(1, result->size());
+
+    auto v = result->at(0);
+
+    v->printShapeInfo("InTopK: shape v");
+    expV.printShapeInfo("InTopK: shape expV");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_InTopK_2) {
+    NDArray<float> x('c', {6, 4}, {11.0, 3.0, 14.0, 5.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   21.0, 3.0, 14.0, 15.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   11.0, 13.0, 14.0, 5.0,
+                                   16.0, 9.0, 13.5, 7.0}
+    );
+
+    NDArray<float> y('c', {6}, {0, 0, 0, 0, 0, 0});
+    NDArray<float> expV('c', {6}, {1, 0, 1, 0, 0, 1 });
+
+    nd4j::ops::in_top_k<float> op;
+    auto result = op.execute({&x, &y}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(1, result->size());
+
+    auto v = result->at(0);
+
+    v->printShapeInfo("InTopK: shape v");
+    expV.printShapeInfo("InTopK: shape expV");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    delete result;
+
+}
+
+TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
+    NDArray<float> x('f', {6, 4}, {11.0, 3.0, 14.0, 5.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   21.0, 3.0, 14.0, 15.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   11.0, 13.0, 14.0, 5.0,
+                                   16.0, 9.0, 13.5, 7.0}
+    );
+
+    NDArray<float> y('f', {6}, {0, 0, 0, 0, 0, 0});
+    NDArray<float> expV('f', {6}, {1, 0, 0, 0, 0, 0 });
+
+    nd4j::ops::in_top_k<float> op;
+    auto result = op.execute({&x, &y}, {}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(1, result->size());
+
+    auto v = result->at(0);
+
+    v->printShapeInfo("InTopK: shape v");
+    expV.printShapeInfo("InTopK: shape expV");
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+
+    ASSERT_TRUE(expV.isSameShape(v));
+    ASSERT_TRUE(expV.equalsTo(v));
+
+    delete result;
+}

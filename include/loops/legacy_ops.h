@@ -134,7 +134,8 @@
         (90,simdOps::Erfc) ,\
         (91,simdOps::Expm1), \
         (92, simdOps::PowDerivative), \
-        (93,simdOps::ATanh)
+        (93,simdOps::ATanh), \
+        (94,simdOps::Reciprocal)
 
 
 

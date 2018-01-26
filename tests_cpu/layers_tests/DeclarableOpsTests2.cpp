@@ -280,6 +280,25 @@ TEST_F(DeclarableOpsTests2, Test_CRelu_BP_2) {
     delete result;
 }
 
+/*
+TEST_F(DeclarableOpsTests2, Test_Polisq) {
+    NDArray<float> x('c', {2, 2}, {1.0, 2.0, -3.0, 4.0});
+    NDArray<float> y('c', {2, 2}, {1.0, 2.0, -3.0, 4.0});
+    NDArray<float> ethalon('c', {2,2}, {2.0, 6.0, 6.0, 20.0});
+
+    nd4j::ops::polisq<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(1, result->size());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(ethalon.equalsTo(z));
+
+    delete result;
+}
+*/
+
 TEST_F(DeclarableOpsTests2, Test_Concat_BP_2) {
     NDArray<float> x('c', {2, 2});
     NDArray<float> y('c', {2, 2});

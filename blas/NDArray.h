@@ -84,6 +84,14 @@ namespace nd4j {
         NDArray(const NDArray<T>& other);
 
         /**
+         * This constructor creates vector of T
+         *
+         * @param values
+         */
+        NDArray(std::initializer_list<T> values, nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(std::vector<T> &values, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
         *  constructor, create empty array stored at given workspace
         */
         NDArray(nd4j::memory::Workspace* workspace);

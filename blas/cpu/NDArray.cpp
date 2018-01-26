@@ -19,6 +19,7 @@
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
 #include <helpers/ShapeUtils.h>
+#include <helpers/ShapeBuilder.h>
 
 namespace nd4j {
 
@@ -187,6 +188,31 @@ NDArray<T>::NDArray(T scalar) {
     _isBuffAlloc = true; 
     _isShapeAlloc = true;
 }
+
+    template <typename T>
+    NDArray<T>::NDArray(std::initializer_list<T> v, nd4j::memory::Workspace* workspace) {
+        std::vector<T> values(v);
+        ALLOCATE(_buffer, workspace, values.size(), T);
+        ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(1), int);
+        ShapeBuilder::shapeVector(values.size(), _shapeInfo);
+        memcpy(_buffer, values.data(), values.size() * sizeOfT());
+
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;
+        _workspace = workspace;
+    }
+
+    template <typename T>
+    NDArray<T>::NDArray(std::vector<T> &values, nd4j::memory::Workspace* workspace) {
+        ALLOCATE(_buffer, workspace, values.size(), T);
+        ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(1), int);
+        ShapeBuilder::shapeVector(values.size(), _shapeInfo);
+        memcpy(_buffer, values.data(), values.size() * sizeOfT());
+
+        _isBuffAlloc = true;
+        _isShapeAlloc = true;
+        _workspace = workspace;
+    }
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
