@@ -189,6 +189,7 @@ NDArray<T>::NDArray(T scalar) {
     _isShapeAlloc = true;
 }
 
+#ifndef __JAVACPP_HACK__
     template <typename T>
     NDArray<T>::NDArray(std::initializer_list<T> v, nd4j::memory::Workspace* workspace) {
         std::vector<T> values(v);
@@ -213,6 +214,7 @@ NDArray<T>::NDArray(T scalar) {
         _isShapeAlloc = true;
         _workspace = workspace;
     }
+#endif
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
