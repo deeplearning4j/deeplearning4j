@@ -492,7 +492,7 @@ __host__ __device__
     __host__ __device__
 #endif
 
-ND4J_EXPORT bool isLikeVector(int *shapeInfo);
+ND4J_EXPORT bool isLikeVector(int *shapeInfo, int& posOfNonUnityDim);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -2845,12 +2845,14 @@ __host__ __device__
     __host__ __device__
 #endif
 
-    INLINEDEF bool isLikeVector(int *shapeInfo) {
+    INLINEDEF bool isLikeVector(int *shapeInfo, int& posOfNonUnityDim) {
                 
         int numOfNonUnity = 0;
         for(int i = 1; i <= shapeInfo[0]; ++i) {
-            if(shapeInfo[i] != 1)
+            if(shapeInfo[i] != 1) {
                 ++numOfNonUnity;
+                posOfNonUnityDim = i-1;
+            }
         }
         
         return numOfNonUnity == 1 && shapeInfo[0] > 2;

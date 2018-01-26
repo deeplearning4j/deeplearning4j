@@ -5,6 +5,7 @@
 #include <ops/declarable/helpers/svd.h>
 #include <ops/declarable/helpers/hhColPivQR.h>
 #include <ops/declarable/helpers/jacobiSVD.h>
+#include <ops/declarable/helpers/reverseArray.h>
 
 
 using namespace nd4j;
@@ -1214,3 +1215,45 @@ TEST_F(HelpersTests1, SVD_test20) {
     ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
 }
 
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, reverseArray_test1) {
+
+    NDArray<float> inArr('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+    NDArray<float> exp('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
+    NDArray<float> outArr('c', {2,5});
+
+
+    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());    
+
+    ASSERT_TRUE(outArr.equalsTo(&exp));    
+    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, reverseArray_test2) {
+
+    NDArray<float> inArr('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+    NDArray<float> exp('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});    
+
+
+    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());    
+
+    ASSERT_TRUE(inArr.equalsTo(&exp));    
+    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, reverseArray_test3) {
+
+    NDArray<float> inArr('c', {2,5}, {1,2,3,4,5,6,7,8,9,10});
+    NDArray<float> exp('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
+    NDArray<float> outArr('c', {2,5});
+
+    ops::helpers::reverseArray<float>(inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+
+    ASSERT_TRUE(outArr.equalsTo(&exp));    
+    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+}

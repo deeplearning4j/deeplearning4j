@@ -13,7 +13,7 @@ namespace ops {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(gatherNd, 2, 1, false, 0, 0) {
+CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
 
 	NDArray<T>* input   = INPUT_VARIABLE(0);
     NDArray<T>* indices = INPUT_VARIABLE(1);
@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(gatherNd, 2, 1, false, 0, 0) {
 }
 
 
-DECLARE_SHAPE_FN(gatherNd) {
+DECLARE_SHAPE_FN(gather_nd) {
 
 	int* inShapeInfo0 = inputShape->at(0);
     int* inShapeInfo1 = inputShape->at(1);

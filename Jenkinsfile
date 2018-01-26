@@ -8,6 +8,6 @@
  */
 
 
-jenkinsBuilder libnd4jTestsFilter: '--gtest_filter="*"'
+jenkinsBuilder()
 
 

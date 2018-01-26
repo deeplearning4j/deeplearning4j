@@ -885,6 +885,11 @@ namespace nd4j {
         void tileToShape(const std::initializer_list<int>& shape, NDArray<T>* target = nullptr);
 
         /**
+        *  calculates the trace of an array, that is sum of elements on main diagonal = sum array[i, i, i, ...]
+        */
+        T getTrace() const;
+        
+        /**
         *  default destructor
         */        
         ~NDArray(); 

@@ -3011,6 +3011,32 @@ void NDArray<T>::tileToShape(const std::initializer_list<int>& shape, NDArray<T>
     tileToShape(shapeV, target);
 }
 
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+T NDArray<T>::getTrace() const {
+    
+    int  rank    = rankOf();
+    int* shape   = shapeOf();
+    int* strides = stridesOf();
+    int  minDim  = 100000000;
+    
+    int indices[MAX_RANK];
+    for(int j = 0; j < rank; ++j) 
+        indices[j] = 1;
+    
+    Nd4jIndex offset = shape::getOffset(0, shape, strides, indices, rank);
+    
+    for(int i = 0; i < rank; ++i) 
+        if(minDim > shape[i])
+            minDim = shape[i];
+    T sum = 0.;
+
+#pragma omp parallel for reduction(sumT:sum) if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
+    for(int i = 0; i < minDim; ++i)
+        sum += _buffer[i*offset];
+
+    return sum;
+}
 
 
 template class ND4J_EXPORT NDArray<float>;
