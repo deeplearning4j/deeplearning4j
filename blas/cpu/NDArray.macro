@@ -84,6 +84,14 @@ BUILD_CALL_1(template NDArray<float> *nd4j::NDArray<float>::template varianceAlo
 BUILD_CALL_1(template NDArray<float16> *nd4j::NDArray<float16>::template varianceAlongDimension, float16, (const bool biasCorrected, const std::initializer_list<int>& dimensions) const, SUMMARY_STATS_OPS)
 BUILD_CALL_1(template NDArray<double> *nd4j::NDArray<double>::template varianceAlongDimension, double, (const bool biasCorrected, const std::initializer_list<int>& dimensions) const, SUMMARY_STATS_OPS)
 
+BUILD_CALL_1(template void nd4j::NDArray<float>::template varianceAlongDimension, float, (const NDArray<float> *target, const bool biasCorrected, const std::initializer_list<int>& dimensions), SUMMARY_STATS_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::template varianceAlongDimension, float16, (const NDArray<float16> *target,const bool biasCorrected, const std::initializer_list<int>& dimensions), SUMMARY_STATS_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::template varianceAlongDimension, double, (const NDArray<double> *target, const bool biasCorrected, const std::initializer_list<int>& dimensions), SUMMARY_STATS_OPS)
+
+BUILD_CALL_1(template void nd4j::NDArray<float>::template varianceAlongDimension, float, (const NDArray<float> *target, const bool biasCorrected, const std::vector<int>& dimensions), SUMMARY_STATS_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<float16>::template varianceAlongDimension, float16, (const NDArray<float16> *target,const bool biasCorrected, const std::vector<int>& dimensions), SUMMARY_STATS_OPS)
+BUILD_CALL_1(template void nd4j::NDArray<double>::template varianceAlongDimension, double, (const NDArray<double> *target, const bool biasCorrected, const std::vector<int>& dimensions), SUMMARY_STATS_OPS)
+
 BUILD_CALL_1(template float nd4j::NDArray<float>::template varianceNumber, float, (bool biasCorrected), SUMMARY_STATS_OPS)
 BUILD_CALL_1(template float16 nd4j::NDArray<float16>::template varianceNumber, float16, (bool biasCorrected), SUMMARY_STATS_OPS)
 BUILD_CALL_1(template double nd4j::NDArray<double>::template varianceNumber, double, (bool biasCorrected), SUMMARY_STATS_OPS)

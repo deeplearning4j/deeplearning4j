@@ -787,7 +787,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     delete result;
 }
 
-//////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_TopK_2) {
     NDArray<float> x('c', {2, 3, 4}, {11.0,  3.0, 14.0, 5.0,
                                       6.0,  9.0, 3.5, 7.0,
@@ -836,7 +836,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_2) {
     delete result;
 }
 
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Test_TopK_3) {
     NDArray<float> x('c', {2, 3, 4}, {11.0,  3.0, 14.0, 5.0,
                                       6.0,  9.0, 3.5, 7.0,
@@ -1045,6 +1044,161 @@ TEST_F(DeclarableOpsTests5, Test_InTopK_3) {
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
+
+    delete result;
+}
+
+///////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, Test_Moments_1) {
+    NDArray<float> x('c', {2, 3, 4}, {11.0, 3.0, 14.0, 5.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   21.0, 3.0, 14.0, 15.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   11.0, 13.0, 14.0, 5.0,
+                                   16.0, 9.0, 13.5, 7.0}
+    );
+
+    NDArray<float> y('c', {3}, {0, 1, 2});
+    //NDArray<float> expV('f', {6}, {1, 0, 0, 0, 0, 0 });
+
+    float expMean = 9.395833f;
+    float expDeviation = 22.4579f;
+//Mean 9.395833
+//Deviance 22.4579
+
+    float inf = 1.e-5f;
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto d = result->at(1);
+
+//    v->printIndexedBuffer("Result is ");
+//    d->printIndexedBuffer("Result is ");
+
+    ASSERT_TRUE(v->isScalar());
+    ASSERT_NEAR(expMean, (*v)(0), inf);
+    ASSERT_NEAR(expDeviation, (*d)(0), inf);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_Moments_2) {
+    NDArray<float> x('c', {2, 3, 4}, {11.0f, 3.0f, 14.0f, 5.0f,
+                                   6.0f, 9.0f, 3.5f, 7.0f,
+                                   21.0f, 3.0f, 14.0f, 15.0f,
+                                   6.0f, 9.0f, 3.5f, 7.0f,
+                                   11.0f, 13.0f, 14.0f, 5.0f,
+                                   16.0f, 9.0f, 13.5f, 7.0f}
+    );
+
+    NDArray<float> expV('c', {4}, {11.833333f, 7.6666665f, 10.416667f, 7.6666665f});
+    NDArray<float> expD('c', {4}, {28.472221f, 12.888889f, 23.951387f, 11.555554f});
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto d = result->at(1);
+
+    ASSERT_TRUE(v->isVector());
+    ASSERT_TRUE(d->isVector());
+
+    ASSERT_TRUE(v->equalsTo(&expV));
+    ASSERT_TRUE(d->equalsTo(&expD));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_Moments_3) {
+    NDArray<float> x('c', {2, 3, 4}, {11.0, 3.0, 14.0, 5.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   21.0, 3.0, 14.0, 15.0,
+                                   6.0, 9.0, 3.5, 7.0,
+                                   11.0, 13.0, 14.0, 5.0,
+                                   16.0, 9.0, 13.5, 7.0}
+    );
+    
+    NDArray<float> expV('c', {3, 4}, { 8.5f, 6.f , 8.75f,  6.f, 
+                                       8.5f, 11.f, 8.75f, 6.f, 
+                                      18.5f, 6.f, 13.75f, 11.f});
+    NDArray<float> expD('c', {3, 4}, { 6.25f, 9.f, 27.5625f,  1.f,
+                                       6.25f, 4.f, 27.5625f,  1.f,
+                                       6.25f, 9.f, 0.0625f,  16.f});
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto d = result->at(1);
+
+    ASSERT_TRUE(v->isMatrix());
+    ASSERT_TRUE(d->isMatrix());
+
+    ASSERT_TRUE(v->equalsTo(&expV));
+    ASSERT_TRUE(d->equalsTo(&expD));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, Test_Moments_4) {
+//    NDArray<float> x('c', {2, 3, 4}, {11.0,  3.0,  14.0, 5.0,
+//                                       6.0,  9.0,   3.5, 7.0,
+//                                     21.0, 3.0, 14.0, 15.0,
+//                                      6.0, 9.0,  3.5,  7.0,
+//                                      11.0, 13.0, 14.0, 5.0,
+//                                      16.0,  9.0, 13.5, 7.0}
+//    );
+//   the fortran ordered matrix the same as C-ordered above
+//
+    NDArray<float> x('f', {2, 3, 4}, {11.0f,  6.0f,  6.0f, 11.0f,
+                                      21.0f, 16.0f,  3.0f,  9.0f,
+                                       9.0f, 13.0f,  3.0f,  9.0f,
+                                      14.0f,  3.5f,  3.5f, 14.0f,
+                                      14.0f,  13.5f,  5.0f,  7.0f,
+                                       7.0f,  5.0f, 15.0f,  7.0f
+                                     }
+    );
+
+
+    NDArray<float> expV('c', {3, 4}, { 8.5f, 6.f , 8.75f,  6.f, 
+                                       8.5f, 11.f, 8.75f, 6.f, 
+                                      18.5f, 6.f, 13.75f, 11.f});
+    NDArray<float> expD('c', {3, 4}, { 6.25f, 9.f, 27.5625f,  1.f,
+                                       6.25f, 4.f, 27.5625f,  1.f,
+                                       6.25f, 9.f, 0.0625f,  16.f});
+
+    nd4j::ops::moments<float> op;
+    auto result = op.execute({&x}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(2, result->size());
+
+    auto v = result->at(0);
+    auto d = result->at(1);
+
+    ASSERT_TRUE(v->isMatrix());
+    ASSERT_TRUE(d->isMatrix());
+
+    v->printIndexedBuffer("v");
+    expV.printIndexedBuffer("expV");
+
+    d->printIndexedBuffer("d");
+    expD.printIndexedBuffer("expD");
+
+    ASSERT_TRUE(v->equalsTo(&expV));
+    ASSERT_TRUE(d->equalsTo(&expD));
 
     delete result;
 }

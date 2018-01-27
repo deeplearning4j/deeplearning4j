@@ -718,6 +718,12 @@ namespace nd4j {
         template<typename OpName>
         NDArray<T>* varianceAlongDimension(const bool biasCorrected, const std::initializer_list<int>& dimensions) const;
 
+
+        template<typename OpName>
+        void varianceAlongDimension(const NDArray<T>* target, const bool biasCorrected, const std::vector<int>& dimensions);
+        template<typename OpName>
+        void varianceAlongDimension(const NDArray<T>* target, const bool biasCorrected, const std::initializer_list<int>& dimensions);
+
         /**
         *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
         *  idx - intervals of indexes which define the sub-arrays  to point on
