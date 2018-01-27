@@ -737,11 +737,11 @@ namespace nd4j {
         }
 
         template <typename T>
-        Graph<T>::Graph(const FlatGraph *flatGraph) {
+        Graph<T>::Graph(const FlatGraph *flatGraph, VariableSpace<T> *variableSpace) {
             this->_onion = new std::map<int, std::vector<Node<T> *> *>();
             this->_mapped = new std::map<int, Node<T> *> ();
             this->_nodes = new std::vector<int>();
-            this->_variableSpace = new VariableSpace<T>();
+            this->_variableSpace = variableSpace == nullptr ? new VariableSpace<T>() : variableSpace;
             
             // creating RNG for this instance
 #ifndef __CUDABLAS__
@@ -931,6 +931,11 @@ namespace nd4j {
             }
 
             return _mappedScopes.at(id);
+        }
+
+        template <typename T>
+        void Graph<T>::forgetVariableSpace() {
+            _variableSpace = nullptr;
         }
 
         template <typename T>

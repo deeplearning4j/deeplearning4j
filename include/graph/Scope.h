@@ -78,6 +78,11 @@ namespace nd4j {
              * This method returns clone of this Scope
              */
             Scope<T>* clone();
+
+            /**
+             * This method removes all Nodes from this scope
+             */
+            void forgetNodes();
         };
     }
 }

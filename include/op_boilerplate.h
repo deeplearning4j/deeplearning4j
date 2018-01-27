@@ -1301,11 +1301,7 @@ struct __registratorSynonymDouble_##NAME {\
                                                                 auto shapeList = new nd4j::ShapeList(); \
                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                                     int* newshape; \
-                                                                    ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int); \
-                                                                    if (shape::order(inputShape->at(e)) == 'c') \
-                                                                        shape::shapeBuffer(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
-                                                                    else \
-                                                                        shape::shapeBufferFortran(shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)), newshape);\
+                                                                    COPY_SHAPE(inputShape->at(0), newshape); \
                                                                     shapeList->push_back(newshape); \
                                                                 } \
                                                                 return shapeList; \

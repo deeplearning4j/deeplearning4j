@@ -72,6 +72,16 @@ namespace nd4j {
         }
 
         template <typename T>
+        void VariableProxy<T>::dropVariable(std::pair<int,int> &pair) {
+            dropVariable(pair.first, pair.second);
+        }
+
+        template <typename T>
+        void VariableProxy<T>::dropVariable(int id, int idx) {
+
+        }
+
+        template <typename T>
         bool VariableProxy<T>::hasVariable(std::string *symbol) {
             return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
         }
@@ -227,6 +237,11 @@ namespace nd4j {
 
             return *this;
         }  
+
+        template <typename T>
+        nd4j::memory::Workspace * nd4j::graph::VariableProxy<T>::workspace() {
+            return &this->_workspace;
+        }
 
         template class ND4J_EXPORT VariableProxy<float>;
         template class ND4J_EXPORT VariableProxy<float16>;

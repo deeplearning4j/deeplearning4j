@@ -77,6 +77,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
 
     ASSERT_TRUE(variableSpace->hasVariable(10, 0));
     auto conditionalResult = variableSpace->getVariable(10, 0)->getNDArray();
+    ASSERT_NE(nullptr, conditionalResult);
 
     ASSERT_NEAR(6.0, conditionalResult->meanNumber(), 1e-5);
 

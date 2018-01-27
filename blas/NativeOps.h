@@ -50,6 +50,8 @@ bool verbose = false;
 
 #include <array/ShapeList.h>
 #include <graph/VariablesSet.h>
+#include <graph/GraphState.h>
+#include <graph/execution/LogicExecutor.h>
 
 class ND4J_EXPORT NativeOps {
 
@@ -3005,6 +3007,20 @@ public:
     void deleteVariablesSetFloat(Nd4jPointer pointer);
     void deleteVariablesSetDouble(Nd4jPointer pointer);
     void deleteVariablesSetHalf(Nd4jPointer pointer);
+
+    // GraphState creation
+    Nd4jPointer getGraphStateHalf(Nd4jIndex id);
+    Nd4jPointer getGraphStateFloat(Nd4jIndex id);
+    Nd4jPointer getGraphStateDouble(Nd4jIndex id);
+
+    void deleteGraphStateHalf(Nd4jPointer state);
+    void deleteGraphStateFloat(Nd4jPointer state);
+    void deleteGraphStateDouble(Nd4jPointer state);
+
+    // this method executes op that requires scope to be present: if/while/cond/whatever
+    Nd4jStatus execCustomOpWithScopeHalf(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jIndex opHash, Nd4jIndex *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
+    Nd4jStatus execCustomOpWithScopeFloat(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jIndex opHash, Nd4jIndex *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
+    Nd4jStatus execCustomOpWithScopeDouble(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jIndex opHash, Nd4jIndex *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs);
 };
 
 

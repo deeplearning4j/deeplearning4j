@@ -60,7 +60,7 @@ namespace nd4j {
 
             void printOutNode(Node<T>* node);
         public:
-            Graph(const FlatGraph *flatGraph = nullptr);
+            Graph(const FlatGraph *flatGraph = nullptr, VariableSpace<T> *variableSpace = nullptr);
 
             ~Graph();
 
@@ -151,6 +151,11 @@ namespace nd4j {
              * This method returns clone of the graph
              */
             Graph<T>* clone();
+
+            /**
+             * This method removes reference to VariableSpace from this Graph
+             */
+            void forgetVariableSpace();
         };
     }
 }

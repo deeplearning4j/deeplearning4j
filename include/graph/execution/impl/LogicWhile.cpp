@@ -30,7 +30,9 @@ namespace nd4j {
                     __variableSpace->putVariable(pair, new Variable<T>(nullptr, nullptr, node->id(), e));
                 }
 
-                auto inputVar = __variableSpace->getVariable(node->input()->at(e));
+                auto va = node->input()->at(e);
+
+                auto inputVar = __variableSpace->getVariable(va);
 
                 auto innerVar = __variableSpace->getVariable(pair);
                 if (innerVar->hasNDArray()) {

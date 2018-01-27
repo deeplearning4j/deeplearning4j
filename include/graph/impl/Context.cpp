@@ -140,7 +140,8 @@ namespace nd4j {
         template <typename T>
         void Context<T>::setBranch(int branch) {
             //_branch = branch;
-            _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
+            if (_variableSpace->flowPath() != nullptr)
+                _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
         }
 
         template <typename T>

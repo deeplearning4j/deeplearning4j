@@ -187,6 +187,12 @@ namespace nd4j {
         }
 
         template <typename T>
+        void nd4j::graph::Node<T>::pickOutput(int nodeId, int outputId) {
+            std::pair<int, int> pair(nodeId, outputId);
+            _output.emplace_back(pair);
+        }
+
+        template <typename T>
         void nd4j::graph::Node<T>::pickOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             _output.emplace_back(pair);

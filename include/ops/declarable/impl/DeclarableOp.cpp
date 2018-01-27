@@ -361,9 +361,9 @@ namespace nd4j {
                 auto v = block.variable(p);
                 if (v == nullptr) {
                     if (this->getOpName() != nullptr) {
-                        nd4j_printf("Node [%i:<%s>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, 0, 0);
+                        nd4j_printf("Node [%i:<%s>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, p.first, p.second);
                     } else {
-                        nd4j_printf("Node [%i:<noname>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
+                        nd4j_printf("Node [%i:<noname>]: Variable [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, p.first, p.second);
                     }
                     return ND4J_STATUS_BAD_INPUT;
                 }
@@ -373,9 +373,9 @@ namespace nd4j {
 
                     if (aV == nullptr || !aV->nonNull()) {
                         if (this->getOpName() != nullptr) {
-                            nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, 0, 0);
+                            nd4j_printf("Node [%i:<%s>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), this->getOpName()->c_str(), cnt, p.first, p.second);
                         } else {
-                            nd4j_printf("Node [%i:<noname>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, 0, 0);
+                            nd4j_printf("Node [%i:<noname>]: NDArray [%i] (%i:%i) is NULL\n", block.getNodeId(), cnt, p.first, p.second);
                         }
                         return ND4J_STATUS_BAD_INPUT;
                     }

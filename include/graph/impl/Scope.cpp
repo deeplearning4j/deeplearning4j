@@ -48,6 +48,11 @@ namespace nd4j {
         }
 
         template <typename T>
+        void Scope<T>::forgetNodes() {
+            _nodes.clear();
+        }
+
+        template <typename T>
         Scope<T>* Scope<T>::clone() {
             auto clone = new Scope<T>(_id, _name.c_str());
 

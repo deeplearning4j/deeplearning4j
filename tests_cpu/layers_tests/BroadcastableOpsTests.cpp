@@ -259,3 +259,20 @@ TEST_F(BroadcastableOpsTests, Test_Shape_5) {
     shapes->destroy();
     delete shapes;
 }
+
+TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> y(2.0f);
+    NDArray<float> exp('c', {2, 2}, {3, 4, 5, 6});
+
+    nd4j::ops::add<float> op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

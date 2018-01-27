@@ -314,6 +314,11 @@ namespace nd4j {
             }
         }
 
+        template <typename T>
+        nd4j::memory::Workspace * nd4j::graph::VariableSpace<T>::workspace() {
+            return &_workspace;
+        }
+
 /*
  * FIXME: this thing have nice chances to become backend-specific!
  */
@@ -368,6 +373,16 @@ namespace nd4j {
             }
 
             return *this;
+        }
+
+        template <typename T>
+        void VariableSpace<T>::dropVariable(std::pair<int,int> &pair) {
+            dropVariable(pair.first, pair.second);
+        }
+
+        template <typename T>
+        void VariableSpace<T>::dropVariable(int id, int idx) {
+
         }
 
         template <typename T>

@@ -109,6 +109,7 @@ namespace nd4j {
 
             void pickOutputOnce(int outputId);
             void pickOutput(int outputId);
+            void pickOutput(int nodeId, int outputId);
             void pickExternalOutput(int outputId);
             void pickInput(int inputId);
             void pickInput(int nodeId, int outputId);
