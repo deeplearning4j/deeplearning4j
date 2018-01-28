@@ -71,6 +71,24 @@ Machine learning encompasses a wide range of algorithms that are able to adapt t
 
 [Encog](http://www.heatonresearch.com/encog/) is a Java machine learning framework that supports many machine learning algorithms. It was developed by Jeff Heaton, of Heaton Research. The official website provides documentation and examples.
 
+## Reinforcement Learning
+
+### Eclipse RL4J
+
+[RL4J](https://github.com/deeplearning4j/rl4j) is a reinforcement learning library for Java that is part of the Eclipse Deeplearning4j framework. [RL4J examples for A3C and Deep-Q learning are here](https://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples). 
+
+### Burlap
+
+The [Brown-UMBC Reinforcement Learning and Planning](http://burlap.cs.brown.edu/) is for the use and development of single or multi-agent planning and learning algorithms and domains to accompany them.
+
+## Scientific Computing/Numerical Computing for Java
+
+All machine learning libraries depend on some form of scientific computing. 
+
+### Eclipse ND4J: Numpy for the JVM
+
+[ND4J](https://nd4j.org/) stands for n-dimensional arrays for Java. An n-dimensional array is also called a tensor. ND4J is Numpy for the JVM. It is the most powerful and flexible scientific computing framework available for JVM languages such as Java and Scala. ND4J uses [JavaCPP](https://github.com/bytedeco/javacpp) and [libnd4j](https://github.com/deeplearning4j/libnd4j) (a C++ library) to perform large matrix manipulations efficiently. [ND4J Github Repository](https://github.com/deeplearning4j/nd4j). Unlike [jblas](http://jblas.org/), ND4J is under active development. 
+
 ## <a name="intro">Other Introductory Resources</a>
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
