@@ -49,7 +49,7 @@ Machine learning encompasses a wide range of algorithms that are able to adapt t
 
 ### SMILE
 
-[SMILE](https://github.com/haifengl/smile) stands for Statistical and Machine Intelligence Learning Engine. SMILE was create by Haifeng Lee of ADP, and provides fast, scalable machine learning for Java. 
+[SMILE](https://github.com/haifengl/smile) stands for Statistical and Machine Intelligence Learning Engine. SMILE was create by Haifeng Lee, and provides fast, scalable machine learning for Java. 
 
 ### SINGA
 
