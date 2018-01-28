@@ -8,6 +8,12 @@ layout: default
 ```
 When it is not in our power to determine what is true, we ought to act in accordance with what is most probable. - Descartes
 ```
+Contents
+
+* <a href="#define">Reinforcement Learning Definitions</a>
+* <a href="#neural">Neural Networks and Reinforcement Learning</a>
+* <a href="#code">Just Show Me the Code</a>
+* <a href="#reading">Further Reading</a>
 
 Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create breakthroughs like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
 
@@ -23,7 +29,7 @@ Eventually, we expect reinforcement learning to perform better and better in mor
 <a href="https://docs.skymind.ai/docs" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH REINFORCEMENT LEARNING</a>
 </p>
 
-## Reinforcement Learning Definitions
+## <a name="define">Reinforcement Learning Definitions</a>
 
 Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. Capital letters tend to denote sets of things, and lower-case letters denote a specific instance of that thing; e.g. `A` is all possible actions, while `a` is a specific action contained in the set. 
 
@@ -78,7 +84,7 @@ Reinforcement learning algorithms have a different relationship to time than hum
 
 And since most humans never experience their Groundhog Day, that means reinforcement learning gives algorithms the potential to learn more, and better, than humans. You could say that the true advantage of these algorithms over humans stems from their ability to live in parallel and therefore learn better.
 
-## Neural Networks and Reinforcement Learning
+## <a name="neural">Neural Networks and Reinforcement Learning</a>
 
 Where do neural networks fit in? Neural networks are the agent that learns to map state-action pairs to rewards. Like all neural networks, they use coefficients to approximate the function relating inputs to outputs, and their learning consists to finding the right coefficients, or weights, by iteratively adjusting those weights along gradients that promise less error.  
 
@@ -106,7 +112,7 @@ This leads us to a more complete expression of the Q function, which takes into 
 
 Like human beings, the Q function is recursive. Just as calling the wetware method human() contains within it another method human(), of which we are all the fruit, calling the Q function on a given state-action pair requires us to call a nested Q function to predict the value of the next state, which in turn depends on the Q function of the state after that, and so forth. 
 
-## Just Show Me the Code
+## <a name="code">Just Show Me the Code</a>
 
 [RL4J examples are available here](https://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples).
 
@@ -190,7 +196,7 @@ public class A3CALE {
 
 ```
 
-## Further Reading
+## <a name="reading">Further Reading</a>
 
 * [RL4J: Reinforcement Learning in Java](https://github.com/deeplearning4j/rl4j)
 * Richard S. Sutton and Andrew G. Barto's [Reinforcement Learning: An Introduction](http://incompleteideas.net/sutton/book/the-book-2nd.html)
