@@ -270,6 +270,7 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Convolutional Networks Tutorial](./convolutionalnets)
 * [LSTM and Recurrent Network Tutorial](./lstm)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
 * [Restricted Boltzmann machines](./restrictedboltzmannmachine)
 * [Eigenvectors, PCA and Entropy](./eigenvector.html)
 * [Using Recurrent Nets With DL4J](./usingrnns)
