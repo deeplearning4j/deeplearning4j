@@ -159,4 +159,22 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [The Netherlands' Nationaal Georegister](http://www.nationaalgeoregister.nl/geonetwork/srv/dut/search#fast=index&from=1&to=50&any_OR_geokeyword_OR_title_OR_keyword=landinrichting*&relation=within) (Dutch)
 * [United Nations Development Programme Projects](http://open.undp.org/#2016)
 
+## <a name="intro">Introductory Machine-Learning Resources</a>
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
+
+* [Deep Neural Networks](./neuralnet-overview)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+
 *Thanks to deeplearning.net and [Luke de Oliveira](https://medium.com/startup-grind/fueling-the-ai-gold-rush-7ae438505bc2) for many of these links and dataset descriptions. Any suggestions of open data sets we should include for the Deeplearning4j community are welcome!*
