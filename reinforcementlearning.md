@@ -5,6 +5,10 @@ layout: default
 
 # A Beginner's Guide to Reinforcement Learning (for Java)
 
+```
+When it is not in our power to determine what is true, we ought to act in accordance with what is most probable. - Descartes
+```
+
 Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but reinforcement learning may be their killer app. 
 
 Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
