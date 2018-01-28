@@ -70,7 +70,7 @@ We map state-action pairs to the values we expect them to produce with the Q fun
 
 The Q function takes as its input an agent’s state and action, and maps them to probable rewards. Reinforcement learning is the process of running the agent through sequences of state-action pairs, observing the rewards that result, and adapting the predictions of the Q function to those rewards until it accurately predicts the best path for the agent to take. That prediction is known as a policy. 
 
-Reinforcement learning is an attempt to model a complex probability distribution. This is one reason it is paired with a [Markov decision process](./markovchainmontecarlo), a method to sample that complex distribution to infer its properties. 
+Reinforcement learning is an attempt to model a complex probability distribution of reward in relation to a very large number of state-action pairs. This is one reason reinforcement learning is paired with a [Markov decision process](./markovchainmontecarlo), a method to sample that complex distribution to infer its properties. 
 
 Reinforcement learning is iterative. In its most interesting applications, it doesn’t begin by knowing which rewards state-action pairs will produce. It learns those relations by running through states again and again, like athletes or musicians iterate through states in an attempt to improve their performance.
 
