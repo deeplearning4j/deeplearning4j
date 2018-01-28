@@ -21,6 +21,10 @@ Deep learning usually refers to deep artificial neural networks. [Neural network
 
 [Neuroph](http://neuroph.sourceforge.net/) is an open-source Java framework for neural networks. Developers can create neural nets with the Neuroph GUI. The Neuroph API documentation also explains how neural networks work.
 
+### Arbiter (Hyperparameter Optimization for Java)
+
+[Eclipse Arbiter](https://github.com/deeplearning4j/arbiter) is a hyperparameter optimization library designed to automate hyperparameter tuning for deep neural net training. It is the equivalent of Google Tensorflow's Vizier, or the Python library Spearmint. Arbiter is part of the Deeplearning4j framework. 
+
 ## Expert Systems
 
 An expert system is also called a rules-based system. The rules are typically if-then statements; i.e. if this condition is met, then perform this action. An expert system usually comprises hundreds or thousands of nested if-then statements. Expert systems were a popular form of AI in the 1980s. They are good at modeling static and deterministic relationships; e.g. the tax code. However, they are also brittle and they require manual modification, which can be slow and expensive. Unlike, machine-learning algorithms, they do not adapt as they are exposed to more data. They can be a useful complement to a machine-learning algorithm, codifying the things that should always happen a certain way. 
