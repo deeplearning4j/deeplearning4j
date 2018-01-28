@@ -33,8 +33,8 @@ Reinforcement learning is based on agents, environments, states, actions and rew
 * State (S): A **state** is the concrete and immediate situation in which the agent finds itself; i.e. a specific place and moment, an instantaneous configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. Were you in the wrong place at the wrong time? That's a state. 
 * Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. From any given state, an agent sends output in the form of actions to the environment, and the environment returns the agent’s new state (which resulted from acting on the previous state) as well as rewards, if there are any. Rewards can be immediate or delayed. They effectively evaluate the agent's action. 
 * Policy (π): The strategy that the agent employs to determine next action based on the current state.
-* Value (V): The expected long-term return with discount, as opposed to the short-term reward R. Vπ(s) is defined as the expected long-term return of the current state under policy π.
-* Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. Qπ(s, a) refers to the long-term return of the current state s, taking action a under policy π. 
+* Value (V): The expected long-term return with discount, as opposed to the short-term reward R. `Vπ(s)` is defined as the expected long-term return of the current state under policy π.
+* Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. `Qπ(s, a)` refers to the long-term return of the current state s, taking action a under policy π. 
 
 ![Alt text](./img/simple_RL_schema.png)
 
