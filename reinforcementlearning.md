@@ -11,11 +11,11 @@ When it is not in our power to determine what is true, we ought to act in accord
 
 Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create breakthroughs like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
 
-Reinforcement learning is goal-oriented. RL algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
+Reinforcement learning is goal-oriented. Reinforcement learning algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
 
 Reinforcement algorithms with deep learning at their core are currently beating expert humans at the [game of Go](https://deeplearning4j.org/deep-learning-and-the-game-of-go#) as well as numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). They it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
-Reinforcement learning solves the difficult problem of correlating actions with the delayed returns they produce. Like humans, RL algorithms must sometimes wait a long time to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to learn what leads to what over many time steps. 
+Reinforcement learning solves the difficult problem of correlating actions with the delayed returns they produce. Like humans, reinforcement learning algorithms must sometimes wait a long time to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to learn what leads to what over many time steps. 
 
 Eventually, we expect reinforcement learning to perform better and better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. 
 
@@ -44,7 +44,7 @@ Reinforcement learning judges actions by the results they produce. It is goal or
 
 In the real world, the goal might be for a robot to travel from point A to point B, and every inch the robot is able to move closer to point B could be counted like points. 
 
-RL differs from both supervised and unsupervised learning by how it interprets inputs. We can illustrate their difference by describing what they learn about a "thing." 
+Reinforcement learning differs from both supervised and unsupervised learning by how it interprets inputs. We can illustrate their difference by describing what they learn about a "thing." 
 
 * Unsupervised learning: That thing is like this other thing. (Similarities w/o names, and the inverse: anomaly detection)
 * Supervised learning: That thing is a “double bacon cheese burger”. (Labels, putting names to faces...)
@@ -52,7 +52,7 @@ RL differs from both supervised and unsupervised learning by how it interprets i
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/-uXVu0l8guo" frameborder="0" allowfullscreen></iframe>
 
-One way to imagine an autonomous RL agent would be as a blind person attempting to navigate the world with their ears and a white cane. Agents have small windows that allow them to perceive their environment, and those windows may not even be the most appropriate way for them to perceive what's around them. 
+One way to imagine an autonomous reinforcement learning agent would be as a blind person attempting to navigate the world with their ears and a white cane. Agents have small windows that allow them to perceive their environment, and those windows may not even be the most appropriate way for them to perceive what's around them. 
 
 (In fact, deciding *which types* of feedback your agent should pay attention to is a hard problem to solve, and glossed over by algorithms that are learning how to play video games, where the kinds of feedback are limited and well defined. These video games are much closer to the sterile environment of the lab, where ideas about reinforcement learning were initially tested.)
 
