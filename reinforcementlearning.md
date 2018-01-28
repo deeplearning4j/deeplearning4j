@@ -56,21 +56,21 @@ Reinforcement learning differs from both supervised and unsupervised learning by
 
 One way to imagine an autonomous reinforcement learning agent would be as a blind person attempting to navigate the world with their ears and a white cane. Agents have small windows that allow them to perceive their environment, and those windows may not even be the most appropriate way for them to perceive what's around them. 
 
-(In fact, deciding *which types* of feedback your agent should pay attention to is a hard problem to solve, and glossed over by algorithms that are learning how to play video games, where the kinds of feedback are limited and well defined. These video games are much closer to the sterile environment of the lab, where ideas about reinforcement learning were initially tested.)
+(In fact, deciding *which types* of feedback your agent should pay attention to is a hard problem to solve. This is known as domain selection. Algorithms that are learning how to play video games can mostly ignore this problem, since the environment is man-made and strictly limited. Thus, video games provide the sterile environment of the lab, where ideas about reinforcement learning can be tested.)
 
 ![Alt text](./img/rat_wired.jpg)
 
-The goal of reinforcement learning is to pick the best known action in any state, which means the actions have to be ranked, assigned values relative to one another. 
+The goal of reinforcement learning is to pick the best known action in any state, which means the actions have to be ranked, assigned values relative to one another. Since those actions are state-dependent, what we are really gauging is the value of state-action pairs; i.e. an action taken from a certain state, something you did somewhere. 
 
-Since those actions are state dependent, what we are really gauging is the value of state-action pairs; i.e. an action taken from a certain state, something you did somewhere. 
+* For example, if the action is marrying someone, then marrying a 35-year-old when you’re 18 should mean something different than marrying a 35-year-old when you’re 90. 
 
-If the action is marrying someone, then marrying a 35-year-old when you’re 18 should mean something different than marrying a 35-year-old when you’re 90. 
-
-If the action is yelling "Fire!" Performing the action a crowded theater should mean something different from performing the action next to a squad of men with rifles. We can’t predict an action’s outcome without knowing the context.
+* If the action is yelling "Fire!" Performing the action a crowded theater should mean something different from performing the action next to a squad of men with rifles. We can’t predict an action’s outcome without knowing the context.
 
 We map state-action pairs to the values we expect them to produce with the Q function.
 
-The Q function takes as its input an agent’s state and action, and maps them to probable rewards. Reinforcement learning is the process of running the agent through sequences of state-action pairs, observing the rewards that result, and adapting the predictions of the Q function to those rewards until it accurately predicts the best path for the agent to take. That prediction is known as a policy.
+The Q function takes as its input an agent’s state and action, and maps them to probable rewards. Reinforcement learning is the process of running the agent through sequences of state-action pairs, observing the rewards that result, and adapting the predictions of the Q function to those rewards until it accurately predicts the best path for the agent to take. That prediction is known as a policy. 
+
+Reinforcement learning is an attempt to model a complex probability distribution. This is one reason it is paired with a [Markov decision process](./markovchainmontecarlo), a method to sample that complex distribution to infer its properties. 
 
 Reinforcement learning is iterative. In its most interesting applications, it doesn’t begin by knowing which rewards state-action pairs will produce. It learns those relations by running through states again and again, like athletes or musicians iterate through states in an attempt to improve their performance.
 
