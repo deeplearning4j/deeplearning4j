@@ -79,6 +79,8 @@ For people just getting started with deep learning, the following tutorials and 
 * [Convolutional Networks for Image Recognition](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
