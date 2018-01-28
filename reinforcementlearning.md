@@ -15,15 +15,17 @@ Contents
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#reading">Further Reading</a>
 
-Neural networks have become well known for recent advances in such diverse fields as computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create breakthroughs like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
+Neural networks are responsible for recent breakthroughs in problems like computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create something like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
 
-Reinforcement learning is goal-oriented. Reinforcement learning algorithms learn how to attain a complex objective or maximize along a dimension over many steps, starting from a blank slate, and under the right conditions they achieve superhuman performance. 
+Reinforcement learning is a set of goal-oriented algorithms. Reinforcement learning algorithms learn how to attain a complex objective (goal) or maximize along a particular dimension over many steps; for example, maximize the points won in a game over many moves.  They can start from a blank slate, and under the right conditions they achieve superhuman performance. 
 
-Reinforcement algorithms with deep learning at their core are currently beating expert humans at the [game of Go](https://deeplearning4j.org/deep-learning-and-the-game-of-go#) as well as numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). They it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
+Reinforcement algorithms that incorporate deep learning can beat world champions at the [game of Go](https://deeplearning4j.org/deep-learning-and-the-game-of-go#) as well as human experts playing numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments, and the state of the art is progressing rapidly. 
 
-Reinforcement learning solves the difficult problem of correlating actions with the delayed returns they produce. Like humans, reinforcement learning algorithms must sometimes wait a long time to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to learn what leads to what over many time steps. 
+Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). It can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
-Eventually, we expect reinforcement learning to perform better and better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. 
+Reinforcement learning solves the difficult problem of correlating immediate actions with the delayed returns they produce. Like humans, reinforcement learning algorithms sometimes have to wait a while to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to understand which action leads to which outcome over many time steps. 
+
+Reinforcement learning algorithms can be expected to perform better and better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. That is, with time we expect them to be valuable to achieve goals in the real world. 
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH REINFORCEMENT LEARNING</a>
@@ -31,7 +33,7 @@ Eventually, we expect reinforcement learning to perform better and better in mor
 
 ## <a name="define">Reinforcement Learning Definitions</a>
 
-Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. Capital letters tend to denote sets of things, and lower-case letters denote a specific instance of that thing; e.g. `A` is all possible actions, while `a` is a specific action contained in the set. 
+Reinforcement learning can be understand using the concepts of agents, environments, states, actions and rewards, all of which we’ll explain below. Capital letters tend to denote sets of things, and lower-case letters denote a specific instance of that thing; e.g. `A` is all possible actions, while `a` is a specific action contained in the set. 
 
 * Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithm is the agent. In life, the agent is you. 
 * Action (A): `A` is the set of all possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
@@ -42,7 +44,7 @@ Reinforcement learning is based on agents, environments, states, actions and rew
 * Value (V): The expected long-term return with discount, as opposed to the short-term reward R. `Vπ(s)` is defined as the expected long-term return of the current state under policy π.
 * Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. `Qπ(s, a)` refers to the long-term return of the current state s, taking action a under policy π. 
 
-So environments are functions that transform an action in the current state into the next state and a reward, while agents are functions that transform the new state and reward into the next action. We know the agent's function, but we do not know the function of the environment. It is a black box about which we can only know the inputs and outputs. Reinforcement learning is an agent's attempt to learn the environment's function, such that we can input actions to the black-box environment that maximize the rewards it returns. 
+So environments are functions that transform an action taken in the current state into the next state and a reward; agents are functions that transform the new state and reward into the next action. We can know the agent's function, but we cannot know the function of the environment. It is a black box where we only see the inputs and outputs. Reinforcement learning represents an agent's attempt to approximate the environment's function, such that we can send actions into the black-box environment that maximize the rewards it spits out. 
 
 ![Alt text](./img/simple_RL_schema.png)
 
