@@ -74,7 +74,9 @@ Reinforcement learning is an attempt to model a complex probability distribution
 
 Reinforcement learning is iterative. In its most interesting applications, it doesn’t begin by knowing which rewards state-action pairs will produce. It learns those relations by running through states again and again, like athletes or musicians iterate through states in an attempt to improve their performance.
 
-Reinforcement learning is Groundhog Day for algorithms. And since most humans never experience their Groundhog Day, that means reinforcement learning gives algorithms the potential to learn more, and better, than humans. In fact, that’s the gist of the last several papers published by DeepMind, since their algorithms now show superhuman performance on most of the video games they’ve trained on. 
+Reinforcement learning algorithms have a different relationship to time than humans do. We are able to run them through the same states over and over again while experimenting with different actions until we can infer which actions are best from which states. We can provide algorithms with their very own [Groundhog Day](http://www.imdb.com/title/tt0107048/), where they start out as dumb jerks and slowly get wise. 
+
+And since most humans never experience their Groundhog Day, that means reinforcement learning gives algorithms the potential to learn more, and better, than humans. You could say that the true advantage of these algorithms over humans stems from their ability to live in parallel and therefore learn better.
 
 ## Neural Networks and Reinforcement Learning
 
