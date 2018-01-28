@@ -25,9 +25,9 @@ Reinforcement learning solves the difficult problem of correlating actions with 
 
 Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. 
 
-* Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithms is the agent. 
+* Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithm is the agent. 
 * Action (A): All possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
-* Environment: The black box of the world in which the agent moves. It takes your current state and action as input, and returns as output your reward and next state. 
+* Environment: The black box of the world through which the agent moves. It takes your current state and action as input, and returns as output your reward and next state. 
 * State (S): A **state** is the situation in which the agent finds itself; i.e. a specific place and moment, a configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. 
 * Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards. An immediate return send back from the environment to evaluate the last action. 
 * Policy (π): The strategy that the agent employs to determine next action based on the current state.
