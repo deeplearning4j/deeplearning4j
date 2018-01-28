@@ -483,6 +483,7 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Reinforcement Learning](./reinforcementlearning)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
