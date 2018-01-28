@@ -67,11 +67,12 @@ So you could apply the same definition to deep learning that Arthur Samuel did t
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Convolutional Networks for Images (CNNs)](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2Vec: Neural Embeddings for Java](./word2vec)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs & Recurrent Networks](./lstm)
 * [Neural Networks & Regression](./logistic-regression)
-* [Convolutional Networks (CNNs)](./convolutionalnets)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Inference: Machine Learning Model Server](./modelserver)
