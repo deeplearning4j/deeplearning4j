@@ -36,7 +36,7 @@ Reinforcement learning is based on agents, environments, states, actions and rew
 * Value (V): The expected long-term return with discount, as opposed to the short-term reward R. `Vπ(s)` is defined as the expected long-term return of the current state under policy π.
 * Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. `Qπ(s, a)` refers to the long-term return of the current state s, taking action a under policy π. 
 
-So environments are functions that transform an action in the current state into the next state and a reward, while agents are functions that transform the new state and reward into the next action. We know the agent's function, but we do not know the function of the environment. It is a black box about which we can only know the inputs and outputs. Reinforcement learning is an attempt to learn, with an agent, the environment's function, such that we can input actions to it that maximize the rewards. 
+So environments are functions that transform an action in the current state into the next state and a reward, while agents are functions that transform the new state and reward into the next action. We know the agent's function, but we do not know the function of the environment. It is a black box about which we can only know the inputs and outputs. Reinforcement learning is an agent's attempt to learn the environment's function, such that we can input actions to the black-box environment that maximize the rewards it returns. 
 
 ![Alt text](./img/simple_RL_schema.png)
 
