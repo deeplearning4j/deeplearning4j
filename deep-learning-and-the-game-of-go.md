@@ -232,7 +232,7 @@ Running these two lines will start up a Python web server that serves several Go
 127.0.0.1:5000/static/play_pg_99.html
 ```
 
-##Conclusion
+## Conclusion
 
 We've covered a lot of ground in this article and hope we have sparked your interest in both the field of deep learning and the game of Go. If you want to learn more, check out the following resources:
 
