@@ -4548,6 +4548,49 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testTadReduce3_3_NEG() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i + 1);
+        }
+        INDArray needle = Nd4j.create(10).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), -1);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < initial.rows(); i++) {
+            INDArray x = initial.getRow(i).dup();
+            double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(x, needle)).getFinalResult()
+                    .doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+
+            log.info("Euclidean: {} vs {} is {}", x, needle, res);
+        }
+    }
+
+    @Test
+    public void testTadReduce3_3_NEG_2() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i + 1);
+        }
+        INDArray needle = Nd4j.create(10).assign(1.0);
+        INDArray reduced = Nd4j.create(5);
+        Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle, reduced, initial.lengthLong()), -1);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < initial.rows(); i++) {
+            INDArray x = initial.getRow(i).dup();
+            double res = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(x, needle)).getFinalResult()
+                    .doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+
+            log.info("Cosine: {} vs {} is {}", x, needle, res);
+        }
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testTadReduce3_5() throws Exception {
         INDArray initial = Nd4j.create(5, 10);
