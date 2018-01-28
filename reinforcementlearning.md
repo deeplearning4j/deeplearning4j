@@ -25,16 +25,18 @@ Eventually, we expect reinforcement learning to perform better and better in mor
 
 ## Reinforcement Learning Definitions
 
-Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. 
+Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. Capital letters tend to denote sets of things, and lower-case letters denote a specific instance of that thing; e.g. `A` is all possible actions, while `a` is a specific action contained in the set. 
 
 * Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithm is the agent. In life, the agent is you. 
-* Action (A): All possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
+* Action (A): `A` is the set of all possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
 * Environment: The world through which the agent moves. The environment takes the agent's current state and action as input, and returns as output the agent's reward and next state. If you are the agent, the environment could be the laws of physics and the rules of society that process your actions and determine the consequences of them.
 * State (S): A **state** is the concrete and immediate situation in which the agent finds itself; i.e. a specific place and moment, an instantaneous configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. Were you in the wrong place at the wrong time? That's a state. 
 * Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. From any given state, an agent sends output in the form of actions to the environment, and the environment returns the agent’s new state (which resulted from acting on the previous state) as well as rewards, if there are any. Rewards can be immediate or delayed. They effectively evaluate the agent's action. 
-* Policy (π): The strategy that the agent employs to determine next action based on the current state.
+* Policy (π): The policy is the strategy that the agent employs to determine the next action based on the current state.
 * Value (V): The expected long-term return with discount, as opposed to the short-term reward R. `Vπ(s)` is defined as the expected long-term return of the current state under policy π.
 * Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. `Qπ(s, a)` refers to the long-term return of the current state s, taking action a under policy π. 
+
+So environments are functions that transform an action in the current state into the next state and a reward, while agents are functions that transform the new state and reward into the next action. We know the agent's function, but we do not know the function of the environment. It is a black box about which we can only know the inputs and outputs. Reinforcement learning is an attempt to learn, with an agent, the environment's function, such that we can input actions to it that maximize the rewards. 
 
 ![Alt text](./img/simple_RL_schema.png)
 
@@ -72,7 +74,7 @@ The Q function takes as its input an agent’s state and action, and maps them t
 
 Reinforcement learning is iterative. In its most interesting applications, it doesn’t begin by knowing which rewards state-action pairs will produce. It learns those relations by running through states again and again, like athletes or musicians iterate through states in an attempt to improve their performance.
 
-Reinforcement learning is Groundhog Day for algorithms. And since most humans never experience their Groundhog Day, that means reinforcement learning gives algorithms the potential to learn more, and better, than humans. In fact, that’s the gist of the last several papers published by DeepMind, since their algorithms now show superhuman performance on most of the video games they’ve trained on. LINK
+Reinforcement learning is Groundhog Day for algorithms. And since most humans never experience their Groundhog Day, that means reinforcement learning gives algorithms the potential to learn more, and better, than humans. In fact, that’s the gist of the last several papers published by DeepMind, since their algorithms now show superhuman performance on most of the video games they’ve trained on. 
 
 ## Neural Networks and Reinforcement Learning
 
