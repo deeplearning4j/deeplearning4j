@@ -15,24 +15,26 @@ Reinforcement learning is goal-oriented. RL algorithms learn how to attain a com
 
 Reinforcement algorithms with deep learning at their core are currently beating expert humans at the [game of Go](https://deeplearning4j.org/deep-learning-and-the-game-of-go#) as well as numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments. Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). They it can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
-Reinforcement learning solves the difficult problem of correlating actions with the delayed returns they produce. Like humans, RL algorithms must sometimes wait a long time to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to learn what leads to what over many time steps. Eventually, we expect reinforcement learning to perform better and better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. 
+Reinforcement learning solves the difficult problem of correlating actions with the delayed returns they produce. Like humans, RL algorithms must sometimes wait a long time to see the fruit of their decisions. They operate in a delayed return environment, where it can be difficult to learn what leads to what over many time steps. 
+
+Eventually, we expect reinforcement learning to perform better and better in more ambiguous, real-life environments while choosing from an arbitrary number of possible actions, rather than from the limited options of a video game. 
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH REINFORCEMENT LEARNING</a>
 </p>
 
 ## Reinforcement Learning Definitions
 
 Reinforcement learning is based on agents, environments, states, actions and rewards, all of which we’ll explain. 
 
-* Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithm is the agent. 
+* Agent: An **agent** takes actions; for example, a drone making a delivery, or Super Mario navigating a video game. The algorithm is the agent. In life, the agent is you. 
 * Action (A): All possible moves the agent can make. An **action** is almost self-explanatory, but it should be noted that agents choose among a list of possible actions. In video games, the list might include running right or left, jumping high or low, crouching or standing still. In the stock markets, the list might include buying, selling or holding any one of an array of securities and their derivatives. When handling aerial drones, alternatives would include many different velocities and accelerations in 3D space. 
-* Environment: The black box of the world through which the agent moves. It takes your current state and action as input, and returns as output your reward and next state. 
-* State (S): A **state** is the situation in which the agent finds itself; i.e. a specific place and moment, a configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. 
-* Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. An agent sends output in the form of actions to the environment, and the environment returns the agent’s new state as well as rewards. An immediate return send back from the environment to evaluate the last action. 
+* Environment: The world through which the agent moves. The environment takes the agent's current state and action as input, and returns as output the agent's reward and next state. If you are the agent, the environment could be the laws of physics and the rules of society that process your actions and determine the consequences of them.
+* State (S): A **state** is the concrete and immediate situation in which the agent finds itself; i.e. a specific place and moment, an instantaneous configuration that puts the agent in relation to other significant things such as tools, obstacles, enemies or prizes. It is the current situation returned by the environment. Were you in the wrong place at the wrong time? That's a state. 
+* Reward (R): A **reward** is the feedback by which we measure the success or failure of an agent’s actions. For example, in a video game, when Mario touches a coin, he wins points. From any given state, an agent sends output in the form of actions to the environment, and the environment returns the agent’s new state (which resulted from acting on the previous state) as well as rewards, if there are any. Rewards can be immediate or delayed. They effectively evaluate the agent's action. 
 * Policy (π): The strategy that the agent employs to determine next action based on the current state.
-* Value (V): The expected long-term return with discount, as opposed to the short-term reward R. Vπ(s) is defined as the expected long-term return of the current state sunder policy π.
-* Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. Qπ(s, a) refers to the long-term return of the current state s, taking action a under policy π.
+* Value (V): The expected long-term return with discount, as opposed to the short-term reward R. Vπ(s) is defined as the expected long-term return of the current state under policy π.
+* Q-value or action-value (Q): Q-value is similar to Value, except that it takes an extra parameter, the current action a. Qπ(s, a) refers to the long-term return of the current state s, taking action a under policy π. 
 
 ![Alt text](./img/simple_RL_schema.png)
 
