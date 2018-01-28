@@ -3,7 +3,7 @@ title: A Beginner's Guide to Reinforcement Learning (for Java and Scala)
 layout: default
 ---
 
-# A Beginner's Guide to Reinforcement Learning (for Java)
+# A Beginner's Guide to Reinforcement Learning 
 
 ```
 When it is not in our power to determine what is true, we ought to act in accordance with what is most probable. - Descartes
