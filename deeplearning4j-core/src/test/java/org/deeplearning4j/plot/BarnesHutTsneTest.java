@@ -46,6 +46,7 @@ public class BarnesHutTsneTest {
     }
 
 
+
     @Test
     public void testTsne() throws Exception {
         Nd4j.ENFORCE_NUMERICAL_STABILITY = true;

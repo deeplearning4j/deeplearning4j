@@ -27,7 +27,7 @@
     <version>0.9.2_spark_1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>org.deeplearning4j.spark</name>
+    <name>Spark parent</name>
     <modules>
         <module>dl4j-spark</module>
         <module>dl4j-spark-nlp</module>
@@ -46,6 +46,13 @@
         <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
         <datavec.spark.version>0.9.2_spark_1-SNAPSHOT</datavec.spark.version>
+
+
+
+        <scala.macros.version>2.1.0</scala.macros.version>
+        <!-- Default scala versions, may be overwritten by build profiles -->
+        <scala.version>2.11.12</scala.version>
+        <scala.binary.version>2.11</scala.binary.version>
     </properties>
 
 
@@ -68,29 +75,43 @@
                     </execution>
                 </executions>
             </plugin>
+            <!-- Scala Compiler -->
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>${maven-scala-plugin.version}</version>
                 <executions>
-                  <execution>
-                    <id>scala-compile-first</id>
-                    <phase>process-resources</phase>
-                    <goals>
-                      <goal>add-source</goal>
-                      <goal>compile</goal>
-                    </goals>
-                  </execution>
-                  <execution>
-                    <id>scala-test-compile</id>
-                    <phase>process-test-resources</phase>
-                    <goals>
-                      <goal>testCompile</goal>
-                    </goals>
-                  </execution>
+                    <!-- Run scala compiler in the process-resources phase, so that dependencies on
+                        scala classes can be resolved later in the (Java) compile phase -->
+                    <execution>
+                        <id>scala-compile-first</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+
+                    <!-- Run scala compiler in the process-test-resources phase, so that dependencies on
+                         scala classes can be resolved later in the (Java) test-compile phase -->
+                    <execution>
+                        <id>scala-test-compile</id>
+                        <phase>process-test-resources</phase>
+                        <goals>
+                            <goal>testCompile</goal>
+                        </goals>
+                    </execution>
                 </executions>
                 <configuration>
-                    <scalaVersion>2.11.8</scalaVersion>
+                    <jvmArgs>
+                        <jvmArg>-Xms128m</jvmArg>
+                        <jvmArg>-Xmx512m</jvmArg>
+                    </jvmArgs>
+                    <compilerPlugins combine.children="append">
+                        <compilerPlugin>
+                            <groupId>org.scalamacros</groupId>
+                            <artifactId>paradise_${scala.version}</artifactId>
+                            <version>${scala.macros.version}</version>
+                        </compilerPlugin>
+                    </compilerPlugins>
                 </configuration>
             </plugin>
         </plugins>

@@ -93,13 +93,14 @@ public class BarnesHutTsne implements Model {
     private SpTree tree;
     private INDArray gains;
     private INDArray yIncs;
+    private int vpTreeWorkers;
     protected transient IterationListener iterationListener;
 
     public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
                     double realMin, double initialMomentum, double finalMomentum, double momentum,
                     int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
                     double learningRate, boolean useAdaGrad, double perplexity, IterationListener iterationListener,
-                    double minGain) {
+                    double minGain,int vpTreeWorkers) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -118,6 +119,7 @@ public class BarnesHutTsne implements Model {
         this.theta = theta;
         this.iterationListener = iterationListener;
         this.invert = invert;
+        this.vpTreeWorkers = vpTreeWorkers;
     }
 
 
@@ -179,7 +181,7 @@ public class BarnesHutTsne implements Model {
         final INDArray beta = ones(N, 1);
 
         final double logU = FastMath.log(u);
-        VPTree tree = new VPTree(d, simiarlityFunction, invert);
+        VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
         log.info("Calculating probabilities of data similarities...");
         for (int i = 0; i < N; i++) {
@@ -769,6 +771,12 @@ public class BarnesHutTsne implements Model {
         private boolean invert = true;
         private int numDim = 2;
         private String similarityFunction = "cosinesimilarity";
+        private int vpTreeWorkers = 1;
+
+        public Builder vpTreeWorkers(int vpTreeWorkers) {
+            this.vpTreeWorkers = vpTreeWorkers;
+            return this;
+        }
 
         public Builder minGain(double minGain) {
             this.minGain = minGain;
@@ -860,7 +868,7 @@ public class BarnesHutTsne implements Model {
         public BarnesHutTsne build() {
             return new BarnesHutTsne(numDim, similarityFunction, theta, invert, maxIter, realMin, initialMomentum,
                             finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
-                            learningRate, useAdaGrad, perplexity, null, minGain);
+                            learningRate, useAdaGrad, perplexity, null, minGain,vpTreeWorkers);
         }
 
     }
