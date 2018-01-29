@@ -31,6 +31,7 @@ PACKAGING=
 CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
+CLEAN="false"
 while [[ $# > 1 ]]
 do
 key="$1"
@@ -75,6 +76,9 @@ case $key in
     -x|--experimental)
     EXPERIMENTAL="$2"
     shift # past argument
+    ;;
+    clean)
+    CLEAN="true"
     ;;
     --default)
     DEFAULT=YES
@@ -349,6 +353,10 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
 fi
 
 mkbuilddir() {
+    if [ "$CLEAN" == "true" ]; then
+        echo "Removing blasbuild"
+        rm -Rf blasbuild
+    fi
     mkdir -p blasbuild
     cd blasbuild
     CHIP_DIR="$CHIP"
@@ -361,13 +369,11 @@ mkbuilddir() {
 
     # create appropriate directories and links here for ND4J
     if [ "$CHIP" != "$CHIP_DIR" ]; then
-        rm -rf "$CHIP_DIR" "$CHIP"
         mkdir -p "$CHIP_DIR"
         ln -s "$CHIP_DIR" "$CHIP"
         mkdir -p "$CHIP/blas"
         cd "$CHIP_DIR"
     else
-        rm -rf "$CHIP"
         mkdir -p "$CHIP"
         cd "$CHIP"
     fi
