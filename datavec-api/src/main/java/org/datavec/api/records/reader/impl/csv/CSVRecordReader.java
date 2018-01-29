@@ -59,6 +59,14 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     /**
+     * Create a CSVRecordReader with the specified delimiter
+     * @param delimiter Delimiter character for CSV
+     */
+    public CSVRecordReader(char delimiter){
+        this(0, delimiter);
+    }
+
+    /**
      * Skip lines and use delimiter
      * @param skipNumLines the number of lines to skip
      * @param delimiter the delimiter
