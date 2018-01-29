@@ -349,6 +349,73 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>libnd4j-assembly</id>
+            <activation>
+                <property>
+                    <name>libnd4j-assembly</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4jhome>${project.build.directory}/libnd4j/</libnd4jhome>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>libnd4j</artifactId>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                    <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-checks</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.0.2</version>
+                        <executions>
+                            <execution>
+                                <id>unpack</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.nd4j</groupId>
+                                            <artifactId>libnd4j</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>zip</type>
+                                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}</outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>
