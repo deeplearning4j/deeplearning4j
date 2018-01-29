@@ -5,7 +5,7 @@ layout: default
 
 # Open Data for Deep Learning
 
-Here you'll find an organized list of interesting, high-quality datasets for machine learning research. We welcome your contributions for curating this list! You can find other lists of such datasets [on Wikipedia](https://en.wikipedia.org/wiki/List_of_datasets_for_machine_learning_research), for example.
+Here you'll find an organized list of interesting, high-quality datasets for machine learning research. We welcome your contributions for [curating this list](https://github.com/deeplearning4j/deeplearning4j/blob/gh-pages/opendata.md)! You can find other lists of such datasets [on Wikipedia](https://en.wikipedia.org/wiki/List_of_datasets_for_machine_learning_research), for example.
 
 ## Recent Additions
 
@@ -163,14 +163,15 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
 
-* [Deep Neural Networks](./neuralnet-overview)
+* [Beginner's Guide to Deep Neural Networks](./neuralnet-overview)
 * [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
-* [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Beginner's Guide to Markov Chain Monte Carlo](./markovchainmontecarlo)
+* [MNIST for Beginners](./mnist-for-beginners.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
