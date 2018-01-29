@@ -262,7 +262,7 @@ public class SpTree implements Serializable {
                 // Compute pairwise distance and Q-value
                 buf.assign(data.slice(n)).subi(data.slice(colP.getInt(i)));
 
-                D = Nd4j.getBlasWrapper().dot(buf, buf);
+                D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force
