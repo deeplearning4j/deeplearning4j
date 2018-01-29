@@ -1957,7 +1957,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
                             //and hence we aren't actually moving it out of the current workspace. Consequently, the
                             //epsilons will be invalidated at the end of the current vertex for loop
-                            epsilons[x] = epsilons[x].detach(); //.leverageTo(workspaceExternal);
+                            epsilons[x] = epsilons[x].detach();
                         }
                     }
 
@@ -1986,7 +1986,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                     try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                                             .getWorkspaceForCurrentThread(workspaceExternal)
                                             .notifyScopeBorrowed()) {
-                                        //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                         gv.setEpsilon(currentEps.add(epsilons[j++]));
                                     }
                                 }

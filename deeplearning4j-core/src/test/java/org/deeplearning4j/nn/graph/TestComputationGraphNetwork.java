@@ -26,6 +26,9 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,6 +74,23 @@ public class TestComputationGraphNetwork {
     private static int getNumParams() {
         //Number of parameters for both iris models
         return (4 * 5 + 5) + (5 * 3 + 3);
+    }
+
+    private static OpExecutioner.ProfilingMode origMode;
+
+    @BeforeClass
+    public static void beforeClass(){
+        origMode = Nd4j.getExecutioner().getProfilingMode();
+    }
+
+    @Before
+    public void before(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @AfterClass
+    public static void afterClass(){
+        Nd4j.getExecutioner().setProfilingMode(origMode);
     }
 
 
