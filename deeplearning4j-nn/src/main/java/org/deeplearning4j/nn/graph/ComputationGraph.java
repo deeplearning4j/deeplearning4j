@@ -1312,9 +1312,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         // computeGradientAndScore() before any fit() methods)
         MemoryWorkspace wsExternal = null;
         boolean shouldCloseWorkspace = false;
-        if(configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
+        if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
             wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-            if(!wsExternal.isScopeActive()){
+            if (!wsExternal.isScopeActive()) {
                 wsExternal.notifyScopeEntered();
                 shouldCloseWorkspace = true;
             }
@@ -1583,29 +1583,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new RuntimeException();
         }
 
-        boolean wsExternalShouldExist = configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE;
-        if(wsExternalShouldExist && !Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)){
-            //workspaceExternal should exist so we can leverage things to it - but if it doesn't, create it here
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-        }
-
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
-/*
-            if(layerFeedForwardIdx >= 0 && i > layerFeedForwardIdx + 1) {
-                break;
-            }
-*/
-
-
-
             GraphVertex current = vertices[topologicalOrder[i]];
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
-                    // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal, wsExternalShouldExist);
+                    // pushing out copy to parent workspace - if one exists
+                    INDArray input = inputs[current.getVertexIndex()].leverageOrDetach(workspaceExternal);
 
 
                     layerActivations.put(current.getVertexName(), input);
@@ -1643,7 +1629,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (publicApi) {
                         out = current.doForward(train).detach();
                     } else {
-                        out = current.doForward(train).leverageTo(workspaceExternal,wsExternalShouldExist);
+                        out = current.doForward(train).leverageOrDetach(workspaceExternal);
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
@@ -1894,127 +1880,113 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new RuntimeException();
         }
 
-        boolean closeExternal = false;
-        MemoryWorkspace wsExternal = null;
-        if(wsm == WorkspaceMode.SEPARATE && !Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
-            wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-            wsExternal.notifyScopeEntered();
-            closeExternal = true;
-        }
-
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
-        try {
-            //Do backprop according to the reverse of the topological ordering of the network
-            boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
-            for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    GraphVertex current = vertices[topologicalOrder[i]];
+        //Do backprop according to the reverse of the topological ordering of the network
+        boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
+        for (int i = topologicalOrder.length - 1; i >= 0; i--) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                GraphVertex current = vertices[topologicalOrder[i]];
 
-                    if (current.isInputVertex())
-                        continue; //No op
-                    //FIXME: make the frozen vertex feature extraction more flexible
-                    if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
-                        break;
+                if (current.isInputVertex())
+                    continue; //No op
+                //FIXME: make the frozen vertex feature extraction more flexible
+                if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
+                    break;
 
-                    if (current.isOutputVertex()) {
-                        //Two reasons for a vertex to be an output vertex:
-                        //(a) it's an output layer (i.e., instanceof IOutputLayer), or
-                        //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
+                if (current.isOutputVertex()) {
+                    //Two reasons for a vertex to be an output vertex:
+                    //(a) it's an output layer (i.e., instanceof IOutputLayer), or
+                    //(b) it's a normal layer, but it has been marked as an output layer for use in external errors - for reinforcement learning, for example
 
-                        int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                        if (current.getLayer() instanceof IOutputLayer) {
-                            IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
+                    int thisOutputNumber = configuration.getNetworkOutputs().indexOf(current.getVertexName());
+                    if (current.getLayer() instanceof IOutputLayer) {
+                        IOutputLayer outputLayer = (IOutputLayer) current.getLayer();
 
-                            INDArray currLabels = labels[thisOutputNumber];
-                            outputLayer.setLabels(currLabels);
-                        } else {
-                            if ((externalEpsilons == null || externalEpsilons.length == 0)
-                                    && labels[thisOutputNumber] != null) {
-                                throw new DL4JException("Layer \"" + current.getVertexName() + "\" of type "
-                                        + current.getLayer().getClass().getSimpleName()
-                                        + " is set as network output "
-                                        + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
-                                        + " a labels array. ");
-                            }
-                            current.setEpsilon(externalEpsilons[thisOutputNumber]);
-                            setVertexEpsilon[topologicalOrder[i]] = true;
+                        INDArray currLabels = labels[thisOutputNumber];
+                        outputLayer.setLabels(currLabels);
+                    } else {
+                        if ((externalEpsilons == null || externalEpsilons.length == 0)
+                                && labels[thisOutputNumber] != null) {
+                            throw new DL4JException("Layer \"" + current.getVertexName() + "\" of type "
+                                    + current.getLayer().getClass().getSimpleName()
+                                    + " is set as network output "
+                                    + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
+                                    + " a labels array. ");
                         }
-                    }
-
-                    Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
-                    INDArray[] epsilons = pair.getSecond();
-
-                    for (int x = 0; x < epsilons.length; x++) {
-                        if (epsilons[x] == null) {
-                            continue;
-                        }
-
-                        if(wsm == WorkspaceMode.SEPARATE) {
-                            epsilons[x] = epsilons[x].leverageTo(workspaceExternal, true);
-                        } else if(wsm == WorkspaceMode.SINGLE){
-                            //TODO we can't simply leverage to workspaceExternal here:
-                            //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
-                            //and hence we aren't actually moving it out of the current workspace. Consequently, the
-                            //epsilons will be invalidated at the end of the current vertex for loop
-                            epsilons[x] = epsilons[x].detach();
-                        }
-                    }
-
-                    //Inputs to the current GraphVertex:
-                    VertexIndices[] inputVertices = current.getInputVertices();
-
-                    //Set epsilons for the vertices that provide inputs to this vertex:
-                    if (inputVertices != null) {
-                        int j = 0;
-                        for (VertexIndices v : inputVertices) {
-                            GraphVertex gv = vertices[v.getVertexIndex()];
-                            if (setVertexEpsilon[gv.getVertexIndex()]) {
-                                //This vertex: must output to multiple vertices... we want to add the epsilons here
-                                INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal, true);
-                                if (wsm == WorkspaceMode.NONE) {
-                                    gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
-                                } else if(wsm == WorkspaceMode.SINGLE){
-                                    //TODO we can't simply leverage or scopeBorrowed to workspaceExternal here:
-                                    //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
-                                    //and hence we aren't actually moving it out of the current workspace. Consequently, the
-                                    //epsilons will be invalidated at the end of the current vertex for loop
-                                    try(MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
-                                        gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                    }
-                                } else {
-                                    try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                            .getWorkspaceForCurrentThread(workspaceExternal)
-                                            .notifyScopeBorrowed()) {
-                                        gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                    }
-                                }
-                            } else {
-                                gv.setEpsilon(epsilons[j++]);
-                            }
-                            setVertexEpsilon[gv.getVertexIndex()] = true;
-
-                        }
-                    }
-
-                    if (pair.getFirst() != null) {
-                        Gradient g = pair.getFirst();
-                        Map<String, INDArray> map = g.gradientForVariable();
-                        LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
-                        for (Map.Entry<String, INDArray> entry : map.entrySet()) {
-                            String origName = entry.getKey();
-                            String newName = current.getVertexName() + "_" + origName;
-                            tempList.addFirst(new Triple<>(newName, entry.getValue(),
-                                    g.flatteningOrderForVariable(origName)));
-                        }
-                        for (Triple<String, INDArray, Character> t : tempList)
-                            gradients.addFirst(t);
+                        current.setEpsilon(externalEpsilons[thisOutputNumber]);
+                        setVertexEpsilon[topologicalOrder[i]] = true;
                     }
                 }
-            }
-        } finally {
-            if(closeExternal){
-                wsExternal.close();
+
+                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
+                INDArray[] epsilons = pair.getSecond();
+
+                for (int x = 0; x < epsilons.length; x++) {
+                    if (epsilons[x] == null) {
+                        continue;
+                    }
+
+                    if(wsm == WorkspaceMode.SEPARATE) {
+                        epsilons[x] = epsilons[x].leverageOrDetach(workspaceExternal);
+                    } else if(wsm == WorkspaceMode.SINGLE){
+                        //TODO we can't simply leverage to workspaceExternal here:
+                        //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
+                        //and hence we aren't actually moving it out of the current workspace. Consequently, the
+                        //epsilons will be invalidated at the end of the current vertex for loop
+                        epsilons[x] = epsilons[x].detach();
+                    }
+                }
+
+                //Inputs to the current GraphVertex:
+                VertexIndices[] inputVertices = current.getInputVertices();
+
+                //Set epsilons for the vertices that provide inputs to this vertex:
+                if (inputVertices != null) {
+                    int j = 0;
+                    for (VertexIndices v : inputVertices) {
+                        GraphVertex gv = vertices[v.getVertexIndex()];
+                        if (setVertexEpsilon[gv.getVertexIndex()]) {
+                            //This vertex: must output to multiple vertices... we want to add the epsilons here
+                            INDArray currentEps = gv.getEpsilon().leverageOrDetach(workspaceExternal);
+                            if (wsm == WorkspaceMode.NONE) {
+                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            } else if(wsm == WorkspaceMode.SINGLE){
+                                //TODO we can't simply leverage or scopeBorrowed to workspaceExternal here:
+                                //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
+                                //and hence we aren't actually moving it out of the current workspace. Consequently, the
+                                //epsilons will be invalidated at the end of the current vertex for loop
+                                try(MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
+                                }
+                            } else {
+                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                                        .getWorkspaceForCurrentThread(workspaceExternal)
+                                        .notifyScopeBorrowed()) {
+                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
+                                }
+                            }
+                        } else {
+                            gv.setEpsilon(epsilons[j++]);
+                        }
+                        setVertexEpsilon[gv.getVertexIndex()] = true;
+
+                    }
+                }
+
+                if (pair.getFirst() != null) {
+                    Gradient g = pair.getFirst();
+                    Map<String, INDArray> map = g.gradientForVariable();
+                    LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
+                    for (Map.Entry<String, INDArray> entry : map.entrySet()) {
+                        String origName = entry.getKey();
+                        String newName = current.getVertexName() + "_" + origName;
+                        tempList.addFirst(new Triple<>(newName, entry.getValue(),
+                                g.flatteningOrderForVariable(origName)));
+                    }
+                    for (Triple<String, INDArray, Character> t : tempList)
+                        gradients.addFirst(t);
+                }
             }
         }
 
