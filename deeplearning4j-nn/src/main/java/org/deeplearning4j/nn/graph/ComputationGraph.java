@@ -1795,6 +1795,18 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return output(train, clearInputs, input)[0];
     }
 
+    /**
+     * An output method for the network, with optional clearing of the layer inputs.<br>
+     * Note: most users should use {@link #output(boolean, INDArray...)} or similar methods, unless they are doing
+     * non-standard operations (like providing the input arrays externally)
+     *
+     * @param train       If true: output during training. False: output during testing. Affects some things such as
+     *                    dropout
+     * @param clearInputs If true: clear the input arrays for all layers. False: leave the input arrays as-is - which
+     *                    can be useful for "external errors" (no output layer) backprop use cases
+     * @param input       Input to the network
+     * @return            Output from the network
+     */
     public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         setInputs(input);
         if(clearInputs){
