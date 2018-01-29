@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 
+import lombok.val;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -37,6 +38,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -691,4 +693,36 @@ public class JCublasNDArray extends BaseNDArray {
 
         return copy;
     }
+
+
+    @Override
+    public INDArray convertToFloats() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new int[]{this.length()}, DataBuffer.Type.FLOAT);
+
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()), DataBuffer.TypeEx.FLOAT, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
+    @Override
+    public INDArray convertToDoubles() {
+        if (data.dataType() == DataBuffer.Type.DOUBLE)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new int[]{this.length()}, DataBuffer.Type.DOUBLE);
+
+        factory.convertDataEx(convertType(data.dataType()), AtomicAllocator.getInstance().getHostPointer(this.data()), DataBuffer.TypeEx.DOUBLE, AtomicAllocator.getInstance().getHostPointer(buffer), buffer.length());
+
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickHostWrite();
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
 }

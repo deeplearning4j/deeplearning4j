@@ -2768,4 +2768,7 @@ public interface INDArray extends Serializable {
 
 
     int toFlatArray(FlatBufferBuilder builder);
+
+    INDArray convertToFloats();
+    INDArray convertToDoubles();
 }

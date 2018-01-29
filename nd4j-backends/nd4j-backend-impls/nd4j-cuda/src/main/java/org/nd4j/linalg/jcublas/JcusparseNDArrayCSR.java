@@ -48,4 +48,14 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
     public int toFlatArray(FlatBufferBuilder builder) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public INDArray convertToFloats() {
+        return null;
+    }
+
+    @Override
+    public INDArray convertToDoubles() {
+        return null;
+    }
 }

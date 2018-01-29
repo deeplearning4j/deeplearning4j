@@ -1073,4 +1073,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return null;
     }
 
+    @Override
+    public INDArray convertToFloats() {
+        return null;
+    }
+
+    @Override
+    public INDArray convertToDoubles() {
+        return null;
+    }
 }

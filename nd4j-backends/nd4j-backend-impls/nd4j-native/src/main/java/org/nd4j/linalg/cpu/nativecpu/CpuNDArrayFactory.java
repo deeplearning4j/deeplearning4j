@@ -1156,7 +1156,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer buffer = null;
 
 
-        if (typeDst.ordinal() < 6) {
+        if (typeDst.ordinal() < 8) {
             // all types below 6 are compression modes
             BytePointer pointer = new BytePointer(source.length() * elementSize);
             CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());

@@ -24,6 +24,7 @@ import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -5654,5 +5655,42 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public int underlyingRank() {
         throw new UnsupportedOperationException("Not a sparse ndarray");
 
+    }
+
+    @Override
+    public INDArray convertToFloats() {
+        if (data.dataType() == DataBuffer.Type.FLOAT)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new int[]{this.length()}, DataBuffer.Type.FLOAT);
+
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.FLOAT, buffer.addressPointer(), buffer.length());
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
+    @Override
+    public INDArray convertToDoubles() {
+        if (data.dataType() == DataBuffer.Type.DOUBLE)
+            return this;
+
+        val factory = Nd4j.getNDArrayFactory();
+        val buffer = Nd4j.createBuffer(new int[]{this.length()}, DataBuffer.Type.DOUBLE);
+
+        factory.convertDataEx(convertType(data.dataType()), this.data().addressPointer(), DataBuffer.TypeEx.DOUBLE, buffer.addressPointer(), buffer.length());
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInformation);
+    }
+
+    protected static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
+        if (type == DataBuffer.Type.HALF) {
+            return DataBuffer.TypeEx.FLOAT16;
+        } else if (type == DataBuffer.Type.FLOAT) {
+            return DataBuffer.TypeEx.FLOAT;
+        } else if (type == DataBuffer.Type.DOUBLE) {
+            return DataBuffer.TypeEx.DOUBLE;
+        } else
+            throw new IllegalStateException("Unknown dataType: [" + type + "]");
     }
 }
