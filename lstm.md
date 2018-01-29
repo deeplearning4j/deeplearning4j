@@ -218,6 +218,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
+* [Open Datasets for Machine Learning](./opendata)
 * [Inference: Machine Learning Model Server](./machine-learning-modelserver)
 
 ### Footnotes
