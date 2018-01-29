@@ -11,7 +11,7 @@ When it is not in our power to determine what is true, we ought to act in accord
 Contents
 
 * <a href="#define">Reinforcement Learning Definitions</a>
-* <a href="#neural">Neural Networks and Reinforcement Learning</a>
+* <a href="#neural">Neural Networks and Deep Reinforcement Learning</a>
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#reading">Further Reading</a>
 
@@ -89,7 +89,7 @@ You could say that reinforcement learning algorithms have a different relationsh
 
 Since humans never experience Groundhog Day outside the movie, reinforcement learning algorithms have the potential to learn more, and better, than humans. You could say that the true advantage of these algorithms over humans stems not so much from their inherent nature, but from their ability to live in parallel on many chips at once, to train night and day without fatigue, and therefore to learn more. An algorithm trained on the game of Go, such as AlphaGo, will have played many more games of Go than any human could hope to complete in 100 lifetimes. 
 
-## <a name="neural">Neural Networks and Reinforcement Learning</a>
+## <a name="neural">Neural Networks and Deep Reinforcement Learning</a>
 
 Where do neural networks fit in? Neural networks are the agent that learns to map state-action pairs to rewards. Like all neural networks, they use coefficients to approximate the function relating inputs to outputs, and their learning consists to finding the right coefficients, or weights, by iteratively adjusting those weights along gradients that promise less error.  
 
