@@ -230,7 +230,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         if (i < 0)
             i += rank();
         if (isScalar()) {
-            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+            if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.SCOPE_PANIC)
                 OpProfiler.getInstance().processScalarCall();
 
             addOrUpdate(new int[] {0, 0}, value);
@@ -608,7 +608,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             throw new IllegalArgumentException("Unable to get linear index >= " + length());
         }
 
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.SCOPE_PANIC)
             OpProfiler.getInstance().processScalarCall();
 
         if (i == 0)

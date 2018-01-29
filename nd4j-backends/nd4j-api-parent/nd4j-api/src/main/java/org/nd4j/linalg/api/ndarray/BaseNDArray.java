@@ -4935,7 +4935,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
     
     protected void autoProcessScalarCall() {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED)
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.DISABLED && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.SCOPE_PANIC)
             OpProfiler.getInstance().processScalarCall();
     }
 
