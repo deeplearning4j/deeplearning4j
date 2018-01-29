@@ -461,13 +461,16 @@ namespace nd4j {
         template<typename OpName>
         void applyScalar(NDArray<T>& scalar, NDArray<T>* target = nullptr, T *extraParams = nullptr);
 
-        /** 
+
+#ifndef __JAVACPP_HACK__
+        /**
         *  apply operation "func" to an array
         *  func - what operation to apply
         *  target - where to store result
-        */ 
-#ifndef __JAVACPP_HACK__
+        */
         void applyLambda(const std::function<T(T)>& func, NDArray<T>* target = nullptr);
+
+        void applyIndexedLambda(const std::function<T(Nd4jIndex, T)>& func, NDArray<T>* target = nullptr);
 
         /** 
         *  apply pairwise operation "func" to an array
@@ -476,6 +479,8 @@ namespace nd4j {
         *  target - where to store result
         */ 
         void applyPairwiseLambda(NDArray<T>* other, const std::function<T(T, T)>& func, NDArray<T>* target = nullptr);
+
+        void applyIndexedPairwiseLambda(NDArray<T>* other, const std::function<T(Nd4jIndex, T, T)>& func, NDArray<T>* target = nullptr);
 
         void applyTriplewiseLambda(NDArray<T>* second, NDArray<T> *third, const std::function<T(T, T, T)>& func, NDArray<T>* target = nullptr);
 #endif

@@ -30,6 +30,7 @@
 #include <array/DataTypeUtils.h>
 #include <helpers/BitwiseUtils.h>
 #include <generated/array_generated.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j{
 namespace graph {
@@ -276,8 +277,9 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
             if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                 auto array = __variableSpace->getVariable(node->id())->getNDArray();
                 auto list = __variableSpace->getVariable(node->id())->getNDArrayList();
+                auto shape =  ShapeUtils<T>::shapeAsString(*array);
                 if (array != nullptr) {
-                    nd4j_debug("node_%i finished. result length: [%i]; meanNumber: [%f]\n", node->id(), (int) array->lengthOf(), array->meanNumber());
+                    nd4j_debug("node_%i finished. result shape: %s; meanNumber: [%f]\n", node->id(), shape.c_str(), array->meanNumber());
                 } else if (list != nullptr) {
                     nd4j_debug("node_% is ListOp, skipping evaluation", node->id());
                 }
@@ -321,8 +323,10 @@ Nd4jPointer GraphExecutioner<T>::executeFlatBuffer(Nd4jPointer pointer) {
 
     // executing internal representation
     auto status = GraphExecutioner<T>::execute(nativeGraph);
-    if (status != ND4J_STATUS_OK)
+    if (status != ND4J_STATUS_OK) {
+        nd4j_printf("Graph execution failed with status: [%i]\n", status)
         return nullptr;
+    }
 
     nd4j_debug("Building output...\n", 0);
 

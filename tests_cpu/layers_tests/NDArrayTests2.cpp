@@ -556,6 +556,18 @@ TEST_F(NDArrayTest2, setZeros_test4) {
     x.setZeros("trianLowD");
 
     ASSERT_TRUE(exp.isSameShape(&x));
-    ASSERT_TRUE(exp.equalsTo(&x));    
+    ASSERT_TRUE(exp.equalsTo(&x));
+}
 
+TEST_F(NDArrayTest2, Test_Indexed_Lambda) {
+    NDArray<float> x('c', {2, 2});
+    NDArray<float> exp('c', {2, 2}, {0, 1, 2, 3});
+
+    auto lambda = ILAMBDA_F(_x) {
+        return (float) _idx;
+    };
+
+    x.applyIndexedLambda(lambda);
+
+    ASSERT_TRUE(exp.equalsTo(&x));
 }
