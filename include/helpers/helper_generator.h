@@ -414,7 +414,7 @@ namespace nd4j {
                 int r = nextInt();
                 int m = to - 1;
                 if ((to & m) == 0)  // i.e., bound is a power of 2
-                    r = (int) ((to * (long) r) >> 31);
+                    r = (int) ((to * (Nd4jIndex) r) >> 31);
                 else {
                     for (int u = r;
                          u - (r = u % to) + m < 0;

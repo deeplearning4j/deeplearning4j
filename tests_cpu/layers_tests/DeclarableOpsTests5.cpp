@@ -1293,3 +1293,157 @@ TEST_F(DeclarableOpsTests5, trace_test5) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
+    
+    NDArray<float> input('c', {2, 2, 2});
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);    
+
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if((*output)(i) == (float)0.)
+            haveZeros = true;
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test2) {
+    
+    NDArray<float> input('c', {1, 3, 2});
+    NDArrayFactory<float>::linspace(1, input);    
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);        
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(input.equalsTo(output));    
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
+    
+    NDArray<float> input('c', {3, 2, 1});
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);        
+
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if((*output)(i) == (float)0.)
+            haveZeros = true;
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
+    
+    std::vector<int> shape = {4};
+    NDArray<float> input('c', shape);
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);            
+
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if((*output)(i) == (float)0.)
+            haveZeros = true;
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
+        
+    NDArray<float> input('c', {4,1});
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);                
+
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if((*output)(i) == (float)0.)
+            haveZeros = true;
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
+        
+    NDArray<float> input('c', {4,1,1});
+    NDArrayFactory<float>::linspace(1, input);
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);                    
+
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if((*output)(i) == (float)0.)
+            haveZeros = true;
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
+        
+    NDArray<float> input('c', {1,4});
+    NDArrayFactory<float>::linspace(1, input);
+    NDArray<float> exp('c', {1,4}, {1, 2, 3, 4});    
+
+    nd4j::ops::random_shuffle<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);                    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(input.isSameShape(output));
+    ASSERT_TRUE(input.equalsTo(output));
+
+    delete results;
+}
+
