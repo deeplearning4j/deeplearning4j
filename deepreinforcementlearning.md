@@ -18,7 +18,7 @@ Contents
 
 Neural networks are responsible for recent breakthroughs in problems like computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create something like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
 
-Reinforcement learning is a set of goal-oriented algorithms. Reinforcement learning algorithms learn how to attain a complex objective (goal) or maximize along a particular dimension over many steps; for example, maximize the points won in a game over many moves.  They can start from a blank slate, and under the right conditions they achieve superhuman performance. 
+Reinforcement learning refers to goal-oriented algorithms, which learn how to attain a complex objective (goal) or maximize along a particular dimension over many steps; for example, maximize the points won in a game over many moves.  They can start from a blank slate, and under the right conditions they achieve superhuman performance. Like a child incentivized by spankings and candy, these algorithms are rewarded when they make the right decisions and penalized when they make the wrong ones -- this is reinforcement.
 
 Reinforcement algorithms that incorporate deep learning can beat world champions at the [game of Go](https://deeplearning4j.org/deep-learning-and-the-game-of-go#) as well as human experts playing numerous [Atari video games](https://www.cs.toronto.edu/~vmnih/docs/dqn.pdf). While that may sound trivial, it’s a vast improvement over their previous accomplishments, and the state of the art is progressing rapidly. 
 
