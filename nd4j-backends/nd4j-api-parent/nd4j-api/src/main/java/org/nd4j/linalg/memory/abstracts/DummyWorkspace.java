@@ -48,6 +48,11 @@ public class DummyWorkspace implements MemoryWorkspace {
         return 0;
     }
 
+    @Override
+    public Type getWorkspaceType() {
+        return Type.DUMMY;
+    }
+
     /**
      * This method does allocation from a given Workspace
      *

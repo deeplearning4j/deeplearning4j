@@ -44,6 +44,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter
     protected Long threadId;
 
+    protected Type workspaceType = Type.SCOPED;
+
     protected static final long SAFETY_OFFSET = 1024L;
 
     @Getter
@@ -124,6 +126,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
 
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED)
+            workspaceType = Type.CIRCULAR;
+        else
+            workspaceType = Type.SCOPED;
+
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED
                         && workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE) {
             if (workspaceConfiguration.getOverallocationLimit() < 1.0)
@@ -172,6 +179,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         init();
+    }
+
+    @Override
+    public Type getWorkspaceType() {
+        return this.workspaceType;
     }
 
     public static void fillFile(File file, long length) throws Exception {

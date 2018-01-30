@@ -102,8 +102,9 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
-//            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
+            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
             FlatArray ndarray = var.ndarray();
+
 
             INDArray val = Nd4j.createFromFlatArray(ndarray);
             results[e] = val;

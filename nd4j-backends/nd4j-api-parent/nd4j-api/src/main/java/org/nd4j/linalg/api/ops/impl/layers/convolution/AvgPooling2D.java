@@ -220,7 +220,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .virtualWidth(1)
                 .virtualHeight(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
-                .extra(1.0) // averaging only for non-padded values
+                .extra(0.0) // averaging only for non-padded values
                 .build();
         this.config = pooling2DConfig;
         addArgs();

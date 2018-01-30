@@ -1632,4 +1632,18 @@ public abstract class NativeOps extends Pointer {
     public abstract void deleteVariablesSetFloat(Pointer pointer);
     public abstract void deleteVariablesSetDouble(Pointer pointer);
     public abstract void deleteVariablesSetHalf(Pointer pointer);
+
+    // GraphState creation
+    public abstract Pointer getGraphStateHalf(long id);
+    public abstract Pointer getGraphStateFloat(long id);
+    public abstract Pointer getGraphStateDouble(long id);
+
+    public abstract void deleteGraphStateHalf(Pointer state);
+    public abstract void deleteGraphStateFloat(Pointer state);
+    public abstract void deleteGraphStateDouble(Pointer state);
+
+    // this method executes op that requires scope to be present: if/while/cond/whatever
+    public abstract int execCustomOpWithScopeHalf(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
+    public abstract int execCustomOpWithScopeFloat(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
+    public abstract int execCustomOpWithScopeDouble(PointerPointer extraPointers, Pointer state, long opHash, long[] scopes, int numScopes, PointerPointer inputBuffers, PointerPointer inputShapes, int numInputs, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs);
 }

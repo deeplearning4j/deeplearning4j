@@ -757,4 +757,14 @@ public class TensorFlowImportTest {
         }
     }
 
+
+    @Test
+    public void testCondMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        log.info("{}", tg.asFlatPrint());
+    }
+
 }

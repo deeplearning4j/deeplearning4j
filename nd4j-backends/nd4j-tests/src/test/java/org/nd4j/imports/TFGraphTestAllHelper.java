@@ -135,8 +135,11 @@ public class TFGraphTestAllHelper {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
             }
 
-            //val string = graph.asFlatPrint();
-            //log.info("Graph structure: \n{}", string);
+            Nd4j.getExecutioner().enableDebugMode(true);
+            Nd4j.getExecutioner().enableVerboseMode(true);
+
+            val string = graph.asFlatPrint();
+            log.info("Graph structure: \n{}", string);
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
 

@@ -13,12 +13,36 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 public interface MemoryWorkspace extends AutoCloseable {
     String DEFAULT_ID = "DefaultWorkspace";
 
+    enum Type {
+        /**
+         * This mode means you have dummy workspace here. It doesn't provide any functionality.
+         */
+        DUMMY,
+
+        /**
+         * Most regular workspace. It starts somewhere, and ends somewhere. It has limits, aka scope of use.
+         */
+        SCOPED,
+
+        /**
+         * Special workspace mode: circular buffer. Workspace is never closed, and gets reset only once end reached.
+         */
+        CIRCULAR,
+    }
+
     /**
      * This method returns WorkspaceConfiguration bean that was used for given Workspace instance
      *
      * @return
      */
     WorkspaceConfiguration getWorkspaceConfiguration();
+
+    /**
+     * This method returns Type of this workspace
+     *
+     * @return
+     */
+    Type getWorkspaceType();
 
     /**
      * This method returns Id of this workspace

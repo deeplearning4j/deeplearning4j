@@ -1,6 +1,7 @@
 package org.nd4j.linalg.profiling;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.primitives.Pair;
@@ -331,6 +332,7 @@ public class OperationProfilerTests {
     public void testScopePanic3() throws Exception {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
 
+
         INDArray array;
 
         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS121")) {
@@ -343,6 +345,42 @@ public class OperationProfilerTests {
             try (MemoryWorkspace workspaceInner = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS122")) {
                 array.add(1.0);
             }
+        }
+    }
+
+    @Test
+    public void testScopePanicPerf() {
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS121")) {
+            INDArray x = Nd4j.create(1000, 1000).assign(1.0);
+            INDArray y = Nd4j.create(1000, 1000).assign(1.0);
+
+            for (int e = 0; e < 10000; e++) {
+                x.addi(y);
+            }
+
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+
+            val nanosC = System.nanoTime();
+            for (int e = 0; e < 10000; e++) {
+                x.addi(y);
+            }
+            val nanosD = System.nanoTime();
+
+            val avgB = (nanosD - nanosC) / 10000;
+
+
+            Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+
+            val nanosA = System.nanoTime();
+            for (int e = 0; e < 10000; e++) {
+                x.addi(y);
+            }
+            val nanosB = System.nanoTime();
+
+            val avgA = (nanosB - nanosA) / 10000;
+
+
+            log.info("A: {}; B: {}", avgA, avgB);
         }
     }
 

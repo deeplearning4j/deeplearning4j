@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
@@ -426,12 +427,15 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (x != null && x.isAttached()) {
             val ws = x.data().getParentWorkspace();
 
-            if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
-            }
+            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 
-            if (ws.getGenerationId() != x.data().getGenerationId())
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                if (!ws.isScopeActive()) {
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                }
+
+                if (ws.getGenerationId() != x.data().getGenerationId())
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+            }
 
         }
 
@@ -439,24 +443,28 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (y != null && y.isAttached()) {
             val ws = y.data().getParentWorkspace();
 
-            if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
-            }
+            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
+                if (!ws.isScopeActive()) {
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                }
 
-            if (ws.getGenerationId() != y.data().getGenerationId())
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                if (ws.getGenerationId() != y.data().getGenerationId())
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+            }
         }
 
         val z = op.z();
         if (z != null && z.isAttached()) {
             val ws = z.data().getParentWorkspace();
 
-            if (!ws.isScopeActive()) {
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
-            }
+            if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
+                if (!ws.isScopeActive()) {
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                }
 
-            if (ws.getGenerationId() != z.data().getGenerationId())
-                throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                if (ws.getGenerationId() != z.data().getGenerationId())
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+            }
         }
     }
 
