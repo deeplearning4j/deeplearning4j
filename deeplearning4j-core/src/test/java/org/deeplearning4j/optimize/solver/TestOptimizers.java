@@ -1093,5 +1093,10 @@ public class TestOptimizers {
         public void setEpochCount(int epochCount) {
 
         }
+
+        @Override
+        public void migrateInput() {
+
+        }
     }
 }
