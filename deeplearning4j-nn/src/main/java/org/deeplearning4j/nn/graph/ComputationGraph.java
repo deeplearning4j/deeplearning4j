@@ -1894,6 +1894,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
+        boolean wsExternalActive = false;
+        if (wsm == WorkspaceMode.SINGLE) {
+            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
+        }
+
         //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
@@ -1942,11 +1947,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if(wsm == WorkspaceMode.SEPARATE) {
                         epsilons[x] = epsilons[x].leverageOrDetach(workspaceExternal);
                     } else if(wsm == WorkspaceMode.SINGLE){
-                        //TODO we can't simply leverage to workspaceExternal here:
-                        //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
-                        //and hence we aren't actually moving it out of the current workspace. Consequently, the
-                        //epsilons will be invalidated at the end of the current vertex for loop
-                        epsilons[x] = epsilons[x].detach();
+                        if(wsExternalActive){
+                            //Standard fit() training case: workspace external is active (beyond just the current for loop)
+                            // hence it's safe to leverage here
+                            epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
+                        } else {
+                            //"External errors" backprop case: workspace external is already (and only) active in the
+                            // current loop, and hence the epsilons will be invalidated at the end of the current vertex
+                            // for loop
+                            epsilons[x] = epsilons[x].detach();
+                        }
                     }
                 }
 
@@ -1961,14 +1971,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageOrDetach(workspaceExternal);
-                            if (wsm == WorkspaceMode.NONE) {
-                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
-                            } else if(wsm == WorkspaceMode.SINGLE){
-                                //TODO we can't simply leverage or scopeBorrowed to workspaceExternal here:
+                            if(wsm == WorkspaceMode.SINGLE && !wsExternalActive){
+                                //External errors case - we can't simply leverage or scopeBorrowed to workspaceExternal here:
                                 //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
                                 //and hence we aren't actually moving it out of the current workspace. Consequently, the
                                 //epsilons will be invalidated at the end of the current vertex for loop
                                 try(MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
+                                }
+                            } else {
+                                //Standard training case
+                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            }
+
+                            if (wsm == WorkspaceMode.NONE ) {
+                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            } else if(wsm == WorkspaceMode.SINGLE && !wsExternalActive){
+                                //"External errors" backprop case: workspace external is already (and only) active in the
+                                // current loop, and hence the epsilons will be invalidated at the end of the current vertex
+                                // for loop. Leveraging or scoping to workspaceExternal in this case isn't sufficient
+                                try (MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                     gv.setEpsilon(currentEps.add(epsilons[j++]));
                                 }
                             } else {

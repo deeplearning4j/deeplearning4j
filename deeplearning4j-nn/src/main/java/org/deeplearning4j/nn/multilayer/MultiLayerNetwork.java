@@ -1384,19 +1384,25 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         currPair.setSecond(currPair.getSecond().leverageOrDetach(workspaceExternal));
 
+        WorkspaceMode wsm = layerWiseConfigurations.getTrainingWorkspaceMode();
         MemoryWorkspace workspace;
-        switch (layerWiseConfigurations.getTrainingWorkspaceMode()){
+        switch (wsm){
             case NONE:
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
                 break;
             case SEPARATE:
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward,workspaceFeedForward);
                 break;
             default:
-                throw new RuntimeException("Unknown workspace mode: " + layerWiseConfigurations.getTrainingWorkspaceMode());
+                throw new RuntimeException("Unknown workspace mode: " + wsm);
+        }
+
+        boolean wsExternalActive = false;
+        if (wsm == WorkspaceMode.SINGLE) {
+            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
         }
 
 
@@ -1428,11 +1434,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 if (currPair.getSecond() != null) {
                     //May be null for embedding layer, etc
-                    if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE){
-                        //For single mode, we can't simply leverage to workspaceExternal, as this will currently
-                        // be active. Consequently, the leverage would be a no-op, and hence the epsilons array
-                        //would be invalidated at the end of the current for loop iteration
-                        currPair.setSecond(currPair.getSecond().detach());
+                    if(wsm == WorkspaceMode.SINGLE){
+                        if(wsExternalActive){
+                            //Standard fit() training case: workspace external is active (beyond just the current for loop)
+                            // hence it's safe to leverage here (technically no-op)
+                            currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
+                        } else {
+                            //"External errors" backprop case: workspace external is already (and only) active in the
+                            // current loop, and hence the epsilons will be invalidated at the end of the current layer
+                            // for loop
+                            currPair.setSecond(currPair.getSecond().detach());
+                        }
                     } else {
                         currPair.setSecond(currPair.getSecond().leverageOrDetach(workspaceExternal));
                     }
