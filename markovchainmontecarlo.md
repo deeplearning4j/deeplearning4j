@@ -114,15 +114,23 @@ Remember, the output layer of a classifier, for example, might be image labels l
 
 ## MCMC and Deep Reinforcement Learning
 
-MCMC can be used in the context of deep reinforcement learning to sample from the array of possible moves available in any given state. This section is a work in progress. 
+MCMC can be used in the context of deep reinforcement learning to sample from the array of possible moves available in any given state. For more information, please see our page on [Deep Reinforcement Learning](./deepreinforcementlearning).
 
 ## Further Deeplearning4j Tutorials
 
-* [Regression & Neural Networks](./linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Regression & Neural Networks](./logistic-regression.html)
+* [Word2vec: Neural Embeddings for NLP](./word2vec.html)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
-* [Reinforcement Learning](./reinforcementlearning.html)
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Convolutional Networks](./convolutionalnets.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
 
 ## Further Reading on Markov Chain Monte Carlo 
 
