@@ -34,7 +34,6 @@ import org.datavec.spark.storage.functions.RecordSavePrepPairFunction;
 import org.datavec.spark.storage.functions.SequenceRecordLoadPairFunction;
 import org.datavec.spark.storage.functions.SequenceRecordSavePrepPairFunction;
 
-import  edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.List;
 
 /**
@@ -90,7 +89,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFileSequences(String, JavaRDD)
      * @see #saveMapFile(String, JavaRDD)
      */
-    public static void saveSequenceFile(String path, JavaRDD<List<Writable>> rdd, @Nullable Integer maxOutputFiles) {
+    public static void saveSequenceFile(String path, JavaRDD<List<Writable>> rdd,  Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
@@ -143,7 +142,7 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      */
     public static void saveSequenceFileSequences(String path, JavaRDD<List<List<Writable>>> rdd,
-                    @Nullable Integer maxOutputFiles) {
+                     Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
@@ -212,7 +211,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, int interval,
-                    @Nullable Integer maxOutputFiles) {
+                     Integer maxOutputFiles) {
         Configuration c = new Configuration();
         c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
         saveMapFile(path, rdd, c, maxOutputFiles);
@@ -237,7 +236,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, Configuration c,
-                    @Nullable Integer maxOutputFiles) {
+                     Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
@@ -309,7 +308,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, int interval,
-                    @Nullable Integer maxOutputFiles) {
+                     Integer maxOutputFiles) {
         Configuration c = new Configuration();
         c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
         saveMapFileSequences(path, rdd, c, maxOutputFiles);
@@ -332,7 +331,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, Configuration c,
-                    @Nullable Integer maxOutputFiles) {
+                     Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
