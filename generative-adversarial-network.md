@@ -243,6 +243,9 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 
 * [StackGAN: Text to Photo-realistic Image Synthesis with Stacked Generative Adversarial Networks] [[Paper]](https://arxiv.org/pdf/1612.03242v1.pdf)[[Code]](https://github.com/hanzhanggit/StackGAN)
 
+* [MaskGAN: Better Text Generation via Filling in the ______](https://arxiv.org/abs/1801.07736) Goodfellow et al
+
+
 ### Video Prediction & Generation
 
 * [Deep multi-scale video prediction beyond mean square error] [[Paper]](https://arxiv.org/abs/1511.05440)[[Code]](https://github.com/dyelax/Adversarial_Video_Generation)(Yann LeCun's paper)
