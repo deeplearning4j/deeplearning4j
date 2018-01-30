@@ -12,6 +12,8 @@
 
 package org.nd4j.context;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -22,6 +24,7 @@ import java.util.Properties;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Nd4jContext implements Serializable {
 
     private Properties conf;
@@ -43,9 +46,16 @@ public class Nd4jContext implements Serializable {
      */
     public void updateProperties(InputStream inputStream) {
         try {
-            conf.load(inputStream);
+            //Load only the properties that are not overridden by the system properties, which take precedence
+            Properties temp = new Properties();
+            temp.load(inputStream);
+            for(String s : temp.stringPropertyNames()){
+                if(!conf.containsKey(s)){
+                    conf.setProperty(s, temp.getProperty(s));
+                }
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn("Error loading system properties from input stream", e);
         }
     }
 
