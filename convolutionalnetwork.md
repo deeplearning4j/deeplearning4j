@@ -24,7 +24,7 @@ Convolutional nets overlap with text analysis via optical character recognition 
 
 The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
 
-Deeplearning4j wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world.
+Deeplearning4j wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy to Android here](./android).
 
 <p align="center">
 <a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
@@ -158,6 +158,8 @@ As more and more information is lost, the patterns processed by the convolutiona
 Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=43:87"></script>
+
+All Deeplearning4j [examples of convolutional networks are available here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution).
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
