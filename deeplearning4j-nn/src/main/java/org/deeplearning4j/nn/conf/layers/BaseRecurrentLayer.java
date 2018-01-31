@@ -24,6 +24,8 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
+        this.weightInitRecurrent = builder.weightInitRecurrent;
+        this.distRecurrent = builder.distRecurrent;
     }
 
     @Override

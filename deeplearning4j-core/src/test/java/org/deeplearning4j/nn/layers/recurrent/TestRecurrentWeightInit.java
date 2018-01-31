@@ -23,23 +23,39 @@ public class TestRecurrentWeightInit {
                         .weightInit(new UniformDistribution(0, 1))
                         .list();
 
-                switch (i) {
-                    case 0:
-                        b.layer(new LSTM.Builder().nIn(10).nOut(10)
-                                .weightInitRecurrent(new UniformDistribution(2,3))
-                                .build());
-                        break;
-                    case 1:
-                        b.layer(new GravesLSTM.Builder().nIn(10).nOut(10)
-                                .weightInitRecurrent(new UniformDistribution(2,3))
-                                .build());
-                        break;
-                    case 2:
-                        b.layer(new SimpleRnn.Builder().nIn(10).nOut(10)
-                                .weightInitRecurrent(new UniformDistribution(2,3)).build());
-                        break;
-                    default:
-                        throw new RuntimeException();
+                if(rwInit) {
+                    switch (i) {
+                        case 0:
+                            b.layer(new LSTM.Builder().nIn(10).nOut(10)
+                                    .weightInitRecurrent(new UniformDistribution(2, 3))
+                                    .build());
+                            break;
+                        case 1:
+                            b.layer(new GravesLSTM.Builder().nIn(10).nOut(10)
+                                    .weightInitRecurrent(new UniformDistribution(2, 3))
+                                    .build());
+                            break;
+                        case 2:
+                            b.layer(new SimpleRnn.Builder().nIn(10).nOut(10)
+                                    .weightInitRecurrent(new UniformDistribution(2, 3)).build());
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
+                } else {
+                    switch (i) {
+                        case 0:
+                            b.layer(new LSTM.Builder().nIn(10).nOut(10).build());
+                            break;
+                        case 1:
+                            b.layer(new GravesLSTM.Builder().nIn(10).nOut(10).build());
+                            break;
+                        case 2:
+                            b.layer(new SimpleRnn.Builder().nIn(10).nOut(10).build());
+                            break;
+                        default:
+                            throw new RuntimeException();
+                    }
                 }
 
                 MultiLayerNetwork net = new MultiLayerNetwork(b.build());
@@ -49,11 +65,11 @@ public class TestRecurrentWeightInit {
                 double min = rw.minNumber().doubleValue();
                 double max = rw.maxNumber().doubleValue();
                 if(rwInit){
-                    assertTrue(String.valueOf(min), min >= 0.0);
-                    assertTrue(String.valueOf(max), max <= 1.0);
-                } else {
                     assertTrue(String.valueOf(min), min >= 2.0);
                     assertTrue(String.valueOf(max), max <= 3.0);
+                } else {
+                    assertTrue(String.valueOf(min), min >= 0.0);
+                    assertTrue(String.valueOf(max), max <= 1.0);
                 }
             }
         }
