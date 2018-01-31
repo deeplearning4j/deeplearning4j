@@ -16,7 +16,7 @@ Contents
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#reading">Further Reading</a>
 
-Neural networks are responsible for recent breakthroughs in problems like computer vision, machine translation and time series prediction – but they can also combine with other algorithms like reinforcement learning to create something like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
+While neural networks are responsible for recent breakthroughs in problems like computer vision, machine translation and time series prediction – they can also combine with reinforcement learning algorithms to create something astounding like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
 
 Reinforcement learning refers to goal-oriented algorithms, which learn how to attain a complex objective (goal) or maximize along a particular dimension over many steps; for example, maximize the points won in a game over many moves.  They can start from a blank slate, and under the right conditions they achieve superhuman performance. Like a child incentivized by spankings and candy, these algorithms are rewarded when they make the right decisions and penalized when they make the wrong ones -- this is reinforcement.
 
