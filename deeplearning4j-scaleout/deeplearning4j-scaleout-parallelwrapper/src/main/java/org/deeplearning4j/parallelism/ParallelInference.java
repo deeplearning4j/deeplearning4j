@@ -337,8 +337,7 @@ public class ParallelInference {
                             INDArray output = null;
                             try {
                                 output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
-                            }
-                            catch (Exception e) {
+                            } catch (Exception e) {
                                 // do nothing
                             }
                             request.setOutput(output);
