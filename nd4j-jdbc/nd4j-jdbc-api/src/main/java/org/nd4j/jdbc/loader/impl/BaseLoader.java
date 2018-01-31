@@ -25,12 +25,13 @@ import org.nd4j.jdbc.loader.api.JDBCNDArrayIO;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.serde.binary.BinarySerde;
 
 import javax.sql.DataSource;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.sql.*;
 
 /**
@@ -45,7 +46,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     protected DataSource dataSource;
 
     protected BaseLoader(DataSource dataSource, String jdbcUrl, String tableName, String idColumnName,
-                    String columnName) throws Exception {
+                         String columnName) throws Exception {
         this.dataSource = dataSource;
         this.jdbcUrl = jdbcUrl;
         this.tableName = tableName;
@@ -106,16 +107,14 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
      * @return the converted ndarray
      */
     @Override
-    public Blob convert(INDArray toConvert) throws SQLException, IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-
-        Nd4j.write(toConvert, dos);
-
-        byte[] bytes = bos.toByteArray();
+    public Blob convert(INDArray toConvert) throws SQLException {
+        ByteBuffer byteBuffer = BinarySerde.toByteBuffer(toConvert);
+        byteBuffer.rewind();
+        byte[] arr = new byte[byteBuffer.capacity()];
+        byteBuffer.get(arr);
         Connection c = dataSource.getConnection();
         Blob b = c.createBlob();
-        b.setBytes(1, bytes);
+        b.setBytes(1, arr);
         c.close();
         return b;
     }
@@ -127,11 +126,20 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
      * @return the loaded ndarray
      */
     @Override
-    public INDArray load(Blob blob) throws SQLException, IOException {
+    public INDArray load(Blob blob) throws SQLException {
         if (blob == null)
             return null;
-        DataInputStream dis = new DataInputStream(blob.getBinaryStream());
-        return Nd4j.read(dis);
+        try(InputStream is = blob.getBinaryStream()) {
+            ByteBuffer direct = ByteBuffer.allocateDirect((int) blob.length());
+            ReadableByteChannel readableByteChannel = Channels.newChannel(is);
+            readableByteChannel.read(direct);
+            direct.rewind();
+            return BinarySerde.toArray(direct);
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
+
+
     }
 
     /**
@@ -175,8 +183,9 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         if (save instanceof IComplexNDArray) {
             IComplexNDArray c2 = (IComplexNDArray) save;
             Nd4j.writeComplex(c2, dos);
-        } else
-            Nd4j.write(save, dos);
+        } else {
+            BinarySerde.writeArrayToOutputStream(save,bos);
+        }
 
         byte[] bytes = bos.toByteArray();
 
@@ -211,13 +220,17 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
             return null;
         } else {
             Blob first = r.getBlob(2);
-            c.close();
             r.close();
             preparedStatement.close();
             return first;
         }
 
 
+    }
+
+    @Override
+    public INDArray loadArrayForId(String id) throws SQLException {
+        return load(loadForID(id));
     }
 
     /**

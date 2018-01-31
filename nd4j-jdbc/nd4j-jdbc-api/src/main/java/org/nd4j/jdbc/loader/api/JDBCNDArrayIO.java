@@ -35,6 +35,13 @@ public interface JDBCNDArrayIO {
 
 
     /**
+     * Loads an array for the given id.
+     * @param id
+     * @return
+     */
+    INDArray loadArrayForId(String id) throws SQLException;
+
+    /**
      * Convert an ndarray to a blob
      *
      * @param toConvert the complex ndarray to convert

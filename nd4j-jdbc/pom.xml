@@ -34,6 +34,7 @@
     <modules>
         <module>nd4j-jdbc-api</module>
         <module>nd4j-jdbc-mysql</module>
+        <module>nd4j-jdbc-hsql</module>
     </modules>
     <build>
         <plugins>

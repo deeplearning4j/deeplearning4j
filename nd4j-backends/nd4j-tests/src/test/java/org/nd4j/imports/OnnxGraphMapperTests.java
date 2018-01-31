@@ -35,9 +35,8 @@ public class OnnxGraphMapperTests {
     }
 
     @Test
-    public void testLoadVgg16() throws Exception {
-        val loadedFile = new ClassPathResource("onnx_graphs/vgg16/model.pb").getInputStream();
-        //   OnnxGraphMapper.getInstance().dumpBinaryProtoAsText(loadedFile,new File("vgg16.txt"));
+    public void test1dCnn() throws Exception {
+        val loadedFile = new ClassPathResource("onnx_graphs/sm_cnn.onnx").getInputStream();
         val mapped = OnnxGraphMapper.getInstance().importGraph(loadedFile);
         System.out.println(mapped.variables());
     }

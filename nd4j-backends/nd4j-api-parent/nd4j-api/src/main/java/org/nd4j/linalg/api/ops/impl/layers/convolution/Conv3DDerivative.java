@@ -31,12 +31,22 @@ public class Conv3DDerivative extends Conv3D {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflwo op name found for conv3d derivative");
+        throw new NoOpNameFoundException("No tensorflow op name found for conv3d derivative");
     }
 
     @Override
     public String[] tensorflowNames() {
-        throw new NoOpNameFoundException("No tensorflwo op name found for conv3d derivative");
+        throw new NoOpNameFoundException("No tensorflow op name found for conv3d derivative");
+    }
+
+    @Override
+    public String onnxName() {
+        throw new NoOpNameFoundException("No onnx op name found for conv3d derivative");
+    }
+
+    @Override
+    public String[] onnxNames() {
+        throw new NoOpNameFoundException("No onnx op name found for conv3d derivative");
     }
 
     @Override
