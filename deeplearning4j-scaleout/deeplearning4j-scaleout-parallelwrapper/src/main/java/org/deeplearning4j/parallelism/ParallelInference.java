@@ -334,7 +334,13 @@ public class ParallelInference {
                             INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
                             request.setOutput(output);
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
-                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
+                            INDArray output = null;
+                            try {
+                                output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
+                            }
+                            catch (Exception e) {
+                                // do nothing
+                            }
                             request.setOutput(output);
                         }
 
