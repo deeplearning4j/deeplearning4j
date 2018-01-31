@@ -439,25 +439,47 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        int totalEntries = numFeatureArrays();
-        if (totalEntries != numLabelsArrays()) {
-            return "";
+        int nfMask = 0;
+        int nlMask = 0;
+        if(featuresMaskArrays != null){
+            for(INDArray i : featuresMaskArrays){
+                if(i != null){
+                    nfMask++;
+                }
+            }
         }
-        for (int i = 0; i < totalEntries; i++) {
-            builder.append("\n=========== ENTRY " + i + " =================\n");
-            builder.append("\n=== INPUT ===\n").append(getFeatures(i).toString().replaceAll(";", "\n"))
-                            .append("\n=== OUTPUT ===\n").append(getLabels(i).toString().replaceAll(";", "\n"));
+        if(labelsMaskArrays != null){
+            for(INDArray i : labelsMaskArrays){
+                if(i != null){
+                    nlMask++;
+                }
+            }
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("MultiDataSet: ").append(numFeatureArrays()).append(" input arrays, ")
+                .append(numLabelsArrays()).append(" label arrays, ")
+                .append(nfMask).append(" input masks, ")
+                .append(nlMask).append(" label masks");
+
+
+        for (int i = 0; i < numFeatureArrays(); i++) {
+            sb.append("\n=== INPUT ").append(i).append(" ===\n").append(getFeatures(i).toString().replaceAll(";", "\n"));
             if (getFeaturesMaskArray(i) != null) {
-                builder.append("\n=== INPUT MASK ===\n")
-                                .append(getFeaturesMaskArray(i).toString().replaceAll(";", "\n"));
-            }
-            if (getLabelsMaskArray(i) != null) {
-                builder.append("\n=== OUTPUT MASK ===\n")
-                                .append(getLabelsMaskArray(i).toString().replaceAll(";", "\n"));
+                sb.append("\n--- INPUT MASK ---\n")
+                        .append(getFeaturesMaskArray(i).toString().replaceAll(";", "\n"));
             }
         }
-        return builder.toString();
+        for( int i=0; i<numLabelsArrays(); i++){
+            sb.append("\n=== LABEL ").append(i).append(" ===\n")
+                    .append(getLabels(i).toString().replaceAll(";", "\n"));
+
+            if (getLabelsMaskArray(i) != null) {
+                sb.append("\n--- LABEL MASK ---\n")
+                        .append(getLabelsMaskArray(i).toString().replaceAll(";", "\n"));
+            }
+        }
+        return sb.toString();
     }
 
     @Override
