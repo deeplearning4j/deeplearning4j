@@ -1160,7 +1160,7 @@ public class GradientCheckTestsComputationGraph {
 
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+                            new INDArray[] {labels1, labels2}, new INDArray[] {inMask1, inMask2}, null);
 
             assertTrue(testName, gradOK);
         }
