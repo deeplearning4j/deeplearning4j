@@ -63,8 +63,7 @@ Also, the size of real images is way bigger.
 
 To overcome these problems, we can analyze only a small part of the image and try to figure out if that part has a car. More precisely, we can scan the image with a sliding rectangle window and each time, let our model predict if there is a car in it. Let's see an example:
 
-![Alt text](./img/eigen_matrix.png)
-car at dawn - moving tiles
+<iframe src="https://i1.wp.com/ramok.tech/wp-content/uploads/2018/01/2018-01-13_14h50_00.gif?resize=840%2C507" width="100%" height="700px;" style="border:none;"></iframe>
 
 To summarize, we use a normal convolution neural network (VGG-16) to train the model with cropped images of different sizes and then use rectangles to scan the images for the objects (cars). As we can see, by using different sizes of rectangles, we can figure out different shapes and positions of cars.
 
