@@ -1444,6 +1444,240 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
+    
+    NDArray<float> x('c', {3, 4, 2}, {10, 20, 11, 21, 12, 22, 13, 23, 
+                                      14, 24, 15, 25, 16, 26, 17, 27,
+                                      18, 28, 19, 29, 20, 30, 21, 31});
+    
+    NDArray<float> y({1.f, 1.f, 1.f, 0.f, 0.f, 0.f, 2.f, 2.f, 2.f});
+    NDArray<float> exp('c', {9, 4, 2}, {14, 24, 15, 25, 16, 26, 17, 27, 14, 24, 15, 25,
+                                        16, 26, 17, 27, 14, 24, 15, 25, 16, 26, 17, 27,
+                                        10, 20, 11, 21, 12, 22, 13, 23, 10, 20, 11, 21,
+                                        12, 22, 13, 23, 10, 20, 11, 21, 12, 22, 13, 23,
+                                        18, 28, 19, 29, 20, 30, 21, 31, 18, 28, 19, 29,
+                                        20, 30, 21, 31, 18, 28, 19, 29, 20, 30, 21, 31});
+
+    y.printShapeInfo("y shape");
+    y.printIndexedBuffer("y buffer");
+
+    nd4j::ops::embedding_lookup<float> op;
+    ResultSet<float>* result = op.execute({&x, &y}, {}, {0});
+    NDArray<float>* output = result->at(0);    
+    x.printShapeInfo("Input");
+    output->printShapeInfo("Output");
+    exp.printShapeInfo("Expected");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    //output->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+    
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
+    
+    NDArray<float> x('c', {3, 4, 2}, {10, 20, 30, 40, 50, 60, 
+                                      70, 80, 90, 10, 11, 12, 
+                                      13, 14, 15, 16, 17, 18, 
+                                      19, 20, 21, 22, 23, 24});
+                    //1,   0,   1,   0,   1,   0
+    NDArray<float> y({1.f, 0.f, 1.f, 0.f, 1.f, 0.f});
+    NDArray<float> exp('c', {6, 4, 2}, {90, 10, 11, 12, 13, 14,
+                                        15, 16, 10, 20, 30, 40,
+                                        50, 60, 70, 80, 90, 10,
+                                        11, 12, 13, 14, 15, 16,
+                                        10, 20, 30, 40, 50, 60,
+                                        70, 80, 90, 10, 11, 12,
+                                        13, 14, 15, 16, 10, 20,
+                                        30, 40, 50, 60, 70, 80});
+
+    y.printShapeInfo("y shape");
+    y.printIndexedBuffer("y buffer");
+
+    nd4j::ops::embedding_lookup<float> op;
+    ResultSet<float>* result = op.execute({&x, &y}, {}, {0});
+    NDArray<float>* output = result->at(0);    
+    x.printShapeInfo("Input");
+    output->printShapeInfo("Output");
+    exp.printShapeInfo("Expected");
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    output->printIndexedBuffer("Output");
+    exp.printIndexedBuffer("Expect");
+    
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
+    
+    NDArray<float> x('c', {3, 4, 2}, {10, 20, 11, 21, 12, 22, 
+                                      13, 23, 14, 24, 15, 25, 16, 26, 17, 27,
+                                      18, 28, 19, 29, 20, 30, 21, 31});
+    
+    NDArray<float> y({0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
+                      2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 
+                      1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f 
+                    }
+    );
+    int numPartition = 3;
+    std::vector<NDArray<float>> exp( { NDArray<float>('c', {6}, {10, 20, 11, 21, 12, 22}), 
+                                      NDArray<float>('c', {8}, {18, 28, 19, 29, 20, 30, 21, 31}),
+                                      NDArray<float>('c', {10}, {13, 23, 14, 24, 15, 25, 16, 26, 17, 27})});
+
+    nd4j::ops::dynamic_partition<float> op;
+    ResultSet<float>* result = op.execute({&x, &y}, {}, {numPartition});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(result->size(), numPartition); // result has the same size as given param 4
+
+    for (int e = 0; e < result->size(); e++) {
+        NDArray<float>* output = result->at(e);
+        output->printShapeInfo("Output shape> ");
+        output->printIndexedBuffer("Output data> ");
+        ASSERT_TRUE(exp[e].isSameShape(output));
+        ASSERT_TRUE(exp[e].equalsTo(output));
+    }
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
+    
+    NDArray<float> x('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
+    NDArray<float> y('c', {2, 4}, {1, 2, 1, 2, 1, 2, 3, 0});
+
+    std::vector<NDArray<float>> exp( {NDArray<float>({-2.2f}),
+                                      NDArray<float>('c', {3}, {0.1f, 5.2f, -1.f}),
+                                      NDArray<float>('c', {3}, {-1.f, 4.3f, 7.4f}),
+                                      NDArray<float>({0.0f})
+                                     });
+
+    nd4j::ops::dynamic_partition<float> op;
+    int numPartition = 4;
+    ResultSet<float>* result = op.execute({&x, &y}, {}, {numPartition});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(result->size(), numPartition); // result has the same size as given param 4
+
+    for (int e = 0; e < result->size(); e++) {
+        NDArray<float>* output = result->at(e);
+        output->printShapeInfo("Output shape> ");
+        exp[e].printShapeInfo("Expected shape> ");
+        output->printIndexedBuffer("Output data> ");
+
+        ASSERT_TRUE(exp[e].isSameShape(output));
+        ASSERT_TRUE(exp[e].equalsTo(output));
+    }
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
+    
+    NDArray<float> x('c', {2, 4}, {0.1f, -1.f, 5.2f, 4.3f, -1.f, 7.4f, 0.0f, -2.2f});
+    NDArray<float> y('c', {2, 4}, {0, 1, 0, 2, 0, 2, 3, 0});
+
+    std::vector<NDArray<float>> exp( {NDArray<float>({0.1f, 5.2f, -1.f, -2.2f}),
+                                      NDArray<float>({-1.f}),
+                                      NDArray<float>({4.3f, 7.4f}),
+                                      NDArray<float>({0.0f})
+                                     });
+
+    nd4j::ops::dynamic_partition<float> op;
+    int numPartition = 4;
+    ResultSet<float>* result = op.execute({&x, &y}, {}, {numPartition});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(result->size(), numPartition); // result has the same size as given param 4
+
+    for (int e = 0; e < result->size(); e++) {
+        NDArray<float>* output = result->at(e);
+        if (output)
+        {
+            output->printShapeInfo("Output shape> ");
+            exp[e].printShapeInfo("Expected shape> ");
+            output->printIndexedBuffer("Output data> ");
+        
+            ASSERT_TRUE(exp[e].isSameShape(output));
+            ASSERT_TRUE(exp[e].equalsTo(output));
+        }
+        else
+        {
+            ASSERT_TRUE(exp[e].lengthOf() == 0);
+        }
+    }
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
+    
+    NDArray<float> x1({1.f, 3.f, 5.f, 0.f});
+    NDArray<float> x2({2.f, 4.f});
+    NDArray<float> y2({-1.f, -1.f});
+    NDArray<float> y1({0.1f, 5.2f, 4.3f, 7.4f});
+
+    
+    NDArray<float> exp({7.4f, 0.1f, -1.f, 5.2f, -1.f, 4.3f});
+
+    nd4j::ops::dynamic_stitch<float> op;
+    ResultSet<float>* result = op.execute({&x1, &x2, &y1, &y2}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    output->printShapeInfo("Output shape> ");
+    exp.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    exp.printIndexedBuffer("Expected res>");    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, DynamicStitch_2) {
+    
+    NDArray<float> x1({1.f, 3.f});
+    NDArray<float> x2({5.f, 0.f, 2.f, 4.f});
+    NDArray<float> y1({-1.f, -1.f});
+    NDArray<float> y2({0.1f, 5.2f, 4.3f, 7.4f});
+
+    
+    NDArray<float> exp({5.2f, -1.f, 4.3f, -1.f, 7.4f, 0.1f});
+
+    nd4j::ops::dynamic_stitch<float> op;
+    ResultSet<float>* result = op.execute({&x1, &x2, &y1, &y2}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    output->printShapeInfo("Output shape> ");
+    exp.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    exp.printIndexedBuffer("Expected res>");    
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, fusedBatchNorm_test1) {
     

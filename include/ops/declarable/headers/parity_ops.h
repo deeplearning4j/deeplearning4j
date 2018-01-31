@@ -439,5 +439,38 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(moments, 1, 2, false, 0, -2);
 
+        /**
+         * embedding_lookup - search for submatrices in given matrix and retunts them
+         * accordingly to index array given.
+         */
+        DECLARE_CUSTOM_OP(embedding_lookup, 2, 1, false, 0, 1);
+
+        /**
+         * dynamic_partition - partition a input tensor onto num_partitions 
+         * accordingly to index array given.
+         *
+         * the first param - NDArray to be partitioned.
+         * the second param - index array
+         * the third param (integer param) - num or partitions.
+         * 
+         * returns a num of NDArrays as output
+         */
+
+        DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
+
+        /**
+         * dynamic_stitch - merge partitions from the second param a input tensor 
+         * into a single tensor accordingly to index array given.
+         *
+         * the first param - index array
+         * the second params - tensors to be merged
+         * 
+         * returns a num of NDArrays as output
+         * 
+         * the operation is inversion od dynamic_partition
+         */
+        DECLARE_CUSTOM_OP(dynamic_stitch, 2, 1, false, 0, 0);
+
+
     }
 }
