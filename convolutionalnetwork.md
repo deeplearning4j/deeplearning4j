@@ -16,13 +16,13 @@ Contents
 * <a href="#code">DL4J Code Sample</a>
 * <a href="#resource">Other Resources</a>
 
-## <a name="intro">Convolutional Net Introduction</a>
+## <a name="intro">Introduction to Convolutional Networks</a>
 
-Convolutional nets can be used to classify images (name what they see), cluster them by similarity (photo search), and perform object recognition within scenes. They can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. 
+Convolutional networks are deep artificial neural networks that can be used to classify images (name what they see), cluster them by similarity (photo search), and perform object recognition within scenes. They are algorithms that can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. 
 
-Convolutional nets overlap with text analysis via optical character recognition (OCR), where the images are symbols to be transcribed, and they can also be applied to sound when it is represented visually.
+Convolutional networks overlap with text analysis via optical character recognition (OCR), where the images are symbols to be transcribed, and they can also be applied to sound when it is represented visually.
 
-The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, and treatments for the visually impaired. 
+The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to the efficacy of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, security, medical diagnoses, and treatments for the visually impaired. 
 
 Deeplearning4j wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy to Android here](./android).
 
