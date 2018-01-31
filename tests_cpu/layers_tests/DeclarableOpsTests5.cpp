@@ -1835,3 +1835,63 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
 
     delete results;
 }
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
+
+    NDArray<float> labels('c', {1, 3}, {1, 2, 4});
+    NDArray<float> predictions('c', {1, 3}, {2, 2, 4});
+    NDArray<float> expected('c', {5, 5}, {0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1});
+
+    nd4j::ops::confusion_matrix<float> op;
+    ResultSet<float>* results = op.execute({&labels, &predictions}, {}, {});
+    NDArray<float>* output = results->at(0);
+    output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
+
+    NDArray<float> labels('c', {1, 2}, {1, 2});
+    NDArray<float> predictions('c', {1, 2}, {0, 2});
+    NDArray<float> expected('c', {3, 3}, {0, 0, 0, 1, 0, 0, 0, 0, 1});
+
+    nd4j::ops::confusion_matrix<float> op;
+    ResultSet<float> *results = op.execute({&labels, &predictions}, {}, {3});
+    NDArray<float> *output = results->at(0);
+    output->printIndexedBuffer();
+
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
+
+    NDArray<float> labels('c', {1, 2}, {1, 2});
+    NDArray<float> predictions('c', {1, 2}, {0, 2});
+    NDArray<float> weights('c', {1, 2}, {100, 200});
+    NDArray<float> expected('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
+
+    nd4j::ops::confusion_matrix<float> op;
+    ResultSet<float> *results = op.execute({&labels, &predictions, &weights}, {}, {3});
+    NDArray<float> *output = results->at(0);
+    output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
