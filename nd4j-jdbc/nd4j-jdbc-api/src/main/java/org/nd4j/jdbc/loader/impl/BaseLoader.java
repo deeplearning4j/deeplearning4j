@@ -29,6 +29,7 @@ import org.nd4j.serde.binary.BinarySerde;
 
 import javax.sql.DataSource;
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
@@ -96,7 +97,6 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         Connection c = dataSource.getConnection();
         Blob b = c.createBlob();
         b.setBytes(1, bytes);
-        c.close();
         return b;
     }
 
@@ -109,13 +109,13 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
     @Override
     public Blob convert(INDArray toConvert) throws SQLException {
         ByteBuffer byteBuffer = BinarySerde.toByteBuffer(toConvert);
-        byteBuffer.rewind();
+        Buffer buffer = (Buffer) byteBuffer;
+        buffer.rewind();
         byte[] arr = new byte[byteBuffer.capacity()];
         byteBuffer.get(arr);
         Connection c = dataSource.getConnection();
         Blob b = c.createBlob();
         b.setBytes(1, arr);
-        c.close();
         return b;
     }
 
@@ -133,7 +133,8 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
             ByteBuffer direct = ByteBuffer.allocateDirect((int) blob.length());
             ReadableByteChannel readableByteChannel = Channels.newChannel(is);
             readableByteChannel.read(direct);
-            direct.rewind();
+            Buffer byteBuffer = (Buffer) direct;
+            byteBuffer.rewind();
             return BinarySerde.toArray(direct);
         } catch (Exception e) {
            throw new RuntimeException(e);
@@ -193,8 +194,6 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         preparedStatement.setString(1, id);
         preparedStatement.setBytes(2, bytes);
         preparedStatement.executeUpdate();
-        preparedStatement.close();
-        c.close();
 
 
     }
@@ -213,15 +212,9 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         preparedStatement.setString(1, id);
         ResultSet r = preparedStatement.executeQuery();
         if (r.wasNull() || !r.next()) {
-            c.close();
-            r.close();
-            preparedStatement.close();
-
             return null;
         } else {
             Blob first = r.getBlob(2);
-            r.close();
-            preparedStatement.close();
             return first;
         }
 
@@ -244,7 +237,7 @@ public abstract class BaseLoader implements JDBCNDArrayIO {
         PreparedStatement p = c.prepareStatement(deleteStatement());
         p.setString(1, id);
         p.execute();
-        p.close();
+
 
     }
 }
