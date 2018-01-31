@@ -304,7 +304,7 @@ namespace nd4j {
                 throw "A columns != B length";
 
             if (result == nullptr)
-                result = new NDArray<T>(A->rows(), 1, 'f');
+                result = new NDArray<T>('f', {A->rows(), 1});
 
             // TODO: strides!!!
             if (BlasHelper::getInstance()->hasGEMV<T>()) {
@@ -329,7 +329,7 @@ namespace nd4j {
                 throw "A length != B length";
 
             if (result == nullptr)
-                result = new NDArray<T>(1,1, 'c');
+                result = new NDArray<T>('c', {1, 1});
 
             result->putScalar(0, nd4j::math::nd4j_dot(A->getBuffer(), B->getBuffer(), A->lengthOf()));
         } else { //if ((A->isMatrix() && B->isMatrix()) || (A->isVector() && B->isMatrix()) || (A->isColumnVector() && B->isRowVector())) {
@@ -338,7 +338,7 @@ namespace nd4j {
             
             if (result == nullptr) {
                 nd4j_verbose("Creating new array: [%i x %i]\n", A->rows(), B->columns());
-                result = new NDArray<T>(A->rows(), B->columns(), 'f');
+                result = new NDArray<T>('f', {A->rows(), B->columns()});
             }
 
 
@@ -592,12 +592,12 @@ NDArray<T>* NDArrayFactory<T>::simpleMMul(const NDArray<T>* a, const NDArray<T>*
 
     NDArray<T>* dot = c;
     if(c == nullptr) 
-        c = new NDArray<T>(a->shapeOf()[0], b->shapeOf()[1], 'f', a->getWorkspace());        
+        c = new NDArray<T>('f', {a->shapeOf()[0], b->shapeOf()[1]}, a->getWorkspace());        
     else {
         if( c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
             throw "NDArrayFactory::simpleMMul static function: wrong shape of C array !";
         if(beta != (T)0. ) {
-            dot = new NDArray<T>(a->shapeOf()[0], b->shapeOf()[1], c->ordering(), a->getWorkspace());
+            dot = new NDArray<T>(c->ordering(), {a->shapeOf()[0], b->shapeOf()[1]},  a->getWorkspace());
             if( beta != (T)1.)
                 c->template applyScalar<simdOps::Multiply<T>>(beta);            
         }        

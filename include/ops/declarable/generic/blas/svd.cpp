@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
 
     for(int i = 0; i < listX->size(); ++i) {
         
-        // NDArray<T> matrix(listX->at(i)->sizeAt(0), listX->at(i)->sizeAt(1), x->ordering(), block.getWorkspace());
+        // NDArray<T> matrix(x->ordering(), {listX->at(i)->sizeAt(0), listX->at(i)->sizeAt(1)}, block.getWorkspace());
         // matrix.assign(listX->at(i));
         helpers::SVD<T> svdObj(*(listX->at(i)), switchNum, calcUV, calcUV, fullUV);    
         listS->at(i)->assign(svdObj._s);

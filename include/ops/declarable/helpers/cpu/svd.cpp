@@ -41,18 +41,18 @@ SVD<T>::SVD(const NDArray<T>& matrix, const int switchSize, const bool calcU, co
     if (_transp)
         math::nd4j_swap<bool>(_calcU, _calcV);
 
-    _s = NDArray<T>(_diagSize, 1, matrix.ordering(), matrix.getWorkspace());
-    _m = NDArray<T>(_diagSize + 1, _diagSize, matrix.ordering(), matrix.getWorkspace());
+    _s = NDArray<T>(matrix.ordering(), {_diagSize, 1}, matrix.getWorkspace());
+    _m = NDArray<T>(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.getWorkspace());
     _m.assign(0.);
 
     if (_calcU)
-        _u = NDArray<T>(_diagSize + 1, _diagSize + 1, matrix.ordering(), matrix.getWorkspace());
+        _u = NDArray<T>(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.getWorkspace());
     else         
-        _u = NDArray<T>(2, _diagSize + 1, matrix.ordering(), matrix.getWorkspace());
+        _u = NDArray<T>(matrix.ordering(), {2, _diagSize + 1}, matrix.getWorkspace());
     _u.assign(0.);
 
     if (_calcV) {
-        _v = NDArray<T>(_diagSize, _diagSize, matrix.ordering(), matrix.getWorkspace());    
+        _v = NDArray<T>(matrix.ordering(), {_diagSize, _diagSize}, matrix.getWorkspace());    
         _v.assign(0.);
     }
 
@@ -88,18 +88,18 @@ SVD<T>::SVD(const NDArray<T>& matrix, const int switchSize, const bool calcU, co
     if (_transp)
         math::nd4j_swap<bool>(_calcU, _calcV);
 
-    _s = NDArray<T>(_diagSize, 1, matrix.ordering(), matrix.getWorkspace());
-    _m = NDArray<T>(_diagSize + 1, _diagSize, matrix.ordering(), matrix.getWorkspace());
+    _s = NDArray<T>(matrix.ordering(), {_diagSize, 1}, matrix.getWorkspace());
+    _m = NDArray<T>(matrix.ordering(), {_diagSize + 1, _diagSize}, matrix.getWorkspace());
     _m.assign(0.);
 
     if (_calcU)
-        _u = NDArray<T>(_diagSize + 1, _diagSize + 1, matrix.ordering(), matrix.getWorkspace());
+        _u = NDArray<T>(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.getWorkspace());
     else         
-        _u = NDArray<T>(2, _diagSize + 1, matrix.ordering(), matrix.getWorkspace());
+        _u = NDArray<T>(matrix.ordering(), {2, _diagSize + 1}, matrix.getWorkspace());
     _u.assign(0.);
 
     if (_calcV) {
-        _v = NDArray<T>(_diagSize, _diagSize, matrix.ordering(), matrix.getWorkspace());    
+        _v = NDArray<T>(matrix.ordering(), {_diagSize, _diagSize}, matrix.getWorkspace());    
         _v.assign(0.);
     }
 }
@@ -130,7 +130,7 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
     _m(first+ind, first) = 0.;
     _m(first+ind, first+ind) = 0.;
         
-    NDArray<T> rotation(2, 2, _m.ordering(), _m.getWorkspace());
+    NDArray<T> rotation(_m.ordering(), {2, 2},  _m.getWorkspace());
     rotation(0,0) = cos;
     rotation(0,1) = -sin;
     rotation(1,0) = sin;
@@ -171,7 +171,7 @@ void SVD<T>::deflation2(int col1U , int col1M, int row1W, int col1W, int ind1, i
     _m(col1M + ind2, col1M + ind2) = _m(col1M + ind1, col1M + ind1);
     _m(col1M + ind2, col1M) = 0.;
     
-    NDArray<T> rotation(2, 2, _m.ordering(), _m.getWorkspace());
+    NDArray<T> rotation(_m.ordering(), {2, 2}, _m.getWorkspace());
     rotation(0,0) = rotation(1,1) = cos;
     rotation(0,1) = -sin;
     rotation(1,0) =  sin;
@@ -593,10 +593,10 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray<T>& U, NDArray<T>& singVal
     delete diagP;
 
     diag(0) = 0.;
-    singVals = NDArray<T>(size, 1, _m.ordering(), _m.getWorkspace());
-    U = NDArray<T>(size+1, size+1, _u.ordering(), _u.getWorkspace());
+    singVals = NDArray<T>(_m.ordering(), {size, 1}, _m.getWorkspace());
+    U = NDArray<T>(_u.ordering(), {size+1, size+1}, _u.getWorkspace());
     if (_calcV) 
-        V = NDArray<T>(size, size, _v.ordering(), _v.getWorkspace());
+        V = NDArray<T>(_v.ordering(), {size, size}, _v.getWorkspace());
     
     int curSize = size;
     while(curSize > 1 && diag(curSize-1) == (T)0.) 
@@ -609,9 +609,9 @@ void SVD<T>::calcBlockSVD(int col1, int size, NDArray<T>& U, NDArray<T>& singVal
             indices.push_back((T)k);            
   
     NDArray<T> permut(_m.ordering(), {1, (int)indices.size()}, indices, _m.getWorkspace());
-    NDArray<T> shifts(size, 1, _m.ordering(), _m.getWorkspace());
-    NDArray<T> mus(size, 1, _m.ordering(), _m.getWorkspace());
-    NDArray<T> zhat(size, 1, _m.ordering(), _m.getWorkspace());
+    NDArray<T> shifts(_m.ordering(), {size, 1}, _m.getWorkspace());
+    NDArray<T> mus   (_m.ordering(), {size, 1}, _m.getWorkspace());
+    NDArray<T> zhat  (_m.ordering(), {size, 1}, _m.getWorkspace());
           
     calcSingVals(col0, diag, permut, singVals, shifts, mus);
     perturb(col0, diag, permut, singVals, shifts, mus, zhat);
@@ -851,7 +851,7 @@ void SVD<T>::exchangeUV(const HHsequence<T>& hhU, const HHsequence<T>& hhV, cons
     if (_calcU) {
         
         int colsU = _fullUV ? hhU.rows() : _diagSize;        
-        NDArray<T> temp1(hhU.rows(), colsU, _u.ordering(), _u.getWorkspace());
+        NDArray<T> temp1(_u.ordering(), {hhU.rows(), colsU}, _u.getWorkspace());
         temp1.setIdentity();
         _u = temp1;        
 
@@ -864,7 +864,7 @@ void SVD<T>::exchangeUV(const HHsequence<T>& hhU, const HHsequence<T>& hhV, cons
     if (_calcV) {
         
         int colsV = _fullUV ? hhV.rows() : _diagSize;        
-        NDArray<T> temp1(hhV.rows(), colsV, _v.ordering(), _v.getWorkspace());
+        NDArray<T> temp1(_v.ordering(), {hhV.rows(), colsV}, _v.getWorkspace());
         temp1.setIdentity();
         _v = temp1;
 
@@ -902,7 +902,7 @@ void SVD<T>::evalData(const NDArray<T>& matrix) {
     
     NDArray<T> copy;
     if(_transp) {        
-        copy = NDArray<T>(matrix.sizeAt(1), matrix.sizeAt(0), matrix.ordering(), matrix.getWorkspace());
+        copy = NDArray<T>(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(0)}, matrix.getWorkspace());
         for(int i = 0; i < copy.sizeAt(0); ++i)
             for(int j = 0; j < copy.sizeAt(1); ++j)
                 copy(i,j) = matrix(j,i) / scale;

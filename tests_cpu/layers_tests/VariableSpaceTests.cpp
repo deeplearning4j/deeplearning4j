@@ -28,8 +28,8 @@ public:
 
 TEST_F(VariableSpaceTest, SettersGettersTest1) {
     auto space1 = new VariableSpace<float>();
-    auto arrayA = new NDArray<float>(5, 5, 'c');
-    auto arrayB = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {5, 5});
+    auto arrayB = new NDArray<float>('c', {3, 3});
 
     space1->putVariable(1, arrayA);
     space1->putVariable(2, arrayB);
@@ -47,8 +47,8 @@ TEST_F(VariableSpaceTest, SettersGettersTest1) {
 
 TEST_F(VariableSpaceTest, SettersGettersTest2) {
     auto space1 = new VariableSpace<float>();
-    auto arrayA = new NDArray<float>(5, 5, 'c');
-    auto arrayB = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {5, 5});
+    auto arrayB = new NDArray<float>('c', {3, 3});
 
     auto varA = new Variable<float>(arrayA);
     auto varB = new Variable<float>(arrayB);
@@ -72,7 +72,7 @@ TEST_F(VariableSpaceTest, EqualityTest1) {
 
     std::string name("myvar");
 
-    auto arrayA = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {3, 3});
     auto variableA = new Variable<float>(arrayA, name.c_str());
 
     space.putVariable(1, variableA);
@@ -94,7 +94,7 @@ TEST_F(VariableSpaceTest, EqualityTest1) {
 TEST_F(VariableSpaceTest, EqualityTest2) {
     VariableSpace<float> space;
 
-    auto arrayA = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {3, 3});
 
     space.putVariable(1, arrayA);
 
@@ -112,7 +112,7 @@ TEST_F(VariableSpaceTest, EqualityTest2) {
 TEST_F(VariableSpaceTest, CloneTests_1) {
     VariableSpace<float> spaceA;
 
-    auto arrayA = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {3, 3});
     arrayA->assign(1.0);
 
     spaceA.putVariable(1, arrayA);
@@ -138,7 +138,7 @@ TEST_F(VariableSpaceTest, CloneTests_1) {
 TEST_F(VariableSpaceTest, CloneTests_2) {
     VariableSpace<float> spaceA;
 
-    auto arrayA = new NDArray<float>(3, 3, 'c');
+    auto arrayA = new NDArray<float>('c', {3, 3});
     arrayA->assign(1.0);
 
     auto variableA = new Variable<float>(arrayA, "alpha");

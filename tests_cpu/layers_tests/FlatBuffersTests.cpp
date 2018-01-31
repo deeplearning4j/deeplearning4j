@@ -70,7 +70,7 @@ TEST_F(FlatBuffersTest, BasicTest1) {
 TEST_F(FlatBuffersTest, FlatGraphTest1) {
     flatbuffers::FlatBufferBuilder builder(4096);
 
-    auto array = new NDArray<float>(5, 5, 'c');
+    auto array = new NDArray<float>('c', {5, 5});
     array->assign(-2.0f);
 
     auto fShape = builder.CreateVector(array->getShapeInfoAsVector());

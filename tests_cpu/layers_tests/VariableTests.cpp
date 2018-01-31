@@ -20,7 +20,7 @@ public:
 };
 
 TEST_F(VariableTests, TestClone_1) {
-    auto array1 = new NDArray<float>(5,5, 'c');
+    auto array1 = new NDArray<float>('c', {5, 5});
     array1->assign(1.0);
 
     auto var1 = new Variable<float>(array1, "alpha");

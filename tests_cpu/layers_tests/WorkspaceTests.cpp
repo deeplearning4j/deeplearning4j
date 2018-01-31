@@ -30,7 +30,7 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
 
-    NDArray<float> array(5, 5, 'c', &workspace);
+    NDArray<float> array('c', {5, 5}, &workspace);
 
     array.putScalar(0, 1.0f);
     array.putScalar(5, 1.0f);
@@ -46,7 +46,7 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 
     ASSERT_EQ(0, workspace.getCurrentOffset());
 
-    NDArray<float> array(5, 5, 'c', &workspace);
+    NDArray<float> array('c', {5, 5}, &workspace);
 
     array.putScalar(0, 1.0f);
     array.putScalar(5, 1.0f);
@@ -60,7 +60,7 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 TEST_F(WorkspaceTests, ResetTest1) {
     Workspace workspace(65536);
 
-    NDArray<float> array(5, 5, 'c', &workspace);
+    NDArray<float> array('c', {5, 5}, &workspace);
     array.putScalar(0, 1.0f);
     array.putScalar(5, 1.0f);
 
@@ -68,7 +68,7 @@ TEST_F(WorkspaceTests, ResetTest1) {
     for (int e = 0; e < 5; e++) {
         workspace.scopeIn();
 
-        NDArray<float> array2(5, 5, 'c', &workspace);
+        NDArray<float> array2('c', {5, 5}, &workspace);
         array2.putScalar(0, 1.0f);
         array2.putScalar(5, 1.0f);
 
@@ -125,7 +125,7 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
 
     ASSERT_TRUE(MemoryRegistrator::getInstance()->hasWorkspaceAttached());
 
-    auto ast = new NDArray<float>(5, 5, 'c');
+    auto ast = new NDArray<float>('c', {5, 5});
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 
@@ -146,7 +146,7 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
 
     MemoryRegistrator::getInstance()->attachWorkspace(&ws);
 
-    auto ast = new NDArray<float>(5, 5, 'c', &ws);
+    auto ast = new NDArray<float>('c', {5, 5}, &ws);
 
     ASSERT_TRUE(ws.getCurrentOffset() > 0);
 

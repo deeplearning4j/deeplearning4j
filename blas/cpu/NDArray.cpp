@@ -128,48 +128,48 @@ NDArray<T>::NDArray(const Nd4jIndex length, const char order, nd4j::memory::Work
 
 ////////////////////////////////////////////////////////////////////////
 // this constructor creates 2D NDArray, memory for array is allocated in this constructor 
-template <typename T>
-    NDArray<T>::NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace) {
+// template <typename T>
+//     NDArray<T>::NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace) {
 
-    Nd4jIndex length = rows * columns;
-    int rank = 2;
+//     Nd4jIndex length = rows * columns;
+//     int rank = 2;
 
-    int *shapeOf = new int[2]{rows, columns};
+//     int *shapeOf = new int[2]{rows, columns};
 
-    _workspace = workspace;
-    if (workspace == nullptr) {
-        if (order == 'f')
-            _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
-        else
-            _shapeInfo = shape::shapeBuffer(rank, shapeOf);
+//     _workspace = workspace;
+//     if (workspace == nullptr) {
+//         if (order == 'f')
+//             _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
+//         else
+//             _shapeInfo = shape::shapeBuffer(rank, shapeOf);
 
-        _buffer =  new T[shape::length(_shapeInfo)];
-    } else {
-        int *shapeInfo =  order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
+//         _buffer =  new T[shape::length(_shapeInfo)];
+//     } else {
+//         int *shapeInfo =  order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
 
-        _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-        memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
+//         _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
+//         memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
 
-        _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
+//         _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
 
-        delete[] shapeInfo;
-    }
+//         delete[] shapeInfo;
+//     }
 
-    memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
+//     memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
 
-    if (order == 'f') {
-        _shapeInfo[7] = 102;
-    } else {
-        _shapeInfo[7] = 99;
-    }
+//     if (order == 'f') {
+//         _shapeInfo[7] = 102;
+//     } else {
+//         _shapeInfo[7] = 99;
+//     }
 
-    delete[] shapeOf;
+//     delete[] shapeOf;
 
-    _shapeInfo[6] = 1;
+//     _shapeInfo[6] = 1;
 
-    _isBuffAlloc = true; 
-    _isShapeAlloc = true;
-}
+//     _isBuffAlloc = true; 
+//     _isShapeAlloc = true;
+// }
 
 template <typename T>
 NDArray<T>::NDArray(T scalar) {

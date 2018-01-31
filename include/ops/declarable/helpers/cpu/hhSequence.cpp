@@ -68,7 +68,7 @@ void HHsequence<T>::applyTo(NDArray<T>& dest) const{
     int size = _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
 
     if(dest.rankOf() != 2 || (dest.sizeAt(0) != size && dest.sizeAt(1) != size))
-        dest = NDArray<T>(size, size, dest.ordering(), dest.getWorkspace());
+        dest = NDArray<T>(dest.ordering(), {size, size}, dest.getWorkspace());
     dest.setIdentity();
     
     for(int k = _diagSize - 1; k >= 0; --k) {

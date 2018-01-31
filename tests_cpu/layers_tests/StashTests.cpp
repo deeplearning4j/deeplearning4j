@@ -21,13 +21,13 @@ public:
 TEST_F(StashTests, BasicTests_1) {
     Stash<float> stash;
 
-    auto alpha = new NDArray<float> (5, 5, 'c');
+    auto alpha = new NDArray<float> ('c',{5, 5});
     alpha->assign(1.0);
 
-    auto beta = new NDArray<float> (5, 5, 'c');
+    auto beta = new NDArray<float> ('c',{5, 5});
     beta->assign(2.0);
 
-    auto cappa = new NDArray<float> (5, 5, 'c');
+    auto cappa = new NDArray<float> ('c',{5, 5});
     cappa->assign(3.0);
 
     stash.storeArray(1, "alpha", alpha);
@@ -47,13 +47,13 @@ TEST_F(StashTests, BasicTests_1) {
 TEST_F(StashTests, BasicTests_2) {
     Stash<float> stash;
 
-    auto alpha = new NDArray<float>(5, 5, 'c');
+    auto alpha = new NDArray<float>('c',{5, 5});
     alpha->assign(1.0);
 
-    auto beta = new NDArray<float>(5, 5, 'c');
+    auto beta = new NDArray<float>('c',{5, 5});
     beta->assign(2.0);
 
-    auto cappa = new NDArray<float>(5, 5, 'c');
+    auto cappa = new NDArray<float>('c',{5, 5});
     cappa->assign(3.0);
 
     stash.storeArray(1, "alpha1", alpha);

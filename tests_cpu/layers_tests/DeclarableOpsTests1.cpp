@@ -49,11 +49,11 @@ TEST_F(DeclarableOpsTests1, BasicInitialization1) {
     std::string expName("concat");
     ASSERT_EQ(expName, *(concat->getOpName()));
 
-    auto x0 = new NDArray<float>(1, 5, 'c');
-    auto x1 = new NDArray<float>(1, 5, 'c');
-    auto x2 = new NDArray<float>(1, 5, 'c');
-    auto x3 = new NDArray<float>(1, 5, 'c');
-    auto x4 = new NDArray<float>(1, 5, 'c');
+    auto x0 = new NDArray<float>('c', {1, 5});
+    auto x1 = new NDArray<float>('c', {1, 5});
+    auto x2 = new NDArray<float>('c', {1, 5});
+    auto x3 = new NDArray<float>('c', {1, 5});
+    auto x4 = new NDArray<float>('c', {1, 5});
 
     x0->assign(1.0f);
     x1->assign(1.0f);
@@ -138,7 +138,7 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
         y->putScalar(i, i + 1);
     }
 
-    NDArray<float> exp(2, 2, 'c');
+    NDArray<float> exp('c', {2, 2});
     exp.putScalar(0, 650.0);
     exp.putScalar(1, 1586.0);
     exp.putScalar(2, 1586.0);
@@ -182,7 +182,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
         y->getBuffer()[i] = i + 1;
     }
 
-    NDArray<float> exp(2, 2, 'c');
+    NDArray<float> exp('c', {2, 2});
     exp.putScalar(0, 2300.0);
     exp.putScalar(1, 2444.0);
     exp.putScalar(2, 2444.0);
@@ -225,7 +225,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
         y->getBuffer()[i] = i + 1;
     }
 
-    NDArray<float>* exp = new NDArray<float>(2, 2, 'f');
+    NDArray<float>* exp = new NDArray<float>('f', {2, 2});
     // exp->putScalar(0, 1090.0);
     // exp->putScalar(1, 2818.0);
     // exp->putScalar(2, 1168.0);
@@ -273,7 +273,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
         y->putScalar(i, i + 1);
     }
 
-    NDArray<float>* exp = new NDArray<float>(2, 2, 'f');
+    NDArray<float>* exp = new NDArray<float>('f', {2, 2});
     // exp->putScalar(0, 1090.0);
     // exp->putScalar(1, 1168.0);
     // exp->putScalar(2, 2818.0);
@@ -325,9 +325,9 @@ TEST_F(DeclarableOpsTests1, DivergentCheck1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, AddMatrices1) {
     
-    NDArray<float>* x = new NDArray<float>(5, 3, 'c');
-    NDArray<float>* y = new NDArray<float>(5, 3, 'c');
-    NDArray<float>* exp = new NDArray<float>(5, 3, 'c'); 
+    NDArray<float>* x = new NDArray<float>  ('c', {5, 3});
+    NDArray<float>* y = new NDArray<float>  ('c', {5, 3});
+    NDArray<float>* exp = new NDArray<float>('c', {5, 3}); 
     x->assign(2);
     y->assign(1);
     exp->assign(3);
@@ -353,9 +353,9 @@ TEST_F(DeclarableOpsTests1, AddMatrices1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, AddVectorVector1) {
     
-    NDArray<float>* x = new NDArray<float>(1, 15, 'c');
-    NDArray<float>* y = new NDArray<float>(1, 15, 'c');
-    NDArray<float>* exp = new NDArray<float>(1, 15, 'c'); 
+    NDArray<float>* x = new NDArray<float>  ('c', {1, 15});
+    NDArray<float>* y = new NDArray<float>  ('c', {1, 15});
+    NDArray<float>* exp = new NDArray<float>('c', {1, 15}); 
     x->assign(2);
     y->assign(1);
     exp->assign(3);
@@ -380,9 +380,9 @@ TEST_F(DeclarableOpsTests1, AddVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, AddMatrixScalar1) {
 
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    auto x = new NDArray<float>('c', {5, 3});
+    auto y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {5, 3}); 
     x->assign(2);
     y->assign(1);
     exp.assign(3);
@@ -406,9 +406,9 @@ TEST_F(DeclarableOpsTests1, AddMatrixScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, AddScalarScalar1) {
     
-    auto x = new NDArray<float>(1, 1, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(1, 1, 'c'); 
+    auto x = new NDArray<float>('c', {1, 1});
+    auto y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {1, 1}); 
     x->assign(2);
     y->assign(1);
     exp.assign(3);
@@ -432,9 +432,9 @@ TEST_F(DeclarableOpsTests1, AddScalarScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, SubtractMatrices1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(5, 3, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    auto x = new NDArray<float>('c', {5, 3});
+    auto y = new NDArray<float>('c', {5, 3});
+    NDArray<float> exp('c', {5, 3}); 
     x->assign(3);
     y->assign(1);
     exp.assign(2);
@@ -466,7 +466,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
     if (rng == nullptr)
         throw "RNG initialization failed";
 
-    auto x = new NDArray<float>(5, 3, 'c');
+    auto x = new NDArray<float>('c', {5, 3});
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
     Context<float>* block = new Context<float>(1, variableSpace, true);
@@ -493,10 +493,10 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeSumTest1) {
 
-    auto x = new NDArray<float>(5, 5, 'c');
-    auto y = new NDArray<float>(5, 5, 'c');
-    auto z = new NDArray<float>(5, 5, 'c');
-    NDArray<float> exp(5, 5, 'c');
+    auto x = new NDArray<float>('c', {5, 5});
+    auto y = new NDArray<float>('c', {5, 5});
+    auto z = new NDArray<float>('c', {5, 5});
+    NDArray<float> exp('c', {5, 5});
     x->assign(3);
     y->assign(1);
     z->assign(2);
@@ -506,7 +506,7 @@ TEST_F(DeclarableOpsTests1, MergeSumTest1) {
     variableSpace->putVariable(-1, x);
     variableSpace->putVariable(-2, y);
     variableSpace->putVariable(-3, z);
-    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>(5,5,'c')));
+    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>('c', {5, 5})));
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1, -2, -3});
 
@@ -526,8 +526,8 @@ TEST_F(DeclarableOpsTests1, MergeSumTest1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ClipByValue1) {
 
-    auto x = new NDArray<float>(5, 5, 'c');
-    NDArray<float> exp(5, 5, 'c');
+    auto x = new NDArray<float>('c', {5, 5});
+    NDArray<float> exp('c', {5, 5});
     x->assign(4);
     x->putScalar(0, -1);
     x->putScalar(1, 2);
@@ -558,22 +558,22 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeMaxTest1) {
 
-    NDArray<float>* x = new NDArray<float>(5, 5, 'c');
-    NDArray<float>* y = new NDArray<float>(5, 5, 'c');
-    NDArray<float>* z = new NDArray<float>(5, 5, 'c');
-    NDArray<float> exp(5, 5, 'c');
+    NDArray<float>* x = new NDArray<float>('c', {5, 5});
+    NDArray<float>* y = new NDArray<float>('c', {5, 5});
+    NDArray<float>* z = new NDArray<float>('c', {5, 5});
+    NDArray<float> exp('c', {5, 5});
     x->assign(3);
     y->assign(1);
     z->assign(2);
     exp.assign(3);
 
-    NDArray<float> zu(5, 5, 'c');
+    NDArray<float> zu('c', {5, 5});
 
     VariableSpace<float>* variableSpace = new VariableSpace<float>();
     variableSpace->putVariable(-1, x);
     variableSpace->putVariable(-2, y);
     variableSpace->putVariable(-3, z);
-    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>(5,5,'c')));
+    variableSpace->putVariable(1, new Variable<float>(new NDArray<float>('c', {5, 5})));
     Context<float>* block = new Context<float>(1, variableSpace, false);
     block->fillInputs({-1, -2, -3});
 
@@ -594,9 +594,9 @@ TEST_F(DeclarableOpsTests1, MergeMaxTest1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, SubtractVectorVector1) {
     
-    NDArray<float>* x = new NDArray<float>(1, 15, 'c');
-    NDArray<float>* y = new NDArray<float>(1, 15, 'c');
-    NDArray<float> exp(1, 15, 'c'); 
+    NDArray<float>* x = new NDArray<float>('c', {1, 15});
+    NDArray<float>* y = new NDArray<float>('c', {1, 15});
+    NDArray<float> exp('c', {1, 15}); 
     x->assign(3);
     y->assign(1);
     exp.assign(2);
@@ -622,9 +622,9 @@ TEST_F(DeclarableOpsTests1, SubtractVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, SubtractMatrixScalar1) {
     
-    NDArray<float>* x = new NDArray<float>(5, 3, 'c');
-    NDArray<float>* y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    NDArray<float>* x = new NDArray<float>('c', {5, 3});
+    NDArray<float>* y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {5, 3}); 
     x->assign(3);
     y->assign(1);
     exp.assign(2);
@@ -649,9 +649,9 @@ TEST_F(DeclarableOpsTests1, SubtractMatrixScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, SubtractScalarScalar1) {
     
-    NDArray<float>* x = new NDArray<float>(1, 1, 'c');
-    NDArray<float>* y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(1, 1, 'c'); 
+    NDArray<float>* x = new NDArray<float>('c', {1, 1});
+    NDArray<float>* y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {1, 1}); 
     x->assign(3);
     y->assign(1);
     exp.assign(2);
@@ -675,9 +675,9 @@ TEST_F(DeclarableOpsTests1, SubtractScalarScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(5, 3, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    auto x = new NDArray<float>('c', {5, 3});
+    auto y = new NDArray<float>('c', {5, 3});
+    NDArray<float> exp('c', {5, 3}); 
     x->assign(3);
     y->assign(1);
     exp.assign(-2);
@@ -701,9 +701,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseSubtractVectorVector1) {
     
-    auto x = new NDArray<float> (1, 15, 'c');
-    auto y = new NDArray<float>(1, 15, 'c');
-    auto exp = new NDArray<float> (1, 15, 'c');
+    auto x = new NDArray<float>   ('c', {1, 15});
+    auto y = new NDArray<float>   ('c', {1, 15});
+    auto exp = new NDArray<float> ('c', {1, 15});
     x->assign(3);
     y->assign(1);
     exp->assign(-2);
@@ -729,9 +729,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseSubtractMatrixScalar1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    auto exp = new NDArray<float>(5, 3, 'c');
+    auto x = new NDArray<float>  ('c', {5, 3});
+    auto y = new NDArray<float>  ('c', {1, 1});
+    auto exp = new NDArray<float>('c', {5, 3});
     x->assign(3);
     y->assign(1);
     exp->assign(-2);
@@ -757,9 +757,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrixScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseSubtractScalarScalar1) {
     
-    auto x = new NDArray<float>(1, 1, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    auto exp = new NDArray<float>(1, 1, 'c');
+    auto x = new NDArray<float>  ('c', {1, 1});
+    auto y = new NDArray<float>  ('c', {1, 1});
+    auto exp = new NDArray<float>('c', {1, 1});
     x->assign(3);
     y->assign(1);
     exp->assign(-2);
@@ -784,9 +784,9 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractScalarScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MultiplyMatrices1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(5, 3, 'c');
-    auto exp = new NDArray<float>(5, 3, 'c');
+    auto x = new NDArray<float>  ('c', {5, 3});
+    auto y = new NDArray<float>  ('c', {5, 3});
+    auto exp = new NDArray<float>('c', {5, 3});
     x->assign(2);
     y->assign(3);
     exp->assign(6);
@@ -811,9 +811,9 @@ TEST_F(DeclarableOpsTests1, MultiplyMatrices1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MultiplyVectorVector1) {
     
-    auto x = new NDArray<float>(1, 15, 'c');
-    auto y = new NDArray<float>(1, 15, 'c');
-    auto exp = new NDArray<float>(1, 15, 'c');
+    auto x = new NDArray<float>  ('c', {1, 15});
+    auto y = new NDArray<float>  ('c', {1, 15});
+    auto exp = new NDArray<float>('c', {1, 15});
     x->assign(2);
     y->assign(3);
     exp->assign(6);
@@ -838,9 +838,9 @@ TEST_F(DeclarableOpsTests1, MultiplyVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MultiplyMatrixScalar) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    auto exp = new NDArray<float>(5, 3, 'c');
+    auto x = new NDArray<float>  ('c', {5, 3});
+    auto y = new NDArray<float>  ('c', {1, 1});
+    auto exp = new NDArray<float>('c', {5, 3});
     x->assign(2);
     y->assign(3);
     exp->assign(6);
@@ -865,9 +865,9 @@ TEST_F(DeclarableOpsTests1, MultiplyMatrixScalar) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
     
-    auto x = new NDArray<float>(1, 1, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    auto exp = new NDArray<float>(1, 1, 'c');
+    auto x = new NDArray<float>  ('c', {1, 1});
+    auto y = new NDArray<float>  ('c', {1, 1});
+    auto exp = new NDArray<float>('c', {1, 1});
     x->assign(2);
     y->assign(3);
     exp->assign(6);
@@ -890,11 +890,11 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
 }
 
 TEST_F(DeclarableOpsTests1, TestMatMul1) {
-    auto x = new NDArray<float>(3, 5, 'c');
+    auto x = new NDArray<float>('c', {3, 5});
     for (int e = 0; e < x->lengthOf(); e++)
         x->putScalar(e, e+1);
 
-    auto y = new NDArray<float>(5, 3, 'c');
+    auto y = new NDArray<float>('c', {5, 3});
     for (int e = 0; e < y->lengthOf(); e++)
         y->putScalar(e, e+1);
 
@@ -936,20 +936,20 @@ TEST_F(DeclarableOpsTests1, TestMatMul1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 
-    auto input = new NDArray<double>(2,2,'c');
+    auto input = new NDArray<double>('c', {2, 2});
     for (int e = 0; e < input->lengthOf(); e++)
         input->putScalar(e, e+1);
 
-    auto epsilon = new NDArray<double>(2,2, 'c');
+    auto epsilon = new NDArray<double>('c', {2, 2});
     epsilon->putScalar(0, 0.1f);
     epsilon->putScalar(1, 0.2f);
     epsilon->putScalar(2, 0.3f);
     epsilon->putScalar(3, 0.4f);
 
-    auto output = new NDArray<double>(2,2,'c');
+    auto output = new NDArray<double>('c', {2, 2});
     output->assign(1.0f);
 
-    auto exp = new NDArray<double>(2, 2, 'c');
+    auto exp = new NDArray<double>('c', {2, 2});
     exp->putScalar(0, -0.019661194f);
     exp->putScalar(1, 0.019661194f);
     exp->putScalar(2, -0.019661194f);
@@ -980,9 +980,9 @@ TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivideMatrices1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(5, 3, 'c');
-    auto exp = new NDArray<float>(5, 3, 'c');
+    auto x = new NDArray<float>  ('c', {5, 3});
+    auto y = new NDArray<float>  ('c', {5, 3});
+    auto exp = new NDArray<float>('c', {5, 3});
     x->assign(6);
     y->assign(2);
     exp->assign(3);
@@ -1007,9 +1007,9 @@ TEST_F(DeclarableOpsTests1, DivideMatrices1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivideVectorVector1) {
     
-    auto x = new NDArray<float>(1, 15, 'c');
-    auto y = new NDArray<float>(1, 15, 'c');
-    NDArray<float> exp(1, 15, 'c'); 
+    auto x = new NDArray<float>('c', {1, 15});
+    auto y = new NDArray<float>('c', {1, 15});
+    NDArray<float> exp('c', {1, 15}); 
     x->assign(6);
     y->assign(2);
     exp.assign(3);
@@ -1033,9 +1033,9 @@ TEST_F(DeclarableOpsTests1, DivideVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivideMatrixScalar1) {
     
-    NDArray<float>* x = new NDArray<float>(5, 3, 'c');
-    NDArray<float>* y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    NDArray<float>* x = new NDArray<float>('c', {5, 3});
+    NDArray<float>* y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {5, 3});
     x->assign(6);
     y->assign(2);
     exp.assign(3);
@@ -1060,9 +1060,9 @@ TEST_F(DeclarableOpsTests1, DivideMatrixScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivideScalarScalar1) {
     
-    auto x = new NDArray<float>(5, 1, 'c');
-    auto y = new NDArray<float>(5, 1, 'c');
-    nd4j::NDArray<float> exp(5, 1, 'c');
+    auto x = new NDArray<float>('c', {5, 1});
+    auto y = new NDArray<float>('c', {5, 1});
+    nd4j::NDArray<float> exp('c', {5, 1});
     x->assign(6);
     y->assign(2);
     exp.assign(3);
@@ -1087,9 +1087,9 @@ TEST_F(DeclarableOpsTests1, DivideScalarScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseDivideMatrices1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(5, 3, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    auto x = new NDArray<float>('c', {5, 3});
+    auto y = new NDArray<float>('c', {5, 3});
+    NDArray<float> exp('c', {5, 3});
     x->assign(2);
     y->assign(6);
     exp.assign(3);
@@ -1113,9 +1113,9 @@ TEST_F(DeclarableOpsTests1, ReverseDivideMatrices1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseDivideVectorVector1) {
     
-    auto x = new NDArray<float>(1, 15, 'c');
-    auto y = new NDArray<float>(1, 15, 'c');
-    NDArray<float> exp(1, 15, 'c'); 
+    auto x = new NDArray<float>('c', {1, 15});
+    auto y = new NDArray<float>('c', {1, 15});
+    NDArray<float> exp('c', {1, 15}); 
     x->assign(2);
     y->assign(6);
     exp.assign(3);
@@ -1139,9 +1139,9 @@ TEST_F(DeclarableOpsTests1, ReverseDivideVectorVector1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseDivideMatrixScalar1) {
     
-    auto x = new NDArray<float>(5, 3, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(5, 3, 'c'); 
+    auto x = new NDArray<float>('c', {5, 3});
+    auto y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {5, 3});
     x->assign(2);
     y->assign(6);
     exp.assign(3);
@@ -1165,9 +1165,9 @@ TEST_F(DeclarableOpsTests1, ReverseDivideMatrixScalar1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, ReverseDivideScalarScalar1) {
     
-    auto x = new NDArray<float>(1, 1, 'c');
-    auto y = new NDArray<float>(1, 1, 'c');
-    NDArray<float> exp(1, 1, 'c'); 
+    auto x = new NDArray<float>('c', {1, 1});
+    auto y = new NDArray<float>('c', {1, 1});
+    NDArray<float> exp('c', {1, 1});
     x->assign(2);
     y->assign(6);
     exp.assign(3);
@@ -1241,15 +1241,15 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
     NativeOps nativeOps;
 
-    auto x = new NDArray<float>(10, 10, 'c');
+    auto x = new NDArray<float>('c', {10, 10});
     x->assign(1.0f);
 
-    auto y = new NDArray<float>(10, 10, 'c');
+    auto y = new NDArray<float>('c', {10, 10});
     y->assign(2.0f);
 
-    auto z = new NDArray<float>(10, 10, 'c');
+    auto z = new NDArray<float>('c', {10, 10});
 
-    auto exp = new NDArray<float>(10, 10, 'c');
+    auto exp = new NDArray<float>('c', {10, 10});
     exp->assign(3.0);
 
     std::string opName("add");
@@ -1294,15 +1294,15 @@ TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
 TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
     NativeOps nativeOps;
 
-    auto x = new NDArray<float>(10, 10, 'c');
+    auto x = new NDArray<float>('c', {10, 10});
     x->assign(1.0f);
 
-    auto y = new NDArray<float>(10, 10, 'c');
+    auto y = new NDArray<float>('c', {10, 10});
     y->assign(2.0f);
 
-    auto z = new NDArray<float>(10, 10, 'c');
+    auto z = new NDArray<float>('c', {10, 10});
 
-    auto exp = new NDArray<float>(10, 10, 'c');
+    auto exp = new NDArray<float>('c', {10, 10});
     exp->assign(3.0);
 
     std::string opName("add");
@@ -1347,7 +1347,7 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(5, 1, 'f');
+    auto z = new NDArray<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -1467,8 +1467,8 @@ TEST_F(DeclarableOpsTests1, Reshape5) {
 }
 
 TEST_F(DeclarableOpsTests1, TestScatterUpdate1) {
-    NDArray<float>* matrix  = new NDArray<float>(3, 2, 'c');
-    NDArray<float>* updates = new NDArray<float>(2, 2, 'c');
+    NDArray<float>* matrix  = new NDArray<float>('c', {3, 2});
+    NDArray<float>* updates = new NDArray<float>('c', {2, 2});
     updates->assign(1.0);
 
     //updates.printBuffer("Updates");
@@ -1505,7 +1505,7 @@ TEST_F(DeclarableOpsTests1, Repeat1) {
     
     float eBuffer[8] = {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     int eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
-    NDArray<float>* x = new NDArray<float>(2, 2, 'c');
+    NDArray<float>* x = new NDArray<float>('c', {2, 2});
     NDArray<float>* exp = new NDArray<float>(eBuffer, eShape);
     for (int e = 0; e < x->lengthOf(); e++)
         x->putScalar(e, e + 1);

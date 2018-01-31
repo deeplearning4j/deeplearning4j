@@ -216,8 +216,8 @@ TEST_F(NDArrayTest2, mmul_test3) {
 
     NDArray<float> x('c', {4, 1}, {1, 2, 3, 4});
     NDArray<float> exp('c', {4, 4}, {1. ,0.2 ,0.3 ,0.4 ,0.2,0.04,0.06,0.08,0.3,0.06,0.09,0.12,0.4,0.08,0.12,0.16});
-    NDArray<float> w((int)x.lengthOf(), 1,  x.ordering(), x.getWorkspace());                            // column-vector
-    NDArray<float> wT(1, (int)x.lengthOf(), x.ordering(), x.getWorkspace());                            // row-vector (transposed w)    
+    NDArray<float> w( x.ordering(), {(int)x.lengthOf(), 1},  x.getWorkspace());                            // column-vector
+    NDArray<float> wT(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());                            // row-vector (transposed w)    
 
     w = x / (float)10.;         
     w(0) = 1.;

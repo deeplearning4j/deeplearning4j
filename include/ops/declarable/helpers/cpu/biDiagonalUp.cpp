@@ -13,8 +13,8 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-BiDiagonalUp<T>::BiDiagonalUp(const NDArray<T>& matrix): _HHmatrix(NDArray<T>(matrix.sizeAt(0), matrix.sizeAt(1), matrix.ordering(), matrix.getWorkspace())),  
-                                                         _HHbidiag(NDArray<T>(matrix.sizeAt(1), matrix.sizeAt(1), matrix.ordering(), matrix.getWorkspace())) {
+BiDiagonalUp<T>::BiDiagonalUp(const NDArray<T>& matrix): _HHmatrix(NDArray<T>(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.getWorkspace())),  
+                                                         _HHbidiag(NDArray<T>(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.getWorkspace())) {
 
 	// input validation
 	if(matrix.rankOf() != 2 || matrix.isScalar())
@@ -83,7 +83,7 @@ HHsequence<T> BiDiagonalUp<T>::makeHHsequence(const char type) const {
 	if(type == 'u') {
 
     	const int diagSize = _HHbidiag.sizeAt(0);
-    	NDArray<T> colOfCoeffs(diagSize, 1, _HHmatrix.ordering(),  _HHmatrix.getWorkspace());
+    	NDArray<T> colOfCoeffs(_HHmatrix.ordering(),  {diagSize, 1}, _HHmatrix.getWorkspace());
 
 	    for(int i = 0; i < diagSize; ++i)
 	        colOfCoeffs(i) = _HHmatrix(i,i);
@@ -93,7 +93,7 @@ HHsequence<T> BiDiagonalUp<T>::makeHHsequence(const char type) const {
     else {
 
     	const int diagUpSize = _HHbidiag.sizeAt(0) - 1;
-		NDArray<T> colOfCoeffs(diagUpSize, 1, _HHmatrix.ordering(),  _HHmatrix.getWorkspace());
+		NDArray<T> colOfCoeffs(_HHmatrix.ordering(), {diagUpSize, 1}, _HHmatrix.getWorkspace());
 
     	for(int i = 0; i < diagUpSize; ++i)
         	colOfCoeffs(i) = _HHmatrix(i,i+1);

@@ -135,12 +135,12 @@ TEST_F(NDArrayTest, TestGetScalar1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, EqualityTest1) {
-    auto *arrayA = new NDArray<float>(3, 5, 'f');
-    auto *arrayB = new NDArray<float>(3, 5, 'f');
-    auto *arrayC = new NDArray<float>(3, 5, 'f');
+    auto *arrayA = new NDArray<float>('f', {3, 5});
+    auto *arrayB = new NDArray<float>('f', {3, 5});
+    auto *arrayC = new NDArray<float>('f', {3, 5});
 
-    auto *arrayD = new NDArray<float>(2, 4, 'f');
-    auto *arrayE = new NDArray<float>(15, 'f');
+    auto *arrayD = new NDArray<float>('f', {2, 4});
+    auto *arrayE = new NDArray<float>('f', {1, 15});
 
     for (int i = 0; i < arrayA->rows(); i++) {
         for (int k = 0; k < arrayA->columns(); k++) {
@@ -178,7 +178,7 @@ TEST_F(NDArrayTest, EqualityTest1) {
 }
 
 TEST_F(NDArrayTest, TestTad1) {
-    auto array = new NDArray<float>(3, 3, 'c');
+    auto array = new NDArray<float>('c', {3, 3});
 
     auto row2 = array->tensorAlongDimension(1, {1});
 
@@ -199,7 +199,7 @@ TEST_F(NDArrayTest, TestTad1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTad2) {
-    auto array = new NDArray<float>(3, 3, 'c');
+    auto array = new NDArray<float>('c', {3, 3});
 
     ASSERT_EQ(3, array->tensorsAlongDimension({1}));
 
@@ -208,7 +208,7 @@ TEST_F(NDArrayTest, TestTad2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestTad3) {
-    auto array = new NDArray<float>(4, 3, 'c');
+    auto array = new NDArray<float>('c', {4, 3});
 
     auto row2 = array->tensorAlongDimension(1, {1});
 
@@ -267,7 +267,7 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 TEST_F(NDArrayTest, TestRepeat1) {
     auto eBuffer = new float[8] {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
     auto eShape = new int[8]{2, 4, 2, 2, 1, 0, 1, 99};
-    auto array = new NDArray<float>(2, 2, 'c');
+    auto array = new NDArray<float>('c', {2, 2});
     auto exp = new NDArray<float>(eBuffer, eShape);
     for (int e = 0; e < array->lengthOf(); e++)
         array->putScalar(e, e + 1);
@@ -292,7 +292,7 @@ TEST_F(NDArrayTest, TestRepeat1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestIndexedPut1) {
-    auto array = new NDArray<float>(3, 3, 'f');
+    auto array = new NDArray<float>('f', {3, 3});
 
     array->putIndexedScalar(4, 1.0f);
     ASSERT_EQ(1.0f, array->getIndexedScalar(4));
@@ -574,7 +574,7 @@ TEST_F(NDArrayTest, TestVectors1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks1) {
-    NDArray<float> array(1, 5, 'c');
+    NDArray<float> array('c', {1, 5});
 
     ASSERT_FALSE(array.isMatrix());
     ASSERT_FALSE(array.isScalar());
@@ -585,7 +585,7 @@ TEST_F(NDArrayTest, TestChecks1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks2) {
-    NDArray<float> array(5, 5, 'c');
+    NDArray<float> array('c', {5, 5});
 
     ASSERT_TRUE(array.isMatrix());
     ASSERT_FALSE(array.isScalar());
@@ -596,7 +596,7 @@ TEST_F(NDArrayTest, TestChecks2) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks3) {
-    NDArray<float> array(5, 1, 'c');
+    NDArray<float> array('c', {5, 1});
 
     ASSERT_FALSE(array.isMatrix());
     ASSERT_FALSE(array.isScalar());
@@ -607,7 +607,7 @@ TEST_F(NDArrayTest, TestChecks3) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestChecks4) {
-    NDArray<float> array(1, 1, 'c');
+    NDArray<float> array('c', {1, 1});
 
     ASSERT_FALSE(array.isMatrix());
     ASSERT_FALSE(array.isVector());
@@ -798,8 +798,8 @@ TEST_F(NDArrayTest, TestMmulHelper1) {
 
 
 TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
-    NDArray<float> x(6, 3, 'c');
-    NDArray<float> y(3, 6, 'c');
+    NDArray<float> x('c', {6, 3});
+    NDArray<float> y('c', {3, 6});
 
     int _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
@@ -824,8 +824,8 @@ TEST_F(NDArrayTest, TestPermuteReshapeMmul1) {
 }
 
 TEST_F(NDArrayTest, TestPermuteReshapeMmul2) {
-    NDArray<float> x(6, 3, 'c');
-    NDArray<float> y(3, 6, 'c');
+    NDArray<float> x('c', {6, 3});
+    NDArray<float> y('c', {3, 6});
 
     int _expS[] = {2, 3, 3, 1, 3, 0, 1, 102};
     float _expB[] = {231.0, 252.0, 273.0, 537.0, 594.0, 651.0, 843.0, 936.0, 1029.0};
@@ -929,7 +929,7 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     auto y = new NDArray<float>(yBuffer, yShape);
     y->triggerAllocationFlag(true, true);
 
-    auto z = new NDArray<float>(5, 1, 'f');
+    auto z = new NDArray<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{28.00,  64.00,  100.00,  136.00,  172.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -959,7 +959,7 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
     auto yShape = new int[8] {2, 3, 1, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(5, 1, 'f');
+    auto z = new NDArray<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{92.00,  104.00,  116.00,  128.00,  140.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -994,7 +994,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto yShape = new int[8] {2, 2, 3, 3, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(3, 3, 'f');
+    auto z = new NDArray<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{7.0, 21.0, 35.0, 10.0, 28.0, 46.0, 13.0, 35.0, 57.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -1024,7 +1024,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto yShape = new int[8] {2, 2, 3, 3, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(3, 3, 'f');
+    auto z = new NDArray<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{7.0, 14.0, 21.0, 12.0, 21.0, 30.0, 17.0, 28.0, 39.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -1054,7 +1054,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto yShape = new int[8] {2, 2, 3, 1, 2, 0, 1, 102};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(3, 3, 'f');
+    auto z = new NDArray<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{39.0, 54.0, 69.0, 9.0, 18.0, 27.0, 9.0, 12.0, 15.0};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -1085,7 +1085,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto yShape = new int[8] {2, 1, 5, 1, 1, 0, 1, 99};
     auto y = new NDArray<float>(yBuffer, yShape);
 
-    auto z = new NDArray<float>(1, 3, 'f');
+    auto z = new NDArray<float>('f', {1, 3});
 
     auto expBuffer = new float[9]{110.00,  260.00,  410.00};
     auto exp = new NDArray<float>(expBuffer, z->getShapeInfo());
@@ -1220,10 +1220,10 @@ TEST_F(NDArrayTest, Broadcast1) {
 
 
 TEST_F(NDArrayTest, RSubScalarTest1) {
-    NDArray<double> array(1, 4, 'c');
+    NDArray<double> array('c', {1, 4});
     array.assign(2.0);
 
-    NDArray<double> result(1, 4, 'c');
+    NDArray<double> result('c', {1, 4});
 
     array.applyScalar<simdOps::ReverseSubtract<double>>(1.0, &result);
 
@@ -1232,7 +1232,7 @@ TEST_F(NDArrayTest, RSubScalarTest1) {
 
 TEST_F(NDArrayTest, BroadcastOpsTest1) {
 
-    NDArray<float> x(5, 5, 'c');
+    NDArray<float> x('c', {5, 5});
     auto row = nd4j::NDArrayFactory<float>::linspace(1.0f, 5.0f, 5);
     float *brow = new float[5]{1,2,3,4,5};
     int *bshape = new int[8]{2, 1, 5, 1, 1, 0, 1, 99};
@@ -1258,7 +1258,7 @@ TEST_F(NDArrayTest, BroadcastOpsTest1) {
 }
 
 TEST_F(NDArrayTest, TestIndexedPut2) {
-    NDArray<float> x(2, 2, 'f');
+    NDArray<float> x('f', {2, 2});
     //x.printShapeInfo("x shape");
     x.putIndexedScalar(1, 1.0f);
 
@@ -1267,7 +1267,7 @@ TEST_F(NDArrayTest, TestIndexedPut2) {
 }
 
 TEST_F(NDArrayTest, TestIndexedPut3) {
-    NDArray<float> x(2, 2, 'c');
+    NDArray<float> x('c', {2, 2});
     x.putIndexedScalar(1, 1.0f);
 
     //x.printBuffer("after");
@@ -1275,7 +1275,7 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
 }
 
 TEST_F(NDArrayTest, TestIndexedPut4) {
-    NDArray<float> x(2, 2, 'f');
+    NDArray<float> x('f', {2, 2});
     x.putScalar(0, 1, 1.0f);
 
     //x.printBuffer("after");
@@ -1284,7 +1284,7 @@ TEST_F(NDArrayTest, TestIndexedPut4) {
 
 
 TEST_F(NDArrayTest, TestIndexedPut5) {
-    NDArray<float> x(2, 2, 'c');
+    NDArray<float> x('c', {2, 2});
     x.putScalar(0, 1, 1.0f);
 
     //x.printBuffer("after");
@@ -1292,7 +1292,7 @@ TEST_F(NDArrayTest, TestIndexedPut5) {
 }
 
 TEST_F(NDArrayTest, TestAllTensors1) {
-    NDArray<float> matrix(3, 5, 'c');
+    NDArray<float> matrix('c', {3, 5});
 
     std::unique_ptr<ResultSet<float>> rows(NDArrayFactory<float>::allTensorsAlongDimension(&matrix, {1}));
 
@@ -1301,7 +1301,7 @@ TEST_F(NDArrayTest, TestAllTensors1) {
 
 
 TEST_F(NDArrayTest, TestIndexing1) {
-    NDArray<float> matrix(5, 5, 'c');
+    NDArray<float> matrix('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.putScalar(e, (float) e);
 
@@ -1343,7 +1343,7 @@ TEST_F(NDArrayTest, TestIndexing2) {
 }
 
 TEST_F(NDArrayTest, TestIndexing3) {
-    NDArray<float> matrix(5, 5, 'c');
+    NDArray<float> matrix('c', {5, 5});
     for (int e = 0; e < matrix.lengthOf(); e++)
         matrix.putScalar(e, (float) e);
 
@@ -1496,7 +1496,7 @@ TEST_F(NDArrayTest, TestReshapeNegative2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestStdDev1) {
-    NDArray<double> array(1, 5, 'c');
+    NDArray<double> array('c', {1, 5});
     for (int e = 0; e < array.lengthOf(); e++)
         array.putScalar(e, e+1);
 
@@ -1506,7 +1506,7 @@ TEST_F(NDArrayTest, TestStdDev1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestStdDev2) {
-    NDArray<double> array(5, 6, 'c');
+    NDArray<double> array('c', {5, 6});
     auto tad = array.tensorAlongDimension(0, {0});
 
     ASSERT_EQ(5, tad->lengthOf());

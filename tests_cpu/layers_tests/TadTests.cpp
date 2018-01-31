@@ -48,8 +48,8 @@ TEST_F(TadTests, Test4DTad1) {
 }
 
 TEST_F(TadTests, TestNumTads1) {
-    NDArray<float> x(2, 3, 'c');
-    NDArray<float> y(2, 2, 'c');
+    NDArray<float> x('c', {2, 3});
+    NDArray<float> y('c', {2, 2});
 
     std::vector<int> dim({0});
 

@@ -103,7 +103,7 @@ namespace nd4j {
         /**
         *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
         */
-        NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
+        // NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
