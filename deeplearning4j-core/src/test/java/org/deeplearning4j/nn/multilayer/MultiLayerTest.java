@@ -1223,4 +1223,25 @@ public class MultiLayerTest {
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
+
+    @Test
+    public void testLayerSize(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .list()
+                .layer(new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).build())
+                .layer(new DenseLayer.Builder().nOut(30).build())
+                .layer(new OutputLayer.Builder().nOut(13).build())
+                .setInputType(InputType.convolutional(28,28,3))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(6, net.layerSize(0));
+        assertEquals(0, net.layerSize(1));
+        assertEquals(30, net.layerSize(2));
+        assertEquals(13, net.layerSize(3));
+    }
 }

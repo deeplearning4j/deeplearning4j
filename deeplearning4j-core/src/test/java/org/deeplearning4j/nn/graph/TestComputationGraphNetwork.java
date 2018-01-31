@@ -1300,5 +1300,31 @@ public class TestComputationGraphNetwork {
         }
     }
 
+    @Test
+    public void testLayerSize(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build(), "in")
+                .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).build(), "0")
+                .layer("2", new DenseLayer.Builder().nOut(30).build(), "1")
+                .layer("3", new OutputLayer.Builder().nOut(13).build(), "2")
+                .setInputTypes(InputType.convolutional(28,28,3))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        assertEquals(6, net.layerSize(0));
+        assertEquals(0, net.layerSize(1));
+        assertEquals(30, net.layerSize(2));
+        assertEquals(13, net.layerSize(3));
+
+        assertEquals(6, net.layerSize("0"));
+        assertEquals(0, net.layerSize("1"));
+        assertEquals(30, net.layerSize("2"));
+        assertEquals(13, net.layerSize("3"));
+    }
 
 }
