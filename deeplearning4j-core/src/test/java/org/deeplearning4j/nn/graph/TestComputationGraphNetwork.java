@@ -1310,6 +1310,7 @@ public class TestComputationGraphNetwork {
                 .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).build(), "0")
                 .layer("2", new DenseLayer.Builder().nOut(30).build(), "1")
                 .layer("3", new OutputLayer.Builder().nOut(13).build(), "2")
+                .setOutputs("3")
                 .setInputTypes(InputType.convolutional(28,28,3))
                 .build();
 
