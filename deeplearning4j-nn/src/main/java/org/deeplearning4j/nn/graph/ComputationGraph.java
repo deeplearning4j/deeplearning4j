@@ -1971,18 +1971,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageOrDetach(workspaceExternal);
-                            if(wsm == WorkspaceMode.SINGLE && !wsExternalActive){
-                                //External errors case - we can't simply leverage or scopeBorrowed to workspaceExternal here:
-                                //If using SINGLE mode, workspaceExternal *is* active but then leverageTo becomes a no-op
-                                //and hence we aren't actually moving it out of the current workspace. Consequently, the
-                                //epsilons will be invalidated at the end of the current vertex for loop
-                                try(MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
-                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                }
-                            } else {
-                                //Standard training case
-                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
-                            }
 
                             if (wsm == WorkspaceMode.NONE ) {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
