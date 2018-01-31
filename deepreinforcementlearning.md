@@ -12,6 +12,9 @@ When it is not in our power to determine what is true, we ought to act in accord
 Contents
 
 * <a href="#define">Reinforcement Learning Definitions</a>
+* <a href="#domain">Domain Selection for Reinforcement Learning</a>
+* <a href="#reward">State-Action Pairs & Complex Probability Distributions of Reward</a>
+* <a href="#time">Machine Learning's Relationship With Time</a>
 * <a href="#neural">Neural Networks and Deep Reinforcement Learning</a>
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#reading">Further Reading</a>
@@ -64,7 +67,7 @@ Reinforcement learning differs from both supervised and unsupervised learning by
 
 <iframe width="420" height="315" src="https://www.youtube.com/embed/-uXVu0l8guo" frameborder="0" allowfullscreen></iframe>
 
-## Domain Selection for Reinforcement Learning
+## <a name="domain">Domain Selection for Reinforcement Learning</a>
 
 One way to imagine an autonomous reinforcement learning agent would be as a blind person attempting to navigate the world with only their ears and a white cane. Agents have small windows that allow them to perceive their environment, and those windows may not even be the most appropriate way for them to perceive what's around them. 
 
@@ -72,7 +75,7 @@ One way to imagine an autonomous reinforcement learning agent would be as a blin
 
 ![Alt text](./img/rat_wired.jpg)
 
-## State-Action Pairs & Complex Probability Distributions of Reward
+## <a name="reward">State-Action Pairs & Complex Probability Distributions of Reward</a>
 
 The goal of reinforcement learning is to pick the best known action for any given state, which means the actions have to be ranked, and assigned values relative to one another. Since those actions are state-dependent, what we are really gauging is the value of state-action pairs; i.e. an action taken from a certain state, something you did somewhere. Here are a few examples to demonstrate that the value and meaning of an action is contingent upon the state in which it is taken:
 
@@ -90,7 +93,7 @@ Any statistical approach is essentially a confession of ignorance. The immense c
 
 Reinforcement learning is iterative. In its most interesting applications, it doesn’t begin by knowing which rewards state-action pairs will produce. It learns those relations by running through states again and again, like athletes or musicians iterate through states in an attempt to improve their performance.
 
-## Machine Learning's Relationship with Time
+## <a name="time">The Relationship Between Machine Learning with Time</a>
 
 You could say that reinforcement learning algorithms have a different relationship to time than humans do. We are able to run the algorithms through the same states over and over again while experimenting with different actions, until we can infer which actions are best from which states. Effectively, we give algorithms their very own [Groundhog Day](http://www.imdb.com/title/tt0107048/), where they start out as dumb jerks and slowly get wise. 
 
