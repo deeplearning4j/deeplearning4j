@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -128,10 +129,20 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
             int[] inputWShape = new int[] {nLast, 4 * nL};
             int[] recurrentWShape = new int[] {nL, 4 * nL + 3};
 
+            WeightInit rwInit;
+            Distribution rwDist;
+            if(layerConf.getWeightInitRecurrent() != null){
+                rwInit = layerConf.getWeightInitRecurrent();
+                rwDist = Distributions.createDistribution(layerConf.getDistRecurrent());
+            } else {
+                rwInit = layerConf.getWeightInit();
+                rwDist = dist;
+            }
+
             params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
                             layerConf.getWeightInit(), dist, inputWeightView));
             params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape,
-                            layerConf.getWeightInit(), dist, recurrentWeightView));
+                            rwInit, rwDist, recurrentWeightView));
             biasView.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
                             Nd4j.valueArrayOf(1, nL, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.
