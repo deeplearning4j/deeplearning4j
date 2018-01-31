@@ -17,6 +17,7 @@ Contents
 * <a href="#time">Machine Learning's Relationship With Time</a>
 * <a href="#neural">Neural Networks and Deep Reinforcement Learning</a>
 * <a href="#code">Just Show Me the Code</a>
+* <a href="#footnote">FootNotes</a>
 * <a href="#reading">Further Reading</a>
 
 While neural networks are responsible for recent breakthroughs in problems like computer vision, machine translation and time series prediction – they can also combine with reinforcement learning algorithms to create something astounding like [AlphaGo](https://deepmind.com/blog/alphago-zero-learning-scratch/). 
@@ -223,6 +224,8 @@ public class A3CALE {
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
+
+<a name="footnote">Footnotes</a>
 
 <a name="one">1)</a> *It might be helpful to imagine a reinforcement learning algorithm in action, to paint it visually. Let's say the algorithm is learning to play the video game Super Mario. It's trying to get Mario through the game and acquire the most points. To do that, we can spin up lots of different Marios in parallel and run them through the space of all possible game states. It's as though you have 1,000 Marios all tunnelling through a mountain, and as they dig (e.g. as they decide again and again which action to take to affect the game environment), their tunnels branch like the intricate and fractal twigs of a tree. The Marios' experience-tunnels are corridors of light cutting through the mountain. And as in life itself, one successful action may precede another in a larger decision flow, propelling the winning Marios onward. You might also imagine that in front of each Mario is a heat map tracking the rewards they can associate with state-action pairs. (Imagine each state-action pair as have its own screen overlayed with heat from yellow to red. The many screens are assembled in a grid, like you might see in front of a Wall St. trader with many monitors. One might be "jump harder from this state", another might be "run faster in this state" and so on and so forth.) Since some state-action pairs lead to significantly more reward than others, and different kinds of actions such as jumping, squatting or running can be taken, the probability distribution of reward over actions is not a bel curve but instead complex, which is why [Markov and Monte Carlo techniques](./markovchainmontecarlo) are used to explore it. That is, while it is difficult to describe the reward distribution in a formula, it can be sampled. Because the algorithm starts ignorant and many of the paths through the game-state space are unexplored, the heat maps will reflect their lack of experience; i.e. there could be blank holes in the heatmap of the rewards they imagine, or they might just start with some default assumptions about rewards that will be adjusted with experience. The Marios are essentially reward-seeking missiles, and the more times they run through the game, the more accurate their heatmap of potential future reward becomes. Those heatmaps are basically probability distributions of reward over the state-action pairs possible from the Mario's current state.*
 
