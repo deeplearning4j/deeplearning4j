@@ -143,7 +143,7 @@ namespace nd4j {
             
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
             //shape::shapeBuffer(1, shape.data(), newShape);
-            nd4j::ShapeBuilder::shapeVector(shape[0], newShape);
+            shape::shapeVector(shape[0], newShape);
 
             return new ShapeList(newShape);
         }

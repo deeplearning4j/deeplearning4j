@@ -35,7 +35,7 @@ namespace nd4j {
             input->template applyTransform<simdOps::SoftMax<T>>(z, nullptr);
             z->template applyPairwiseTransform<simdOps::Multiply<T>>(epsInput, tmp_, nullptr);
 
-            auto sum = tmp_->template reduceAlongDimension<simdOps::Sum<T>>({1});
+            auto sum = tmp_->template reduceAlongDimension<simdOps::Sum<T>>({1}, false, true);
 
             tmp_->assign(epsInput);
             tmp_->template applyBroadcast<simdOps::Subtract<T>>({0}, sum);

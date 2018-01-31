@@ -1428,6 +1428,24 @@ ND4J_EXPORT bool isLikeVector(int *shapeInfo, int& posOfNonUnityDim);
     // return absolute index of array min, min is sub-array of max, index to be returned is min index and corresponds to maxIdx of max array 
     ND4J_EXPORT Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    ND4J_EXPORT void shapeScalar(int* const buffer);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    ND4J_EXPORT void shapeVector(const int length, int* const buffer);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    ND4J_EXPORT void shapeOldScalar(int* const buffer, const char order);
+
+
 
 
 //END HEADERS
@@ -4730,7 +4748,7 @@ __host__ __device__
     __host__
 #endif
     // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
-    // also sort input array of dimensions, this operation is also necessary for creating TAD object
+    // also it sorts input array of dimensions, this operation is also necessary for creating TAD object
     INLINEDEF void checkDimensions(const int rank, std::vector<int>& dimensions) {
 
         int dimSize = dimensions.size();
@@ -4782,7 +4800,48 @@ INLINEDEF Nd4jIndex subArrayIndex(const int* maxShapeInfo, const int* minShapeIn
 }
 
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void shapeScalar(int* const buffer) {
+        
+        buffer[0] = 0;
+        buffer[1] = 0;        
+        buffer[2] = 1;        
+        buffer[3] = 99;
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void shapeOldScalar(int* const buffer, const char order) {
+        
+        buffer[0] = 2;
+        buffer[1] = 1;
+        buffer[2] = 1;
+        buffer[3] = 1;
+        buffer[4] = 1;
+        buffer[5] = 0;
+        buffer[6] = 1;
+        buffer[7] = (int)order;
+    }
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void shapeVector(const int length, int* const buffer) {
+
+        buffer[0] = 1;
+        buffer[1] = length;
+        buffer[2] = 1;
+        buffer[3] = 0;
+        buffer[4] = 1;
+        buffer[5] = 99;
+    }
+
 
 }
 
 #endif /* SHAPE_H_ */
+        

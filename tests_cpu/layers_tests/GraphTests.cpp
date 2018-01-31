@@ -1202,7 +1202,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
 
 
 TEST_F(GraphTests, Test_Clone_1) {
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', (std::vector<int>){3});
     exp.assign(3.0);
 
 
@@ -1238,7 +1238,7 @@ TEST_F(GraphTests, Test_Clone_1) {
 
 
 TEST_F(GraphTests, Test_Clone_2) {
-    NDArray<float> exp('c', {3, 1});
+    NDArray<float> exp('c', (std::vector<int>){3});
     exp.assign(3.0);
 
 

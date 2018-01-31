@@ -24,7 +24,7 @@ namespace nd4j {
 
             int *newshape;
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
-            nd4j::ShapeBuilder::shapeVector(shape::rank(inShape), newshape);
+            shape::shapeVector(shape::rank(inShape), newshape);
 
             return new ShapeList(newshape);
         };

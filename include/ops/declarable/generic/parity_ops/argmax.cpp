@@ -23,7 +23,7 @@ namespace nd4j {
                     axis.emplace_back(ca);
                 }
 
-                int* shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false);
+                int* shape = ShapeUtils<T>::evalReduceShapeInfo(input->ordering(), axis, *input, false, true);
                 auto output = new NDArray<T>(shape, false, block.getWorkspace());
                 
                 input->template applyIndexReduce<simdOps::IndexMax<T>>(output, axis);

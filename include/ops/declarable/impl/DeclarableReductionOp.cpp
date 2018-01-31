@@ -53,7 +53,7 @@ namespace nd4j {
             Nd4jIndex tadLength = shape::tadLength(inputShape->at(0), dims.data(), dims.size());
             Nd4jIndex numTads = shape::length(inputShape->at(0)) /  tadLength;
 
-            int *newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), block.getWorkspace());
+            int *newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true,block.getWorkspace());
 
             return new ShapeList(newShape);
         }

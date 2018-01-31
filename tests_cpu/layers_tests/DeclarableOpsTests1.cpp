@@ -2842,7 +2842,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
     NDArray<double> expGradW('c', {N,2*K,6*K});
     expGradW.setBuffer(expGradWBuff);
     NDArray<double> expGradB('c', {1,4*K});    
-    gradBias.template reduceAlongDimension<simdOps::Sum<double>>(&expGradB, {0});    // [bS x 4K] -> [1 x 4K]    
+    gradBias.template reduceAlongDimension<simdOps::Sum<double>>(&expGradB, {0}, false, true);    // [bS x 4K] -> [1 x 4K]        
     NDArray<double> expGradInit('c', {bS,2*K});
     expGradInit.setBuffer(expGradInitBuff);
 

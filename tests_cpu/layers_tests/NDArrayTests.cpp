@@ -1527,7 +1527,7 @@ TEST_F(NDArrayTest, TestApplyIndexReduce1) {
     float xBuff[] = {1, 5, 2, 12, 9, 3, 10, 7, 4, 11, 6, 8};    
     int xShapeInfo[] = {3, 2, 3, 2, 6, 2, 1, 0, 1, 99};        
     float expBuff[] = {3,1}; 
-    int expShapeInfo[] = {2, 1, 2, 2, 1, 0, 1, 99};
+    int expShapeInfo[] = {1, 2, 1, 0, 1, 99};
     std::vector<int> dim = {0,1};
     
     NDArray<float> x(xBuff, xShapeInfo);
@@ -1603,7 +1603,7 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension1) {
     float xBuff[] =   {1, 2, 3, 4, 5, 6};        
     float expBuff[] = {0.666667, 0.666667};
     int xShapeInfo[] =   {2, 2, 3, 3, 1, 0, 1, 99};        
-    int expShapeInfo[] = {2, 2, 1, 1, 1, 0, 1, 99};        
+    int expShapeInfo[] = {1, 2, 1, 0, 1, 99};        
     
         
     NDArray<float> x(xBuff, xShapeInfo);    

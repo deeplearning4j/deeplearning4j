@@ -19,7 +19,6 @@
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
 #include <helpers/ShapeUtils.h>
-#include <helpers/ShapeBuilder.h>
 
 namespace nd4j {
 
@@ -195,7 +194,7 @@ NDArray<T>::NDArray(T scalar) {
         std::vector<T> values(v);
         ALLOCATE(_buffer, workspace, values.size(), T);
         ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(1), int);
-        ShapeBuilder::shapeVector(values.size(), _shapeInfo);
+        shape::shapeVector(values.size(), _shapeInfo);
         memcpy(_buffer, values.data(), values.size() * sizeOfT());
 
         _isBuffAlloc = true;
@@ -207,7 +206,7 @@ NDArray<T>::NDArray(T scalar) {
     NDArray<T>::NDArray(std::vector<T> &values, nd4j::memory::Workspace* workspace) {
         ALLOCATE(_buffer, workspace, values.size(), T);
         ALLOCATE(_shapeInfo, workspace, shape::shapeInfoLength(1), int);
-        ShapeBuilder::shapeVector(values.size(), _shapeInfo);
+        shape::shapeVector(values.size(), _shapeInfo);
         memcpy(_buffer, values.data(), values.size() * sizeOfT());
 
         _isBuffAlloc = true;
@@ -889,9 +888,9 @@ template <typename T>
 //////////////////////////////////////////////////////////////////////////
 // method calculates sum along dimension(s) in this array and save it to row: as new NDArray with dimensions 1xN
     template<typename T>
-    NDArray<T> *NDArray<T>::sum(const std::initializer_list<int> &dimensions, const bool keepDims) const {        
-            
-        return reduceAlongDimension<simdOps::Sum<T>>(dimensions, keepDims);
+    NDArray<T> *NDArray<T>::sum(const std::initializer_list<int> &dimensions) const {
+
+        return reduceAlongDimension<simdOps::Sum<T>>(dimensions);
 //    NativeOpExcutioner<T>::execReduce(1, _buffer, _shapeInfo, nullptr, result->_buffer, result->_shapeInfo, dims, dimensions.size(), tad->tadOnlyShapeInfo, tad->tadOffsets);
     }
 
@@ -915,11 +914,11 @@ template <typename T>
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims) const {
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
         
         std::vector<int> copy(dimensions);
         
-        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims);
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes);
         NDArray<T>* result = new NDArray<T>(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -942,11 +941,11 @@ template <typename T>
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
-    NDArray<T> NDArray<T>::reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims) const {
+    NDArray<T> NDArray<T>::reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
         
         std::vector<int> copy(dimensions);
         
-        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims);
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes);
         NDArray<T> result(newShape, _workspace);
         RELEASE(newShape, _workspace);        
         
@@ -969,11 +968,11 @@ template <typename T>
 // method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
-    void NDArray<T>::reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims, T *extras) const {
+    void NDArray<T>::reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, T *extras) const {
 
         std::vector<int> copy(dimensions);
 
-        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims);
+        int* newShape = ShapeUtils<T>::evalReduceShapeInfo('c', copy, *this, keepDims, supportOldShapes);
         if(!shape::shapeEquals(newShape, target->getShapeInfo())) {
             nd4j_printf("NDArray::reduceAlongDimension method: wrong target shape!\n", "");
             throw "NDArray::reduceAlongDimension method: wrong target shape!";
@@ -996,9 +995,9 @@ template <typename T>
 // method reduces array by excluding its shapes along axes present in dimensions vector
     template<typename T>
     template<typename OpName>
-    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims) const {
+    NDArray<T> *NDArray<T>::reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 		        
-        return reduceAlongDimension<OpName>(std::vector<int>(dimensions), keepDims);
+        return reduceAlongDimension<OpName>(std::vector<int>(dimensions), keepDims, supportOldShapes);
 	}
 
 

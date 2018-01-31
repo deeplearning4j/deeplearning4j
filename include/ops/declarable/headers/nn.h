@@ -60,5 +60,27 @@ namespace nd4j {
          * 0: optional, learning rate
          */
         DECLARE_CONFIGURABLE_OP(apply_sgd, 2, 1, true, -2, 0);   
+
+        /**
+         * This operation performs batch normalization of layer, it is based on following article http://arxiv.org/abs/1502.03167.
+         * Expected arguments:
+         * x: input 4D array of shape [bS,iH,iW,iD] (data format = NHWC) or [bS,iD,iH,iW] (data format = NCHW), where
+         *    bS - batch size 
+         *    iH - input height    
+         *    iW - input width 
+         *    iD - input depth (or number of channels)
+         * scale:  1D input array of scale factors, shape [iD]
+         * offset: 1D input array of offsets (shifts), shape [iD]
+         * mean: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false
+         * variance: 1D input array of population mean used for inference, shape [iD], this array is required only if isTraining = false         
+         * 
+         * T input arguments:
+         * 0: epsilon, it is optional argument, default value is 0.001, this is small number to be added to the variance of x
+         * 
+         * integer input arguments:
+         * 0: dataFormat, may have two values: zero -> NHWC, unity -> NCHW
+         * 1: isTraining, may have two values: zero -> inference, unity -> training
+         */
+        DECLARE_CUSTOM_OP(fused_batch_norm, 3, 1, false, 0, 2);
     }
 }

@@ -20,7 +20,7 @@ namespace nd4j {
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
 
-            nd4j::ShapeBuilder::shapeScalar(newShape);
+            shape::shapeScalar(newShape);
 
             return new ShapeList(newShape);
         }

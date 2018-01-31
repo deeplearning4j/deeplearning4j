@@ -4,7 +4,6 @@
 
 #include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/dilation2d.h>
-#include <helpers/ShapeBuilder.h>
 
 namespace nd4j {
 namespace ops {
@@ -83,7 +82,7 @@ namespace ops {
         } else {
             if (block.numI() < 9) {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
-                ShapeBuilder::shapeScalar(newShape);
+                shape::shapeScalar(newShape);
                 return new ShapeList(newShape);
             }
                 

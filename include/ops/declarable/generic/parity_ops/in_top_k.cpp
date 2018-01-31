@@ -51,9 +51,9 @@ namespace nd4j {
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(shapeRank), int);
 
 //            if (shape::order(in) == 'c')
-//                ShapeBuilder::shapeVector(shape::sizeAt(in, 0),  newshape);
+//                shape::shapeVector(shape::sizeAt(in, 0),  newshape);
 //            else
-//                ShapeBuilder::shapeVectorFortran(shape::sizeAt(in, 0),  newshape);
+//                shape::shapeVectorFortran(shape::sizeAt(in, 0),  newshape);
             if (shape::order(in) == 'c')
                 shape::shapeBuffer(shape::rank(in), shape::shapeOf(in), newshape);
             else 

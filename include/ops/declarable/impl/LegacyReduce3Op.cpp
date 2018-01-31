@@ -77,7 +77,7 @@ namespace nd4j {
                 auto array = new NDArray<T>(nullptr, xShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                xShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array);
+                xShape = ShapeUtils<T>::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
 
                 delete array;
             }

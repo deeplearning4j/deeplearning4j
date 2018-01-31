@@ -361,7 +361,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);  // apply mask
 
     // gradB    
-    NDArray<T>* temp3 = gradBias->template reduceAlongDimension<simdOps::Sum<T>>({0,2});    // [1 x 2K]
+    NDArray<T>* temp3 = gradBias->template reduceAlongDimension<simdOps::Sum<T>>({0,2}, false, true);    // [1 x 2K]
     gradB->assign(temp3);
 
     // gradW [bS x 3K x K]
@@ -530,7 +530,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);       // apply mask
 
     // gradB    
-    gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0,2});    // [1 x 2K]    
+    gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0,2}, false, true);    // [1 x 2K]    
 
     // gradW [bS x 3K x K]
     input->permutei({0, 2, 1});                                               // [bS x N x K]
@@ -815,7 +815,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     }
 
     // gradB    
-    gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0});    // [1 x 4K]    
+    gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0}, false, true);    // [1 x 4K]    
 
     // gradWeights     
     input->permutei({0, 2, 1});                                             // [N x bS x 2K] -> [N x 2K x bS]    

@@ -131,7 +131,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     NDArray<T>* labels  = INPUT_VARIABLE(2);
 
 	std::vector<int> dimensions = {-1};
-    int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), false, block.getWorkspace());
+    int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), false, true, block.getWorkspace());
     
     // if scalar is required
     if(INT_ARG(0) != 0) {	

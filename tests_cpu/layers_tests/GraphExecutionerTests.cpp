@@ -58,7 +58,7 @@ TEST_F(GraphExecutionerTests, Test_Implicit_Output_2) {
 
 
 TEST_F(GraphExecutionerTests, Test_Implicit_Output_3) {
-    NDArray<float> exp('c', {3, 1}, {3, 3, 3});
+    NDArray<float> exp('c', {3}, {3, 3, 3});
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
     auto status = GraphExecutioner<float>::execute(graph);

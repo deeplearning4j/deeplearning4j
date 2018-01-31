@@ -128,7 +128,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     }
     else {							// in this case output has the same shape as labels reduced  by dim axis    	
     	std::vector<int> dimensions = {dim};
-    	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), true, block.getWorkspace());
+    	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), true, false, block.getWorkspace());
     }
     
     return new ShapeList(outShapeInfo);    

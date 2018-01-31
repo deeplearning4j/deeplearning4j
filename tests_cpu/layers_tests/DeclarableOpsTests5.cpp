@@ -1353,10 +1353,8 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-
     delete results;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
@@ -1378,7 +1376,6 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
     ASSERT_TRUE(input.isSameShape(output));
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
-
 
     delete results;
 }
@@ -1447,3 +1444,160 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, fusedBatchNorm_test1) {
+    
+    NDArray<double> x('c', {2, 2, 3, 4});
+    NDArrayFactory<double>::linspace(1, x);
+    std::vector<int> shape = {4};
+    NDArray<double> scale('c', shape);
+    
+    scale = 0.5;
+    NDArray<double> offset('c', shape);
+    offset = 2.;
+    NDArray<double> expY('c', {2, 2, 3, 4}, {1.20337462,  1.20337462,  1.20337462,  1.20337462, 1.34821558,  1.34821558,  1.34821558,  1.34821558, 1.49305654,  1.49305654,  1.49305654,  1.49305654, 1.63789749,  1.63789749,  1.63789749,  1.63789749, 1.78273857,  1.78273857,  1.78273857,  1.78273857, 1.92757952,  1.92757952,  1.92757952,  1.92757952, 2.0724206 ,  2.0724206 ,  2.0724206 ,  2.0724206 , 2.21726155,  2.21726155,  2.21726155,  2.21726155, 2.36210251,  2.36210251,  2.36210251,  2.36210251, 2.50694346,  2.50694346,  2.50694346,  2.50694346, 2.65178442,  2.65178442,  2.65178442,  2.65178442, 2.79662538,  2.79662538,  2.79662538,  2.79662538});
+    NDArray<double> expBatchMean('c', shape, {23.,  24.,  25.,  26.});
+    NDArray<double> expBatchVar('c', shape, {208.00001526,  208.00001526,  208.00001526,  208.00001526});
+
+
+    nd4j::ops::fused_batch_norm<double> op;
+    ResultSet<double>* results = op.execute({&x, &scale, &offset}, {}, {0,1});
+    NDArray<double>* y = results->at(0);    
+    NDArray<double>* batchMean = results->at(1);
+    NDArray<double>* batchVar = results->at(2);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expY.isSameShape(y));
+    ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
+    ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, fusedBatchNorm_test2) {
+    
+    NDArray<double> x('c', {2, 2, 3, 4});
+    NDArrayFactory<double>::linspace(1, x);
+    std::vector<int> shape = {4};
+    NDArray<double> scale('c', shape);
+    
+    scale = 0.5;
+    NDArray<double> offset('c', shape);
+    offset = 2.;
+    NDArray<double> expY('c', {2, 2, 3, 4}, {1.20347691,  1.20347691,  1.20347691,  1.20347691, 1.34829926,  1.34829926,  1.34829926,  1.34829926, 1.49312162,  1.49312162,  1.49312162,  1.49312162, 1.6379441 ,  1.6379441 ,  1.6379441 ,  1.6379441 , 1.78276646,  1.78276646,  1.78276646,  1.78276646, 1.92758882,  1.92758882,  1.92758882,  1.92758882, 2.0724113 ,  2.0724113 ,  2.0724113 ,  2.0724113 , 2.21723366,  2.21723366,  2.21723366,  2.21723366, 2.36205602,  2.36205602,  2.36205602,  2.36205602, 2.50687838,  2.50687838,  2.50687838,  2.50687838, 2.65170074,  2.65170074,  2.65170074,  2.65170074, 2.79652309,  2.79652309,  2.79652309,  2.79652309});
+    NDArray<double> expBatchMean('c', shape, {23.,  24.,  25.,  26.});
+    NDArray<double> expBatchVar('c', shape, {208.00001526,  208.00001526,  208.00001526,  208.00001526});
+
+    nd4j::ops::fused_batch_norm<double> op;
+    ResultSet<double>* results = op.execute({&x, &scale, &offset}, {0.05}, {0,1});
+    NDArray<double>* y = results->at(0);    
+    NDArray<double>* batchMean = results->at(1);
+    NDArray<double>* batchVar = results->at(2);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expY.isSameShape(y));
+    ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
+    ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, fusedBatchNorm_test3) {
+    
+    NDArray<double> x('c', {2, 4, 2, 3});
+    NDArrayFactory<double>::linspace(1, x);
+    std::vector<int> shape = {4};
+    NDArray<double> scale('c', shape);
+    
+    scale = 0.5;
+    NDArray<double> offset('c', shape);
+    offset = 2.;
+    NDArray<double> expY('c', {2, 4, 2, 3}, {1.20337462,  1.20337462,  1.20337462,  1.20337462, 1.34821558,  1.34821558,  1.34821558,  1.34821558, 1.49305654,  1.49305654,  1.49305654,  1.49305654, 1.63789749,  1.63789749,  1.63789749,  1.63789749, 1.78273857,  1.78273857,  1.78273857,  1.78273857, 1.92757952,  1.92757952,  1.92757952,  1.92757952, 2.0724206 ,  2.0724206 ,  2.0724206 ,  2.0724206 , 2.21726155,  2.21726155,  2.21726155,  2.21726155, 2.36210251,  2.36210251,  2.36210251,  2.36210251, 2.50694346,  2.50694346,  2.50694346,  2.50694346, 2.65178442,  2.65178442,  2.65178442,  2.65178442, 2.79662538,  2.79662538,  2.79662538,  2.79662538});
+    NDArray<double> expBatchMean('c', shape, {23.,  24.,  25.,  26.});
+    NDArray<double> expBatchVar('c', shape, {208.00001526,  208.00001526,  208.00001526,  208.00001526});
+
+    nd4j::ops::fused_batch_norm<double> op;
+    ResultSet<double>* results = op.execute({&x, &scale, &offset}, {}, {1,1});
+    NDArray<double>* y = results->at(0);    
+    NDArray<double>* batchMean = results->at(1);
+    NDArray<double>* batchVar = results->at(2);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expY.isSameShape(y));
+    ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
+    ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, fusedBatchNorm_test4) {
+    
+    NDArray<double> x('c', {2, 2, 3, 4});    
+    NDArrayFactory<double>::linspace(1, x);
+    std::vector<int> shape = {4};
+    NDArray<double> scale('c', shape);    
+    NDArray<double> offset('c', shape);
+    NDArray<double> mean('c', shape);
+    NDArray<double> variance('c', shape);
+    
+    scale = 0.5;    
+    offset = 2.;
+    mean = 25.;
+    variance = 5.;
+
+    NDArray<double> expY('c', {2, 2, 3, 4}, {-3.36602688, -3.14244223, -2.91885757, -2.6952734 , -2.47168875, -2.24810457, -2.02451992, -1.80093551, -1.57735109, -1.35376668, -1.13018227, -0.90659785, -0.68301344, -0.45942879, -0.23584437, -0.01225996, 0.21132445,  0.43490887,  0.65849328,  0.88207781, 1.10566223,  1.32924664,  1.55283117,  1.77641559, 2.        ,  2.22358441,  2.44716883,  2.67075348, 2.89433765,  3.11792231,  3.34150672,  3.56509113, 3.78867555,  4.01225996,  4.23584461,  4.45942879, 4.68301344,  4.90659809,  5.13018227,  5.35376644, 5.57735109,  5.80093575,  6.02451992,  6.24810457, 6.47168875,  6.6952734 ,  6.91885757,  7.14244223});
+    NDArray<double> expBatchMean('c', shape, {0.,  0.,  0.,  0.});
+    NDArray<double> expBatchVar('c', shape, {0.,  0.,  0.,  0.});
+
+
+    nd4j::ops::fused_batch_norm<double> op;
+    ResultSet<double>* results = op.execute({&x, &scale, &offset}, {}, {0,1});
+    NDArray<double>* y = results->at(0);    
+    NDArray<double>* batchMean = results->at(1);
+    NDArray<double>* batchVar = results->at(2);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expY.isSameShape(y));
+    ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
+    ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
+    
+    NDArray<double> x('c', {2, 2, 3, 4});    
+    NDArrayFactory<double>::linspace(1, x);
+    std::vector<int> shape = {4};
+    NDArray<double> scale('c', shape);    
+    NDArray<double> offset('c', shape);
+    NDArray<double> mean('c', shape);
+    NDArray<double> variance('c', shape);
+    
+    scale = 0.5;    
+    offset = 2.;
+    mean = 25.;
+    variance = 5.;
+
+    NDArray<double> expY('c', {2, 2, 3, 4}, {-3.33992958e+00,  -3.11743259e+00,  -2.89493513e+00,  -2.67243814e+00, -2.44994116e+00,  -2.22744417e+00,  -2.00494719e+00,  -1.78244996e+00, -1.55995297e+00,  -1.33745599e+00,  -1.11495876e+00,  -8.92461777e-01, -6.69964790e-01,  -4.47467566e-01,  -2.24970579e-01,  -2.47359276e-03, 2.20023513e-01,   4.42520618e-01,   6.65017605e-01,   8.87514710e-01, 1.11001182e+00,   1.33250880e+00,   1.55500591e+00,   1.77750289e+00, 2.00000000e+00,   2.22249699e+00,   2.44499421e+00,   2.66749120e+00, 2.88998818e+00,   3.11248541e+00,   3.33498240e+00,   3.55747938e+00, 3.77997637e+00,   4.00247383e+00,   4.22497082e+00,   4.44746780e+00, 4.66996479e+00,   4.89246178e+00,   5.11495876e+00,   5.33745575e+00, 5.55995274e+00,   5.78244972e+00,   6.00494719e+00,   6.22744417e+00, 6.44994116e+00,   6.67243814e+00,   6.89493513e+00,   7.11743259e+00});
+    NDArray<double> expBatchMean('c', shape, {0.,  0.,  0.,  0.});
+    NDArray<double> expBatchVar('c', shape, {0.,  0.,  0.,  0.});
+
+
+    nd4j::ops::fused_batch_norm<double> op;
+    ResultSet<double>* results = op.execute({&x, &scale, &offset}, {0.05}, {0,1});
+    NDArray<double>* y = results->at(0);    
+    NDArray<double>* batchMean = results->at(1);
+    NDArray<double>* batchVar = results->at(2);    
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expY.isSameShape(y));
+    ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
+    ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
+
+    delete results;
+}

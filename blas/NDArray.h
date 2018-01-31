@@ -321,7 +321,7 @@ namespace nd4j {
         *  dimensions - array of dimensions to calculate sum over
         *  keepDims - if true then put unities in place of reduced dimensions
         */
-        NDArray<T> *sum(const std::initializer_list<int> &dimensions, const bool keepDims = false) const;
+        NDArray<T> *sum(const std::initializer_list<int> &dimensions) const;
 
 		/**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector, result is stored in new array to be returned
@@ -329,11 +329,11 @@ namespace nd4j {
         *  keepDims - if true then put unities in place of reduced dimensions
         */ 
         template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray<T>* reduceAlongDimension(const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 		template<typename OpName>
-        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
+        NDArray<T>* reduceAlongDimension(const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
         template<typename OpName>
-        NDArray<T> reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray<T> reduceAlongDims(const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -343,7 +343,7 @@ namespace nd4j {
         *  extras - extra parameters
         */ 
         template<typename OpName>
-        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false, T *extras = nullptr) const;
+        void reduceAlongDimension(NDArray<T>* target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, T *extras = nullptr) const;
 
         /**
         *  return variance of array elements set

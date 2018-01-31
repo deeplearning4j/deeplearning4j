@@ -195,7 +195,7 @@ namespace nd4j {
                     // we have new 1D shape here
                     int *newShape;
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-                    ShapeBuilder::shapeVector(tmpA[1], newShape);
+                    shape::shapeVector(tmpA[1], newShape);
 
                     RELEASE(shape, block.getWorkspace());
                     RELEASE(tmpA, block.getWorkspace());
