@@ -1684,7 +1684,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(INDArray... input) {
-        return output(false, input);
+        return output(false, input, inputMaskArrays, labelMaskArrays);
     }
 
     /**
@@ -1708,7 +1708,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        return output(train, input, null, null);
+        return output(train, input, inputMaskArrays, labelMaskArrays);
     }
 
     /**
