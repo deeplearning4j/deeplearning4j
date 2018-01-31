@@ -178,7 +178,7 @@ public class Transforms {
      * @return the negative of the ndarray
      */
     public static INDArray neg(INDArray ndArray) {
-        return neg(ndArray, Nd4j.copyOnOps);
+        return neg(ndArray, true);
     }
 
 
@@ -189,7 +189,7 @@ public class Transforms {
      * @return
      */
     public static INDArray floor(INDArray ndArray) {
-        return floor(ndArray, Nd4j.copyOnOps);
+        return floor(ndArray, true);
 
     }
 
@@ -200,7 +200,7 @@ public class Transforms {
      * @return
      */
     public static INDArray ceiling(INDArray ndArray) {
-        return ceiling(ndArray, Nd4j.copyOnOps);
+        return ceiling(ndArray, true);
 
     }
 
@@ -221,7 +221,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sign(INDArray toSign) {
-        return sign(toSign, Nd4j.copyOnOps);
+        return sign(toSign, true);
     }
 
 
@@ -232,7 +232,7 @@ public class Transforms {
      * @return
      */
     public static INDArray stabilize(INDArray ndArray, double k) {
-        return stabilize(ndArray, k, Nd4j.copyOnOps);
+        return stabilize(ndArray, k, true);
     }
 
     /**
@@ -241,7 +241,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sin(INDArray in) {
-        return sin(in, Nd4j.copyOnOps);
+        return sin(in, true);
     }
 
     /**
@@ -261,7 +261,7 @@ public class Transforms {
      * @return
      */
     public static INDArray atanh(INDArray in) {
-        return atanh(in, Nd4j.copyOnOps);
+        return atanh(in, true);
     }
 
     /**
@@ -280,7 +280,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sinh(INDArray in) {
-        return sinh(in, Nd4j.copyOnOps);
+        return sinh(in, true);
     }
 
     /**
@@ -299,7 +299,7 @@ public class Transforms {
      * @return
      */
     public static INDArray cos(INDArray in) {
-        return cos(in, Nd4j.copyOnOps);
+        return cos(in, true);
     }
 
     /**
@@ -318,7 +318,7 @@ public class Transforms {
      * @return
      */
     public static INDArray cosh(INDArray in) {
-        return cosh(in, Nd4j.copyOnOps);
+        return cosh(in, true);
     }
 
     /**
@@ -333,7 +333,7 @@ public class Transforms {
 
 
     public static INDArray acos(INDArray arr) {
-        return acos(arr, Nd4j.copyOnOps);
+        return acos(arr, true);
     }
 
 
@@ -343,7 +343,7 @@ public class Transforms {
 
 
     public static INDArray asin(INDArray arr) {
-        return asin(arr, Nd4j.copyOnOps);
+        return asin(arr, true);
     }
 
 
@@ -352,7 +352,7 @@ public class Transforms {
     }
 
     public static INDArray atan(INDArray arr) {
-        return atan(arr, Nd4j.copyOnOps);
+        return atan(arr, true);
     }
 
 
@@ -361,7 +361,7 @@ public class Transforms {
     }
 
     public static INDArray ceil(INDArray arr) {
-        return ceil(arr, Nd4j.copyOnOps);
+        return ceil(arr, true);
     }
 
 
@@ -371,7 +371,7 @@ public class Transforms {
 
 
     public static INDArray relu(INDArray arr) {
-        return relu(arr, Nd4j.copyOnOps);
+        return relu(arr, true);
     }
 
 
@@ -382,7 +382,7 @@ public class Transforms {
 
 
     public static INDArray leakyRelu(INDArray arr) {
-        return leakyRelu(arr, Nd4j.copyOnOps);
+        return leakyRelu(arr, true);
     }
 
 
@@ -391,7 +391,7 @@ public class Transforms {
     }
 
     public static INDArray elu(INDArray arr) {
-        return elu(arr, Nd4j.copyOnOps);
+        return elu(arr, true);
     }
 
 
@@ -400,7 +400,7 @@ public class Transforms {
     }
 
     public static INDArray eluDerivative(INDArray arr) {
-        return eluDerivative(arr, Nd4j.copyOnOps);
+        return eluDerivative(arr, true);
     }
 
 
@@ -411,7 +411,7 @@ public class Transforms {
 
 
     public static INDArray leakyRelu(INDArray arr, double cutoff) {
-        return leakyRelu(arr, cutoff, Nd4j.copyOnOps);
+        return leakyRelu(arr, cutoff, true);
     }
 
 
@@ -420,7 +420,7 @@ public class Transforms {
     }
 
     public static INDArray leakyReluDerivative(INDArray arr, double cutoff) {
-        return leakyReluDerivative(arr, cutoff, Nd4j.copyOnOps);
+        return leakyReluDerivative(arr, cutoff, true);
     }
 
 
@@ -431,7 +431,7 @@ public class Transforms {
 
 
     public static INDArray softPlus(INDArray arr) {
-        return softPlus(arr, Nd4j.copyOnOps);
+        return softPlus(arr, true);
     }
 
 
@@ -440,7 +440,7 @@ public class Transforms {
     }
 
     public static INDArray step(INDArray arr) {
-        return softPlus(arr, Nd4j.copyOnOps);
+        return softPlus(arr, true);
     }
 
 
@@ -450,7 +450,7 @@ public class Transforms {
 
 
     public static INDArray softsign(INDArray arr) {
-        return softPlus(arr, Nd4j.copyOnOps);
+        return softPlus(arr, true);
     }
 
 
@@ -460,7 +460,7 @@ public class Transforms {
 
 
     public static INDArray softsignDerivative(INDArray arr) {
-        return softPlus(arr, Nd4j.copyOnOps);
+        return softPlus(arr, true);
     }
 
 
@@ -471,7 +471,7 @@ public class Transforms {
 
 
     public static INDArray softmax(INDArray arr) {
-        return softmax(arr, Nd4j.copyOnOps);
+        return softmax(arr, true);
     }
 
 
@@ -502,12 +502,12 @@ public class Transforms {
      * @return
      */
     public static INDArray exp(INDArray ndArray) {
-        return exp(ndArray, Nd4j.copyOnOps);
+        return exp(ndArray, true);
     }
 
 
     public static INDArray hardTanh(INDArray ndArray) {
-        return hardTanh(ndArray, Nd4j.copyOnOps);
+        return hardTanh(ndArray, true);
 
     }
 
@@ -524,7 +524,7 @@ public class Transforms {
 
 
     public static INDArray hardTanhDerivative(INDArray ndArray) {
-        return hardTanhDerivative(ndArray, Nd4j.copyOnOps);
+        return hardTanhDerivative(ndArray, true);
 
     }
 
@@ -547,7 +547,7 @@ public class Transforms {
      * @return
      */
     public static INDArray identity(INDArray ndArray) {
-        return identity(ndArray, Nd4j.copyOnOps);
+        return identity(ndArray, true);
     }
 
 
@@ -559,23 +559,35 @@ public class Transforms {
      * @return the ndarray raised to this power
      */
     public static INDArray pow(INDArray ndArray, Number power) {
-        return pow(ndArray, power, Nd4j.copyOnOps);
+        return pow(ndArray, power, true);
 
     }
 
 
     /**
-     * Pow function
+     * Element-wise power function - x^y, performed element-wise.
+     * Not performed in-place: the input arrays are not modified.
      *
-     * @param ndArray the ndarray to raise hte power of
+     * @param ndArray the ndarray to raise to the power of
      * @param power   the power to raise by
-     * @return the ndarray raised to this power
+     * @return a copy of the ndarray raised to the specified power (element-wise)
      */
     public static INDArray pow(INDArray ndArray, INDArray power) {
-        return exec(new Pow(ndArray, power, ndArray, ndArray.length(), 0));
-
+        return pow(ndArray, power, true);
     }
 
+    /**
+     * Element-wise power function - x^y, performed element-wise
+     *
+     * @param ndArray the ndarray to raise to the power of
+     * @param power   the power to raise by
+     * @param dup     if true:
+     * @return the ndarray raised to this power
+     */
+    public static INDArray pow(INDArray ndArray, INDArray power, boolean dup) {
+        INDArray result = (dup ? Nd4j.create(ndArray.shape(), ndArray.ordering()) : ndArray);
+        return exec(new Pow(ndArray, power, result, ndArray.length(), 0));
+    }
 
     /**
      * Rounding function
@@ -584,7 +596,7 @@ public class Transforms {
      * @return
      */
     public static INDArray round(INDArray ndArray) {
-        return round(ndArray, Nd4j.copyOnOps);
+        return round(ndArray, true);
     }
 
     /**
@@ -594,7 +606,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoid(INDArray ndArray) {
-        return sigmoid(ndArray, Nd4j.copyOnOps);
+        return sigmoid(ndArray, true);
     }
 
     /**
@@ -615,7 +627,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sigmoidDerivative(INDArray ndArray) {
-        return sigmoid(ndArray, Nd4j.copyOnOps);
+        return sigmoid(ndArray, true);
     }
 
     /**
@@ -637,7 +649,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sqrt(INDArray ndArray) {
-        return sqrt(ndArray, Nd4j.copyOnOps);
+        return sqrt(ndArray, true);
     }
 
     /**
@@ -647,7 +659,7 @@ public class Transforms {
      * @return
      */
     public static INDArray tanh(INDArray ndArray) {
-        return tanh(ndArray, Nd4j.copyOnOps);
+        return tanh(ndArray, true);
     }
 
     /**
@@ -658,7 +670,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log(INDArray ndArray, double base) {
-        return log(ndArray, base, Nd4j.copyOnOps);
+        return log(ndArray, base, true);
     }
 
     /**
@@ -673,11 +685,11 @@ public class Transforms {
     }
 
     public static INDArray log(INDArray ndArray) {
-        return log(ndArray, Nd4j.copyOnOps);
+        return log(ndArray, true);
     }
 
     public static INDArray eps(INDArray ndArray) {
-        return eps(ndArray, Nd4j.copyOnOps);
+        return eps(ndArray, true);
     }
 
     /**
@@ -688,7 +700,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray) {
-        return greaterThanOrEqual(first, ndArray, Nd4j.copyOnOps);
+        return greaterThanOrEqual(first, ndArray, true);
     }
 
     /**
@@ -699,7 +711,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray) {
-        return lessThanOrEqual(first, ndArray, Nd4j.copyOnOps);
+        return lessThanOrEqual(first, ndArray, true);
     }
 
 
@@ -781,7 +793,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray ndArray, double k) {
-        return max(ndArray, k, Nd4j.copyOnOps);
+        return max(ndArray, k, true);
     }
 
     /**
@@ -807,7 +819,7 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second) {
-        return max(first, second, Nd4j.copyOnOps);
+        return max(first, second, true);
     }
 
     /**
@@ -830,7 +842,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray ndArray, double k) {
-        return min(ndArray, k, Nd4j.copyOnOps);
+        return min(ndArray, k, true);
     }
 
     /**
@@ -856,7 +868,7 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray first, INDArray second) {
-        return min(first, second, Nd4j.copyOnOps);
+        return min(first, second, true);
     }
 
 
