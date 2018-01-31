@@ -5,8 +5,10 @@
 #ifndef LIBND4J_PAIR_H
 #define LIBND4J_PAIR_H
 
+#include <dll.h>
+
 namespace nd4j {
-    class Pair {
+    class ND4J_EXPORT Pair {
     protected:
         int _first = 0;
         int _second = 0;
