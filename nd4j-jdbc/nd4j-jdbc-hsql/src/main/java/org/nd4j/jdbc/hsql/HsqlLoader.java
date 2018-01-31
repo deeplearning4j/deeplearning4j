@@ -4,17 +4,22 @@ import org.nd4j.jdbc.loader.impl.BaseLoader;
 
 import javax.sql.DataSource;
 
+/**
+ * HSQLDB loader for ndarrays.
+ *
+ * @author Adam Gibson
+ */
 public class HsqlLoader extends BaseLoader {
 
-    protected HsqlLoader(DataSource dataSource, String jdbcUrl, String tableName, String idColumnName, String columnName) throws Exception {
+    public HsqlLoader(DataSource dataSource, String jdbcUrl, String tableName, String idColumnName, String columnName) throws Exception {
         super(dataSource, jdbcUrl, tableName, idColumnName, columnName);
     }
 
-    protected HsqlLoader(String jdbcUrl, String tableName, String idColumnName, String columnName) throws Exception {
+    public HsqlLoader(String jdbcUrl, String tableName, String idColumnName, String columnName) throws Exception {
         super(jdbcUrl, tableName, idColumnName, columnName);
     }
 
-    protected HsqlLoader(DataSource dataSource, String jdbcUrl, String tableName, String columnName) throws Exception {
+    public HsqlLoader(DataSource dataSource, String jdbcUrl, String tableName, String columnName) throws Exception {
         super(dataSource, jdbcUrl, tableName, columnName);
     }
 

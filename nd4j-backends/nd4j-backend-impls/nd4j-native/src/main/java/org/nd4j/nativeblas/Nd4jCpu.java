@@ -258,8 +258,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_eye.class,
         float_gather_nd.class,
         float_reverse_sequense.class,
-        float_trace.class,
-        float_random_shuffle.class,};
+        float_trace.class,};
     Class[] halfOps = {
         half_testreduction.class,
         half_noop.class,
@@ -509,8 +508,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_eye.class,
         half_gather_nd.class,
         half_reverse_sequense.class,
-        half_trace.class,
-        half_random_shuffle.class,};
+        half_trace.class,};
     Class[] doubleOps = {
         double_testreduction.class,
         double_noop.class,
@@ -760,8 +758,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_eye.class,
         double_gather_nd.class,
         double_reverse_sequense.class,
-        double_trace.class,
-        double_random_shuffle.class,};
+        double_trace.class,};
 
 @Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
     static { Loader.load(); }
@@ -6850,7 +6847,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -7934,7 +7935,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -9018,7 +9023,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -16285,15 +16294,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 // #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
 
-// #define ILAMBDA_D(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, double X) -> double
-// #define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, double X, double Y) -> double
-
 // #define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
 // #define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
 // #define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
-
-// #define ILAMBDA_F(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, float X) -> float
-// #define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, float X, float Y) -> float
 
 // #define LAMBDA_F(X, ...) [__VA_ARGS__] (float X) -> float
 // #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
@@ -16303,8 +16306,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
 // #define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
 
-// #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, T X) -> T
-// #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, T X, T Y) -> T
 
 // #endif
 
@@ -24651,51 +24652,6 @@ private native void allocate();
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
-
-        @Name("nd4j::ops::random_shuffle<float>") public static class float_random_shuffle extends FloatDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_random_shuffle(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_random_shuffle(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public float_random_shuffle position(long position) {
-                return (float_random_shuffle)super.position(position);
-            }
-        public float_random_shuffle() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
-                                                }
-
-        @Name("nd4j::ops::random_shuffle<float16>") public static class half_random_shuffle extends HalfDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_random_shuffle(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_random_shuffle(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public half_random_shuffle position(long position) {
-                return (half_random_shuffle)super.position(position);
-            }
-        public half_random_shuffle() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
-                                                }
-
-        @Name("nd4j::ops::random_shuffle<double>") public static class double_random_shuffle extends DoubleDeclarableOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_random_shuffle(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_random_shuffle(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public double_random_shuffle position(long position) {
-                return (double_random_shuffle)super.position(position);
-            }
-        public double_random_shuffle() { super((Pointer)null); allocate(); }
-private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
-                                                }
     
 
 

@@ -6094,7 +6094,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -7178,7 +7182,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -8262,7 +8270,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  extraParams - extra parameters for operation
         */
 
-
+        /** 
+        *  apply operation "func" to an array
+        *  func - what operation to apply
+        *  target - where to store result
+        */ 
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -15498,15 +15510,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 // #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
 
-// #define ILAMBDA_D(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, double X) -> double
-// #define ILAMBDA_DD(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, double X, double Y) -> double
-
 // #define LAMBDA_D(X, ...) [__VA_ARGS__] (double X) -> double
 // #define LAMBDA_DD(X, Y, ...) [__VA_ARGS__] (double X, double Y) -> double
 // #define LAMBDA_DDD(t, u, v, ...) [__VA_ARGS__] (double t, double u, double v) -> double
-
-// #define ILAMBDA_F(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, float X) -> float
-// #define ILAMBDA_FF(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, float X, float Y) -> float
 
 // #define LAMBDA_F(X, ...) [__VA_ARGS__] (float X) -> float
 // #define LAMBDA_FF(X, Y, ...) [__VA_ARGS__] (float X, float Y) -> float
@@ -15516,8 +15522,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LAMBDA_TT(X, Y, ...) [__VA_ARGS__] (T X, T Y) -> T
 // #define LAMBDA_TTT(t, u, v, ...) [__VA_ARGS__] (T t, T u, T v) -> T
 
-// #define ILAMBDA_T(X, ...) [__VA_ARGS__] (Nd4jIndex _idx, T X) -> T
-// #define ILAMBDA_TT(X, Y, ...) [__VA_ARGS__] (Nd4jIndex _idx, T X, T Y) -> T
 
 // #endif
 
