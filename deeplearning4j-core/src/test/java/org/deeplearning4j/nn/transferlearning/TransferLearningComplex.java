@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
  * Created by susaneraly on 2/20/17.
  */
 @Slf4j
-public class TransferLearningComplex {
+public class TransferLearningComplex extends BaseDL4JTest {
 
     @Test
     public void testMergeAndFreeze() {

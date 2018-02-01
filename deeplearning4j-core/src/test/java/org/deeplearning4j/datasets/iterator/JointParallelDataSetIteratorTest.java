@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.JointParallelDataSetIterator;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
 import org.junit.Test;
@@ -13,7 +14,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author raver119@gmail.com
  */
-public class JointParallelDataSetIteratorTest {
+public class JointParallelDataSetIteratorTest extends BaseDL4JTest {
 
     /**
      * Simple test, checking datasets alignment. They all should have the same data for the same cycle

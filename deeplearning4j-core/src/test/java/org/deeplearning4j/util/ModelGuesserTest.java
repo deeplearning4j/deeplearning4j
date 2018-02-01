@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,7 +30,7 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * Created by agibsonccc on 12/29/16.
  */
-public class ModelGuesserTest {
+public class ModelGuesserTest extends BaseDL4JTest {
 
 
     @Test

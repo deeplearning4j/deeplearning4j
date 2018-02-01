@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.misc;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,7 +22,7 @@ import org.nd4j.linalg.schedule.ScheduleType;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestLrChanges {
+public class TestLrChanges extends BaseDL4JTest {
 
     @Test
     public void testChangeLrMLN(){

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
@@ -35,7 +36,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 20/01/2017.
  */
-public class TestMasking {
+public class TestMasking extends BaseDL4JTest {
 
     static {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);

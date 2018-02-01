@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimizer.listener;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestCheckpointListener {
+public class TestCheckpointListener extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();

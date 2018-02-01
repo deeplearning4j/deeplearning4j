@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 /**
  *
  */
-public class BNGradientCheckTest {
+public class BNGradientCheckTest extends BaseDL4JTest {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-5;

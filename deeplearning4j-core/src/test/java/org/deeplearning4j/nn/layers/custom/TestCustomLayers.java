@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.custom;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -47,7 +48,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 26/08/2016.
  */
-public class TestCustomLayers {
+public class TestCustomLayers extends BaseDL4JTest {
 
     @Test
     public void testJsonMultiLayerNetwork() {

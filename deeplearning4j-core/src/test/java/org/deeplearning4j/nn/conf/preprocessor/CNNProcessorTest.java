@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -20,7 +21,7 @@ import static org.junit.Assert.*;
 /**
  **/
 
-public class CNNProcessorTest {
+public class CNNProcessorTest extends BaseDL4JTest {
     private static int rows = 28;
     private static int cols = 28;
     private static INDArray in2D = Nd4j.create(1, 784);

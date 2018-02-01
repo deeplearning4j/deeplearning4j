@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -28,7 +29,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
-public class BackPropMLPTest {
+public class BackPropMLPTest extends BaseDL4JTest {
 
     @Test
     public void testMLPTrivial() {

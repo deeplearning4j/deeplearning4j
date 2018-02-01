@@ -4,6 +4,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.CifarLoader;
 import org.datavec.image.loader.LFWLoader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.impl.*;
@@ -36,7 +37,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class DataSetIteratorTest {
+public class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testBatchSizeOfOneIris() throws Exception {

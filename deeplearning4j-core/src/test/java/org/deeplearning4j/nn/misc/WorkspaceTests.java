@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.misc;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -21,7 +22,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
 @Slf4j
-public class WorkspaceTests {
+public class WorkspaceTests extends BaseDL4JTest {
 
     @Before
     public void before(){

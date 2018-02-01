@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -25,7 +26,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-public class OutputLayerGradientChecks {
+public class OutputLayerGradientChecks extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;

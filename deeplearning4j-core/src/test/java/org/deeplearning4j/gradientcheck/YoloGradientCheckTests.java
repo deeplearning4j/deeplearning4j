@@ -6,6 +6,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Alex Black
  */
-public class YoloGradientCheckTests {
+public class YoloGradientCheckTests extends BaseDL4JTest {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;

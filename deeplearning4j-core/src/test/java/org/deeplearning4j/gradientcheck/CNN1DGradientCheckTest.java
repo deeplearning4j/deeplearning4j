@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -20,7 +21,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class CNN1DGradientCheckTest {
+public class CNN1DGradientCheckTest extends BaseDL4JTest {
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;

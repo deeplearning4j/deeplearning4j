@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.feedforward.dense;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by nyghtowl on 8/31/15.
  */
-public class DenseTest {
+public class DenseTest extends BaseDL4JTest {
 
     private int numSamples = 150;
     private int batchSize = 150;

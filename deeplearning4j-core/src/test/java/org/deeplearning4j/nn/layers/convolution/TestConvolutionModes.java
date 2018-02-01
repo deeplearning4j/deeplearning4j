@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 15/11/2016.
  */
-public class TestConvolutionModes {
+public class TestConvolutionModes extends BaseDL4JTest {
 
     @Test
     public void testStrictTruncateConvolutionModeOutput() {

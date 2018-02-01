@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.junit.Test;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Created by Alex on 05/07/2017.
  */
-public class EvaluationCalibrationTest {
+public class EvaluationCalibrationTest extends BaseDL4JTest {
 
     @Test
     public void testReliabilityDiagram() {

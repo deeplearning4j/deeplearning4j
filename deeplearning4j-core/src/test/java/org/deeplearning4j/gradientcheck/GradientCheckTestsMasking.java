@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 /**Gradient checking tests with masking (i.e., variable length time series inputs, one-to-many and many-to-one etc)
  */
-public class GradientCheckTestsMasking {
+public class GradientCheckTestsMasking extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;

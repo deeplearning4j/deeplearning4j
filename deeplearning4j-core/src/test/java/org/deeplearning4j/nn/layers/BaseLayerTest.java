@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,7 +22,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * Created by nyghtowl on 11/15/15.
  */
-public class BaseLayerTest {
+public class BaseLayerTest extends BaseDL4JTest {
 
     protected INDArray weight = Nd4j.create(new double[] {0.10, -0.20, -0.15, 0.05}, new int[] {2, 2});
     protected INDArray bias = Nd4j.create(new double[] {0.5, 0.5}, new int[] {1, 2});

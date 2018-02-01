@@ -1,5 +1,6 @@
 package org.deeplearning4j.ui;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -8,7 +9,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class UiConnectionInfoTest {
+public class UiConnectionInfoTest extends BaseDL4JTest {
 
     @Before
     public void setUp() throws Exception {

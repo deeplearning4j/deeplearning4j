@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.misc;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -17,7 +18,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestNetConversion {
+public class TestNetConversion extends BaseDL4JTest {
 
     @Test
     public void testMlnToCompGraph() {

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -44,7 +45,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 11/27/14.
  */
-public class NeuralNetConfigurationTest {
+public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     final DataSet trainingSet = createData();
 

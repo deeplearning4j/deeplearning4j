@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 04/11/2016.
  */
-public class ROCTest {
+public class ROCTest extends BaseDL4JTest {
 
     private static Map<Double, Double> expTPR;
     private static Map<Double, Double> expFPR;

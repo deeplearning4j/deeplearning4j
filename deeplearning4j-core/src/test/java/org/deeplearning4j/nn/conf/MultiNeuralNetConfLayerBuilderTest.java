@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -22,7 +23,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * @author Jeffrey Tang.
  */
-public class MultiNeuralNetConfLayerBuilderTest {
+public class MultiNeuralNetConfLayerBuilderTest extends BaseDL4JTest {
     int numIn = 10;
     int numOut = 5;
     double drop = 0.3;

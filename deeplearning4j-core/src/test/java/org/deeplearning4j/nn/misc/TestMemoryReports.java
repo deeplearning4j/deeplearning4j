@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.misc;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 14/07/2017.
  */
-public class TestMemoryReports {
+public class TestMemoryReports extends BaseDL4JTest {
 
     public static List<Pair<? extends Layer, InputType>> getTestLayers() {
         List<Pair<? extends Layer, InputType>> l = new ArrayList<>();

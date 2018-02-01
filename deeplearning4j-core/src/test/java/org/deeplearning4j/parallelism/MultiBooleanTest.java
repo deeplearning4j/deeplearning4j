@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.MultiBoolean;
 import org.junit.Test;
 
@@ -9,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author raver119@gmail.com
  */
-public class MultiBooleanTest {
+public class MultiBooleanTest extends BaseDL4JTest {
 
     @Test
     public void testBoolean1() throws Exception {

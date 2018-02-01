@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class LocalResponseTest {
+public class LocalResponseTest extends BaseDL4JTest {
 
     private INDArray x = Nd4j.create(new double[] {0.88128096, -0.96666986, -0.61832994, 0.26418415, 0.05694608,
                     0.2950289, 0.99222249, 0.24541704, 0.4219842, 0.96430975, 0.19299535, -0.06658337, -0.27603117,

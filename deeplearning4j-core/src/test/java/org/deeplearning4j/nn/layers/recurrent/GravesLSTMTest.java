@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,7 +27,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 
-public class GravesLSTMTest {
+public class GravesLSTMTest extends BaseDL4JTest {
 
     @Test
     public void testLSTMGravesForwardBasic() {
