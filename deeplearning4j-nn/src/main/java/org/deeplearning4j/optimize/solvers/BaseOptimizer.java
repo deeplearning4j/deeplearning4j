@@ -249,7 +249,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         pair = gradientAndScore();
 
         //updates searchDirection
-        postStep(pair.getFirst().gradient());
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            postStep(pair.getFirst().gradient());
+        }
 
         //invoke listeners
         int iterationCount = BaseOptimizer.getIterationCount(model);

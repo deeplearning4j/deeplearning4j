@@ -80,14 +80,6 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testSubSampleSumActivate() throws Exception {
-        INDArray input = getData();
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
-
-        layer.activate(input);
-    }
-
     //////////////////////////////////////////////////////////////////////////////////
 
     @Test
