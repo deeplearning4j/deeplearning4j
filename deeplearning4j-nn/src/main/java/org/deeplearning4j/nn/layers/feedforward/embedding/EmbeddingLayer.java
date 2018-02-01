@@ -101,7 +101,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             if (indexes[i] < 0 || indexes[i] >= nOut) {
                 throw new DL4JInvalidInputException("Invalid index for embedding layer: got index " + indexes[i]
                         + " for entry " + i + " in minibatch; indexes must be between 0 and nOut-1 inclusive (0 to "
-                        + nOut + ")");
+                        + (nOut-1) + ")");
             }
         }
 
