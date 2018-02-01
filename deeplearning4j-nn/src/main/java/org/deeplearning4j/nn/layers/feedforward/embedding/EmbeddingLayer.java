@@ -93,9 +93,17 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
                                             + layerId());
         }
 
+        int nOut = layerConf().getNOut();
         int[] indexes = new int[input.length()];
-        for (int i = 0; i < indexes.length; i++)
+        for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
+
+            if (indexes[i] < 0 || indexes[i] >= nOut) {
+                throw new DL4JInvalidInputException("Invalid index for embedding layer: got index " + indexes[i]
+                        + " for entry " + i + " in minibatch; indexes must be between 0 and nOut-1 inclusive (0 to "
+                        + (nOut-1) + ")");
+            }
+        }
 
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
