@@ -356,7 +356,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         protected InputType inputType;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
 
