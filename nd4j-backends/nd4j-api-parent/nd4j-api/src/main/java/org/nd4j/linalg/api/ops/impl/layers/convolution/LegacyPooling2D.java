@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -86,12 +87,12 @@ public class LegacyPooling2D extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new UnsupportedOperationException("Not supported");
+        throw new NoOpNameFoundException("Not supported");
     }
 
     @Override
     public String tensorflowName() {
-        throw new UnsupportedOperationException("Not supported");
+        throw new NoOpNameFoundException("Not supported");
     }
 
     @Override
