@@ -640,10 +640,97 @@ std::vector<int> ShapeUtils<T>::evalBroadcastBackwardAxis(int *operand, int *res
     return axis;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+int* 
+ShapeUtils<T>::matrixProductShape(int* theFirstShape, int* theSecondShape, 
+    bool shouldTranspondFirst, bool shouldTranspondSecond, 
+    nd4j::memory::Workspace* workspace) {
+
+    int *inA = theFirstShape;
+    int *inB = theSecondShape;
+    int *shape;
+    ALLOCATE(shape, workspace, shape::shapeInfoLength(2), int);
+
+    int *tmpA, *tmpB;
+    COPY_SHAPE_EX(inA, tmpA, workspace);
+    COPY_SHAPE_EX(inB, tmpB, workspace);
+
+
+
+    if (shouldTranspondFirst)
+        shape::transposeInplace(tmpA);
+
+    if (shouldTranspondSecond)
+        shape::transposeInplace(tmpB);
+
+
+    if (shape::rank(tmpA) == 1 && shape::isMatrix(tmpB)) {
+        // special case here
+        int *newShape;
+        shape[0] = 1;
+        shape[1] = tmpB[2];
+        ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);
+        shape::shapeBufferFortran(2, shape, newShape);
+
+        RELEASE(shape, workspace);
+        RELEASE(tmpA, workspace);
+        RELEASE(tmpB, workspace);
+
+        return newShape;
+    } else if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
+        // just scalar vs scalar
+        shape[0] = 1;
+        shape[1] = 1;
+    }  else if (shape::isMatrix(tmpA) && shape::isVector(tmpB)) {
+        // gemv case
+        if (shape::rank(tmpB) == 2) {
+            shape[0] = tmpA[1];
+            shape[1] = tmpB[2];
+        } else {
+            // we have new 1D shape here
+            int *newShape;
+            ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);
+            shape::shapeVector(tmpA[1], newShape);
+
+            RELEASE(shape, workspace);
+            RELEASE(tmpA, workspace);
+            RELEASE(tmpB, workspace);
+
+            return newShape;
+        }
+    } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || 
+               (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || 
+               (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {
+        // gemm case
+        shape[0] = tmpA[1];
+        shape[1] = tmpB[2];
+    } else if ((shape::isVector(tmpA) && shape::isScalar(tmpB)) || 
+        (shape::isScalar(tmpA) && shape::isVector(tmpB))) {
+        // element-wise
+        shape[0] = 1;
+        shape[1] = (int) nd4j::math::nd4j_max<Nd4jIndex>(shape::length(tmpA), shape::length(tmpB));
+    } else if (shape::isRowVector(tmpA) && shape::isRowVector(tmpB)) {
+        // dot case
+        shape[0] = 1;
+        shape[1] = 1;
+    }
+
+    int *newShape;
+    ALLOCATE(newShape, workspace, shape::shapeInfoLength(2), int);
+    shape::shapeBufferFortran(2, shape, newShape);
+
+    RELEASE(shape, workspace);
+
+    RELEASE(tmpA, workspace);
+    RELEASE(tmpB, workspace);
+    return newShape;
+}
+
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;
 
-
 }
+
 

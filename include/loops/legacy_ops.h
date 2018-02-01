@@ -200,7 +200,7 @@
         (8, simdOps::Prod), \
         (9, simdOps::StandardDeviation), \
         (10, simdOps::Variance), \
-		(11, simdOps::ASum), \
+        (11, simdOps::ASum), \
         (12, simdOps::MatchCondition) ,\
         (13, simdOps::AMax) ,\
         (14, simdOps::AMin) ,\
@@ -214,7 +214,8 @@
         (22, simdOps::CountNonZero), \
         (23, simdOps::NormFrobenius), \
         (24, simdOps::NormP), \
-        (25, simdOps::SquaredNorm)
+        (25, simdOps::SquaredNorm), \
+        (26, simdOps::CountZero)
 
 
 

@@ -486,6 +486,33 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(dynamic_stitch, 2, 1, false, 0, 0);
 
+        /**
+         * zero_fraction op.
+         * compute a fraction of zeros in given array
+         *
+         * input param - an array (tensor)
+         * output value - a real number with given type (e.g. float or double)
+         */
+        DECLARE_CUSTOM_OP(zero_fraction, 1, 1, false, 0, 0);
+
+        /**
+         * xw_plus_b op.
+         * multiply two first matrices and add third vector to each row of result
+         *
+         * input params:
+         *   - 2D matrix NxM
+         *   - 2D matrix MxN
+         *   - 1D vector with N elements
+         * output value - 2D matrix NxN as multiply of matrixes and add vector
+         */
+        DECLARE_CUSTOM_OP(xw_plus_b, 3, 1, false, 0, 0);
+
+        /**
+         * This operation is missed due it simplicy.
+         * Input and output params are the same after operation.
+         * Input - NDArray, output - NDArray with the same shape.
+         */
+        DECLARE_OP(stop_gradient, 1, 1, true);
 
     }
 }

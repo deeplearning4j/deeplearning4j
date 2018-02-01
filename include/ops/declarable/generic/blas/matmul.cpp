@@ -1,5 +1,6 @@
 //
 //
+// Modified by GS <sgazeos@gmail.com> 01.02.2018
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -131,15 +132,6 @@ namespace nd4j {
         DECLARE_SYN(dot, matmul);
 
         DECLARE_SHAPE_FN(matmul) {
-            int *inA = inputShape->at(0);
-            int *inB = inputShape->at(1);
-            int *shape;
-            ALLOCATE(shape, block.getWorkspace(), 2, int);
-
-            int *tmpA, *tmpB;
-            COPY_SHAPE(inA, tmpA);
-            COPY_SHAPE(inB, tmpB);
-
 
             int iSize = (int) block.getIArguments()->size();
             int transA = 0;
@@ -163,69 +155,9 @@ namespace nd4j {
             if (transB == 1)
                 transB = 112;
 
-            if (transA == 112)
-                shape::transposeInplace(tmpA);
+            int* outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), transA == 112, transB == 112, block.getWorkspace()); 
 
-            if (transB == 112)
-                shape::transposeInplace(tmpB);
-
-            if (shape::rank(tmpA) == 1 && shape::isMatrix(tmpB)) {
-                // special case here
-                int *newShape;
-                shape[0] = 1;
-                shape[1] = tmpB[2];
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-                shape::shapeBufferFortran(2, shape, newShape);
-
-                RELEASE(shape, block.getWorkspace());
-                RELEASE(tmpA, block.getWorkspace());
-                RELEASE(tmpB, block.getWorkspace());
-
-                return new ShapeList(newShape);
-            } else if (shape::isScalar(tmpA) && shape::isScalar(tmpB)) {
-                // just scalar vs scalar
-                shape[0] = 1;
-                shape[1] = 1;
-            }  else if (shape::isMatrix(tmpA) && shape::isVector(tmpB)) {
-                // gemv case
-                if (shape::rank(tmpB) == 2) {
-                    shape[0] = tmpA[1];
-                    shape[1] = tmpB[2];
-                } else {
-                    // we have new 1D shape here
-                    int *newShape;
-                    ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-                    shape::shapeVector(tmpA[1], newShape);
-
-                    RELEASE(shape, block.getWorkspace());
-                    RELEASE(tmpA, block.getWorkspace());
-                    RELEASE(tmpB, block.getWorkspace());
-
-                    return new ShapeList(newShape);
-                }
-            } else if ((shape::isMatrix(tmpA) && shape::isMatrix(tmpB)) || (shape::isVector(tmpA) && shape::isMatrix(tmpB)) || (shape::isColumnVector(tmpA) && shape::isVector(tmpB))) {
-                // gemm case
-                shape[0] = tmpA[1];
-                shape[1] = tmpB[2];
-            } else if ((shape::isVector(tmpA) && shape::isScalar(tmpB)) || (shape::isScalar(tmpA) && shape::isVector(tmpB))) {
-                // element-wise
-                shape[0] = 1;
-                shape[1] = (int) nd4j::math::nd4j_max<Nd4jIndex>(shape::length(tmpA), shape::length(tmpB));
-            } else if (shape::isRowVector(tmpA) && shape::isRowVector(tmpB)) {
-                // dot case
-                shape[0] = 1;
-                shape[1] = 1;
-            }
-
-            int *newShape;
-            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-            shape::shapeBufferFortran(2, shape, newShape);
-
-            RELEASE(shape, block.getWorkspace());
-
-            RELEASE(tmpA, block.getWorkspace());
-            RELEASE(tmpB, block.getWorkspace());
-            return new ShapeList(newShape);
+            return new ShapeList(outputShape);
         }
     }
 }

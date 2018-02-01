@@ -77,6 +77,10 @@ namespace nd4j {
         static int* evalDiagShapeInfo(const NDArray<T>& arr);
 
         static std::vector<int> evalBroadcastBackwardAxis(int *operand, int *result);
+
+        // utility to calculate matrix product shape with give source shapes and additional params 
+        // returns ShapeList pointer with result shape
+        static int* matrixProductShape(int* theFirstShape, int* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::memory::Workspace* workspace);
     };
 
 

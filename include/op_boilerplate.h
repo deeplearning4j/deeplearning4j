@@ -1516,6 +1516,9 @@ struct __registratorDouble_##NAME {\
 #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);\
                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
 
+#define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), int);\
+                                memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+
 // define macros for compiler enforcement to make function inline  
 #ifdef __clang__
 #define FORCEINLINE inline 

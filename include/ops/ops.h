@@ -1856,7 +1856,7 @@ namespace simdOps {
     };
 
 
-	template<typename T>
+    template<typename T>
     class CountNonZero {
     public:
         no_op_exec_special_accumulation
@@ -1883,6 +1883,33 @@ namespace simdOps {
         }
     };
 
+
+    template<typename T>
+    class CountZero {
+    public:
+        no_op_exec_special_accumulation
+        no_op_exec_special_accumulation_cuda
+
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return d1 == (T) 0.0f ? (T) 1.0f : (T) 0.0f;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
 
 	template<typename T>
 	class Prod {

@@ -1895,3 +1895,126 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
 
     delete results;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
+    
+    NDArray<float> x('c', {3, 4, 2}, {0, 20, 30, 0, 50, 0, 
+                                      70, 0, 90, 0, 11, 12, 
+                                      13, 14, 15, 16, 17, 18, 
+                                      19, 0, 21, 22, 23, 24});
+
+    nd4j::ops::zero_fraction<float> op;
+    ResultSet<float>* res = op.execute({&x}, {}, {});
+    
+    ASSERT_EQ(Status::OK(), res->status());
+    ASSERT_TRUE(res->at(0)->isScalar());
+    ASSERT_EQ(res->at(0)->getScalar(0), 0.25f);
+    
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
+    
+    NDArray<float> x('c', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+
+    nd4j::ops::zero_fraction<float> op;
+    ResultSet<float>* res = op.execute({&x}, {}, {});
+    
+    ASSERT_EQ(Status::OK(), res->status());
+    ASSERT_TRUE(res->at(0)->isScalar());
+    ASSERT_EQ(res->at(0)->getScalar(0), 0.375f);
+    
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
+    
+    NDArray<float> x('f', {2, 2, 2}, {5.5f, 0.f, 0.3f, 5.5f, 8.6f, 0.f, 0.f, 0.4f});
+
+    nd4j::ops::zero_fraction<float> op;
+    ResultSet<float>* res = op.execute({&x}, {}, {});
+    
+    ASSERT_EQ(Status::OK(), res->status());
+    ASSERT_TRUE(res->at(0)->isScalar());
+    ASSERT_EQ(res->at(0)->getScalar(0), 0.375f);
+    
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_1) {
+
+    NDArray<float> x('c', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
+    NDArray<float> y('c', {3,2}, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f});
+    NDArray<float> b({100.f, 200.f});
+
+    NDArray<float> exp('c', {2,2}, {173.f, 264.f, 310.f, 279.f});
+
+    nd4j::ops::xw_plus_b<float> op;
+    ResultSet<float>* result = op.execute({&x, &y, &b}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    output->printShapeInfo("Output shape> ");
+    exp.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    exp.printIndexedBuffer("Expected res>");    
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, StopGradient_1) {
+
+    NDArray<float> x('c', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
+
+    nd4j::ops::stop_gradient<float> op;
+    ResultSet<float>* result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    output->printShapeInfo("Output shape> ");
+    x.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    x.printIndexedBuffer("Expected res>");    
+
+    ASSERT_TRUE(x.isSameShape(output));
+    ASSERT_TRUE(x.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, StopGradient_2) {
+
+    NDArray<float> x('f', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
+
+    nd4j::ops::stop_gradient<float> op;
+    ResultSet<float>* result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    NDArray<float>* output = result->at(0);
+
+    output->printShapeInfo("Output shape> ");
+    x.printShapeInfo("Expected shape> ");
+    output->printIndexedBuffer("Output data> ");
+    x.printIndexedBuffer("Expected res>");    
+
+    ASSERT_TRUE(x.isSameShape(output));
+    ASSERT_TRUE(x.equalsTo(output));
+
+    delete result;
+}
+
