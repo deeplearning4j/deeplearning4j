@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.solver;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -45,7 +46,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
-public class TestOptimizers {
+public class TestOptimizers extends BaseDL4JTest {
 
     //For debugging.
     private static final boolean PRINT_OPT_RESULTS = true;

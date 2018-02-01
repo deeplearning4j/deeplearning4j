@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimizer.listener;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 01/01/2017.
  */
-public class TestListeners {
+public class TestListeners extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
@@ -33,7 +34,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class ComputationGraphTestRNN {
+public class ComputationGraphTestRNN extends BaseDL4JTest {
 
     @Test
     public void testRnnTimeStepGravesLSTM() {

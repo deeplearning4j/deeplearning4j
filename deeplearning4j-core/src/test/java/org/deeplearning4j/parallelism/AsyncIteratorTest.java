@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class AsyncIteratorTest {
+public class AsyncIteratorTest extends BaseDL4JTest {
 
     @Test
     public void hasNext() throws Exception {

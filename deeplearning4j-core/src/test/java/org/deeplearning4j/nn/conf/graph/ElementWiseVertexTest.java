@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,7 +29,7 @@ import java.util.Map;
  * Created by binesh on 6/14/2017.
  */
 
-public class ElementWiseVertexTest {
+public class ElementWiseVertexTest extends BaseDL4JTest {
     @Test
     public void testElementWiseVertexNumParams() {
         /*

@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import junit.framework.TestCase;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -32,10 +33,8 @@ import org.slf4j.LoggerFactory;
 import static org.junit.Assert.*;
 
 
-public class GravesBidirectionalLSTMTest {
-    private static final Logger LOGGER = LoggerFactory.getLogger(GravesBidirectionalLSTMTest.class);
-
-    double score = 0.0;
+public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
+    private double score = 0.0;
 
     @Test
     public void testBidirectionalLSTMGravesForwardBasic() {

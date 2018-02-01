@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
  * Created by nyghtowl on 1/15/16.
  */
 @Ignore
-public class TestCompGraphCNN {
+public class TestCompGraphCNN extends BaseDL4JTest {
 
     protected ComputationGraphConfiguration conf;
     protected ComputationGraph graph;

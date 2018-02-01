@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -23,7 +24,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LayerConfigTest {
+public class LayerConfigTest extends BaseDL4JTest {
 
     @Test
     public void testLayerName() {

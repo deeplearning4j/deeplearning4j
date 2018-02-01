@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ExponentialReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
@@ -26,7 +27,7 @@ import static org.junit.Assert.*;
  * Created by Alex on 25/11/2016.
  */
 @Slf4j
-public class TestReconstructionDistributions {
+public class TestReconstructionDistributions extends BaseDL4JTest {
 
     @Test
     public void testGaussianLogProb() {

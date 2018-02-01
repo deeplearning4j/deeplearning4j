@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
@@ -26,7 +27,7 @@ import java.io.ByteArrayOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
-public class BidirectionalTest {
+public class BidirectionalTest extends BaseDL4JTest {
 
 
     @Test

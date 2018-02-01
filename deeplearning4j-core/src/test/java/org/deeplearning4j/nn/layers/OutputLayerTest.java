@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -59,9 +61,8 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 9/1/14.
  */
-public class OutputLayerTest {
-    private static final Logger log = LoggerFactory.getLogger(OutputLayerTest.class);
-
+@Slf4j
+public class OutputLayerTest extends BaseDL4JTest {
 
     @Test
     public void testIris2() {

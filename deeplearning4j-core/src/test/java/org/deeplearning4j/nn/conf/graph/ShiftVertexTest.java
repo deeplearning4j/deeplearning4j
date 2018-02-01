@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,7 +29,7 @@ import java.util.TreeMap;
  * Created by binesh on 6/13/2017. 
  */
 
-public class ShiftVertexTest {
+public class ShiftVertexTest extends BaseDL4JTest {
     @Test
     public void testShiftVertexNumParamsTrue() {
         /*

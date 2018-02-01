@@ -1,5 +1,6 @@
 package org.deeplearning4j.regressiontest;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -35,7 +36,7 @@ import static org.junit.Assert.*;
  *
  * @author Alex Black
  */
-public class RegressionTest080 {
+public class RegressionTest080 extends BaseDL4JTest {
 
     @Test
     public void regressionTestMLP1() throws Exception {

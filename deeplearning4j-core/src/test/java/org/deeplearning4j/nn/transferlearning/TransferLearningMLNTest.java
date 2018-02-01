@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -30,7 +31,7 @@ import static org.junit.Assert.*;
  * Created by susaneraly on 2/15/17.
  */
 @Slf4j
-public class TransferLearningMLNTest {
+public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void simpleFineTune() {

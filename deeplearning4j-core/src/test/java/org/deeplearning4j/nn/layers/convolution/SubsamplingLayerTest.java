@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -28,7 +29,7 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-public class SubsamplingLayerTest {
+public class SubsamplingLayerTest extends BaseDL4JTest {
 
     private int nExamples = 1;
     private int depth = 20; //depth & nOut

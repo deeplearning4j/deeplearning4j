@@ -19,6 +19,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by mjk on 9/15/14.
  */
-public class SerializationUtilsTest {
+public class SerializationUtilsTest extends BaseDL4JTest {
     @Test
     public void testWriteRead() {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);

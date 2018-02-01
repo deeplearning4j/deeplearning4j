@@ -4,6 +4,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -38,7 +39,7 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 @Ignore
-public class ConvolutionLayerSetupTest {
+public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testConvolutionLayerSetup() {

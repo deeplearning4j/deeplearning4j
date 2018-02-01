@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.junit.Test;
@@ -12,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 26/06/2017.
  */
-public class JsonTest {
+public class JsonTest extends BaseDL4JTest {
 
     @Test
     public void testJsonLossFunctions() {

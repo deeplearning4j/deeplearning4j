@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -17,7 +18,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 
 import static org.junit.Assert.*;
 
-public class TestGradientNormalization {
+public class TestGradientNormalization extends BaseDL4JTest {
 
     @Test
     public void testRenormalizatonPerLayer() {

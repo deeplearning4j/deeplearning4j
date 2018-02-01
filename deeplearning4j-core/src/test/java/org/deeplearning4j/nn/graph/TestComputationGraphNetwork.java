@@ -4,6 +4,7 @@ import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -53,7 +54,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestComputationGraphNetwork {
+public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)

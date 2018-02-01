@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -78,7 +79,7 @@ import static org.junit.Assert.*;
  * Created by agibsonccc on 12/27/14.
  */
 @Slf4j
-public class MultiLayerTest {
+public class MultiLayerTest extends BaseDL4JTest {
 
     private static OpExecutioner.ProfilingMode origMode;
 
