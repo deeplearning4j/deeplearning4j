@@ -35,46 +35,47 @@ CLEAN="false"
 while [[ $# > 0 ]]
 do
 key="$1"
+value="${2:-}"
 #Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
 case $key in
     -o|-platform|--platform)
-    OS="$2"
+    OS="$value"
     shift # past argument
     ;;
     -b|--build-type)
-    BUILD="$2"
+    BUILD="$value"
     shift # past argument
     ;;
     -p|--packaging)
-    PACKAGING="$2"
+    PACKAGING="$value"
     shift # past argument
     ;;
     -c|--chip)
-    CHIP="$2"
+    CHIP="$value"
     shift # past argument
     ;;
     -cc|--compute)
-    COMPUTE="$2"
+    COMPUTE="$value"
     shift # past argument
     ;;
     -a|--arch)
-    ARCH="$2"
+    ARCH="$value"
     shift # past argument
     ;;
     -l|--libtype)
-    LIBTYPE="$2"
+    LIBTYPE="$value"
     shift # past argument
     ;;
     -e|--chip-extension)
-    CHIP_EXTENSION="$2"
+    CHIP_EXTENSION="$value"
     shift # past argument
     ;;
     -v|--chip-version)
-    CHIP_VERSION="$2"
+    CHIP_VERSION="$value"
     shift # past argument
     ;;
     -x|--experimental)
-    EXPERIMENTAL="$2"
+    EXPERIMENTAL="$value"
     shift # past argument
     ;;
     clean)
@@ -87,7 +88,9 @@ case $key in
             # unknown option
     ;;
 esac
-shift # past argument or value
+if [[ $# > 0 ]]; then
+    shift # past argument or value
+fi
 done
 HOST=$(uname -s | tr [A-Z] [a-z])
 KERNEL=$HOST-$(uname -m | tr [A-Z] [a-z])
@@ -370,6 +373,7 @@ mkbuilddir() {
     # create appropriate directories and links here for ND4J
     if [ "$CHIP" != "$CHIP_DIR" ]; then
         mkdir -p "$CHIP_DIR"
+        rm -f "$CHIP"
         ln -s "$CHIP_DIR" "$CHIP"
         mkdir -p "$CHIP/blas"
         cd "$CHIP_DIR"
