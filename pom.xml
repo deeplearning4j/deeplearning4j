@@ -57,7 +57,7 @@
         <libnd4j.cuda></libnd4j.cuda>
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
-        <javacpp.version>1.4</javacpp.version>
+        <javacpp.version>1.4.1-SNAPSHOT</javacpp.version>
     </properties>
 
     <developers>

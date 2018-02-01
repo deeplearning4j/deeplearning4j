@@ -32,7 +32,7 @@ CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
 CLEAN="false"
-while [[ $# > 1 ]]
+while [[ $# > 0 ]]
 do
 key="$1"
 #Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
