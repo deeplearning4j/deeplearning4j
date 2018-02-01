@@ -66,6 +66,11 @@ public class LegacyPooling2D extends BaseTransformOp {
     }
 
     @Override
+    public String opName(){
+        return "legacypooling2d";
+    }
+
+    @Override
     public Object[] extraArgs() {
         return new Object[] {kh, kw, sy, sx, ph, pw, dh, dw, isSameMode ? 1.0 : 0.0, type.ordinal(), extra};
     }
