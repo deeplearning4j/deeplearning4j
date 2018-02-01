@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,7 +14,7 @@ import static org.junit.Assert.*;
  * Created by Alex on 28/07/2017.
  */
 @Slf4j
-public class TestEmnistDataSetIterator {
+public class TestEmnistDataSetIterator extends BaseDL4JTest {
 
     @Test
     public void testEmnistDataSetIterator() throws Exception {

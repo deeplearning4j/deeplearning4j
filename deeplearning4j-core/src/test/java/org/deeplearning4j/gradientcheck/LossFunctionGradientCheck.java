@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 12/09/2016.
  */
 @Slf4j
-public class LossFunctionGradientCheck {
+public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);

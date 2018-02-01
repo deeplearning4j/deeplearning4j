@@ -18,6 +18,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -36,7 +37,7 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-public class RecordReaderMultiDataSetIteratorTest {
+public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testsBasic() throws Exception {

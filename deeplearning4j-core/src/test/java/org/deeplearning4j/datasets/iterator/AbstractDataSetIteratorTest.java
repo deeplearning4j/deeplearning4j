@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -15,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by raver on 16.06.2016.
  */
-public class AbstractDataSetIteratorTest {
+public class AbstractDataSetIteratorTest extends BaseDL4JTest {
     @Test
     public void next() throws Exception {
         int numFeatures = 128;

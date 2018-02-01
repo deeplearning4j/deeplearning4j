@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
@@ -13,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-public class EvalJsonTest {
+public class EvalJsonTest extends BaseDL4JTest {
 
     @Test
     public void testSerdeEmpty() {
