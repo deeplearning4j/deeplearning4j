@@ -108,8 +108,10 @@ public class CategoricalToIntegerTransform extends BaseTransform {
                 //Do conversion
                 String str = w.toString();
                 Integer classIdx = statesMap.get(str);
-                if (classIdx == null)
-                    throw new RuntimeException("Unknown state (index not found): " + str);
+                if (classIdx == null) {
+                    throw new IllegalStateException("Cannot convert categorical value to integer value: input value (\"" + str
+                            + "\") is not in the list of known categories (state names/categories: " + stateNames + ")");
+                }
                 out.add(new IntWritable(classIdx));
             } else {
                 //No change to this column
@@ -131,8 +133,10 @@ public class CategoricalToIntegerTransform extends BaseTransform {
         String value = input.toString();
         //Do conversion
         Integer classIdx = statesMap.get(value);
-        if (classIdx == null)
-            throw new RuntimeException("Unknown state (index not found): " + value);
+        if (classIdx == null) {
+            throw new IllegalStateException("Cannot convert categorical value to integer value: input value (\"" + value
+                    + "\") is not in the list of known categories (state names/categories: " + stateNames + ")");
+        }
         return classIdx;
     }
 

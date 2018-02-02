@@ -136,8 +136,10 @@ public class CategoricalToOneHotTransform extends BaseTransform {
                 //Do conversion
                 String str = w.toString();
                 Integer classIdx = statesMap.get(str);
-                if (classIdx == null)
-                    throw new RuntimeException("Unknown state (index not found): " + str);
+                if (classIdx == null) {
+                    throw new IllegalStateException("Cannot convert categorical value to one-hot: input value (\"" + str
+                            + "\") is not in the list of known categories (state names/categories: " + stateNames + ")");
+                }
                 for (int j = 0; j < n; j++) {
                     if (j == classIdx)
                         out.add(new IntWritable(1));
@@ -165,8 +167,10 @@ public class CategoricalToOneHotTransform extends BaseTransform {
         List<Integer> oneHot = new ArrayList<>();
         int n = stateNames.size();
         Integer classIdx = statesMap.get(str);
-        if (classIdx == null)
-            throw new RuntimeException("Unknown state (index not found): " + str);
+        if (classIdx == null) {
+            throw new IllegalStateException("Cannot convert categorical value to one-hot: input value (\"" + str
+                    + "\") is not in the list of known categories (state names/categories: " + stateNames + ")");
+        }
         for (int j = 0; j < n; j++) {
             if (j == classIdx)
                 oneHot.add(1);
