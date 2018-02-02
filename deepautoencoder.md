@@ -165,3 +165,15 @@ public class DeepAutoEncoderExample {
 To construct a deep autoencoder, please make sure you have the most recent version of [Deeplearning4j and its examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief)
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
+
+## <a name="resources">Other Beginner's Guides</a>
+
+* [Regression & Neural Networks](./linear-regression.html)
+* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Convolutional Networks](./convolutionalnets)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Eigenvectors & PCA](./eigenvector)
