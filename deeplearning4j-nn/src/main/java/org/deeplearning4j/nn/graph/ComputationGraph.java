@@ -1618,6 +1618,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else {
                             vertices[vIdx].setInput(vIdxInputNum, input);
                         }
+
+
+                        //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                        // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                        // input is in the current workspace, which may be invalidated at the end of this loop
+                        // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                        if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                            try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                vertices[vIdx].migrateInput();
+                            }
+                        } else {
+                            //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                            if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                    //Same edge case as above - but scope to workspaceExternal instead
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                    //No workspace external - don't want to scope to external if config is say NONE
+                                    vertices[vIdx].migrateInput();
+                                }
+                            }
+                        }
                     }
 
                 } else {
@@ -1667,6 +1691,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 }
                             } else {
                                 vertices[vIdx].setInput(inputNum, out);
+                            }
+
+
+                            //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                            // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                            // input is in the current workspace, which may be invalidated at the end of this loop
+                            // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                            if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                                try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                                if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                        //Same edge case as above - but scope to workspaceExternal instead
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                } else {
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                        //No workspace external - don't want to scope to external if config is say NONE
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                }
                             }
                         }
                     }
