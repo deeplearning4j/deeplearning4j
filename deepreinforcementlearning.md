@@ -96,9 +96,9 @@ Reinforcement learning is iterative. In its most interesting applications, it do
 
 ## <a name="time">The Relationship Between Machine Learning with Time</a>
 
-You could say that reinforcement learning algorithms have a different relationship to time than humans do. We are able to run the algorithms through the same states over and over again while experimenting with different actions, until we can infer which actions are best from which states. Effectively, we give algorithms their very own [Groundhog Day](http://www.imdb.com/title/tt0107048/), where they start out as dumb jerks and slowly get wise. 
+You could say that an algorithm is a method to more quickly aggregate the lessons of time. Reinforcement learning algorithms have a different relationship to time than humans do. An algorithm can run through the same states over and over again while experimenting with different actions, until it can infer which actions are best from which states. Effectively, algorithms enjoy their very own [Groundhog Day](http://www.imdb.com/title/tt0107048/), where they start out as dumb jerks and slowly get wise. 
 
-Since humans never experience Groundhog Day outside the movie, reinforcement learning algorithms have the potential to learn more, and better, than humans. You could say that the true advantage of these algorithms over humans stems not so much from their inherent nature, but from their ability to live in parallel on many chips at once, to train night and day without fatigue, and therefore to learn more. An algorithm trained on the game of Go, such as AlphaGo, will have played many more games of Go than any human could hope to complete in 100 lifetimes.<sup>[2](#two)</sup> 
+Since humans never experience Groundhog Day outside the movie, reinforcement learning algorithms have the potential to learn more, and better, than humans. Indeed, the true advantage of these algorithms over humans stems not so much from their inherent nature, but from their ability to live in parallel on many chips at once, to train night and day without fatigue, and therefore to learn more. An algorithm trained on the game of Go, such as AlphaGo, will have played many more games of Go than any human could hope to complete in 100 lifetimes.<sup>[2](#two)</sup> 
 
 ## <a name="neural">Neural Networks and Deep Reinforcement Learning</a>
 
