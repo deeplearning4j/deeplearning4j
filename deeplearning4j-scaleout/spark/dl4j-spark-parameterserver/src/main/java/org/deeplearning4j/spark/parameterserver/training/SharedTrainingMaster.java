@@ -45,6 +45,8 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -426,8 +428,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                             : graph.getSparkContext().defaultParallelism();
 
         // set current box as controller, if field is unset - switch to next stop
-        if (voidConfiguration.getControllerAddress() == null)
-            voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
+        if (voidConfiguration.getControllerAddress() == null) {
+            try {
+                String sparkIp = InetAddress.getByName(System.getenv("SPARK_PUBLIC_DNS")).getHostAddress();
+                voidConfiguration.setControllerAddress(sparkIp);
+            } catch(UnknownHostException e) { }
+        }
 
         // next step - is to get ip address that matches specific network mask
         if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
