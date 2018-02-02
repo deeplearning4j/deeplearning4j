@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.ui;
 
+import com.tdunning.math.stats.TDigest;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
@@ -66,9 +67,15 @@ public class TestUI {
                         .histogramBuckets(new double[] {-3, -2, -1, 0, 1, 2, 3})
                         .histogramBucketCounts(new long[] {15, 20, 35, 40, 55, 60}).build());
 
+        TDigest t = TDigest.createDigest(100);
+        for( int i=0; i<100; i++ ){
+            t.add(i);
+        }
         list.add(new IntegerAnalysis.Builder().countTotal(10).countMaxValue(1).countMinValue(4).min(0).max(30)
                         .histogramBuckets(new double[] {-3, -2, -1, 0, 1, 2, 3})
-                        .histogramBucketCounts(new long[] {10, 2, 3, 4, 5, 6}).build());
+                        .histogramBucketCounts(new long[] {10, 2, 3, 4, 5, 6})
+                        .digest(t)
+                .build());
 
         list.add(new TimeAnalysis.Builder().min(1451606400000L).max(1451606400000L + 60000L).build());
 
@@ -77,7 +84,7 @@ public class TestUI {
 
         String tempDir = System.getProperty("java.io.tmpdir");
         String outPath = FilenameUtils.concat(tempDir, "datavec_transform_UITest.html");
-        //        System.out.println(outPath);
+        System.out.println(outPath);
         File f = new File(outPath);
         f.deleteOnExit();
         HtmlAnalysis.createHtmlAnalysisFile(da, f);
