@@ -50,11 +50,15 @@ F1 scores are expressed as percentages. They are basically the probability that 
 
 Next, we'll show you how to use [distributed and multithreaded computing](./iterativereduce) to train your networks more quickly. To read about another type of deep network, the deep autoencoder, [click here](./deepautoencoder). 
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
+### <a name="resources">Other Beginner's Guides to Machine Learning</a>
+
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [LSTMs and Recurrent Networks](./lstm)
 * [Word2vec](./word2vec)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [Neural Networks and Regression](./linear-regression)
+* [Neural Networks and Regression](./logistic-regression)
 * [Convolutional Networks](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
