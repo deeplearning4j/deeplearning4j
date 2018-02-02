@@ -976,17 +976,34 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currInput = activationFromPrevLayer(i, currInput, train);
 
-                if(publicApi){
+                if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                    //Case 1: public api -> always detatch
+                    //Case 2: workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                    // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                    // the current for loop, hence a detach is required
                     currInput = currInput.detach();
+
+                    try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                        //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                        // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                        // input is in the current workspace, which may be invalidated at the end of this loop
+                        // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                        layers[i].migrateInput();
+                    }
                 } else {
-                    if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
-                        //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
-                        // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
-                        // the current for loop, hence a detach is required
-                        currInput = currInput.detach();
+                    //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                    currInput = currInput.leverageOrDetach(workspaceExternal);
+
+                    if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                        try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                            //Same edge case as above - but scope to workspaceExternal instead
+                            layers[i].migrateInput();
+                        }
                     } else {
-                        //Standard training case
-                        currInput = currInput.leverageOrDetach(workspaceExternal);
+                        try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                            //No workspace external - don't want to scope to external if config is say NONE
+                            layers[i].migrateInput();
+                        }
                     }
                 }
                 activations.add(currInput);
