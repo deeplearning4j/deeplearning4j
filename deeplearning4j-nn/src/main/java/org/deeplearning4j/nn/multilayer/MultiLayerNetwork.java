@@ -951,12 +951,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         activations.add(currInput);
 
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                        ? new DummyWorkspace()
-                        : layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationFeedForward, workspaceFeedForward);
+        WorkspaceMode wsm = layerWiseConfigurations.getTrainingWorkspaceMode();
+        MemoryWorkspace workspace;
+        switch (wsm){
+            case NONE:
+                workspace = new DummyWorkspace();
+                break;
+            case SINGLE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                break;
+            case SEPARATE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationFeedForward, workspaceFeedForward);
+                break;
+            default:
+                throw new IllegalStateException("Unknown workspace mode: " + wsm);
+        }
 
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
@@ -966,7 +976,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 if(publicApi){
                     currInput = currInput.detach();
                 } else {
-                    currInput = currInput.leverageTo(workspaceExternal);
+                    currInput = currInput.leverageOrDetach(workspaceExternal);
                 }
                 activations.add(currInput);
             }
