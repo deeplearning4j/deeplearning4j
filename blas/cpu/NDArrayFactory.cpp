@@ -476,7 +476,7 @@ namespace nd4j {
 
     template<typename T>
     NDArray<T>* NDArrayFactory<T>::linspace(T from, T to, Nd4jIndex numElements) {
-        auto result = new NDArray<T>(numElements, 'c');
+        auto result = new NDArray<T>('c', {1, (int)numElements});
 
         for (Nd4jIndex e = 0; e < numElements; e++) {
             T step = (T) e / ((T) numElements - (T) 1.0f);

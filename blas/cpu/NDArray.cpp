@@ -79,37 +79,6 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray<T>::NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace) {
-    if (length < 1)
-        throw "Can't allocate non-positive number of elements";
-    _workspace = workspace;
-
-    if (workspace == nullptr) {
-        _buffer =  new T[length];
-    } else {
-        _buffer = (T*) _workspace->allocateBytes(length * sizeOfT());
-    }
-
-    // todo make this optional
-    memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
-
-    int *shape = new int[2]{1, (int) length};
-
-    if (order == 'f') {
-        _shapeInfo = shape::shapeBufferFortran(2, shape);
-        _shapeInfo[7] = 102;
-    } else {
-        _shapeInfo = shape::shapeBuffer(2, shape);
-        _shapeInfo[7] = 99;
-    }
-
-    _shapeInfo[6] = 1;
-    _isBuffAlloc = true;
-    _isShapeAlloc = true;
-    delete[] shape;
-}
-
     template <typename T>
     NDArray<T>::NDArray(std::initializer_list<int> s, nd4j::memory::Workspace* workspace) {
         std::vector<int> shape(s);
@@ -127,50 +96,6 @@ NDArray<T>::NDArray(const Nd4jIndex length, const char order, nd4j::memory::Work
     }
 
 ////////////////////////////////////////////////////////////////////////
-// this constructor creates 2D NDArray, memory for array is allocated in this constructor 
-// template <typename T>
-//     NDArray<T>::NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace) {
-
-//     Nd4jIndex length = rows * columns;
-//     int rank = 2;
-
-//     int *shapeOf = new int[2]{rows, columns};
-
-//     _workspace = workspace;
-//     if (workspace == nullptr) {
-//         if (order == 'f')
-//             _shapeInfo = shape::shapeBufferFortran(rank, shapeOf);
-//         else
-//             _shapeInfo = shape::shapeBuffer(rank, shapeOf);
-
-//         _buffer =  new T[shape::length(_shapeInfo)];
-//     } else {
-//         int *shapeInfo =  order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
-
-//         _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-//         memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
-
-//         _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
-
-//         delete[] shapeInfo;
-//     }
-
-//     memset(_buffer, 0, length * sizeOfT());              // set all elements in new array to be zeros
-
-//     if (order == 'f') {
-//         _shapeInfo[7] = 102;
-//     } else {
-//         _shapeInfo[7] = 99;
-//     }
-
-//     delete[] shapeOf;
-
-//     _shapeInfo[6] = 1;
-
-//     _isBuffAlloc = true; 
-//     _isShapeAlloc = true;
-// }
-
 template <typename T>
 NDArray<T>::NDArray(T scalar) {
     nd4j::memory::Workspace* workspace = nullptr;

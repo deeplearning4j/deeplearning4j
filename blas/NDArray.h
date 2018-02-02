@@ -101,16 +101,6 @@ namespace nd4j {
         NDArray(nd4j::memory::Workspace* workspace);
 
         /**
-        *  this constructor creates 2D NDArray with shape [rows x columns], memory for array is allocated in constructor
-        */
-        // NDArray(const int rows, const int columns, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
-        *  this constructor creates NDArray as single row, dimension is [1 x length], memory for array is allocated in constructor 
-        */ 
-        NDArray(const Nd4jIndex length, const char order, nd4j::memory::Workspace* workspace = nullptr);
-
-        /**
         *  this constructor creates new NDArray with shape matching "other" array, do not copy "other" elements into new array
         */
         NDArray(const NDArray<T> *other, const bool copyStrides = false, nd4j::memory::Workspace* workspace = nullptr);
@@ -388,7 +378,7 @@ namespace nd4j {
         void applyTransform(NDArray<T> *target, T *extraParams = nullptr);
 
         /**
-        *  apply OpName transformation directly to array
+        *  apply OpName transformation to this array and store result in new array being returned
         *  extraParams - extra parameters for operation
         */
         template<typename OpName>

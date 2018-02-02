@@ -53,7 +53,7 @@ TEST_F(NDArrayTest, TestDup1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, AssignScalar1) {
-    auto *array = new NDArray<float>(10, 'c');
+    auto *array = new NDArray<float>('c', {1, 10});
 
     array->assign(2.0f);
 
@@ -320,7 +320,7 @@ TEST_F(NDArrayTest, TestAddiRowVector) {
     float *e = new float[4] {2, 3, 4, 5};
 
     auto *array = new NDArray<float>(c, cShape);
-    auto *row = new NDArray<float>(2, 'c');
+    auto *row = new NDArray<float>('c', {1, 2});
     auto *exp = new NDArray<float>(e, cShape);
     row->assign(1.0f);
 
