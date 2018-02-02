@@ -968,6 +968,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 throw new IllegalStateException("Unknown workspace mode: " + wsm);
         }
 
+        boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
+
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
@@ -976,7 +979,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 if(publicApi){
                     currInput = currInput.detach();
                 } else {
-                    currInput = currInput.leverageOrDetach(workspaceExternal);
+                    if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
+                        //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                        // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                        // the current for loop, hence a detach is required
+                        currInput = currInput.detach();
+                    } else {
+                        //Standard training case
+                        currInput = currInput.leverageOrDetach(workspaceExternal);
+                    }
                 }
                 activations.add(currInput);
             }

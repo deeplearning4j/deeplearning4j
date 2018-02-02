@@ -1568,8 +1568,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                                 int layerFeedForwardIdx) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        WorkspaceMode wsm = configuration.getTrainingWorkspaceMode();
         MemoryWorkspace workspace;
-        switch(configuration.getTrainingWorkspaceMode()){
+        switch(wsm){
             case NONE:
                 workspace = new DummyWorkspace();
                 break;
@@ -1580,8 +1581,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
                 break;
             default:
-                throw new RuntimeException();
+                throw new RuntimeException("Unknown workspace mode: " + wsm);
         }
+
+        boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1629,7 +1633,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (publicApi) {
                         out = current.doForward(train).detach();
                     } else {
-                        out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                        if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
+                            //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                            // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                            // the current for loop, hence a detach is required
+                            out = current.doForward(train).detach();
+                        } else {
+                            //Standard training case
+                            out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                        }
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
@@ -1665,9 +1677,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         }
 
-        if (!train)
-            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (!train && wsm == WorkspaceMode.SEPARATE) {
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        }
 
         if(publicApi){
             clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)

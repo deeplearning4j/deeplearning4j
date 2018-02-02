@@ -24,13 +24,12 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -524,83 +523,184 @@ public class OutputLayerTest extends BaseDL4JTest {
 
 
     @Test
-    public void testCnnOutputLayer(){
+    public void testCnnLossLayer(){
 
-        for(Activation a : new Activation[]{Activation.TANH, Activation.SELU}) {
-            //Check that (A+identity) is equal to (identity+A), for activation A
-            //i.e., should get same output and weight gradients for both
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("*** Testing workspace: " + ws);
 
-            MultiLayerConfiguration conf1 =
-                    new NeuralNetConfiguration.Builder().seed(12345L)
-                            .updater(new NoOp())
-                            .convolutionMode(ConvolutionMode.Same)
-                            .list()
-                            .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
-                                    .kernelSize(2,2).stride(1,1)
-                                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                    .updater(new NoOp()).build())
-                            .layer(new CnnLossLayer.Builder(LossFunction.MSE)
-                                    .activation(a)
-                                    .build())
-                            .build();
+            for (Activation a : new Activation[]{Activation.TANH, Activation.SELU}) {
+                //Check that (A+identity) is equal to (identity+A), for activation A
+                //i.e., should get same output and weight gradients for both
 
-            MultiLayerConfiguration conf2 =
-                    new NeuralNetConfiguration.Builder().seed(12345L)
-                            .updater(new NoOp())
-                            .convolutionMode(ConvolutionMode.Same)
-                            .list()
-                            .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
-                                    .kernelSize(2,2).stride(1,1)
-                                    .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
-                                    .updater(new NoOp()).build())
-                            .layer(new CnnLossLayer.Builder(LossFunction.MSE)
-                                    .activation(Activation.IDENTITY)
-                                    .build())
-                            .build();
+                MultiLayerConfiguration conf1 =
+                        new NeuralNetConfiguration.Builder().seed(12345L)
+                                .updater(new NoOp())
+                                .convolutionMode(ConvolutionMode.Same)
+                                .inferenceWorkspaceMode(ws)
+                                .trainingWorkspaceMode(ws)
+                                .list()
+                                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                                        .kernelSize(2, 2).stride(1, 1)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                        .updater(new NoOp()).build())
+                                .layer(new CnnLossLayer.Builder(LossFunction.MSE)
+                                        .activation(a)
+                                        .build())
+                                .build();
 
-            MultiLayerNetwork mln = new MultiLayerNetwork(conf1);
-            mln.init();
+                MultiLayerConfiguration conf2 =
+                        new NeuralNetConfiguration.Builder().seed(12345L)
+                                .updater(new NoOp())
+                                .convolutionMode(ConvolutionMode.Same)
+                                .inferenceWorkspaceMode(ws)
+                                .trainingWorkspaceMode(ws)
+                                .list()
+                                .layer(new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
+                                        .kernelSize(2, 2).stride(1, 1)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                        .updater(new NoOp()).build())
+                                .layer(new CnnLossLayer.Builder(LossFunction.MSE)
+                                        .activation(Activation.IDENTITY)
+                                        .build())
+                                .build();
 
-            MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
-            mln2.init();
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf1);
+                mln.init();
+
+                MultiLayerNetwork mln2 = new MultiLayerNetwork(conf2);
+                mln2.init();
 
 
-            mln2.setParams(mln.params());
+                mln2.setParams(mln.params());
 
 
-            INDArray in = Nd4j.rand(new int[]{3,3,5,5});
+                INDArray in = Nd4j.rand(new int[]{3, 3, 5, 5});
 
-            INDArray out1 = mln.output(in);
-            INDArray out2 = mln2.output(in);
+                INDArray out1 = mln.output(in);
+                INDArray out2 = mln2.output(in);
 
-            assertEquals(out1, out2);
+                assertEquals(out1, out2);
 
-            INDArray labels = Nd4j.rand(out1.shape());
+                INDArray labels = Nd4j.rand(out1.shape());
 
-            mln.setInput(in);
-            mln.setLabels(labels);
+                mln.setInput(in);
+                mln.setLabels(labels);
 
-            mln2.setInput(in);
-            mln2.setLabels(labels);
+                mln2.setInput(in);
+                mln2.setLabels(labels);
 
-            mln.computeGradientAndScore();
-            mln2.computeGradientAndScore();
+                mln.computeGradientAndScore();
+                mln2.computeGradientAndScore();
 
-            assertEquals(mln.score(), mln2.score(), 1e-6);
-            assertEquals(mln.gradient().gradient(), mln2.gradient().gradient());
+                assertEquals(mln.score(), mln2.score(), 1e-6);
+                assertEquals(mln.gradient().gradient(), mln2.gradient().gradient());
 
-            //Also check computeScoreForExamples
-            INDArray in2a = Nd4j.rand(new int[]{1,3,5,5});
-            INDArray labels2a = Nd4j.rand(new int[]{1,4,5,5});
+                //Also check computeScoreForExamples
+                INDArray in2a = Nd4j.rand(new int[]{1, 3, 5, 5});
+                INDArray labels2a = Nd4j.rand(new int[]{1, 4, 5, 5});
 
-            INDArray in2 = Nd4j.concat(0, in2a, in2a);
-            INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
+                INDArray in2 = Nd4j.concat(0, in2a, in2a);
+                INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
 
-            INDArray s = mln.scoreExamples(new DataSet(in2, labels2), false);
-            assertArrayEquals(new int[]{2,1}, s.shape());
-            assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
+                INDArray s = mln.scoreExamples(new DataSet(in2, labels2), false);
+                assertArrayEquals(new int[]{2, 1}, s.shape());
+                assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
 
-            TestUtils.testModelSerialization(mln);
+                TestUtils.testModelSerialization(mln);
+            }
+        }
+    }
+
+    @Test
+    public void testCnnLossLayerCompGraph(){
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("*** Testing workspace: " + ws);
+
+            for (Activation a : new Activation[]{Activation.TANH, Activation.SELU}) {
+                //Check that (A+identity) is equal to (identity+A), for activation A
+                //i.e., should get same output and weight gradients for both
+
+                ComputationGraphConfiguration conf1 =
+                        new NeuralNetConfiguration.Builder().seed(12345L)
+                                .updater(new NoOp())
+                                .convolutionMode(ConvolutionMode.Same)
+                                .inferenceWorkspaceMode(ws)
+                                .trainingWorkspaceMode(ws)
+                                .graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(Activation.IDENTITY)
+                                        .kernelSize(2, 2).stride(1, 1)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                        .updater(new NoOp()).build(), "in")
+                                .addLayer("1", new CnnLossLayer.Builder(LossFunction.MSE)
+                                        .activation(a)
+                                        .build(), "0")
+                                .setOutputs("1")
+                                .build();
+
+                ComputationGraphConfiguration conf2 =
+                        new NeuralNetConfiguration.Builder().seed(12345L)
+                                .updater(new NoOp())
+                                .convolutionMode(ConvolutionMode.Same)
+                                .inferenceWorkspaceMode(ws)
+                                .trainingWorkspaceMode(ws)
+                                .graphBuilder()
+                                .addInputs("in")
+                                .addLayer("0", new ConvolutionLayer.Builder().nIn(3).nOut(4).activation(a)
+                                        .kernelSize(2, 2).stride(1, 1)
+                                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1.0))
+                                        .updater(new NoOp()).build(), "in")
+                                .addLayer("1", new CnnLossLayer.Builder(LossFunction.MSE)
+                                        .activation(Activation.IDENTITY)
+                                        .build(), "0")
+                                .setOutputs("1")
+                                .build();
+
+                ComputationGraph graph = new ComputationGraph(conf1);
+                graph.init();
+
+                ComputationGraph graph2 = new ComputationGraph(conf2);
+                graph2.init();
+
+
+                graph2.setParams(graph.params());
+
+
+                INDArray in = Nd4j.rand(new int[]{3, 3, 5, 5});
+
+                INDArray out1 = graph.outputSingle(in);
+                INDArray out2 = graph2.outputSingle(in);
+
+                assertEquals(out1, out2);
+
+                INDArray labels = Nd4j.rand(out1.shape());
+
+                graph.setInput(0,in);
+                graph.setLabels(labels);
+
+                graph2.setInput(0,in);
+                graph2.setLabels(labels);
+
+                graph.computeGradientAndScore();
+                graph2.computeGradientAndScore();
+
+                assertEquals(graph.score(), graph2.score(), 1e-6);
+                assertEquals(graph.gradient().gradient(), graph2.gradient().gradient());
+
+                //Also check computeScoreForExamples
+                INDArray in2a = Nd4j.rand(new int[]{1, 3, 5, 5});
+                INDArray labels2a = Nd4j.rand(new int[]{1, 4, 5, 5});
+
+                INDArray in2 = Nd4j.concat(0, in2a, in2a);
+                INDArray labels2 = Nd4j.concat(0, labels2a, labels2a);
+
+                INDArray s = graph.scoreExamples(new DataSet(in2, labels2), false);
+                assertArrayEquals(new int[]{2, 1}, s.shape());
+                assertEquals(s.getDouble(0), s.getDouble(1), 1e-6);
+
+                TestUtils.testModelSerialization(graph);
+            }
         }
     }
 
