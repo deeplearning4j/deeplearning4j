@@ -64,17 +64,21 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString() {
-        StringBuilder quantiles = new StringBuilder();
-        double[] printReports = new double[]{0.001, 0.01, 0.1, 0.5, 0.9, 0.99, 0.999};
-        for (int i = 0; i < printReports.length; i++){
-            quantiles.append(printReports[i] +" -> " + digest.quantile(printReports[i]));
-            if (i < printReports.length - 1) quantiles.append(",");
+        String q = "";
+        if(digest != null) {
+            StringBuilder quantiles = new StringBuilder(", quantiles=[");
+            double[] printReports = new double[]{0.001, 0.01, 0.1, 0.5, 0.9, 0.99, 0.999};
+            for (int i = 0; i < printReports.length; i++) {
+                quantiles.append(printReports[i]).append(" -> ").append(digest.quantile(printReports[i]));
+                if (i < printReports.length - 1) quantiles.append(",");
+            }
+            quantiles.append("]");
+            q = quantiles.toString();
         }
         return "mean=" + mean + ",sampleStDev=" + sampleStdev + ",sampleVariance=" + sampleVariance + ",countZero="
                         + countZero + ",countNegative=" + countNegative + ",countPositive=" + countPositive
                         + ",countMinValue=" + countMinValue + ",countMaxValue=" + countMaxValue + ",count="
-                        + countTotal + ", quantiles=[" + quantiles.toString() +
-    "]";
+                        + countTotal + q;
     }
 
     public abstract double getMinDouble();

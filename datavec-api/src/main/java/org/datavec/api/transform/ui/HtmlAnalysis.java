@@ -97,7 +97,7 @@ public class HtmlAnalysis {
             table[i][0] = name;
             table[i][1] = type.toString();
             table[i][2] = ca.toString().replaceAll(",", ", "); //Hacky work-around to improve display in HTML table
-
+            table[i][2] = table[i][2].replaceAll(" -> ", " : ");    //Quantiles rendering
             double[] buckets;
             long[] counts;
 
