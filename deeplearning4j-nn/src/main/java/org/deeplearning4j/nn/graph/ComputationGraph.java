@@ -3613,12 +3613,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
+        for (Layer layer : layers) {
+            layer.clear();
+            layer.clearNoiseWeightParams();
         }
 
-        for (int f = 0; f < vertices.length; f++) {
-            vertices[f].clearVertex();
+        for (GraphVertex vertex : vertices) {
+            vertex.clearVertex();
         }
     }
 

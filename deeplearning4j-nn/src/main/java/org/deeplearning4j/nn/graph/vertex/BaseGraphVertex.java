@@ -155,6 +155,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
         for (int i = 0; i < inputs.length; i++) {
             inputs[i] = null;
         }
+        epsilon = null;
     }
 
     @Override

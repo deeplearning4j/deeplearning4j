@@ -3277,10 +3277,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
-            layers[f].setMaskArray(null);
-            layers[f].clear();
+        for (Layer layer : layers) {
+            layer.clear();
+            layer.clearNoiseWeightParams();
         }
     }
 
