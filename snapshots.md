@@ -47,9 +47,14 @@ And specify snapshot version. We follow simple rule. If latest stable release ve
 
 Primary limitation when using snapshots, is absence of `-platform` artifacts. So, if you've been using `nd4j-native-platform` as your backend, you should be using `nd4j-native` with snapshots.
 
+
 ## <a name="ND4J_Backend">ND4J_Backend</a>
 
-If your pom.xml has a dependency for `nd4j-native-platform` and you switch to using snapshots to get access to a recent feature you will have to switch your `nd4j-backend` to `nd4j-native`
+If your pom.xml has a dependency for `nd4j-native-platform` and you switch to using snapshots to get access to a recent feature you will have to switch your `nd4j-backend` to `nd4j-native`.
+
+Of note when using the nd4j-native backend, you need to add openblas as a dependency. We do this for you in the -platform pom. Reference the -platform pom [here](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-backend-impls/nd4j-native-platform/pom.xml#L19) to double check your dependencies. Note that these are version properties. See the <properties> section of the pom for current versions of the openblas and javacpp presets required to run nd4j-native.
+    
+    
 
 ## <a name="Note_to_gradle_users">Note to gradle users</a>
 
