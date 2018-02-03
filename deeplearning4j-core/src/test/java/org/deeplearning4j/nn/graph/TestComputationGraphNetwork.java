@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -54,6 +55,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
@@ -910,7 +912,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
-    public void testIterationCountAndPresistence() throws IOException {
+    public void testIterationCountAndPersistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)

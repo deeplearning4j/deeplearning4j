@@ -43,7 +43,7 @@ import java.util.*;
  * Bidirectional layer wrapper you can make any recurrent layer bidirectional, in particular GravesLSTM.
  * Note that this layer adds the output of both directions, which translates into "ADD" mode in Bidirectional.
  *
- * Proposed usage: {@code .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder()....build()))}
+ * Usage: {@code .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder()....build()))}
  */
 @Data
 @NoArgsConstructor

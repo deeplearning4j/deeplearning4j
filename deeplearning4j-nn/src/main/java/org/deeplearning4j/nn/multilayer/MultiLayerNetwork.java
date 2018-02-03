@@ -951,22 +951,60 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         activations.add(currInput);
 
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE
-                        ? new DummyWorkspace()
-                        : layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationFeedForward, workspaceFeedForward);
+        WorkspaceMode wsm = layerWiseConfigurations.getTrainingWorkspaceMode();
+        MemoryWorkspace workspace;
+        switch (wsm){
+            case NONE:
+                workspace = new DummyWorkspace();
+                break;
+            case SINGLE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                break;
+            case SEPARATE:
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationFeedForward, workspaceFeedForward);
+                break;
+            default:
+                throw new IllegalStateException("Unknown workspace mode: " + wsm);
+        }
+
+        boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
 
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currInput = activationFromPrevLayer(i, currInput, train);
 
-                if(publicApi){
+                if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                    //Case 1: public api -> always detatch
+                    //Case 2: workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                    // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                    // the current for loop, hence a detach is required
                     currInput = currInput.detach();
+
+                    try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                        //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                        // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                        // input is in the current workspace, which may be invalidated at the end of this loop
+                        // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                        layers[i].migrateInput();
+                    }
                 } else {
-                    currInput = currInput.leverageTo(workspaceExternal);
+                    //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                    currInput = currInput.leverageOrDetach(workspaceExternal);
+
+                    if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                        try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                            //Same edge case as above - but scope to workspaceExternal instead
+                            layers[i].migrateInput();
+                        }
+                    } else {
+                        try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                            //No workspace external - don't want to scope to external if config is say NONE
+                            layers[i].migrateInput();
+                        }
+                    }
                 }
                 activations.add(currInput);
             }
@@ -3239,10 +3277,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
-            layers[f].setMaskArray(null);
-            layers[f].clear();
+        for (Layer layer : layers) {
+            layer.clear();
+            layer.clearNoiseWeightParams();
         }
     }
 

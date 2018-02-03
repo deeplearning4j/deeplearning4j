@@ -1568,8 +1568,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                                 int layerFeedForwardIdx) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        WorkspaceMode wsm = configuration.getTrainingWorkspaceMode();
         MemoryWorkspace workspace;
-        switch(configuration.getTrainingWorkspaceMode()){
+        switch(wsm){
             case NONE:
                 workspace = new DummyWorkspace();
                 break;
@@ -1580,8 +1581,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
                 break;
             default:
-                throw new RuntimeException();
+                throw new RuntimeException("Unknown workspace mode: " + wsm);
         }
+
+        boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1614,6 +1618,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else {
                             vertices[vIdx].setInput(vIdxInputNum, input);
                         }
+
+
+                        //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                        // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                        // input is in the current workspace, which may be invalidated at the end of this loop
+                        // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                        if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                            try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                vertices[vIdx].migrateInput();
+                            }
+                        } else {
+                            //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                            if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                    //Same edge case as above - but scope to workspaceExternal instead
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                    //No workspace external - don't want to scope to external if config is say NONE
+                                    vertices[vIdx].migrateInput();
+                                }
+                            }
+                        }
                     }
 
                 } else {
@@ -1629,7 +1657,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (publicApi) {
                         out = current.doForward(train).detach();
                     } else {
-                        out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                        if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
+                            //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                            // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                            // the current for loop, hence a detach is required
+                            out = current.doForward(train).detach();
+                        } else {
+                            //Standard training case
+                            out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                        }
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
@@ -1656,6 +1692,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             } else {
                                 vertices[vIdx].setInput(inputNum, out);
                             }
+
+
+                            //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                            // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                            // input is in the current workspace, which may be invalidated at the end of this loop
+                            // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                            if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                                try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                                if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                        //Same edge case as above - but scope to workspaceExternal instead
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                } else {
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                        //No workspace external - don't want to scope to external if config is say NONE
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1665,9 +1725,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         }
 
-        if (!train)
-            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (!train && wsm == WorkspaceMode.SEPARATE) {
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        }
 
         if(publicApi){
             clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
@@ -3553,12 +3613,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
+        for (Layer layer : layers) {
+            layer.clear();
+            layer.clearNoiseWeightParams();
         }
 
-        for (int f = 0; f < vertices.length; f++) {
-            vertices[f].clearVertex();
+        for (GraphVertex vertex : vertices) {
+            vertex.clearVertex();
         }
     }
 
