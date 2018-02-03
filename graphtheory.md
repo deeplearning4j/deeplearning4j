@@ -17,6 +17,6 @@ Here are three papers discussing how neural nets can be applied to data encoded 
 
 * [node2vec: Scalable Feature Learning for Networks](https://arxiv.org/abs/1607.00653) (Stanford 2016)
 
-## Thought vectors
+## [Thought vectors](./thoughtvectors)
 
 On a biological level, thoughts are literally graphs, graphs that capture the connections and action between neurons. Those graphs can represent a network of neurons whose connections fire in different ways over time as synapses fire, a dynamic flow of graphs. 
