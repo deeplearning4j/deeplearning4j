@@ -1,5 +1,6 @@
 ---
 title: A Beginner's Guide to Recurrent Networks and LSTMs
+author: Chris V. Nicholson
 layout: default
 ---
 
