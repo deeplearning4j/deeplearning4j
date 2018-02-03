@@ -1,5 +1,6 @@
 ---
 title: A Beginner's Guide to Deep Reinforcement Learning (for Java and Scala)
+author: Chris V. Nicholson
 layout: default
 redirect_from: reinforcementlearning
 ---
