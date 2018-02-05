@@ -80,7 +80,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
-        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ", layer type: " +
+                getClass().getSimpleName() + ")";
     }
 
     public INDArray getInput() {
