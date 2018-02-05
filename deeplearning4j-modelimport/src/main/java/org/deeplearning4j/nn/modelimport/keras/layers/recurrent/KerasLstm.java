@@ -135,7 +135,7 @@ public class KerasLstm extends KerasLayer {
                         "Specifying different initialization for recurrent weights not supported.");
             else
                 log.warn("Specifying different initialization for recurrent weights not supported.");
-        KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
