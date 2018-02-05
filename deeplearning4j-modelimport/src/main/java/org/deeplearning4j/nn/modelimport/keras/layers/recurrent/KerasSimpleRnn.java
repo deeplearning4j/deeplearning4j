@@ -89,12 +89,6 @@ public class KerasSimpleRnn extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
-        if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
-            if (enforceTrainingConfig)
-                throw new UnsupportedKerasConfigurationException(
-                        "Specifying different initialization for recurrent weights not supported.");
-            else
-                log.warn("Specifying different initialization for recurrent weights not supported.");
         KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
@@ -111,11 +105,14 @@ public class KerasSimpleRnn extends KerasLayer {
                 .dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
+                .weightInitRecurrent(recurrentWeightInit)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
         if (distribution != null)
             builder.dist(distribution);
+        if (recurrentDistribution != null)
+            builder.dist(recurrentDistribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
