@@ -96,6 +96,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long getGenerationId() {
+        if(parentWorkspace != null){
+            return workspaceGenerationId;
+        } else if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached()){
+            return wrappedDataBuffer.getGenerationId();
+        } else if(originalBuffer != null && originalBuffer.isAttached()){
+            return originalBuffer.getGenerationId();
+        }
         return workspaceGenerationId;
     }
 
@@ -1527,7 +1534,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public MemoryWorkspace getParentWorkspace() {
-        return parentWorkspace;
+        if(parentWorkspace != null){
+            return parentWorkspace;
+        }
+        if(wrappedDataBuffer != null && wrappedDataBuffer.isAttached() && wrappedDataBuffer.getParentWorkspace() != null){
+            return wrappedDataBuffer.getParentWorkspace();
+        }
+        if(originalBuffer != null && originalBuffer.isAttached() && originalBuffer.getParentWorkspace() != null){
+            return originalBuffer.getParentWorkspace();
+        }
+        return null;
     }
 
     /**
