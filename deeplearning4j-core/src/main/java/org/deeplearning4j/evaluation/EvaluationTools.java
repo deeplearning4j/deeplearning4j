@@ -42,7 +42,7 @@ public class EvaluationTools {
     private static final double CHART_HEIGHT_PX = 400.0;
 
     private static final StyleChart CHART_STYLE = new StyleChart.Builder().width(CHART_WIDTH_PX, LengthUnit.Px)
-                    .height(CHART_HEIGHT_PX, LengthUnit.Px).margin(LengthUnit.Px, 60, 60, 40, 10).strokeWidth(2.0)
+                    .height(CHART_HEIGHT_PX, LengthUnit.Px).margin(LengthUnit.Px, 60, 60, 75, 10).strokeWidth(2.0)
                     .seriesColors(Color.BLUE, Color.LIGHT_GRAY).build();
 
     private static final StyleChart CHART_STYLE_PRECISION_RECALL =
@@ -179,7 +179,7 @@ public class EvaluationTools {
 
     /**
      * Given a {@link EvaluationCalibration} instance, export the charts to a stand-alone HTML file
-     * @param roc  ROC to export
+     * @param ec  EvaluationCalibration instance to export HTML charts for
      * @param file File to export to
      */
     public static void exportevaluationCalibrationToHtmlFile(EvaluationCalibration ec, File file) throws IOException {

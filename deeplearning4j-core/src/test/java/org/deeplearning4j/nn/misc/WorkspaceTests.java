@@ -393,4 +393,35 @@ public class WorkspaceTests extends BaseDL4JTest {
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
     }
+
+
+    @Test
+    public void testWorkspaceSetting() {
+
+        for(WorkspaceMode wsm : WorkspaceMode.values()) {
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .weightInit(WeightInit.XAVIER)
+                    .seed(12345)
+                    .list()
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
+                    .trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm)
+                    .build();
+
+            assertEquals(wsm, conf.getTrainingWorkspaceMode());
+            assertEquals(wsm, conf.getInferenceWorkspaceMode());
+
+
+
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .weightInit(WeightInit.XAVIER)
+                    .seed(12345)
+                    .trainingWorkspaceMode(wsm).inferenceWorkspaceMode(wsm)
+                    .list()
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
+                    .build();
+
+            assertEquals(wsm, conf2.getTrainingWorkspaceMode());
+            assertEquals(wsm, conf2.getInferenceWorkspaceMode());
+        }
+    }
 }
