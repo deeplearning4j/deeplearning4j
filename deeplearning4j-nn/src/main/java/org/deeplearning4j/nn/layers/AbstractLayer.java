@@ -107,13 +107,13 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void migrateInput(){
-        if(input != null){
+        if(input != null && input.isAttached()){
             input = input.migrate(true);
         }
-        if(preOutput != null){
+        if(preOutput != null && preOutput.isAttached()){
             preOutput = preOutput.migrate(true);
         }
-        if(maskArray != null){
+        if(maskArray != null && maskArray.isAttached()){
             maskArray = maskArray.migrate(true);
         }
     }
