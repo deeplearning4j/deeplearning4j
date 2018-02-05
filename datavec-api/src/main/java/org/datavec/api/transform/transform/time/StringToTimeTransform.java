@@ -29,6 +29,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TimeZone;
 
 /**
@@ -45,13 +48,15 @@ public class StringToTimeTransform extends BaseColumnTransform {
     private final Long minValidTime;
     private final Long maxValidTime;
     //formats from: http://www.java2s.com/Tutorials/Java/Data_Type_How_to/Legacy_Date_Format/Guess_the_format_pattern_based_on_date_value.htm
-    private static final String[] formats = { "yyyy-MM-dd'T'HH:mm:ss'Z'",
-            "yyyy-MM-dd'T'HH:mm:ssZ", "yyyy-MM-dd'T'HH:mm:ss",
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
-            "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss",
-            "MM/dd/yyyy'T'HH:mm:ss.SSS'Z'", "MM/dd/yyyy'T'HH:mm:ss.SSSZ",
-            "MM/dd/yyyy'T'HH:mm:ss.SSS", "MM/dd/yyyy'T'HH:mm:ssZ",
-            "MM/dd/yyyy'T'HH:mm:ss", "yyyy:MM:dd HH:mm:ss", "yyyyMMdd", "YYYY-MM-dd HH:mm:ss"};
+    private static final String[] formats = { "YYYY-MM-dd'T'HH:mm:ss'Z'",
+            "YYYY-MM-dd'T'HH:mm:ssZ", "YYYY-MM-dd'T'HH:mm:ss",
+            "YYYY-MM-dd'T'HH:mm:ss.SSS'Z'", "YYYY-MM-dd'T'HH:mm:ss.SSSZ",
+            "YYYY-MM-dd HH:mm:ss", "MM/dd/YYYY HH:mm:ss",
+            "MM/dd/YYYY'T'HH:mm:ss.SSS'Z'", "MM/dd/YYYY'T'HH:mm:ss.SSSZ",
+            "MM/dd/YYYY'T'HH:mm:ss.SSS", "MM/dd/YYYY'T'HH:mm:ssZ",
+            "MM/dd/YYYY'T'HH:mm:ss", "YYYY:MM:dd HH:mm:ss", "YYYYMMdd", "YYYY-MM-dd HH:mm:ss",
+
+    };
     private transient DateTimeFormatter[] formatters;
 
     private transient DateTimeFormatter formatter;
@@ -135,10 +140,13 @@ public class StringToTimeTransform extends BaseColumnTransform {
         if(timeFormat != null)
             this.formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
         else {
+            List<DateTimeFormatter> dateFormatList = new ArrayList<>();
             formatters = new DateTimeFormatter[formats.length];
             for(int i = 0; i < formatters.length; i++) {
-                formatters[i] = DateTimeFormat.forPattern(formats[i]).withZone(timeZone);
+                dateFormatList.add(DateTimeFormat.forPattern(formats[i]).withZone(timeZone));
             }
+
+            formatters = dateFormatList.toArray(new DateTimeFormatter[dateFormatList.size()]);
         }
     }
 
@@ -151,6 +159,9 @@ public class StringToTimeTransform extends BaseColumnTransform {
     @Override
     public Writable map(Writable columnWritable) {
         String str = columnWritable.toString();
+        if(str.contains("T") && !str.contains("'T'")) {
+            str = str.replaceFirst("T","'T'");
+        }
         if(formatter == null) {
             long result = -1;
 
@@ -203,10 +214,13 @@ public class StringToTimeTransform extends BaseColumnTransform {
         if(timeFormat != null)
             formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
         else {
+            List<DateTimeFormatter> dateFormatList = new ArrayList<>();
             formatters = new DateTimeFormatter[formats.length];
             for(int i = 0; i < formatters.length; i++) {
-                formatters[i] = DateTimeFormat.forPattern(formats[i]).withZone(timeZone);
+                dateFormatList.add(DateTimeFormat.forPattern(formats[i]).withZone(timeZone));
             }
+
+            formatters = dateFormatList.toArray(new DateTimeFormatter[dateFormatList.size()]);
         }
     }
 
