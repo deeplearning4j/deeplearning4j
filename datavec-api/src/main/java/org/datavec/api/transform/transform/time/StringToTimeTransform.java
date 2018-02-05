@@ -44,8 +44,32 @@ public class StringToTimeTransform extends BaseColumnTransform {
     private final DateTimeZone timeZone;
     private final Long minValidTime;
     private final Long maxValidTime;
+    //formats from: http://www.java2s.com/Tutorials/Java/Data_Type_How_to/Legacy_Date_Format/Guess_the_format_pattern_based_on_date_value.htm
+    private static final String[] formats = { "yyyy-MM-dd'T'HH:mm:ss'Z'",
+            "yyyy-MM-dd'T'HH:mm:ssZ", "yyyy-MM-dd'T'HH:mm:ss",
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSSZ",
+            "yyyy-MM-dd HH:mm:ss", "MM/dd/yyyy HH:mm:ss",
+            "MM/dd/yyyy'T'HH:mm:ss.SSS'Z'", "MM/dd/yyyy'T'HH:mm:ss.SSSZ",
+            "MM/dd/yyyy'T'HH:mm:ss.SSS", "MM/dd/yyyy'T'HH:mm:ssZ",
+            "MM/dd/yyyy'T'HH:mm:ss", "yyyy:MM:dd HH:mm:ss", "yyyyMMdd", "YYYY-MM-dd HH:mm:ss"};
+    private transient DateTimeFormatter[] formatters;
 
     private transient DateTimeFormatter formatter;
+
+
+    /**
+     * Instantiate this without a time format specified.
+     * If this constructor is used, this transform will be allowed
+     * to handle several common transforms as defined in the
+     * static formats array.
+     *
+     *
+     * @param columnName Name of the String column
+     * @param timeZone   Timezone for time parsing
+     */
+    public StringToTimeTransform(String columnName,  TimeZone timeZone) {
+        this(columnName, null, timeZone, null, null);
+    }
 
     /**
      * @param columnName Name of the String column
@@ -55,6 +79,22 @@ public class StringToTimeTransform extends BaseColumnTransform {
     public StringToTimeTransform(String columnName, String timeFormat, TimeZone timeZone) {
         this(columnName, timeFormat, timeZone, null, null);
     }
+
+
+    /**
+     * Instantiate this without a time format specified.
+     * If this constructor is used, this transform will be allowed
+     * to handle several common transforms as defined in the
+     * static formats array.
+     *
+     *
+     * @param columnName Name of the String column
+     * @param timeZone   Timezone for time parsing
+     */
+    public StringToTimeTransform(String columnName, DateTimeZone timeZone) {
+        this(columnName, null, timeZone, null, null);
+    }
+
 
     /**
      * @param columnName Name of the String column
@@ -73,8 +113,8 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
      */
     public StringToTimeTransform(@JsonProperty("columnName") String columnName,
-                    @JsonProperty("timeFormat") String timeFormat, @JsonProperty("timeZone") TimeZone timeZone,
-                    @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
+                                 @JsonProperty("timeFormat") String timeFormat, @JsonProperty("timeZone") TimeZone timeZone,
+                                 @JsonProperty("minValidTime") Long minValidTime, @JsonProperty("maxValidTime") Long maxValidTime) {
         this(columnName, timeFormat, DateTimeZone.forTimeZone(timeZone), minValidTime, maxValidTime);
     }
 
@@ -86,14 +126,20 @@ public class StringToTimeTransform extends BaseColumnTransform {
      * @param maxValidTime Max valid time (epoch millisecond format). If null: no restriction in max valid time
      */
     public StringToTimeTransform(String columnName, String timeFormat, DateTimeZone timeZone, Long minValidTime,
-                    Long maxValidTime) {
+                                 Long maxValidTime) {
         super(columnName);
         this.timeFormat = timeFormat;
         this.timeZone = timeZone;
         this.minValidTime = minValidTime;
         this.maxValidTime = maxValidTime;
-
-        this.formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
+        if(timeFormat != null)
+            this.formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
+        else {
+            formatters = new DateTimeFormatter[formats.length];
+            for(int i = 0; i < formatters.length; i++) {
+                formatters[i] = DateTimeFormat.forPattern(formats[i]).withZone(timeZone);
+            }
+        }
     }
 
 
@@ -105,8 +151,31 @@ public class StringToTimeTransform extends BaseColumnTransform {
     @Override
     public Writable map(Writable columnWritable) {
         String str = columnWritable.toString();
-        long time = formatter.parseMillis(str);
-        return new LongWritable(time);
+        if(formatter == null) {
+            long result = -1;
+
+            for(DateTimeFormatter formatter : formatters) {
+                try {
+                    result = formatter.parseMillis(str);
+                    return new LongWritable(result);
+                }catch (Exception e) {
+
+                }
+
+
+            }
+
+            if(result  < 0) {
+                throw new IllegalStateException("Unable to parse date time " + str);
+            }
+        }
+        else {
+            long time = formatter.parseMillis(str);
+            return new LongWritable(time);
+        }
+
+        throw new IllegalStateException("Unable to parse date time " + str);
+
     }
 
     @Override
@@ -131,7 +200,14 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         in.defaultReadObject();
-        formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
+        if(timeFormat != null)
+            formatter = DateTimeFormat.forPattern(timeFormat).withZone(timeZone);
+        else {
+            formatters = new DateTimeFormatter[formats.length];
+            for(int i = 0; i < formatters.length; i++) {
+                formatters[i] = DateTimeFormat.forPattern(formats[i]).withZone(timeZone);
+            }
+        }
     }
 
     /**
