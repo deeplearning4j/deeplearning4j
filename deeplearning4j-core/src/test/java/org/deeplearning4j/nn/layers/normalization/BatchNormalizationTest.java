@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -46,7 +47,7 @@ import static org.junit.Assert.*;
 
 /**
  */
-public class BatchNormalizationTest {
+public class BatchNormalizationTest extends BaseDL4JTest {
 
     static {
         //Force Nd4j initialization, then set data type to double:

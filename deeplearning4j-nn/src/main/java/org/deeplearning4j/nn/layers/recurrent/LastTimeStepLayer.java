@@ -104,6 +104,11 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
         return getLastStep(underlying.activate(input));
     }
 
+    @Override
+    public void migrateInput() {
+        underlying.migrateInput();
+    }
+
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {

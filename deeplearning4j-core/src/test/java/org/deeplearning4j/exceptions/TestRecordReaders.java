@@ -5,6 +5,7 @@ import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordRe
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.exception.DL4JException;
@@ -21,7 +22,7 @@ import static junit.framework.TestCase.fail;
 /**
  * Created by Alex on 14/11/2016.
  */
-public class TestRecordReaders {
+public class TestRecordReaders extends BaseDL4JTest {
 
     @Test
     public void testClassIndexOutsideOfRangeRRDSI() {

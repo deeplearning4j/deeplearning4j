@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 09/09/2016.
  */
-public class CustomPreprocessorTest {
+public class CustomPreprocessorTest extends BaseDL4JTest {
 
     @Test
     public void testCustomPreprocessor() {

@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 17/01/2017.
  */
-public class GlobalPoolingGradientCheckTests {
+public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);

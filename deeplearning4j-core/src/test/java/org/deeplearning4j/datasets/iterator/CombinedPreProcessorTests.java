@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -12,7 +13,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by susaneraly on 6/17/17.
  */
-public class CombinedPreProcessorTests {
+public class CombinedPreProcessorTests extends BaseDL4JTest {
 
     @Test
     public void somePreProcessorsCombined() {

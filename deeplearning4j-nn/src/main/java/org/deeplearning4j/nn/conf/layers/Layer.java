@@ -56,6 +56,7 @@ import java.util.*;
                 @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
                 @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
                 @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
+                @JsonSubTypes.Type(value = CenterLossOutputLayer.class, name = "CenterLossOutputLayer"),
                 @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
                 @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
                 @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),

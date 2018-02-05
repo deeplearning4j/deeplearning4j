@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -14,7 +15,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestLastTimeStepLayer {
+public class TestLastTimeStepLayer extends BaseDL4JTest {
 
     @Test
     public void testLastTimeStepVertex() {

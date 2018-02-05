@@ -103,8 +103,6 @@ public class LayerVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
-
-        applyPreprocessorAndSetInput();
         return layer.activate(training);
     }
 
@@ -175,6 +173,7 @@ public class LayerVertex extends BaseGraphVertex {
                                             + inputNumber + ")");
         inputs[inputNumber] = input;
         setLayerInput = false;
+        applyPreprocessorAndSetInput();
     }
 
     @Override
@@ -266,5 +265,10 @@ public class LayerVertex extends BaseGraphVertex {
 
         IOutputLayer ol = (IOutputLayer)layer;
         return ol.computeScoreForExamples(l1, l2);
+    }
+
+    @Override
+    public void migrateInput(){
+        layer.migrateInput();
     }
 }

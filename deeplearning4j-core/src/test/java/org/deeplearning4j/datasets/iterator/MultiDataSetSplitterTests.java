@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.MultiDataSetGenerator;
 import org.junit.Test;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -11,7 +12,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author raver119@gmail.com
  */
-public class MultiDataSetSplitterTests {
+public class MultiDataSetSplitterTests extends BaseDL4JTest {
 
     @Test
     public void testSplitter_1() throws Exception {

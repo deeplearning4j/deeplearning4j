@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -16,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 /**
  */
 
-public class SeedTest {
+public class SeedTest extends BaseDL4JTest {
 
     private DataSetIterator irisIter = new IrisDataSetIterator(50, 50);
     private DataSet data = irisIter.next();

@@ -35,6 +35,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -59,7 +60,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * Created by agibsonccc on 3/6/15.
  */
 @Slf4j
-public class RecordReaderDataSetiteratorTest {
+public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     @Test
     public void testRecordReader() throws Exception {

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -25,7 +26,7 @@ import java.util.Random;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class EmbeddingLayerTest {
+public class EmbeddingLayerTest extends BaseDL4JTest {
 
     @Test
     public void testEmbeddingLayerConfig() {

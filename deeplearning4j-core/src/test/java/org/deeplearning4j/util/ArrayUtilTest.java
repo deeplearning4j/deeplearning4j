@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 /**
  *
  */
-public class ArrayUtilTest {
+public class ArrayUtilTest extends BaseDL4JTest {
 
     @Test
     public void testRange() {

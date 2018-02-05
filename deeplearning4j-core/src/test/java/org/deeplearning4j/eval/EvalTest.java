@@ -26,6 +26,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
@@ -69,7 +70,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 /**
  * Created by agibsonccc on 12/22/14.
  */
-public class EvalTest {
+public class EvalTest extends BaseDL4JTest {
 
     @Before
     public void before(){

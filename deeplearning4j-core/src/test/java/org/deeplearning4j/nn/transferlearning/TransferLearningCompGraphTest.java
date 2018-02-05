@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertNull;
 /**
  * Created by susaneraly on 2/17/17.
  */
-public class TransferLearningCompGraphTest {
+public class TransferLearningCompGraphTest extends BaseDL4JTest {
 
     @Test
     public void simpleFineTune() {

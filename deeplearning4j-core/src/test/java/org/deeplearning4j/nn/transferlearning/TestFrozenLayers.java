@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -25,7 +26,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestFrozenLayers {
+public class TestFrozenLayers extends BaseDL4JTest {
 
     @Test
     public void testFrozenMLN(){

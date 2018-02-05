@@ -64,11 +64,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode trainingWorkspaceMode;
+    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
 
     @Getter
     @Setter
-    protected WorkspaceMode inferenceWorkspaceMode;
+    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
 
     @Getter
     @Setter
@@ -356,7 +356,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttBackLength = 20;
         protected InputType inputType;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
 

@@ -19,6 +19,7 @@
 package org.deeplearning4j.plot;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -38,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 10/1/14.
  */
-public class BarnesHutTsneTest {
+public class BarnesHutTsneTest extends BaseDL4JTest {
     @Before
     public void setUp() {
         //   CudaEnvironment.getInstance().getConfiguration().enableDebug(true).setVerbose(false);

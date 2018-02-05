@@ -132,6 +132,20 @@ public abstract class BaseGraphVertex implements GraphVertex {
     }
 
     @Override
+    public void migrateInput(){
+        if(inputs != null){
+            for( int i=0; i<inputs.length; i++ ){
+                if(inputs[i] != null){
+                    inputs[i] = inputs[i].migrate(true);
+                }
+            }
+        }
+        if(epsilon != null){
+            epsilon = epsilon.migrate(true);
+        }
+    }
+
+    @Override
     public void setEpsilon(INDArray epsilon) {
         this.epsilon = epsilon;
     }
@@ -141,6 +155,7 @@ public abstract class BaseGraphVertex implements GraphVertex {
         for (int i = 0; i < inputs.length; i++) {
             inputs[i] = null;
         }
+        epsilon = null;
     }
 
     @Override

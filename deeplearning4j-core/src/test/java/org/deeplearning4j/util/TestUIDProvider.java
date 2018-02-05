@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
@@ -9,7 +10,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Created by Alex on 26/06/2016.
  */
-public class TestUIDProvider {
+public class TestUIDProvider extends BaseDL4JTest {
 
     @Test
     public void testUIDProvider() {

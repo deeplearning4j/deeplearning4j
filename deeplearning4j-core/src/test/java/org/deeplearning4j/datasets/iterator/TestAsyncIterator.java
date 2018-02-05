@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -19,7 +20,7 @@ import static org.junit.Assert.*;
  * @author Alex Black
  */
 @Ignore
-public class TestAsyncIterator {
+public class TestAsyncIterator extends BaseDL4JTest {
 
     @Test
     public void testBasic() {

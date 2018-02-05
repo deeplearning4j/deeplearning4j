@@ -80,7 +80,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
-        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ", layer type: " +
+                getClass().getSimpleName() + ")";
     }
 
     public INDArray getInput() {
@@ -102,6 +103,19 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public void setInput(INDArray input) {
         this.input = input;
         dropoutApplied = false;
+    }
+
+    @Override
+    public void migrateInput(){
+        if(input != null){
+            input = input.migrate(true);
+        }
+        if(preOutput != null){
+            preOutput = preOutput.migrate(true);
+        }
+        if(maskArray != null){
+            maskArray = maskArray.migrate(true);
+        }
     }
 
     @Override

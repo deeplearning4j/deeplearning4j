@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -33,7 +34,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class MultiLayerTestRNN {
+public class MultiLayerTestRNN extends BaseDL4JTest {
 
     @Test
     public void testGravesLSTMInit() {

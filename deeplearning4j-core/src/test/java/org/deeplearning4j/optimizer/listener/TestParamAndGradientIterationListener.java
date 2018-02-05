@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimizer.listener;
 
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -17,7 +18,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
-public class TestParamAndGradientIterationListener {
+public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
     @Test
     public void test() {

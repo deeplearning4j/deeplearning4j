@@ -1,13 +1,14 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.DataSetGenerator;
 import org.junit.Test;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import static org.junit.Assert.assertEquals;
 
-public class DataSetSplitterTests {
+public class DataSetSplitterTests extends BaseDL4JTest {
     @Test
     public void testSplitter_1() throws Exception {
         val back = new DataSetGenerator(1000, new int[]{32, 100}, new int[]{32, 5});

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
 /**
  */
 
-public class ActivationLayerTest {
+public class ActivationLayerTest extends BaseDL4JTest {
 
     @Test
     public void testInputTypes() {

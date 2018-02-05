@@ -1312,9 +1312,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         // computeGradientAndScore() before any fit() methods)
         MemoryWorkspace wsExternal = null;
         boolean shouldCloseWorkspace = false;
-        if(configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
+        if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
             wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-            if(!wsExternal.isScopeActive()){
+            if (!wsExternal.isScopeActive()) {
                 wsExternal.notifyScopeEntered();
                 shouldCloseWorkspace = true;
             }
@@ -1493,7 +1493,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> feedForward(INDArray[] input, boolean train, boolean clearInputs){
         setInputs(input);
-        return feedForward(train, false, false, clearInputs);
+        Map<String,INDArray> out = feedForward(train, false, false, clearInputs);
+        if(!clearInputs) {
+            //Layer inputs could be in a workspace. If we aren't supposed to clear them, then we want to make sure
+            // they are detached - otherwise, they could leak out of scope and cause corruption or a crash...
+            for (Layer l : layers) {
+                l.migrateInput();
+            }
+        }
+        return out;
     }
 
     /**
@@ -1560,38 +1568,34 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                                 int layerFeedForwardIdx) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        WorkspaceMode wsm = configuration.getTrainingWorkspaceMode();
         MemoryWorkspace workspace;
-        switch(configuration.getTrainingWorkspaceMode()){
+        switch(wsm){
             case NONE:
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
                 break;
             case SEPARATE:
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
                 break;
             default:
-                throw new RuntimeException();
+                throw new RuntimeException("Unknown workspace mode: " + wsm);
         }
+
+        boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
-/*
-            if(layerFeedForwardIdx >= 0 && i > layerFeedForwardIdx + 1) {
-                break;
-            }
-*/
-
-
-
             GraphVertex current = vertices[topologicalOrder[i]];
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
-                    // pushing out copy to parent workspace
-                    INDArray input = inputs[current.getVertexIndex()].leverageTo(workspaceExternal);
+                    // pushing out copy to parent workspace - if one exists
+                    INDArray input = inputs[current.getVertexIndex()].leverageOrDetach(workspaceExternal);
 
 
                     layerActivations.put(current.getVertexName(), input);
@@ -1614,6 +1618,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         } else {
                             vertices[vIdx].setInput(vIdxInputNum, input);
                         }
+
+
+                        //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                        // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                        // input is in the current workspace, which may be invalidated at the end of this loop
+                        // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                        if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                            try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                vertices[vIdx].migrateInput();
+                            }
+                        } else {
+                            //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                            if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                    //Same edge case as above - but scope to workspaceExternal instead
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                    //No workspace external - don't want to scope to external if config is say NONE
+                                    vertices[vIdx].migrateInput();
+                                }
+                            }
+                        }
                     }
 
                 } else {
@@ -1629,7 +1657,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (publicApi) {
                         out = current.doForward(train).detach();
                     } else {
-                        out = current.doForward(train).leverageTo(workspaceExternal);
+                        if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
+                            //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
+                            // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
+                            // the current for loop, hence a detach is required
+                            out = current.doForward(train).detach();
+                        } else {
+                            //Standard training case
+                            out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                        }
                     }
 
                     if (includeNonLayerVertexActivations || current.hasLayer() || current.isOutputVertex()) {
@@ -1656,6 +1692,30 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             } else {
                                 vertices[vIdx].setInput(inputNum, out);
                             }
+
+
+                            //Edge case for layer input fields: Suppose a layer does .dup() or similar on setInput, for some reason
+                            // (an example being bidirectional wrapper, which does a reverse op on the input). Now, the new
+                            // input is in the current workspace, which may be invalidated at the end of this loop
+                            // This will be a no-op most of the time, but will migrate on those "input copied" cases
+                            if(publicApi || (wsm == WorkspaceMode.SINGLE && !wseOpenSingle)){
+                                try(MemoryWorkspace scopeOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                    vertices[vIdx].migrateInput();
+                                }
+                            } else {
+                                //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
+                                if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                        //Same edge case as above - but scope to workspaceExternal instead
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                } else {
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                                        //No workspace external - don't want to scope to external if config is say NONE
+                                        vertices[vIdx].migrateInput();
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1665,9 +1725,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         }
 
-        if (!train)
-            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (!train && wsm == WorkspaceMode.SEPARATE) {
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        }
 
         if(publicApi){
             clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
@@ -1684,7 +1744,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(INDArray... input) {
-        return output(false, input);
+        return output(false, input, inputMaskArrays, labelMaskArrays);
     }
 
     /**
@@ -1708,7 +1768,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        return output(train, input, null, null);
+        return output(train, input, inputMaskArrays, labelMaskArrays);
     }
 
     /**
@@ -1778,12 +1838,71 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Output activations array
      */
     public INDArray outputSingle(boolean train, INDArray... input) {
+        return outputSingle(train, true, input);
+    }
+
+    /**
+     * Identical to {@link #outputSingle(boolean, boolean, INDArray...)} but has the option of not clearing the input
+     * arrays (useful when later backpropagating external errors). Most users should use {@link #outputSingle(boolean, INDArray...)}
+     * in preference to this method.
+     */
+    public INDArray outputSingle(boolean train, boolean clearInputs, INDArray... input){
         if (numOutputArrays != 1) {
             throw new IllegalStateException(
                     "Cannot use outputSingle with ComputationGraph that does not have exactly 1 output. nOutputs: "
                             + numOutputArrays);
         }
-        return output(train, input)[0];
+        return output(train, clearInputs, input)[0];
+    }
+
+    /**
+     * An output method for the network, with optional clearing of the layer inputs.<br>
+     * Note: most users should use {@link #output(boolean, INDArray...)} or similar methods, unless they are doing
+     * non-standard operations (like providing the input arrays externally)
+     *
+     * @param train       If true: output during training. False: output during testing. Affects some things such as
+     *                    dropout
+     * @param clearInputs If true: clear the input arrays for all layers. False: leave the input arrays as-is - which
+     *                    can be useful for "external errors" (no output layer) backprop use cases
+     * @param input       Input to the network
+     * @return            Output from the network
+     */
+    public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
+        setInputs(input);
+        if(clearInputs){
+            //Don't need intermedite activations/inputs to be out of workspace -> use silent output
+            WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+            configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+            MemoryWorkspace workspace =
+                    configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                            : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                            workspaceConfigurationExternal, workspaceExternal);
+
+            try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                INDArray[] tmp = silentOutput(train, input);
+                for (int x = 0; x < tmp.length; x++)
+                    tmp[x] = tmp[x].detach();
+
+                configuration.setTrainingWorkspaceMode(cMode);
+                clearLayersStates();    //Otherwise: invalidated input INDArrays could leak out and cause crash
+                return tmp;
+            }
+        } else {
+            //Want to keep intermediate activations/inputs out of workspaces, for later external gradients (etc) use
+            Map<String, INDArray> activations = feedForward(train, false, false, false);
+            INDArray[] outputs = new INDArray[numOutputArrays];
+            int i = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                outputs[i++] = activations.get(s).detach();
+            }
+            for (Layer l : layers) {
+                l.migrateInput();
+            }
+            for(GraphVertex gv : vertices){
+                gv.migrateInput();
+            }
+            return outputs;
+        }
     }
 
     /**
@@ -1817,13 +1936,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initGradientsView();
         }
 
+        WorkspaceMode wsm = configuration.getTrainingWorkspaceMode();
         MemoryWorkspace workspace;
-        switch (configuration.getTrainingWorkspaceMode()){
+        switch (wsm){
             case NONE:
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
                 break;
             case SEPARATE:
                 workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward,workspaceFeedForward);
@@ -1832,8 +1952,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new RuntimeException();
         }
 
-
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
+
+        boolean wsExternalActive = false;
+        if (wsm == WorkspaceMode.SINGLE) {
+            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
+        }
 
         //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
@@ -1880,7 +2004,20 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         continue;
                     }
 
-                    epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
+                    if(wsm == WorkspaceMode.SEPARATE) {
+                        epsilons[x] = epsilons[x].leverageOrDetach(workspaceExternal);
+                    } else if(wsm == WorkspaceMode.SINGLE){
+                        if(wsExternalActive){
+                            //Standard fit() training case: workspace external is active (beyond just the current for loop)
+                            // hence it's safe to leverage here
+                            epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
+                        } else {
+                            //"External errors" backprop case: workspace external is already (and only) active in the
+                            // current loop, and hence the epsilons will be invalidated at the end of the current vertex
+                            // for loop
+                            epsilons[x] = epsilons[x].detach();
+                        }
+                    }
                 }
 
                 //Inputs to the current GraphVertex:
@@ -1893,14 +2030,21 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         GraphVertex gv = vertices[v.getVertexIndex()];
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-                            INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
-                            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
+                            INDArray currentEps = gv.getEpsilon().leverageOrDetach(workspaceExternal);
+
+                            if (wsm == WorkspaceMode.NONE ) {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
+                            } else if(wsm == WorkspaceMode.SINGLE && !wsExternalActive){
+                                //"External errors" backprop case: workspace external is already (and only) active in the
+                                // current loop, and hence the epsilons will be invalidated at the end of the current vertex
+                                // for loop. Leveraging or scoping to workspaceExternal in this case isn't sufficient
+                                try (MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
+                                }
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                                         .getWorkspaceForCurrentThread(workspaceExternal)
                                         .notifyScopeBorrowed()) {
-                                    //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                     gv.setEpsilon(currentEps.add(epsilons[j++]));
                                 }
                             }
@@ -3469,12 +3613,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for (int f = 0; f < layers.length; f++) {
-            layers[f].setInput(null);
+        for (Layer layer : layers) {
+            layer.clear();
+            layer.clearNoiseWeightParams();
         }
 
-        for (int f = 0; f < vertices.length; f++) {
-            vertices[f].clearVertex();
+        for (GraphVertex vertex : vertices) {
+            vertex.clearVertex();
         }
     }
 
@@ -3601,6 +3746,47 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public void setLearningRate(String layerName, ISchedule newLr) {
         NetworkUtils.setLearningRate(this, layerName, newLr);
+    }
+
+    /**
+     * Return the layer size (number of units) for the specified layer.
+     * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
+     * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
+     * - ConvolutionLayer: the depth (number of channels)<br>
+     * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
+     *
+     * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
+     * @return Size of the layer
+     */
+    public int layerSize(int layer) {
+        if (layer < 0 || layer > layers.length) {
+            throw new IllegalArgumentException("Invalid layer index: " + layer + ". Layer index must be between 0 and "
+                    + (layers.length - 1) + " inclusive");
+        }
+        return layerSize(layers[layer].conf().getLayer().getLayerName());
+    }
+
+    /**
+     * Return the layer size (number of units) for the specified layer.
+     * Note that the meaning of the "layer size" can depend on the type of layer. For example:<br>
+     * - DenseLayer, OutputLayer, recurrent layers: number of units (nOut configuration option)<br>
+     * - ConvolutionLayer: the depth (number of channels)<br>
+     * - Subsampling layers, global pooling layers, etc: size of 0 is always returned<br>
+     *
+     * @param layerName Name of the layer to get the size of
+     * @return Size of the layer
+     */
+    public int layerSize(String layerName) {
+        Layer l = getLayer(layerName);
+        if(l == null){
+            throw new IllegalArgumentException("No layer with name \"" + layerName + "\" exists");
+        }
+        org.deeplearning4j.nn.conf.layers.Layer conf = l.conf().getLayer();
+        if (conf == null || !(conf instanceof FeedForwardLayer)) {
+            return 0;
+        }
+        FeedForwardLayer ffl = (FeedForwardLayer) conf;
+        return ffl.getNOut();
     }
 
     /**

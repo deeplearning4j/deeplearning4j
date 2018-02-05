@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -23,7 +24,7 @@ import static org.junit.Assert.*;
 /**
  * @author Jeffrey Tang.
  */
-public class LayerBuilderTest {
+public class LayerBuilderTest extends BaseDL4JTest {
     final double DELTA = 1e-15;
 
     int numIn = 10;

@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.solver;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Adam Gibson
  */
-public class BackTrackLineSearchTest {
+public class BackTrackLineSearchTest extends BaseDL4JTest {
     private DataSetIterator irisIter;
     private DataSet irisData;
 

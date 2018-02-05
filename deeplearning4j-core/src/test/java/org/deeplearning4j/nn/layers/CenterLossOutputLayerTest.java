@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -53,8 +54,7 @@ import static org.junit.Assert.assertNotEquals;
  *
  * @author Justin Long (@crockpotveggies)
  */
-public class CenterLossOutputLayerTest {
-    private static final Logger log = LoggerFactory.getLogger(CenterLossOutputLayerTest.class);
+public class CenterLossOutputLayerTest extends BaseDL4JTest {
 
     private ComputationGraph getGraph(int numLabels, double lambda) {
         Nd4j.getRandom().setSeed(12345);

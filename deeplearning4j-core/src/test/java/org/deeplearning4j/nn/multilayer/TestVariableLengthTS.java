@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,7 +28,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class TestVariableLengthTS {
+public class TestVariableLengthTS extends BaseDL4JTest {
 
     @Test
     public void testVariableLengthSimple() {

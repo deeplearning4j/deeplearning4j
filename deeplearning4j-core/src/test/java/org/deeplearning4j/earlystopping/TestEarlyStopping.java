@@ -1,5 +1,6 @@
 package org.deeplearning4j.earlystopping;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
@@ -42,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class TestEarlyStopping {
+public class TestEarlyStopping extends BaseDL4JTest {
 
     @Test
     public void testEarlyStoppingIris() {

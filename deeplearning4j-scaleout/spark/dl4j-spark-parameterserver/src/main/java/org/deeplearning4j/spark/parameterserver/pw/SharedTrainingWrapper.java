@@ -218,7 +218,7 @@ public class SharedTrainingWrapper {
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
-                    String localIP = System.getenv("SPARK_PUBLIC_DNS");
+                    String localIP = null;
 
                     // picking IP address based on network mask
                     if (localIP == null && voidConfiguration.getNetworkMask() != null) {

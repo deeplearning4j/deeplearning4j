@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.earlystopping;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -49,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class TestEarlyStoppingCompGraph {
+public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
     @Test
     public void testEarlyStoppingIris() {
