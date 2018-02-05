@@ -179,5 +179,7 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(assign, 2, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(assign_bp, 3, 2, false, 0, 0);
+
+        DECLARE_CUSTOM_OP(meshgrid, -1, -1, false, 0, 0);
     }
 }

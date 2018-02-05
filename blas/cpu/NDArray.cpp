@@ -1100,7 +1100,7 @@ template <typename T>
         tad.createTadOnlyShapeInfo();
         tad.createOffsets();
 
-        shape::printShapeInfoLinear(tad.tadOnlyShapeInfo);
+        // shape::printShapeInfoLinear(tad.tadOnlyShapeInfo);
 
         T* buffer = this->_buffer + tad.tadOffsets[index];
 
