@@ -21,6 +21,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 @Slf4j
 public class WorkspaceTests extends BaseDL4JTest {
 
@@ -358,6 +361,36 @@ public class WorkspaceTests extends BaseDL4JTest {
                     net2.fit(new DataSet(Nd4j.rand(new int[]{3, 10, 20}), Nd4j.rand(new int[]{3, 10, 20})));
                 }
             }
+        }
+    }
+
+    @Test
+    public void testScalarOutputCase() {
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("WorkspaceMode = " + ws);
+
+            Nd4j.getRandom().setSeed(12345);
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .weightInit(WeightInit.XAVIER)
+                    .seed(12345)
+                    .trainingWorkspaceMode(ws).inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new OutputLayer.Builder().nIn(3).nOut(1).activation(Activation.SIGMOID).build())
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray input = Nd4j.linspace(1, 3, 3);
+            INDArray out = net.output(input);
+            INDArray out2 = net.output(input);
+
+            assertEquals(out2, out);
+
+            assertFalse(out.isAttached());
+            assertFalse(out2.isAttached());
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
     }
 }
