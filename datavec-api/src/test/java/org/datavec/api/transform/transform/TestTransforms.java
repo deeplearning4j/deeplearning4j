@@ -683,14 +683,21 @@ public class TestTransforms {
 
     @Test
     public void testStringToTimeTransformNoDateTime() throws Exception {
-        testStringToDateTime(null);
-        String dateTime = "2017-09-21T17:06:29.064687";
+
         Schema schema = getSchema(ColumnType.String);
+        String dateTime = "2017-09-21T17:06:29.064687";
+        String dateTime2 = "2007-12-30";
+
 
         //http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
-        Transform transform = new StringToTimeTransform("column", null, DateTimeZone.forID("UTC"));
+        StringToTimeTransform transform = new StringToTimeTransform("column", null, DateTimeZone.forID("UTC"));
         transform.setInputSchema(schema);
         transform.map(new Text(dateTime));
+        transform.map(new Text(dateTime2));
+        testStringToDateTime(null);
+
+
+
 
     }
 

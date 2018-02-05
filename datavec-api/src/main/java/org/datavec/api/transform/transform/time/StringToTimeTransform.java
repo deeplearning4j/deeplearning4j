@@ -33,6 +33,7 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.regex.Pattern;
 
 /**
  * Convert a String column to a time column by parsing the date/time String, using a JodaTime.
@@ -48,8 +49,9 @@ public class StringToTimeTransform extends BaseColumnTransform {
     private final Long minValidTime;
     private final Long maxValidTime;
     //formats from: http://www.java2s.com/Tutorials/Java/Data_Type_How_to/Legacy_Date_Format/Guess_the_format_pattern_based_on_date_value.htm
-    private static final String[] formats = { "YYYY-MM-dd'T'HH:mm:ss'Z'",
-            "YYYY-MM-dd'T'HH:mm:ssZ", "YYYY-MM-dd'T'HH:mm:ss",
+    //2017-09-21T17:06:29.064687
+    private static final String[] formats = { "YYYY-MM-dd'T'HH:mm:ss","YYYY-MM-dd","YYYY-MM-dd'T'HH:mm:ss'Z'",
+            "YYYY-MM-dd'T'HH:mm:ssZ",
             "YYYY-MM-dd'T'HH:mm:ss.SSS'Z'", "YYYY-MM-dd'T'HH:mm:ss.SSSZ",
             "YYYY-MM-dd HH:mm:ss", "MM/dd/YYYY HH:mm:ss",
             "MM/dd/YYYY'T'HH:mm:ss.SSS'Z'", "MM/dd/YYYY'T'HH:mm:ss.SSSZ",
@@ -158,12 +160,19 @@ public class StringToTimeTransform extends BaseColumnTransform {
 
     @Override
     public Writable map(Writable columnWritable) {
-        String str = columnWritable.toString();
-        if(str.contains("T") && !str.contains("'T'")) {
-            str = str.replaceFirst("T","'T'");
+        String str = columnWritable.toString().trim();
+        if(str.contains("'T'")) {
+            str = str.replaceFirst("'T'","T");
         }
+
+
+
         if(formatter == null) {
             long result = -1;
+            if(Pattern.compile("\\.[0-9]+").matcher(str).find()) {
+                str = str.replaceAll("\\.[0-9]+","");
+            }
+
 
             for(DateTimeFormatter formatter : formatters) {
                 try {
