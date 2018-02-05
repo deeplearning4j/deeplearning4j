@@ -514,5 +514,8 @@ namespace nd4j {
          */
         DECLARE_OP(stop_gradient, 1, 1, true);
 
+
+        DECLARE_CUSTOM_OP(parallel_stack, -1, 1, false, 0, 0);
+
     }
 }
