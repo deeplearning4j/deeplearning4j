@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -77,18 +78,27 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
 
         Map<String,INDArray> m;
 
-        if(initializeParams){
+        if (initializeParams) {
             Distribution dist = Distributions.createDistribution(c.getDist());
 
-             m = getSubsets(paramsView, nIn, nOut, false);
-             INDArray w = WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
-             m.put(WEIGHT_KEY, w);
+            m = getSubsets(paramsView, nIn, nOut, false);
+            INDArray w = WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, c.getWeightInit(), dist, 'f', m.get(WEIGHT_KEY));
+            m.put(WEIGHT_KEY, w);
 
-            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, c.getWeightInit(), dist, 'f', m.get(RECURRENT_WEIGHT_KEY));
+            WeightInit rwInit;
+            Distribution rwDist;
+            if (c.getWeightInitRecurrent() != null) {
+                rwInit = c.getWeightInitRecurrent();
+                rwDist = Distributions.createDistribution(c.getDistRecurrent());
+            } else {
+                rwInit = c.getWeightInit();
+                rwDist = dist;
+            }
+
+            INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
             m.put(RECURRENT_WEIGHT_KEY, rw);
-
         } else {
-             m = getSubsets(paramsView, nIn, nOut, true);
+            m = getSubsets(paramsView, nIn, nOut, true);
         }
 
         conf.addVariable(WEIGHT_KEY);
