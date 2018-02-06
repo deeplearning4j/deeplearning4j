@@ -84,6 +84,8 @@ brew install maven
 
 Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
 
+* [Paul Dub's guide to maven](http://www.dubs.tech/guides/maven-essentials/)
+
 * [Maven In Five Minutes](http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)
 
 #### <a name="IntelliJ">IntelliJ IDEA</a>
