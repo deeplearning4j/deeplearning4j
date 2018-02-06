@@ -271,7 +271,9 @@
         (23, simdOps::ReverseMod),\
         (24, simdOps::SafeDivide), \
         (25, simdOps::Mod) ,\
-        (92, simdOps::PowDerivative)
+        (92, simdOps::PowDerivative), \
+        (93, simdOps::LogPoisonLoss), \
+        (94, simdOps::LogPoisonLossFull)
 
 
 

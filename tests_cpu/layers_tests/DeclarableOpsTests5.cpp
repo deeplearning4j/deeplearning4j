@@ -2223,3 +2223,71 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test2) {
 
     delete results;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, ELU_1) {
+
+    NDArray<double> input  ('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
+    NDArray<double> exp    ('c', {2, 2, 2}, { -0.63212055,  2. , 1.5, -0.753403, 1.,   2.,  2.,   1.});
+    NDArray<double> res    ('c', {2, 2, 2});
+    
+    input.applyTransform<simdOps::ELU<double>>(&res);
+
+    ASSERT_TRUE(res.equalsTo(&exp));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, L2_Loss_1) {
+
+    NDArray<double> input  ('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
+    double exp(9.605);
+    
+    nd4j::ops::l2_loss<double> op;
+    ResultSet<double>* results = op.execute({&input}, {}, {});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(output->isScalar());
+    ASSERT_EQ((*output)(0), exp);    
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, LogPoisonLoss_1) {
+
+    NDArray<double> input  ('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
+    NDArray<double> targets('c', {2, 2, 2}, {1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0});
+
+    NDArray<double> exp('c', {2, 2, 2}, {1.3678794, 5.389056, 2.981689, 1.6465969, 1.7182817, 5.389056, 5.389056, 1.7182817});
+    
+    nd4j::ops::log_poison_loss<double> op;
+    ResultSet<double>* results = op.execute({&targets, &input}, {}, {});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, LogPoisonLoss_2) {
+
+    NDArray<double> input  ('c', {2, 2, 2}, { -1.,  2. , 1.5, -1.4, 1.,   2.,  2.,   1.});
+    NDArray<double> targets('c', {2, 2, 2}, {2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0});
+
+    NDArray<double> exp('c', {2, 2, 2}, {3.0196857, 4.0408626, 2.1334953, 3.6984034, 1.3700882, 4.0408626, 4.0408626, 1.3700882});
+ 
+    nd4j::ops::log_poison_loss<double> op;
+    ResultSet<double>* results = op.execute({&targets, &input}, {}, {1});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));    
+
+    delete results;
+}
+

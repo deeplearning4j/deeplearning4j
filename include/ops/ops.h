@@ -18,6 +18,8 @@
 #ifndef M_E
 #define M_E 2.718281828459
 #endif
+#define DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
+
 
 #define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *resultShapeBuffer, T *extraParams, int *tadShapeInfo, Nd4jIndex *tadOffsets) {}
 #define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(T *x, int *xShapeInfo, T *extraParams, T *result, int *resultShapeInfoBuffer, int *dimension, int dimensionLength, int *tadShapeInfo, Nd4jIndex *tadOffset){}
@@ -180,6 +182,51 @@ namespace simdOps {
 		// op for MetaOps
 		op_def static T op(T d1, T *params) {
 			return params[0] - d1;
+		}
+	};
+
+        
+	template<typename T>
+	class LogPoisonLossFull {
+
+	public:
+		op_def static T op(T z, T c) {
+			return (exp(c) - z * c  + (z * log(z) - z + (T)0.5 * log(DOUBLE_PI_T * z)));
+		}
+
+		op_def static T op(T z, T c, T *params) {
+			return (exp(c) - z * c  + (z * log(z) - z + (T)0.5 * log(DOUBLE_PI_T * z)));
+		}
+
+		op_def static T op(T z) {
+			return (z * log(z) - z + (T)0.5 * log(DOUBLE_PI_T * z));
+		}
+
+		// op for MetaOps
+		op_def static T op(T z, T *params) {
+			return (exp(params[0]) - z * params[0]  + (z * log(z) - z + (T)0.5 * log(DOUBLE_PI_T * z)));
+		}
+	};
+
+	template<typename T>
+	class LogPoisonLoss {
+
+	public:
+		op_def static T op(T z, T c) {
+			return (exp(c) - z * c);
+		}
+
+		op_def static T op(T z, T c, T *params) {
+			return (exp(c) - z * c);
+		}
+
+		op_def static T op(T z) {
+			return (z);
+		}
+
+		// op for MetaOps
+		op_def static T op(T z, T *params) {
+			return (exp(params[0]) - z * params[0]);
 		}
 	};
 
