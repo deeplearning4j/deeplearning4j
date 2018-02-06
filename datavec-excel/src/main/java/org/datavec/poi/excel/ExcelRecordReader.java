@@ -1,18 +1,42 @@
 package org.datavec.poi.excel;
 
 import org.apache.poi.ss.usermodel.*;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.FileRecordReader;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.BooleanWritable;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
+/**
+ * Excel record reader for loading rows of an excel spreadsheet
+ * from multiple spreadsheets very similar to the
+ * {@link org.datavec.api.records.reader.impl.csv.CSVRecordReader}
+ *
+ * Of note when you have multiple sheets, you must have the same number of
+ * lines skipped at the top. For example, if you have a header as follows:
+ * Header1 Header2 Header3
+ *   1      2       3
+ *   4     5        6
+ *
+ * Any other sheet you are trying to parse must also contain the
+ * same number of header lines.
+ *
+ */
 public class ExcelRecordReader extends FileRecordReader {
+    //originally from CSVRecordReader
+    private boolean skippedLines = false;
+    protected int skipNumLines = 0;
+    public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
+
     private Iterator<Sheet> sheetIterator;
     private Iterator<Row> rows;
     // Create a DataFormatter to format and get each cell's value as String
@@ -20,12 +44,44 @@ public class ExcelRecordReader extends FileRecordReader {
     private Workbook currWorkBook;
     //we should ensure that the number of columns is consistent across all worksheets
     private int numColumns = -1;
+
+    /**
+     * Skip skipNumLines number of lines
+     * @param skipNumLines the number of lines to skip
+     */
+    public ExcelRecordReader(int skipNumLines) {
+        this.skipNumLines = skipNumLines;
+    }
+
+
+
+    public ExcelRecordReader() {
+        this(0);
+    }
+
     @Override
     public boolean hasNext() {
-        return super.hasNext() ||
+        if (!skipLines())
+            throw new NoSuchElementException("No next element found!");
+        return skipLines() && super.hasNext() ||
                 sheetIterator != null && sheetIterator.hasNext()
                 || rows != null && rows.hasNext();
     }
+
+
+    private boolean skipLines() {
+        if (!skippedLines && skipNumLines > 0) {
+            for (int i = 0; i < skipNumLines; i++) {
+                if (!super.hasNext()) {
+                    return false;
+                }
+                super.next();
+            }
+            skippedLines = true;
+        }
+        return true;
+    }
+
 
     @Override
     public List<Writable> next() {
@@ -67,6 +123,19 @@ public class ExcelRecordReader extends FileRecordReader {
         }
 
     }
+
+    @Override
+    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        super.initialize(conf, split);
+        this.skipNumLines = conf.getInt(SKIP_NUM_LINES,0);
+    }
+
+    @Override
+    public void reset() {
+        super.reset();
+        skippedLines = false;
+    }
+
 
 
     private List<Writable> rowToRecord(Row currRow) {

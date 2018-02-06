@@ -20,6 +20,14 @@ public class ExcelRecordReaderTest {
         assertTrue(excel.hasNext());
         List<Writable> next = excel.next();
         assertEquals(3,next.size());
+
+        RecordReader headerReader = new ExcelRecordReader(1);
+        headerReader.initialize(new FileSplit(new ClassPathResource("testsheetheader.xlsx").getFile()));
+        assertTrue(excel.hasNext());
+        List<Writable> next2 = excel.next();
+        assertEquals(3,next2.size());
+
+
     }
 
 }
