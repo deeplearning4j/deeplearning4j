@@ -938,6 +938,30 @@ namespace simdOps {
 	};
 
 	template<typename T>
+	class Sqr {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_pow<T>(d1, (T)2);
+		}
+
+//		op_def static T op(T d1, T d2) {
+//			return nd4j::math::nd4j_pow<T>(d1, 2);
+//		}
+
+//		op_def static T op(T d1, T d2, T *params) {
+//			return nd4j::math::nd4j_pow<T>(d1, d2);
+//		}
+
+		op_def static T op(T d1) {
+			return nd4j::math::nd4j_pow<T>(d1, (T)2);
+		}
+	};
+
+
+	template<typename T>
 	class Pow {
 	public:
 		no_op_exec_special

@@ -135,7 +135,8 @@
         (91,simdOps::Expm1), \
         (92, simdOps::PowDerivative), \
         (93,simdOps::ATanh), \
-        (94,simdOps::Reciprocal)
+        (94,simdOps::Reciprocal), \
+        (95,simdOps::Sqr)
 
 
 

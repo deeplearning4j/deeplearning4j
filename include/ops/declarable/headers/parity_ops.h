@@ -533,5 +533,21 @@ namespace nd4j {
          *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
          */
         DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
+
+        /**
+         * normalize_moments operation normalize already calculated mean and variation 
+         * accordingly to shift and count.
+         * input params:
+         *  - count of data
+         *  - tensor with mean
+         *  - tensor with variance (the same shape as before)
+         *
+         *  - optional floating point param shift.
+         * 
+         *  returns a normalized pair mean and variance with the same shapes as input
+         */
+        DECLARE_CUSTOM_OP(normalize_moments, 3, 2, false, 1, 0);
+
+
     }
 }

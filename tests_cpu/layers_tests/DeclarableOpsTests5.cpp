@@ -2291,3 +2291,157 @@ TEST_F(DeclarableOpsTests5, LogPoisonLoss_2) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, NormalizeMoments_1) {
+
+    NDArray<double> means  ('c', {2, 3, 4}, { 11.,   3.,  14.,   5.,
+                                               6.,   9.,  3.5,   7.,
+                                              21.,   3.,  14.,  15.,
+                                               6.,   9.,  3.5,   7.,
+                                              11.,  13.,  14.,   5.,
+                                              16.,   9., 13.5,   7.});
+
+    NDArray<double> deviance('c', {2, 3, 4}, { 21.,  13.,  24.,  15.,
+                                               16.,  19., 13.5,  17.,
+                                               31.,  13.,  24.,  25.,
+                                               16.,  19., 13.5,  17.,
+                                               21.,  23.,  24.,  15.,
+                                               26.,  19., 23.5,  17.});
+
+    NDArray<double> counts(2.0);
+
+    NDArray<double> expMeans('c', {2, 3, 4}, {
+                                                 5.5,   1.5,     7.,  2.5,
+                                                  3.,   4.5,   1.75,  3.5,
+                                                10.5,   1.5,     7.,  7.5,
+                                                  3.,   4.5,   1.75,  3.5,
+                                                 5.5,   6.5,     7.,  2.5,
+                                                  8.,   4.5,   6.75,  3.5});
+
+    NDArray<double> expDeviance('c', {2, 3, 4}, {
+                                                -19.75,     4.25,       -37.,   1.25,
+                                                   -1.,   -10.75,     3.6875,  -3.75,
+                                                -94.75,     4.25,       -37.,  -43.75,
+                                                   -1.,   -10.75,     3.6875,  -3.75,
+                                                -19.75,   -30.75,       -37.,   1.25,
+                                                  -51.,   -10.75,   -33.8125,  -3.75});
+
+    nd4j::ops::normalize_moments<double> op;
+    ResultSet<double>* results = op.execute({&counts, &means, &deviance}, {0.0}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(results->size(), 2);
+
+    NDArray<double>* outputMeans = results->at(0);    
+    NDArray<double>* outputDeviance = results->at(1);    
+
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
+    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
+    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, NormalizeMoments_2) {
+
+    NDArray<double> means  ('c', {3, 2, 4}, { 11.,   3.,  14.,   5.,
+                                               6.,   9.,  3.5,   7.,
+                                              21.,   3.,  14.,  15.,
+                                               6.,   9.,  3.5,   7.,
+                                              11.,  13.,  14.,   5.,
+                                              16.,   9., 13.5,   7.});
+
+    NDArray<double> deviance('c', {3, 2, 4}, { 21.,  13.,  24.,  15.,
+                                               16.,  19., 13.5,  17.,
+                                               31.,  13.,  24.,  25.,
+                                               16.,  19., 13.5,  17.,
+                                               21.,  23.,  24.,  15.,
+                                               26.,  19., 23.5,  17.});
+
+    NDArray<double> counts(12.0);
+
+    NDArray<double> expMeans('c', {3, 2, 4}, { 0.9166667,     0.25,  1.1666667, 0.4166667,
+                                                     0.5,     0.75,  0.2916667, 0.5833334,
+                                                    1.75,     0.25,  1.1666667,      1.25,
+                                                     0.5,     0.75,  0.2916667, 0.5833334,
+                                               0.9166667, 1.0833334, 1.1666667, 0.4166667,
+                                               1.3333334,      0.75,     1.125, 0.5833334});
+
+    NDArray<double> expDeviance('c', {3, 2, 4}, {
+                                                 0.9097222,  1.0208334,  0.6388887,  1.0763888,
+                                                 1.0833334,  1.0208334,  1.0399306,   1.076389,
+                                                -0.4791665,  1.0208334,  0.6388887,  0.5208335,
+                                                 1.0833334,  1.0208334,  1.0399306,   1.076389,
+                                                 0.9097222,  0.7430556,  0.6388887,  1.0763888,
+                                                0.38888884,  1.0208334,  0.6927084,   1.076389});
+
+    nd4j::ops::normalize_moments<double> op;
+    ResultSet<double>* results = op.execute({&counts, &means, &deviance}, {0.0}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(results->size(), 2);
+
+    NDArray<double>* outputMeans = results->at(0);    
+    NDArray<double>* outputDeviance = results->at(1);    
+
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
+    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
+    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));    
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, NormalizeMoments_3) {
+
+    NDArray<double> means  ('c', {3, 2, 4}, { 11.,   3.,  14.,   5.,
+                                               6.,   9.,  3.5,   7.,
+                                              21.,   3.,  14.,  15.,
+                                               6.,   9.,  3.5,   7.,
+                                              11.,  13.,  14.,   5.,
+                                              16.,   9., 13.5,   7.});
+
+    NDArray<double> deviance('c', {3, 2, 4}, { 21.,  13.,  24.,  15.,
+                                               16.,  19., 13.5,  17.,
+                                               31.,  13.,  24.,  25.,
+                                               16.,  19., 13.5,  17.,
+                                               21.,  23.,  24.,  15.,
+                                               26.,  19., 23.5,  17.});
+
+    NDArray<double> counts(12.0);
+    double shift = 10.0;
+    NDArray<double> expMeans('c', {3, 2, 4}, { 10.9166667,     10.25,  11.1666667, 10.4166667,
+                                                     10.5,     10.75,  10.2916667, 10.5833334,
+                                                    11.75,     10.25,  11.1666667,      11.25,
+                                                     10.5,     10.75,  10.2916667, 10.5833334,
+                                               10.9166667, 11.0833334, 11.1666667, 10.4166667,
+                                               11.3333334,      10.75,     11.125, 10.5833334});
+
+    NDArray<double> expDeviance('c', {3, 2, 4}, {
+                                                 0.9097222,  1.0208334,  0.6388887,  1.0763888,
+                                                 1.0833334,  1.0208334,  1.0399306,   1.076389,
+                                                -0.4791665,  1.0208334,  0.6388887,  0.5208335,
+                                                 1.0833334,  1.0208334,  1.0399306,   1.076389,
+                                                 0.9097222,  0.7430556,  0.6388887,  1.0763888,
+                                                0.38888884,  1.0208334,  0.6927084,   1.076389});
+
+    nd4j::ops::normalize_moments<double> op;
+    ResultSet<double>* results = op.execute({&counts, &means, &deviance}, {shift}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(results->size(), 2);
+
+    NDArray<double>* outputMeans = results->at(0);    
+    NDArray<double>* outputDeviance = results->at(1);    
+
+    ASSERT_TRUE(expMeans.isSameShape(outputMeans));
+    ASSERT_TRUE(expMeans.equalsTo(outputMeans));    
+    ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
+    ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));    
+
+    delete results;
+}
+
