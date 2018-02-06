@@ -334,7 +334,7 @@ public class VoidParameterServer {
             }
 
 
-        String sparkIp = System.getenv("SPARK_PUBLIC_DNS");
+        String sparkIp = null;
 
 
         if (sparkIp == null && voidConfiguration.getNetworkMask() != null) {

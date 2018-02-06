@@ -34,6 +34,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "graph/VariableType.h",
                         "graph/ArgumentsList.h",
                         "types/pair.h",
+                        "types/pair.h",
                         "NDArray.h",
                         "array/NDArrayList.h",
                         "array/ResultSet.h",

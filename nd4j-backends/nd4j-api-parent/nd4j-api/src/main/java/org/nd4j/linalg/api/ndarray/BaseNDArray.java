@@ -5288,7 +5288,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isAttached() {
-        return data.isAttached();
+        return data.isAttached() ||
+                (data.underlyingDataBuffer() != null && data.underlyingDataBuffer().isAttached()) ||
+                (data.originalDataBuffer() != null && data.originalDataBuffer().isAttached());
     }
 
     /**

@@ -51,7 +51,7 @@ import java.util.Properties;
 @Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
-    protected ProfilingMode profilingMode = ProfilingMode.DISABLED;
+    protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
     public DefaultOpExecutioner() {}
