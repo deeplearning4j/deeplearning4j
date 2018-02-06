@@ -50,13 +50,14 @@ public class StringToTimeTransform extends BaseColumnTransform {
     private final Long maxValidTime;
     //formats from: http://www.java2s.com/Tutorials/Java/Data_Type_How_to/Legacy_Date_Format/Guess_the_format_pattern_based_on_date_value.htm
     //2017-09-21T17:06:29.064687
+    // 12/1/2010 11:21
     private static final String[] formats = { "YYYY-MM-dd'T'HH:mm:ss","YYYY-MM-dd","YYYY-MM-dd'T'HH:mm:ss'Z'",
             "YYYY-MM-dd'T'HH:mm:ssZ",
             "YYYY-MM-dd'T'HH:mm:ss.SSS'Z'", "YYYY-MM-dd'T'HH:mm:ss.SSSZ",
             "YYYY-MM-dd HH:mm:ss", "MM/dd/YYYY HH:mm:ss",
             "MM/dd/YYYY'T'HH:mm:ss.SSS'Z'", "MM/dd/YYYY'T'HH:mm:ss.SSSZ",
             "MM/dd/YYYY'T'HH:mm:ss.SSS", "MM/dd/YYYY'T'HH:mm:ssZ",
-            "MM/dd/YYYY'T'HH:mm:ss", "YYYY:MM:dd HH:mm:ss", "YYYYMMdd", "YYYY-MM-dd HH:mm:ss",
+            "MM/dd/YYYY'T'HH:mm:ss", "YYYY:MM:dd HH:mm:ss", "YYYYMMdd", "YYYY-MM-dd HH:mm:ss","MM/dd/YYYY HH:mm",
 
     };
     private transient DateTimeFormatter[] formatters;

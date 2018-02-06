@@ -87,7 +87,7 @@ public class CSVRecordReader extends LineRecordReader {
         this(skipNumLines, stringDelimToChar(delimiter));
     }
 
-    private static char stringDelimToChar(String delimiter){
+    private static char stringDelimToChar(String delimiter) {
         if(delimiter.length() > 1){
             throw new UnsupportedOperationException("Multi-character delimiters have been deprecated. For quotes, " +
                     "use CSVRecordReader(int skipNumLines, char delimiter, char quote)");
