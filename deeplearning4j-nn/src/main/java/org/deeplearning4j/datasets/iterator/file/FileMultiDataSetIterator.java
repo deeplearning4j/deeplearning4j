@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.iterator.file;
 
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +22,7 @@ import java.util.Random;
  *
  * @author Alex BLack
  */
-public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, MultiDataSetPreProcessor> {
+public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, MultiDataSetPreProcessor> implements MultiDataSetIterator {
 
 
     /**
@@ -124,5 +125,10 @@ public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, Mul
         if (preProcessor != null) {
             preProcessor.preProcess(toPreProcess);
         }
+    }
+
+    @Override
+    public MultiDataSet next(int num) {
+        throw new UnsupportedOperationException("Not supported for this iterator");
     }
 }

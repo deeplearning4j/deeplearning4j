@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.iterator.file;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.util.MathUtils;
@@ -34,17 +35,17 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
 
 
     protected BaseFileIterator(File rootDir, int batchSize, String... validExtensions) {
-        this(rootDir, true, new Random(), -1, validExtensions);
+        this(rootDir, true, new Random(), batchSize, validExtensions);
     }
 
-    protected BaseFileIterator(File rootDir, boolean recursive, Random rng, int batchSize, String... validExtensions) {
+    protected BaseFileIterator(@NonNull File rootDir, boolean recursive, Random rng, int batchSize, String... validExtensions) {
         this.batchSize = batchSize;
         this.rng = rng;
 
         list = new CompactHeapStringList();
         Collection<File> c = FileUtils.listFiles(rootDir, validExtensions, recursive);
         if (c.isEmpty()) {
-            throw new IllegalStateException("Root directory is null " + (validExtensions != null ? " (or all files rejected by extension filter)" : ""));
+            throw new IllegalStateException("Root directory is empty (no files found) " + (validExtensions != null ? " (or all files rejected by extension filter)" : ""));
         }
         for (File f : c) {
             list.add(f.getPath());
@@ -61,7 +62,7 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
 
     @Override
     public boolean hasNext() {
-        return position < list.size();
+        return partialStored != null || position < list.size();
     }
 
     @Override
@@ -69,28 +70,31 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
         if (!hasNext()) {
             throw new NoSuchElementException("No next element");
         }
-        int nextIdx = (order == null ? order[position++] : position++);
 
-        T next = load(new File(list.get(nextIdx)));
+        T next;
+        if (partialStored != null) {
+            next = partialStored;
+            partialStored = null;
+        } else {
+            int nextIdx = (order != null ? order[position++] : position++);
+            next = load(new File(list.get(nextIdx)));
+        }
         if (batchSize <= 0) {
             //Don't recombine, return as-is
             return next;
         }
 
-        if (partialStored == null && sizeOf(next) == batchSize) {
+        if (sizeOf(next) == batchSize) {
             return next;
         }
 
         int exampleCount = 0;
         List<T> toMerge = new ArrayList<>();
-        if (partialStored != null) {
-            toMerge.add(partialStored);
-            exampleCount += sizeOf(partialStored);
-            partialStored = null;
-        }
+        toMerge.add(next);
+        exampleCount += sizeOf(next);
 
         while (exampleCount < batchSize && hasNext()) {
-            nextIdx = (order == null ? order[position++] : position++);
+            int nextIdx = (order != null ? order[position++] : position++);
             next = load(new File(list.get(nextIdx)));
             exampleCount += sizeOf(next);
             toMerge.add(next);
@@ -138,8 +142,12 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
         }
 
         T ret = merge(correctNum);
-        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            this.partialStored = merge(remainder);
+        if (remainder.isEmpty()) {
+            this.partialStored = null;
+        } else {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                this.partialStored = merge(remainder);
+            }
         }
 
         return ret;
