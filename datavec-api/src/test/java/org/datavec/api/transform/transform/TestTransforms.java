@@ -687,11 +687,12 @@ public class TestTransforms {
         Schema schema = getSchema(ColumnType.String);
         String dateTime = "2017-09-21T17:06:29.064687";
         String dateTime2 = "2007-12-30";
-
+        String dateTime3 = "12/1/2010 11:21";
 
         //http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html
         StringToTimeTransform transform = new StringToTimeTransform("column", null, DateTimeZone.forID("UTC"));
         transform.setInputSchema(schema);
+        transform.map(new Text(dateTime3));
         transform.map(new Text(dateTime));
         transform.map(new Text(dateTime2));
         testStringToDateTime(null);
