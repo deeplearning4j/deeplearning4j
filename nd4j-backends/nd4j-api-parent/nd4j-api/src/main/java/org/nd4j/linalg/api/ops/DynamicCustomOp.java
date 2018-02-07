@@ -492,6 +492,15 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     }
 
+    public void updateInputsFromSameDiff() {
+        val inputs = sameDiff.getInputsForFunction(this);
+
+        inputArguments.clear();;
+
+        for (val input: inputs)
+            inputArguments.add(sameDiff.getArrForVarName(input));
+    }
+
     @Override
     public void populateInputsAndOutputsFromSameDiff() {
         val descriptor = getDescriptor();

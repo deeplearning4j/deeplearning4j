@@ -317,4 +317,17 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             System.out.println();
         }
     }
+
+
+    @Override
+    public List<String> getAllWorkspacesIdsForCurrentThread() {
+        ensureThreadExistense();
+        return new ArrayList<>(backingMap.get().keySet());
+    }
+
+    @Override
+    public List<MemoryWorkspace> getAllWorkspacesForCurrentThread() {
+        ensureThreadExistense();
+        return new ArrayList<>(backingMap.get().values());
+    }
 }

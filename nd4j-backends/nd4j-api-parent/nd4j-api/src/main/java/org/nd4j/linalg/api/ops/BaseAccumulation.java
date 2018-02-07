@@ -122,7 +122,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation() {}
 
 
-
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 
     /**
      * Initialize with the given

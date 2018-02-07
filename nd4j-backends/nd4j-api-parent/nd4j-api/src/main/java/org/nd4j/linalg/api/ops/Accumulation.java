@@ -90,4 +90,7 @@ public interface Accumulation extends Op {
 
     boolean isComplexAccumulation();
 
+
+    Type getOpType();
+
 }

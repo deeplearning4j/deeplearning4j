@@ -61,9 +61,14 @@ public interface Op {
         SHAPE,
         CONDITIONAL,
         LOOP,
+        LOOP_COND,
         IF,
         RETURN,
+        ENTER,
+        EXIT,
+        NEXT_ITERATION,
         RANDOM,
+        MERGE,
         SUMMARYSTATS,
     }
 

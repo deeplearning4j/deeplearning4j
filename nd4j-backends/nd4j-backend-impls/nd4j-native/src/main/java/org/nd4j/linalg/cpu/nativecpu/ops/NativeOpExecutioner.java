@@ -420,7 +420,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
             //pairwise reduction like similarity of two arrays
-            else if (op.y() != null) {
+            else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
                     loop.execReduce3AllDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
@@ -488,7 +488,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
-            else if (op.y() != null) {
+            else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                 if (op.isComplexAccumulation()) {
                     loop.execReduce3AllFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),

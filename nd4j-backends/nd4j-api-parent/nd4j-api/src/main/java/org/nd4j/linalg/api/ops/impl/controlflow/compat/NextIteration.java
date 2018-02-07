@@ -1,5 +1,7 @@
-package org.nd4j.linalg.api.ops.impl.controlflow;
+package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import lombok.NonNull;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -13,13 +15,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class Switch extends DynamicCustomOp {
-
+public class NextIteration extends BaseCompatOp {
     @Override
     public String opName() {
-        return "switch";
+        return "next_iteration";
     }
-
 
     @Override
     public List<int[]> calculateOutputShape() {
@@ -37,12 +37,12 @@ public class Switch extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Switch";
+        return "NextIteration";
     }
 
     @Override
     public Op.Type opType() {
-        return Op.Type.CONDITIONAL;
+        return Op.Type.NEXT_ITERATION;
     }
 
     @Override

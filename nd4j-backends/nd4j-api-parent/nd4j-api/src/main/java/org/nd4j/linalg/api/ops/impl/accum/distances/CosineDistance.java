@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -95,6 +96,10 @@ public class CosineDistance extends BaseAccumulation {
         this.isComplex = allDistances;
     }
 
+    @Override
+    public Type opType() {
+        return Type.REDUCE3;
+    }
 
     @Override
     public int opNum() {

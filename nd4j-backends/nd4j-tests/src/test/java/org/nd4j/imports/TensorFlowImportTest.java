@@ -24,6 +24,7 @@ import org.nd4j.linalg.util.HashUtil;
 import org.tensorflow.framework.GraphDef;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -757,14 +758,154 @@ public class TensorFlowImportTest {
         }
     }
 
-
     @Test
     public void testCondMapping1() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
         assertNotNull(tg);
 
-        log.info("{}", tg.asFlatPrint());
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-2);
+        assertNotNull(array);
+        assertEquals(exp, array);
     }
 
+    @Test
+    public void testCondMapping2() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        val input = Nd4j.create(2, 2).assign(-1);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_0"));
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(1);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input = Nd4j.create(2, 2).assign(1);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_0"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(1);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileMapping2() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input = Nd4j.trueScalar(4.0);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(2);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileMapping3() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input = Nd4j.trueScalar(9.0);
+        tg.associateArrayWithVariable(input, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_0.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(4);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+
+    @Test
+    public void testWhileDualMapping1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(-4.0);
+        val input1 = Nd4j.trueScalar(1.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_1.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-1);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+    @Test
+    public void testWhileDualMapping2() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_1/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(-9.0);
+        val input1 = Nd4j.trueScalar(1.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_1.fb"));
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        val exp = Nd4j.create(2, 2).assign(-3);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
+
+
+    @Test
+    public void testMixedWhileCond1() throws Exception {
+        Nd4j.create(1);
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simplewhile_nested/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+        val input0 = Nd4j.create(2, 2).assign(1.0);
+        val input1 = Nd4j.create(3, 3).assign(2.0);
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        //tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simplewhile_nested.fb"));
+
+
+        //log.info("{}", tg.asFlatPrint());
+
+        val array = tg.execAndEndResult();
+        //val array = tg.getVariable("output").getArr();
+        val exp = Nd4j.create(2, 2).assign(15.0);
+        assertNotNull(array);
+        assertEquals(exp, array);
+    }
 }
