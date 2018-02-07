@@ -145,6 +145,8 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
 
     Graph<float> graph(restoredGraph);
 
+    graph.printOut();
+
     ASSERT_EQ(2, graph.totalNodes());
     ASSERT_EQ(1, graph.rootNodes());
 

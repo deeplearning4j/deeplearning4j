@@ -20,11 +20,14 @@ namespace nd4j {
             // flag that shows if node is active or disabled (i.e. after Switch op)
             bool _active = true;
 
+            bool _executed = false;
+
             // active divergence branch
             int _branch = 0;
 
+            int _id = 0;
         public:
-            NodeState() = default;
+            NodeState(int id = 0);
             ~NodeState() = default;
 
             void setInnerTime(Nd4jIndex time);
@@ -38,6 +41,9 @@ namespace nd4j {
 
             int branch();
             void markBranch(int index);
+
+            bool wasExecuted();
+            void markExecuted(bool wasExecuted);
         };
     }
 }

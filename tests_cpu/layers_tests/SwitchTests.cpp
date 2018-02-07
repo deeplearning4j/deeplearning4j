@@ -87,13 +87,13 @@ TEST_F(SwitchTests, SwitchTest1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    nd4j_printf("Z0: [%i]; Z1: [%i]\n", flowPath.isActive(nodeZ0->id()), flowPath.isActive(nodeZ1->id()));
+    nd4j_printf("Z0: [%i]; Z1: [%i]\n", flowPath.isNodeActive(nodeZ0->id()), flowPath.isNodeActive(nodeZ1->id()));
 
     // we know that Switch got TRUE evaluation, so :0 should be inactive
-    ASSERT_FALSE(flowPath.isActive(nodeZ0->id()));
+    ASSERT_FALSE(flowPath.isNodeActive(nodeZ0->id()));
 
     // and :1 should be active
-    ASSERT_TRUE(flowPath.isActive(nodeZ1->id()));
+    ASSERT_TRUE(flowPath.isNodeActive(nodeZ1->id()));
 
     std::pair<int,int> unexpected(4,0);
     std::pair<int,int> expectedResultIndex(5,0);
@@ -163,8 +163,8 @@ TEST_F(SwitchTests, SwitchTest2) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_TRUE(!flowPath.isActive(nodeZ0->id()));
-    ASSERT_TRUE(flowPath.isActive(nodeZ1->id()));
+    ASSERT_TRUE(!flowPath.isNodeActive(nodeZ0->id()));
+    ASSERT_TRUE(flowPath.isNodeActive(nodeZ1->id()));
 
     auto z = graph.getVariableSpace()->getVariable(7)->getNDArray();
 
@@ -229,8 +229,8 @@ TEST_F(SwitchTests, SwitchTest3) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_TRUE(flowPath.isActive(nodeZ0->id()));
-    ASSERT_TRUE(!flowPath.isActive(nodeZ1->id()));
+    ASSERT_TRUE(flowPath.isNodeActive(nodeZ0->id()));
+    ASSERT_TRUE(!flowPath.isNodeActive(nodeZ1->id()));
 
     auto z = graph.getVariableSpace()->getVariable(6)->getNDArray();
 

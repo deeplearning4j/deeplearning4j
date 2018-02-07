@@ -38,6 +38,7 @@ namespace nd4j {
 
             std::map<int, std::vector<nd4j::graph::Node<T> *> *> *_onion;
             std::map<int, nd4j::graph::Node<T> *> _unmapped;
+            std::vector<int> _unmappedMap; // macOS?
 
             std::mutex _mutexPreprocessing;
             std::atomic<bool> _built;
@@ -59,6 +60,8 @@ namespace nd4j {
             void pushToOutputOnce(int id);
 
             void printOutNode(Node<T>* node);
+
+            void prepareOutputs();
         public:
             Graph(const FlatGraph *flatGraph = nullptr, VariableSpace<T> *variableSpace = nullptr);
 
@@ -148,6 +151,13 @@ namespace nd4j {
             Scope<T>* scopeById(int id);
 
             /**
+             * This method returns TRUE if specified ID refers to Scope, and false otherwise
+             * @param id
+             * @return
+             */
+            bool hasScope(int id);
+
+            /**
              * This method returns clone of the graph
              */
             Graph<T>* clone();
@@ -156,6 +166,18 @@ namespace nd4j {
              * This method removes reference to VariableSpace from this Graph
              */
             void forgetVariableSpace();
+
+            /**
+             * This method returns Node with given Id
+             */
+            Node<T>* nodeById(int nodeId);
+
+            /**
+             * This method returns True if node with given ID exists, False otherwise
+             * @param nodeId
+             * @return
+             */
+            bool hasNode(int nodeId);
         };
     }
 }

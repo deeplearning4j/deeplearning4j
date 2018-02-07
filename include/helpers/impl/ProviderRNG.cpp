@@ -13,7 +13,10 @@ ProviderRNG::ProviderRNG() {
     Nd4jIndex *buffer = new Nd4jIndex[100000];
     NativeOps nativeOps;    
     std::lock_guard<std::mutex> lock(_mutex);
+    #ifndef __CUDACC__
+    // at this moment we don't have streams etc, so let's just skip this for now
     _rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);    
+    #endif
     // if(_rng != nullptr)        
 }
 

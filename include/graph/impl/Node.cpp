@@ -74,7 +74,9 @@ namespace nd4j {
         bool nd4j::graph::Node<T>::isDivergencePoint() {
             if (hasCustomOp()) {
                 return _customOp->getOpDescriptor()->isDivergent();
-            } else
+            } else if (opType() == OpType_LOGIC && opNum() == 30)
+                return true;
+            else
                 return false;
         }
 
@@ -88,8 +90,25 @@ namespace nd4j {
             return _active;
         }
 
+        template<typename T>
+        Nd4jIndex Node<T>::getFrameId() {
+            return _frameId;
+        }
+
+        template<typename T>
+        void Node<T>::setFrameId(Nd4jIndex frameId) {
+            _frameId = frameId;
+        }
+
         template <typename T>
         ContextPrototype<T> * nd4j::graph::Node<T>::getContextPrototype() {
+            if (_protoContext == nullptr)
+                _protoContext = new ContextPrototype<T>(this->id());
+            if (_protoContext->inputs()->empty()) {
+                for (int e = 0; e < this->input()->size(); e++) {
+                    _protoContext->inputs()->emplace_back(this->input()->at(e));
+                }
+            }
             return _protoContext;
         }
 
@@ -459,6 +478,15 @@ namespace nd4j {
                     }
                 }
 
+                if (this->opType() == OpType_LOGIC && this->opNum() == 100L) {
+                    if (node->extraInteger()->size() < 1) {
+                        nd4j_printf("Node_%i is type of Enter, but has no FrameID defined\n", this->id());
+                        throw "Enter node must have FrameID specified";
+                    }
+
+                    this->setFrameId(node->extraInteger()->Get(0));
+                }
+
 
                 // these ops allow in-place execution by design
                 if (this->_opType == OpType_TRANSFORM || this->_opType == OpType_SCALAR || this->_opType == OpType_BROADCAST || this->_opType == OpType_RANDOM || this->_opType == OpType_ACCUMULATION || this->_opType == OpType_ACCUMULATION3 || this->_opType == OpType_PAIRWISE || this->_opType == OpType_SUMMARYSTATS || this->_opType == OpType_INDEX_ACCUMULATION) {
@@ -551,6 +579,27 @@ namespace nd4j {
 
             if (_isDeductable && _customOp != nullptr)
                 delete _customOp;
+        }
+
+        template <typename T>
+        int nd4j::graph::Node<T>::getRewindNode() {
+            return _rewindNode;
+        }
+
+        template <typename T>
+        void nd4j::graph::Node<T>::setRewindNode(int nodeId) {
+            _rewindNode = nodeId;
+        }
+
+        template <typename T>
+        std::pair<int, int>& nd4j::graph::Node<T>::getRewindLayer() {
+            return _rewindLayer;
+        };
+
+        template <typename T>
+        void nd4j::graph::Node<T>::setRewindLayer(int layerId, int stepId) {
+            _rewindLayer.first = layerId;
+            _rewindLayer.second = stepId;
         }
 
         template <typename T>

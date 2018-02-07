@@ -6,6 +6,9 @@
 
 namespace nd4j {
     namespace graph {
+        NodeState::NodeState(int id) {
+            _id = id;
+        }
 
         void NodeState::setInnerTime(Nd4jIndex time) {
             _inner = time;
@@ -37,6 +40,14 @@ namespace nd4j {
 
         void NodeState::markBranch(int index) {
             _branch = index;
+        }
+
+        bool NodeState::wasExecuted() {
+            return _executed;
+        }
+
+        void NodeState::markExecuted(bool wasExecuted) {
+            _executed = wasExecuted;
         }
     }
 }

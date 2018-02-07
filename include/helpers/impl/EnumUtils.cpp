@@ -40,6 +40,11 @@ namespace nd4j {
             case 20: return "CONDITIONAL";
             case 30: return "SWITCH";
             case 40: return "RETURN";
+            case 60: return "MERGE";
+            case 70: return "LOOP_COND";
+            case 80: return "NEXT_ITERATION";
+            case 90: return "EXIT";
+            case 100: return "ENTER";
             default: return "UNKNOWN OPERATION";
         } 
     }

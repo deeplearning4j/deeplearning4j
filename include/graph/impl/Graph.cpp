@@ -237,15 +237,24 @@ namespace nd4j {
             if (node->getLayer() < 0)
                 throw std::runtime_error("Only nodes with non-negative layer defined can be inserted");
 
+            std::pair<int, Node<T> *> pair(node->id(), node);
+            if (_mapped->count(pair.first) > 0)
+                return;
+
             nd4j_debug("Node_%i mapped to layer_%i\n", node->id(), node->getLayer());
 
-            std::pair<int, Node<T> *> pair(node->id(), node);
+
             _onion->at(node->getLayer())->push_back(node);
             _mapped->insert(pair);
+
+            //_unmapped.erase(node->id());
         }
 
         template <typename T>
         void Graph<T>::expandOnion(int newLayer) {
+            if (_onion->count(newLayer) > 0)
+                return;
+
             std::vector<Node<T> *> *rootList = new std::vector<Node<T> *>();
             std::pair<int, std::vector<Node<T> *>*> pair(newLayer, rootList);
             _onion->insert(pair);
@@ -447,14 +456,16 @@ namespace nd4j {
             }
 
             std::pair<int, Node<T> *> pair(node->id(), node);
+            nd4j_printf("Adding node_%i\n", node->id());
             // if model has only external variables as input - it goes to first layer, no matter what.
             if (node->hasExternalInputs() && !node->hasInternalInputs()) {
                 node->setLayer(0);
 
-                _onion->at(0)->push_back(node);
-                _mapped->insert(pair);
+                injectNode(node);
 
                 nd4j_logger("A Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                
+                return;
             } else {
                 // in some cases we're able to put stuff immediately
                 if (node->hasInternalInputs() && !node->hasExternalInputs() && node->input()->size() == 1) {
@@ -474,38 +485,74 @@ namespace nd4j {
                     if (automapAllowed) {
                         auto parent = _mapped->at(node->input()->at(0).first);
                         int nLayer = parent->getLayer() + 1;
-                        if (_onion->count(nLayer) != 1) {
-                            expandOnion(nLayer);
-                        }
 
+                        expandOnion(nLayer);
                         node->setLayer(nLayer);
-                        _onion->at(nLayer)->push_back(node);
-                        _mapped->insert(pair);
+                        injectNode(node);
 
-                        nd4j_logger("B Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+                        nd4j_logger("Node_%i mapped to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
 
                         return;
                     }
-                }
+                } /*else if (node->opType() == OpType_LOGIC && node->opNum() == 10) {
+                    // Scopes are just being added. They won't be executed on their own anyway.
 
+                    int nLayer = _onion->size();                    
+
+                    expandOnion(nLayer);
+                    node->setLayer(nLayer);
+                    injectNode(node);
+
+                    nd4j_logger("Node_%i mapped Scope to layer_%i; Output: %i;\n", node->id(), node->getLayer(), node->output()->at(0));
+
+                    return;
+                }
+*/
                 // otherwise we're putting it to unmapped space for further sorting
                 _unmapped.insert(pair);
+                _unmappedMap.emplace_back(pair.first);
+                nd4j_printf("adding: %i\n", pair.first);
             }
         }
 
         template <typename T>
         Nd4jStatus Graph<T>::buildGraph() {
-            if (_built.load())
+            if (_built.load()) {
+                prepareOutputs();
                 return ND4J_STATUS_OK;
+            }
+
+            typename std::map<int, Node<T> *>::iterator fit;
+            int cnts = 0;
+            for ( fit = _unmapped.begin(); fit != _unmapped.end(); fit++ ) {
+                int tK = fit->first;
+                int tF = _unmappedMap.at(cnts++);
+
+                nd4j_printf("Firtst: %i; tF: %i\n", tK, tF);
+            }
 
             int buildCnt = 0;
             int buildLimit = _unmapped.size() * 2;
             while (_unmapped.size() > 0) {
 
+                int sz = _unmapped.size();
+                int sf = _unmappedMap.size();
+
+                std::vector<int> queue;
+
                 // first pass for unmapped nodes, we try to build tale here
                 typename std::map<int, Node<T> *>::iterator it;
+                int cntf = 0;
+                nd4j_printf("-----------\n","");
                 for ( it = _unmapped.begin(); it != _unmapped.end(); it++ ) {
                     auto node = it->second;
+                    int tK = it->first;
+                    int tF = _unmappedMap.at(cntf++);
+
+                    nd4j_printf("tK: %i; tF: %i\n", tK, tF);
+                //for (int f = 0; f < sz; f++) {
+                //    auto node = _unmapped.at(_unmappedMap.at(f));
+                
 
                     // single-input node
                     if (node->input()->size() == 1) {
@@ -523,7 +570,6 @@ namespace nd4j {
                             expandOnion(lastLayer);
 
                             node->setLayer(lastLayer);
-
                             this->injectNode(node);
 
                             if (node->hasCustomOp()) {
@@ -553,6 +599,7 @@ namespace nd4j {
                                 expandOnion(maxLayer);
 
                             this->injectNode(node);
+                            queue.emplace_back(node->id());
 
                             if (node->hasCustomOp()) {
                                 ContextPrototype<T>* block = nullptr;
@@ -576,12 +623,14 @@ namespace nd4j {
                         } else
                             continue;
 
-                        _unmapped.erase(node->id());
+                        //_unmapped.erase(node->id());
+                        queue.emplace_back(node->id());
                     } else {
                         // multi-input node
                         if (node->getName() == nullptr) {
                             nd4j_debug("Trying MI Node_%i\n", node->id());
                         } else {
+                            std::string np = *(node->getName());
                             nd4j_debug("Trying MI Node_%i:[%s]\n", node->id(), node->getName()->c_str());
                         }
 
@@ -596,11 +645,13 @@ namespace nd4j {
 
                                 if (maxLayer < iNode->getLayer())
                                     maxLayer = iNode->getLayer();
-                            } else {
+                            } else 
+                                if (node->opType() == OpType_LOGIC) {
+                                    // just allow it?
+                            } else // checking if that's static variable
                                 if (nodeId > 0 && !_variableSpace->hasExternalVariable(nodeId)) {
                                     breaker = true;
                                     break;
-                                }
                             }
                         }
 
@@ -613,6 +664,7 @@ namespace nd4j {
 
                         node->setLayer(maxLayer);
                         injectNode(node);
+                        queue.emplace_back(node->id());
 
                         if (node->hasCustomOp()) {
                             ContextPrototype<T>* block = nullptr;
@@ -632,10 +684,11 @@ namespace nd4j {
                                 }
                             }
                         }
-
-                        _unmapped.erase(node->id());
                     }
                 }
+
+                for (auto &v: queue)
+                    _unmapped.erase(v);
 
                 // second pass is mover, we'll be moving onion layers around here
                 buildCnt++;
@@ -653,6 +706,13 @@ namespace nd4j {
             if (_unmapped.size() == 0)
                 _built.store(true);
 
+            prepareOutputs();
+
+            return ND4J_STATUS_OK;
+        }
+
+        template <typename T>
+        void Graph<T>::prepareOutputs() {
             // if we're dumping everything out there - we'll add external variables as well
             if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) {
                 auto ext = _variableSpace->getExternalVariables();
@@ -733,7 +793,6 @@ namespace nd4j {
                     }
                 }
             }
-            return ND4J_STATUS_OK;
         }
 
         template <typename T>
@@ -742,7 +801,8 @@ namespace nd4j {
             this->_mapped = new std::map<int, Node<T> *> ();
             this->_nodes = new std::vector<int>();
             this->_variableSpace = variableSpace == nullptr ? new VariableSpace<T>() : variableSpace;
-            
+            bool trusted = flatGraph != nullptr;
+
             // creating RNG for this instance
 #ifndef __CUDABLAS__
             // we temporary skip this random init
@@ -797,7 +857,6 @@ namespace nd4j {
 
             // rolling through nodes
             if (flatGraph != nullptr && flatGraph->nodes() != nullptr && flatGraph->nodes()->size() > 0) {
-
                 for (unsigned int e = 0; e < flatGraph->nodes()->size(); e++) {
                     auto node = flatGraph->nodes()->Get(e);
 
@@ -807,9 +866,16 @@ namespace nd4j {
 
                     nd4j_debug("Node name: [%s]\n", node->name()->c_str());
                     auto nnode = new Node<T>(node);
+                    expandOnion(e);
+                    nnode->setLayer(e);
                     this->addNode(nnode);
+                    injectNode(nnode);
+                    _unmapped.erase(nnode->id());
                 }
+
+                _built = true;
             }
+
         }
 
 
@@ -993,6 +1059,21 @@ namespace nd4j {
             clone->_built.store(_built.load());
 
             return clone;
+        }
+
+        template <typename T>
+        bool Graph<T>::hasNode(int id) {
+            return _mapped->count(id) > 0;
+        }
+
+        template <typename T>
+        Node<T>* Graph<T>::nodeById(int id) {
+            return _mapped->at(id);
+        }
+
+        template <typename T>
+        bool Graph<T>::hasScope(int id) {
+            return _mappedScopes.count(id) > 0;
         }
 
         template class ND4J_EXPORT Graph<float>;
