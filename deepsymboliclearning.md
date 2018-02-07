@@ -1,9 +1,9 @@
 ---
-title: About the Deeplearning4j Team
+title: Deep Learning & Symbolic Reasoning
 layout: default
 ---
 
-# Hybrid Methods Combining Deep Learning & Symbolic Learning
+# Deep Learning & Symbolic Reasoning
 
 The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. 
 
@@ -13,7 +13,7 @@ Research into so-called one-shot learning could address deep learning's data hun
 
 [Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence) was the dominant paradigm within the AI community for the post-War era until the 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
 
-One of the main differences between machine learning and traditional symbolic manipulation is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, humans perceive the rules and then hard-code them. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
+One of the main differences between machine learning and traditional symbolic reasoning is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, humans perceive the rules by which two phenomena relate, and then hard-code them in a static program. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
 
 ```
 In the days when Sussman was a novice, Minsky once came to him as he sat hacking at the PDP-6.
