@@ -82,7 +82,7 @@ If you are working on a Mac, you can simply enter the following into the command
 brew install maven
 ```
 
-Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
+Maven is widely used among Java developers and it's pretty much mandatory for working with DL4J. If you come from a different background, and Maven is new to you, check out [Apache's Maven overview](http://maven.apache.org/what-is-maven.html) and our [introduction to Maven for non-Java programmers](http://deeplearning4j.org/maven.html), which includes some additional troubleshooting tips. [Other build tools](../buildtools) such as Ivy and Gradle can also work, but we support Maven best.
 
 * [Paul Dubs' guide to maven](http://www.dubs.tech/guides/maven-essentials/)
 
@@ -92,7 +92,7 @@ Maven is widely used among Java developers and it's pretty much mandatory for wo
 
 An Integrated Development Environment ([IDE](http://encyclopedia.thefreedictionary.com/integrated+development+environment)) allows you to work with our API and configure neural networks in a few steps. We strongly recommend using [IntelliJ](https://www.jetbrains.com/idea/download/), which communicates with Maven to handle dependencies. The [community edition of IntelliJ](https://www.jetbrains.com/idea/download/) is free. 
 
-There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and [Netbeans](http://wiki.netbeans.org/MavenBestPractices). IntelliJ is preferred, and using it will make finding help on [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) easier if you need it.
+There are other popular IDEs such as [Eclipse](http://books.sonatype.com/m2eclipse-book/reference/creating-sect-importing-projects.html) and [Netbeans](http://wiki.netbeans.org/MavenBestPractices). However, IntelliJ is preferred, and using it will make finding help on [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j) easier if you need it.
 
 #### <a name="Git">Git</a>
 
@@ -104,7 +104,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
 
 ## <a name="examples">DL4J Examples in a Few Easy Steps</a>
 
-1. Use command line to enter the following:
+1. Use the command line to enter the following:
 
         $ git clone https://github.com/deeplearning4j/dl4j-examples.git
         $ cd dl4j-examples/
