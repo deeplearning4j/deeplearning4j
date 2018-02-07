@@ -25,10 +25,13 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -39,6 +42,7 @@ import java.util.*;
  */
 @AllArgsConstructor
 @Data
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class DataAnalysis implements Serializable {
     private static final String COL_NAME = "columnName";
     private static final String COL_IDX = "columnIndex";
@@ -49,6 +53,10 @@ public class DataAnalysis implements Serializable {
 
     private Schema schema;
     private List<ColumnAnalysis> columnAnalysis;
+
+    protected DataAnalysis(){
+        //No arg for JSON
+    }
 
     @Override
     public String toString() {
@@ -84,32 +92,48 @@ public class DataAnalysis implements Serializable {
      * Convert the DataAnalysis object to JSON format
      */
     public String toJson() {
-        //Normally we'd just map the object directly to/from JSON using Jackson, but we want the result to be human-readable.
-        //Consequently, we'll manually map things to a better format semi-manually
-        return toJson(getJsonRepresentation());
+        try{
+            return new JsonSerializer().getObjectMapper().writeValueAsString(this);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Convert the DataAnalysis object to YAML format
      */
     public String toYaml() {
-        return toYaml(getJsonRepresentation());
+        try{
+            return new YamlSerializer().getObjectMapper().writeValueAsString(this);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     /**
      * Deserialize a JSON DataAnalysis String that was previously serialized with {@link #toJson()}
      */
     public static DataAnalysis fromJson(String json) {
-        ObjectMapper om = new JsonSerializer().getObjectMapper();
-        return fromMapper(om, json);
+        try{
+            return new JsonSerializer().getObjectMapper().readValue(json, DataAnalysis.class);
+        } catch (Exception e){
+            //Legacy format
+            ObjectMapper om = new JsonSerializer().getObjectMapper();
+            return fromMapper(om, json);
+        }
     }
 
     /**
      * Deserialize a YAML DataAnalysis String that was previously serialized with {@link #toYaml()}
      */
     public static DataAnalysis fromYaml(String yaml) {
-        ObjectMapper om = new YamlSerializer().getObjectMapper();
-        return fromMapper(om, yaml);
+        try{
+            return new YamlSerializer().getObjectMapper().readValue(yaml, DataAnalysis.class);
+        } catch (Exception e){
+            //Legacy format
+            ObjectMapper om = new YamlSerializer().getObjectMapper();
+            return fromMapper(om, yaml);
+        }
     }
 
     private static DataAnalysis fromMapper(ObjectMapper om, String json) {
@@ -162,6 +186,7 @@ public class DataAnalysis implements Serializable {
         return new DataAnalysis(schema, analysis);
     }
 
+    @Deprecated //Legacy format, no longer used
     private Map<String, List<Map<String, Object>>> getJsonRepresentation() {
         Map<String, List<Map<String, Object>>> jsonRepresentation = new LinkedHashMap<>();
         List<Map<String, Object>> list = new ArrayList<>();

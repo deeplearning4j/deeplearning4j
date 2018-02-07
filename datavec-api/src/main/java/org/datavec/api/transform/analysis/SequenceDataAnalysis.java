@@ -21,7 +21,11 @@ import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.JsonSerializer;
+import org.datavec.api.transform.serde.YamlSerializer;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -31,12 +35,32 @@ import java.util.List;
 @Data
 public class SequenceDataAnalysis extends DataAnalysis {
 
-    private final SequenceLengthAnalysis sequenceLengthAnalysis;
+    private SequenceLengthAnalysis sequenceLengthAnalysis;
 
     public SequenceDataAnalysis(Schema schema, List<ColumnAnalysis> columnAnalysis,
                     SequenceLengthAnalysis sequenceAnalysis) {
         super(schema, columnAnalysis);
         this.sequenceLengthAnalysis = sequenceAnalysis;
+    }
+
+    protected SequenceDataAnalysis(){
+        //No arg for JSON
+    }
+
+    public static SequenceDataAnalysis fromJson(String json){
+        try{
+            return new JsonSerializer().getObjectMapper().readValue(json, SequenceDataAnalysis.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static SequenceDataAnalysis fromYaml(String yaml){
+        try{
+            return new YamlSerializer().getObjectMapper().readValue(yaml, SequenceDataAnalysis.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
