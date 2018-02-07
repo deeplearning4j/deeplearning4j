@@ -12,6 +12,8 @@ Generative adversarial networks (GANs) are deep neural net architectures compris
 
 GANs' potential is huge, because they can learn to mimic any distribution of data. That is, GANs can be taught to create worlds eerily similar to our own in any domain: images, music, speech, prose. They are robot artists in a sense, and their [output is impressive](https://www.nytimes.com/2017/08/14/arts/design/google-how-ai-creates-new-music-and-new-artists-project-magenta.html) -- poignant even. 
 
+![Alt text](./img/aipainter.jpg)
+
 ## Generative vs. Discriminative Algorithms
 
 To understand GANs, you should know how generative algorithms work, and for that, contrasting them with discriminative algorithms is instructive. Discriminative algorithms try to classify input data; that is, given the features of a data instance, they predict a label or category to which that data belongs. 
