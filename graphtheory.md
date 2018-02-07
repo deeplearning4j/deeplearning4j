@@ -5,7 +5,9 @@ layout: default
 
 # Graph Theory and Machine Learning
 
-Here are a few papers discussing how neural nets can be applied to data encoded in graphs. (This page is a WIP.)
+Here are a few papers discussing how neural nets can be applied to data encoded in graphs. Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
+
+(This page is a WIP.)
 
 * [Community Detection with Graph Neural Networks](https://arxiv.org/abs/1705.08415) (2017)
 by Joan Bruna and Xiang Li
