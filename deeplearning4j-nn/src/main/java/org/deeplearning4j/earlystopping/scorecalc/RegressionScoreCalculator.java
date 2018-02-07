@@ -12,11 +12,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
  */
 public class RegressionScoreCalculator extends BaseIEvaluationScoreCalculator<MultiLayerNetwork, RegressionEvaluation> {
 
-    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2 };
 
-    protected final Metric metric;
 
-    public RegressionScoreCalculator(Metric metric, DataSetIterator iterator){
+    protected final RegressionEvaluation.Metric metric;
+
+    public RegressionScoreCalculator(RegressionEvaluation.Metric metric, DataSetIterator iterator){
         super(iterator);
         this.metric = metric;
     }
@@ -29,22 +29,7 @@ public class RegressionScoreCalculator extends BaseIEvaluationScoreCalculator<Mu
 
     @Override
     protected double finalScore(RegressionEvaluation eval) {
-        switch (metric){
-            case MSE:
-                return eval.averageMeanSquaredError();
-            case MAE:
-                return eval.averageMeanAbsoluteError();
-            case RMSE:
-                return eval.averagerootMeanSquaredError();
-            case RSE:
-                return eval.averagerelativeSquaredError();
-            case PC:
-                return eval.averagePearsonCorrelation();
-            case R2:
-                return eval.averageRSquared();
-            default:
-                throw new IllegalStateException("Unknown metric: " + metric);
-        }
+        return eval.scoreForMetric(metric);
     }
 
 }

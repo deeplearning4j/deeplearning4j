@@ -18,6 +18,8 @@ public abstract class BaseScoreCalculator<T extends Model> implements ScoreCalcu
 
     @Override
     public double calculateScore(T network) {
+        reset();
+
         if(!iterator.hasNext())
             iterator.reset();
 
@@ -31,6 +33,8 @@ public abstract class BaseScoreCalculator<T extends Model> implements ScoreCalcu
 
         return finalScore(scoreSum, minibatchCount, exampleCount);
     }
+
+    protected abstract void reset();
 
     protected abstract INDArray output(T network, INDArray input);
 
