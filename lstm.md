@@ -216,6 +216,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Combining Symbolic Learning & Deep Learning](./deepsymboliclearning)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
