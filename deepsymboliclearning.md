@@ -5,11 +5,13 @@ layout: default
 
 # Deep Symbolic Learning: Hybrid Methods to Combine Deep Learning with Symbolic Learning
 
-The two biggest knocks on deep learning are lack of model interpretability (why did my model make that prediction?) and the amount of data deep neural networks require to learn. Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.
+The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require to learn. 
+
+Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.
 
 Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup>   
 
-This page includes recent, interesting research that attempts to combine deep learning with symbolic learning. 
+This page includes some recent, interesting research that attempts to combine deep learning with symbolic learning. 
 
 ## Deep Symbolic Learning Resources
 
@@ -44,6 +46,6 @@ by Gary Marcus
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Word2vec and Neural Embeddings for Natural-Language Processing](./word2vec.html)
 
 <a name="one">1)</a> The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples. 
