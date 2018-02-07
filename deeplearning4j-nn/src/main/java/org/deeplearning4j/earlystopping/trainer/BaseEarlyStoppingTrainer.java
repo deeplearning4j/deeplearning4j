@@ -75,6 +75,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
     @Override
     public EarlyStoppingResult<T> fit() {
+        esConfig.validate();
         log.info("Starting early stopping training");
         if (esConfig.getScoreCalculator() == null)
             log.warn("No score calculator provided for early stopping. Score will be reported as 0.0 to epoch termination conditions");
