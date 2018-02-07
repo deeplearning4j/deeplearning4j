@@ -388,28 +388,18 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during training:
-         * NONE: workspace won't be used
-         * SINGLE: one workspace will be used during whole iteration loop
-         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
-         *
-         * @param workspaceMode
-         * @return
+         * @deprecated Use {@link NeuralNetConfiguration.Builder#trainingWorkspaceMode(WorkspaceMode)}
          */
+        @Deprecated
         public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.trainingWorkspaceMode = workspaceMode;
             return this;
         }
 
         /**
-         * This method defines Workspace mode being used during inference:
-         * NONE: workspace won't be used
-         * SINGLE: one workspace will be used during whole iteration loop
-         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
-         *
-         * @param workspaceMode
-         * @return
+         * @deprecated Use {@link NeuralNetConfiguration.Builder#inferenceWorkspaceMode(WorkspaceMode)}
          */
+        @Deprecated
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
             return this;

@@ -409,10 +409,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public void migrateInput(){
         super.migrateInput();
-        if(labels != null){
+        if(labels != null && labels.isAttached()){
             labels = labels.migrate(true);
         }
-        if(inputMaskArray != null){
+        if(inputMaskArray != null && inputMaskArray.isAttached()){
             inputMaskArray = inputMaskArray.migrate(true);
         }
     }

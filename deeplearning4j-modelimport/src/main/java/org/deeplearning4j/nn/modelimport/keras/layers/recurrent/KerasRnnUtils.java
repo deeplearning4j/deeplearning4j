@@ -45,7 +45,12 @@ public class KerasRnnUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         double dropout = 1.0;
         if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_U()))
-            dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
+            try {
+                dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
+            } catch (Exception e) {
+                int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_U());
+                dropout = 1.0 - (double) kerasDropout;
+            }
         if (dropout < 1.0)
             throw new UnsupportedKerasConfigurationException(
                     "Dropout > 0 on recurrent connections not supported.");
