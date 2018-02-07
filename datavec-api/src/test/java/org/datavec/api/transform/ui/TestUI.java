@@ -121,7 +121,12 @@ public class TestUI {
 
 
         //HTML:
-        
+        outPath = FilenameUtils.concat(tempDir, "datavec_transform_UITest_seq.html");
+        System.out.println(outPath);
+        f = new File(outPath);
+        f.deleteOnExit();
+        HtmlAnalysis.createHtmlAnalysisFile(sda, f);
+
 
         //JSON
         json = sda.toJson();

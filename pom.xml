@@ -66,6 +66,7 @@
         <commons-lang3.version>3.3.1</commons-lang3.version>
         <commons-math3.version>3.3</commons-math3.version>
         <commons-io.version>2.4</commons-io.version>
+        <commons-codec.version>1.10</commons-codec.version>
         <args4j.version>2.0.29</args4j.version>
         <lombok.version>1.16.10</lombok.version>
         <jodatime.version>2.9.2</jodatime.version>
