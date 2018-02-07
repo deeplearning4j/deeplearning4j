@@ -55,6 +55,8 @@ The discriminator network is a standard convolutional network that can categoriz
 
 Both nets are trying to optimize a different and opposing objective function, or loss function, in a zero-zum game. This is essentially an [actor-critic model](https://arxiv.org/abs/1610.01945). As the discriminator changes its behavior, so does the generator, and vice versa. Their losses push against each other. 
 
+![Alt text](./img/GANs.png)
+
 If you want to learn more about generating images, Brandon Amos wrote a great post about [interpreting images as samples from a probability distribution](http://bamos.github.io/2016/08/09/deep-completion/#step-1-interpreting-images-as-samples-from-a-probability-distribution). 
 
 ## GANs, Autoencoders and VAEs
