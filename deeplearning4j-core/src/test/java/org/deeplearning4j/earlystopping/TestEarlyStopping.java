@@ -1,21 +1,28 @@
 package org.deeplearning4j.earlystopping;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
+import org.deeplearning4j.earlystopping.scorecalc.AutoencoderScoreCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
+import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -35,14 +42,12 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class TestEarlyStopping extends BaseDL4JTest {
 
     @Test
@@ -423,6 +428,93 @@ public class TestEarlyStopping extends BaseDL4JTest {
         public void onCompletion(EarlyStoppingResult esResult) {
             log.info("EarlyStopping: onCompletion called (result: {})", esResult);
             onCompletionCallCount++;
+        }
+    }
+
+
+    @Test
+    public void testRegressionScoreFunctionSimple() throws Exception {
+
+        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
+                RegressionEvaluation.Metric.MAE}) {
+            log.info("Metric: " + metric);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new DenseLayer.Builder().nIn(784).nOut(32).build())
+                    .layer(new OutputLayer.Builder().nIn(32).nOut(784).activation(Activation.SIGMOID).build())
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+
+            List<DataSet> l = new ArrayList<>();
+            for( int i=0; i<10; i++ ){
+                DataSet ds = iter.next();
+                l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
+            }
+
+            iter = new ExistingDataSetIterator(l);
+
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(new RegressionScoreCalculator(metric, iter)).modelSaver(saver)
+                            .build();
+
+            EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+            assertNotNull(result.getBestModel());
+            assertTrue(result.getBestModelScore() > 0.0);
+        }
+    }
+
+    @Test
+    public void testAEScoreFunctionSimple() throws Exception {
+
+        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
+                RegressionEvaluation.Metric.MAE}) {
+            log.info("Metric: " + metric);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new AutoEncoder.Builder().nIn(784).nOut(32).build())
+                    .pretrain(true).backprop(false)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+
+            List<DataSet> l = new ArrayList<>();
+            for( int i=0; i<10; i++ ){
+                DataSet ds = iter.next();
+                l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
+            }
+
+            iter = new ExistingDataSetIterator(l);
+
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(new AutoencoderScoreCalculator(metric, iter)).modelSaver(saver)
+                            .build();
+
+            EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+            assertNotNull(result.getBestModel());
+            assertTrue(result.getBestModelScore() > 0.0);
         }
     }
 }
