@@ -5,7 +5,15 @@ layout: default
 
 # Graph Theory and Machine Learning
 
-Here are a few papers discussing how neural nets can be applied to data encoded in graphs. Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
+Here are a few papers discussing how neural nets can be applied to data encoded in graphs. Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. In a nutshell, here's the flow: 
+
+```
+Data (graph, words) -> Real number vector -> Deep neural network
+```
+
+Algorithms can “embed” the node of a graph into a real vector (similar to embedding a [word](./word2vec)). They start with a set of nodes that are close to each other randomly (analogous to a sentence or word corpus), then use these generated sets of nodes as a training sets for some representation learning algorithm. 
+
+The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
 
 (This page is a WIP.)
 
