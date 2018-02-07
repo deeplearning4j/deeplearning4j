@@ -30,6 +30,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 
 /**
@@ -42,6 +44,14 @@ public class MnistDataFetcher extends BaseDataFetcher {
     public static final int NUM_EXAMPLES_TEST = 10000;
     protected static final String TEMP_ROOT = System.getProperty("user.home");
     protected static final String MNIST_ROOT = TEMP_ROOT + File.separator + "MNIST" + File.separator;
+
+    protected static final long CHECKSUM_TRAIN_FEATURES = 2094436111L;
+    protected static final long CHECKSUM_TRAIN_LABELS = 4008842612L;
+    protected static final long CHECKSUM_TEST_FEATURES = 2165396896L;
+    protected static final long CHECKSUM_TEST_LABELS = 2212998611L;
+
+    protected static final long[] CHECKSUMS_TRAIN = new long[]{CHECKSUM_TRAIN_FEATURES, CHECKSUM_TRAIN_LABELS};
+    protected static final long[] CHECKSUMS_TEST = new long[]{CHECKSUM_TEST_FEATURES, CHECKSUM_TEST_LABELS};
 
     protected transient MnistManager man;
     protected boolean binarize = true;
@@ -68,22 +78,30 @@ public class MnistDataFetcher extends BaseDataFetcher {
         }
         String images;
         String labels;
+        long[] checksums;
         if (train) {
             images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
             labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
             totalExamples = NUM_EXAMPLES;
+            checksums = CHECKSUMS_TRAIN;
         } else {
             images = MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped;
             labels = MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
             totalExamples = NUM_EXAMPLES_TEST;
+            checksums = CHECKSUMS_TEST;
         }
+        String[] files = new String[]{images, labels};
 
         try {
             man = new MnistManager(images, labels, train);
+            validateFiles(files, checksums);
         } catch (Exception e) {
-            FileUtils.deleteDirectory(new File(MNIST_ROOT));
+            try {
+                FileUtils.deleteDirectory(new File(MNIST_ROOT));
+            } catch (Exception e2){ }
             new MnistFetcher().downloadAndUntar();
             man = new MnistManager(images, labels, train);
+            validateFiles(files, checksums);
         }
 
         numOutcomes = 10;
@@ -119,6 +137,23 @@ public class MnistDataFetcher extends BaseDataFetcher {
         if (!f.exists())
             return false;
         return true;
+    }
+
+    private void validateFiles(String[] files, long[] checksums){
+        //Validate files:
+        try {
+            for (int i = 0; i < files.length; i++) {
+                File f = new File(files[i]);
+                Checksum adler = new Adler32();
+                long checksum = f.exists() ? FileUtils.checksum(f, adler).getValue() : -1;
+                if (!f.exists() || checksum != checksums[i]) {
+                    throw new IllegalStateException("Failed checksum: expected " + checksums[i] +
+                            ", got " + checksum + " for file: " + f);
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public MnistDataFetcher() throws IOException {
