@@ -218,10 +218,10 @@ public class BarnesHutTsne implements Model {
                         workspaceConfigurationExternal,
                         workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-        log.info("Calculating probabilities of data similarities...");
-        for (int i = 0; i < N; i++) {
-            if (i % 500 == 0)
-                log.info("Handled " + i + " records");
+            log.info("Calculating probabilities of data similarities...");
+            for (int i = 0; i < N; i++) {
+                if (i % 500 == 0)
+                    log.info("Handled " + i + " records");
 
                 double betaMin = -Double.MAX_VALUE;
                 double betaMax = Double.MAX_VALUE;
@@ -530,6 +530,7 @@ public class BarnesHutTsne implements Model {
                 vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
                 //lie about gradient
                 vals.muli(12);
+
                 for (int i = 0; i < maxIter; i++) {
                     step(vals, i);
 
@@ -542,7 +543,8 @@ public class BarnesHutTsne implements Model {
                     if (iterationListener != null) {
                         iterationListener.iterationDone(this, i, 0);
                     }
-                    log.info("Error at iteration " + i + " is " + score());
+
+
                 }
             }
         }
