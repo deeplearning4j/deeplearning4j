@@ -28,16 +28,22 @@ import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.BufferedWriter;
@@ -63,6 +69,13 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sign;
  */
 @Slf4j
 public class BarnesHutTsne implements Model {
+
+
+
+    public final static String workspaceCache = "LOOP_CACHE";
+    public final static String workspaceExternal = "LOOP_EXTERNAL";
+
+
     protected int maxIter = 1000;
     protected double realMin = Nd4j.EPS_THRESHOLD;
     protected double initialMomentum = 0.5;
@@ -95,12 +108,28 @@ public class BarnesHutTsne implements Model {
     private INDArray yIncs;
     private int vpTreeWorkers;
     protected transient IterationListener iterationListener;
+    protected WorkspaceMode workspaceMode;
+    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+            .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
+
+    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder().initialSize(0)
+            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyLearning(LearningPolicy.OVER_TIME).policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
+            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
+            .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME).build();
+
 
     public BarnesHutTsne(int numDimensions, String simiarlityFunction, double theta, boolean invert, int maxIter,
-                    double realMin, double initialMomentum, double finalMomentum, double momentum,
-                    int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
-                    double learningRate, boolean useAdaGrad, double perplexity, IterationListener iterationListener,
-                    double minGain,int vpTreeWorkers) {
+                         double realMin, double initialMomentum, double finalMomentum, double momentum,
+                         int switchMomentumIteration, boolean normalize, int stopLyingIteration, double tolerance,
+                         double learningRate, boolean useAdaGrad, double perplexity, IterationListener iterationListener,
+                         double minGain,int vpTreeWorkers) {
         this.maxIter = maxIter;
         this.realMin = realMin;
         this.initialMomentum = initialMomentum;
@@ -183,63 +212,73 @@ public class BarnesHutTsne implements Model {
         final double logU = FastMath.log(u);
         VPTree tree = new VPTree(d, simiarlityFunction, vpTreeWorkers,invert);
 
+        MemoryWorkspace workspace =
+                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal,
+                        workspaceExternal);
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
         log.info("Calculating probabilities of data similarities...");
         for (int i = 0; i < N; i++) {
             if (i % 500 == 0)
                 log.info("Handled " + i + " records");
 
-            double betaMin = -Double.MAX_VALUE;
-            double betaMax = Double.MAX_VALUE;
-            List<DataPoint> results = new ArrayList<>();
-            tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
-            double betas = beta.getDouble(i);
+                double betaMin = -Double.MAX_VALUE;
+                double betaMax = Double.MAX_VALUE;
+                List<DataPoint> results = new ArrayList<>();
+                tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
+                double betas = beta.getDouble(i);
 
-            INDArray cArr = VPTree.buildFromData(results);
-            Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
-            INDArray currP = pair.getFirst();
-            double hDiff = pair.getSecond() - logU;
-            int tries = 0;
-            boolean found = false;
-            //binary search
-            while (!found && tries < 200) {
-                if (hDiff < tolerance && -hDiff < tolerance)
-                    found = true;
-                else {
-                    if (hDiff > 0) {
-                        betaMin = betas;
+                INDArray cArr = VPTree.buildFromData(results);
+                Pair<INDArray, Double> pair = computeGaussianKernel(cArr, beta.getDouble(i), k);
+                INDArray currP = pair.getFirst();
+                double hDiff = pair.getSecond() - logU;
+                int tries = 0;
+                boolean found = false;
+                //binary search
+                while (!found && tries < 200) {
+                    if (hDiff < tolerance && -hDiff < tolerance)
+                        found = true;
+                    else {
+                        if (hDiff > 0) {
+                            betaMin = betas;
 
-                        if (betaMax == Double.MAX_VALUE || betaMax == -Double.MAX_VALUE)
-                            betas *= 2;
-                        else
-                            betas = (betas + betaMax) / 2.0;
-                    } else {
-                        betaMax = betas;
-                        if (betaMin == -Double.MAX_VALUE || betaMin == Double.MAX_VALUE)
-                            betas /= 2.0;
-                        else
-                            betas = (betas + betaMin) / 2.0;
+                            if (betaMax == Double.MAX_VALUE || betaMax == -Double.MAX_VALUE)
+                                betas *= 2;
+                            else
+                                betas = (betas + betaMax) / 2.0;
+                        } else {
+                            betaMax = betas;
+                            if (betaMin == -Double.MAX_VALUE || betaMin == Double.MAX_VALUE)
+                                betas /= 2.0;
+                            else
+                                betas = (betas + betaMin) / 2.0;
+                        }
+
+                        pair = computeGaussianKernel(cArr, betas, k);
+                        hDiff = pair.getSecond() - logU;
+                        tries++;
                     }
 
-                    pair = computeGaussianKernel(cArr, betas, k);
-                    hDiff = pair.getSecond() - logU;
-                    tries++;
                 }
 
-            }
+
+                currP.divi(currP.sum(Integer.MAX_VALUE));
+                INDArray indices = Nd4j.create(1, k + 1);
+                for (int j = 0; j < indices.length(); j++) {
+                    if (j >= results.size())
+                        break;
+                    indices.putScalar(j, results.get(j).getIndex());
+                }
+
+                for (int l = 0; l < k; l++) {
+                    cols.putScalar(rows.getInt(i) + l, indices.getDouble(l + 1));
+                    vals.putScalar(rows.getInt(i) + l, currP.getDouble(l));
+                }
 
 
-            currP.divi(currP.sum(Integer.MAX_VALUE));
-            INDArray indices = Nd4j.create(1, k + 1);
-            for (int j = 0; j < indices.length(); j++) {
-                if (j >= results.size())
-                    break;
-                indices.putScalar(j, results.get(j).getIndex());
             }
 
-            for (int l = 0; l < k; l++) {
-                cols.putScalar(rows.getInt(i) + l, indices.getDouble(l + 1));
-                vals.putScalar(rows.getInt(i) + l, currP.getDouble(l));
-            }
 
 
 
@@ -322,84 +361,92 @@ public class BarnesHutTsne implements Model {
      */
     public INDArray symmetrized(INDArray rowP, INDArray colP, INDArray valP) {
         INDArray rowCounts = Nd4j.create(N);
-        for (int n = 0; n < N; n++) {
-            int begin = rowP.getInt(n);
-            int end = rowP.getInt(n + 1);
-            for (int i = begin; i < end; i++) {
-                boolean present = false;
-                for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i) + 1); m++)
-                    if (colP.getInt(m) == n) {
-                        present = true;
+
+        MemoryWorkspace workspace =
+                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal,
+                        workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            for (int n = 0; n < N; n++) {
+                int begin = rowP.getInt(n);
+                int end = rowP.getInt(n + 1);
+                for (int i = begin; i < end; i++) {
+                    boolean present = false;
+                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i) + 1); m++)
+                        if (colP.getInt(m) == n) {
+                            present = true;
+                        }
+
+
+                    if (present)
+                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+
+                    else {
+                        rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
+                        rowCounts.putScalar(colP.getInt(i), rowCounts.getDouble(colP.getInt(i)) + 1);
                     }
-
-
-                if (present)
-                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
-
-                else {
-                    rowCounts.putScalar(n, rowCounts.getDouble(n) + 1);
-                    rowCounts.putScalar(colP.getInt(i), rowCounts.getDouble(colP.getInt(i)) + 1);
                 }
             }
-        }
 
 
-        int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
-        INDArray offset = Nd4j.create(N);
-        INDArray symRowP = Nd4j.create(N + 1);
-        INDArray symColP = Nd4j.create(numElements);
-        INDArray symValP = Nd4j.create(numElements);
+            int numElements = rowCounts.sum(Integer.MAX_VALUE).getInt(0);
+            INDArray offset = Nd4j.create(N);
+            INDArray symRowP = Nd4j.create(N + 1);
+            INDArray symColP = Nd4j.create(numElements);
+            INDArray symValP = Nd4j.create(numElements);
 
-        for (int n = 0; n < N; n++)
-            symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
+            for (int n = 0; n < N; n++)
+                symRowP.putScalar(n + 1, symRowP.getDouble(n) + rowCounts.getDouble(n));
 
 
-
-        for (int n = 0; n < N; n++) {
-            for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
-                boolean present = false;
-                for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
-                    if (colP.getInt(m) == n) {
-                        present = true;
-                        if (n < colP.getInt(i)) {
-                            // make sure we do not add elements twice
-                            symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
-                            symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
-                            symValP.putScalar(symRowP.getInt(n) + offset.getInt(n),
-                                            valP.getDouble(i) + valP.getDouble(m));
-                            symValP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)),
-                                            valP.getDouble(i) + valP.getDouble(m));
+            for (int n = 0; n < N; n++) {
+                for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
+                    boolean present = false;
+                    for (int m = rowP.getInt(colP.getInt(i)); m < rowP.getInt(colP.getInt(i)) + 1; m++) {
+                        if (colP.getInt(m) == n) {
+                            present = true;
+                            if (n < colP.getInt(i)) {
+                                // make sure we do not add elements twice
+                                symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colP.getInt(i));
+                                symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)), n);
+                                symValP.putScalar(symRowP.getInt(n) + offset.getInt(n),
+                                        valP.getDouble(i) + valP.getDouble(m));
+                                symValP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colP.getInt(i)),
+                                        valP.getDouble(i) + valP.getDouble(m));
+                            }
                         }
                     }
-                }
 
-                // If (colP[i], n) is not present, there is no addition involved
-                if (!present) {
-                    int colPI = colP.getInt(i);
-                    if (n < colPI) {
-                        symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
-                        symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
-                        symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
-                        symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
+                    // If (colP[i], n) is not present, there is no addition involved
+                    if (!present) {
+                        int colPI = colP.getInt(i);
+                        if (n < colPI) {
+                            symColP.putScalar(symRowP.getInt(n) + offset.getInt(n), colPI);
+                            symColP.putScalar(symRowP.getInt(colP.getInt(i)) + offset.getInt(colPI), n);
+                            symValP.putScalar(symRowP.getInt(n) + offset.getInt(n), valP.getDouble(i));
+                            symValP.putScalar(symRowP.getInt(colPI) + offset.getInt(colPI), valP.getDouble(i));
+                        }
+
                     }
 
-                }
-
-                // Update offsets
-                if (!present || (present && n < colP.getInt(i))) {
-                    offset.putScalar(n, offset.getInt(n) + 1);
-                    int colPI = colP.getInt(i);
-                    if (colPI != n)
-                        offset.putScalar(colPI, offset.getDouble(colPI) + 1);
+                    // Update offsets
+                    if (!present || (present && n < colP.getInt(i))) {
+                        offset.putScalar(n, offset.getInt(n) + 1);
+                        int colPI = colP.getInt(i);
+                        if (colPI != n)
+                            offset.putScalar(colPI, offset.getDouble(colPI) + 1);
+                    }
                 }
             }
+
+            // Divide the result by two
+            symValP.divi(2.0);
+            return symValP;
+
         }
 
-        // Divide the result by two
-        symValP.divi(2.0);
-
-
-        return symValP;
 
     }
 
@@ -461,8 +508,8 @@ public class BarnesHutTsne implements Model {
         if (theta == 0.0) {
             log.debug("theta == 0, using decomposed version, might be slow");
             Tsne decomposedTsne = new Tsne(maxIter, realMin, initialMomentum, finalMomentum, minGain, momentum,
-                            switchMomentumIteration, normalize, usePca, stopLyingIteration, tolerance, learningRate,
-                            useAdaGrad, perplexity);
+                    switchMomentumIteration, normalize, usePca, stopLyingIteration, tolerance, learningRate,
+                    useAdaGrad, perplexity);
             Y = decomposedTsne.calculate(x, numDimensions, perplexity);
         } else {
             //output
@@ -470,24 +517,33 @@ public class BarnesHutTsne implements Model {
                 Y = randn(x.rows(), numDimensions, Nd4j.getRandom()).muli(1e-3f);
             }
 
-
-            computeGaussianPerplexity(x, perplexity);
-            vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
-            //lie about gradient
-            vals.muli(12);
-            for (int i = 0; i < maxIter; i++) {
-                step(vals, i);
-
-                if (i == switchMomentumIteration)
-                    momentum = finalMomentum;
-                if (i == stopLyingIteration)
-                    vals.divi(12);
+            MemoryWorkspace workspace =
+                    workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                            : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                            workspaceConfigurationExternal,
+                            workspaceExternal);
 
 
-                if (iterationListener != null) {
-                    iterationListener.iterationDone(this, i, 0);
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
+                computeGaussianPerplexity(x, perplexity);
+                vals = symmetrized(rows, cols, vals).divi(vals.sum(Integer.MAX_VALUE));
+                //lie about gradient
+                vals.muli(12);
+                for (int i = 0; i < maxIter; i++) {
+                    step(vals, i);
+
+                    if (i == switchMomentumIteration)
+                        momentum = finalMomentum;
+                    if (i == stopLyingIteration)
+                        vals.divi(12);
+
+
+                    if (iterationListener != null) {
+                        iterationListener.iterationDone(this, i, 0);
+                    }
+                    log.info("Error at iteration " + i + " is " + score());
                 }
-                log.info("Error at iteration " + i + " is " + score());
             }
         }
     }
@@ -510,34 +566,43 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        INDArray yGrads = gradient;
 
-        gains = gains.add(.2).muli(sign(yGrads)).neqi(sign(yIncs))
-                        .addi(gains.mul(0.8).muli(sign(yGrads)).neqi(sign(yIncs)));
+        MemoryWorkspace workspace =
+                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal,
+                        workspaceExternal);
 
-        BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
 
-        INDArray gradChange = gains.mul(yGrads);
+            INDArray yGrads = gradient;
 
-        if (useAdaGrad) {
-            if (adaGrad == null) {
-                adaGrad = new AdaGrad(gradient.shape(), learningRate);
-                adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1, gradChange.length()),
-                                gradChange.shape(), gradient.ordering(), true);
+            gains = gains.add(.2).muli(sign(yGrads)).neqi(sign(yIncs))
+                    .addi(gains.mul(0.8).muli(sign(yGrads)).neqi(sign(yIncs)));
+
+            BooleanIndexing.applyWhere(gains, Conditions.lessThan(minGain), new Value(minGain));
+
+
+            INDArray gradChange = gains.mul(yGrads);
+
+            if (useAdaGrad) {
+                if (adaGrad == null) {
+                    adaGrad = new AdaGrad(gradient.shape(), learningRate);
+                    adaGrad.setStateViewArray(Nd4j.zeros(gradient.shape()).reshape(1, gradChange.length()),
+                            gradChange.shape(), gradient.ordering(), true);
+                }
+
+                gradChange = adaGrad.getGradient(gradChange, 0);
+
+            } else {
+                gradChange.muli(learningRate);
             }
 
-            gradChange = adaGrad.getGradient(gradChange, 0);
-
+            yIncs.muli(momentum).subi(gradChange);
+            Y.addi(yIncs);
         }
-
-        else {
-            gradChange.muli(learningRate);
-        }
-
-        yIncs.muli(momentum).subi(gradChange);
-        Y.addi(yIncs);
-
     }
 
 
@@ -600,32 +665,46 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public double score() {
-        // Get estimate of normalization term
-        INDArray buff = Nd4j.create(numDimensions);
-        AtomicDouble sum_Q = new AtomicDouble(0.0);
-        for (int n = 0; n < N; n++)
-            tree.computeNonEdgeForces(n, theta, buff, sum_Q);
 
-        // Loop over all edges to compute t-SNE error
-        double C = .0;
-        INDArray linear = Y;
-        for (int n = 0; n < N; n++) {
-            int begin = rows.getInt(n);
-            int end = rows.getInt(n + 1);
-            int ind1 = n;
-            for (int i = begin; i < end; i++) {
-                int ind2 = cols.getInt(i);
-                buff.assign(linear.slice(ind1));
-                buff.subi(linear.slice(ind2));
+        MemoryWorkspace workspace =
+                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal,
+                        workspaceExternal);
 
-                double Q = pow(buff, 2).sum(Integer.MAX_VALUE).getDouble(0);
-                Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
-                C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
-                                / (Q + Nd4j.EPS_THRESHOLD);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
+
+            // Get estimate of normalization term
+            INDArray buff = Nd4j.create(numDimensions);
+            AtomicDouble sum_Q = new AtomicDouble(0.0);
+            for (int n = 0; n < N; n++)
+                tree.computeNonEdgeForces(n, theta, buff, sum_Q);
+
+            // Loop over all edges to compute t-SNE error
+            double C = .0;
+            INDArray linear = Y;
+            for (int n = 0; n < N; n++) {
+                int begin = rows.getInt(n);
+                int end = rows.getInt(n + 1);
+                int ind1 = n;
+                for (int i = begin; i < end; i++) {
+                    int ind2 = cols.getInt(i);
+                    buff.assign(linear.slice(ind1));
+                    buff.subi(linear.slice(ind2));
+
+                    double Q = pow(buff, 2).sum(Integer.MAX_VALUE).getDouble(0);
+                    Q = (1.0 / (1.0 + Q)) / sum_Q.doubleValue();
+                    C += vals.getDouble(i) * FastMath.log(vals.getDouble(i) + Nd4j.EPS_THRESHOLD)
+                            / (Q + Nd4j.EPS_THRESHOLD);
+                }
             }
+
+            return C;
+
         }
 
-        return C;
     }
 
     @Override
@@ -698,28 +777,39 @@ public class BarnesHutTsne implements Model {
 
     @Override
     public Gradient gradient() {
-        if (yIncs == null)
-            yIncs = zeros(Y.shape());
-        if (gains == null)
-            gains = ones(Y.shape());
-
-        AtomicDouble sumQ = new AtomicDouble(0);
-        /* Calculate gradient based on barnes hut approximation with positive and negative forces */
-        INDArray posF = Nd4j.create(Y.shape());
-        INDArray negF = Nd4j.create(Y.shape());
-        if (tree == null)
-            tree = new SpTree(Y);
-        tree.computeEdgeForces(rows, cols, vals, N, posF);
-
-        for (int n = 0; n < N; n++)
-            tree.computeNonEdgeForces(n, theta, negF.slice(n), sumQ);
+        MemoryWorkspace workspace =
+                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                        workspaceConfigurationExternal,
+                        workspaceExternal);
 
 
-        INDArray dC = posF.subi(negF.divi(sumQ));
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-        Gradient ret = new DefaultGradient();
-        ret.gradientForVariable().put(Y_GRAD, dC);
-        return ret;
+
+            if (yIncs == null)
+                yIncs = zeros(Y.shape());
+            if (gains == null)
+                gains = ones(Y.shape());
+
+            AtomicDouble sumQ = new AtomicDouble(0);
+            /* Calculate gradient based on barnes hut approximation with positive and negative forces */
+            INDArray posF = Nd4j.create(Y.shape());
+            INDArray negF = Nd4j.create(Y.shape());
+            if (tree == null)
+                tree = new SpTree(Y);
+            tree.computeEdgeForces(rows, cols, vals, N, posF);
+
+            for (int n = 0; n < N; n++)
+                tree.computeNonEdgeForces(n, theta, negF.slice(n), sumQ);
+
+
+            INDArray dC = posF.subi(negF.divi(sumQ));
+
+            Gradient ret = new DefaultGradient();
+            ret.gradientForVariable().put(Y_GRAD, dC);
+            return ret;
+        }
     }
 
     @Override
@@ -867,8 +957,8 @@ public class BarnesHutTsne implements Model {
 
         public BarnesHutTsne build() {
             return new BarnesHutTsne(numDim, similarityFunction, theta, invert, maxIter, realMin, initialMomentum,
-                            finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
-                            learningRate, useAdaGrad, perplexity, null, minGain,vpTreeWorkers);
+                    finalMomentum, momentum, switchMomentumIteration, normalize, stopLyingIteration, tolerance,
+                    learningRate, useAdaGrad, perplexity, null, minGain,vpTreeWorkers);
         }
 
     }
