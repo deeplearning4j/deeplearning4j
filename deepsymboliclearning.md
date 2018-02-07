@@ -5,7 +5,7 @@ layout: default
 
 # Hybrid Methods Combining Deep Learning & Symbolic Learning
 
-The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require to learn. 
+The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. 
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.
 
