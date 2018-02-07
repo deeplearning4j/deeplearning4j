@@ -29,7 +29,11 @@ At that moment, Sussman was enlightened.
 
 A hard-coded rule is one form of assumption, a strong one, while deep neural artchitectures contain others, usually about *how* it should learn rather than what conclusion it should reach. The goal, obviously, is to rely on assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
-This page includes some recent, interesting research that attempts to combine deep learning with symbolic learning. 
+How can we combine the ability of deep neural nets to learn correlations from scratch with higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express? 
+
+Combining symbolic reasoning with deep neural networks and deep reinforcement learning may help us address the fundamental challenges of reasoning, hierarchical representations, transfer learning, robustness in the face of adversarial examples, and interpretability (or explanatory power).
+
+This page includes some recent, interesting research that attempts to combine deep learning with symbolic learning to answer those questions. 
 
 ## Deep Symbolic Learning Resources
 
