@@ -30,14 +30,18 @@ import java.io.Serializable;
 @Builder
 public class SequenceLengthAnalysis implements Serializable {
 
-    private final long totalNumSequences;
-    private final int minSeqLength;
-    private final int maxSeqLength;
-    private final long countZeroLength;
-    private final long countOneLength;
-    private final double meanLength;
-    private final double[] histogramBuckets;
-    private final long[] histogramBucketCounts;
+    private long totalNumSequences;
+    private int minSeqLength;
+    private int maxSeqLength;
+    private long countZeroLength;
+    private long countOneLength;
+    private double meanLength;
+    private double[] histogramBuckets;
+    private long[] histogramBucketCounts;
+
+    protected SequenceLengthAnalysis(){
+        //No-arg for JSON
+    }
 
     @Override
     public String toString() {

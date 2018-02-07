@@ -23,7 +23,9 @@ import freemarker.template.Version;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.analysis.SequenceDataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
+import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ui.components.RenderableComponentHistogram;
 import org.datavec.api.transform.ui.components.RenderableComponentTable;
@@ -83,21 +85,62 @@ public class HtmlAnalysis {
         List<ColumnAnalysis> caList = analysis.getColumnAnalysis();
         Schema schema = analysis.getSchema();
 
+        SequenceDataAnalysis sda = null;
+        boolean hasSLA = false;
+        if(analysis instanceof SequenceDataAnalysis) {
+            sda = (SequenceDataAnalysis) analysis;
+            hasSLA = sda.getSequenceLengthAnalysis() != null;
+        }
+
+
         int n = caList.size();
+        if(hasSLA){
+            n++;
+        }
         String[][] table = new String[n][3];
 
         List<DivObject> divs = new ArrayList<>();
         List<String> histogramDivNames = new ArrayList<>();
 
-        for (int i = 0; i < n; i++) {
+        //Render sequence length analysis, if required:
+        if(hasSLA){
+            SequenceLengthAnalysis seqLength = sda.getSequenceLengthAnalysis();
+            String name = "Sequence Lengths";
+
+            table[0][0] = name;
+            table[0][1] = "(Seq Length)";
+            table[0][2] = seqLength.toString().replaceAll(",", ", "); //Hacky work-around to improve display in HTML table
+            table[0][2] = table[0][2].replaceAll(" -> ", " : ");    //Quantiles rendering
+
+            double[] buckets = seqLength.getHistogramBuckets();
+            long[] counts = seqLength.getHistogramBucketCounts();
+
+
+            if(buckets != null){
+                RenderableComponentHistogram.Builder histBuilder = new RenderableComponentHistogram.Builder();
+                for (int j = 0; j < counts.length; j++) {
+                    histBuilder.addBin(buckets[j], buckets[j + 1], counts[j]);
+                }
+                histBuilder.margins(60, 60, 90, 20);
+
+                RenderableComponentHistogram hist = histBuilder.title(name).build();
+
+                String divName = "histdiv_" + name.replaceAll("\\W", "");
+                divs.add(new DivObject(divName, ret.writeValueAsString(hist)));
+                histogramDivNames.add(divName);
+            }
+        }
+
+        for (int i = 0; i < caList.size(); i++) {
             ColumnAnalysis ca = caList.get(i);
             String name = schema.getName(i); //namesList.get(i);
             ColumnType type = schema.getType(i);
 
-            table[i][0] = name;
-            table[i][1] = type.toString();
-            table[i][2] = ca.toString().replaceAll(",", ", "); //Hacky work-around to improve display in HTML table
-            table[i][2] = table[i][2].replaceAll(" -> ", " : ");    //Quantiles rendering
+            int idx = i + (sda != null && sda.getSequenceLengthAnalysis() != null ? 1 : 0);
+            table[idx][0] = name;
+            table[idx][1] = type.toString();
+            table[idx][2] = ca.toString().replaceAll(",", ", "); //Hacky work-around to improve display in HTML table
+            table[idx][2] = table[idx][2].replaceAll(" -> ", " : ");    //Quantiles rendering
             double[] buckets;
             long[] counts;
 

@@ -16,11 +16,13 @@
 
 package org.datavec.api.transform.analysis.columns;
 
-import lombok.Data;
 import com.tdunning.math.stats.TDigest;
-
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.analysis.json.TDigestDeserializer;
+import org.datavec.api.transform.analysis.json.TDigestSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Abstract class for numerical column analysis
@@ -28,6 +30,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(exclude = {"digest"})
 public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
 
     protected double mean;
@@ -41,6 +44,8 @@ public abstract class NumericalColumnAnalysis implements ColumnAnalysis {
     protected long countTotal;
     protected double[] histogramBuckets;
     protected long[] histogramBucketCounts;
+    @JsonSerialize(using = TDigestSerializer.class)
+    @JsonDeserialize(using = TDigestDeserializer.class)
     protected TDigest digest;
 
     protected NumericalColumnAnalysis(Builder builder) {

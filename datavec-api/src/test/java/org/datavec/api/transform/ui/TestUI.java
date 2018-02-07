@@ -19,10 +19,12 @@ package org.datavec.api.transform.ui;
 import com.tdunning.math.stats.TDigest;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.analysis.SequenceDataAnalysis;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.columns.IntegerAnalysis;
 import org.datavec.api.transform.analysis.columns.StringAnalysis;
 import org.datavec.api.transform.analysis.columns.TimeAnalysis;
+import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.DoubleWritable;
@@ -30,20 +32,26 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Created by Alex on 25/03/2016.
  */
 public class TestUI {
 
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
     @Test
-    @Ignore
     public void testUI() throws Exception {
         Schema schema = new Schema.Builder().addColumnString("StringColumn").addColumnInteger("IntColumn")
                         .addColumnInteger("IntColumn2").addColumnInteger("IntColumn3")
@@ -82,12 +90,53 @@ public class TestUI {
 
         DataAnalysis da = new DataAnalysis(schema, list);
 
-        String tempDir = System.getProperty("java.io.tmpdir");
+        File fDir = testDir.newFolder();
+        String tempDir = fDir.getAbsolutePath();
         String outPath = FilenameUtils.concat(tempDir, "datavec_transform_UITest.html");
         System.out.println(outPath);
         File f = new File(outPath);
         f.deleteOnExit();
         HtmlAnalysis.createHtmlAnalysisFile(da, f);
+
+
+        //Test JSON:
+        String json = da.toJson();
+        DataAnalysis fromJson = DataAnalysis.fromJson(json);
+        assertEquals( da, fromJson );
+
+
+
+        //Test sequence analysis:
+        SequenceLengthAnalysis sla = SequenceLengthAnalysis.builder()
+                .totalNumSequences(100)
+                .minSeqLength(1)
+                .maxSeqLength(50)
+                .countZeroLength(0)
+                .countOneLength(10)
+                .meanLength(20.0)
+                .histogramBuckets(new double[]{0.0, 1.0, 2.0, 3.0, 4.0, 5.0})
+                .histogramBucketCounts(new long[]{1,2,3,4,5})
+                .build();
+        SequenceDataAnalysis sda = new SequenceDataAnalysis(da.getSchema(), da.getColumnAnalysis(), sla);
+
+
+        //HTML:
+        outPath = FilenameUtils.concat(tempDir, "datavec_transform_UITest_seq.html");
+        System.out.println(outPath);
+        f = new File(outPath);
+        f.deleteOnExit();
+        HtmlAnalysis.createHtmlAnalysisFile(sda, f);
+
+
+        //JSON
+        json = sda.toJson();
+        SequenceDataAnalysis sFromJson = SequenceDataAnalysis.fromJson(json);
+
+        String toStr1 = sda.toString();
+        String toStr2 = sFromJson.toString();
+        assertEquals(toStr1, toStr2);
+
+        assertEquals(sda, sFromJson);
     }
 
 
