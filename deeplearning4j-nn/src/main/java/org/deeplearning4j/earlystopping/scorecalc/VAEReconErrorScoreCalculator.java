@@ -2,21 +2,23 @@ package org.deeplearning4j.earlystopping.scorecalc;
 
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
+import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * Score function for a MultiLayerNetwork with a single {@link org.deeplearning4j.nn.conf.layers.AutoEncoder} layer.
- * Calculates the specified {@link RegressionEvaluation.Metric} on the layer's reconstructions
- */
-public class AutoencoderScoreCalculator extends BaseScoreCalculator<MultiLayerNetwork> {
+public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<MultiLayerNetwork> {
 
     protected final RegressionEvaluation.Metric metric;
     protected RegressionEvaluation evaluation;
 
-    public AutoencoderScoreCalculator(RegressionEvaluation.Metric metric, DataSetIterator iterator){
+    /**
+     * Constructor for reconstruction *ERROR*
+     *
+     * @param metric
+     * @param iterator
+     */
+    public VAEReconErrorScoreCalculator(RegressionEvaluation.Metric metric, DataSetIterator iterator) {
         super(iterator);
         this.metric = metric;
     }
@@ -29,14 +31,13 @@ public class AutoencoderScoreCalculator extends BaseScoreCalculator<MultiLayerNe
     @Override
     protected INDArray output(MultiLayerNetwork network, INDArray input) {
         Layer l = network.getLayer(0);
-        if(!(l instanceof AutoEncoder)){
-            throw new UnsupportedOperationException("Can only score networks with autoencoder layers as first layer -" +
+        if(!(l instanceof VariationalAutoencoder)){
+            throw new UnsupportedOperationException("Can only score networks with VariationalAutoencoder layers as first layer -" +
                     " got " + l.getClass().getSimpleName());
         }
-        AutoEncoder ae = (AutoEncoder) l;
-
-        INDArray encode = ae.encode(input, false);
-        return ae.decode(encode);
+        VariationalAutoencoder vae = (VariationalAutoencoder)l;
+        INDArray z = vae.activate(input, false);
+        return vae.generateAtMeanGivenZ(z);
     }
 
     @Override
