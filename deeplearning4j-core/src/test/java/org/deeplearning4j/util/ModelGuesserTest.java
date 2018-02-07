@@ -94,6 +94,26 @@ public class ModelGuesserTest extends BaseDL4JTest {
 
     }
 
+
+    @Test
+    public void testNormalizerInPlace() throws Exception {
+        MultiLayerNetwork net = getNetwork();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+
+
+        NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
+        normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
+        ModelSerializer.writeModel(net, tempFile, true,normalizer);
+
+        Model model = ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
+        Normalizer<?> normalizer1 = ModelGuesser.loadNormalizer(tempFile.getAbsolutePath());
+        assertEquals(model, net);
+        assertEquals(normalizer, normalizer1);
+
+    }
+
     @Test
     public void testLoadNormalizersInputStream() throws Exception {
         MultiLayerNetwork net = getNetwork();
