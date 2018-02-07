@@ -3,13 +3,31 @@ title: About the Deeplearning4j Team
 layout: default
 ---
 
-# Deep Symbolic Learning: Hybrid Methods to Combine Deep Learning with Symbolic Learning
+# Hybrid Methods Combining Deep Learning & Symbolic Learning
 
 The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require to learn. 
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.
 
-Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup>   
+Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup> 
+
+[Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence) was the dominant paradigm within the AI community for the post-War era until the 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
+
+One of the main differences between machine learning and traditional symbolic manipulation is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, humans perceive the rules and then hard-code them. This difference is the subject of a [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
+
+```
+In the days when Sussman was a novice, Minsky once came to him as he sat hacking at the PDP-6.
+"What are you doing?", asked Minsky.
+"I am training a randomly wired neural net to play Tic-tac-toe", Sussman replied.
+"Why is the net wired randomly?", asked Minsky.
+"I do not want it to have any preconceptions of how to play", Sussman said.
+Minsky then shut his eyes.
+"Why do you close your eyes?" Sussman asked his teacher.
+"So that the room will be empty."
+At that moment, Sussman was enlightened.
+```
+
+A hard-coded rule is one form of assumption, a strong one, while deep neural artchitectures contain others, usually about *how* it should learn rather than what conclusion it should reach. The goal, obviously, is to rely on assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
 This page includes some recent, interesting research that attempts to combine deep learning with symbolic learning. 
 
