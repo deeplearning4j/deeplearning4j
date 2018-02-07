@@ -93,6 +93,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
     @Override
     public boolean isOpIgnoreException(NodeDef node) {
         //if statements should not be ignored
+/*
         if(node.getOp().equals("Merge")) {
             boolean ret = false;
             for(int i = 0; i < node.getInputCount(); i++) {
@@ -114,8 +115,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
             return ret;
         }
-
-        return false;
+*/
+        return true;
     }
 
     @Override
@@ -423,7 +424,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         return GraphDef.parseFrom(inputStream);
     }
 
-
+    protected void importCondition(String conditionName, NodeDef tfNode, ImportState<GraphDef,NodeDef> importState) {
+        /**
+         * Cond structure:
+         *
+         */
+    }
 
     @Override
     public void mapNodeType(NodeDef tfNode, ImportState<GraphDef,NodeDef> importState) {
@@ -462,6 +468,24 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         }
         else {
             val opName = tfNode.getOp();
+            val nodeName = tfNode.getName();
+
+            // FIXME: early draft
+            // conditional import
+            /*
+            if (nodeName.startsWith("cond") && nodeName.contains("/")) {
+                val str = nodeName.replaceAll("/.*$","");
+                importCondition(str, tfNode, importState);
+
+                seenNodes.add(nodeName);
+                return;
+            } else if (nodeName.startsWith("while")) {
+                // while loop import
+
+                return;
+            }
+            */
+
             val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
             if(differentialFunction == null) {
                 throw new ND4JIllegalStateException("No tensorflow op found for " + opName + " possibly missing operation class?");

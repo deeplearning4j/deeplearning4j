@@ -5,6 +5,8 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 
+import java.util.List;
+
 
 /**
  * This interface describes backend-specific implementations of MemoryWorkspaceManager, basically Factory + Thread-based provider
@@ -165,6 +167,20 @@ public interface MemoryWorkspaceManager {
      */
     MemoryWorkspace scopeOutOfWorkspaces();
 
-
+    /**
+     * This method prints out allocation statistics for current thread
+     */
     void printAllocationStatisticsForCurrentThread();
+
+    /**
+     * This method returns list of workspace IDs for current thread
+     *
+     * @return
+     */
+    List<String> getAllWorkspacesIdsForCurrentThread();
+
+    /**
+     * This method returns all workspaces for current thread
+     */
+    List<MemoryWorkspace> getAllWorkspacesForCurrentThread();
 }

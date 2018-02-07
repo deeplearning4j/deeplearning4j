@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
-import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
@@ -316,5 +315,18 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             log.info("External (pinned) amount: {} bytes", ((Nd4jWorkspace) map.get(key)).getPinnedSize());
             System.out.println();
         }
+    }
+
+
+    @Override
+    public List<String> getAllWorkspacesIdsForCurrentThread() {
+        ensureThreadExistense();
+        return new ArrayList<>(backingMap.get().keySet());
+    }
+
+    @Override
+    public List<MemoryWorkspace> getAllWorkspacesForCurrentThread() {
+        ensureThreadExistense();
+        return new ArrayList<>(backingMap.get().values());
     }
 }

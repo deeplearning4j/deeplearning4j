@@ -88,7 +88,12 @@ public class HammingDistance extends BaseAccumulation {
         this.isComplex = allDistances;
     }
 
-     @Override
+    @Override
+    public Type opType() {
+        return Type.REDUCE3;
+    }
+
+    @Override
     public int opNum() {
         return 7;
     }

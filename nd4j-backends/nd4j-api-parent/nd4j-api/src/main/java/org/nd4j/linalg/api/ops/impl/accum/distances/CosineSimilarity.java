@@ -100,6 +100,10 @@ public class CosineSimilarity extends BaseAccumulation {
         this.isComplex = allDistances;
     }
 
+    @Override
+    public Type opType() {
+        return Type.REDUCE3;
+    }
 
     @Override
     public int opNum() {
