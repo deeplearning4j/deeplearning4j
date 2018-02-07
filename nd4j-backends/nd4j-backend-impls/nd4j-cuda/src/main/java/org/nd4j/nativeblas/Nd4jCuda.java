@@ -15444,7 +15444,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define UNSTASH(NAME)       block.getStash()->extractArray(block.getNodeId(), NAME);
 
 // #define INPUT_VARIABLE(INDEX)     (nd4j::NDArray<T> *) block.getVariable(INDEX)->getNDArray()
-// #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX);
+// #define OUTPUT_VARIABLE(INDEX)     this->getZ(block, INDEX)
 
 // #define INPUT_LIST(INDEX)     (nd4j::NDArrayList<T> *) block.getVariable(INDEX)->getNDArrayList()
 
