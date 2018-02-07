@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
@@ -316,7 +317,9 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         int nIn = 5;
         int nOut = 4;
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
                                         .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
@@ -333,7 +336,9 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                         .setOutputs("out").backprop(true).build();
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
-        ComputationGraphConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345).graphBuilder()
+        ComputationGraphConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345)
+                .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
                         .addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
                                         .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
@@ -358,10 +363,11 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         ComputationGraph graphTBPTT = new ComputationGraph(confTBPTT);
         graphTBPTT.init();
+        graphTBPTT.clearTbpttState = false;
 
-        assertTrue(graphTBPTT.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttFwdLength() == timeSeriesLength);
-        assertTrue(graphTBPTT.getConfiguration().getTbpttBackLength() == timeSeriesLength);
+        assertEquals(BackpropType.TruncatedBPTT, graphTBPTT.getConfiguration().getBackpropType());
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttFwdLength());
+        assertEquals(timeSeriesLength, graphTBPTT.getConfiguration().getTbpttBackLength());
 
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});
@@ -398,9 +404,9 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
         assertTrue(l1StateTBPTT.isEmpty());
 
         assertTrue(l0TBPTTState.isEmpty());
-        assertTrue(l0TBPTTStateTBPTT.size() == 2);
+        assertEquals(2, l0TBPTTStateTBPTT.size());
         assertTrue(l1TBPTTState.isEmpty());
-        assertTrue(l1TBPTTStateTBPTT.size() == 2);
+        assertEquals(2, l1TBPTTStateTBPTT.size());
 
         INDArray tbpttActL0 = l0TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
         INDArray tbpttActL1 = l1TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);

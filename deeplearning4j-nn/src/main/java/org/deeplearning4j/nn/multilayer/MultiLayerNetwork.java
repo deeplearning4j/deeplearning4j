@@ -117,11 +117,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
+    protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
-
-    /*
-      Binary drop connect mask
-     */
     protected INDArray mask;
 
     protected int layerIndex; //For Layer.get/setIndex()
@@ -2366,6 +2363,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                 }
                 truncatedBPTTGradient();
+                if(clearTbpttState) {
+                    rnnClearPreviousState();
+                }
             } else {
                 synchronizeIterEpochCounts();
 

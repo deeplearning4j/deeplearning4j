@@ -102,6 +102,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected double score;
     @Setter
     private boolean initDone = false;
+    protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
 
     public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
@@ -2082,6 +2083,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
+
+        if(truncatedBPTT && clearTbpttState){
+            rnnClearPreviousState();
+        }
     }
 
     @Override
