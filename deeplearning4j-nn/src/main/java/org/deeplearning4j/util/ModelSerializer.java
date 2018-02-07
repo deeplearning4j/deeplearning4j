@@ -149,7 +149,6 @@ public class ModelSerializer {
                     Nd4j.write(updaterState, dos);
                 } finally {
                     dos.flush();
-                    dos.close();
                 }
             }
         }
@@ -162,7 +161,7 @@ public class ModelSerializer {
             NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
         }
 
-
+        dos.close();
         zipfile.close();
     }
 
