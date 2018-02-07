@@ -235,9 +235,24 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                     try {
                         bestModel = esConfig.getModelSaver().getBestModel();
                     } catch (IOException e2) {
-                        log.error("Error with earlystopping",e2);
-                        throw new RuntimeException(e2);
+                        //Best model does not exist. Just save the current model
+                        if(esConfig.isSaveLastModel()) {
+                            try {
+                                esConfig.getModelSaver().saveBestModel(model,0.0);
+                                bestModel = model;
+                            } catch (IOException e) {
+                                log.error("Unable to save model.",e);
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        else {
+                            log.error("Error with earlystopping",e2);
+                            throw new RuntimeException(e2);
+                        }
+
                     }
+
+
                     EarlyStoppingResult<T> result = new EarlyStoppingResult<>(
                             EarlyStoppingResult.TerminationReason.EpochTerminationCondition,
                             termReason.toString(), scoreVsEpoch, bestModelEpoch, bestModelScore, epochCount + 1,
