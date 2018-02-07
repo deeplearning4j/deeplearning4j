@@ -27,7 +27,7 @@ Minsky then shut his eyes.
 At that moment, Sussman was enlightened.
 ```
 
-A hard-coded rule is one form of assumption, a strong one, while deep neural artchitectures contain others, usually about *how* it should learn rather than what conclusion it should reach. The goal, obviously, is to rely on assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
+A hard-coded rule is a preconception. It is one form of assumption, a strong one, while deep neural artchitectures contain other assumptions, usually about *how* they should learn rather than what conclusion they should reach. The ideal, obviously, is to choose assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
 How can we combine the ability of deep neural nets to learn correlations from scratch with higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express? 
 
