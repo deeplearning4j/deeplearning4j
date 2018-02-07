@@ -2730,6 +2730,25 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testConfusionMatrix(){
+      INDArray labels = Nd4j.create(new float[] {1, 2, 4});
+      INDArray pred = Nd4j.create(new float[] {2, 2, 4});
+      INDArray weights = Nd4j.create(new float[] {10, 100, 1000});
+      Integer numClasses = 5;
+      SameDiff sd = SameDiff.create();
+      SDVariable labelsVar = sd.var("labels", labels);
+      SDVariable predictionsVar = sd.var("predictions", pred);
+      SDVariable weightsVar = sd.var("weights", weights);
+      sd.confusionMatrix(labelsVar, predictionsVar, numClasses, weightsVar);
+      INDArray out = sd.execAndEndResult();
+
+      INDArray exp = Nd4j.create(new float [][] {{0, 0, 0, 0, 0},  {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
+              {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000} });
+
+      assertEquals(exp, out);
+    }
+
+    @Test
     public void testArgMax(){
         Nd4j.getRandom().setSeed(12345);
 
