@@ -156,22 +156,4 @@
      </dependency>
     </dependencies>
 
-    <profiles>
-        <profile>
-            <id>backport-fun-java8</id>
-            <activation>
-                <jdk>(,1.7]</jdk>
-            </activation>
-            <dependencies>
-                <dependency>
-
-                    <groupId>net.sf.m-m-m</groupId>
-                    <artifactId>mmm-util-backport-java.util.function</artifactId>
-                    <version>${mm-util-backport-java.version}</version>
-
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-
 </project>

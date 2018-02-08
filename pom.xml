@@ -87,7 +87,6 @@
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <tablesaw.version>0.11.4</tablesaw.version>
         <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
-        <mm-util-backport-java.version>1.0.1</mm-util-backport-java.version>
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
         <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
         <maven-javadoc-plugin.version>2.10.4</maven-javadoc-plugin.version>
