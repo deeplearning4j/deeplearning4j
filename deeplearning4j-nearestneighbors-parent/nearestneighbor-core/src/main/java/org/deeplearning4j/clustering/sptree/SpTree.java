@@ -40,8 +40,7 @@ import java.util.Set;
 public class SpTree implements Serializable {
 
 
-    public final static String workspaceCache = "LOOP_CACHE";
-    public final static String workspaceExternal = "LOOP_EXTERNAL";
+    public final static String workspaceExternal = "SPTREE_LOOP_EXTERNAL";
 
 
     private int D;
@@ -82,7 +81,7 @@ public class SpTree implements Serializable {
 
 
     public SpTree(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
-                    String similarityFunction) {
+                  String similarityFunction) {
         init(parent, data, corner, width, indices, similarityFunction);
     }
 
@@ -92,13 +91,8 @@ public class SpTree implements Serializable {
         this.N = data.rows();
         this.D = data.columns();
         this.similarityFunction = similarityFunction;
-        MemoryWorkspace workspace =
-                workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal,
-                        workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-
+        try (MemoryWorkspace ws = workspace().notifyScopeEntered()) {
+            data = data.migrate();
             INDArray meanY = data.mean(0);
             INDArray minY = data.min(0);
             INDArray maxY = data.max(0);
@@ -130,14 +124,18 @@ public class SpTree implements Serializable {
         this(data, new HashSet<INDArray>());
     }
 
-    private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
-                    String similarityFunction) {
+    public MemoryWorkspace workspace() {
         MemoryWorkspace workspace =
                 workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        return workspace;
+    }
+
+    private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
+                      String similarityFunction) {
+        try (MemoryWorkspace ws = workspace().notifyScopeEntered()) {
 
             this.parent = parent;
             D = data.columns();
@@ -292,7 +290,7 @@ public class SpTree implements Serializable {
                 double mult = cumSize * Q;
                 sumQ.addAndGet(mult);
                 mult *= Q;
-                negativeForce.addi(buf.mul(mult));
+                negativeForce.addi(buf.muli(mult));
 
             } else {
 
@@ -308,7 +306,7 @@ public class SpTree implements Serializable {
 
     /**
      *
-     * Compute edge forces using barns hut
+     * Compute edge forces using barnes hut
      * @param rowP a vector
      * @param colP
      * @param valP
@@ -328,16 +326,17 @@ public class SpTree implements Serializable {
             // Loop over all edges in the graph
             double D;
             for (int n = 0; n < N; n++) {
+                INDArray slice = data.slice(n);
                 for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
                     // Compute pairwise distance and Q-value
-                    buf.assign(data.slice(n)).subi(data.slice(colP.getInt(i)));
+                    buf.assign(slice).subi(data.slice(colP.getInt(i)));
 
                     D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
                     D = valP.getDouble(i) / D;
 
                     // Sum positive force
-                    posF.slice(n).addi(buf.mul(D));
+                    posF.slice(n).addi(buf.muli(D));
 
                 }
             }
