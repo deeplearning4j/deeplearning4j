@@ -117,7 +117,7 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
         /** Score calculator. Used to calculate a score (such as loss function on a test set), every N epochs,
          * where N is set by {@link #evaluateEveryNEpochs}
          */
-        public Builder<T> scoreCalculator(ScoreCalculator<T> scoreCalculator) {
+        public Builder<T> scoreCalculator(ScoreCalculator scoreCalculator) {
             this.scoreCalculator = scoreCalculator;
             return this;
         }
