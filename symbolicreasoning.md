@@ -61,7 +61,11 @@ by Gary Marcus
 
 *Although deep learning has historical roots going back decades, neither the term "deep learning" nor the approach was popular just over five years ago, when the field was reignited by papers such as Krizhevsky, Sutskever and Hinton's now classic (2012) deep network model of Imagenet. What has the field discovered in the five subsequent years? Against a background of considerable progress in areas such as speech recognition, image recognition, and game playing, and considerable enthusiasm in the popular press, I present ten concerns for deep learning, and suggest that deep learning must be supplemented by other techniques if we are to reach artificial general intelligence.*
 
-* [Composable Planning with Attributes](https://openreview.net/forum?id=r154_g-Rb)
+* [Composable Planning with Attributes](https://openreview.net/forum?id=r154_g-Rb) (2018)
+by Amy Zhang, Adam Lerer, Sainbayar Sukhbaatar, Rob Fergus and Arthur Szlam
+
+*The tasks that an agent will need to solve often aren’t known during training. However, if the agent knows which properties of the environment we consider im- portant, then after learning how its actions affect those properties the agent may be able to use this knowledge to solve complex tasks without training specifi- cally for them. Towards this end, we consider a setup in which an environment is augmented with a set of user defined attributes that parameterize the features of interest. We propose a model that learns a policy for transitioning between “nearby” sets of attributes, and maintains a graph of possible transitions. Given a task at test time that can be expressed in terms of a target set of attributes, and a current state, our model infers the attributes of the current state and searches over paths through attribute space to get a high level plan, and then uses its low level policy to execute the plan. We show in grid-world games and 3D block stacking that our model is able to generalize to longer, more complex tasks at test time even when it only sees short, simple tasks at train time.
+TL;DR: Compositional attribute-based planning that generalizes to long test tasks, despite being trained on short & simple tasks.*
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
 * [LSTMs and Recurrent Networks](./lstm)
