@@ -9766,6 +9766,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <map>
 // #include <pointercast.h>
 // #include <graph/NodeState.h>
+// #include <graph/FrameState.h>
 // #include <dll.h>
         @Namespace("nd4j::graph") @NoOffset public static class FlowPath extends Pointer {
             static { Loader.load(); }
@@ -9787,12 +9788,32 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("Nd4jIndex") long innerTime(int nodeId);
             public native @Cast("Nd4jIndex") long outerTime(int nodeId);
 
-            public native @Cast("bool") boolean isActive(int nodeId);
-            
-            public native void markActive(int nodeId, @Cast("bool") boolean isActive);
+            public native @Cast("bool") boolean isNodeActive(int nodeId);
+            public native void markNodeActive(int nodeId, @Cast("bool") boolean isActive);
+
+            public native @Cast("bool") boolean wasExecuted(int nodeId);
+            public native void markExecuted(int nodeId, @Cast("bool") boolean wasExecuted);
 
             public native int branch(int nodeId);
             public native void markBranch(int nodeId, int index);
+
+            // Frame-related methods
+
+            public native void registerFrame(@Cast("Nd4jIndex") long frameId);
+            public native void forgetFrame(@Cast("Nd4jIndex") long frameId);
+
+            public native @Cast("bool") boolean isFrameActive(@Cast("Nd4jIndex") long frameId);
+            public native void markFrameActive(@Cast("Nd4jIndex") long frameId, @Cast("bool") boolean isActive);
+
+            public native @Cast("bool") boolean isRewindPlanned(@Cast("Nd4jIndex") long frameId);
+            public native void planRewind(@Cast("Nd4jIndex") long frameId, @Cast("bool") boolean reallyRewind);
+
+            public native int getRewindPosition(@Cast("Nd4jIndex") long frameId);
+            public native void setRewindPosition(@Cast("Nd4jIndex") long frameId, int position);
+            public native void setRewindPositionOnce(@Cast("Nd4jIndex") long frameId, int position);
+
+            public native void incrementNumberOfCycles(@Cast("Nd4jIndex") long frameId);
+            public native @Cast("Nd4jIndex") long getNumberOfCycles(@Cast("Nd4jIndex") long frameId);
         }
     
 
