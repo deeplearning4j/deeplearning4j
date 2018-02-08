@@ -32,6 +32,8 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
+    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2 }
+
     public static final int DEFAULT_PRECISION = 5;
 
     private boolean initialized;
@@ -503,5 +505,24 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
 
         return ret / (double) numColumns();
+    }
+
+    public double scoreForMetric(Metric metric){
+        switch (metric){
+            case MSE:
+                return averageMeanSquaredError();
+            case MAE:
+                return averageMeanAbsoluteError();
+            case RMSE:
+                return averagerootMeanSquaredError();
+            case RSE:
+                return averagerelativeSquaredError();
+            case PC:
+                return averagePearsonCorrelation();
+            case R2:
+                return averageRSquared();
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 }

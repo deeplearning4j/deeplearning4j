@@ -70,6 +70,9 @@ import java.util.*;
 @Setter
 @JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
+
+    public enum Metric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC}
+
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
@@ -1614,6 +1617,25 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             out.add(new Prediction(actualClass, predictedClass, meta));
         }
         return out;
+    }
+
+    public double scoreForMetric(Metric metric){
+        switch (metric){
+            case ACCURACY:
+                return accuracy();
+            case F1:
+                return f1();
+            case PRECISION:
+                return precision();
+            case RECALL:
+                return recall();
+            case GMEASURE:
+                return gMeasure(EvaluationAveraging.Macro);
+            case MCC:
+                return matthewsCorrelation(EvaluationAveraging.Macro);
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 
 

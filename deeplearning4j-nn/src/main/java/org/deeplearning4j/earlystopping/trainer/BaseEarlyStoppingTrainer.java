@@ -187,7 +187,12 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
                 double score = (sc == null ? 0.0 : esConfig.getScoreCalculator().calculateScore(model));
                 scoreVsEpoch.put(epochCount - 1, score);
 
-                if (sc != null && score < bestModelScore) {
+                boolean invalidScore = Double.isNaN(score) || Double.isInfinite(score);
+                if(invalidScore){
+                    log.warn("Score is not finite for epoch {}: score = {}", epochCount, score);
+                }
+
+                if (sc != null && score < bestModelScore || (bestModelEpoch == -1 && invalidScore)) {
                     //Save best model:
                     if (bestModelEpoch == -1) {
                         //First calculated/reported score
