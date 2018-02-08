@@ -1,19 +1,22 @@
-package org.deeplearning4j.earlystopping.scorecalc.mln;
+package org.deeplearning4j.earlystopping.scorecalc;
 
-import org.deeplearning4j.earlystopping.scorecalc.base.BaseMLNScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.base.BaseScoreCalculator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
- * Score calculator for variational autoencoder reconstruction probability or reconstruction log probability.
+ * Score calculator for variational autoencoder reconstruction probability or reconstruction log probability for a
+ * MultiLayerNetwork or ComputationGraph. VariationalAutoencoder layer must be first layer in the network<br>
  * See {@link VariationalAutoencoder#reconstructionProbability(INDArray, int)} for more details
  *
  * @author Alex Black
  */
-public class VAEReconProbScoreCalculator extends BaseMLNScoreCalculator {
+public class VAEReconProbScoreCalculator extends BaseScoreCalculator<Model> {
 
     protected final int reconstructionProbNumSamples;
     protected final boolean logProb;
@@ -57,14 +60,27 @@ public class VAEReconProbScoreCalculator extends BaseMLNScoreCalculator {
     }
 
     @Override
-    protected INDArray output(MultiLayerNetwork network, INDArray input, INDArray fMask, INDArray lMask) {
+    protected INDArray output(Model network, INDArray input, INDArray fMask, INDArray lMask) {
         return null;    //Not used
     }
 
     @Override
-    protected double scoreMinibatch(MultiLayerNetwork network, INDArray features, INDArray labels, INDArray fMask,
+    protected INDArray[] output(Model network, INDArray[] input, INDArray[] fMask, INDArray[] lMask) {
+        return null;    //Not used
+    }
+
+    @Override
+    protected double scoreMinibatch(Model net, INDArray features, INDArray labels, INDArray fMask,
                                     INDArray lMask, INDArray output) {
-        Layer l = network.getLayer(0);
+        Layer l;
+        if(net instanceof MultiLayerNetwork) {
+            MultiLayerNetwork network = (MultiLayerNetwork)net;
+            l = network.getLayer(0);
+        } else {
+            ComputationGraph network = (ComputationGraph)net;
+            l = network.getLayer(0);
+        }
+
         if(!(l instanceof VariationalAutoencoder)){
             throw new UnsupportedOperationException("Can only score networks with VariationalAutoencoder layers as first layer -" +
                     " got " + l.getClass().getSimpleName());
@@ -76,6 +92,11 @@ public class VAEReconProbScoreCalculator extends BaseMLNScoreCalculator {
         } else {
             return vae.reconstructionProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();
         }
+    }
+
+    @Override
+    protected double scoreMinibatch(Model network, INDArray[] features, INDArray[] labels, INDArray[] fMask, INDArray[] lMask, INDArray[] output) {
+        return 0;
     }
 
     @Override

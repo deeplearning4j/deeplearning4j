@@ -36,9 +36,10 @@ public abstract class BaseIEvaluationScoreCalculator<T extends Model, U extends 
 
         if(network instanceof MultiLayerNetwork){
             DataSetIterator i = (iter != null ? iter : new MultiDataSetWrapperIterator(iterator));
-            eval = ((MultiLayerNetwork) network).doEvaluation(iter, eval)[0];
+            eval = ((MultiLayerNetwork) network).doEvaluation(i, eval)[0];
         } else if(network instanceof ComputationGraph){
-            eval = ((ComputationGraph) network).doEvaluation(iterator, eval)[0];
+            MultiDataSetIterator i = (iterator != null ? iterator : new MultiDataSetIteratorAdapter(iter));
+            eval = ((ComputationGraph) network).doEvaluation(i, eval)[0];
         } else {
             throw new RuntimeException("Unknown model type: " + network.getClass());
         }

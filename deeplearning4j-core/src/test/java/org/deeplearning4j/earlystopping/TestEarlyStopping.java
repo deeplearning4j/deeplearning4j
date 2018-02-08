@@ -9,17 +9,19 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
-import org.deeplearning4j.earlystopping.scorecalc.mln.AutoencoderScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.ClassificationScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.AutoencoderScoreCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.mln.VAEReconErrorScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.mln.VAEReconProbScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.VAEReconErrorScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.VAEReconProbScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
+import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -612,6 +614,47 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
             assertTrue(result.getBestModelScore() > 0.0);
+        }
+    }
+
+    @Test
+    public void testClassificationScoreFunctionSimple() throws Exception {
+
+        for(Evaluation.Metric metric : Evaluation.Metric.values()) {
+            log.info("Metric: " + metric);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new DenseLayer.Builder().nIn(784).nOut(32).build())
+                    .layer(new OutputLayer.Builder().nIn(32).nOut(10).activation(Activation.SOFTMAX).build())
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+
+            List<DataSet> l = new ArrayList<>();
+            for( int i=0; i<10; i++ ){
+                DataSet ds = iter.next();
+                l.add(ds);
+            }
+
+            iter = new ExistingDataSetIterator(l);
+
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(new ClassificationScoreCalculator(metric, iter)).modelSaver(saver)
+                            .build();
+
+            EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+            assertNotNull(result.getBestModel());
         }
     }
 }
