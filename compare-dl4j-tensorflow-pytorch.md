@@ -13,7 +13,7 @@ Skymind bundles Deeplearning4j and Python deep learning libraries such as Tensor
 DL4J is portable and platform neutral, rather than being optimized on a specific cloud service such as AWS, Azure or Google Cloud. In speed, its [performance is equal to Caffe](https://github.com/deeplearning4j/dl4j-benchmark) on non-trivial image-processing tasks on multiple GPUs, and faster than Tensorflow or Torch. For more information on benchmarking Deeplearning4j, please see this [benchmarks page](https://deeplearning4j.org/benchmark) to optimize its performance by adjusting the JVM's heap space, garbage collection algorithm, memory management and DL4J's ETL pipeline. Deeplearning4j has Java, [Scala](https://github.com/deeplearning4j/scalnet) and [Python APIs, the latter using Keras](./keras). 
 
 <p align="center">
-<a href="https://skymind.readme.io/v1.0.1/docs/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEPLEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 ### Content
