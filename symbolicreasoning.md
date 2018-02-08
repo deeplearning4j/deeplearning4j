@@ -1,6 +1,7 @@
 ---
 title: Deep Learning & Symbolic Reasoning
 layout: default
+redirect_from: deepsymboliclearning
 ---
 
 # Deep Learning & Symbolic Reasoning
