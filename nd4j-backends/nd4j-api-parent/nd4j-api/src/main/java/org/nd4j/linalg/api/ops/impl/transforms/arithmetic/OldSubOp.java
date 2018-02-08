@@ -66,7 +66,7 @@ public class OldSubOp extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 1;
+        return 9;
     }
 
     @Override
