@@ -89,4 +89,9 @@ public class ShannonEntropy extends BaseAccumulation {
         return "entropy_shannon";
     }
 
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

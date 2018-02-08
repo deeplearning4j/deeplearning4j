@@ -107,4 +107,9 @@ public class NormMax extends BaseAccumulation {
        return "norm";
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
+
 }

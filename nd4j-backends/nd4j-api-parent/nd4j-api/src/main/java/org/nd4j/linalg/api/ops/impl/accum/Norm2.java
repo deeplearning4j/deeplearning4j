@@ -102,4 +102,9 @@ public class Norm2 extends BaseAccumulation {
     public String tensorflowName() {
         return "norm";
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

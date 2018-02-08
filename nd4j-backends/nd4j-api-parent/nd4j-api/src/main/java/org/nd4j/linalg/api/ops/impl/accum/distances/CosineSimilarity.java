@@ -106,6 +106,11 @@ public class CosineSimilarity extends BaseAccumulation {
     }
 
     @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
     public int opNum() {
         return 2;
     }

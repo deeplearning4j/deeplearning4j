@@ -94,6 +94,11 @@ public class HammingDistance extends BaseAccumulation {
     }
 
     @Override
+    public Type getOpType() {
+        return opType();
+    }
+
+    @Override
     public int opNum() {
         return 7;
     }

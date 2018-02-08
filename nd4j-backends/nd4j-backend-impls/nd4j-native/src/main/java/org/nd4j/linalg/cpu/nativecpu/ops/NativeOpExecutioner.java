@@ -918,13 +918,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 op.setZ(Nd4j.scalar(0.0));
             }
 
+            // since we're going to call reduceToScalar, we must ensure equal lengths
+            if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
+                if (op.x().lengthLong() != op.y().lengthLong())
+                    throw new ND4JIllegalStateException("X and Y operands should have equall lengths. X length: " + op.x().lengthLong() + "; Y length: " + op.y().lengthLong());
+            }
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
                     op.setFinalResult(loop.execSummaryStatsScalarDouble(null, op.opNum(),
                             (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             (DoublePointer) getPointerForExtraArgs(op), true));
-                } else if (op.y() != null) {
+                } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                     op.setFinalResult(loop.execReduce3ScalarDouble(null, op.opNum(),
                             (DoublePointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
@@ -944,7 +950,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                             (FloatPointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                             (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
-                } else if (op.y() != null) {
+                } else if (op.y() != null && op.getOpType() == Op.Type.REDUCE3) {
                     op.setFinalResult(loop.execReduce3ScalarFloat(null, op.opNum(),
                             (FloatPointer) op.x().data().addressPointer(),
                             (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),

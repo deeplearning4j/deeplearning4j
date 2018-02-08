@@ -98,4 +98,9 @@ public class Norm1 extends BaseAccumulation {
         SDVariable bcGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
         return Collections.singletonList(signum.mul(bcGrad));
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

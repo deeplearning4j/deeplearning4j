@@ -107,4 +107,9 @@ public class MatchCondition extends BaseAccumulation {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

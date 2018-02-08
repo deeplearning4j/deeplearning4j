@@ -173,4 +173,9 @@ public class Variance extends BaseAccumulation {
         return "moments";
     }
 
+
+    @Override
+    public Type getOpType() {
+        return Type.VARIANCE;
+    }
 }

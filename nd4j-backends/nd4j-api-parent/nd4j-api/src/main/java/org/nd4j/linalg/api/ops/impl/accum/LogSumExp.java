@@ -89,4 +89,9 @@ public class LogSumExp extends BaseAccumulation {
     public String tensorflowName() {
         return "reduce_logsumexp";
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

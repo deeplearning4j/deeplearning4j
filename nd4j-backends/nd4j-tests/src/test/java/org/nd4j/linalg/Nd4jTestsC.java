@@ -5978,6 +5978,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp1, out1);
     }
 
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testBadReduce3Call() {
+        val x = Nd4j.create(400,20);
+        val y = Nd4j.ones(1, 20);
+        x.distance2(y);
+    }
+
+
+    @Test
+    public void testReduce3AlexBug() {
+        val arr = Nd4j.linspace(1,100,100).reshape('f', 10, 10).dup('c');
+        val arr2 = Nd4j.linspace(1,100,100).reshape('c', 10, 10);
+        val out = Nd4j.getExecutioner().exec(new EuclideanDistance(arr, arr2), 1);
+        val exp = Nd4j.create(new double[] {151.93748, 128.86038, 108.37435, 92.22256, 82.9759, 82.9759, 92.22256, 108.37435, 128.86038, 151.93748});
+
+        assertEquals(exp, out);
+    }
+
 
     @Override
     public char ordering() {

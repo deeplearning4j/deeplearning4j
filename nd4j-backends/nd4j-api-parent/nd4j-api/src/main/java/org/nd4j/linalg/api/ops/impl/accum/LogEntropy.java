@@ -80,4 +80,9 @@ public class  LogEntropy extends BaseAccumulation {
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

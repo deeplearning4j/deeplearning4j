@@ -83,4 +83,8 @@ public class Dot extends BaseAccumulation {
        return "matmul";
     }
 
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE3;
+    }
 }

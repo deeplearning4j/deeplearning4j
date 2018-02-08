@@ -102,4 +102,9 @@ public class Sum extends BaseAccumulation {
     public String tensorflowName() {
         return "Sum";
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

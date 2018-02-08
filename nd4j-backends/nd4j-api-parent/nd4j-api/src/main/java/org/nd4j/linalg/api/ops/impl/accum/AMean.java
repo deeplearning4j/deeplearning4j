@@ -81,4 +81,8 @@ public class  AMean extends ASum {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
+    @Override
+    public Type opType() {
+        return Type.REDUCE;
+    }
 }

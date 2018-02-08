@@ -114,5 +114,8 @@ public class Min extends BaseAccumulation {
         return Collections.singletonList(ret);
     }
 
-
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

@@ -123,4 +123,9 @@ public class Max extends BaseAccumulation {
     public String tensorflowName() {
         return "reduce_max";
     }
+
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }

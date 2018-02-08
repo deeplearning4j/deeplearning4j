@@ -83,5 +83,8 @@ public class AMax extends BaseAccumulation {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
-
+    @Override
+    public Type getOpType() {
+        return Type.REDUCE;
+    }
 }
