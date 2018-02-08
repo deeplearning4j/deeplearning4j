@@ -1,17 +1,22 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
+import org.deeplearning4j.earlystopping.scorecalc.base.BaseIEvaluationScoreCalculator;
 import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.EvaluationAveraging;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculator<MultiLayerNetwork, Evaluation> {
+/**
+ * Score function for evaluating a MultiLayerNetwork according to an evaluation metric ({@link Evaluation.Metric} such
+ * as accuracy, F1 score, etc.
+ * Used for MultiLayerNetwork and ComputationGraph
+ *
+ * @author Alex Black
+ */
+public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculator<Model, Evaluation> {
 
-    public enum Metric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC}
+    protected final Evaluation.Metric metric;
 
-    protected final Metric metric;
-
-    public ClassificationScoreCalculator(Metric metric, DataSetIterator iterator){
+    public ClassificationScoreCalculator(Evaluation.Metric metric, DataSetIterator iterator){
         super(iterator);
         this.metric = metric;
     }
@@ -23,24 +28,6 @@ public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculato
 
     @Override
     protected double finalScore(Evaluation e) {
-        switch (metric){
-            case ACCURACY:
-                return e.accuracy();
-            case F1:
-                return e.f1();
-            case PRECISION:
-                return e.precision();
-            case RECALL:
-                return e.recall();
-            case GMEASURE:
-                return e.gMeasure(EvaluationAveraging.Macro);
-            case MCC:
-                return e.matthewsCorrelation(EvaluationAveraging.Macro);
-            default:
-                throw new IllegalStateException("Unknown metric: " + metric);
-        }
+        return e.scoreForMetric(metric);
     }
-
-
-
 }

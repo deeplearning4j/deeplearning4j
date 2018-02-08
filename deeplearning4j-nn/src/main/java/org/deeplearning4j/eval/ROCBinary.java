@@ -225,6 +225,18 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     }
 
     /**
+     * @return the (macro-)average AUPRC (area under precision recall curve)
+     */
+    public double calculateAverageAUCPR(){
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += calculateAUCPR(i);
+        }
+
+        return ret / (double) numLabels();
+    }
+
+    /**
      * Calculate the AUC - Area Under (ROC) Curve<br>
      * Utilizes trapezoidal integration internally
      *

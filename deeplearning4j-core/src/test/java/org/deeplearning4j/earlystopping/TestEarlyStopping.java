@@ -9,7 +9,7 @@ import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
-import org.deeplearning4j.earlystopping.scorecalc.AutoencoderScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.mln.AutoencoderScoreCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;

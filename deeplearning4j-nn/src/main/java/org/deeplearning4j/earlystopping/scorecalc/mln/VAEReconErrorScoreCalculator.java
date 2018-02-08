@@ -1,5 +1,6 @@
-package org.deeplearning4j.earlystopping.scorecalc;
+package org.deeplearning4j.earlystopping.scorecalc.mln;
 
+import org.deeplearning4j.earlystopping.scorecalc.base.BaseMLNScoreCalculator;
 import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
@@ -7,7 +8,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<MultiLayerNetwork> {
+public class VAEReconErrorScoreCalculator extends BaseMLNScoreCalculator {
 
     protected final RegressionEvaluation.Metric metric;
     protected RegressionEvaluation evaluation;
@@ -29,7 +30,7 @@ public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<MultiLayer
     }
 
     @Override
-    protected INDArray output(MultiLayerNetwork network, INDArray input) {
+    protected INDArray output(MultiLayerNetwork network, INDArray input, INDArray fMask, INDArray lMask) {
         Layer l = network.getLayer(0);
         if(!(l instanceof VariationalAutoencoder)){
             throw new UnsupportedOperationException("Can only score networks with VariationalAutoencoder layers as first layer -" +
@@ -41,7 +42,8 @@ public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<MultiLayer
     }
 
     @Override
-    protected double scoreMinibatch(MultiLayerNetwork network, INDArray features, INDArray labels, INDArray output) {
+    protected double scoreMinibatch(MultiLayerNetwork network, INDArray features, INDArray labels, INDArray fMask,
+                                    INDArray lMask, INDArray output) {
         evaluation.eval(features, output);
         return 0.0; //Not used
     }
