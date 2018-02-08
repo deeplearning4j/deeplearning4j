@@ -12,6 +12,8 @@ import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.mln.AutoencoderScoreCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.mln.VAEReconErrorScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.mln.VAEReconProbScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
@@ -26,6 +28,8 @@ import org.deeplearning4j.nn.conf.layers.AutoEncoder;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
@@ -162,7 +166,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
         //Check that best score actually matches (returned model vs. manually calculated score)
         MultiLayerNetwork bestNetwork = result.getBestModel();
         irisIter.reset();
-        double score = bestNetwork.score(irisIter.next());
+        double score = bestNetwork.score(irisIter.next(), false);
         assertEquals(result.getBestModelScore(), score, 1e-2);
     }
 
@@ -508,6 +512,99 @@ public class TestEarlyStopping extends BaseDL4JTest {
                             .iterationTerminationConditions(
                                     new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
                             .scoreCalculator(new AutoencoderScoreCalculator(metric, iter)).modelSaver(saver)
+                            .build();
+
+            EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+            assertNotNull(result.getBestModel());
+            assertTrue(result.getBestModelScore() > 0.0);
+        }
+    }
+
+    @Test
+    public void testVAEScoreFunctionSimple() throws Exception {
+
+        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
+                RegressionEvaluation.Metric.MAE}) {
+            log.info("Metric: " + metric);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new VariationalAutoencoder.Builder()
+                            .nIn(784).nOut(32)
+                            .encoderLayerSizes(64)
+                            .decoderLayerSizes(64)
+                            .build())
+                    .pretrain(true).backprop(false)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+
+            List<DataSet> l = new ArrayList<>();
+            for( int i=0; i<10; i++ ){
+                DataSet ds = iter.next();
+                l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
+            }
+
+            iter = new ExistingDataSetIterator(l);
+
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(new VAEReconErrorScoreCalculator(metric, iter)).modelSaver(saver)
+                            .build();
+
+            EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);
+            EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+            assertNotNull(result.getBestModel());
+            assertTrue(result.getBestModelScore() > 0.0);
+        }
+    }
+
+    @Test
+    public void testVAEScoreFunctionReconstructionProbSimple() throws Exception {
+
+        for(boolean logProb : new boolean[]{false, true}) {
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .list()
+                    .layer(new VariationalAutoencoder.Builder()
+                            .nIn(784).nOut(32)
+                            .encoderLayerSizes(64)
+                            .decoderLayerSizes(64)
+                            .reconstructionDistribution(new BernoulliReconstructionDistribution(Activation.SIGMOID))
+                            .build())
+                    .pretrain(true).backprop(false)
+                    .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            DataSetIterator iter = new MnistDataSetIterator(32, false, 12345);
+
+            List<DataSet> l = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                DataSet ds = iter.next();
+                l.add(new DataSet(ds.getFeatures(), ds.getFeatures()));
+            }
+
+            iter = new ExistingDataSetIterator(l);
+
+            EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                    new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                            .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                            .iterationTerminationConditions(
+                                    new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                            .scoreCalculator(new VAEReconProbScoreCalculator(iter, 20, logProb)).modelSaver(saver)
                             .build();
 
             EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConf, net, iter);

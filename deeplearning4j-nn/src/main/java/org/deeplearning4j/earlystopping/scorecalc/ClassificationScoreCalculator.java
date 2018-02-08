@@ -8,7 +8,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 /**
  * Score function for evaluating a MultiLayerNetwork according to an evaluation metric ({@link Evaluation.Metric} such
  * as accuracy, F1 score, etc.
- * Used for MultiLayerNetwork and ComputationGraph
+ * Used for both MultiLayerNetwork and ComputationGraph
  *
  * @author Alex Black
  */

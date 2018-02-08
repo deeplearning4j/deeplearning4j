@@ -7,8 +7,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
- * Calculate the regression score of the network on a test set, using the specified regression metric
- * - {@link RegressionEvaluation.Metric}
+ * Calculate the regression score of the network (MultiLayerNetwork or ComputationGraph) on a test set, using the
+ * specified regression metric - {@link RegressionEvaluation.Metric}
  *
  * @author Alex Black
  */

@@ -8,6 +8,11 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
+/**
+ * Score function for variational autoencoder reconstruction error.
+ *
+ * @see VAEReconProbScoreCalculator for reconstruction probability
+ */
 public class VAEReconErrorScoreCalculator extends BaseMLNScoreCalculator {
 
     protected final RegressionEvaluation.Metric metric;

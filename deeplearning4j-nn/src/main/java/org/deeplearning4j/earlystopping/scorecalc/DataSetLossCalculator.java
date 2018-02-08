@@ -11,11 +11,12 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** Given a DataSetIterator: calculate the total loss for the model on that data set.
- * Can be used for MultiLayerNetwork and ComputationGraph
+ * Can be used for both MultiLayerNetwork and ComputationGraph
+ *
+ * @author Alex Black
  */
 public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
 
-    private DataSetIterator dataSetIterator;
     @JsonProperty
     private boolean average;
 
@@ -31,12 +32,14 @@ public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
 
     @Override
     public String toString() {
-        return "DataSetLossCalculator(" + dataSetIterator + ",average=" + average + ")";
+        return "DataSetLossCalculator(average=" + average + ")";
     }
 
     @Override
     protected void reset() {
-        //No op
+        scoreSum = 0;
+        minibatchCount = 0;
+        exampleCount = 0;
     }
 
     @Override
@@ -59,9 +62,11 @@ public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
     @Override
     protected double scoreMinibatch(Model network, INDArray[] features, INDArray[] labels, INDArray[] fMask, INDArray[] lMask, INDArray[] output) {
         if(network instanceof MultiLayerNetwork){
-            return ((MultiLayerNetwork) network).score(new DataSet(get0(features), get0(labels), get0(fMask), get0(lMask)), false);
+            return ((MultiLayerNetwork) network).score(new DataSet(get0(features), get0(labels), get0(fMask), get0(lMask)), false)
+                    * features[0].size(0);
         } else if(network instanceof ComputationGraph){
-            return ((ComputationGraph) network).score(new MultiDataSet(features, labels, fMask, lMask));
+            return ((ComputationGraph) network).score(new MultiDataSet(features, labels, fMask, lMask))
+                    * features[0].size(0);
         } else {
             throw new RuntimeException("Unknown model type: " + network.getClass());
         }

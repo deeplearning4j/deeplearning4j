@@ -8,7 +8,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 /**
- * Score calculator for variational autoencoder reconstruction probability or reconstruction log probability
+ * Score calculator for variational autoencoder reconstruction probability or reconstruction log probability.
+ * See {@link VariationalAutoencoder#reconstructionProbability(INDArray, int)} for more details
  *
  * @author Alex Black
  */
@@ -19,14 +20,27 @@ public class VAEReconProbScoreCalculator extends BaseMLNScoreCalculator {
     protected final boolean average;
 
     /**
-     * Constructor for reconstruction probability
+     * Constructor for average reconstruction probability
      *
-     * @param iterator
+     * @param iterator Iterator
+     * @param reconstructionProbNumSamples Number of samples. See {@link VariationalAutoencoder#reconstructionProbability(INDArray, int)}
+     *                                    for details
+     * @param logProb If true: calculate (negative) log probability. False: probability
      */
     public VAEReconProbScoreCalculator(DataSetIterator iterator, int reconstructionProbNumSamples, boolean logProb) {
         this(iterator, reconstructionProbNumSamples, logProb, true);
     }
 
+    /**
+     * Constructor for reconstruction probability
+     *
+     * @param iterator Iterator
+     * @param reconstructionProbNumSamples Number of samples. See {@link VariationalAutoencoder#reconstructionProbability(INDArray, int)}
+     *                                    for details
+     * @param logProb If true: calculate (negative) log probability. False: probability
+     * @param average If true: return average (log) probability. False: sum of log probability.
+     *
+     */
     public VAEReconProbScoreCalculator(DataSetIterator iterator, int reconstructionProbNumSamples, boolean logProb,
                                        boolean average){
         super(iterator);
@@ -58,7 +72,7 @@ public class VAEReconProbScoreCalculator extends BaseMLNScoreCalculator {
         VariationalAutoencoder vae = (VariationalAutoencoder)l;
         //Reconstruction prob
         if(logProb){
-            return vae.reconstructionLogProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();
+            return -vae.reconstructionLogProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();
         } else {
             return vae.reconstructionProbability(features, reconstructionProbNumSamples).sumNumber().doubleValue();
         }

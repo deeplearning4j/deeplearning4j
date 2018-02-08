@@ -48,8 +48,10 @@ public abstract class BaseScoreCalculator<T extends Model> implements ScoreCalcu
             while(mdsIterator.hasNext()){
                 MultiDataSet mds = mdsIterator.next();
                 INDArray[] out = output(network, mds.getFeatures(), mds.getFeaturesMaskArrays(), mds.getLabelsMaskArrays() );
-                scoreMinibatch(network, mds.getFeatures(), mds.getLabels(), mds.getFeaturesMaskArrays(),
+                scoreSum += scoreMinibatch(network, mds.getFeatures(), mds.getLabels(), mds.getFeaturesMaskArrays(),
                         mds.getLabelsMaskArrays(), out);
+                minibatchCount++;
+                exampleCount += mds.getFeatures(0).size(0);
             }
         }
 
