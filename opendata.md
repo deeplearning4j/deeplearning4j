@@ -19,7 +19,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Quandl Data Portal](https://www.quandl.com/)
 
 <p align="center">
-<a href="https://skymind.ai/quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
 
 ## Natural-Image Datasets
