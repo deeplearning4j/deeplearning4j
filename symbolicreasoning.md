@@ -61,6 +61,8 @@ by Gary Marcus
 
 *Although deep learning has historical roots going back decades, neither the term "deep learning" nor the approach was popular just over five years ago, when the field was reignited by papers such as Krizhevsky, Sutskever and Hinton's now classic (2012) deep network model of Imagenet. What has the field discovered in the five subsequent years? Against a background of considerable progress in areas such as speech recognition, image recognition, and game playing, and considerable enthusiasm in the popular press, I present ten concerns for deep learning, and suggest that deep learning must be supplemented by other techniques if we are to reach artificial general intelligence.*
 
+* [Composable Planning with Attributes](https://openreview.net/forum?id=r154_g-Rb)
+
 ### <a name="beginner">Other Deep Learning Tutorials</a>
 * [LSTMs and Recurrent Networks](./lstm)
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
