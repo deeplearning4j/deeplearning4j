@@ -7,6 +7,7 @@ import org.deeplearning4j.eval.ROCBinary;
 import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 public class ROCScoreCalculator extends BaseIEvaluationScoreCalculator<Model, IEvaluation> {
 
@@ -20,7 +21,17 @@ public class ROCScoreCalculator extends BaseIEvaluationScoreCalculator<Model, IE
         this(type, Metric.AUC, iterator);
     }
 
+    public ROCScoreCalculator(ROCType type, MultiDataSetIterator iterator){
+        this(type, Metric.AUC, iterator);
+    }
+
     public ROCScoreCalculator(ROCType type, Metric metric, DataSetIterator iterator){
+        super(iterator);
+        this.type = type;
+        this.metric = metric;
+    }
+
+    public ROCScoreCalculator(ROCType type, Metric metric, MultiDataSetIterator iterator){
         super(iterator);
         this.type = type;
         this.metric = metric;

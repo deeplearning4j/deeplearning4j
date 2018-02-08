@@ -33,6 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * Typically used to calculate the loss on a test set.
  */
 @NoArgsConstructor
+@Deprecated
 public class DataSetLossCalculatorCG implements ScoreCalculator<ComputationGraph> {
     @JsonIgnore
     private DataSetIterator dataSetIterator;
