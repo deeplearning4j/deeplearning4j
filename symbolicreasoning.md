@@ -12,9 +12,11 @@ Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial
 
 Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup> 
 
-[Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence) was the dominant paradigm within the AI community for the post-War era until the 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
+## Symbolic AI
 
-One of the main differences between machine learning and traditional symbolic reasoning is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, humans perceive the rules by which two phenomena relate, and then hard-code them in a static program. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
+[Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence), also known as GOFAI, was the dominant paradigm in the AI community from the post-War era until the late 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
+
+One of the main differences between machine learning and traditional symbolic reasoning is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, to build a symbolic reasoning system, first humans must learn the rules by which two phenomena relate, and then hard-code those relationships into a static program. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
 
 ```
 In the days when Sussman was a novice, Minsky once came to him as he sat hacking at the PDP-6.
@@ -28,9 +30,9 @@ Minsky then shut his eyes.
 At that moment, Sussman was enlightened.
 ```
 
-A hard-coded rule is a preconception. It is one form of assumption, a strong one, while deep neural artchitectures contain other assumptions, usually about *how* they should learn rather than what conclusion they should reach. The ideal, obviously, is to choose assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
+A hard-coded rule is a preconception. It is one form of assumption, and a strong one, while deep neural architectures contain other assumptions, usually about *how* they should learn, rather than what conclusion they should reach. The ideal, obviously, is to choose assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
-How can we combine the ability of deep neural nets to learn correlations from scratch with higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express? 
+How can we fuse the ability of deep neural nets to learn probabilistic correlations from scratch alongside abstract and higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express in all its natural plasticity? 
 
 Combining symbolic reasoning with deep neural networks and deep reinforcement learning may help us address the fundamental challenges of reasoning, hierarchical representations, transfer learning, robustness in the face of adversarial examples, and interpretability (or explanatory power).
 
