@@ -13,6 +13,10 @@ An activation, or activation function, for a neural network is defined as the ma
 
 Activation algorithms are the gates that determine, at each node in the net, whether and to what extent to transmit the signal the node has received from the previous layer. A combination of weights (coefficients) and biases work on the input data from the previous layer to determine whether that signal surpasses a given treshhold and is deemed significant. Those weights and biases are slowly updated as the neural net minimizes its error; i.e. the level of nodes' activation change in the course of learning. Deeplearning4j includes activation functions such as sigmoid, relu, tanh and ELU. These activation functions allow neural networks to make complex boundary decisions for features at various levels of abstraction. 
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 <!-- 
 ## Tom Hanlon commented this out May 2017, the link was broken, I had no time to track down what it pointed to
 * [Activation Visualizer in Deeplearning4j](http://deeplearning4j.org/doc/org/deeplearning4j/plot/iterationlistener/ActivationMeanIterationListener.html)
