@@ -17,6 +17,10 @@ The result will be vector representation of each node in the graph with some inf
 
 (This page is a WIP.)
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 * [Community Detection with Graph Neural Networks](https://arxiv.org/abs/1705.08415) (2017)
 by Joan Bruna and Xiang Li
 
