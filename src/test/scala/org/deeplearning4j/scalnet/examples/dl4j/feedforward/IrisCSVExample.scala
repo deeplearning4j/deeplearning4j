@@ -44,7 +44,7 @@ object IrisCSVExample extends App {
   private val log: Logger = LoggerFactory.getLogger(IrisCSVExample.getClass)
 
   private val numLinesToSkip = 0
-  private val delimiter = ","
+  private val delimiter = ','
   private val labelIndex = 4
   private val numClasses = 3
   private val batchSize = 150
