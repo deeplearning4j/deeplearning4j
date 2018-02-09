@@ -26,9 +26,9 @@ The sum of those products is added to a bias and fed into an activation function
  
 For each hidden node, ReLU outputs an activation, `a`, and the activations are summed going into the output node, which simply passes the activations' sum through. 
 
-That is, a neural network performing regression will have one output node, and that node will just multiply the sum of the previous layer's activations by 1. The result will be ŷ, "y hat", the network's estimate, the dependent variable that all your x's map to. 
+That is, a neural network performing regression will have one output node, and that node will just multiply the sum of the previous layer's activations by 1. The result will be `ŷ`, "y hat", the network's estimate, the dependent variable that all your `x`'s map to. 
 
-To perform backpropagation and make the network learn, you simply compare ŷ to the ground-truth value of y and adjust the weights and biases of the network until error is minimized, much as you would with a classifier. Root-means-squared-error (RMSE) could be the loss function. 
+To perform backpropagation and make the network learn, you simply compare `ŷ` to the ground-truth value of `y` and adjust the weights and biases of the network until error is minimized, much as you would with a classifier. Root-means-squared-error (RMSE) could be the loss function. 
 
 In this way, you can use a neural network to get the function relating an arbitrary number of independent variables x to a dependent variable y that you're trying to predict. 
 
@@ -59,4 +59,4 @@ Here's a more complete example of [using a neural network for regression](https:
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
-* [Reinforcement Learning](./reinforcementlearning)
+* [Reinforcement Learning](./deepreinforcementlearning)
