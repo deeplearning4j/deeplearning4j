@@ -5996,6 +5996,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, out);
     }
 
+    @Test
+    public void testAllDistancesEdgeCase1() {
+        val x = Nd4j.create(400, 20).assign(2.0);
+        val y = Nd4j.ones(1, 20);
+        val z = Transforms.allEuclideanDistances(x, y, 1);
+
+        val exp = Nd4j.create(400, 1).assign(4.47214);
+
+        assertEquals(exp, z);
+    }
+
 
     @Override
     public char ordering() {

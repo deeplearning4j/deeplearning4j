@@ -18,6 +18,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
@@ -907,5 +908,11 @@ public class TensorFlowImportTest {
         val exp = Nd4j.create(2, 2).assign(15.0);
         assertNotNull(array);
         assertEquals(exp, array);
+    }
+
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testNonFrozenGraph1() throws Exception {
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());
     }
 }

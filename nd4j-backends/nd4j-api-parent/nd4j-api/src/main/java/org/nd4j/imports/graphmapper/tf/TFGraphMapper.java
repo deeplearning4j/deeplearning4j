@@ -820,6 +820,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 for (int e = 0; e < fb.capacity(); e++)
                     fa[e] = (float) fb.get(e);
 
+                if (fa.length == 0)
+                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+
                 val array = Nd4j.create(fa, arrayShape, 'c', 0);
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
@@ -856,6 +859,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 for (int e = 0; e < fb.capacity(); e++)
                     fa[e] = fb.get(e);
 
+                if (fa.length == 0)
+                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+
                 val array = Nd4j.create(fa, arrayShape, 'c', 0);
                 return array;
             }
@@ -888,6 +894,9 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 val da = new double[fb.capacity()];
                 for (int e = 0; e < fb.capacity(); e++)
                     da[e] = fb.get(e);
+
+                if (da.length == 0)
+                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
                 val array = Nd4j.create(da, arrayShape, 0, 'c');
                 return array;

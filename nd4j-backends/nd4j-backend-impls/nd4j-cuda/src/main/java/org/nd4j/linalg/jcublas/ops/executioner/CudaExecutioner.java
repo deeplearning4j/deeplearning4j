@@ -277,6 +277,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 xShapeInfoHostPointer.put(13, yDevTadOffsets);
             } else {
                 // TAD vs full array code branch
+                val fakeOffsets = Nd4j.getConstantHandler().getConstantBuffer(new int[] {0, 0});
+                yDevTadOffsets = fakeOffsets == null ? null : AtomicAllocator.getInstance().getPointer(fakeOffsets, context);
+
+                yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
 
                 xShapeInfoHostPointer.put(12, AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context));
                 xShapeInfoHostPointer.put(13, null);
@@ -314,6 +318,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             } else if (op.y() != null) {
                 if (op.isComplexAccumulation()) {
+
+                    val dT = new LongPointerWrapper(devTadOffsets);
+                    val yT = new LongPointerWrapper(yDevTadOffsets);
+
                     nativeOps.execReduce3AllDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                             (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
                             (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
@@ -322,9 +330,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             (IntPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                             (IntPointer) dimensionPointer, dimension.length,
                             (IntPointer) devTadShapeInfo,
-                            new LongPointerWrapper(devTadOffsets),
+                            dT,
                             (IntPointer) yDevTadShapeInfo,
-                            new LongPointerWrapper(yDevTadOffsets));
+                            yT);
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
