@@ -23,24 +23,54 @@ namespace nd4j {
 namespace ops {
     const int kMaxSpaceToBatchBlockDims = 4;
 
-    CUSTOM_OP_IMPL(batch_to_space, 3, 1, false, 0, -2) {
+    CUSTOM_OP_IMPL(batch_to_space, 1, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
-        auto blocks = INPUT_VARIABLE(1);
-        auto crops = INPUT_VARIABLE(2);
+
 
         auto output = OUTPUT_VARIABLE(0);
 
         const int input_dims = input->rankOf();
-        const int block_dims = (int) blocks->lengthOf();
+        int block_dims = 0;
+        std::vector<int> block_shape; // = blocks->template asVectorT<int>();
+        std::vector<int> crops_shape; // = crops->template asVectorT<int>();
+
+        if (block.width() >= 3) {
+            auto blocks = INPUT_VARIABLE(1);
+            auto crops = INPUT_VARIABLE(2);
+
+            block_dims = (int) blocks->lengthOf();
+
+            REQUIRE_TRUE(blocks->isVector(), 0, "BatchToSpace: blocks supposed to be vector, but got %iD instead", blocks->rankOf());
+            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "BatchToSpace: blocks length + 2 should match input rank at least");
+            REQUIRE_TRUE(crops->rankOf() == 2, 0, "BatchToSpace: padding should have rank of 2, but got %i instead", crops->rankOf());
+            REQUIRE_TRUE(crops->columns() == 2 && blocks->lengthOf() == crops->rows(), 0, "BatchToSpace: padding should have M rows and 2 columns");
+
+            block_shape = blocks->template asVectorT<int>();
+            crops_shape = crops->template asVectorT<int>();
+
+        } else if (block.numI() > 0) {
+            int totalArgs = block.numI();
+
+            int M = totalArgs / 3;
+            REQUIRE_TRUE(totalArgs % 3 == 0, 0, "BatchToSpace: number of IntArguments should be dividable by 3 without reminder");
+
+            block_dims = M;
+            block_shape.resize(block_dims);
+            crops_shape.resize(M*2);
+
+            REQUIRE_TRUE(input->rankOf() >= 1 + M + 1, 0, "BatchToSpace: blocks length + 2 should match input rank at least");
+
+            int e = 0;
+            for (; e < block_dims; e++)
+                block_shape[e] = INT_ARG(e);
+
+            for (; e < block.numI(); e++)
+                crops_shape[e - M] = INT_ARG(e);
+        } else {
+            REQUIRE_TRUE(false, 0, "BatchToSpace: there should be some params :(");
+        }
 
 
-        REQUIRE_TRUE(blocks->isVector(), 0, "BatchToSpace: blocks supposed to be vector, but got %iD instead", blocks->rankOf());
-        REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "BatchToSpace: blocks length + 2 should match input rank at least");
-        REQUIRE_TRUE(crops->rankOf() == 2, 0, "BatchToSpace: padding should have rank of 2, but got %i instead", crops->rankOf());
-        REQUIRE_TRUE(crops->columns() == 2 && blocks->lengthOf() == crops->rows(), 0, "BatchToSpace: padding should have M rows and 2 columns");
-
-        std::vector<int> block_shape = blocks->template asVectorT<int>();
-        std::vector<int> crops_shape = crops->template asVectorT<int>();
 
         int removed_prefix_block_dims = 0;
         for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {
@@ -121,14 +151,40 @@ namespace ops {
 
     DECLARE_SHAPE_FN(batch_to_space) {
         auto in = inputShape->at(0);
-        auto blocks = INPUT_VARIABLE(1);
-        auto crops = INPUT_VARIABLE(2);
 
         const int input_dims = shape::rank(in);
-        const int block_dims = (int) blocks->lengthOf();
+        int block_dims = 0;
 
-        std::vector<int> block_shape = blocks->template asVectorT<int>();
-        std::vector<int> crops_shape = crops->template asVectorT<int>();
+        std::vector<int> block_shape;
+        std::vector<int> crops_shape;
+
+        if (block.width() >= 3) {
+            auto blocks = INPUT_VARIABLE(1);
+            auto crops = INPUT_VARIABLE(2);
+
+            block_dims = (int) blocks->lengthOf();
+
+            block_shape = blocks->template asVectorT<int>();
+            crops_shape = crops->template asVectorT<int>();
+
+        } else if (block.numI() > 0) {
+            int totalArgs = block.numI();
+
+            int M = totalArgs / 3;
+
+            block_dims = M;
+            block_shape.resize(block_dims);
+            crops_shape.resize(M*2);
+
+            int e = 0;
+            for (; e < block_dims; e++)
+                block_shape[e] = INT_ARG(e);
+
+            for (; e < block.numI(); e++)
+                crops_shape[e - M] = INT_ARG(e);
+        } else {
+            // throw something here
+        }
 
         int removed_prefix_block_dims = 0;
         for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {

@@ -23,28 +23,61 @@ namespace nd4j {
 namespace ops {
     const int kMaxSpaceToBatchBlockDims = 4;
 
-    CUSTOM_OP_IMPL(space_to_batch, 3, 1, false, 0, -2) {
+    CUSTOM_OP_IMPL(space_to_batch, 1, 1, false, 0, -2) {
         auto input = INPUT_VARIABLE(0);
-        auto blocks = INPUT_VARIABLE(1);
-        auto padding = INPUT_VARIABLE(2);
+
+        std::vector<int> block_shape;
+        std::vector<int> padding_shape;
 
         auto output = OUTPUT_VARIABLE(0);
 
-        REQUIRE_TRUE(blocks->isVector(), 0, "SpaceToBatch: blocks supposed to be vector, but got %iD instead", blocks->rankOf());
-        REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
-        REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
-        REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
 
         const int xRank = input->rankOf();
-        const int block_dims = (int) blocks->lengthOf();
-        std::vector<int> block_shape((int) block_dims);
-        std::vector<int> padding_shape((int) padding->lengthOf());
+        int block_dims = 0;
 
-        for (int e = 0; e < block_dims; e++)
-            block_shape[e] = (int) blocks->getScalar(e);
 
-        for (int e = 0; e < padding->lengthOf(); e++)
-            padding_shape[e] = (int) padding->getScalar(e);
+        if (block.width() >= 3) {
+            auto blocks = INPUT_VARIABLE(1);
+            auto padding = INPUT_VARIABLE(2);
+
+            block_dims = (int) blocks->lengthOf();
+
+            REQUIRE_TRUE(blocks->isVector(), 0, "SpaceToBatch: blocks supposed to be vector, but got %iD instead", blocks->rankOf());
+            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf() + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
+            REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
+            REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
+
+
+            block_shape.resize(block_dims);
+            padding_shape.resize(padding->lengthOf());
+
+            for (int e = 0; e < block_dims; e++)
+                block_shape[e] = (int) blocks->getScalar(e);
+
+            for (int e = 0; e < padding->lengthOf(); e++)
+                padding_shape[e] = (int) padding->getScalar(e);
+        } else if (block.numI() > 0) {
+            int totalArgs = block.numI();
+
+            int M = totalArgs / 3;
+            REQUIRE_TRUE(totalArgs % 3 == 0, 0, "SpaceToBatch: number of IntArguments should be dividable by 3 without reminder");
+
+            block_dims = M;
+            block_shape.resize(block_dims);
+            padding_shape.resize(M*2);
+
+            REQUIRE_TRUE(input->rankOf() >= 1 + M + 1, 0, "SpaceToBatch: blocks length + 2 should match input rank at least");
+
+            int e = 0;
+            for (; e < block_dims; e++)
+                block_shape[e] = INT_ARG(e);
+
+            for (; e < block.numI(); e++)
+                padding_shape[e - M] = INT_ARG(e);
+
+        } else {
+            REQUIRE_TRUE(false, 0, "SpaceToBatch: there should be some params :(");
+        }
 
 
         // Determine the length of the prefix of block dims that can be combined
@@ -52,7 +85,7 @@ namespace ops {
         int removed_prefix_block_dims = 0;
         for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {
             const int dim = removed_prefix_block_dims;
-            if ((int) padding->getScalar(2 * dim) != 0 || (int) padding->getScalar(2 * dim + 1) != 0 || block_shape[dim] != 1)
+            if (padding_shape[2 * dim] != 0 || padding_shape[2 * dim + 1] != 0 || block_shape[dim] != 1)
                 break;            
         }
 
@@ -61,7 +94,7 @@ namespace ops {
         int removed_suffix_block_dims = 0;
         for (; removed_suffix_block_dims < block_dims - removed_prefix_block_dims; ++removed_suffix_block_dims) {
             const int dim = block_dims - 1 - removed_suffix_block_dims;
-            if ((int) padding->getScalar(dim * 2) != 0 || (int) padding->getScalar(dim * 2 + 1) != 0 || block_shape[dim] != 1)
+            if (padding_shape[dim * 2] != 0 || padding_shape[dim * 2 + 1] != 0 || block_shape[dim] != 1)
                 break;
         }
 
@@ -96,8 +129,8 @@ namespace ops {
         internal_output_shape.emplace_back(input_batch_size * block_shape_product);
 
         for (int block_dim = removed_prefix_block_dims; block_dim < block_dims - removed_suffix_block_dims; block_dim++) {
-            const int pad_start = (int) padding->getScalar(2 * block_dim);
-            const int pad_end = (int) padding->getScalar(2 * block_dim + 1);
+            const int pad_start = padding_shape[2 * block_dim];
+            const int pad_end = padding_shape[2 * block_dim + 1];
 
             const int input_size = input->sizeAt(block_dim + 1);
             const int block_shape_value = block_shape[block_dim];
@@ -130,28 +163,59 @@ namespace ops {
 
     DECLARE_SHAPE_FN(space_to_batch) {
         auto in = inputShape->at(0);
-        auto blocks = INPUT_VARIABLE(1);
-        auto padding = INPUT_VARIABLE(2);
-
 
         const int xRank = shape::rank(in);
-        const int block_dims = (int) blocks->lengthOf();
-        std::vector<int> block_shape;
+        int block_dims = 0;
 
-        for (int e = 0; e < block_dims; e++)
-            block_shape.emplace_back((int) blocks->getScalar(e));
+        std::vector<int> block_shape;
+        std::vector<int> padding_shape;
+
+        if (block.width() >= 3) {
+            auto blocks = INPUT_VARIABLE(1);
+            auto padding = INPUT_VARIABLE(2);
+
+            block_dims = (int) blocks->lengthOf();
+
+            block_shape.resize(block_dims);
+            padding_shape.resize(padding->lengthOf());
+
+            for (int e = 0; e < block_dims; e++)
+                block_shape[e] = (int) blocks->getScalar(e);
+
+            for (int e = 0; e < padding->lengthOf(); e++)
+                padding_shape[e] = (int) padding->getScalar(e);
+        } else if (block.numI() > 0) {
+            int totalArgs = block.numI();
+
+            int M = totalArgs / 3;
+
+            block_dims = M;
+            block_shape.resize(block_dims);
+            padding_shape.resize(M*2);
+
+            int e = 0;
+            for (; e < block_dims; e++)
+                block_shape[e] = INT_ARG(e);
+
+            for (; e < block.numI(); e++)
+                padding_shape[e - M] = INT_ARG(e);
+
+        } else {
+            // throw something here
+        }
+
 
         int removed_prefix_block_dims = 0;
         for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {
             const int dim = removed_prefix_block_dims;
-            if ((int) padding->getScalar(2 * dim) != 0 || (int) padding->getScalar(2 * dim + 1) != 0 || block_shape[dim] != 1)
+            if (padding_shape[2 * dim] != 0 || padding_shape[2 * dim + 1] != 0 || block_shape[dim] != 1)
                 break;
         }
 
         int removed_suffix_block_dims = 0;
         for (; removed_suffix_block_dims < block_dims - removed_prefix_block_dims; ++removed_suffix_block_dims) {
             const int dim = block_dims - 1 - removed_suffix_block_dims;
-            if ((int) padding->getScalar(dim * 2) != 0 || (int) padding->getScalar(dim * 2 + 1) != 0 || block_shape[dim] != 1)
+            if (padding_shape[dim * 2] != 0 || padding_shape[dim * 2 + 1] != 0 || block_shape[dim] != 1)
                 break;
         }
 
@@ -184,8 +248,8 @@ namespace ops {
         internal_output_shape.emplace_back(input_batch_size * block_shape_product);
 
         for (int block_dim = removed_prefix_block_dims; block_dim < block_dims - removed_suffix_block_dims; block_dim++) {
-            const int pad_start = (int) padding->getScalar(2 * block_dim);
-            const int pad_end = (int) padding->getScalar(2 * block_dim + 1);
+            const int pad_start = padding_shape[2 * block_dim];
+            const int pad_end = padding_shape[2 * block_dim + 1];
 
             const int input_size = shape::sizeAt(in, block_dim + 1);
             const int block_shape_value = block_shape[block_dim];
