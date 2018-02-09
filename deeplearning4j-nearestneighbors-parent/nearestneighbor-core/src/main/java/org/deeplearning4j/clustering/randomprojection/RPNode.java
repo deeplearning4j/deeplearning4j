@@ -12,10 +12,12 @@ public class RPNode {
     private RPNode left,right;
     private List<Integer> indices;
     private double median;
+    private RPTree tree;
 
 
-    public RPNode(int depth) {
+    public RPNode(RPTree tree,int depth) {
         this.depth = depth;
+        this.tree = tree;
         indices = new ArrayList<>();
     }
 }

@@ -1,4 +1,4 @@
-package org.deeplearning4j.datasets.iterators.impl;
+package org.deeplearning4j.datasets.iterator.impl;
 
 import org.datavec.image.loader.CifarLoader;
 import org.datavec.image.transform.ImageTransform;

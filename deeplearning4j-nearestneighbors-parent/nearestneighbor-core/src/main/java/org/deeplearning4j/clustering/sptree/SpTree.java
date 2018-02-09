@@ -91,20 +91,19 @@ public class SpTree implements Serializable {
         this.N = data.rows();
         this.D = data.columns();
         this.similarityFunction = similarityFunction;
-        try (MemoryWorkspace ws = workspace().notifyScopeEntered()) {
-            data = data.migrate();
-            INDArray meanY = data.mean(0);
-            INDArray minY = data.min(0);
-            INDArray maxY = data.max(0);
-            INDArray width = Nd4j.create(meanY.shape());
-            for (int i = 0; i < width.length(); i++) {
-                width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
-                        meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
-            }
-
-            init(null, data, meanY, width, indices, similarityFunction);
-            fill(N);
+        data = data.migrate();
+        INDArray meanY = data.mean(0);
+        INDArray minY = data.min(0);
+        INDArray maxY = data.max(0);
+        INDArray width = Nd4j.create(meanY.shape());
+        for (int i = 0; i < width.length(); i++) {
+            width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
+                    meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
+
+        init(null, data, meanY, width, indices, similarityFunction);
+        fill(N);
+
 
     }
 
@@ -135,28 +134,27 @@ public class SpTree implements Serializable {
 
     private void init(SpTree parent, INDArray data, INDArray corner, INDArray width, Set<INDArray> indices,
                       String similarityFunction) {
-        try (MemoryWorkspace ws = workspace().notifyScopeEntered()) {
 
-            this.parent = parent;
-            D = data.columns();
-            N = data.rows();
-            this.similarityFunction = similarityFunction;
-            nodeCapacity = N % NODE_RATIO;
-            index = new int[nodeCapacity];
-            for (int d = 1; d < this.D; d++)
-                numChildren *= 2;
-            this.indices = indices;
-            isLeaf = true;
-            size = 0;
-            cumSize = 0;
-            children = new SpTree[numChildren];
-            this.data = data;
-            boundary = new Cell(D);
-            boundary.setCorner(corner.dup());
-            boundary.setWidth(width.dup());
-            centerOfMass = Nd4j.create(D);
-            buf = Nd4j.create(D);
-        }
+        this.parent = parent;
+        D = data.columns();
+        N = data.rows();
+        this.similarityFunction = similarityFunction;
+        nodeCapacity = N % NODE_RATIO;
+        index = new int[nodeCapacity];
+        for (int d = 1; d < this.D; d++)
+            numChildren *= 2;
+        this.indices = indices;
+        isLeaf = true;
+        size = 0;
+        cumSize = 0;
+        children = new SpTree[numChildren];
+        this.data = data;
+        boundary = new Cell(D);
+        boundary.setCorner(corner.dup());
+        boundary.setWidth(width.dup());
+        centerOfMass = Nd4j.create(D);
+        buf = Nd4j.create(D);
+
     }
 
 
@@ -321,24 +319,22 @@ public class SpTree implements Serializable {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal,
                         workspaceExternal);
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-            // Loop over all edges in the graph
-            double D;
-            for (int n = 0; n < N; n++) {
-                INDArray slice = data.slice(n);
-                for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
+        // Loop over all edges in the graph
+        double D;
+        for (int n = 0; n < N; n++) {
+            INDArray slice = data.slice(n);
+            for (int i = rowP.getInt(n); i < rowP.getInt(n + 1); i++) {
 
-                    // Compute pairwise distance and Q-value
-                    buf.assign(slice).subi(data.slice(colP.getInt(i)));
+                // Compute pairwise distance and Q-value
+                buf.assign(slice).subi(data.slice(colP.getInt(i)));
 
-                    D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
-                    D = valP.getDouble(i) / D;
+                D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
+                D = valP.getDouble(i) / D;
 
-                    // Sum positive force
-                    posF.slice(n).addi(buf.muli(D));
+                // Sum positive force
+                posF.slice(n).addi(buf.muli(D));
 
-                }
             }
         }
     }

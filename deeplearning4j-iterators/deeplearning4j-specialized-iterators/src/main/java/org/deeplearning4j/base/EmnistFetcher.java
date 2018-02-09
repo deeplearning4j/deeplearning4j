@@ -19,7 +19,7 @@
 package org.deeplearning4j.base;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.datasets.iterators.impl.EmnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 
 import java.io.File;
 

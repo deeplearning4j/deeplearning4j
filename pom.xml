@@ -534,6 +534,7 @@
         <module>deeplearning4j-zoo</module>
         <module>deeplearning4j-nearestneighbors-parent</module>
         <module>deeplearning4j-iterators</module>
+        <module>deeplearning4j-manifold</module>
     </modules>
 
     <licenses>

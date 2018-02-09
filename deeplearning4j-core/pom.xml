@@ -67,6 +67,11 @@
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-tsne</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-specialized-iterators</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>

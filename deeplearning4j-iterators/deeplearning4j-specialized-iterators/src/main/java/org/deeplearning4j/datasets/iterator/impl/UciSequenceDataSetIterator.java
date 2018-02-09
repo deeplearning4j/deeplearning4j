@@ -1,4 +1,4 @@
-package org.deeplearning4j.datasets.iterators.impl;
+package org.deeplearning4j.datasets.iterator.impl;
 
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.DataSetType;

@@ -20,7 +20,7 @@ package org.deeplearning4j.datasets.fetchers;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.EmnistFetcher;
-import org.deeplearning4j.datasets.iterators.impl.EmnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 import org.deeplearning4j.datasets.mnist.MnistManager;
 
 import java.io.File;

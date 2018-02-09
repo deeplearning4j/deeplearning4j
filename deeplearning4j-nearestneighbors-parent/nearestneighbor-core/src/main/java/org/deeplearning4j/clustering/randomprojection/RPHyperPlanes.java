@@ -11,10 +11,11 @@ public class RPHyperPlanes {
 
     public RPHyperPlanes(int dim) {
         this.dim = dim;
-        wholeHyperPlane = Nd4j.zeros(dim);
     }
 
     public INDArray getHyperPlaneAt(int depth) {
+        if(wholeHyperPlane.isVector())
+            return wholeHyperPlane;
         return wholeHyperPlane.slice(depth);
     }
 

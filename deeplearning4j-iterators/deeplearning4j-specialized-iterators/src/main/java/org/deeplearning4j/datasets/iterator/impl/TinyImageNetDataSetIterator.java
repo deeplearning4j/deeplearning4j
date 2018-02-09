@@ -16,7 +16,7 @@
  *
  */
 
-package org.deeplearning4j.datasets.iterators.impl;
+package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.Getter;
 import org.datavec.image.transform.ImageTransform;

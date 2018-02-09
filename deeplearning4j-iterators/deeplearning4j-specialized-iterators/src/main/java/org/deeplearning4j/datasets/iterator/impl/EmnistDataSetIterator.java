@@ -16,10 +16,9 @@
  *
  */
 
-package org.deeplearning4j.datasets.iterators.impl;
+package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.Getter;
-import org.deeplearning4j.datasets.fetchers.BaseDataFetcher;
 import org.deeplearning4j.datasets.fetchers.EmnistDataFetcher;
 import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -97,7 +96,6 @@ public class EmnistDataSetIterator extends BaseDatasetIterator {
 
     protected Set dataSet;
     protected int batch, numExamples;
-    protected BaseDataFetcher fetcher;
     @Getter
     protected DataSetPreProcessor preProcessor;
 
