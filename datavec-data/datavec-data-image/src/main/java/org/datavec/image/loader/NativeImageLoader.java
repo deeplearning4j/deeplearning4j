@@ -18,6 +18,7 @@ package org.datavec.image.loader;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.javacv.Frame;
@@ -282,7 +283,8 @@ public class NativeImageLoader extends BaseImageLoader {
                             + channels + ", rows: " + rows + ", columns: " + cols + "}");
         }
 
-        Indexer idx = image.createIndexer();
+        boolean direct = !Loader.getPlatform().startsWith("android");
+        Indexer idx = image.createIndexer(direct);
         Pointer pointer = ret.data().pointer();
         int[] stride = ret.stride();
         boolean done = false;
@@ -291,7 +293,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
         if (pointer instanceof FloatPointer) {
             FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(),
-                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]});
+                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {
@@ -335,7 +337,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
         } else if (pointer instanceof DoublePointer) {
             DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(),
-                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]});
+                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]}, direct);
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {
@@ -634,13 +636,14 @@ public class NativeImageLoader extends BaseImageLoader {
             dataType = pointer instanceof DoublePointer ? CV_64F : CV_32F;
         }
         Mat mat = new Mat(rows, cols, CV_MAKETYPE(dataType, channels));
-        Indexer matidx = mat.createIndexer();
+        boolean direct = !Loader.getPlatform().startsWith("android");
+        Indexer matidx = mat.createIndexer(direct);
 
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
 
         if (pointer instanceof FloatPointer && dataType == CV_32F) {
             FloatIndexer ptridx = FloatIndexer.create((FloatPointer)pointer, new long[] {channels, rows, cols},
-                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]});
+                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]}, direct);
             FloatIndexer idx = (FloatIndexer)matidx;
             for (int k = 0; k < channels; k++) {
                 for (int i = 0; i < rows; i++) {
@@ -652,7 +655,7 @@ public class NativeImageLoader extends BaseImageLoader {
             done = true;
         } else if (pointer instanceof DoublePointer && dataType == CV_64F) {
             DoubleIndexer ptridx = DoubleIndexer.create((DoublePointer)pointer, new long[] {channels, rows, cols},
-                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]});
+                    new long[] {stride[rank == 3 ? 0 : 1], stride[rank == 3 ? 1 : 2], stride[rank == 3 ? 2 : 3]}, direct);
             DoubleIndexer idx = (DoubleIndexer)matidx;
             for (int k = 0; k < channels; k++) {
                 for (int i = 0; i < rows; i++) {
