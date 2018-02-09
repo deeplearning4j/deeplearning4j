@@ -19,7 +19,11 @@ Despite the differences between these two approaches, the idea is the same: once
 - For JVM/GC memory: whenever an INDArray is collected by the garbage collector, its off-heap memory will be deallocated, assuming it is not used elsewhere.
 - For `MemoryWorkspaces`: whenever an INDArray leaves the workspace scope - for example, when a layer finished forward pass/predictions - its memory may be reused without deallocation and reallocation. This results in better performance for cyclical workloads.
 
-# Configuring Memory Limits
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
+## Configuring Memory Limits
 
 With DL4J/ND4J, there are two types of memory limits to be aware of and configure: The on-heap JVM memory limit, and the off-heap memory limit, where NDArrays live. Both limits are controlled via Java command-line arguments:
 
