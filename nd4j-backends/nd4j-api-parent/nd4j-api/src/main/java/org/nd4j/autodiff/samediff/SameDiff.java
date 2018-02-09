@@ -3580,14 +3580,12 @@ public class SameDiff {
         int count = 1;
         String name = baseName + "_" + count + (argIndex > 0 ? ":" + argIndex : "");
         while (getVariable(name) != null) {
-            name = baseName + "_" + count + (argIndex > 0 ? ":" + argIndex : "");
-            count++;
+            name = baseName + "_" + (++count) + (argIndex > 0 ? ":" + argIndex : "");
         }
 
         if (getVariable(name) != null) {
             throw new ND4JIllegalStateException("Converged on already generated variable!");
         }
-
 
         return name;
     }
