@@ -41,6 +41,10 @@ Specifically, the ComputationGraph allows for networks to be built with the foll
 
 As a general rule, when building networks with a single input layer, a single output layer, and an input->a->b->c->output type connection structure: MultiLayerNetwork is usually the preferred network. However, everything that MultiLayerNetwork can do, ComputationGraph can do as well - though the configuration may be a little more complicated.
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 ## <a name="usecases">Computation Graph: Some Example Use Cases</a>
 
 Examples of some architectures that can be built using ComputationGraph include:
