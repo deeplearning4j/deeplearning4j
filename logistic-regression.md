@@ -11,7 +11,7 @@ Broadly speaking, neural networks are used for the purpose of clustering through
 While classification typically uses a form of logistic regression in the net's final layer to convert continuous data into dummy variables like 0 and 1 -- e.g. given someone's height, weight and age you might bucket them as a heart-disease candidate or not -- true regression maps one set of continuous inputs to another set of continuous outputs. 
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH MACHINE LEARNING</a>
 </p>
 
 For example, given the age and floor space of a house and its distance from a good school, you might predict how much the house would sell for: continuous to continuous. No dummy variables like one finds in classification, just mapping independent variables `x` to a continuous `y`.
