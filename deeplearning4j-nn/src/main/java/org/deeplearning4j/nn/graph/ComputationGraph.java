@@ -1247,9 +1247,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Set<Integer> inputSet = new HashSet<>();
             for (String s : inputsToThisVertex) {
                 Integer inputIdx = vertexNamesMap2.get(s);
-                if (inputIdx == null) {
-                    System.out.println();
-                }
                 inputSet.add(inputIdx);
                 Set<Integer> outputSetForInputIdx = outputEdges.get(inputIdx);
                 if (outputSetForInputIdx == null) {

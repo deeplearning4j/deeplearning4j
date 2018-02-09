@@ -697,6 +697,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             int nParamsDense = 10 * 10 + 10;
             assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
                     extErrorGrad.gradient());
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
     }
 
