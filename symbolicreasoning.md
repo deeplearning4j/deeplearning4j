@@ -12,6 +12,10 @@ Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial
 
 Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup> 
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
+
 ## Symbolic AI
 
 [Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence), also known as GOFAI, was the dominant paradigm in the AI community from the post-War era until the late 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
