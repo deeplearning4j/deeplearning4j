@@ -51,6 +51,8 @@ A word should be said about semantic structure. It's possible to embed dependenc
 
 Advances in theory and hardware, in turn, will give us other tools to tackle natural language processing and machine conceptualization, the missing link between symbolic logic, which is abstract, and machine percetion via deep learning, which is processing concrete instances of, say, images or sounds. 
 
+On a biological level, thoughts are literally [graphs](./graphdata), graphs that capture the connections and action between neurons. Those graphs can represent a network of neurons whose connections fire in different ways over time as synapses fire, a dynamic flow of graphs. 
+
 Here are a few of the approaches that are being made to thought vectorization: 
 
 * Doc2vec: [Doc2Vec](http://deeplearning4j.org/doc2vec.html), paragraph vectors and sentence vectors are broadly synonymous. It doesn't necessarily account for word order and it is generally used in associating word groups with labels (in sentiment analysis, for example)
