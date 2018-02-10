@@ -26,16 +26,22 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
         if (model instanceof MultiLayerNetwork) {
             if (testData instanceof DataSetIterator) {
                 return score((MultiLayerNetwork) model, (DataSetIterator) testData);
-            } else {
+            } else if(testData instanceof MultiDataSetIterator){
                 return score((MultiLayerNetwork) model, (MultiDataSetIterator) testData);
+            } else if(testData instanceof DataSetIteratorFactory){
+                return score((MultiLayerNetwork)model, ((DataSetIteratorFactory)testData).create());
+            } else {
+                throw new RuntimeException("Unknown type of data: " + testData.getClass());
             }
         } else {
             if (testData instanceof DataSetIterator) {
                 return score((ComputationGraph) model, (DataSetIterator) testData);
             } else if(testData instanceof DataSetIteratorFactory){
                 return score((ComputationGraph) model, ((DataSetIteratorFactory)testData).create());
-            } else {
+            } else if(testData instanceof MultiDataSetIterator) {
                 return score((ComputationGraph) model, (MultiDataSetIterator) testData);
+            } else {
+                throw new RuntimeException("Unknown type of data: " + testData.getClass());
             }
         }
     }
