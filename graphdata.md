@@ -43,11 +43,18 @@ Since that's the case, you can address the uncomputable size of a Facebook-scale
 
 ## Representing and Traversing the Graph
 
-Let's say you decide to give each node an arbitrary representation vector, like a word embedding, each node's vector being the same length. The next step would be to traverse the graph, and that traversal could be represented by arranging the node vectors next to each other in a matrix. You could then feed that matrix representing the graph to a recurrent neural net. That's basically DeepWalk (see below).
+Let's say you decide to give each node an arbitrary representation vector, like a word embedding, each node's vector being the same length. The next step would be to traverse the graph, and that traversal could be represented by arranging the node vectors next to each other in a matrix. You could then feed that matrix representing the graph to a recurrent neural net. That's basically DeepWalk (see below), which treats truncated random walks across a large graph as sentences. 
+
+Another more 
 
 ## Further Resources on Graph Data and Deep Learning
 
 Below are a few papers discussing how neural nets can be applied to data in graphs. 
+
+[Representation Learning on Graphs: Methods and Applications](https://cs.stanford.edu/people/jure/pubs/graphrepresentation-ieee17.pdf) (2017)
+by William Hamilton, Rex Ying and Jure Leskovec
+
+*Machine learning on graphs is an important and ubiquitous task with applications ranging from drug design to friendship recommendation in social networks. The primary challenge in this domain is finding a way to represent, or encode, graph structure so that it can be easily exploited by machine learning models. Traditionally, machine learning approaches relied on user-defined heuristics to extract features encoding structural information about a graph (e.g., degree statistics or kernel functions). However, recent years have seen a surge in approaches that automatically learn to encode graph structure into low-dimensional embeddings, using techniques based on deep learning and nonlinear dimensionality reduction. Here we provide a conceptual review of key advancements in this area of representation learning on graphs, including matrix factorization-based methods, random-walk based algorithms, and graph convolutional networks. We review methods to embed individual nodes as well as approaches to embed entire (sub)graphs. In doing so, we develop a unified framework to describe these recent approaches, and we highlight a number of important applications and directions for future work.*
 
 * [Community Detection with Graph Neural Networks](https://arxiv.org/abs/1705.08415) (2017)
 by Joan Bruna and Xiang Li
