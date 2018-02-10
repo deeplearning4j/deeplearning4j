@@ -60,7 +60,7 @@ namespace nd4j {
                 return c2d.execute(&block);
             }
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
@@ -157,7 +157,7 @@ namespace nd4j {
                 const int inY = inShape[3];
                 const int inX = inShape[4];
 
-                ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+                ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
                 if (isSameMode)
                     ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
@@ -173,7 +173,7 @@ namespace nd4j {
                 const int inY = inShape[3];
                 const int inX = inShape[4];
 
-                ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+                ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
                 if (isSameMode)
                     ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);

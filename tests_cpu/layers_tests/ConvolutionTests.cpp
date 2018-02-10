@@ -722,7 +722,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
 
     int oY, oX;
 
-    nd4j::ops::ConvolutionUtils<double>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+    nd4j::ops::ConvolutionUtils<double>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
     if (isSameMode)
         nd4j::ops::ConvolutionUtils<double>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);

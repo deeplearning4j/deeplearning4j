@@ -63,7 +63,7 @@ namespace nd4j {
             const int inY = inShape[3];
             const int inX = 1; // constant value
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, 1, sY, 1, pY, pX, 1, 1, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, 1, sY, 1, pY, pX, 1, 1, inY, inX, isSameMode);
 
             if (isSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, 1, sY, 1, 1, 1);

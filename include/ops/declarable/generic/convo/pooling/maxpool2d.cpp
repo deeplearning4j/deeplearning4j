@@ -36,7 +36,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             bool cOrderStrides = false;
             bool isEpsilonDup = false;
@@ -159,7 +159,7 @@ namespace nd4j {
             const bool isSameMode = INT_ARG(8) > 0;
 
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
@@ -216,7 +216,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             const bool bisSameMode = INT_ARG(8) > 0;
             if (bisSameMode)

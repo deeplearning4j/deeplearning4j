@@ -52,7 +52,7 @@ namespace nd4j {
                 delete tz;
             }
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1],
@@ -108,7 +108,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
@@ -158,7 +158,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
             bool cOrderStrides = false;
             bool isEpsilonDup = false;

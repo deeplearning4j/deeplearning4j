@@ -17,9 +17,10 @@ namespace nd4j {
 
     template<typename T>
     ResultSet<T>* NDArrayFactory<T>::allExamples(NDArray<T>* ndArray) {
-        std::vector<int> dimensions;
+        
+        std::vector<int> dimensions(ndArray->rankOf() - 1);            
         for (int e = 1; e < ndArray->rankOf(); e++)
-            dimensions.push_back(e);
+            dimensions[e-1] = e;
 
         return allTensorsAlongDimension(ndArray, dimensions);
     }

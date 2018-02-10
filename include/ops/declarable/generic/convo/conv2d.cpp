@@ -76,7 +76,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(weights->shapeOf()[2] == kY && weights->shapeOf()[3] == kX, 0, "Kernels should have dimensions of [%i, %i], but got [%i, %i] instead", kY, kX, weights->sizeAt(2), weights->sizeAt(3));
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
@@ -175,7 +175,7 @@ namespace nd4j {
             const int inY = isNCHW ? shape::sizeAt(inShape, 2) : shape::sizeAt(inShape, 1);
             const int inX = isNCHW ? shape::sizeAt(inShape, 3) : shape::sizeAt(inShape, 2);
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode) {
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
@@ -245,7 +245,7 @@ namespace nd4j {
             const int inY = input->sizeAt(2);
             const int inX = input->sizeAt(3);
 
-            ConvolutionUtils<T>::calcOutHWpool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
 
             if (isSameMode)
                 ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);

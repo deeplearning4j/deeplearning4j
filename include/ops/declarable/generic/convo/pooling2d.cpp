@@ -165,7 +165,7 @@ namespace nd4j {
 
             // calculate output Height/Width
             int oH, oW;
-            ConvolutionUtils<T>::calcOutHWpool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+            ConvolutionUtils<T>::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
             // allocate memory for new shape
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), 12, int);
