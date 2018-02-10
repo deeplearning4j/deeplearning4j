@@ -10,6 +10,13 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * A layer space that wraps a DL4J layer, without any optimizable hyperparameters
+ *
+ * @param <T> Type of layer
+ *
+ * @author Alex Black
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

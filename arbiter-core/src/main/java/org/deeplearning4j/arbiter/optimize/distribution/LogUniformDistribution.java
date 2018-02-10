@@ -9,6 +9,7 @@ import org.apache.commons.math3.exception.OutOfRangeException;
 import java.util.Random;
 
 /**
+ * Log uniform distribution, with support in range [min, max] for min > 0
  *
  * Reference: https://www.vosesoftware.com/riskwiki/LogUniformdistribution.php
  *
@@ -24,7 +25,11 @@ public class LogUniformDistribution implements RealDistribution {
 
     private transient Random rng = new Random();
 
-    @java.beans.ConstructorProperties({"min", "max"})
+    /**
+     *
+     * @param min Minimum value
+     * @param max Maximum value
+     */
     public LogUniformDistribution(double min, double max) {
         Preconditions.checkArgument(min > 0, "Minimum must be > 0. Got: " + min);
         Preconditions.checkArgument(max > min, "Maximum must be > min. Got: (min, max)=("
