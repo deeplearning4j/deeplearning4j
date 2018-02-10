@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
@@ -34,9 +35,9 @@ import java.util.Map;
  * certain values according to a probability
  * density. For example: generate samples for learning rate according to log uniform distribution
  *
- * @param <T> Type of candidates to generate
  * @author Alex Black
  */
+@Slf4j
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
 public class RandomSearchGenerator extends BaseCandidateGenerator {
@@ -69,6 +70,7 @@ public class RandomSearchGenerator extends BaseCandidateGenerator {
         try {
             value = parameterSpace.getValue(randomValues);
         } catch (Exception e2) {
+            log.warn("Error getting configuration for candidate", e2);
             e = e2;
         }
 

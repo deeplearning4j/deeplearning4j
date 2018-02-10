@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.random.RandomAdaptor;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -42,9 +43,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Also note that: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
  * when generating candidates. This allows the grid for a hyperparameter to be non-linear: i.e., for example, linear in log space
  *
- * @param <T> Type of candidates to generate
  * @author Alex Black
  */
+@Slf4j
 @EqualsAndHashCode(exclude = {"order"}, callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
 public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
@@ -163,6 +164,7 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         try {
             value = parameterSpace.getValue(values);
         } catch (Exception e2) {
+            log.warn("Error getting configuration for candidate", e2);
             e = e2;
         }
 
