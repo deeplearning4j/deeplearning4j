@@ -1,19 +1,27 @@
 ---
-title: Deep Learning for Graphs
+title: Deep Learning for Graph Data
 layout: default
 ---
 
-# Deep Learning for Graphs
+# Deep Learning for Graph Data
 
-Here are a few papers discussing how neural nets can be applied to data encoded in graphs. Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. In a nutshell, here's the flow: 
+Below are a few papers discussing how neural nets can be applied to data in graphs. 
+
+Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
+
+In a nutshell, here's one way to make them ingestable for the algorithms: 
 
 ```
 Data (graph, words) -> Real number vector -> Deep neural network
 ```
 
-Algorithms can “embed” the node of a graph into a real vector (similar to embedding a [word](./word2vec)). They start with a set of nodes that are close to each other randomly (analogous to a sentence or word corpus), then use these generated sets of nodes as a training sets for some representation learning algorithm. 
+## Graph Data
 
-The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
+Applying neural networks to graph data can de difficult. Neural nets do well on vectors and tensors; data types like images (which have structure embedded in them via pixel proximity); and sequences such as text and time series (which display structure in one direction, forward in time). Graphs do not have those kinds of structure. They have no proper beginning and no end, and two nodes connected to each other are not necessarily "close". 
+
+![Alt text](./img/graph-data-example.png)
+
+Algorithms can “embed” each node of a graph into a real vector (similar to the embedding a [word](./word2vec)). The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
 
 (This page is a WIP.)
 
