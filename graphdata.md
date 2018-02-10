@@ -5,8 +5,6 @@ layout: default
 
 # Deep Learning for Graph Data
 
-Below are a few papers discussing how neural nets can be applied to data in graphs. 
-
 Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
 
 In a nutshell, here's one way to make them ingestable for the algorithms: 
@@ -44,6 +42,8 @@ Since that's the case, you can address the uncomputable size of a Facebook-scale
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
+
+Below are a few papers discussing how neural nets can be applied to data in graphs. 
 
 * [Community Detection with Graph Neural Networks](https://arxiv.org/abs/1705.08415) (2017)
 by Joan Bruna and Xiang Li
