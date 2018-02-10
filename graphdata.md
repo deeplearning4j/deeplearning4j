@@ -43,9 +43,11 @@ Since that's the case, you can address the uncomputable size of a Facebook-scale
 
 ## Representing and Traversing the Graph
 
-Let's say you decide to give each node an arbitrary representation vector, like a word embedding, each node's vector being the same length. The next step would be to traverse the graph, and that traversal could be represented by arranging the node vectors next to each other in a matrix. You could then feed that matrix representing the graph to a recurrent neural net. That's basically DeepWalk (see below), which treats truncated random walks across a large graph as sentences. 
+Let's say you decide to give each node an arbitrary representation vector, like a low-dimensional word embedding, each node's vector being the same length. The next step would be to traverse the graph, and that traversal could be represented by arranging the node vectors next to each other in a matrix. You could then feed that matrix representing the graph to a recurrent neural net. That's basically DeepWalk (see below), which treats truncated random walks across a large graph as sentences. 
 
-Another more 
+Another more recent approach is a *graph convolutional network*, which very similar to convolutional networks: it passes a node filter over a graph much as you would pass a convolutional filter over an image, registering each time it sees a certain kind of node. The readings taken by the filters are stacked and passed to a maxpooling layer, which discards all but the strongest signal, before we return to a filter-passing convolutional layer.  
+
+One interesting aspect of graph is so-called side information, or the attributes and features associated with each node. For example, each node could have an image associated to it, or a text, in which case an algorithm attempting to make a decision about that graph might have a CNN subroutine embedded in it for those image nodes. 
 
 ## Further Resources on Graph Data and Deep Learning
 
