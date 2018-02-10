@@ -126,4 +126,9 @@ public class LogUniformDistribution implements RealDistribution {
         }
         return d;
     }
+
+    @Override
+    public String toString(){
+        return "LogUniformDistribution(min=" + min + ",max=" + max + ")";
+    }
 }
