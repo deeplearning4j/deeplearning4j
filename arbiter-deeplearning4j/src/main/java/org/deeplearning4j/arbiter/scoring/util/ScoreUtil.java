@@ -278,6 +278,7 @@ public class ScoreUtil {
     }
 
 
+    @Deprecated
     public static double getScoreFromRegressionEval(RegressionEvaluation eval, RegressionValue regressionValue) {
         double sum = 0.0;
         int nColumns = eval.numColumns();

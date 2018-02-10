@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter;
 
 import lombok.*;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.layers.fixed.FixedLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
@@ -213,6 +214,19 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
                         EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration) {
             this.earlyStoppingConfiguration = earlyStoppingConfiguration;
             return this;
+        }
+
+        public Builder layer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs){
+            return addLayer(layerName, layerSpace, layerInputs);
+        }
+
+        public Builder layer(String layerName, LayerSpace<? extends Layer> layerSpace, InputPreProcessor preProcessor,
+                             String... layerInputs) {
+            return addLayer(layerName, layerSpace, preProcessor, layerInputs);
+        }
+
+        public Builder layer(String layerName, Layer layer, String... layerInputs){
+            return layer(layerName, new FixedLayerSpace<>(layer), layerInputs);
         }
 
         public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {

@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.random.RandomAdaptor;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -42,9 +43,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * Also note that: if a probability distribution is provided for continuous hyperparameters, this will be taken into account
  * when generating candidates. This allows the grid for a hyperparameter to be non-linear: i.e., for example, linear in log space
  *
- * @param <T> Type of candidates to generate
  * @author Alex Black
  */
+@Slf4j
 @EqualsAndHashCode(exclude = {"order"}, callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
 public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
@@ -77,11 +78,25 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
      */
     public GridSearchCandidateGenerator(@JsonProperty("parameterSpace") ParameterSpace<?> parameterSpace,
                     @JsonProperty("discretizationCount") int discretizationCount, @JsonProperty("mode") Mode mode,
-                    @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
-        super(parameterSpace, dataParameters);
+                    @JsonProperty("dataParameters") Map<String, Object> dataParameters,
+                    @JsonProperty("initDone") boolean initDone) {
+        super(parameterSpace, dataParameters, initDone);
         this.discretizationCount = discretizationCount;
         this.mode = mode;
         initialize();
+    }
+
+    /**
+     * @param parameterSpace      ParameterSpace from which to generate candidates
+     * @param discretizationCount For continuous parameters: into how many values should we discretize them into?
+     *                            For example, suppose continuous parameter is in range [0,1] with 3 bins:
+     *                            do [0.0, 0.5, 1.0]. Note that if all values
+     * @param mode                {@link GridSearchCandidateGenerator.Mode} specifies the order
+     *                            in which candidates should be generated.
+     */
+    public GridSearchCandidateGenerator(ParameterSpace<?> parameterSpace, int discretizationCount, Mode mode,
+                                        Map<String, Object> dataParameters){
+        this(parameterSpace, discretizationCount, mode, dataParameters, false);
     }
 
     @Override
@@ -159,6 +174,7 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         try {
             value = parameterSpace.getValue(values);
         } catch (Exception e2) {
+            log.warn("Error getting configuration for candidate", e2);
             e = e2;
         }
 

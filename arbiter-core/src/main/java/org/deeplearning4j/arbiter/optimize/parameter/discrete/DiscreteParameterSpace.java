@@ -32,7 +32,6 @@ import java.util.*;
  * @param <P> Parameter type
  * @author Alex Black
  */
-@JsonIgnoreProperties("index")
 @EqualsAndHashCode
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
 

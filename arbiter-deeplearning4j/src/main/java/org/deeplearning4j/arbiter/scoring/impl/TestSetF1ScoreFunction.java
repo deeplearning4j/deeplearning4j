@@ -13,9 +13,11 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
  * on a test set for a {@link MultiLayerNetwork} or {@link ComputationGraph}
  *
  * @author Alex Black
+ * @deprecated Use {@link EvaluationScoreFunction}
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@Deprecated
 public class TestSetF1ScoreFunction extends BaseNetScoreFunction {
 
     @Override

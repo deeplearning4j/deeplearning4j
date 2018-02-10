@@ -40,7 +40,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"index", "min", "max"})
+@JsonIgnoreProperties({"min", "max"})
 @NoArgsConstructor
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 

@@ -3,6 +3,7 @@ package org.deeplearning4j.arbiter;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.layers.fixed.FixedLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
@@ -188,6 +189,19 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         public Builder setInputType(ParameterSpace<InputType> inputType) {
             this.inputType = inputType;
             return this;
+        }
+
+        public Builder layer(Layer layer){
+            return layer(new FixedLayerSpace<>(layer));
+        }
+
+        public Builder layer(LayerSpace<?> layerSpace) {
+            return layer(layerSpace, new FixedValue<>(1), true);
+        }
+
+        public Builder layer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution,
+                                boolean duplicateConfig) {
+            return addLayer(layerSpace, numLayersDistribution, duplicateConfig);
         }
 
 

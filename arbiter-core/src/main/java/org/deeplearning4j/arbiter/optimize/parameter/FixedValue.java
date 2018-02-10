@@ -37,7 +37,6 @@ import java.util.Map;
  *
  * @param <T> Type of (fixed) value
  */
-@JsonIgnoreProperties("index")
 @EqualsAndHashCode
 public class FixedValue<T> implements ParameterSpace<T> {
     @JsonSerialize(using = GenericSerializer.class)

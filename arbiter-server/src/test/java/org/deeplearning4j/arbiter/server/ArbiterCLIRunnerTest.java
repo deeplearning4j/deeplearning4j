@@ -1,5 +1,6 @@
 package org.deeplearning4j.arbiter.server;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -34,6 +35,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 3/12/17.
  */
+@Slf4j
 public class ArbiterCLIRunnerTest {
 
 
@@ -74,13 +76,15 @@ public class ArbiterCLIRunnerTest {
                 .dataProvider(dataProvider)
                 .modelSaver(new FileModelSaver(modelSavePath))
                 .scoreFunction(new TestSetLossScoreFunction())
-                .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                        new MaxCandidatesCondition(100))
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(5))
                 .build();
         assertEquals(configuration,OptimizationConfiguration.fromJson(configuration.toJson()));
 
         FileUtils.writeStringToFile(new File(configPath),configuration.toJson());
         System.out.println(configuration.toJson());
+
+        log.info("Starting test");
         cliRunner.runMain(
                 "--dataSetIteratorClass",
                 MnistDataSetIteratorFactory.class.getCanonicalName(),
