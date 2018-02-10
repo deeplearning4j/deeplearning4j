@@ -1597,7 +1597,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-
+            val t = op.numInputArguments();
 
             OpStatus status = OpStatus.ND4J_STATUS_OK;
             try {

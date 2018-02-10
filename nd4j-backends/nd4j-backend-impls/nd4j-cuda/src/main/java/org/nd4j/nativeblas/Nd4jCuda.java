@@ -26,7 +26,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     public void clear() { resize(0); }
     public native void resize(@Cast("size_t") long n);
 
-    @Index public native FloatNDArray get(@Cast("size_t") long i);
+    @Index(function = "at") public native FloatNDArray get(@Cast("size_t") long i);
     public native FloatNDArrayVector put(@Cast("size_t") long i, FloatNDArray value);
 
     public native @ByVal Iterator begin();
@@ -81,7 +81,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     public void clear() { resize(0); }
     public native void resize(@Cast("size_t") long n);
 
-    @Index public native HalfNDArray get(@Cast("size_t") long i);
+    @Index(function = "at") public native HalfNDArray get(@Cast("size_t") long i);
     public native HalfNDArrayVector put(@Cast("size_t") long i, HalfNDArray value);
 
     public native @ByVal Iterator begin();
@@ -136,7 +136,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     public void clear() { resize(0); }
     public native void resize(@Cast("size_t") long n);
 
-    @Index public native DoubleNDArray get(@Cast("size_t") long i);
+    @Index(function = "at") public native DoubleNDArray get(@Cast("size_t") long i);
     public native DoubleNDArrayVector put(@Cast("size_t") long i, DoubleNDArray value);
 
     public native @ByVal Iterator begin();

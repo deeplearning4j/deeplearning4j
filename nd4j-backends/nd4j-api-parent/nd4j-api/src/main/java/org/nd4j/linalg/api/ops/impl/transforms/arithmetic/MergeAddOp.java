@@ -34,8 +34,7 @@ import java.util.List;
  */
 public class MergeAddOp extends BaseDynamicTransformOp {
 
-    public MergeAddOp() {
-    }
+    public MergeAddOp() {}
 
     public MergeAddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);

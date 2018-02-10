@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -20,6 +21,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -30,6 +33,60 @@ public class GradCheckTransforms {
     static {
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    @Test
+    public void testBatchToSpace() {
+        Nd4j.getRandom().setSeed(1337);
+
+        int miniBatch = 4;
+        int[] inputShape = new int[]{miniBatch, 1, 1, 1};
+
+        int M = 2;
+        int[] blockShape = new int[]{M, 1};
+        int[] cropShape = new int[]{M, 2};
+
+        INDArray input = Nd4j.randn(inputShape);
+        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape);
+        INDArray crops = Nd4j.create(new float[]{0,0,0,0}, cropShape);
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable sdInput = sd.var("in", inputShape);
+
+        INDArray expOut = Nd4j.create(1, 2, 2, 1);
+        DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
+                .addInputs(input, blocks, crops)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
+
+        sd.associateArrayWithVariable(input, sdInput);
+
+//        BatchToSpace bts = new BatchToSpace(sd, new SDVariable[] {sdInput}, blocks, crops, false);
+//        SDVariable testOut = sd.var("test", expOut.shape());
+//        sd.associateArrayWithVariable(expOut, testOut);
+//
+//        List<SDVariable> backwardResult = bts.doDiff(Collections.singletonList(testOut));
+
+
+        SDVariable t = sd.batchToSpace(sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
+        SDVariable loss = sd.mean("loss", t);
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if(!expOut.equals(out)){ log.info("batch to space failed on forward"); }
+
+//        INDArray btsGrad = backwardResult.get(0).getArr();
+//        if(!input.equals(btsGrad)){ log.info("batch to space failed on backward"); }
+
+        boolean ok;
+        try{
+            ok = GradCheckUtil.checkGradients(sd);
+        } catch (Exception e){
+            e.printStackTrace();
+            ok = false;
+        }
+
     }
 
     @Test

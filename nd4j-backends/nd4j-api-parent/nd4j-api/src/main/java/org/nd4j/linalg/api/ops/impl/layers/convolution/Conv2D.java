@@ -37,22 +37,23 @@ import java.util.*;
 @Getter
 public class Conv2D extends DynamicCustomOp {
 
-    protected  Conv2DConfig config;
+    protected Conv2DConfig config;
 
     @Builder(builderMethodName = "builder")
     public Conv2D(SameDiff sameDiff,
                   SDVariable[] inputFunctions,
                   INDArray[] inputArrays, INDArray[] outputs,
                   Conv2DConfig config) {
-        super(null,inputArrays,outputs);
+        super(null, inputArrays, outputs);
         this.sameDiff = sameDiff;
         this.config = config;
         addArgs();
-        sameDiff.putFunctionForId(this.getOwnName(),this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
+        sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
         sameDiff.addArgsFor(inputFunctions, this);
     }
 
-    public Conv2D() {}
+    public Conv2D() {
+    }
 
     protected void addArgs() {
         addIArgument(new int[]{config.getKh(),
@@ -70,7 +71,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public Object getValue(Field property) {
-        if(config == null) {
+        if (config == null) {
             config = Conv2DConfig.builder().build();
         }
 
@@ -79,7 +80,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
+        config.setValueFor(target, value);
     }
 
     @Override
@@ -89,7 +90,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         addArgs();
 
 
@@ -107,7 +108,7 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode,node, graph);
+        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode, node, graph);
         addArgs();
     }
 
@@ -115,55 +116,53 @@ public class Conv2D extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String,AttributeAdapter> tfMappings = new LinkedHashMap<>();
+        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
+        tfMappings.put("kh", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 2, 0, fields.get("dataFormat")));
+        tfMappings.put("kw", new ConditionalFieldValueNDArrayShapeAdapter("NCHW", 3, 1, fields.get("dataFormat")));
+        tfMappings.put("sy", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
+        tfMappings.put("sx", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
+        tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
+        tfMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
-        tfMappings.put("kh",new ConditionalFieldValueNDArrayShapeAdapter("NCHW",2,0,fields.get("dataFormat")));
-        tfMappings.put("kw",new ConditionalFieldValueNDArrayShapeAdapter("NCHW",3,1,fields.get("dataFormat")));
-        tfMappings.put("sy",new ConditionalFieldValueIntIndexArrayAdapter("NCHW",2,1,fields.get("dataFormat")));
-        tfMappings.put("sx",new ConditionalFieldValueIntIndexArrayAdapter("NCHW",3,2,fields.get("dataFormat")));
-        tfMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
-        tfMappings.put("isNHWC",new StringEqualsAdapter("NHWC"));
 
+        Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
+        onnxMappings.put("ky", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("kx", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("dh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("dw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("sy", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("sx", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
+        onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 
-        Map<String,AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("ky",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
-        onnxMappings.put("kx",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
-        onnxMappings.put("dh",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
-        onnxMappings.put("dw",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
-        onnxMappings.put("sy",new SizeThresholdIntArrayIntIndexAdpater(0,2,0));
-        onnxMappings.put("sx",new SizeThresholdIntArrayIntIndexAdpater(1,2,0));
-        onnxMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
-        onnxMappings.put("isNHWC",new StringEqualsAdapter("NHWC"));
-
-        ret.put(tensorflowName(),tfMappings);
-        ret.put(onnxName(),onnxMappings);
+        ret.put(tensorflowName(), tfMappings);
+        ret.put(onnxName(), onnxMappings);
         return ret;
     }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"sx","sy"})
+                .propertyNames(new String[]{"sx", "sy"})
                 .build();
 
 
-
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh","kw"})
+                .propertyNames(new String[]{"kh", "kw"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw","dh"})
+                .propertyNames(new String[]{"dw", "dh"})
                 .tfAttrName("rates")
                 .build();
 
@@ -187,10 +186,8 @@ public class Conv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"ph","pw"})
+                .propertyNames(new String[]{"ph", "pw"})
                 .build();
-
-
 
 
         map.put("sx", strideMapping);
@@ -199,22 +196,22 @@ public class Conv2D extends DynamicCustomOp {
         map.put("kw", kernelMapping);
         map.put("dw", dilationMapping);
         map.put("dh", dilationMapping);
-        map.put("isSameMode",sameMode);
+        map.put("isSameMode", sameMode);
         map.put("ph", paddingWidthHeight);
         map.put("pw", paddingWidthHeight);
-        map.put("dataFormat",dataFormat);
-        map.put("isNHWC",nhwc);
+        map.put("dataFormat", dataFormat);
+        map.put("isNHWC", nhwc);
 
         try {
             ret.put(onnxName(), map);
-        }catch(NoOpNameFoundException e) {
+        } catch (NoOpNameFoundException e) {
             //ignore
         }
 
 
         try {
-            ret.put(tensorflowName(),map);
-        }catch(NoOpNameFoundException e) {
+            ret.put(tensorflowName(), map);
+        } catch (NoOpNameFoundException e) {
             //ignore
         }
 
