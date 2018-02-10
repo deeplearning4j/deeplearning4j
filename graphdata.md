@@ -7,7 +7,7 @@ layout: default
 
 Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
 
-In a nutshell, here's one way to make them ingestable for the algorithms: 
+In a nutshell, here's one way to make graph data ingestable for the algorithms: 
 
 ```
 Data (graph, words) -> Real number vector -> Deep neural network
