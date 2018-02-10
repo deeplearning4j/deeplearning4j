@@ -68,6 +68,21 @@ There are many problems beyond just social networks where it's helpful to think 
 --diseases that share etiologies and symptoms
 --medications that share ingredients
 
+### <a name="beginner">Other Deep-learning Tutorials</a>
+
+* [Introduction to Neural Networks](./neuralnet-overview)
+* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [LSTMs and Recurrent Networks](./lstm)
+* [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Combining Symbolic Learning & Deep Learning](./deepsymboliclearning)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Neural Networks & Regression](./logistic-regression)
+* [Open Datasets for Machine Learning](./opendata)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+
 ## Further Resources on Graph Data and Deep Learning
 
 Below are a few papers discussing how neural nets can be applied to data in graphs. 
