@@ -84,6 +84,10 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         initialize();
     }
 
+    public GridSearchCandidateGenerator(ParameterSpace<?> parameterSpace, int discretizationCount, Mode mode){
+        this(parameterSpace, discretizationCount, mode, null);
+    }
+
     @Override
     protected void initialize() {
         super.initialize();

@@ -48,6 +48,10 @@ public class RandomSearchGenerator extends BaseCandidateGenerator {
         initialize();
     }
 
+    public RandomSearchGenerator(ParameterSpace<?> parameterSpace){
+        this(parameterSpace, null);
+    }
+
 
     @Override
     public boolean hasMoreCandidates() {
