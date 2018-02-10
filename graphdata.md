@@ -64,6 +64,9 @@ There are many problems beyond just social networks where it's helpful to think 
 * A thought is a graph of synaptic firings
 * The Web is a graph of hyperlinks
 * Any ontology graphs the interrelationship of entities
+--taxonomies of animal species
+--diseases that share etiologies and symptoms
+--medications that share ingredients
 
 ## Further Resources on Graph Data and Deep Learning
 
