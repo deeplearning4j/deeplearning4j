@@ -64,7 +64,9 @@ public class FileModelSaver implements ResultSaver {
         this.fPath = new File(path);
 
         File baseDirectory = new File(path);
-        if (!baseDirectory.isDirectory()) {
+        if(!baseDirectory.exists()){
+            baseDirectory.mkdirs();
+        } else if (!baseDirectory.isDirectory()) {
             throw new IllegalArgumentException("Invalid path: is not directory. " + path);
         }
 
