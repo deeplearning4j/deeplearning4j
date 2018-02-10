@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.optimize.serde.jackson;
 
 import org.apache.commons.math3.distribution.*;
+import org.deeplearning4j.arbiter.optimize.distribution.LogUniformDistribution;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -50,6 +51,8 @@ public class RealDistributionDeserializer extends JsonDeserializer<RealDistribut
                 return new UniformRealDistribution(node.get("lower").asDouble(), node.get("upper").asDouble());
             case "WeibullDistribution":
                 return new WeibullDistribution(node.get("alpha").asDouble(), node.get("beta").asDouble());
+            case "LogUniformDistribution":
+                return new LogUniformDistribution(node.get("min").asDouble(), node.get("max").asDouble());
             default:
                 throw new RuntimeException("Unknown or not supported distribution: " + simpleName);
         }

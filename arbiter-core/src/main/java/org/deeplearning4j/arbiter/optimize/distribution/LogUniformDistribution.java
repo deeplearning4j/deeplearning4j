@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.optimize.distribution;
 
 import com.google.common.base.Preconditions;
+import lombok.Getter;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
@@ -15,8 +16,8 @@ import java.util.Random;
  */
 public class LogUniformDistribution implements RealDistribution {
 
-    private final double min;
-    private final double max;
+    @Getter private final double min;
+    @Getter private final double max;
 
     private final double logMin;
     private final double logMax;

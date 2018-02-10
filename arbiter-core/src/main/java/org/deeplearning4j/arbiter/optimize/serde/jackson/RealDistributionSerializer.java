@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.optimize.serde.jackson;
 
 import org.apache.commons.math3.distribution.*;
+import org.deeplearning4j.arbiter.optimize.distribution.LogUniformDistribution;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 import org.nd4j.shade.jackson.databind.JsonSerializer;
 import org.nd4j.shade.jackson.databind.SerializerProvider;
@@ -77,6 +78,10 @@ public class RealDistributionSerializer extends JsonSerializer<RealDistribution>
             WeibullDistribution wb = (WeibullDistribution) d;
             j.writeNumberField("alpha", wb.getShape());
             j.writeNumberField("beta", wb.getScale());
+        } else if (c == LogUniformDistribution.class){
+            LogUniformDistribution lud = (LogUniformDistribution) d;
+            j.writeNumberField("min", lud.getMin());
+            j.writeNumberField("max", lud.getMax());
         } else {
             throw new UnsupportedOperationException("Unknown or not supported RealDistribution: " + d.getClass());
         }

@@ -78,6 +78,10 @@ public class DistributionUtils {
             WeibullDistribution wa = (WeibullDistribution) a;
             WeibullDistribution wb = (WeibullDistribution) b;
             return wa.getShape() == wb.getShape() && wa.getScale() == wb.getScale();
+        } else if (c == LogUniformDistribution.class ){
+            LogUniformDistribution lu_a = (LogUniformDistribution)a;
+            LogUniformDistribution lu_b = (LogUniformDistribution)b;
+            return lu_a.getMin() == lu_b.getMin() && lu_a.getMax() == lu_b.getMax();
         } else {
             throw new UnsupportedOperationException("Unknown or not supported RealDistribution: " + c);
         }
