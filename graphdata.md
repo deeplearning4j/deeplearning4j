@@ -1,6 +1,7 @@
 ---
 title: Deep Learning for Graph Data
 layout: default
+redirect_from: graphtheory
 ---
 
 # Deep Learning for Graph Data
