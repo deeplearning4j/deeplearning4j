@@ -58,12 +58,15 @@ Finally, you can compute derivative functions such as graph Lapalians from the t
 
 ## Types of Graphs
 
-There are many problems beyond just social networks where it's helpful to think of things as a graph. 
+There are many problems beyond just social networks where it's helpful to think of things as a graph.<sup>[1](#one)</sup>   
 
 * A molecule is a graph of atoms
-* A thought is a graph of synaptic firings
+* A thought is a graph of synaptic firings (edges) between neurons (nodes)
 * The Web is a graph of hyperlinks
-* Any ontology graphs the interrelationship of entities:
+* [A video game is a graph of states connected by actions that lead from one state to the next](./deepreinforcementlearning)
+* A [neural network](./neuralnet-overview) is a graph ... that makes predictions about other graphs
+
+Any ontology or knowledge graph charts the interrelationship of entities (combining [symbolic reasoning](./symbolicreasoning) with the graph structure):
 * Taxonomies of animal species
 * Diseases that share etiologies and symptoms
 * Medications that share ingredients
@@ -82,6 +85,10 @@ There are many problems beyond just social networks where it's helpful to think 
 * [Neural Networks & Regression](./logistic-regression)
 * [Open Datasets for Machine Learning](./opendata)
 * [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+
+## <a name="footnote">Footnotes</a>
+
+<a name="one">1)</a> *In a weird meta way it's just graphs all the way down, [not turtles](https://en.wikipedia.org/wiki/Turtles_all_the_way_down). A human scientist whose head is full of firing synapses (graph) is both embedded in a larger social network (graph) and engaged in constructing ontologies of knowledge (graph) and making predictions about data with neural nets (graph).*
 
 ## Further Resources on Graph Data and Deep Learning
 
