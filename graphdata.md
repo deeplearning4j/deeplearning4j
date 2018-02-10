@@ -53,9 +53,16 @@ Another more recent approach is a *graph convolutional network*, which very simi
 
 One interesting aspect of graph is so-called side information, or the attributes and features associated with each node. For example, each node could have an image associated to it, in which case an algorithm attempting to make a decision about that graph might have a CNN subroutine embedded in it for those image nodes. Or the side data could be text, and the graph could be a tree (the leaves are words, intermediate nodes are phrases combining the words) over which we run a recursive neural net, an algorithm popolarized by Richard Socher. 
 
+Finally, you can compute derivative functions such as graph Lapalians from the tensors that represent the graphs, much like you might perform an eigen analysis on a tensor. These functions will tell you things about the graph that may help you classify or cluster it. (See below for more information.)  
+
 ## Types of Graphs
 
+There are many problems beyond just social networks where it's helpful to think of things as a graph. 
 
+* A molecule is a graph of atoms
+* A thought is a graph of synaptic firings
+* The Web is a graph of hyperlinks
+* Any ontology graphs the interrelationship of entities
 
 ## Further Resources on Graph Data and Deep Learning
 
@@ -65,6 +72,10 @@ Below are a few papers discussing how neural nets can be applied to data in grap
 by William Hamilton, Rex Ying and Jure Leskovec
 
 *Machine learning on graphs is an important and ubiquitous task with applications ranging from drug design to friendship recommendation in social networks. The primary challenge in this domain is finding a way to represent, or encode, graph structure so that it can be easily exploited by machine learning models. Traditionally, machine learning approaches relied on user-defined heuristics to extract features encoding structural information about a graph (e.g., degree statistics or kernel functions). However, recent years have seen a surge in approaches that automatically learn to encode graph structure into low-dimensional embeddings, using techniques based on deep learning and nonlinear dimensionality reduction. Here we provide a conceptual review of key advancements in this area of representation learning on graphs, including matrix factorization-based methods, random-walk based algorithms, and graph convolutional networks. We review methods to embed individual nodes as well as approaches to embed entire (sub)graphs. In doing so, we develop a unified framework to describe these recent approaches, and we highlight a number of important applications and directions for future work.*
+
+[A Short Tutorial on Graph Laplacians, Laplacian Embedding, and Spectral Clustering]
+by Radu Horaud
+(https://csustan.csustan.edu/~tom/Clustering/GraphLaplacian-tutorial.pdf)
 
 [Community Detection with Graph Neural Networks](https://arxiv.org/abs/1705.08415) (2017)
 by Joan Bruna and Xiang Li
