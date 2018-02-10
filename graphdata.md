@@ -26,7 +26,7 @@ Applying neural networks and other machine-learning techniques to graph data can
 
 The first question to answer is: What kind of graph are you dealing with?
 
-Let's say you have a finite state machine, where each state is a node in the graph. You can give each state node a unique ID, maybe a number. Then you give all the rows the names of the states, and you give all the columns the same names, so that the matrix contains an element for every state to intersect with every other state. Then you could mark those elements with a 1 or 0 to indicate whether the two states were connected in the graph, or even use weighted nodes (a continuous number) to indicate the likelihood of a transition from one state to the next. 
+Let's say you have a finite state machine, where each state is a node in the graph. You can give each state node a unique ID, maybe a number. Then you give all the rows the names of the states, and you give all the columns the same names, so that the matrix contains an element for every state to intersect with every other state. Then you could mark those elements with a 1 or 0 to indicate whether the two states were connected in the graph, or even use weighted nodes (a continuous number) to indicate the likelihood of a transition from one state to the next. (The transition matrix below represents a finite state machine for the weather.) 
 
 ![Alt text](./img/transition-matrix.png)
 
