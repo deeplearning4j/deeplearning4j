@@ -8,7 +8,7 @@ redirect_from: deepsymboliclearning
 
 The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. 
 
-Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI. 
+Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.<sup>[1](#one)</sup>   
 
 Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup> 
 
@@ -40,9 +40,13 @@ How can we fuse the ability of deep neural nets to learn probabilistic correlati
 
 Combining symbolic reasoning with deep neural networks and deep reinforcement learning may help us address the fundamental challenges of reasoning, hierarchical representations, transfer learning, robustness in the face of adversarial examples, and interpretability (or explanatory power).
 
-This page includes some recent, notable research that attempts to combine deep learning with symbolic learning to answer those questions. 
+## <a name="footnote">Footnotes</a>
+
+<a name="one">1)</a> Hinton, Yann LeCun and Andrew Ng have all suggested that work on unsupervised learning (learning from unlabeled data) will lead to our next breakthroughs.
 
 ## Resources for Deep Learning and Symbolic Reasoning
+
+This page includes some recent, notable research that attempts to combine deep learning with symbolic learning to answer those questions. 
 
 * [Towards Deep Symbolic Reinforcement Learning](https://arxiv.org/abs/1609.05518) (2016)
 by Marta Garnelo, Kai Arulkumaran and Murray Shanahan
