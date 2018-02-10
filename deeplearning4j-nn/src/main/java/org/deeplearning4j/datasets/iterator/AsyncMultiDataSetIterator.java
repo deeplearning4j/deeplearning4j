@@ -179,6 +179,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
         thread.shutdown();
@@ -219,6 +220,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
         thread.shutdown();
@@ -367,6 +369,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
                 shouldWork.set(false);
             } catch (RuntimeException e) {

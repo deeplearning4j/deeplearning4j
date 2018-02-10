@@ -1085,6 +1085,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             try {
                                 buffer.put(newSequence);
                             } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 //
                             }
 

@@ -158,6 +158,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
                     processing.decrementAndGet();
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
                 shutdown();
             } catch (Exception e) {
