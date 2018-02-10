@@ -1,8 +1,6 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
+import lombok.*;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -18,6 +16,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)  //JSON
 public class EvaluationScoreFunction extends BaseNetScoreFunction {
 
     protected Evaluation.Metric metric;

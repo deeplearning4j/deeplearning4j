@@ -48,11 +48,6 @@ public class TestLogUniform {
             assertTrue(d >= min);
             assertTrue(d <= max);
         }
-
-        for(int i=0; i<1000; i++ ){
-            System.out.println(rd.sample());
-        }
-
     }
 
 }
