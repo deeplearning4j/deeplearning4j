@@ -63,11 +63,10 @@ There are many problems beyond just social networks where it's helpful to think 
 * A molecule is a graph of atoms
 * A thought is a graph of synaptic firings
 * The Web is a graph of hyperlinks
-* Any ontology graphs the interrelationship of entities
-
---taxonomies of animal species
---diseases that share etiologies and symptoms
---medications that share ingredients
+* Any ontology graphs the interrelationship of entities:
+* Taxonomies of animal species
+* Diseases that share etiologies and symptoms
+* Medications that share ingredients
 
 ### <a name="beginner">Other Deep-learning Tutorials</a>
 
