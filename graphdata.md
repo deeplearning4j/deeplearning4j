@@ -15,13 +15,29 @@ In a nutshell, here's one way to make them ingestable for the algorithms:
 Data (graph, words) -> Real number vector -> Deep neural network
 ```
 
-## Graph Data
+Algorithms can “embed” each node of a graph into a real vector (similar to the embedding a [word](./word2vec)). The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
 
-Applying neural networks to graph data can de difficult. Neural nets do well on vectors and tensors; data types like images (which have structure embedded in them via pixel proximity); and sequences such as text and time series (which display structure in one direction, forward in time). Graphs do not have those kinds of structure. They have no proper beginning and no end, and two nodes connected to each other are not necessarily "close". 
+## The Difficulties of Graph Data
+
+Applying neural networks and other machine-learning techniques to graph data can de difficult. 
+
+The first question to answer is: What kind of graph are you dealing with?
+
+Let's say you have a finite state machine, where each state is a node in the graph. You can give each state node a unique ID, maybe a number. Then you give all the rows the names of the states, and you give all the columns the same names, so that the matrix contains an element for every state to intersect with every other state. Then you could mark those elements with a 1 or 0 to indicate whether the two states were connected in the graph, or even use weighted nodes (a continuous number) to indicate the likelihood of a transition from one state to the next. 
+
+![Alt text](./img/transition-matrix.png)
+
+That seems simple enough, but many graphs, like social network graphs with billions of nodes (where each member is a node and each connection to another member is an edge), are simply too large to be computed. **Size** is one problem that graphs present as a data structure. In other words, you can't efficiently store a large social network in a tensor. 
+
+Neural nets do well on vectors and tensors; data types like images (which have structure embedded in them via pixel proximity -- they have fixed size and spatiality); and sequences such as text and time series (which display structure in one direction, forward in time). 
+
+Graphs have an **arbitrary structure**: they are collections of things without a location in space, or with an arbitrary location. They have no proper beginning and no end, and two nodes connected to each other are not necessarily "close". 
 
 ![Alt text](./img/graph-data-example.png)
 
-Algorithms can “embed” each node of a graph into a real vector (similar to the embedding a [word](./word2vec)). The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
+The second question when dealing with graphs is: What kind of question are you trying to answer by applying machine learning to them? In social networks, you're usually trying to make a decision about what kind person you're looking at, represented by the node, or what kind of friends and interactions does that person have. So you're making predictions about the node itself or the edges. 
+
+Since that's the case, you can address the uncomputable size of a Facebook-scale graph by looking at a node and its neighbors maybe 1-3 degrees away; i.e. a subgraph. The immediate neighborhood of the node, taking `k` steps down the graph in all directions, probably captures most of the information you care about. You're filtering out the graph's overwhelming size.
 
 (This page is a WIP.)
 
