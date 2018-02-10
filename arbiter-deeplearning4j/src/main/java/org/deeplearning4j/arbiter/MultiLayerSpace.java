@@ -190,6 +190,15 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             return this;
         }
 
+        public Builder layer(LayerSpace<?> layerSpace) {
+            return layer(layerSpace, new FixedValue<>(1), true);
+        }
+
+        public Builder layer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution,
+                                boolean duplicateConfig) {
+            return addLayer(layerSpace, numLayersDistribution, duplicateConfig);
+        }
+
 
         public Builder addLayer(LayerSpace<?> layerSpace) {
             return addLayer(layerSpace, new FixedValue<>(1), true);

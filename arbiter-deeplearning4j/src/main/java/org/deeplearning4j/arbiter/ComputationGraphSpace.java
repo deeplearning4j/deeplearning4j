@@ -215,6 +215,15 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             return this;
         }
 
+        public Builder layer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs){
+            return addLayer(layerName, layerSpace, layerInputs);
+        }
+
+        public Builder layer(String layerName, LayerSpace<? extends Layer> layerSpace, InputPreProcessor preProcessor,
+                             String... layerInputs) {
+            return addLayer(layerName, layerSpace, preProcessor, layerInputs);
+        }
+
         public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {
             layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false, null));
             return this;
