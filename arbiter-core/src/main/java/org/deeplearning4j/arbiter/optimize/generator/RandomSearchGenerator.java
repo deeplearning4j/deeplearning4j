@@ -44,13 +44,18 @@ public class RandomSearchGenerator extends BaseCandidateGenerator {
 
     @JsonCreator
     public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<?> parameterSpace,
-                    @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
-        super(parameterSpace, dataParameters);
+                    @JsonProperty("dataParameters") Map<String, Object> dataParameters,
+                                 @JsonProperty("initDone") boolean initDone) {
+        super(parameterSpace, dataParameters, initDone);
         initialize();
     }
 
+    public RandomSearchGenerator(ParameterSpace<?> parameterSpace, Map<String,Object> dataParameters){
+        this(parameterSpace, dataParameters, false);
+    }
+
     public RandomSearchGenerator(ParameterSpace<?> parameterSpace){
-        this(parameterSpace, null);
+        this(parameterSpace, null, false);
     }
 
 

@@ -4,7 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.Layer;
+
+import java.util.Collections;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -33,5 +37,10 @@ public class FixedLayerSpace<T extends Layer> extends LayerSpace<T> {
         if(idxs != null && idxs.length > 0){
             throw new IllegalStateException("Cannot set indices: no parameters");
         }
+    }
+
+    @Override
+    public List<ParameterSpace> collectLeaves() {
+        return Collections.<ParameterSpace>singletonList(this);
     }
 }

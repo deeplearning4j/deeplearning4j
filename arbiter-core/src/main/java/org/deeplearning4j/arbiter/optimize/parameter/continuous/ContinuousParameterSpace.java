@@ -38,7 +38,6 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties("index")
 public class ContinuousParameterSpace implements ParameterSpace<Double> {
 
     //Need to use custom serializers/deserializers for commons RealDistribution instances

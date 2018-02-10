@@ -43,28 +43,34 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator {
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
     protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
     protected Map<String, Object> dataParameters;
+    protected boolean initDone = false;
 
-    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace, Map<String, Object> dataParameters) {
+    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace, Map<String, Object> dataParameters,
+                                  boolean initDone) {
         this.parameterSpace = parameterSpace;
         this.dataParameters = dataParameters;
+        this.initDone = initDone;
     }
 
     protected void initialize() {
-        //First: collect leaf parameter spaces objects and remove duplicates
-        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(parameterSpace.collectLeaves());
+        if(!initDone) {
+            //First: collect leaf parameter spaces objects and remove duplicates
+            List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(parameterSpace.collectLeaves());
 
-        //Second: assign each a number
-        int i = 0;
-        for (ParameterSpace ps : noDuplicatesList) {
-            int np = ps.numParameters();
-            if (np == 1) {
-                ps.setIndices(i++);
-            } else {
-                int[] values = new int[np];
-                for (int j = 0; j < np; j++)
-                    values[i++] = j;
-                ps.setIndices(values);
+            //Second: assign each a number
+            int i = 0;
+            for (ParameterSpace ps : noDuplicatesList) {
+                int np = ps.numParameters();
+                if (np == 1) {
+                    ps.setIndices(i++);
+                } else {
+                    int[] values = new int[np];
+                    for (int j = 0; j < np; j++)
+                        values[j] = i++;
+                    ps.setIndices(values);
+                }
             }
+            initDone = true;
         }
     }
 
