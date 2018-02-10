@@ -210,7 +210,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Long Short-Term Memory in Recurrent Neural Networks](http://www.felixgers.de/papers/phd.pdf); Felix Gers
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
+### <a name="beginner">Other Deep-learning Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
