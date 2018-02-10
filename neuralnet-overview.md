@@ -315,6 +315,7 @@ For people just getting started with deep learning, the following tutorials and 
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Deep Learning & Symbolic Reasoning](./deepsymboliclearning)
+* [Deep Learning for Graph Data](./graphdata)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
