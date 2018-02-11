@@ -10,7 +10,7 @@ The two biggest flaws of deep learning are its lack of model interpretability (w
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.<sup>[1](#one)</sup>   
 
-Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[2](#two)</sup> 
+Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to manipulate, generate and otherwise cohabitate with concepts, could help solve explainability.<sup>[2](#two)</sup> 
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH AI</a>
@@ -18,7 +18,9 @@ Research into so-called one-shot learning could address deep learning's data hun
 
 ## Symbolic AI
 
-[Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence), also known as GOFAI, was the dominant paradigm in the AI community from the post-War era until the late 1980s. Implementations of symbolic reasoning are called rules engines or expert systems; they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Those concepts are encoded into the system by its programmers. 
+[Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence), also known as Good, Old-Fashioned AI (GOFAI), was the dominant paradigm in the AI community from the post-War era until the late 1980s. 
+
+Implementations of symbolic reasoning are called rules engines or expert systems or knowledge graphs (see [Cyc](https://en.wikipedia.org/wiki/Cyc) for one of the longer-running examples); they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. Imagine how Turbotax manages to reflect the US tax code -- that's an expert system. External concepts are added to the system by its programmer-creators. 
 
 One of the main differences between machine learning and traditional symbolic reasoning is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, to build a symbolic reasoning system, first humans must learn the rules by which two phenomena relate, and then hard-code those relationships into a static program. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
 
