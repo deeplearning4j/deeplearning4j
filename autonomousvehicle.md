@@ -9,6 +9,9 @@ In this post, we are going to build a real-time video object detection applicati
 
 ![Alt text](./img/carcar.jpg)
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+</p>
 
 ## Object Detection Nature
 
