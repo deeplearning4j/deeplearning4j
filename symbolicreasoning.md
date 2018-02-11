@@ -42,9 +42,15 @@ At that moment, Sussman was enlightened.
 
 A hard-coded rule is a preconception. It is one form of assumption, and a strong one, while deep neural architectures contain other assumptions, usually about *how* they should learn, rather than what conclusion they should reach. The ideal, obviously, is to choose assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
+## Combining Deep Neural Nets and Symbolic Reasoning
+
 How can we fuse the ability of deep neural nets to learn probabilistic correlations from scratch alongside abstract and higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express in all its natural plasticity? 
 
 Combining symbolic reasoning with deep neural networks and deep reinforcement learning may help us address the fundamental challenges of reasoning, hierarchical representations, transfer learning, robustness in the face of adversarial examples, and interpretability (or explanatory power).
+
+### Supervised Learning: A Basic Hybrid AI
+
+Let's explore how they currently overlap and how they might. First of all, every deep neural net trained by supervised learning combines deep learning and symbolic manipulation, at least in a rudimentary sense. Because symbolic reasoning encodes knowledge in symbols and strings of characters. In supervised learning, those strings of characters are called labels, the categories by which we classify input data using a statistical model. The output of a classifier (let's say we're dealing with an image recognition algorithm that tells us whether we're looking at a pedestrian, a stop sign, a traffic lane line or a moving semi-truck), can trigger business logic that reacts to each classification. That business logic is one form of symbolic reasoning. 
 
 ## <a name="footnote">Footnotes</a>
 
