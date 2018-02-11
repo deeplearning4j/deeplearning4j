@@ -136,6 +136,7 @@ public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
         try {
             executorService.awaitTermination(999, TimeUnit.DAYS);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException("ExecutorService interrupted", e);
         }
 

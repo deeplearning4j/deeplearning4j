@@ -74,7 +74,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
                 // called in AsyncLabelAwareIterator.reset().
                 thread.join();
             } catch (InterruptedException e) {
-
+                Thread.currentThread().interrupt();
             }
             nextElement = terminator;
         }
@@ -106,6 +106,7 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
                 }
                 buffer.put(terminator);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
                 shouldWork.set(false);
             } catch (Exception e) {

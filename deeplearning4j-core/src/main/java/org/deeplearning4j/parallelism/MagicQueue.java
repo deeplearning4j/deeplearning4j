@@ -512,6 +512,7 @@ public class MagicQueue<T> implements BlockingQueue<T> {
             try {
                 bufferQueue.put(dataSet);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 //
             }
         }
