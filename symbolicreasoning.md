@@ -10,10 +10,10 @@ The two biggest flaws of deep learning are its lack of model interpretability (w
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.<sup>[1](#one)</sup>   
 
-Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[1](#one)</sup> 
+Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to generate and manipulate concepts, could help solve explainability.<sup>[2](#two)</sup> 
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH AI</a>
 </p>
 
 ## Symbolic AI
@@ -43,6 +43,8 @@ Combining symbolic reasoning with deep neural networks and deep reinforcement le
 ## <a name="footnote">Footnotes</a>
 
 <a name="one">1)</a> Hinton, Yann LeCun and Andrew Ng have all suggested that work on unsupervised learning (learning from unlabeled data) will lead to our next breakthroughs.
+
+<a name="two">2)</a> The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples. 
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
@@ -98,4 +100,4 @@ by Q. Liao and T.A. Poggio
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2vec and Neural Embeddings for Natural-Language Processing](./word2vec.html)
 
-<a name="one">1)</a> The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples. 
+
