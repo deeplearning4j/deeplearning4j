@@ -12794,6 +12794,15 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifdef __CUDACC__
 // #endif
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, IntPointer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, IntBuffer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, int[] shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, IntPointer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, IntBuffer shapeInfo);
+    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int[] shapeInfo);
+
+// #ifdef __CUDACC__
+// #endif
     @Namespace("shape") public static native void printIntArray(IntPointer arr,int length);
     @Namespace("shape") public static native void printIntArray(IntBuffer arr,int length);
     @Namespace("shape") public static native void printIntArray(int[] arr,int length);
@@ -13743,6 +13752,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns a shape buffer
  * for the shape information metadata.
  */
+// #ifdef __CUDACC__
+// #endif
+
 // #ifdef __CUDACC__
 // #endif
 

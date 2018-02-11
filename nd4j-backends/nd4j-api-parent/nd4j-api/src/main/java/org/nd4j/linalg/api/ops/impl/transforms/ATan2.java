@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -35,38 +36,17 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class ATan2 extends BaseTransformOp {
+public class ATan2 extends BaseDynamicTransformOp {
 
     public ATan2(SameDiff sameDiff, SDVariable y, SDVariable x) {
-        super(sameDiff, x, y );
+        super(sameDiff, new SDVariable[] {y, x} ,false);
     }
 
     public ATan2() {}
 
-    public ATan2(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public ATan2(INDArray x, INDArray z, long n) {
-        super(x, z, n);
-    }
-
-    public ATan2(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public ATan2(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public int opNum() {
-        return 69;
-    }
-
     @Override
     public String opName() {
-        return "atan2";
+        return "tf_atan2";
     }
 
 

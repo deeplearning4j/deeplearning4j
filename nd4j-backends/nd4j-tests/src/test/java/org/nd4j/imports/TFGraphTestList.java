@@ -34,17 +34,17 @@ public class TFGraphTestList {
              "norm_tests/norm_0",
              "concat",
              "conv_0",
-            /* "conv_1", //Raver is working on this
+             "conv_1", //Raver is working on this
              "conv_2", //missing SpaceToBatchND
              "conv_3", //fails due to 4d input: this seems to be related to Conv2d being mapped to Dilation2D which takes 3d input
              "deep_mnist", //broadcast bug? double check with raver
-             "deep_mnist_no_dropout",
+             //"deep_mnist_no_dropout",
              "expand_dim",
              "g_00",
              "g_01",
              "g_01",
              "g_02",
-           //  "g_03", //op missing?
+             "g_03", //op missing?
              "g_04",
              "g_05",
              "gru_mnist",
@@ -64,21 +64,21 @@ public class TFGraphTestList {
            //  "ssd_mobilenet_v1_coco",
              "stack",
              "stack_1d",
-             "stack_scalar", */
-            //"simpleif_0",
-           //"simple_cond", //JVM crash
-           // "simple_while",  //Functions not being added: Need to finish while import
-            /*"transform_0",
+             "stack_scalar",
+            "simpleif_0",
+            "simple_cond", //JVM crash
+            "simple_while",  //Functions not being added: Need to finish while import
+            "transform_0",
             "transpose_00",
             "unstack",
            // "yolov2_608x608"
-           */
+
     };
 
 
 
     //change this to SAMEDIFF for samediff
-    public static TFGraphTestAllHelper.ExecuteWith executeWith = ExecuteWith.LIBND4J;
+    public static TFGraphTestAllHelper.ExecuteWith executeWith = ExecuteWith.SAMEDIFF;
     //public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     // public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
 

@@ -14,28 +14,42 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
+    @Builder.Default private int kT = 1;
+    @Builder.Default private int kW = 1;
+    @Builder.Default private int kH = 1;
+
     //strides
-    private int dT;
-    private int dW;
-    private int dH;
+    @Builder.Default private int dT = 1;
+    @Builder.Default private int dW = 1;
+    @Builder.Default private int dH = 1;
+
     //padding
-    private int pT;
-    private int pW;
-    private int pH;
+    @Builder.Default private int pT = 0;
+    @Builder.Default private int pW = 0;
+    @Builder.Default private int pH = 0;
+
     //dilations
-    private int dilationT;
-    private int dilationW;
-    private int dilationH;
+    @Builder.Default private int dilationT = 1;
+    @Builder.Default private int dilationW = 1;
+    @Builder.Default private int dilationH = 1;
+
     //output padding
-    private int aT;
-    private int aW;
-    private int aH;
+    @Builder.Default private int aT = 0;
+    @Builder.Default private int aW = 0;
+    @Builder.Default private int aH = 0;
+
     private boolean biasUsed;
+    private boolean isValidMode;
+    private boolean isNCDHW;
+
     @Builder.Default
     private String dataFormat = "NDHWC";
 
     public Map<String,Object> toProperties() {
         Map<String,Object> ret = new LinkedHashMap<>();
+        ret.put("kT",kT);
+        ret.put("kW",kW);
+        ret.put("kH",kH);
         ret.put("dT",dT);
         ret.put("dW",dW);
         ret.put("dH",dH);
@@ -50,6 +64,8 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         ret.put("aH",aH);
         ret.put("biasUsed",biasUsed);
         ret.put("dataFormat",dataFormat);
+        ret.put("isValidMode",isValidMode);
+
         return ret;
     }
 

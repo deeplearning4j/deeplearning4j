@@ -823,6 +823,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (fa.length == 0)
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
+                if (fa.length == 1)
+                    return Nd4j.trueScalar(fa[0]);
+
+                if (arrayShape.length == 1)
+                    return Nd4j.trueVector(fa);
+
                 val array = Nd4j.create(fa, arrayShape, 'c', 0);
                 //log.debug("SUM1: {}", array.sumNumber());
                 //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
@@ -862,6 +868,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 if (fa.length == 0)
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
 
+                if (fa.length == 1)
+                    return Nd4j.trueScalar(fa[0]);
+
+                if (arrayShape.length == 1)
+                    return Nd4j.trueVector(fa);
+
                 val array = Nd4j.create(fa, arrayShape, 'c', 0);
                 return array;
             }
@@ -897,6 +909,12 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                 if (da.length == 0)
                     throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+
+                if (da.length == 1)
+                    return Nd4j.trueScalar(da[0]);
+
+                if (arrayShape.length == 1)
+                    return Nd4j.trueVector(da);
 
                 val array = Nd4j.create(da, arrayShape, 0, 'c');
                 return array;
