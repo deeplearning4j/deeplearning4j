@@ -22,7 +22,9 @@ Research into so-called one-shot learning could address deep learning's data hun
 
 Implementations of symbolic reasoning are called rules engines or expert systems or knowledge graphs (see [Cyc](https://en.wikipedia.org/wiki/Cyc) for one of the longer-running examples); they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. 
 
-Imagine how [Turbotax](https://turbotax.intuit.com/) manages to reflect the US tax code -- you tell it how much you earned and how many dependents you have and other contingencies, and it computes the tax you owe by law -- that's an expert system. External concepts are added to the system by its programmer-creators. 
+Imagine how [Turbotax](https://turbotax.intuit.com/) manages to reflect the US tax code -- you tell it how much you earned and how many dependents you have and other contingencies, and it computes the tax you owe by law -- that's an expert system. 
+
+External concepts are added to the system by its programmer-creators, and that's more important than it sounds... 
 
 One of the main differences between machine learning and traditional symbolic reasoning is where the learning happens. In machine- and deep-learning, the algorithm learns rules as it establishes correlations between inputs and outputs. In symbolic reasoning, the rules are created through human intervention. That is, to build a symbolic reasoning system, first humans must learn the rules by which two phenomena relate, and then hard-code those relationships into a static program. This difference is the subject of a well-known [hacker koan](https://simple.wikipedia.org/wiki/Hacker_koan):
 
