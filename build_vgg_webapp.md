@@ -29,6 +29,10 @@ Here are the results:
 * [VGG-16 ILSVRC-14](http://www.image-net.org/challenges/LSVRC/2014/results#clsloc) 
 * VGG-16 also performed well on two other image classification benchmarks: VOC and Caltech. Those results are [here](http://www.robots.ox.ac.uk/~vgg/research/very_deep/).
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">BUILD APPS WITH DEEP LEARNING</a>
+</p>
+
 ## <a name="Using VGG-16">Using VGG-16 in Web Applications</a>
 
 The first step in working with neural networks is training. During training, the network is fed input data (images, in this case), and the net's output, or guesses, are compared to the expected results (the images' labels). With each run through the data, the network's weights are modified to decrease the error rate of the guesses; that is, they are adjusted so that the guesses better match the proper label of an image. (Training a large network on millions of images can take a lot of computing resources, thus the interest of distributing pre-trained nets like this.)
