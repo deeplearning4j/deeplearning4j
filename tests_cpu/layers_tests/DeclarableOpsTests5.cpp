@@ -215,6 +215,8 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
 
     auto z = result->at(0);
 
+    z->printIndexedBuffer("z");
+
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 

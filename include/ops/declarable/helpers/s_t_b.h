@@ -17,7 +17,7 @@ namespace helpers {
 
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    FORCEINLINE void _prepare(NDArray<T> * space, NDArray<T> *batch, int block_array[NUM_BLOCK_DIMS], int padding_array[NUM_BLOCK_DIMS * 2]) {
+    FORCEINLINE void _prepare(NDArray<T> * space, NDArray<T> *batch, const int block_array[NUM_BLOCK_DIMS], const int padding_array[NUM_BLOCK_DIMS * 2]) {
 
         int pad_start[NUM_BLOCK_DIMS];
         int block_shape[NUM_BLOCK_DIMS];
@@ -35,49 +35,43 @@ namespace helpers {
             batch_shape[block_dim] = batch->sizeAt(block_dim + 1);
         }
 
-        int space_strides[NUM_BLOCK_DIMS + 2];
-        int batch_strides[NUM_BLOCK_DIMS + 2];
-        space_strides[NUM_BLOCK_DIMS + 1] = 1;
-        batch_strides[NUM_BLOCK_DIMS + 1] = 1;
-
-#pragma unroll
-        for (int dim = NUM_BLOCK_DIMS; dim >= 0; --dim) {
-            space_strides[dim] = space_strides[dim + 1] * space->sizeAt(dim + 1);
-            batch_strides[dim] = batch_strides[dim + 1] * batch->sizeAt(dim + 1);
-        }
-
+        int *space_strides = space->stridesOf();
+        int *batch_strides = batch->stridesOf();
 
         // TODO: this loop should be moved to _execute phase
-        for (int batch_b = 0; batch_b < batch_size; batch_b++) {
+        for (int batch_b = 0; batch_b < batch_size; ++batch_b) {
             const int space_b = batch_b % space_size;
             int block_index = batch_b / space_size;
             int block_offsets[NUM_BLOCK_DIMS];
-            for (int block_dim = NUM_BLOCK_DIMS - 1; block_dim >= 0; block_dim--) {
+            for (int block_dim = NUM_BLOCK_DIMS - 1; block_dim >= 0; --block_dim) {
                 block_offsets[block_dim] = block_dim > 0 ? block_index % block_shape[block_dim] : block_index;
                 block_index /= block_shape[block_dim];
             }
 
-            _execute<T, NUM_BLOCK_DIMS, B2S>(space->buffer() + space_b * space_strides[0], space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->buffer() + batch_b * batch_strides[0], batch_shape, &batch_strides[1]);
+            int space_offset = space_b * space_strides[0];
+            int batch_offset = batch_b * batch_strides[0];
+
+            _execute<T, NUM_BLOCK_DIMS, B2S>(space->buffer() + space_offset, space_shape, &space_strides[1], block_shape, pad_start, block_offsets, batch->buffer() + batch_offset, batch_shape, &batch_strides[1]);
         }
     };
 
 
     template <typename T>
-    FORCEINLINE Nd4jStatus _spaceToBatch(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, std::vector<int> &block_shape, std::vector<int> &paddings) {
+    FORCEINLINE Nd4jStatus _spaceToBatch(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, int *block_shape, int *paddings) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<T, 1, false>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 1, false>(in, out, block_shape, paddings);
                 break;
             case 2:
-                _prepare<T, 2, false>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 2, false>(in, out, block_shape, paddings);
                 break;
             case 3:
-                _prepare<T, 3, false>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 3, false>(in, out, block_shape, paddings);
                 break;
             case 4:
-                _prepare<T, 4, false>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 4, false>(in, out, block_shape, paddings);
                 break;
             default: {
                 return Status::THROW("SpaceToBatch: Wrong number of internal_block_dims");
@@ -92,21 +86,21 @@ namespace helpers {
 
 
     template <typename T>
-    FORCEINLINE Nd4jStatus _batchToSpace(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, std::vector<int> &block_shape, std::vector<int> &paddings) {
+    FORCEINLINE Nd4jStatus _batchToSpace(int internal_block_dims, NDArray<T> *input, NDArray<T> *output, std::vector<int> &internal_input_shape, std::vector<int> &internal_output_shape, int *block_shape, int *crops) {
         auto in = input->reshape('c', internal_input_shape);
         auto out = output->reshape('c', internal_output_shape);
         switch (internal_block_dims) {
             case 1:
-                _prepare<T, 1, true>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 1, true>(in, out, block_shape, crops);
                 break;
             case 2:
-                _prepare<T, 2, true>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 2, true>(in, out, block_shape, crops);
                 break;
             case 3:
-                _prepare<T, 3, true>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 3, true>(in, out, block_shape, crops);
                 break;
             case 4:
-                _prepare<T, 4, true>(in, out, block_shape.data(), paddings.data());
+                _prepare<T, 4, true>(in, out, block_shape, crops);
                 break;
             default: {
                 return Status::THROW("BatchToSpace: Wrong number of internal_block_dims");

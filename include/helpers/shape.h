@@ -1386,6 +1386,11 @@ ND4J_EXPORT bool isLikeVector(int *shapeInfo, int& posOfNonUnityDim);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
+    ND4J_EXPORT void printShapeInfoLinear(const char *msg, int *shapeInfo);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     ND4J_EXPORT void printIntArray(int *arr,int length);
 
 #ifdef __CUDACC__
@@ -4124,6 +4129,26 @@ __host__ __device__
         int rank = shape::rank(shapeInfo);
         int lim = shape::shapeInfoLength(rank);
         printf("ShapeInfo: [");
+        for (int i = 0; i < lim; i++) {
+            printf("%i", shapeInfo[i]);
+
+            if (i < lim - 1) {
+                printf(", ");
+            }
+        }
+        printf("]\n");
+#ifndef __CUDACC__
+        fflush(stdout);
+#endif
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void printShapeInfoLinear(const char *msg, int *shapeInfo) {
+        int rank = shape::rank(shapeInfo);
+        int lim = shape::shapeInfoLength(rank);
+        printf("%s : [", msg);
         for (int i = 0; i < lim; i++) {
             printf("%i", shapeInfo[i]);
 

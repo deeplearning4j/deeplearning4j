@@ -13,9 +13,9 @@ namespace helpers {
     struct SpaceToBatchHelper {
         template <typename T>
         static void run(T *ptrSpace, const int *space_shape, const int *space_strides, const int *block_shape, const int *pad_start, const int *block_offsets, T *ptrBatch, const int *batch_shape, const int *batch_strides) {
-            for (int batch_pos = 0; batch_pos < batch_shape[0]; batch_pos++) {
+            for (int batch_pos = 0; batch_pos < batch_shape[0]; ++batch_pos) {
                 const int space_pos = batch_pos * block_shape[0] + block_offsets[0] - pad_start[0];
-                if (space_pos >= 0 && space_pos <= space_shape[0]) {
+                if (space_pos >= 0 && space_pos < space_shape[0]) {
                     SpaceToBatchHelper<N - 1, B2S>::run(ptrSpace + space_pos * space_strides[0], space_shape + 1, space_strides + 1, block_shape + 1, pad_start + 1, block_offsets + 1, ptrBatch, batch_shape + 1, batch_strides + 1);
                 } else {
                     if (!B2S)
@@ -32,7 +32,8 @@ namespace helpers {
     struct SpaceToBatchHelper<0, B2S> {
         template <typename T>
         static void run(T *ptrSpace, const int *space_shape, const int *space_strides, const int *block_shape, const int *pad_start, const int *block_offsets, T *ptrBatch, const int *batch_shape, const int *batch_strides) {
-            for (int i = 0; i < batch_strides[-1]; i++)
+            int str = batch_strides[-1];
+            for (int i = 0; i < str; i++)
                 if (B2S)
                     ptrSpace[i] = ptrBatch[i];
                 else

@@ -36,9 +36,12 @@ CUSTOM_OP_IMPL(conv3dNew, 2, 1, false, 0, 13) {
 
     // vol2col (im2col for 3d case) works only with NCDHW format    
     if(!dataFormat) {
-        input   = input->permute({0, 4, 1, 2, 3});                              // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]        
+        input   = input->permute({0, 4, 1, 2, 3});                              // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         weights = weights->permute({4, 3, 0, 1, 2});                            // [kD, kH, kW, iC, oC] -> [oC, iC, kD, kH, kW] 
         output  = output->permute({0, 4, 1, 2, 3});                             // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
+
+        input->streamline('c');
+        weights->streamline('c');
     }
 
     int bS = input->sizeAt(0);           // batch size
@@ -133,15 +136,25 @@ DECLARE_SHAPE_FN(conv3dNew) {
     
     int* outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
-    outputShapeInfo[0]      = 5;
-    outputShapeInfo[1]      = bS;
-    outputShapeInfo[indID+1] = oD;
-    outputShapeInfo[indID+2] = oH;
-    outputShapeInfo[indID+3] = oW;
-    outputShapeInfo[indIC+1] = oC;
+
+    if (dataFormat) {
+        outputShapeInfo[0] = 5;
+        outputShapeInfo[1] = bS;
+        outputShapeInfo[2] = oC;
+        outputShapeInfo[3] = oD;
+        outputShapeInfo[4] = oH;
+        outputShapeInfo[5] = oW;
+    } else {
+        outputShapeInfo[0] = 5;
+        outputShapeInfo[1] = bS;
+        outputShapeInfo[2] = oD;
+        outputShapeInfo[3] = oH;
+        outputShapeInfo[4] = oW;
+        outputShapeInfo[5] = oC;
+    }
     
     shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
-    
+
     return new ShapeList(outputShapeInfo);
 }
 

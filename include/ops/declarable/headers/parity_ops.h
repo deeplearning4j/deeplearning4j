@@ -548,6 +548,10 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(normalize_moments, 3, 2, false, 1, 0);
 
-
+        /**
+         * Special atan2 op impl for TF's args order
+         * @tparam T
+         */
+        DECLARE_OP(tf_atan2, 2, 1, true);
     }
 }

@@ -29,14 +29,21 @@ namespace ops {
         std::vector<int> block_shape;
         std::vector<int> padding_shape;
 
-        auto output = OUTPUT_VARIABLE(0);
+        bool order_changed = false;
+        if (input->ordering() != 'c') {
+            order_changed = true;
+            input = input->dup('c');
+        }
 
+        auto output = OUTPUT_VARIABLE(0);
 
         const int xRank = input->rankOf();
         int block_dims = 0;
 
 
+
         if (block.width() >= 3) {
+            nd4j_printf("going through imported way\n","");
             auto blocks = INPUT_VARIABLE(1);
             auto padding = INPUT_VARIABLE(2);
 
@@ -47,15 +54,12 @@ namespace ops {
             REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
             REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
 
+            block_shape = blocks->template asVectorT<int>();
+            padding_shape = padding->template asVectorT<int>();
 
-            block_shape.resize(block_dims);
-            padding_shape.resize(padding->lengthOf());
+            nd4j_printv("blocks_shape:", block_shape);
+            nd4j_printv("padding_shape:", padding_shape);
 
-            for (int e = 0; e < block_dims; e++)
-                block_shape[e] = (int) blocks->getScalar(e);
-
-            for (int e = 0; e < padding->lengthOf(); e++)
-                padding_shape[e] = (int) padding->getScalar(e);
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();
 
@@ -154,9 +158,13 @@ namespace ops {
         internal_input_shape.emplace_back(depth);
         internal_output_shape.emplace_back(depth);
 
+        int* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
+        int* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
 
-        helpers::_spaceToBatch(internal_block_dims, input, output, internal_input_shape, internal_output_shape, block_shape, padding_shape);
+        helpers::_spaceToBatch(internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
 
+        if (order_changed)
+            delete input;
 
         return Status::OK();
     }

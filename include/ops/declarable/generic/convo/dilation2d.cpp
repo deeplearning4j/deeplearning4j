@@ -28,20 +28,22 @@ namespace ops {
         if (block.width() > 2) {
             REQUIRE_TRUE(block.width() >= 4, 0, "Dilation2D: number of input arrays should be 4 at least");
 
-            auto s = INPUT_VARIABLE(2);
-            auto r = INPUT_VARIABLE(3);
+
+            auto r = INPUT_VARIABLE(2);
+            auto s = INPUT_VARIABLE(3);
 
             strides = s->template asVectorT<int>();
             rates = r->template asVectorT<int>();
         } else {
             REQUIRE_TRUE(block.numI() >= 9, 0, "Dilation2D: number of Int arguments should be 9 at least");
-                
-            int e = 1;
-            for (int cnt = 0; cnt < 4; cnt++)
-                strides[cnt] = INT_ARG(e++);
 
+            int e = 1;
             for (int cnt = 0;cnt < 4; cnt++)
                 rates[cnt] = INT_ARG(e++);
+
+
+            for (int cnt = 0; cnt < 4; cnt++)
+                strides[cnt] = INT_ARG(e++);
         }
 
 
@@ -74,8 +76,9 @@ namespace ops {
         int *newShape;
 
         if (block.width() > 2) {
-            auto s = INPUT_VARIABLE(2);
-            auto r = INPUT_VARIABLE(3);
+            auto r = INPUT_VARIABLE(2);
+            auto s = INPUT_VARIABLE(3);
+
 
             strides = s->template asVectorT<int>();
             rates = r->template asVectorT<int>();
@@ -87,11 +90,11 @@ namespace ops {
             }
                 
             int e = 1;
-            for (int cnt = 0; cnt < 4; cnt++)
-                strides[cnt] = INT_ARG(e++);
-
             for (int cnt = 0;cnt < 4; cnt++)
                 rates[cnt] = INT_ARG(e++);
+
+            for (int cnt = 0; cnt < 4; cnt++)
+                strides[cnt] = INT_ARG(e++);
         }
 
         int stride_rows = 0, stride_cols = 0;
