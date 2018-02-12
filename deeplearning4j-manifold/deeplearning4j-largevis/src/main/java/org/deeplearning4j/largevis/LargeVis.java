@@ -6,7 +6,12 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.randomprojection.RPForest;
 import org.deeplearning4j.clustering.randomprojection.RPUtils;
+import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -15,9 +20,14 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.list.FloatNDArrayList;
 import org.nd4j.list.IntNDArrayList;
 import org.nd4j.list.NDArrayList;
 import org.nd4j.list.matrix.IntMatrixNDArrayList;
+import org.nd4j.weightinit.WeightInitScheme;
+import org.nd4j.weightinit.impl.XavierFanInInitScheme;
+import org.nd4j.weightinit.impl.XavierInitScheme;
+import org.nd4j.weightinit.impl.XavierUniformInitScheme;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -54,6 +64,8 @@ public class LargeVis {
     @Builder.Default
     private IUpdater updater = new Sgd(0.01);
     private GradientUpdater gradientUpdater;
+    private WeightInitScheme weightInitScheme;
+
     /**
      * KNNVec is a pointer to a vector.
      * This tends to be a list of vectors.
@@ -73,7 +85,7 @@ public class LargeVis {
     private int maxSize;
     @Builder.Default
     private String distanceFunction = "euclidean";
-    private NDArrayList edgeWeight;
+    private FloatNDArrayList edgeWeight;
     private int nEdges;
     @Builder.Default
     private IntNDArrayList reverse = new IntNDArrayList();
@@ -82,7 +94,7 @@ public class LargeVis {
     @Builder.Default
     private int outDim = 2;
     @Builder.Default
-    private double initialAlpha = 1.0;
+    private double initialAlpha = 1e-2;
     private int nSamples;
     @Builder.Default
     private int nNegatives = 5;
@@ -103,8 +115,9 @@ public class LargeVis {
     @Builder.Default
     private int iterationCount = 200;
     private int negSize = (int) 1e8;
-
-
+    @Builder.Default
+    private double gradClipValue = 5.0;
+    private GradientNormalization gradientNormalization = GradientNormalization.ClipElementWiseAbsoluteValue;
     private int edgeCountActual = 0;
 
     private AtomicInteger updateCount = new AtomicInteger(0);
@@ -136,9 +149,20 @@ public class LargeVis {
                     long seed,int nNeighbors,
                     Boolean normalize,
                     int iterationCount,
-                    IUpdater updater) {
+                    IUpdater updater,
+                    WeightInitScheme weightInitScheme,
+                    GradientNormalization gradientNormalization
+            ,double gradClipValue) {
         if(iterationCount > 0) {
             this.iterationCount = iterationCount;
+        }
+
+        if(gradientNormalization != null) {
+            this.gradientNormalization = gradientNormalization;
+        }
+
+        if(gradClipValue > 0) {
+            this.gradClipValue = gradClipValue;
         }
 
         if(normalize != null) {
@@ -149,6 +173,11 @@ public class LargeVis {
             this.updater = updater;
         this.normalize = normalize;
         this.vec = vec;
+
+        if(weightInitScheme != null) {
+            this.weightInitScheme = weightInitScheme;
+        }
+
         if(maxSize > 0)
             this.maxSize = maxSize;
         if(distanceFunction != null)
@@ -179,7 +208,9 @@ public class LargeVis {
             head.add(-1);
         }
 
-        edgeWeight = new NDArrayList();
+
+
+        edgeWeight = new FloatNDArrayList();
 
         this.executorService = Executors.newFixedThreadPool(numWorkers, new ThreadFactory() {
             @Override
@@ -273,12 +304,12 @@ public class LargeVis {
         INDArray normProb;
         int[] largeBlock = new int[nEdges];
         int[] smallBlock = new int[nEdges];
-        double sum = 0;
+        double sum;
         int currSmallBlock,currLargeBlock;
         int numSmallBlock = 0;
         int numLargeBlock = 0;
         sum = edgeWeight.array().sumNumber().doubleValue();
-        normProb = edgeWeight.array().muli(nEdges / sum);
+        normProb = edgeWeight.array().muli(nEdges / (sum + 1e-12));
         int len = edgeWeight.array().length();
 
         for(int k = len - 1; k >= 0; k--)  {
@@ -317,8 +348,9 @@ public class LargeVis {
     }
 
 
-
-
+    /**
+     *
+     */
     public void runPropagation() {
         LinkedList<PropagationThread> list = new LinkedList<>();
         oldKnnVec = knnVec;
@@ -332,7 +364,6 @@ public class LargeVis {
 
 
         for(int i = 0; i < numWorkers; i++) {
-            final int j = i;
             PropagationThread propagationThread = new PropagationThread(i);
             list.add(propagationThread);
             executorService.submit(propagationThread);
@@ -383,7 +414,8 @@ public class LargeVis {
                 for(int i = 0; i < v1.size(); i++) {
                     y = v1.get(i);
                     check[y] = x;
-                    distances.incrementCount(y, RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    distances.incrementCount(y, yDistance);
                     if(distances.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
                         distances.removeKey(distances.argMax());
@@ -395,11 +427,13 @@ public class LargeVis {
                     for(int j = 0; j < v2.size(); j++) {
                         if(check[y = v2.get(j)] != x) {
                             check[y] = x;
-                            distances.incrementCount(y, RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                            float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                            distances.incrementCount(y,yDistance);
                         }
                     }
 
-                    distances.incrementCount(y, RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    distances.incrementCount(y, yDistance);
                     if(distances.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
                         distances.removeKey(distances.argMax());
@@ -429,7 +463,8 @@ public class LargeVis {
             int x = MathUtils.randomNumberBetween(0,vec.rows() - 1);
             for(int y = 0; y < vec.rows(); y++) {
                 if(x != y) {
-                    heap.incrementCount(y,RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    heap.incrementCount(y,yDistance);
                     if(heap.size() == nNeighbors + 1)  {
                         heap.removeKey(heap.argMax());
                     }
@@ -516,6 +551,10 @@ public class LargeVis {
         computeSimilarity();
     }
 
+    /**
+     * Compute all the similarities
+     * for each data point
+     */
     public void computeSimilarity() {
         head = new IntNDArrayList();
         for(int i = 0; i < vec.rows(); i++) {
@@ -527,7 +566,8 @@ public class LargeVis {
                 edgeFrom.add(x);
                 int y = knnVec.get(x).get(i);
                 edgeTo.add(y);
-                edgeWeight.add(RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                float dist = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                edgeWeight.add(dist);
                 next.add(head.get(x));
                 reverse.add(-1);
                 head.set(x,nEdges++);
@@ -565,7 +605,6 @@ public class LargeVis {
             }
         }
 
-        double sumWeight = 0.0;
         for(int x = 0; x < vec.rows(); x++) {
             for(int p = head.get(x); p >= 0; p = next.get(p)) {
                 int y = edgeTo.get(p);
@@ -573,7 +612,7 @@ public class LargeVis {
                 if(q == -1) {
                     edgeFrom.add(y);
                     edgeTo.add(x);
-                    edgeWeight.add(0.0);
+                    edgeWeight.add(1e-12f);
                     next.add(head.get(y));
                     reverse.add(p);
                     q = nEdges++;
@@ -582,14 +621,14 @@ public class LargeVis {
                 }
 
                 if(x > y) {
-                    double pWeight = p >= edgeWeight.size() ? 0.0 : edgeWeight.get(p);
-                    double qWeight =  q >= edgeWeight.size() ? 0.0 : edgeWeight.get(q);
+                    float pWeight = p >= edgeWeight.size() ? 0.0f : edgeWeight.get(p);
+                    float qWeight =  q >= edgeWeight.size() ? 0.0f : edgeWeight.get(q);
                     while(edgeWeight.size() < p + 1)
-                        edgeWeight.add(0.0);
+                        edgeWeight.add(1e-12f);
                     while(edgeWeight.size() < q + 1)
-                        edgeWeight.add(0.0);
-                    sumWeight += (pWeight + qWeight);
-                    double assign = (pWeight + qWeight) / 2;
+                        edgeWeight.add(1e-12f);
+                    float assign = (pWeight + qWeight) / 2;
+
                     edgeWeight.set(p,assign);
                     edgeWeight.set(q,assign);
                 }
@@ -621,16 +660,18 @@ public class LargeVis {
             double hiBeta = 0;
             int H = 0;
             double tmp = 0;
-            double sumWeight = Double.MIN_VALUE;
+            float sumWeight = Float.MIN_VALUE;
 
             for(int x = low; x < high; x++) {
                 double beta = 1.0;
                 loBeta = hiBeta = -1;
                 for(int iter = 0; iter < iterationCount; iter++) {
                     H = 0;
+                    sumWeight = Float.MIN_VALUE;
                     for(int p = head.get(x); p >= 0; p = next.get(p)) {
-                        sumWeight  += tmp = Math.exp(- beta * edgeWeight.get(p));
-                        H += beta * (edgeWeight.get(p) * tmp);
+                        float currEdgeWeight = edgeWeight.get(p);
+                        sumWeight  += tmp = Math.exp(- beta * currEdgeWeight);
+                        H += beta * (currEdgeWeight * tmp);
                     }
 
                     H = (int) ((H / sumWeight) + Math.log(sumWeight));
@@ -646,8 +687,8 @@ public class LargeVis {
                             beta = (beta + hiBeta) / 2;
                         }
 
-                        if(beta > Double.MAX_VALUE) {
-                            beta = (int) Double.MAX_VALUE;
+                        if(beta > Float.MAX_VALUE) {
+                            beta = (int) Float.MAX_VALUE;
                         }
                     }
                     else {
@@ -665,14 +706,15 @@ public class LargeVis {
                     }
 
 
-                    sumWeight = Double.MIN_VALUE;
+                    sumWeight = Float.MIN_VALUE;
                     for(int p = head.get(x); p >= 0; p = next.get(p)) {
-                        double newValue = Math.exp(-beta * edgeWeight.get(p));
+                        float newValue = (float) Math.exp(-beta * edgeWeight.get(p));
                         sumWeight +=  newValue;
                         edgeWeight.set(p,newValue);
                     }
 
-
+                    sumWeight = Math.max(Float.MIN_VALUE,sumWeight);
+                    INDArray div = edgeWeight.array().div(sumWeight);
                     edgeWeight.array().divi(sumWeight + 1e-12);
 
 
@@ -728,6 +770,7 @@ public class LargeVis {
                 y = edgeTo.get(p);
                 INDArray visY = vis.slice(y);
                 INDArray visX = vis.slice(x);
+                curr.assign(visX);
                 for(int i = 0; i < nNegatives + 1; i++) {
                     if(y > 0) {
                         y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1))];
@@ -747,9 +790,11 @@ public class LargeVis {
                     //double check this
 
                     gg = curr.sub(visY).mul(g * currLr);
+                    normalize(gg);
                     err.addi(gg);
 
                     gg = visY.sub(curr);
+                    normalize(gg);
                     visY.addi(gg.mul(currLr));
 
 
@@ -766,8 +811,48 @@ public class LargeVis {
     }
 
 
+    private void normalize(INDArray input) {
+        switch (gradientNormalization) {
+            case RenormalizeL2PerLayer:
+                double l2 = input.norm2Number().doubleValue();
+                input.divi(l2);
+
+                break;
+            case RenormalizeL2PerParamType:
+                double l22 = Nd4j.getExecutioner().execAndReturn(new Norm2(input)).getFinalResult().doubleValue();
+                input.divi(l22);
+
+                break;
+            case ClipElementWiseAbsoluteValue:
+                CustomOp op = DynamicCustomOp.builder("clipbyvalue")
+                        .addInputs(input)
+                        .callInplace(true)
+                        .addFloatingPointArguments(-gradClipValue, gradClipValue)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
+                break;
+            case ClipL2PerLayer:
+                throw new UnsupportedOperationException("Clip l2 per layer not supported");
+            case ClipL2PerParamType:
+                throw new UnsupportedOperationException("Clip l2 per layer not supported");
+            default:
+                throw new RuntimeException(
+                        "Unknown (or not implemented) gradient normalization strategy: " + gradientNormalization);
+        }
+    }
+
+
+    /**
+     * Create the weight matrix for visualization.
+     */
     public void visualize() {
-        vis = Nd4j.create(vec.rows(),outDim);
+        if(this.weightInitScheme == null) {
+            weightInitScheme = new XavierFanInInitScheme('c',outDim);
+        }
+
+        vis = weightInitScheme.create(new int[] {vec.rows(),outDim});
+
         initNegTable();
         initAliasTable();
         LinkedList<VisualizeThread> visualizeThreads = new LinkedList<>();

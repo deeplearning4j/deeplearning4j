@@ -16,11 +16,21 @@ import java.util.List;
  * A port of:
  * https://github.com/lyst/rpforest
  * to nd4j
+ *
+ * @author Adam Gibson
  */
 public class RPUtils {
 
 
-
+    /**
+     * Query all trees using the given input and data
+     * @param toQuery the query vector
+     * @param X the input data to query
+     * @param trees the trees to query
+     * @param n the number of results to search for
+     * @param similarityFunction the similarity function to use
+     * @return the indices (in order) in the ndarray
+     */
     public static INDArray queryAll(INDArray toQuery,INDArray X,List<RPTree> trees,int n,String similarityFunction) {
         List<Integer> candidates = getCandidates(toQuery, trees,similarityFunction);
         val sortedCandidates = sortCandidates(toQuery,X,candidates,similarityFunction);
@@ -35,8 +45,18 @@ public class RPUtils {
         return result;
     }
 
+    /**
+     * Get the sorted distances given the
+     * query vector, input data, given the list of possible search candidates
+     * @param x the query vector
+     * @param X the input data to use
+     * @param candidates the possible search candidates
+     * @param similarityFunction the similarity function to use
+     * @return the sorted distances
+     */
     public static List<Pair<Double,Integer>> sortCandidates(INDArray x,INDArray X,
-                                                            List<Integer> candidates,String similarityFunction) {
+                                                            List<Integer> candidates,
+                                                            String similarityFunction) {
         int prevIdx = -1;
         List<Pair<Double,Integer>> ret = new ArrayList<>();
         for(int i = 0; i < candidates.size(); i++) {
@@ -60,7 +80,14 @@ public class RPUtils {
 
 
 
-
+    /**
+     * Get the search candidates as indices given the input
+     * and similarity function
+     * @param x the input data to search with
+     * @param trees the trees to search
+     * @param similarityFunction the function to use for similarity
+     * @return the list of indices as the search results
+     */
     public static INDArray getAllCandidates(INDArray x,List<RPTree> trees,String similarityFunction) {
         List<Integer> candidates = getCandidates(x,trees,similarityFunction);
         Collections.sort(candidates);
@@ -91,6 +118,15 @@ public class RPUtils {
         return arr;
     }
 
+
+    /**
+     * Get the search candidates as indices given the input
+     * and similarity function
+     * @param x the input data to search with
+     * @param roots the trees to search
+     * @param similarityFunction the function to use for similarity
+     * @return the list of indices as the search results
+     */
     public static List<Integer> getCandidates(INDArray x,List<RPTree> roots,String similarityFunction) {
         List<Integer> ret = new ArrayList<>();
         for(RPTree tree : roots) {
@@ -102,13 +138,24 @@ public class RPUtils {
         return ret;
     }
 
+
+    /**
+     * Query the tree starting from the given node
+     * using the given hyper plane and similarity function
+     * @param from the node to start from
+     * @param planes the hyper plane to query
+     * @param x the input data
+     * @param similarityFunction the similarity function to use
+     * @return the leaf node representing the given query from a
+     * search in the tree
+     */
     public static  RPNode query(RPNode from,RPHyperPlanes planes,INDArray x,String similarityFunction) {
         if(from.getLeft() == null && from.getRight() == null) {
             return from;
         }
 
         INDArray hyperPlane = planes.getHyperPlaneAt(from.getDepth());
-        double dist = Transforms.cosineSim(hyperPlane,x);
+        double dist = computeDistance(similarityFunction,x,hyperPlane);
         if(dist <= from.getMedian()) {
             return query(from.getLeft(),planes,x,similarityFunction);
         }
@@ -120,10 +167,42 @@ public class RPUtils {
     }
 
 
+    /**
+     * Compute the distance between 2 vectors
+     * given a function name. Valid function names:
+     * euclidean: euclidean distance
+     * cosinedistance: cosine distance
+     * cosine similarity: cosine similarity
+     * manhattan: manhattan distance
+     * jaccard: jaccard distance
+     * hamming: hamming distance
+     * @param function the function to use (default euclidean distance)
+     * @param x the first vector
+     * @param y the second vector
+     * @return the distance between the 2 vectors given the inputs
+     */
     public static double computeDistance(String function,INDArray x,INDArray y) {
-        return Transforms.cosineSim(x,y);
+        switch(function) {
+            case "euclidean": return Transforms.euclideanDistance(x,y);
+            case "cosinedistance": return Transforms.cosineDistance(x,y);
+            case "cosinesimiliarty": return Transforms.cosineDistance(x,y);
+            case "manhattan": return Transforms.manhattanDistance(x,y);
+            case "jaccard": return Transforms.jaccardDistance(x,y);
+            case "hamming": return Transforms.hammingDistance(x,y);
+            default: return Transforms.euclideanDistance(x,y);
+        }
     }
 
+    /**
+     * Initialize the tree given the input parameters
+     * @param tree the tree to initialize
+     * @param from the starting node
+     * @param planes the hyper planes to use (vector space for similarity)
+     * @param X the input data
+     * @param maxSize the max number of indices on a given leaf node
+     * @param depth the current depth of the tree
+     * @param similarityFunction the similarity function to use
+     */
     public static void buildTree(RPTree tree,
                                  RPNode from,
                                  RPHyperPlanes planes,
@@ -188,10 +267,21 @@ public class RPUtils {
     }
 
 
+    /**
+     * Scan for leaves accumulating
+     * the nodes in the passed in list
+     * @param nodes the nodes so far
+     * @param scan the tree to scan
+     */
     public static void scanForLeaves(List<RPNode> nodes,RPTree scan) {
         scanForLeaves(nodes,scan.getRoot());
     }
 
+    /**
+     * Scan for leaves accumulating
+     * the nodes in the passed in list
+     * @param nodes the nodes so far
+     */
     public static void scanForLeaves(List<RPNode> nodes,RPNode current) {
         if(current.getLeft() == null && current.getRight() == null)
             nodes.add(current);
@@ -202,8 +292,11 @@ public class RPUtils {
     }
 
 
-
-
+    /**
+     * Prune indices from the given node
+     * when it's a leaf
+     * @param node the node to prune
+     */
     public static void slimNode(RPNode node) {
         if(node.getRight() != null && node.getLeft() != null) {
             node.getIndices().clear();
