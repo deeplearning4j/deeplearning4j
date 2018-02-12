@@ -38,7 +38,7 @@ Other times they express lessons we derive inductively from our experiences of t
 
 [Symbolic artificial intelligence](https://en.wikipedia.org/wiki/Symbolic_artificial_intelligence), also known as Good, Old-Fashioned AI (GOFAI), was the dominant paradigm in the AI community from the post-War era until the late 1980s. 
 
-Implementations of symbolic reasoning are called rules engines or expert systems or knowledge graphs (see [Cyc](https://en.wikipedia.org/wiki/Cyc) for one of the longer-running examples); they are essentially piles of nested if-then statements drawing conclusions based on human-readable concepts. 
+Implementations of symbolic reasoning are called rules engines or expert systems or knowledge graphs. See [Cyc](https://en.wikipedia.org/wiki/Cyc) for one of the longer-running examples. Google made a big one, too, which is what provides the information in the top box under your query when you search for something easy like [the capital of Germany](https://www.google.com/search?q=capital+of+germany). These systems are essentially piles of nested if-then statements drawing conclusions about entities based on human-readable concepts and their relations expressed in well understood semantics. They're [graphs](./graphdata). 
 
 Imagine how [Turbotax](https://turbotax.intuit.com/) manages to reflect the US tax code -- you tell it how much you earned and how many dependents you have and other contingencies, and it computes the tax you owe by law -- that's an expert system. 
 
