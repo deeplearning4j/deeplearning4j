@@ -61,6 +61,10 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
     @Setter
     private TaskListener taskListener;
 
+    public MultiLayerNetworkTaskCreator(ModelEvaluator modelEvaluator){
+        this(modelEvaluator, null);
+    }
+
     @Override
     public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
                     ScoreFunction scoreFunction, List<StatusListener> statusListeners) {

@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class AdaGradSpace extends BaseUpdaterSpace {
 
     private ParameterSpace<Double> learningRate;

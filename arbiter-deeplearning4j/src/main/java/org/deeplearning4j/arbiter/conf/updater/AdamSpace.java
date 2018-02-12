@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class AdamSpace extends BaseUpdaterSpace {
 
     private ParameterSpace<Double> learningRate;

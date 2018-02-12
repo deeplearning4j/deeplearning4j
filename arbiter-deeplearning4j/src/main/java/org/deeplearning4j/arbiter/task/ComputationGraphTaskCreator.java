@@ -63,6 +63,10 @@ public class ComputationGraphTaskCreator implements TaskCreator {
     @Setter
     private TaskListener taskListener;
 
+    public ComputationGraphTaskCreator(ModelEvaluator modelEvaluator){
+        this(modelEvaluator, null);
+    }
+
     @Override
     public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
                                                ScoreFunction scoreFunction, List<StatusListener> statusListener) {
