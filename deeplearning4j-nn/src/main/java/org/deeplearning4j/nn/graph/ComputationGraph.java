@@ -901,7 +901,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             iterator.reset();
         }
 
-        if (trainingListeners.size() > 0) {
+        if (!trainingListeners.isEmpty()) {
             for (TrainingListener tl : trainingListeners) {
                 tl.onEpochStart(this);
             }
@@ -972,7 +972,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
 
-        if (trainingListeners.size() > 0) {
+        if (!trainingListeners.isEmpty()) {
             for (TrainingListener tl : trainingListeners) {
                 tl.onEpochEnd(this);
             }
@@ -1322,7 +1322,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             //Calculate activations (which are stored in each layer, and used in backprop)
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                 Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
-                if (trainingListeners.size() > 0) {
+                if (!trainingListeners.isEmpty()) {
                     try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         for (TrainingListener tl : trainingListeners) {
                             tl.onForwardPass(this, activations);
@@ -1332,7 +1332,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 calcBackpropGradients(true);
             } else {
                 Map<String, INDArray> activations = feedForward(true, true, false, false);
-                if (trainingListeners.size() > 0) {
+                if (!trainingListeners.isEmpty()) {
                     try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         for (TrainingListener tl : trainingListeners) {
                             tl.onForwardPass(this, activations);
@@ -1358,7 +1358,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             //Listeners
-            if (trainingListeners.size() > 0) {
+            if (!trainingListeners.isEmpty()) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
                         tl.onBackwardPass(this);

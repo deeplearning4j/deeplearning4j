@@ -89,7 +89,7 @@ public class TsneModule implements UIModule {
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if (fileParts.size() <= 0) {
+        if (fileParts.isEmpty()) {
             return badRequest("No file uploaded");
         }
 
@@ -113,7 +113,7 @@ public class TsneModule implements UIModule {
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if (fileParts.size() <= 0) {
+        if (fileParts.isEmpty()) {
             //            System.out.println("**** NO FILE ****");
             return badRequest("No file uploaded");
         }

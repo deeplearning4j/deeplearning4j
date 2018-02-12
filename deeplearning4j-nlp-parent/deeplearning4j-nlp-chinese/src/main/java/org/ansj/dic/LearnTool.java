@@ -83,7 +83,7 @@ public class LearnTool {
 
     // 批量将新词加入到词典中
     private void addListToTerm(List<NewWord> newWords) {
-        if (newWords.size() == 0)
+        if (newWords.isEmpty())
             return;
         for (NewWord newWord : newWords) {
 

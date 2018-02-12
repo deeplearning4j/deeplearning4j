@@ -358,10 +358,10 @@ public class VPTree {
         workspace.notifyScopeLeft();
         //log.info("Thread: {}; Workspace size: {} MB; ConstantCache: {}; ShapeCache: {}; TADCache: {}", Thread.currentThread().getId(), (int) (workspace.getCurrentSize() / 1024 / 1024 ), Nd4j.getConstantHandler().getCachedBytes(), Nd4j.getShapeInfoProvider().getCachedBytes(), Nd4j.getExecutioner().getTADManager().getCachedBytes());
 
-        if (leftPoints.size() > 0)
+        if (!leftPoints.isEmpty())
             ret.futureLeft = executorService.submit(new NodeBuilder(leftPoints, leftIndices)); // = buildFromPoints(leftPoints);
 
-        if (rightPoints.size() > 0)
+        if (!rightPoints.isEmpty())
             ret.futureRight = executorService.submit(new NodeBuilder(rightPoints, rightIndices));
 
         //System.gc();
@@ -438,10 +438,10 @@ public class VPTree {
         workspace.notifyScopeLeft();
         workspace.destroyWorkspace(true);
 
-        if (leftPoints.size() > 0)
+        if (!leftPoints.isEmpty())
             ret.left = buildFromPoints(leftPoints, leftIndices);
 
-        if (rightPoints.size() > 0)
+        if (!rightPoints.isEmpty())
             ret.right = buildFromPoints(rightPoints, rightIndices);
 
         // destroy once again

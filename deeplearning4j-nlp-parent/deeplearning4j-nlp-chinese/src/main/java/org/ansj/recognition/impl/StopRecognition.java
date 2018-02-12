@@ -104,15 +104,15 @@ public class StopRecognition implements Recognition {
      */
     public boolean filter(Term term) {
 
-        if (stop.size() > 0 && (stop.contains(term.getName()))) {
+        if (!stop.isEmpty() && (stop.contains(term.getName()))) {
             return true;
         }
 
-        if (natureStop.size() > 0 && (natureStop.contains(term.natrue().natureStr))) {
+        if (!natureStop.isEmpty() && (natureStop.contains(term.natrue().natureStr))) {
             return true;
         }
 
-        if (regexList.size() > 0) {
+        if (!regexList.isEmpty()) {
             for (Pattern stopwordPattern : regexList) {
                 if (stopwordPattern.matcher(term.getName()).matches()) {
                     return true;

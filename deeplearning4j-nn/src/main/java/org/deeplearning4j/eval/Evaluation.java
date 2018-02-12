@@ -543,10 +543,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 }
             }
         }
-        if (falsePositivesWarningClasses.size() > 0) {
+        if (!falsePositivesWarningClasses.isEmpty()) {
             warningHelper(warnings, falsePositivesWarningClasses, "precision");
         }
-        if (falseNegativesWarningClasses.size() > 0) {
+        if (!falseNegativesWarningClasses.isEmpty()) {
             warningHelper(warnings, falseNegativesWarningClasses, "recall");
         }
 

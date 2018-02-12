@@ -1332,7 +1332,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             log.warn("Warning: finetune is not applied.");
         }
 
-        if (trainingListeners.size() > 0) {
+        if (!trainingListeners.isEmpty()) {
             for (TrainingListener tl : trainingListeners) {
                 tl.onEpochEnd(this);
             }
@@ -2357,7 +2357,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Calculate activations (which are stored in each layer, and used in backprop)
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
-                if (trainingListeners.size() > 0) {
+                if (!trainingListeners.isEmpty()) {
                     for (TrainingListener tl : trainingListeners) {
                         tl.onForwardPass(this, activations);
                     }
@@ -2373,7 +2373,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
                 // need the input to the output layer to be set (such that backprop can be done)
                 List<INDArray> activations = feedForwardToLayer(layers.length - 2, true, false, false);
-                if (trainingListeners.size() > 0) {
+                if (!trainingListeners.isEmpty()) {
                     //TODO: We possibly do want output layer activations in some cases here...
                     for (TrainingListener tl : trainingListeners) {
                         tl.onForwardPass(this, activations);
@@ -2396,7 +2396,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
 
             //Listeners
-            if (trainingListeners.size() > 0) {
+            if (!trainingListeners.isEmpty()) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
                         tl.onBackwardPass(this);

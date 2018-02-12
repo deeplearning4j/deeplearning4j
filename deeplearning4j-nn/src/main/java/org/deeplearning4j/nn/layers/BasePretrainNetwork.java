@@ -64,7 +64,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         else
             trainingListeners.clear();
 
-        if (listeners != null && listeners.size() > 0) {
+        if (listeners != null && !listeners.isEmpty()) {
             iterationListeners.addAll(listeners);
             for (IterationListener il : listeners) {
                 if (il instanceof TrainingListener) {

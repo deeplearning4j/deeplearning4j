@@ -675,17 +675,17 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         if (statsStorage != null) {
             Collection<StorageMetaData> meta = finalResult.getListenerMetaData();
-            if (meta != null && meta.size() > 0) {
+            if (meta != null && !meta.isEmpty()) {
                 statsStorage.putStorageMetaData(meta);
             }
 
             Collection<Persistable> staticInfo = finalResult.getListenerStaticInfo();
-            if (staticInfo != null && staticInfo.size() > 0) {
+            if (staticInfo != null && !staticInfo.isEmpty()) {
                 statsStorage.putStaticInfo(staticInfo);
             }
 
             Collection<Persistable> updates = finalResult.getListenerUpdates();
-            if (updates != null && updates.size() > 0) {
+            if (updates != null && !updates.isEmpty()) {
                 statsStorage.putUpdate(updates);
             }
         }

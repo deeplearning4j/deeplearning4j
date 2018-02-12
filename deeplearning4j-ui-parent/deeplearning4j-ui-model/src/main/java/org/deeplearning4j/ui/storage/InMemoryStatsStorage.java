@@ -57,7 +57,7 @@ public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
 
         this.staticInfo.put(id, staticInfo);
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo, staticInfo.getSessionID(),
                             staticInfo.getTypeID(), staticInfo.getWorkerID(), staticInfo.getTimeStamp());
         for (StatsStorageListener l : listeners) {
@@ -75,7 +75,7 @@ public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
         updateMap.put(update.getTimeStamp(), update);
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate, update.getSessionID(),
                             update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
         for (StatsStorageListener l : listeners) {
@@ -92,7 +92,7 @@ public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
         this.storageMetaData.put(id, storageMetaData);
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
                             storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(),
                             storageMetaData.getTimeStamp());

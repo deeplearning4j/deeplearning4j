@@ -96,7 +96,7 @@ public class SummaryComputer {
             keywords = new ArrayList<Keyword>();
         }
 
-        if (keywords.size() == 0) {
+        if (keywords.isEmpty()) {
 
             KeyWordComputer kc = new KeyWordComputer(10);
             keywords = kc.computeArticleTfidf(title, content);

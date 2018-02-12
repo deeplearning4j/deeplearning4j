@@ -78,7 +78,7 @@ public class NlpAnalysis extends Analysis {
 
                     int tempOff = 0;
 
-                    if (words.size() > 0) {
+                    if (!words.isEmpty()) {
                         String word = words.get(0);
                         if (!isRuleWord(word)) {
                             mc.add("始##始" + TAB + word, CRF_WEIGHT);
