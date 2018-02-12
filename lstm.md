@@ -4,6 +4,10 @@ author: Chris V. Nicholson
 layout: default
 ---
 
+<head>
+  <script src="https://cdn.optimizely.com/js/2296590312.js"></script>
+</head>
+
 # A Beginner's Guide to Recurrent Networks and LSTMs
 
 Contents
