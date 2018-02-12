@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.linalg.learning.config.Nadam;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class NadamSpace extends BaseUpdaterSpace {
 
     private ParameterSpace<Double> learningRate;
@@ -35,6 +37,14 @@ public class NadamSpace extends BaseUpdaterSpace {
         this.beta1 = beta1;
         this.beta2 = beta2;
         this.epsilon = epsilon;
+    }
+
+    public static NadamSpace withLR(ParameterSpace<Double> lr){
+        return new NadamSpace(lr, null, null, null, null);
+    }
+
+    public static NadamSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new NadamSpace(null, lrSchedule, null, null, null);
     }
 
     @Override

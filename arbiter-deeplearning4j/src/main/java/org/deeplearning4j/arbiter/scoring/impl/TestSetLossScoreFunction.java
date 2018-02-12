@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.scoring.impl;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -32,6 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class TestSetLossScoreFunction extends BaseNetScoreFunction {
     @JsonProperty
     private final boolean average;

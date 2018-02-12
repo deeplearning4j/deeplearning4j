@@ -18,7 +18,9 @@
 package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
@@ -36,8 +38,10 @@ import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -53,12 +57,19 @@ import java.util.concurrent.Callable;
 public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
     private ModelEvaluator modelEvaluator;
+    @Getter
+    @Setter
+    private TaskListener taskListener;
+
+    public MultiLayerNetworkTaskCreator(ModelEvaluator modelEvaluator){
+        this(modelEvaluator, null);
+    }
 
     @Override
     public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
                     ScoreFunction scoreFunction, List<StatusListener> statusListeners) {
 
-        return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners);
+        return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners, taskListener);
 
     }
 
@@ -70,21 +81,23 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         private ScoreFunction scoreFunction;
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
+        private TaskListener taskListener;
 
         private long startTime;
 
         public DL4JLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
-                        ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
+                        ModelEvaluator modelEvaluator, List<StatusListener> listeners, TaskListener taskListener) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
             this.listeners = listeners;
+            this.taskListener = taskListener;
         }
 
 
         @Override
-        public OptimizationResult call() throws Exception {
+        public OptimizationResult call() {
 
             try {
                 return callHelper();
@@ -99,7 +112,7 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
         }
 
-        private OptimizationResult callHelper() throws Exception {
+        private OptimizationResult callHelper() {
             startTime = System.currentTimeMillis();
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
                     startTime, startTime, null, candidate.getFlatParameters(), null);
@@ -109,8 +122,12 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                             ((DL4JConfiguration) candidate.getValue()).getMultiLayerConfiguration());
             net.init();
 
+            if(taskListener != null){
+                net = taskListener.preProcess(net, candidate);
+            }
+
             if (listeners != null) {
-                net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
+                net.addListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
             }
 
             //Early stopping or fixed number of epochs:
@@ -156,6 +173,10 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
             if (net != null) {
                 score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 ci.setScore(score);
+            }
+
+            if(taskListener != null){
+                taskListener.postProcess(net, candidate);
             }
 
             return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);

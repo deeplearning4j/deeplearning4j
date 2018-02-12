@@ -18,7 +18,9 @@
 package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.GraphConfiguration;
@@ -36,9 +38,12 @@ import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.function.BiConsumer;
+import org.nd4j.linalg.function.BiFunction;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -54,15 +59,22 @@ import java.util.concurrent.Callable;
 public class ComputationGraphTaskCreator implements TaskCreator {
 
     private ModelEvaluator modelEvaluator;
+    @Getter
+    @Setter
+    private TaskListener taskListener;
+
+    public ComputationGraphTaskCreator(ModelEvaluator modelEvaluator){
+        this(modelEvaluator, null);
+    }
 
     @Override
     public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
-                    ScoreFunction scoreFunction, List<StatusListener> statusListener) {
+                                               ScoreFunction scoreFunction, List<StatusListener> statusListener) {
 
-        return new GraphLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
+        return new GraphLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener, taskListener);
     }
 
-
+    @AllArgsConstructor
     private static class GraphLearningTask implements Callable<OptimizationResult> {
 
         private Candidate candidate;
@@ -70,16 +82,19 @@ public class ComputationGraphTaskCreator implements TaskCreator {
         private ScoreFunction scoreFunction;
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
+        private TaskListener taskListener;
 
         private long startTime;
 
         public GraphLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
-                        ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
+                                 ModelEvaluator modelEvaluator, List<StatusListener> listeners,
+                                 TaskListener taskListener) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
             this.listeners = listeners;
+            this.taskListener = taskListener;
         }
 
 
@@ -90,10 +105,10 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 return callHelper();
             } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
-                log.warn( "Execution failed for task {}", candidate.getIndex(), e );
+                log.warn("Execution failed for task {}", candidate.getIndex(), e);
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
-                                null, null, candidate.getFlatParameters(), stackTrace);
+                        null, null, candidate.getFlatParameters(), stackTrace);
                 return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
             }
 
@@ -102,14 +117,18 @@ public class ComputationGraphTaskCreator implements TaskCreator {
         private OptimizationResult callHelper() throws Exception {
             startTime = System.currentTimeMillis();
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, startTime, startTime,
-                            null, candidate.getFlatParameters(), null);
+                    null, candidate.getFlatParameters(), null);
 
             //Create network
             ComputationGraph net = new ComputationGraph(((GraphConfiguration) candidate.getValue()).getConfiguration());
             net.init();
 
+            if(taskListener != null){
+                net = taskListener.preProcess(net, candidate);
+            }
+
             if (listeners != null) {
-                net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
+                net.addListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
             }
 
             //For DataSetIterator: wraps in a MultiDataSetIterator, hence method can be used for both
@@ -117,7 +136,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
 
             EarlyStoppingConfiguration<ComputationGraph> esConfig =
-                            ((GraphConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
+                    ((GraphConfiguration) candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, iterator, null);
@@ -147,13 +166,17 @@ public class ComputationGraphTaskCreator implements TaskCreator {
             Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 additionalEvaluation =
-                                (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                        (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
 
             Double score = null;
             if (net != null) {
                 score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 ci.setScore(score);
+            }
+
+            if(taskListener != null){
+                taskListener.postProcess(net, candidate);
             }
 
             return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);

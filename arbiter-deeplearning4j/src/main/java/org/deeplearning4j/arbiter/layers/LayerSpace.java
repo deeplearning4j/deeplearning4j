@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.dropout.DropoutSpace;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
@@ -40,6 +41,7 @@ import java.util.Map;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
+@EqualsAndHashCode(callSuper = false)
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace<L> {
     protected ParameterSpace<Double> dropOut;

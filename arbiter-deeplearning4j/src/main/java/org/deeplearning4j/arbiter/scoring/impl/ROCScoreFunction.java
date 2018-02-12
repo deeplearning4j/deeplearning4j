@@ -23,13 +23,27 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)  //JSON
 public class ROCScoreFunction extends BaseNetScoreFunction {
 
+    /**
+     * Type of ROC evaluation to perform:<br>
+     * ROC: use {@link ROC} to perform evaluation (single output binary classification)<br>
+     * BINARY: use {@link ROCBinary} to perform evaluation (multi-output/multi-task binary classification)<br>
+     * MULTICLASS: use {@link ROCMultiClass} to perform evaluation (1 vs. all multi-class classification)
+     *
+     */
     public enum ROCType {ROC, BINARY, MULTICLASS}
+
+    /**
+     * Metric to calculate.<br>
+     * AUC: Area under ROC curve<br>
+     * AUPRC: Area under precision/recall curve
+     */
     public enum Metric {AUC, AUPRC};
 
     protected ROCType type;
     protected Metric metric;
 
     /**
+     * @param type ROC type to use for evaluation
      * @param metric Evaluation metric to calculate
      */
     public ROCScoreFunction(@NonNull ROCType type, @NonNull Metric metric) {

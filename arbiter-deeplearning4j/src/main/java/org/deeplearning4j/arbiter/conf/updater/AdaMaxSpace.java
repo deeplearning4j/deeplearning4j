@@ -1,6 +1,7 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.linalg.learning.config.AdaMax;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class AdaMaxSpace extends BaseUpdaterSpace {
 
     private ParameterSpace<Double> learningRate;
@@ -35,6 +37,14 @@ public class AdaMaxSpace extends BaseUpdaterSpace {
         this.beta1 = beta1;
         this.beta2 = beta2;
         this.epsilon = epsilon;
+    }
+
+    public static AdaMaxSpace withLR(ParameterSpace<Double> lr){
+        return new AdaMaxSpace(lr, null, null, null, null);
+    }
+
+    public static AdaMaxSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new AdaMaxSpace(null, lrSchedule, null, null, null);
     }
 
     @Override
