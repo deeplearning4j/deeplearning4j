@@ -26,13 +26,13 @@ That something else could be a physical object, an idea, an event, you name it. 
 
 The signifier indicates the signified, like a finger pointing at the moon. Symbols compress sensory data in a way that enables humans, those beings of limited bandwidth, to share information.<sup>[4](#four)</sup> 
 
-Combinations of symbols that express their interrelations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math, or the conclusions you might draw from a logical syllogism:
+Combinations of symbols that express their interrelations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math, or the conclusions you might draw from a logical syllogism like this old Roman chestnut:
 
 ```
 All men are mortal; Caius is a man; therefore Caius is mortal.
 ```
 
-Other times they express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop," or "my hand seems to burn when I touch the pot on the stove."  
+Other times they express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop (so for godssake let's make sure we have some in the fridge)," or "my hand seems to burn when I touch the pot on the stove."  
 
 ## Symbolic AI
 
