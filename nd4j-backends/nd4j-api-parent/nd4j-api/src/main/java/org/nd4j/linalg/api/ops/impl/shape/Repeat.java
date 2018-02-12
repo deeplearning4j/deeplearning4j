@@ -126,12 +126,12 @@ public class Repeat extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        return "Tile";
+        return "Repeat";
     }
 
     @Override
     public String tensorflowName() {
-        return "Tile";
+        return "Repeat";
     }
 
 

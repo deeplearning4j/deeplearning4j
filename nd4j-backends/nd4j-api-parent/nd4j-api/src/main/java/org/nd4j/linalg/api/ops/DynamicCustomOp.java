@@ -354,6 +354,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         //refresh the current list
         if (args != null) {
             for (int i = 0; i < args.length; i++) {
+
+                // it's possible to get into situation where number of args > number of arrays AT THIS MOMENT
+                if (i >= arrsSoFar.length)
+                    continue;
+
                 if (!Arrays.equals(args[i].getShape(), arrsSoFar[i].shape()))
                     throw new ND4JIllegalStateException("Illegal array passed in. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
             }

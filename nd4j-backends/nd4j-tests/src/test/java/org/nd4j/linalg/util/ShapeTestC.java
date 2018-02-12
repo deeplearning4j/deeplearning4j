@@ -1,5 +1,7 @@
 package org.nd4j.linalg.util;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -9,11 +11,13 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class ShapeTestC extends BaseNd4jTest {
 
@@ -48,6 +52,84 @@ public class ShapeTestC extends BaseNd4jTest {
         for (int i = 0; i < arr.length(); i++)
             assertEquals(arr.getDouble(i), onesInMiddle.getDouble(i), 1e-3);
     }
+
+
+    @Test
+    public void testKeepDimsShape_1_T() throws Exception {
+        val shape = new int[]{5, 5};
+        val axis = new int[]{1, 0, 1};
+
+        val result = Shape.getReducedShape(shape, axis, true, true);
+
+        assertArrayEquals(new int[]{1, 1}, result);
+    }
+
+    @Test
+    public void testKeepDimsShape_1_F() throws Exception {
+        val shape = new int[]{5, 5};
+        val axis = new int[]{0, 0, 1};
+
+        val result = Shape.getReducedShape(shape, axis, false, true);
+
+        assertArrayEquals(new int[]{}, result);
+    }
+
+    @Test
+    public void testKeepDimsShape_2_T() throws Exception {
+        val shape = new int[]{5, 5, 5};
+        val axis = new int[]{1, 0, 1};
+
+        val result = Shape.getReducedShape(shape, axis, true, true);
+
+        assertArrayEquals(new int[]{1, 1, 5}, result);
+    }
+
+    @Test
+    public void testKeepDimsShape_2_F() throws Exception {
+        val shape = new int[]{5, 5, 5};
+        val axis = new int[]{0, 0, 1};
+
+        val result = Shape.getReducedShape(shape, axis, false, true);
+
+        assertArrayEquals(new int[]{5}, result);
+    }
+
+
+    @Test
+    public void testKeepDimsShape_3_T() throws Exception {
+        val shape = new int[]{1, 1};
+        val axis = new int[]{1, 0, 1};
+
+        val result = Shape.getReducedShape(shape, axis, true, true);
+
+        assertArrayEquals(new int[]{1, 1}, result);
+    }
+
+    @Test
+    public void testKeepDimsShape_3_F() throws Exception {
+        val shape = new int[]{1, 1};
+        val axis = new int[]{0, 0};
+
+        val result = Shape.getReducedShape(shape, axis, false, true);
+
+        log.info("Result: {}", result);
+
+        assertArrayEquals(new int[]{1}, result);
+    }
+
+
+    @Test
+    public void testKeepDimsShape_4_F() throws Exception {
+        val shape = new int[]{4, 4};
+        val axis = new int[]{0, 0};
+
+        val result = Shape.getReducedShape(shape, axis, false, true);
+
+        log.info("Result: {}", result);
+
+        assertArrayEquals(new int[]{4}, result);
+    }
+
 
     @Override
     public char ordering() {

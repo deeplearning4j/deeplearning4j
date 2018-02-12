@@ -25,14 +25,13 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Tile function
@@ -98,8 +97,25 @@ public class Tile extends DynamicCustomOp {
         return ret;
     }
 
+    @Override
+    public List<int[]> calculateOutputShape() {
+        /**
+         * This op is special case: we can't infer its shape before both inputs are available.
+         * So if reps argument is full of 0.0s - we skip shape inference
+         *
+         * And during actual op invocation both inputs should be available due to topo sort
+         */
+        val array = inputArguments()[1];
+        val reps = new int[array.length()];
 
+        for (int e = 0; e < reps.length; e++)
+            reps[e] = (int) array.getDouble(e);
 
+        if (ArrayUtil.prod(reps) == 0)
+            return Collections.emptyList();
+        else
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
 
     @Override
     public String opName() {

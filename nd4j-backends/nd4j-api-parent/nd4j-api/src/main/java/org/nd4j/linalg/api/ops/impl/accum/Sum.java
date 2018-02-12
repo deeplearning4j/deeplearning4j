@@ -78,7 +78,6 @@ public class Sum extends BaseAccumulation {
         return "sum";
     }
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //Out = sum(in)

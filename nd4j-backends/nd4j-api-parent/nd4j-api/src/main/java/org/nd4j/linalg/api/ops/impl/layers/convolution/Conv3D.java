@@ -202,7 +202,6 @@ public class Conv3D extends DynamicCustomOp {
                 outputPadding,biasUsed}) {
             for(val keys : propertyMapping.getPropertyNames())
                 map.put(keys,propertyMapping);
-
         }
 
         ret.put(onnxName(),map);
