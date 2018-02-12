@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -78,7 +79,8 @@ import java.util.*;
                 @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
                 @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
                 @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
-                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult")}
+                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
+                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer")}
 )
 @Data
 @NoArgsConstructor

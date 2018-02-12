@@ -1,17 +1,20 @@
 package org.deeplearning4j.nn.conf.layers.util;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 import java.util.Map;
 
+@NoArgsConstructor
 public class MaskLayer extends Layer {
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
@@ -27,7 +30,7 @@ public class MaskLayer extends Layer {
 
     @Override
     public ParamInitializer initializer() {
-        return null;
+        return EmptyParamInitializer.getInstance();
     }
 
     @Override
@@ -63,5 +66,10 @@ public class MaskLayer extends Layer {
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         return new LayerMemoryReport();
+    }
+
+    @Override
+    public String toString(){
+        return "MaskLayer()";
     }
 }
