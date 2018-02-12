@@ -76,7 +76,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 <a name="two">2)</a> *The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples.* 
 
-<a name="three">3)</a> *The weird thing about writing about signs, of course, is that in the confines of a text, we're just using one set of signs to describe another in the hopes that the reader will respond to the sensory evocation and supply the necessary analog memories of `red` and `thorn`. But you get my drift.*
+<a name="three">3)</a> *The weird thing about writing about signs, of course, is that in the confines of a text, we're just using one set of signs to describe another in the hopes that the reader will respond to the sensory evocation and supply the necessary analog memories of `red` and `thorn`. But you get my drift. (It gets even weirder when you consider that the sensory data perceived by our minds, and to which signs refer, are themselves signs of the thing in itself, which we cannot know.)*
 
 <a name="four">4)</a> *According to science, the average American English speaker speaks at a rate of about 110–150 words per minute (wpm). Just how much reality do you think will fit into a ten-minute transmission? *
 
