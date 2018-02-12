@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.conf.updater.schedule;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.schedule.ExponentialSchedule;
@@ -24,14 +25,15 @@ public class InverseScheduleSpace implements ParameterSpace<ISchedule> {
     private ParameterSpace<Double> gamma;
     private ParameterSpace<Double> power;
 
-    public InverseScheduleSpace(ScheduleType scheduleType, ParameterSpace<Double> initialValue, double gamma, double power){
+    public InverseScheduleSpace(@NonNull ScheduleType scheduleType, @NonNull ParameterSpace<Double> initialValue,
+                                double gamma, double power){
         this(scheduleType, initialValue, new FixedValue<>(gamma), new FixedValue<>(power));
     }
 
-    public InverseScheduleSpace(@JsonProperty("scheduleType") ScheduleType scheduleType,
-                                @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
-                                @JsonProperty("gamma") ParameterSpace<Double> gamma,
-                                @JsonProperty("power") ParameterSpace<Double> power){
+    public InverseScheduleSpace(@NonNull @JsonProperty("scheduleType") ScheduleType scheduleType,
+                                @NonNull @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
+                                @NonNull @JsonProperty("gamma") ParameterSpace<Double> gamma,
+                                @NonNull @JsonProperty("power") ParameterSpace<Double> power){
         this.scheduleType = scheduleType;
         this.initialValue = initialValue;
         this.gamma = gamma;

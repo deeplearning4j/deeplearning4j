@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.conf.updater.schedule;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -24,14 +25,15 @@ public class StepScheduleSpace implements ParameterSpace<ISchedule> {
     private ParameterSpace<Double> decayRate;
     private ParameterSpace<Double> step;
 
-    public StepScheduleSpace(ScheduleType scheduleType, ParameterSpace<Double> initialValue, double decayRate, double step){
+    public StepScheduleSpace(@NonNull ScheduleType scheduleType, @NonNull ParameterSpace<Double> initialValue,
+                             double decayRate, double step){
         this(scheduleType, initialValue, new FixedValue<>(decayRate), new FixedValue<>(step));
     }
 
-    public StepScheduleSpace(@JsonProperty("scheduleType") ScheduleType scheduleType,
-                             @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
-                             @JsonProperty("decayRate") ParameterSpace<Double> decayRate,
-                             @JsonProperty("step") ParameterSpace<Double> step){
+    public StepScheduleSpace(@NonNull @JsonProperty("scheduleType") ScheduleType scheduleType,
+                             @NonNull @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
+                             @NonNull @JsonProperty("decayRate") ParameterSpace<Double> decayRate,
+                             @NonNull @JsonProperty("step") ParameterSpace<Double> step){
         this.scheduleType = scheduleType;
         this.initialValue = initialValue;
         this.decayRate = decayRate;

@@ -37,6 +37,14 @@ public class AdaMaxSpace extends BaseUpdaterSpace {
         this.epsilon = epsilon;
     }
 
+    public static AdaMaxSpace withLR(ParameterSpace<Double> lr){
+        return new AdaMaxSpace(lr, null, null, null, null);
+    }
+
+    public static AdaMaxSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new AdaMaxSpace(null, lrSchedule, null, null, null);
+    }
+
     @Override
     public IUpdater getValue(double[] parameterValues) {
         double lr = learningRate == null ? AdaMax.DEFAULT_ADAMAX_LEARNING_RATE : learningRate.getValue(parameterValues);

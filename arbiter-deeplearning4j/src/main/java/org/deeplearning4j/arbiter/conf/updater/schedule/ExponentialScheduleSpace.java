@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.conf.updater.schedule;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.schedule.ExponentialSchedule;
@@ -19,13 +20,14 @@ public class ExponentialScheduleSpace implements ParameterSpace<ISchedule> {
     private ParameterSpace<Double> initialValue;
     private ParameterSpace<Double> gamma;
 
-    public ExponentialScheduleSpace(ScheduleType scheduleType, ParameterSpace<Double> initialValue, double gamma){
+    public ExponentialScheduleSpace(@NonNull ScheduleType scheduleType,
+                                    @NonNull ParameterSpace<Double> initialValue, double gamma){
         this(scheduleType, initialValue, new FixedValue<>(gamma));
     }
 
-    public ExponentialScheduleSpace(@JsonProperty("scheduleType") ScheduleType scheduleType,
-                                    @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
-                                    @JsonProperty("gamma") ParameterSpace<Double> gamma){
+    public ExponentialScheduleSpace(@NonNull @JsonProperty("scheduleType") ScheduleType scheduleType,
+                                    @NonNull @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
+                                    @NonNull @JsonProperty("gamma") ParameterSpace<Double> gamma){
         this.scheduleType = scheduleType;
         this.initialValue = initialValue;
         this.gamma = gamma;

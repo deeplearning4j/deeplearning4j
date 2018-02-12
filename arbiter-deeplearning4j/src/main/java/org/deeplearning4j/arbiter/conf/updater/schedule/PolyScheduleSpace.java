@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.conf.updater.schedule;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -24,14 +25,15 @@ public class PolyScheduleSpace implements ParameterSpace<ISchedule> {
     private ParameterSpace<Double> power;
     private ParameterSpace<Integer> maxIter;
 
-    public PolyScheduleSpace(ScheduleType scheduleType, ParameterSpace<Double> initialValue, double power, int maxIter){
+    public PolyScheduleSpace(@NonNull ScheduleType scheduleType, @NonNull ParameterSpace<Double> initialValue,
+                             double power, int maxIter){
         this(scheduleType, initialValue, new FixedValue<>(power), new FixedValue<>(maxIter));
     }
 
-    public PolyScheduleSpace(@JsonProperty("scheduleType") ScheduleType scheduleType,
-                             @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
-                             @JsonProperty("power") ParameterSpace<Double> power,
-                             @JsonProperty("maxIter") ParameterSpace<Integer> maxIter){
+    public PolyScheduleSpace(@NonNull @JsonProperty("scheduleType") ScheduleType scheduleType,
+                             @NonNull @JsonProperty("initialValue") ParameterSpace<Double> initialValue,
+                             @NonNull @JsonProperty("power") ParameterSpace<Double> power,
+                             @NonNull @JsonProperty("maxIter") ParameterSpace<Integer> maxIter){
         this.scheduleType = scheduleType;
         this.initialValue = initialValue;
         this.power = power;

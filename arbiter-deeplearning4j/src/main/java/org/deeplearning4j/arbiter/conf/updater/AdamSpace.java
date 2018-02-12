@@ -25,7 +25,15 @@ public class AdamSpace extends BaseUpdaterSpace {
         this(learningRate, null, beta1, beta2, epsilon);
     }
 
-    public AdamSpace(@JsonProperty("learningRate") ParameterSpace<Double> learningRate,
+    public static AdamSpace withLR(ParameterSpace<Double> lr){
+        return new AdamSpace(lr, null, null, null, null);
+    }
+
+    public static AdamSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new AdamSpace(null, lrSchedule, null, null, null);
+    }
+
+    protected AdamSpace(@JsonProperty("learningRate") ParameterSpace<Double> learningRate,
                      @JsonProperty("learningRateSchedule") ParameterSpace<ISchedule> learningRateSchedule,
                      @JsonProperty("beta1") ParameterSpace<Double> beta1,
                      @JsonProperty("beta2") ParameterSpace<Double> beta2,

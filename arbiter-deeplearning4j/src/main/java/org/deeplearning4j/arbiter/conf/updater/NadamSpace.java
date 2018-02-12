@@ -37,6 +37,14 @@ public class NadamSpace extends BaseUpdaterSpace {
         this.epsilon = epsilon;
     }
 
+    public static NadamSpace withLR(ParameterSpace<Double> lr){
+        return new NadamSpace(lr, null, null, null, null);
+    }
+
+    public static NadamSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new NadamSpace(null, lrSchedule, null, null, null);
+    }
+
     @Override
     public IUpdater getValue(double[] parameterValues) {
         double lr = learningRate == null ? Nadam.DEFAULT_NADAM_LEARNING_RATE : learningRate.getValue(parameterValues);

@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -32,6 +33,31 @@ public class NesterovsSpace extends BaseUpdaterSpace {
         this.momentum = momentum;
         this.momentumSchedule = momentumSchedule;
     }
+
+    public static NesterovsSpace withLR(ParameterSpace<Double> lr){
+        return new NesterovsSpace(lr, null, null, null);
+    }
+
+    public static NesterovsSpace withLR(ParameterSpace<Double> lr, double momentum){
+        return new NesterovsSpace(lr, null, new FixedValue<>(momentum), null);
+    }
+
+    public static NesterovsSpace withLR(ParameterSpace<Double> lr, ParameterSpace<Double> momentum){
+        return new NesterovsSpace(lr, null, momentum, null);
+    }
+
+    public static NesterovsSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule){
+        return new NesterovsSpace(null, lrSchedule, null, null);
+    }
+
+    public static NesterovsSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule, double momentum){
+        return new NesterovsSpace(null, lrSchedule, new FixedValue<>(momentum), null);
+    }
+
+    public static NesterovsSpace withLRSchedule(ParameterSpace<ISchedule> lrSchedule, ParameterSpace<Double> momentum){
+        return new NesterovsSpace(null, lrSchedule, momentum, null);
+    }
+
 
     @Override
     public IUpdater getValue(double[] parameterValues) {
