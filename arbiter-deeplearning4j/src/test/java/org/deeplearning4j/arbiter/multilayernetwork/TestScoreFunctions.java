@@ -22,6 +22,8 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.scoring.impl.ROCScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.eval.ROC;
+import org.deeplearning4j.eval.ROCBinary;
 import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -94,19 +96,38 @@ public class TestScoreFunctions {
 
                     OptimizationResult or = rr.getResult();
                     MultiLayerNetwork net = (MultiLayerNetwork) or.getResult();
-                    ROCMultiClass r = new ROCMultiClass();
-                    net.doEvaluation(testIter, r);
 
                     double expScore;
-                    double aucTemp = r.calculateAverageAUC();
-                    double auprcTemp = r.calculateAverageAUCPR();
-                    if (auc) {
-                        expScore = r.calculateAverageAUC();
-                    } else {
-                        expScore = r.calculateAverageAUCPR();
+                    switch (rocType){
+                        case ROC:
+                            if(auc){
+                                expScore = net.doEvaluation(testIter, new ROC())[0].calculateAUC();
+                            } else {
+                                expScore = net.doEvaluation(testIter, new ROC())[0].calculateAUCPR();
+                            }
+                            break;
+                        case BINARY:
+                            if(auc){
+                                expScore = net.doEvaluation(testIter, new ROCBinary())[0].calculateAverageAuc();
+                            } else {
+                                expScore = net.doEvaluation(testIter, new ROCBinary())[0].calculateAverageAUCPR();
+                            }
+                            break;
+                        case MULTICLASS:
+                            if(auc){
+                                expScore = net.doEvaluation(testIter, new ROCMultiClass())[0].calculateAverageAUC();
+                            } else {
+                                expScore = net.doEvaluation(testIter, new ROCMultiClass())[0].calculateAverageAUCPR();
+                            }
+                            break;
+                        default:
+                            throw new RuntimeException();
                     }
 
-                    System.out.println(msg + "\t" + aucTemp + "\t" + auprcTemp);
+
+                    DataSetIterator iter = new MnistDataSetIterator(32, 8000, false, true, true, 12345);
+                    iter.setPreProcessor(new PreProc(rocType));
+
                     assertEquals(msg, expScore, or.getScore(), 1e-5);
                 }
             }
