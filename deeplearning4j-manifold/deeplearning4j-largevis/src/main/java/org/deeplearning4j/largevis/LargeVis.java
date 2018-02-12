@@ -278,7 +278,10 @@ public class LargeVis {
     }
 
 
-    private void initNegTable() {
+    /**
+     * Initializes the neg table
+     */
+    public void initNegTable() {
         log.info("Initializing neg table");
         reverse.clear();
         double sumWeights = 0.0;
@@ -308,7 +311,10 @@ public class LargeVis {
 
     }
 
-    private void initAliasTable() {
+    /**
+     * Initializes the alias table
+     */
+    public void initAliasTable() {
         log.info("Initializing alias table");
         alias = new int[nEdges];
         prob = Nd4j.create(1,nEdges);
@@ -806,6 +812,10 @@ public class LargeVis {
      * @return the error wrt the given parameters
      */
     public INDArray errorWrt(INDArray visX,INDArray visY,int y,int p,double currLr) {
+        if(negTable == null) {
+            initNegTable();
+        }
+
         INDArray err = Nd4j.create(outDim);
         for(int i = 0; i < nNegatives + 1; i++) {
             if(y > 0) {
@@ -922,17 +932,24 @@ public class LargeVis {
         }
     }
 
-
     /**
-     * Create the weight matrix for visualization.
+     * Init weights
      */
-    public void visualize() {
+    public void initWeights() {
         if(this.weightInitScheme == null) {
             weightInitScheme = new XavierFanInInitScheme('c',outDim);
         }
 
         vis = weightInitScheme.create(new int[] {vec.rows(),outDim});
 
+    }
+
+
+    /**
+     * Create the weight matrix for visualization.
+     */
+    public void visualize() {
+        initWeights();
         initNegTable();
         initAliasTable();
         LinkedList<VisualizeThread> visualizeThreads = new LinkedList<>();
