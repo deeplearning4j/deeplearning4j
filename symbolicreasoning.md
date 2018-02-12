@@ -6,15 +6,25 @@ redirect_from: deepsymboliclearning
 
 # Deep Learning & Symbolic Reasoning
 
-The two biggest flaws of deep learning are its lack of model interpretability (why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. 
+The two biggest flaws of deep learning are its lack of model interpretability (i.e. why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. They are data hungry.
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.<sup>[1](#one)</sup>   
 
-Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to manipulate, generate and otherwise cohabitate with concepts, could help solve explainability.<sup>[2](#two)</sup> 
+Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to manipulate, generate and otherwise cohabitate with concepts, could help solve explainability, because, after all, humans communicate with signs and symbols, and that is what we desire from machines.<sup>[2](#two)</sup> 
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH AI</a>
 </p>
+
+## Signs, Symbols, Signifiers and Signifieds
+
+The words *sign* and *symbol* derive from Latin and Greek words, respectively, that mean *mark* or *token*, as in "take this rose as a token of my esteem." Both words mean "to stand for something" or "to represent something else". 
+
+That something else could be a physical object, an idea, an event, you name it. So the sign or symbol is a visual pattern, say a character or string of characters, in which meaning is embedded, and that sign or symbol is pointing at something else. It could be the variable `x` or it could be the word `rose`, which is pointing at the red, curling petals layered one over the other in a tight spiral at the end of a stalk of thorns.<sup>[3](#three)</sup>  
+
+The signifier indicates the signified, like a finger pointing at the moon. Symbols compress sensory data in a way that enables humans, those beings of limited bandwidth, to share information.<sup>[4](#four)</sup> 
+
+Combinations of symbols that express their relations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math; other times they express lessons we inductively derive from the world, as in: "the baby seems to prefer the pea-flavored goop."  
 
 ## Symbolic AI
 
@@ -54,9 +64,13 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 ## <a name="footnote">Footnotes</a>
 
-<a name="one">1)</a> Hinton, Yann LeCun and Andrew Ng have all suggested that work on unsupervised learning (learning from unlabeled data) will lead to our next breakthroughs.
+<a name="one">1)</a> *Hinton, Yann LeCun and Andrew Ng have all suggested that work on unsupervised learning (learning from unlabeled data) will lead to our next breakthroughs.*
 
-<a name="two">2)</a> The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples. 
+<a name="two">2)</a> *The two problems may overlap, and solving one could lead to solving the other, since a concept that helps explain a model will also help it recognize certain patterns in data using fewer examples.* 
+
+<a name="three">3)</a> *The weird thing about writing about signs, of course, is that in the confines of a text, we're just using one set of signs to describe another in the hopes that the reader will respond to the sensory evocation and supply the necessary analog memories of `red` and `thorn`. But you get my drift.*
+
+<a name="four">4)</a> *According to science, the average American English speaker speaks at a rate of about 110–150 words per minute (wpm).*
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
