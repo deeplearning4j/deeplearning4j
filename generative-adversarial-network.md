@@ -1,10 +1,10 @@
 ---
-title: A Beginner's Guide to Generative Adversarial Networks (GANs)
+title: GAN: A Beginner's Guide to Generative Adversarial Networks
 layout: default
 redirect_from: gan
 ---
 
-# A Beginner's Guide to Generative Adversarial Networks (GANs)
+# GAN: A Beginner's Guide to Generative Adversarial Networks
 
 Generative adversarial networks (GANs) are deep neural net architectures comprised of two nets, pitting one against the other (thus the "adversarial"). 
 
