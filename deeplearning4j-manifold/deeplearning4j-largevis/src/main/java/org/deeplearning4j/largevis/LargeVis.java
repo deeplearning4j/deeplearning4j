@@ -1,13 +1,11 @@
 package org.deeplearning4j.largevis;
 
-import com.sun.istack.internal.NotNull;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.randomprojection.RPForest;
 import org.deeplearning4j.clustering.randomprojection.RPUtils;
 import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -22,12 +20,9 @@ import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.util.MathUtils;
 import org.nd4j.list.FloatNDArrayList;
 import org.nd4j.list.IntNDArrayList;
-import org.nd4j.list.NDArrayList;
 import org.nd4j.list.matrix.IntMatrixNDArrayList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.XavierFanInInitScheme;
-import org.nd4j.weightinit.impl.XavierInitScheme;
-import org.nd4j.weightinit.impl.XavierUniformInitScheme;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -49,6 +44,22 @@ import java.util.concurrent.locks.LockSupport;
  *
  * This algorithm also uses the nd4j updaters (to allow for more flexibility)
  * over static gradient clipping and the simpler learning rate schedule.
+ *
+ *
+ * The algorithm has the following parameters:
+ *      -fea: specify whether the input file is high-dimensional feature vectors (1) or networks (0). Default is 1.
+ *      -input: Input file of feature vectors or networks
+ *      -output: Output file of low-dimensional representations.
+ *      -threads: Number of threads. Default is 8.
+ *      -outdim: The lower dimensionality LargesVis learns for visualization (usually 2 or 3). Default is 2.
+ *      -samples: Number of edge samples for graph layout (in millions). Default is set to data size / 100 (million).
+ *      -prop: Number of times for neighbor propagations in the state of K      -NNG construction, usually less than 3. Default is 3.
+ *      -alpha: Initial learning rate. Default is 1.0.
+ *      -trees: Number of random-projection trees used for constructing K-NNG. 50 is sufficient for most cases.
+ *      -neg: Number of negative samples used for negative sampling. Default is 5.
+ *      -neigh: Number of neighbors (K) in K-NNG, which is usually set as three times of perplexity. Default is 150.
+ *      -gamma: The weights assigned to negative edges. Default is 7.
+ *      -perp: The perplexity used for deciding edge weights in K-NNG. Default is 50.
  *
  * @author Adam Gibson
  */
@@ -94,7 +105,7 @@ public class LargeVis {
     @Builder.Default
     private int outDim = 2;
     @Builder.Default
-    private double initialAlpha = 1e-2;
+    private double initialAlpha = 1.0;
     private int nSamples;
     @Builder.Default
     private int nNegatives = 5;
@@ -214,7 +225,7 @@ public class LargeVis {
 
         this.executorService = Executors.newFixedThreadPool(numWorkers, new ThreadFactory() {
             @Override
-            public Thread newThread(@NotNull Runnable r) {
+            public Thread newThread( Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
 
                 int cThread = workerCounter.getAndIncrement();
@@ -624,9 +635,9 @@ public class LargeVis {
                     float pWeight = p >= edgeWeight.size() ? 0.0f : edgeWeight.get(p);
                     float qWeight =  q >= edgeWeight.size() ? 0.0f : edgeWeight.get(q);
                     while(edgeWeight.size() < p + 1)
-                        edgeWeight.add(1e-12f);
+                        edgeWeight.add(0.0f);
                     while(edgeWeight.size() < q + 1)
-                        edgeWeight.add(1e-12f);
+                        edgeWeight.add(0.0f);
                     float assign = (pWeight + qWeight) / 2;
 
                     edgeWeight.set(p,assign);
@@ -656,11 +667,11 @@ public class LargeVis {
             log.info("Starting compute similarity thread " + id);
             int low = id  * vec.rows() / numWorkers;
             int high = (id + 1) * vec.rows() / numWorkers;
-            double loBeta = 0;
-            double hiBeta = 0;
-            int H = 0;
-            double tmp = 0;
-            float sumWeight = Float.MIN_VALUE;
+            double loBeta;
+            double hiBeta;
+            int H;
+            double tmp;
+            float sumWeight;
 
             for(int x = low; x < high; x++) {
                 double beta = 1.0;
@@ -705,20 +716,19 @@ public class LargeVis {
                         beta = Float.MAX_VALUE;
                     }
 
-
-                    sumWeight = Float.MIN_VALUE;
-                    for(int p = head.get(x); p >= 0; p = next.get(p)) {
-                        float newValue = (float) Math.exp(-beta * edgeWeight.get(p));
-                        sumWeight +=  newValue;
-                        edgeWeight.set(p,newValue);
-                    }
-
-                    sumWeight = Math.max(Float.MIN_VALUE,sumWeight);
-                    INDArray div = edgeWeight.array().div(sumWeight);
-                    edgeWeight.array().divi(sumWeight + 1e-12);
-
-
                 }
+
+
+                sumWeight = Float.MIN_VALUE;
+                for(int p = head.get(x); p >= 0; p = next.get(p)) {
+                    float newValue = (float) Math.exp(-beta * edgeWeight.get(p));
+                    sumWeight +=  newValue;
+                }
+
+                for (int p = head.get(x); p >= 0; p = next.get(p)) {
+                    edgeWeight.set(p,edgeWeight.get(p) / sumWeight);
+                }
+
             }
 
             isDone.set(true);
@@ -806,7 +816,7 @@ public class LargeVis {
             }
 
             done.set(true);
-            log.info("Finishing visualize thread " + id);
+            log.info("Finishing visualize thread " + id + " with error " + err.sumNumber());
         }
     }
 
@@ -871,6 +881,10 @@ public class LargeVis {
 
     }
 
+    /**
+     * Get the result of the training
+     * @return
+     */
     public INDArray getResult() {
         return vis;
     }
