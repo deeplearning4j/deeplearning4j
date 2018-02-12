@@ -19,9 +19,9 @@ Here are a few other definitions of artificial intelligence:
 * The capability of a machine to imitate intelligent human behavior.
 * A computer system able to perform tasks that normally require human intelligence, such as visual perception, speech recognition, decision-making, and translation between languages.
 
-There are a lot of ways to simulate human intelligence, and some methods are more intelligence than others. 
+There are a lot of ways to simulate human intelligence, and some methods are more intelligent than others. 
 
-AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called rules engines or expert systems. The intelligence they might mimic could be an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
+AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called [rules engines, expert systems or symbolic reasoning](./symbolicreasoning). The intelligence they might mimic could be that of an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
 
 Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
 
@@ -53,7 +53,7 @@ They are, in short, an optimization algorithm. If you tune them right, they mini
 
 ## Deep Learning
 
-Deep learning is a subset of machine learning. Usually, when people use the term deep learning, they are referring to [deep artificial neural networks](https://deeplearning4j.org/neuralnet-overview), and somewhat less frequently to deep [reinforcement learning](https://deeplearning4j.org/reinforcementlearning). 
+Deep learning is a subset of machine learning. Usually, when people use the term deep learning, they are referring to [deep artificial neural networks](./neuralnet-overview), and somewhat less frequently to [deep reinforcement learning](./deepreinforcementlearning). 
 
 Deep artificial neural networks are a set of algorithms that have set new records in accuracy for many important problems, such as image recognition, sound recognition, recommender systems, etc. For example, deep learning is part of DeepMind's well-known AlphaGo algorithm, which beat the former world champion Lee Sedol at Go in early 2016, and the current world champion Ke Jie in early 2017. A more complete explanation of neural works is [here](./neuralnet-overview).
 
@@ -67,12 +67,14 @@ So you could apply the same definition to deep learning that Arthur Samuel did t
 
 ### <a name="beginner">Other Deeplearning4j Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
-* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Deep Learning & Symbolic Reasoning](./symbolicreasoning)
 * [Convolutional Networks for Images (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Word2Vec: Neural Word Embeddings for Machine Learning](./word2vec)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs & Recurrent Networks](./lstm)
+* [Deep Learning & Graph Data](./graphdata)
 * [Neural Networks & Regression](./logistic-regression)
 * [Inference: Machine Learning Model Server](./modelserver)
