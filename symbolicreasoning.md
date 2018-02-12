@@ -32,7 +32,7 @@ Combinations of symbols that express their interrelations could be called *reaso
 All men are mortal; Caius is a man; therefore Caius is mortal.
 ```
 
-Other times the symbols express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop (so for godssake let's make sure we keep some in the fridge)," or "my hand seems to burn when I touch the pot on the stove" or `E = mc<sup>2</sup>`.  
+Other times the symbols express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop (so for godssake let's make sure we keep some in the fridge)," or *E = mc<sup>2</sup>*.  
 
 ## Symbolic AI
 
