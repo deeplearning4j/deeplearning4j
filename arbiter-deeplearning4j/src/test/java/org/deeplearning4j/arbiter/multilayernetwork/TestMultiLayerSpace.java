@@ -43,6 +43,7 @@ import org.deeplearning4j.arbiter.scoring.impl.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -53,6 +54,8 @@ import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDist
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -69,6 +72,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -430,6 +434,40 @@ public class TestMultiLayerSpace {
         MultiLayerSpace fromJson = MultiLayerSpace.fromJson(json);
 
         assertEquals(mls, fromJson);
+    }
+
+
+    @Test
+    public void testBidirectional() throws Exception {
+
+        MultiLayerSpace mls =
+                new MultiLayerSpace.Builder().updater(new Sgd(0.005))
+                        .seed(12345)
+                        .layer(new Bidirectional(new LSTMLayerSpace.Builder()
+                                .nIn(10).nOut(10).build()))
+                        .backprop(true).pretrain(false).build();
+
+        DL4JConfiguration conf = mls.getValue(new double[0]);
+        MultiLayerConfiguration c2 = conf.getMultiLayerConfiguration();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(c2);
+        net.init();
+
+        assertEquals(1, net.getnLayers());
+        assertTrue(net.getLayer(0) instanceof BidirectionalLayer);
+        BidirectionalLayer bl = (BidirectionalLayer)net.getLayer(0);
+
+        Field f = BidirectionalLayer.class.getDeclaredField("fwd");
+        Field b = BidirectionalLayer.class.getDeclaredField("bwd");
+        f.setAccessible(true);
+        b.setAccessible(true);
+        org.deeplearning4j.nn.layers.recurrent.LSTM lstmFwd = (org.deeplearning4j.nn.layers.recurrent.LSTM) f.get(bl);
+        org.deeplearning4j.nn.layers.recurrent.LSTM lstmBwd = (org.deeplearning4j.nn.layers.recurrent.LSTM) b.get(bl);
+
+        assertEquals(10, ((LSTM)lstmFwd.conf().getLayer()).getNIn());
+        assertEquals(10, ((LSTM)lstmFwd.conf().getLayer()).getNOut());
+        assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNIn());
+        assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNOut());
     }
 
 
