@@ -572,6 +572,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             return;
         }
 
+        // this is for safety. We have to be sure that no ops were left non-processed
+        //Furthermore, need to commit before marking workspace as closed, to avoid (incorrectly) hitting scope panic
+        Nd4j.getExecutioner().commit();
+
         // since this workspace block is finished, we restore previous one. Even if it's null
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         isOpen.set(false);
@@ -602,10 +606,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             maxCycle.set(cycleAllocations.get());
         }
-
-        // this is for safety. We have to be sure that no ops were left non-processed
-        Nd4j.getExecutioner().commit();
-
 
         // checking, if we should reallocate this workspace to higher amount of memory
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE && maxCycle.get() > 0) {
