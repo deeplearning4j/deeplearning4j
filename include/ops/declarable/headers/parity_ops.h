@@ -553,5 +553,17 @@ namespace nd4j {
          * @tparam T
          */
         DECLARE_OP(tf_atan2, 2, 1, true);
+
+        /**
+         * This op calculates weighted logarithmic loss of input
+         * Input arguments
+         *  0 - target
+         *  1 - input
+         *  2 - weights (scalar or vector with same as last dimension)
+         *  
+         *  return value - a tensor with the same shape as target or input
+         */
+        DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
+
     }
 }

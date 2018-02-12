@@ -1478,5 +1478,65 @@ TEST_F(DeclarableOpsTests4, conv3d_test7) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_1) {
+    
+
+    NDArray<float> input   ('c', {2, 3}, {11.f, 13.f,  4.f, 15.f,  6.f,  3.f});
+    NDArray<float> targets ('c', {2, 3}, {15.5f, 15.7f,  5.f , 15.f,   5.f,   6.f});
+    NDArray<float> weight (0.7f);
+    NDArray<float> expected('c', {2, 3}, {-159.50006,  -191.1, -16.009075, -210., -24.001238, -15.03887});
+    
+//Targets {15.5f, 15.7f,  5.f , 15.f,   5.f,   6.f};
+//----------
+//Inputs {11.f, 13.f,  4.f, 15.f,  6.f,  3.f};
+//----------
+//Weights [0.7]
+//Result {-159.50006,  -191.1,       -16.009075, -210., -24.001238,  -15.03887}
+
+    nd4j::ops::weighted_cross_entropy_with_logits<float> op;
+    ResultSet<float>* results = op.execute({&targets, &input, &weight}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    // output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
+    
+
+    NDArray<float> input   ('c', {2, 3}, {11.f,   13.f,  4.f, 15.f,  6.f,  3.f});
+    NDArray<float> targets ('c', {2, 3}, {15.5f, 15.7f,  5.f, 15.f,  5.f,  6.f});
+    NDArray<float> weights ({0.5f, 0.7f, 1.0f}) ;
+    NDArray<float> expected('c', {2, 3}, {-159.5001f, -191.1f, -15.98185f, -210.f,  -24.001238f, -14.951412f});
+    
+
+//Targets {15.5f, 15.7f,  5.f , 15.f,   5.f,   6.f};
+//----------
+//Inputs {11.f, 13.f,  4.f, 15.f,  6.f,  3.f};
+//----------
+//Weights [0.7]
+//Result {-159.50006,  -191.1,       -16.009075, -210., -24.001238,  -15.03887}
+
+    nd4j::ops::weighted_cross_entropy_with_logits<float> op;
+    ResultSet<float>* results = op.execute({&targets, &input, &weights}, {}, {});
+    NDArray<float>* output = results->at(0);
+    
+    output->printIndexedBuffer("Result is ");
+    expected.printIndexedBuffer("Expected is ");
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
 
  
