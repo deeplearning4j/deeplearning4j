@@ -1,11 +1,13 @@
 package org.deeplearning4j.clustering.randomprojection;
 
+import org.datavec.api.transform.transform.doubletransform.MinMaxNormalizer;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import java.util.List;
@@ -40,10 +42,19 @@ public class RPTreeTest {
     }
 
     @Test
-    public void testFindSelf() {
-        //DataSetIterator mnist = new MnistDataSetIterator();
+    public void testFindSelf() throws Exception {
+        DataSetIterator mnist = new MnistDataSetIterator(100, 6000);
+        NormalizerMinMaxScaler minMaxNormalizer = new NormalizerMinMaxScaler(0, 1);
+        minMaxNormalizer.fit(mnist);
+        DataSet d = mnist.next();
+        minMaxNormalizer.transform(d.getFeatures());
+        RPForest rpForest = new RPForest(50, 50, "euclidean");
+        rpForest.fit(d.getFeatures());
+        for (int i = 0; i < 10; i++) {
+            INDArray indexes = rpForest.queryAll(d.getFeatures().slice(i), 10);
+            assertEquals(i,indexes.getInt(0));
+        }
     }
-
 
     @Test
     public void testRpTreeMaxNodes() {
