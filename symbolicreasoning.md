@@ -24,7 +24,13 @@ That something else could be a physical object, an idea, an event, you name it. 
 
 The signifier indicates the signified, like a finger pointing at the moon. Symbols compress sensory data in a way that enables humans, those beings of limited bandwidth, to share information.<sup>[4](#four)</sup> 
 
-Combinations of symbols that express their relations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math; other times they express lessons we inductively derive from the world, as in: "the baby seems to prefer the pea-flavored goop."  
+Combinations of symbols that express their interrelations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math, or the conclusions you might draw from a logical syllogism:
+
+```
+All men are mortal; Caius is a man; therefore Caius is mortal.
+```
+
+Other times they express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop," or "my hand seems to burn when I touch the pot on the stove."  
 
 ## Symbolic AI
 
@@ -70,7 +76,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 <a name="three">3)</a> *The weird thing about writing about signs, of course, is that in the confines of a text, we're just using one set of signs to describe another in the hopes that the reader will respond to the sensory evocation and supply the necessary analog memories of `red` and `thorn`. But you get my drift.*
 
-<a name="four">4)</a> *According to science, the average American English speaker speaks at a rate of about 110–150 words per minute (wpm).*
+<a name="four">4)</a> *According to science, the average American English speaker speaks at a rate of about 110–150 words per minute (wpm). Just how much reality do you think will fit into a ten-minute transmission? *
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
