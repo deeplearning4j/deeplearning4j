@@ -17,7 +17,7 @@ import java.util.List;
  * https://github.com/lyst/rpforest
  * to nd4j
  *
- * @author Adam Gibson
+ * @author
  */
 public class RPUtils {
 

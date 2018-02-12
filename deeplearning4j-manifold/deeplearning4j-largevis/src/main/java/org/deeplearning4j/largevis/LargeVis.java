@@ -466,6 +466,10 @@ public class LargeVis {
     }
 
 
+    /**
+     * Test accuracy of the parameters.
+     * @return
+     */
     public int testAccuracy() {
         int testCase = 100;
         Counter<Integer> heap = new Counter<>();
@@ -544,8 +548,11 @@ public class LargeVis {
     }
 
 
-
-
+    /**
+     * Construct the k-nearest-neighbors tree including:
+     * Building and running the {@link RPForest} algorithm
+     *
+     */
 
     public void constructKnn() {
         if(normalize) {
@@ -738,6 +745,102 @@ public class LargeVis {
 
     }
 
+    /**
+     * Return the gradients wrt the distances of x and y
+     * relative to each other
+     * @param x the slice of vis to take the gradient of
+     * @param y the slice of y to take the gradient of
+     * @param i the current iteration
+     * @param currLr the current learning rate
+     * @return the gradients wrt x and y (in that order)
+     */
+    public INDArray[] gradientsFor(int x,int y,int i,double currLr) {
+        INDArray visY = vis.slice(y);
+        INDArray visX = vis.slice(x);
+        return gradientsFor(visX,visY,i,currLr);
+    }
+
+
+    /**
+     * Return the gradients wrt the distances of x and y
+     * relative to each other
+     * @param visX the slice of vis to take the gradient of
+     * @param visY the slice of y to take the gradient of
+     * @param i the current iteration
+     * @param currLr the current learning rate
+     * @return the gradients wrt x and y (in that order)
+     */
+    public INDArray[] gradientsFor(INDArray visX,INDArray visY,int i,double currLr) {
+        INDArray[] grads = new INDArray[2];
+        double g;
+        double f = RPUtils.computeDistance(distanceFunction,visX,visY);
+        if(i == 0) {
+            g = (-2 / (1 + f));
+        }
+        else {
+            g = 2 * gamma / (1 + f) / (0.1 + f);
+        }
+
+        //gradient wrt distance to x and y
+        grads[0] = visX.sub(visY).muli(g * currLr);
+        normalize(grads[0]);
+
+
+        //gradients wrt distance from y to x
+        grads[1]  = visY.sub(visX);
+        normalize(grads[1].muli(currLr));
+
+        return grads;
+    }
+
+
+    /**
+     * Compute the error wrt the given parameters given a sampled edge(p)
+     * and 2 vectors to compute the distance and error for
+     *
+     * @param visX the x component to compute the error for
+     * @param visY the y component to compute the error for
+     * @param y the index of y
+     * @param p the sample edge for random access
+     * @param currLr the current learning rate for the gradient update
+     * @return the error wrt the given parameters
+     */
+    public INDArray errorWrt(INDArray visX,INDArray visY,int y,int p,double currLr) {
+        INDArray err = Nd4j.create(outDim);
+        for(int i = 0; i < nNegatives + 1; i++) {
+            if(y > 0) {
+                y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1))];
+                if (y == edgeTo.get(p)) continue;
+            }
+
+            //get the gradient wrt x and y
+            INDArray[] grads = gradientsFor(visX,visY,i,currLr);
+            err.addi(grads[0]);
+            visY.addi(grads[1]);
+
+
+        }
+
+        return err;
+
+    }
+
+
+    /**
+     * Compute the error wrt the given parameters given a sampled edge(p)
+     * and 2 vectors to compute the distance and error for
+     *
+     * @param x the x component to compute the error for
+     * @param y the index of y
+     * @param p the sampled edge for random access
+     * @param currLr the current learning rate for the gradient update
+     * @return the error wrt the given parameters
+     */
+    public INDArray errorWrt(int x,int y,int p,double currLr) {
+        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr);
+
+    }
+
 
     private class VisualizeThread implements Runnable {
         private int id;
@@ -754,11 +857,6 @@ public class LargeVis {
         @Override
         public void run() {
             log.info("Starting visualize thread " + id);
-            double f;
-            double g;
-            INDArray gg;
-            INDArray curr = Nd4j.create(outDim);
-            INDArray err = Nd4j.create(outDim);
             int edgeCount = 0;
             int lastEdgeCount = 0;
             int p,x,y;
@@ -778,45 +876,17 @@ public class LargeVis {
                 p = sampleAnEdge(Nd4j.getRandom().nextGaussian(),Nd4j.getRandom().nextDouble());
                 x = edgeFrom.get(p);
                 y = edgeTo.get(p);
-                INDArray visY = vis.slice(y);
+                INDArray err = errorWrt(x,y,p,currLr);
+                //update the error for the given vector
                 INDArray visX = vis.slice(x);
-                curr.assign(visX);
-                for(int i = 0; i < nNegatives + 1; i++) {
-                    if(y > 0) {
-                        y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1))];
-                        if (y == edgeTo.get(p)) continue;
-                    }
-
-                    f = RPUtils.computeDistance(distanceFunction,curr,visY);
-                    if(i == 0) {
-                        g = (-2 / (1 + f));
-                    }
-                    else {
-                        g = 2 * gamma / (1 + f) / (0.1 + f);
-                    }
-
-
-
-                    //double check this
-
-                    gg = curr.sub(visY).mul(g * currLr);
-                    normalize(gg);
-                    err.addi(gg);
-
-                    gg = visY.sub(curr);
-                    normalize(gg);
-                    visY.addi(gg.mul(currLr));
-
-
-                }
-
                 visX.addi(err);
                 edgeCount++;
                 updateCount.getAndIncrement();
+                log.info("Updating visualize thread " + id + " with error " + err.sumNumber());
+
             }
 
             done.set(true);
-            log.info("Finishing visualize thread " + id + " with error " + err.sumNumber());
         }
     }
 

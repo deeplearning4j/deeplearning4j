@@ -5,11 +5,13 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Future;
 
 @Data
 public class RPNode {
     private int depth;
     private RPNode left,right;
+    private Future<RPNode> leftFuture,rightFuture;
     private List<Integer> indices;
     private double median;
     private RPTree tree;
@@ -20,4 +22,7 @@ public class RPNode {
         this.tree = tree;
         indices = new ArrayList<>();
     }
+
+
+
 }

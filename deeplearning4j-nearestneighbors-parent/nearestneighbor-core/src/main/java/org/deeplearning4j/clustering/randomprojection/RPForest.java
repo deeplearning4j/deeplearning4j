@@ -34,7 +34,7 @@ public class RPForest {
     public void fit(INDArray x) {
         this.data = x;
         for(int i = 0; i < numTrees; i++) {
-            RPTree tree = new RPTree(data.columns(),maxSize,similarityFunction);
+            RPTree tree = new RPTree(data.columns(),maxSize,0,similarityFunction);
             tree.buildTree(x);
             trees.add(tree);
         }
