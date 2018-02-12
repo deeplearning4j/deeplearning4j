@@ -12,6 +12,12 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 
+/**
+ * MaskLayer applies the mask array to the forward pass activations, and backward pass gradients, passing through
+ * this layer. It can be used with 2d (feed-forward), 3d (time series) or 4d (CNN) activations.
+ *
+ * @author Alex Black
+ */
 public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.util.MaskLayer> {
     private Gradient emptyGradient = new DefaultGradient();
 
