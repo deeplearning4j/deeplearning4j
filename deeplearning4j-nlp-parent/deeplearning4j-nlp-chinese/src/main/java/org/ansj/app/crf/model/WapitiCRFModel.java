@@ -302,7 +302,7 @@ public class WapitiCRFModel extends Model {
 
             List<String> matcherAll = StringUtil.matcherAll("\\[.*?\\]", temp);
 
-            if (matcherAll.size() == 0) {
+            if (matcherAll.isEmpty()) {
                 continue;
             }
 

@@ -114,7 +114,7 @@ public class NearestNeighborsServer {
                 labels.addAll(FileUtils.readLines(new File(labelsPathArr[i]), "utf-8"));
             }
         }
-        if (labels.size() > 0 && labels.size() != rows)
+        if (!labels.isEmpty() && labels.size() != rows)
             throw new DL4JInvalidInputException(String.format("Number of labels must match number of rows in points matrix (expected %d, found %d)", rows, labels.size()));
 
         final INDArray points = Nd4j.createUninitialized(rows, cols);
@@ -186,7 +186,7 @@ public class NearestNeighborsServer {
 
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
                 for (int i=0; i<results.size(); i++) {
-                    if (labels.size() > 0)
+                    if (!labels.isEmpty())
                         nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i), labels.get(results.get(i).getIndex())));
                     else
                         nnResult.add(new NearestNeighborsResult(results.get(i).getIndex(), distances.get(i)));

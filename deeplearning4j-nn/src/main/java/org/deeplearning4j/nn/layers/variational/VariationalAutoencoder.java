@@ -238,7 +238,7 @@ public class VariationalAutoencoder implements Layer {
             this.score += logPTheta / numSamples;
 
             //If we have any training listeners (for example, for UI StatsListener - pass on activations)
-            if (trainingListeners != null && trainingListeners.size() > 0 && l == 0) { //Note: only doing this on the *first* sample
+            if (trainingListeners != null && !trainingListeners.isEmpty() && l == 0) { //Note: only doing this on the *first* sample
                 Map<String, INDArray> activations = new LinkedHashMap<>();
                 for (int i = 0; i < fwd.encoderActivations.length; i++) {
                     activations.put("e" + i, fwd.encoderActivations[i]);
@@ -249,7 +249,7 @@ public class VariationalAutoencoder implements Layer {
                 }
                 activations.put(VariationalAutoencoderParamInitializer.PXZ_PREFIX,
                                 reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
-                if (trainingListeners.size() > 0) {
+                if (!trainingListeners.isEmpty()) {
                     try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         for (TrainingListener tl : trainingListeners) {
                             tl.onForwardPass(this, activations);
@@ -858,7 +858,7 @@ public class VariationalAutoencoder implements Layer {
         else
             trainingListeners.clear();
 
-        if (listeners != null && listeners.size() > 0) {
+        if (listeners != null && !listeners.isEmpty()) {
             iterationListeners.addAll(listeners);
             for (IterationListener il : listeners) {
                 if (il instanceof TrainingListener) {

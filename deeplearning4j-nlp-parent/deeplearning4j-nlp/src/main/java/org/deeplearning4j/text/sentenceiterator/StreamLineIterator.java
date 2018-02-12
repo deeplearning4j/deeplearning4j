@@ -66,7 +66,7 @@ public class StreamLineIterator implements SentenceIterator {
         }
 
         // actually its the same. You get string or you get null as result of poll, if buffer is empty after prefetch try
-        if (buffer.size() < 1)
+        if (buffer.isEmpty())
             return null;
         else
             return buffer.poll();

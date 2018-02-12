@@ -97,7 +97,7 @@ public class ParallelTransformerIterator extends BasicTransformerIterator {
         else
             underlyingHas = false;
 
-        return (underlyingHas || buffer.size() > 0 || stringBuffer.size() > 0 || processing.get() > 0);
+        return (underlyingHas || !buffer.isEmpty() || !stringBuffer.isEmpty() || processing.get() > 0);
     }
 
     @Override

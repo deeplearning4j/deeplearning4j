@@ -471,7 +471,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             maxTSLength = list.get(0).size();
         INDArray arr;
 
-        if (list.get(0).size() == 0) {
+        if (list.get(0).isEmpty()) {
             throw new ZeroLengthSequenceException("Zero length sequence encountered");
         }
 

@@ -406,7 +406,7 @@ public class KerasLayerUtils {
         List<String> inboundLayerNames = new ArrayList<>();
         if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
             List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
-            if (inboundNodes.size() > 0) {
+            if (!inboundNodes.isEmpty()) {
                 inboundNodes = (List<Object>) inboundNodes.get(0);
                 for (Object o : inboundNodes) {
                     String nodeName = (String) ((List<Object>) o).get(0);

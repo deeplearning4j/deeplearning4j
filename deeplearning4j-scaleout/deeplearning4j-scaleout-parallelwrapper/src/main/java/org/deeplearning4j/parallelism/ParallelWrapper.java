@@ -860,7 +860,7 @@ public class ParallelWrapper implements AutoCloseable {
                 model.setListeners(Collections.emptyList());
             }
 
-            if (modelListeners != null && modelListeners.size() > 0) {
+            if (modelListeners != null && !modelListeners.isEmpty()) {
                 wrapper.setListeners(modelListeners);
             }
 

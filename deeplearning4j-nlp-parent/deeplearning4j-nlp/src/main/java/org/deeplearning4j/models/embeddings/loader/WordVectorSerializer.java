@@ -956,7 +956,7 @@ public class WordVectorSerializer {
                     }
 
                     // it's possible to have full model without syn1Neg
-                    if (rows.size() > 0) {
+                    if (!rows.isEmpty()) {
                         INDArray syn1Neg = Nd4j.vstack(rows);
                         ((InMemoryLookupTable) w2v.getLookupTable()).setSyn1Neg(syn1Neg);
                     }
@@ -1026,7 +1026,7 @@ public class WordVectorSerializer {
         reader.close();
 
         // it's possible to have full model without syn1
-        if (rows.size() > 0) {
+        if (!rows.isEmpty()) {
             INDArray syn1 = Nd4j.vstack(rows);
             lookupTable.setSyn1(syn1);
         }

@@ -153,7 +153,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     }
 
     private void initializeUnderlying(SequenceRecord nextF) {
-        if (nextF.getSequenceRecord().size() == 0) {
+        if (nextF.getSequenceRecord().isEmpty()) {
             throw new ZeroLengthSequenceException();
         }
         int totalSizeF = nextF.getSequenceRecord().get(0).size();

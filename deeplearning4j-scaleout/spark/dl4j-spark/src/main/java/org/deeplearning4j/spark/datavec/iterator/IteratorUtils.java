@@ -79,7 +79,7 @@ public class IteratorUtils {
         checkIterator(iterator, (rdds == null ? 0 : rdds.size()), (seqRdds == null ? 0 : seqRdds.size()));
         assertNullOrSameLength(rdds, rddsKeyColumns, false);
         assertNullOrSameLength(seqRdds, seqRddsKeyColumns, true);
-        if((rdds == null || rdds.size() == 0) && (seqRdds == null || seqRdds.size() == 0) ){
+        if((rdds == null || rdds.isEmpty()) && (seqRdds == null || seqRdds.isEmpty()) ){
             throw new IllegalArgumentException();
         }
 
@@ -139,7 +139,7 @@ public class IteratorUtils {
         private int keyIndex;
         @Override
         public Tuple2<Writable, DataVecRecord> call(List<List<Writable>> seq) throws Exception {
-            if(seq.size() == 0){
+            if(seq.isEmpty()){
                 throw new IllegalStateException("Sequence of length 0 encountered");
             }
             return new Tuple2<>(seq.get(0).get(keyIndex), new DataVecRecord(readerIdx, null, seq));

@@ -233,7 +233,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
     @Override
     public List<Serializable> getDataSetMetaData() {
-        if (dataSetMetaData == null || dataSetMetaData.size() == 0)
+        if (dataSetMetaData == null || dataSetMetaData.isEmpty())
             return null;
 
         List<Serializable> l = new ArrayList<>();
@@ -274,7 +274,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
     @Override
     public boolean hasGarbageCollection() {
-        return gcStats != null && gcStats.size() > 0;
+        return gcStats != null && !gcStats.isEmpty();
     }
 
     @Override
@@ -460,7 +460,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         //GC stats group length
         bufferSize += 4; //Group header: always present
         List<byte[]> gcStatsLabelBytes = null;
-        if (gcStats != null && gcStats.size() > 0) {
+        if (gcStats != null && !gcStats.isEmpty()) {
             gcStatsLabelBytes = new ArrayList<>();
             for (int i = 0; i < gcStats.size(); i++) {
                 GCStats stats = gcStats.get(i);
@@ -496,7 +496,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
 
         //Metadata group:
         bufferSize += 4; //Metadata group header: always present
-        if (dataSetMetaData != null && dataSetMetaData.size() > 0) {
+        if (dataSetMetaData != null && !dataSetMetaData.isEmpty()) {
             for (byte[] b : dataSetMetaData) {
                 bufferSize += 4 + b.length; //4 bytes header + content
             }
@@ -688,16 +688,16 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                             .minibatchesPerSecond((float) minibatchesPerSecond);
         }
 
-        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.size() == 0 ? 0 : gcStats.size());
+        UpdateEncoder.GcStatsEncoder gce = ue.gcStatsCount(gcStats == null || gcStats.isEmpty() ? 0 : gcStats.size());
         List<byte[]> gcStatsLabelBytes = null;
-        if (gcStats != null && gcStats.size() > 0) {
+        if (gcStats != null && !gcStats.isEmpty()) {
             gcStatsLabelBytes = new ArrayList<>();
             for (GCStats stats : gcStats) {
                 byte[] nameAsBytes = SbeUtil.toBytes(true, stats.gcName);
                 gcStatsLabelBytes.add(nameAsBytes);
             }
         }
-        if (gcStats != null && gcStats.size() > 0) {
+        if (gcStats != null && !gcStats.isEmpty()) {
             int i = 0;
             for (GCStats g : gcStats) {
                 byte[] gcLabelBytes = gcStatsLabelBytes.get(i++);
@@ -868,7 +868,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
         // +++ DataSet MetaData +++
         UpdateEncoder.DataSetMetaDataBytesEncoder metaEnc =
                         ue.dataSetMetaDataBytesCount(dataSetMetaData != null ? dataSetMetaData.size() : 0);
-        if (dataSetMetaData != null && dataSetMetaData.size() > 0) {
+        if (dataSetMetaData != null && !dataSetMetaData.isEmpty()) {
             for (byte[] b : dataSetMetaData) {
                 metaEnc = metaEnc.next();
                 UpdateEncoder.DataSetMetaDataBytesEncoder.MetaDataBytesEncoder mdbe =

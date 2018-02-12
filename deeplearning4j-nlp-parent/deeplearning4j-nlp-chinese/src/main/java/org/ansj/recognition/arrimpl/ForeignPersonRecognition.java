@@ -61,7 +61,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
 
             term = terms[i];
             // 如果名字的开始是人名的前缀,或者后缀.那么忽略
-            if (tempList.size() == 0) {
+            if (tempList.isEmpty()) {
                 if (term.termNatures().personAttr.end > 10) {
                     continue;
                 }
@@ -148,7 +148,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
 
             term = terms[i];
             // 如果名字的开始是人名的前缀,或者后缀.那么忽略
-            if (tempList.size() == 0) {
+            if (tempList.isEmpty()) {
                 if (term.termNatures().personAttr.end > 10) {
                     continue;
                 }
@@ -190,7 +190,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
 
             term = terms[i];
             // 如果名字的开始是人名的前缀,或者后缀.那么忽略
-            if (tempList.size() == 0) {
+            if (tempList.isEmpty()) {
                 if (term.termNatures().personAttr.end > 10) {
                     continue;
                 }
