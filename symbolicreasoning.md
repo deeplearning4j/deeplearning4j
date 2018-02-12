@@ -6,11 +6,13 @@ redirect_from: deepsymboliclearning
 
 # Deep Learning & Symbolic Reasoning
 
+Deep learning has its discontents, and many of them look to other branches of AI when they hope for the future. Symbolic reasoning is one of those branches. 
+
 The two biggest flaws of deep learning are its lack of model interpretability (i.e. why did my model make that prediction?) and the amount of data that deep neural networks require in order to learn. They are data hungry.
 
 Geoff Hinton himself has [expressed scepticism](https://www.axios.com/artificial-intelligence-pioneer-says-we-need-to-start-over-1513305524-f619efbd-9db0-4947-a9b2-7a4c310a28fe.html) about whether backpropagation, the workhorse of deep neural nets, will be the way forward for AI.<sup>[1](#one)</sup>   
 
-Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to manipulate, generate and otherwise cohabitate with concepts, could help solve explainability, because, after all, humans communicate with signs and symbols, and that is what we desire from machines.<sup>[2](#two)</sup> 
+Research into so-called one-shot learning could address deep learning's data hunger, while deep symbolic learning, or enabling deep neural networks to manipulate, generate and otherwise cohabitate with concepts expressed in strings of characters, could help solve explainability, because, after all, humans communicate with signs and symbols, and that is what we desire from machines.<sup>[2](#two)</sup> 
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH AI</a>
