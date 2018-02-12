@@ -23,7 +23,9 @@ import org.deeplearning4j.arbiter.scoring.impl.ROCScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,14 +53,17 @@ public class TestScoreFunctions {
                 String msg = (auc ? "AUC" : "AUPRC") + " - " + rocType;
                 log.info("Starting: " + msg);
 
-                ParameterSpace<Double> lr = new ContinuousParameterSpace(1e-5, 1e-2);
+                ParameterSpace<Double> lr = new ContinuousParameterSpace(1e-5, 1e-3);
 
                 int nOut = (rocType == ROCScoreFunction.ROCType.ROC ? 2 : 10);
-                LossFunctions.LossFunction lf = (rocType == ROCScoreFunction.ROCType.MULTICLASS ?
-                        LossFunctions.LossFunction.MCXENT : LossFunctions.LossFunction.XENT);
-                Activation a = (rocType == ROCScoreFunction.ROCType.MULTICLASS ? Activation.SOFTMAX : Activation.SIGMOID);
+                LossFunctions.LossFunction lf = (rocType == ROCScoreFunction.ROCType.BINARY ?
+                        LossFunctions.LossFunction.XENT : LossFunctions.LossFunction.MCXENT);
+                Activation a = (rocType == ROCScoreFunction.ROCType.BINARY ? Activation.SIGMOID : Activation.SOFTMAX);
                 MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                        .trainingWorkspaceMode(WorkspaceMode.NONE)
+                        .inferenceWorkspaceMode(WorkspaceMode.NONE)
                         .updater(new AdamSpace(lr))
+                        .weightInit(WeightInit.XAVIER)
                         .layer(new OutputLayerSpace.Builder().nIn(784).nOut(nOut)
                                 .activation(a)
                                 .lossFunction(lf).build())
@@ -66,8 +71,7 @@ public class TestScoreFunctions {
 
                 CandidateGenerator cg = new RandomSearchGenerator(mls);
                 ResultSaver rs = new InMemoryResultSaver();
-                ScoreFunction sf = new ROCScoreFunction(ROCScoreFunction.ROCType.MULTICLASS,
-                        (auc ? ROCScoreFunction.Metric.AUC : ROCScoreFunction.Metric.AUPRC));
+                ScoreFunction sf = new ROCScoreFunction(rocType, (auc ? ROCScoreFunction.Metric.AUC : ROCScoreFunction.Metric.AUPRC));
 
 
                 OptimizationConfiguration oc = new OptimizationConfiguration.Builder()
@@ -76,6 +80,7 @@ public class TestScoreFunctions {
                         .modelSaver(rs)
                         .scoreFunction(sf)
                         .terminationConditions(new MaxCandidatesCondition(3))
+                        .rngSeed(12345)
                         .build();
 
                 IOptimizationRunner runner = new LocalOptimizationRunner(oc, new MultiLayerNetworkTaskCreator());
@@ -93,12 +98,15 @@ public class TestScoreFunctions {
                     net.doEvaluation(testIter, r);
 
                     double expScore;
+                    double aucTemp = r.calculateAverageAUC();
+                    double auprcTemp = r.calculateAverageAUCPR();
                     if (auc) {
                         expScore = r.calculateAverageAUC();
                     } else {
                         expScore = r.calculateAverageAUCPR();
                     }
 
+                    System.out.println(msg + "\t" + aucTemp + "\t" + auprcTemp);
                     assertEquals(msg, expScore, or.getScore(), 1e-5);
                 }
             }
@@ -147,8 +155,8 @@ public class TestScoreFunctions {
             switch (rocType){
                 case ROC:
                     //Convert to binary
-                    int mb = toPreProcess.getFeatures().size(0);
-                    INDArray argMax = Nd4j.argMax(toPreProcess.getFeatures(), 1);
+                    int mb = toPreProcess.getLabels().size(0);
+                    INDArray argMax = Nd4j.argMax(toPreProcess.getLabels(), 1);
                     INDArray newLabel = Nd4j.create(mb, 2);
                     for( int i=0; i<mb; i++ ){
                         int idx = (int)argMax.getDouble(i, 0);
