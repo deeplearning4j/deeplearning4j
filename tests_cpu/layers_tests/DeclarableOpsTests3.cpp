@@ -266,7 +266,7 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_1) {
     NDArray<float> exp('c', {1, 4}, {1, 3, 6, 10});
 
     nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.execute({&x}, {}, {0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -282,7 +282,7 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_2) {
     NDArray<float> exp('c', {2, 4}, {1, 3, 6, 10, 1, 3, 6, 10});
 
     nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {1});
+    auto result = op.execute({&x}, {}, {0, 0, 1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -298,7 +298,7 @@ TEST_F(DeclarableOpsTests3, Test_CumSum_3) {
     NDArray<float> exp('c', {2, 4}, {1, 2, 3, 4, 2, 4, 6, 8});
 
     nd4j::ops::cumsum<float> op;
-    auto result = op.execute({&x}, {}, {0});
+    auto result = op.execute({&x}, {}, {0, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);

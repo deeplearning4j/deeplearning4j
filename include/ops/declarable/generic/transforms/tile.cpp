@@ -28,18 +28,13 @@ namespace nd4j {
                 for (int e = 0; e < input->rankOf(); e++)
                     shape[e] = input->sizeAt(e) * reps[e];
 
-                output = new NDArray<T>(input->ordering(), shape, block.getWorkspace());
+                output = OUTPUT_VARIABLE(0);
 
-                overwrite = true;
             } else {
                 REQUIRE_TRUE(false, 0, "Tile: this op requires input array and repeats vector, either as IArgs or second array");
             }
             
             input->tile(reps, *output);
-
-            if (overwrite) {
-                OVERWRITE_RESULT(output);
-            }
 
             return ND4J_STATUS_OK;
         }
@@ -66,8 +61,17 @@ namespace nd4j {
                 else
                     shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
             } else {
+                auto r = INPUT_VARIABLE(1);
+                auto reps = r->template asVectorT<int>();
+
                 // runtime evaluation, sorry
-                REPLICATE_SHAPE(inShape, newShape);
+                for (int e = 0; e < shape.size(); e++)
+                    shape[e] *= reps[e];
+
+                if (shape::order(inShape) == 'c')
+                    shape::shapeBuffer(shape.size(), shape.data(), newShape);
+                else
+                    shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
             }
 
             shapeList->push_back(newShape);

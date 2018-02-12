@@ -12,45 +12,108 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T, typename OpName>
-            void _prefix(T* x, int* xShapeInfo, T* z, int* zShapeInfo) {
-                auto length = shape::length(xShapeInfo);
+            void _prefix(T* x, int* xShapeInfo, T* z, int* zShapeInfo, bool exclusive, bool reverse) {
+                auto length = (int) shape::length(xShapeInfo);
 
-                if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 && shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
-                    T sum = (T) 0;                    
-#pragma omp simd                    
-                    for (int e = 0; e < length; e++) {
-                        sum = OpName::op(sum, x[e]);
-                        z[e] = sum;
+                if (reverse) {
+                    if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
+                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
+                        T prevSum = (T) 0;
+                        T sum = (T) 0;
+
+                        for (int e = length - 1; e >= 0; --e) {
+                            sum = OpName::op(sum, x[e]);
+                            if (!exclusive)
+                                prevSum = sum;
+
+                            z[e] = prevSum;
+
+                            prevSum = sum;
+                        }
+                    } else {
+                        int xCoord[MAX_RANK];
+                        int zCoord[MAX_RANK];
+                        T prevSum = (T) 0;
+                        T sum = (T) 0;
+
+                        int xRank = shape::rank(xShapeInfo);
+                        int zRank = shape::rank(zShapeInfo);
+
+                        int *xShape = shape::shapeOf(xShapeInfo);
+                        int *zShape = shape::shapeOf(zShapeInfo);
+
+                        int *xStride = shape::stride(xShapeInfo);
+                        int *zStride = shape::stride(zShapeInfo);
+
+                        for (int e = length - 1; e >= 0; --e) {
+                            shape::ind2subC(xRank, xShape, e, xCoord);
+                            shape::ind2subC(zRank, zShape, e, zCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+                            sum = OpName::op(sum, x[xOffset]);
+                            if (!exclusive)
+                                prevSum = sum;
+
+                            z[zOffset] = prevSum;
+
+                            prevSum = sum;
+                        }
                     }
                 } else {
-                    int xCoord[MAX_RANK];
-                    int zCoord[MAX_RANK];
-                    T sum = (T) 0;  
+                    if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
+                        shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
+                        T prevSum = (T) 0;
+                        T sum = (T) 0;
 
-                    int xRank = shape::rank(xShapeInfo);
-                    int zRank = shape::rank(zShapeInfo);
+                        for (int e = 0; e < length; e++) {
+                            sum = OpName::op(sum, x[e]);
 
-                    int *xShape = shape::shapeOf(xShapeInfo);
-                    int *zShape = shape::shapeOf(zShapeInfo);
+                            if (!exclusive)
+                                prevSum = sum;
 
-                    int *xStride = shape::stride(xShapeInfo);
-                    int *zStride = shape::stride(zShapeInfo);
+                            z[e] = prevSum;
 
-                    for (int e = 0; e < length; e++) {
-                        shape::ind2subC(xRank, xShape, e, xCoord);
-                        shape::ind2subC(zRank, zShape, e, zCoord);
+                            prevSum = sum;
+                        }
+                    } else {
+                        int xCoord[MAX_RANK];
+                        int zCoord[MAX_RANK];
+                        T prevSum = (T) 0;
+                        T sum = (T) 0;
 
-                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+                        int xRank = shape::rank(xShapeInfo);
+                        int zRank = shape::rank(zShapeInfo);
 
-                        sum = OpName::op(sum, x[xOffset]);
-                        z[zOffset] = sum;
+                        int *xShape = shape::shapeOf(xShapeInfo);
+                        int *zShape = shape::shapeOf(zShapeInfo);
+
+                        int *xStride = shape::stride(xShapeInfo);
+                        int *zStride = shape::stride(zShapeInfo);
+
+                        for (int e = 0; e < length; e++) {
+                            shape::ind2subC(xRank, xShape, e, xCoord);
+                            shape::ind2subC(zRank, zShape, e, zCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+                            sum = OpName::op(sum, x[xOffset]);
+
+                            if (!exclusive)
+                                prevSum = sum;
+
+                            z[zOffset] = prevSum;
+
+                            prevSum = sum;
+                        }
                     }
                 }
             };
 
             template <typename T, typename OpName>
-            void _prefix(NDArray<T>* x, NDArray<T>* z, std::vector<int>& dims) {
+            void _prefix(NDArray<T>* x, NDArray<T>* z, std::vector<int>& dims, bool exclusive, bool reverse) {
                 auto xTads = NDArrayFactory<T>::allTensorsAlongDimension(x, dims);
                 auto zTads = NDArrayFactory<T>::allTensorsAlongDimension(z, dims);
                 int t = xTads->size();
@@ -60,29 +123,29 @@ namespace nd4j {
                     auto tx = xTads->at(e);
                     auto tz = zTads->at(e);
 
-                    _prefix<T, OpName>(tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo());
+                    _prefix<T, OpName>(tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo(), exclusive, reverse);
                 }
 
                 delete xTads;
                 delete zTads;
             };
 
-            template void _prefix<float, simdOps::Add<float>>(float* x, int* xShapeInfo, float* z, int* zShapeInfo);
-            template void _prefix<float16, simdOps::Add<float16>>(float16* x, int* xShapeInfo, float16* z, int* zShapeInfo);
-            template void _prefix<double, simdOps::Add<double>>(double* x, int* xShapeInfo, double* z, int* zShapeInfo);
+            template void _prefix<float, simdOps::Add<float>>(float* x, int* xShapeInfo, float* z, int* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<float16, simdOps::Add<float16>>(float16* x, int* xShapeInfo, float16* z, int* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<double, simdOps::Add<double>>(double* x, int* xShapeInfo, double* z, int* zShapeInfo, bool exclusive, bool reverse);
 
-            template void _prefix<float, simdOps::Multiply<float>>(float* x, int* xShapeInfo, float* z, int* zShapeInfo);
-            template void _prefix<float16, simdOps::Multiply<float16>>(float16* x, int* xShapeInfo, float16* z, int* zShapeInfo);
-            template void _prefix<double, simdOps::Multiply<double>>(double* x, int* xShapeInfo, double* z, int* zShapeInfo);
+            template void _prefix<float, simdOps::Multiply<float>>(float* x, int* xShapeInfo, float* z, int* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<float16, simdOps::Multiply<float16>>(float16* x, int* xShapeInfo, float16* z, int* zShapeInfo, bool exclusive, bool reverse);
+            template void _prefix<double, simdOps::Multiply<double>>(double* x, int* xShapeInfo, double* z, int* zShapeInfo, bool exclusive, bool reverse);
 
 
-            template void _prefix<float, simdOps::Add<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims);
-            template void _prefix<float16, simdOps::Add<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims);
-            template void _prefix<double, simdOps::Add<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims);
+            template void _prefix<float, simdOps::Add<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<float16, simdOps::Add<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<double, simdOps::Add<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
 
-            template void _prefix<float, simdOps::Multiply<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims);
-            template void _prefix<float16, simdOps::Multiply<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims);
-            template void _prefix<double, simdOps::Multiply<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims);
+            template void _prefix<float, simdOps::Multiply<float>>(NDArray<float>* x, NDArray<float>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<float16, simdOps::Multiply<float16>>(NDArray<float16>* x, NDArray<float16>* z, std::vector<int>& dims, bool exclusive, bool reverse);
+            template void _prefix<double, simdOps::Multiply<double>>(NDArray<double>* x, NDArray<double>* z, std::vector<int>& dims, bool exclusive, bool reverse);
         }
     }
 }
