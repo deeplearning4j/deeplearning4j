@@ -20,19 +20,19 @@ Research into so-called one-shot learning could address deep learning's data hun
 
 ## Signs, Symbols, Signifiers and Signifieds
 
-The words *sign* and *symbol* derive from Latin and Greek words, respectively, that mean *mark* or *token*, as in "take this rose as a token of my esteem." Both words mean "to stand for something" or "to represent something else". 
+The words *sign* and *symbol* derive from Latin and Greek words, respectively, that mean *mark* or *token*, as in "take this rose as a token of my esteem." Both words mean "to stand for something else" or "to represent something else". 
 
-That something else could be a physical object, an idea, an event, you name it. So the sign or symbol is a visual pattern, say a character or string of characters, in which meaning is embedded, and that sign or symbol is pointing at something else. It could be the variable `x` or it could be the word `rose`, which is pointing at the red, curling petals layered one over the other in a tight spiral at the end of a stalk of thorns.<sup>[3](#three)</sup>  
+That something else could be a physical object, an idea, an event, you name it. For our purposes, the sign or symbol is a visual pattern, say a character or string of characters, in which meaning is embedded, and that sign or symbol is pointing at something else. It could be the variable `x`, pointing at an unknown quantity, or it could be the word `rose`, which is pointing at the red, curling petals layered one over the other in a tight spiral at the end of a stalk of thorns.<sup>[3](#three)</sup>  
 
 The signifier indicates the signified, like a finger pointing at the moon. Symbols compress sensory data in a way that enables humans, those beings of limited bandwidth, to share information.<sup>[4](#four)</sup> 
 
-Combinations of symbols that express their interrelations could be called *reasoning*. Sometimes those symbolic relations are necessary and deductive, as in the formulas of pure math, or the conclusions you might draw from a logical syllogism like this old Roman chestnut:
+Combinations of symbols that express their interrelations could be called *reasoning*, and when we humans string a bunch of signs together to express thought, as I am doing now, you might call it *symbolic manipulation*. Sometimes those symbolic relations are necessary and deductive, as with the formulas of pure math or the conclusions you might draw from a logical syllogism like this old Roman chestnut:
 
 ```
 All men are mortal; Caius is a man; therefore Caius is mortal.
 ```
 
-Other times they express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop (so for godssake let's make sure we keep some in the fridge)," or "my hand seems to burn when I touch the pot on the stove."  
+Other times the symbols express lessons we derive inductively from our experiences of the world, as in: "the baby seems to prefer the pea-flavored goop (so for godssake let's make sure we keep some in the fridge)," or "my hand seems to burn when I touch the pot on the stove" or `E = mc<sup>2</sup>`.  
 
 ## Symbolic AI
 
