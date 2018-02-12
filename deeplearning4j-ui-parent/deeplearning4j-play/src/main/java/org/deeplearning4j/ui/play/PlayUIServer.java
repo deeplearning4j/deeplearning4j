@@ -439,6 +439,7 @@ public class PlayUIServer extends UIServer {
                 try {
                     Thread.sleep(uiProcessingDelay);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     if (!shutdown.get()) {
                         throw new RuntimeException("Unexpected interrupted exception", e);
                     }

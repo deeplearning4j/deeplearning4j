@@ -252,7 +252,6 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             INDArray temp = isPosLabelForBinProbs.sum(0);
             probHistogramByLabelClass.getRow(j).addi(temp);
         }
-        System.out.println();
     }
 
     @Override

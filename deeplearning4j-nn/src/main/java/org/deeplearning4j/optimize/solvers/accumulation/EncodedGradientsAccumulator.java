@@ -507,6 +507,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     try {
                         messages.get(i).put(compressed);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         log.info("Something bad at index_{}", i);
                         throw new RuntimeException(e);
                     }

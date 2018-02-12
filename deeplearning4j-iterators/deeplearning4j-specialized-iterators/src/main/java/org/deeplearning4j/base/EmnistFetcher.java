@@ -32,7 +32,7 @@ import java.io.File;
 public class EmnistFetcher extends MnistFetcher {
     protected static final String LOCAL_DIR_NAME = "EMNIST";
 
-    private static final String baseURL = "http://benchmark.deeplearn.online/emnist/";
+    private static final String baseURL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/emnist/";
 
     private final EmnistDataSetIterator.Set ds;
 

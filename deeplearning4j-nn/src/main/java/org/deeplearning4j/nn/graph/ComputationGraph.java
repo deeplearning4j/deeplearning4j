@@ -1247,9 +1247,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             Set<Integer> inputSet = new HashSet<>();
             for (String s : inputsToThisVertex) {
                 Integer inputIdx = vertexNamesMap2.get(s);
-                if (inputIdx == null) {
-                    System.out.println();
-                }
                 inputSet.add(inputIdx);
                 Set<Integer> outputSetForInputIdx = outputEdges.get(inputIdx);
                 if (outputSetForInputIdx == null) {
@@ -3299,6 +3296,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
+
+    /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
+     * Defaults to exact mode for {@link ROC} class, instead of thresholded
+     *
+     * @param iterator          Data to evaluate on
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(DataSetIterator iterator) {
+        return evaluateROC(iterator, 0);
+    }
     /**
      * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
      *
@@ -3311,6 +3319,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
+     * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class.
+     * Defaults to exact mode for {@link ROC} class, instead of thresholded
+     *
+     * @param iterator          Data to evaluate on
+     * @return ROC evaluation on the given dataset
+     */
+    public ROC evaluateROC(MultiDataSetIterator iterator) {
+        return evaluateROC(iterator, 0);
+    }
+
+    /**
      * Evaluate the network (must be a binary classifier) on the specified data, using the {@link ROC} class
      *
      * @param iterator          Data to evaluate on
@@ -3319,6 +3338,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
         return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
+    }
+
+    /**
+     * Evaluate the network on the specified data, using the {@link ROCMultiClass} class.
+     * Defaults to exact mode for {@link ROCMultiClass} class, instead of thresholded
+     *
+     * @param iterator          Data to evaluate on
+     * @return Multi-class ROC evaluation on the given dataset
+     */
+    public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator) {
+        return evaluateROCMultiClass(iterator, 0);
     }
 
     /**

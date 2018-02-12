@@ -139,6 +139,7 @@ public class ParallelInference {
             try {
                 observables.put(observable);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
         } else {
@@ -344,6 +345,7 @@ public class ParallelInference {
                     }
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -391,6 +393,7 @@ public class ParallelInference {
                     if (isNew)
                         targetQueue.put(currentObservable);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                 }
 
