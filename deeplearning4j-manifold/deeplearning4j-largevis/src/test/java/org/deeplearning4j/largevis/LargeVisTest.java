@@ -4,6 +4,8 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 
+import static org.junit.Assert.assertNotNull;
+
 public class LargeVisTest {
 
     @Test
@@ -14,6 +16,7 @@ public class LargeVisTest {
                 .normalize(true)
                 .seed(42).build();
         largeVis.fit();
+        assertNotNull(largeVis.getResult());
     }
 
 }

@@ -1,6 +1,7 @@
 package org.deeplearning4j.clustering.randomprojection;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -11,6 +12,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RPTreeTest {
 
@@ -36,5 +38,28 @@ public class RPTreeTest {
         rpTree.addNodeAtIndex(150,data.getRow(0));
 
     }
+
+    @Test
+    public void testFindSelf() {
+        //DataSetIterator mnist = new MnistDataSetIterator();
+    }
+
+
+    @Test
+    public void testRpTreeMaxNodes() {
+        DataSetIterator mnist = new IrisDataSetIterator(150,150);
+        RPForest rpTree = new RPForest(4,4,"euclidean");
+        DataSet d = mnist.next();
+        NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
+        normalizerStandardize.fit(d);
+        rpTree.fit(d.getFeatures());
+        for(RPTree tree : rpTree.getTrees()) {
+            for(RPNode node : tree.getLeaves()) {
+                assertTrue(node.getIndices().size() <= rpTree.getMaxSize());
+            }
+        }
+
+    }
+
 
 }

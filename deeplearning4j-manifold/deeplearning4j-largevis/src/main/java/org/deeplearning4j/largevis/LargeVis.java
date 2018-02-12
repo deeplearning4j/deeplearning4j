@@ -19,18 +19,29 @@ import org.nd4j.list.IntNDArrayList;
 import org.nd4j.list.NDArrayList;
 import org.nd4j.list.matrix.IntMatrixNDArrayList;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
+
+/**
+ * A port of the LargeVis algorithm:
+ * https://github.com/lferry007/LargeVis
+ *
+ * to nd4j. This implementation uses
+ * RPTrees rather than annoy as in the original implementation.
+ *
+ *
+ * This algorithm also uses the nd4j updaters (to allow for more flexibility)
+ * over static gradient clipping and the simpler learning rate schedule.
+ *
+ * @author Adam Gibson
+ */
 @Data
 @Slf4j
 public class LargeVis {
@@ -88,16 +99,19 @@ public class LargeVis {
     @Builder.Default
     private long seed = 42;
     @Builder.Default
-    private boolean normalize = true;
-
+    private Boolean normalize = true;
+    @Builder.Default
+    private int iterationCount = 200;
     private int negSize = (int) 1e8;
+
 
     private int edgeCountActual = 0;
 
+    private AtomicInteger updateCount = new AtomicInteger(0);
+    private AtomicInteger epochCount = new AtomicInteger(0);
     private IntNDArrayList edgeFrom = new IntNDArrayList();
     private IntNDArrayList edgeTo = new IntNDArrayList();
     private ExecutorService executorService;
-    private Object lock = new Object();
     protected final AtomicInteger workerCounter = new AtomicInteger(0);
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
@@ -120,10 +134,19 @@ public class LargeVis {
                     double perplexity,
                     int nPropagations,
                     long seed,int nNeighbors,
-                    boolean normalize,
+                    Boolean normalize,
+                    int iterationCount,
                     IUpdater updater) {
+        if(iterationCount > 0) {
+            this.iterationCount = iterationCount;
+        }
 
-        this.updater = updater;
+        if(normalize != null) {
+            this.normalize = normalize;
+        }
+
+        if(updater != null)
+            this.updater = updater;
         this.normalize = normalize;
         this.vec = vec;
         if(maxSize > 0)
@@ -433,7 +456,7 @@ public class LargeVis {
 
 
     public int sampleAnEdge(double rand1,double rand2) {
-        int k = (int)( (nEdges - 0.1) * rand1);
+        int k = MathUtils.randomNumberBetween(0,nEdges - 1);
         return rand2 <= prob.getDouble(k) ? k : alias[k];
     }
 
@@ -594,16 +617,16 @@ public class LargeVis {
             log.info("Starting compute similarity thread " + id);
             int low = id  * vec.rows() / numWorkers;
             int high = (id + 1) * vec.rows() / numWorkers;
-            int loBeta = 0;
-            int hiBeta = 0;
+            double loBeta = 0;
+            double hiBeta = 0;
             int H = 0;
             double tmp = 0;
             double sumWeight = Double.MIN_VALUE;
 
             for(int x = low; x < high; x++) {
-                int beta = 1;
+                double beta = 1.0;
                 loBeta = hiBeta = -1;
-                for(int iter = 0; iter < 200; iter++) {
+                for(int iter = 0; iter < iterationCount; iter++) {
                     H = 0;
                     for(int p = head.get(x); p >= 0; p = next.get(p)) {
                         sumWeight  += tmp = Math.exp(- beta * edgeWeight.get(p));
@@ -627,6 +650,19 @@ public class LargeVis {
                             beta = (int) Double.MAX_VALUE;
                         }
                     }
+                    else {
+                        hiBeta = beta;
+                        if(loBeta < 0) {
+                            beta /= 2;
+                        }
+                        else {
+                            beta = (loBeta + beta) / 2;
+                        }
+                    }
+
+                    if(beta > Float.MAX_VALUE) {
+                        beta = Float.MAX_VALUE;
+                    }
 
 
                     sumWeight = Double.MIN_VALUE;
@@ -637,7 +673,7 @@ public class LargeVis {
                     }
 
 
-                    edgeWeight.array().divi(sumWeight);
+                    edgeWeight.array().divi(sumWeight + 1e-12);
 
 
                 }
@@ -666,17 +702,15 @@ public class LargeVis {
         @Override
         public void run() {
             log.info("Starting visualize thread " + id);
-            double f = initialAlpha;
-            double g = initialAlpha;
+            double f;
+            double g;
             INDArray gg;
-            double currAlpha = initialAlpha;
             INDArray curr = Nd4j.create(outDim);
             INDArray err = Nd4j.create(outDim);
-            double gradClip = 5.0;
             int edgeCount = 0;
             int lastEdgeCount = 0;
             int p,x,y;
-            gradientUpdater = updater.instantiate(err,false);
+            double currLr = initialAlpha;
             while(true) {
                 if(edgeCount > nSamples / numWorkers + 2) {
                     break;
@@ -685,52 +719,45 @@ public class LargeVis {
                 if(edgeCount - lastEdgeCount > 10000) {
                     edgeCountActual += edgeCount - lastEdgeCount;
                     lastEdgeCount = edgeCount;
-                    currAlpha = initialAlpha * (1 - edgeCountActual / (nSamples + 1.0));
+                    currLr = updater.getLearningRate(updateCount.get(),epochCount.get());
+                    epochCount.getAndIncrement();
                 }
 
                 p = sampleAnEdge(Nd4j.getRandom().nextGaussian(),Nd4j.getRandom().nextDouble());
                 x = edgeFrom.get(p);
                 y = edgeTo.get(p);
-                //lx = x * out_dim;
-                //for (i = 0; i < out_dim; ++i) cur[i] = vis[lx + i], err[i] = 0;
+                INDArray visY = vis.slice(y);
+                INDArray visX = vis.slice(x);
                 for(int i = 0; i < nNegatives + 1; i++) {
-                    if(i > 0) {
-                        y = negTable[(MathUtils.randomNumberBetween(0,negSize - 1))];
+                    if(y > 0) {
+                        y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1))];
                         if (y == edgeTo.get(p)) continue;
-                        f = RPUtils.computeDistance(distanceFunction,curr.slice(y),vis.slice(y));
-                        if(i == 0) {
-                            g = (-2 / (1 + f));
-                        }
-                        else {
-                            g = 2 * gamma / (1 + f) / (0.1 + f);
-                        }
-
-
-                        /**
-                         *
-                         *
-                         * 	gg = g * (cur[j] - vis[ly + j]);
-                         err[j] += gg * cur_alpha;
-
-                         gg = g * (vis[ly + j] - cur[j]);
-                         vis[ly + j] += gg * cur_alpha;
-
-                         */
-
-                        //double check this
-                        double currLr = updater.getLearningRate(0,i);
-
-                        gg = curr.sub(vis.slice(y)).mul(g * currLr);
-                        err.addi(gg);
-
-                        gg = vis.slice(y).sub(curr);
-                        vis.slice(y).addi(gg.mul(currLr));
                     }
+
+                    f = RPUtils.computeDistance(distanceFunction,curr,visY);
+                    if(i == 0) {
+                        g = (-2 / (1 + f));
+                    }
+                    else {
+                        g = 2 * gamma / (1 + f) / (0.1 + f);
+                    }
+
+
+
+                    //double check this
+
+                    gg = curr.sub(visY).mul(g * currLr);
+                    err.addi(gg);
+
+                    gg = visY.sub(curr);
+                    visY.addi(gg.mul(currLr));
+
 
                 }
 
-                vis.slice(x).addi(err);
+                visX.addi(err);
                 edgeCount++;
+                updateCount.getAndIncrement();
             }
 
             done.set(true);
@@ -757,6 +784,10 @@ public class LargeVis {
             }
         }
 
+    }
+
+    public INDArray getResult() {
+        return vis;
     }
 
 
