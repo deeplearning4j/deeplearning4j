@@ -1,5 +1,5 @@
 ---
-title: Eigenvectors, PCA, Covariance and Entropy
+title: Eigenvectors, Eigenvalues, PCA, Covariance and Entropy
 author: Chris V. Nicholson
 layout: default
 ---
