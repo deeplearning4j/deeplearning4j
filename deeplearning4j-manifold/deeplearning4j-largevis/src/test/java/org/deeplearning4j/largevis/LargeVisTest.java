@@ -60,7 +60,7 @@ public class LargeVisTest {
         int x = 0;
         int y = 1;
         int i = 0;
-        double currLr = 1e-3;
+        double currLr = 1;
         Nd4j.getRandom().setSeed(12345);
 
         INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr,false);
