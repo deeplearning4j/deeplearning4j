@@ -110,7 +110,7 @@ $ git clone git://git.kernel.org/pub/scm/git/git.git
         $ cd dl4j-examples/
         $ mvn clean install
 
-2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-examples' directory. (Note that it is dl4j-0.4-examples on pictures, that is an outdated repository name, you should use dl4j-examples everywhere).
+2. Open IntelliJ and choose Import Project. Then select the main 'dl4j-examples' directory. (Note: the example in the illustration below refers to an outdated repository named dl4j-0.4-examples. However, the repository that you will download and install will be called dl4j-examples).
 
 ![select directory](./img/Install_IntJ_1.png)
 
