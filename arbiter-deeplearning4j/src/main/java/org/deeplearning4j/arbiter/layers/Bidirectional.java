@@ -1,5 +1,7 @@
 package org.deeplearning4j.arbiter.layers;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.nn.conf.layers.Layer;
 
@@ -11,6 +13,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@NoArgsConstructor  //JSON
+@Data
 public class Bidirectional extends LayerSpace<Layer> {
 
     protected LayerSpace<?> layerSpace;
