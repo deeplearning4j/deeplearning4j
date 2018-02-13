@@ -27,7 +27,7 @@ To create a useful training set, you have to understand the problem you're solvi
 
 ### The Different Data Sets of Machine Learning
 
-Machine learning typically works with three data sets: training, dev and test. All three should randomly sample a larger body of data.
+Machine learning typically works with two data sets: training and test. All three should randomly sample a larger body of data.
 
 The first set you use is the **training set**, the largest of the three. Running a training set through a neural network teaches the net how to weigh different features, adjusting them coefficients according to their likelihood of minimizing errors in your results.
 
