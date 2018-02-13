@@ -270,9 +270,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceFeedForward)) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_FEED_FORWARD)) {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                                .getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
+                                .getAndActivateWorkspace(ComputationGraph.WORKSPACE_FEED_FORWARD)) {
                     if (isExternal) {
                         //RL4J etc type case: calculate gradients in 1 net, update them in another
                         ub.updateExternalGradient(iteration, epoch, gradient.gradient(), getParams());

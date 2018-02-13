@@ -14,7 +14,7 @@ import java.util.HashMap;
 public class ImageNetLabels {
 
     //FIXME
-    private final static String jsonUrl =
+    private final static String JSON_URL =
                     "https://s3.amazonaws.com/deep-learning-models/image-models/imagenet_class_index.json";
     private static ArrayList<String> predictionLabels = null;
 
@@ -22,7 +22,7 @@ public class ImageNetLabels {
         if (predictionLabels == null) {
             HashMap<String, ArrayList<String>> jsonMap;
             try {
-                jsonMap = new ObjectMapper().readValue(new URL(jsonUrl), HashMap.class);
+                jsonMap = new ObjectMapper().readValue(new URL(JSON_URL), HashMap.class);
                 predictionLabels = new ArrayList<>(jsonMap.size());
                 for (int i = 0; i < jsonMap.size(); i++) {
                     predictionLabels.add(jsonMap.get(String.valueOf(i)).get(1));

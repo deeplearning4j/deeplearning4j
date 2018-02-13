@@ -144,7 +144,7 @@ public abstract class Model {
     public void writeModel(String path) {
         try (FileOutputStream fso = new FileOutputStream(path)) {
             ObjectOutputStream oos = new ObjectOutputStream(new GZIPOutputStream(fso));
-            oos.writeUTF(CRFModel.version);
+            oos.writeUTF(CRFModel.VERSION);
             oos.writeObject(status);
             oos.writeObject(config.getTemplate());
             Map<String, float[]> map = featureTree.toMap();

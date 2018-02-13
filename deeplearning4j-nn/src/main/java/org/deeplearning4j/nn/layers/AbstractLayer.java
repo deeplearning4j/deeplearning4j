@@ -358,9 +358,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
             //TODO: Epoch + iteration counters...
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
-                        .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
+                        .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL)
                         .notifyScopeBorrowed()) {
                     input = layerConf().getIDropout().applyDropout(input, getIterationCount(), getEpochCount(), false);
                 }
