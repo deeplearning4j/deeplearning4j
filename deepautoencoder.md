@@ -1,9 +1,9 @@
 ---
-title: Deep Autoencoders
+title: A Beginner's Guide to Deep Autoencoders
 layout: default
 ---
 
-# Deep Autoencoders
+# A Beginner's Guide to Deep Autoencoders
 
 A deep autoencoder is composed of two, symmetrical [deep-belief networks](./deepbeliefnetwork.html) that typically have four or five shallow layers representing the encoding half of the net, and second set of four or five layers that make up the decoding half.
 
@@ -13,7 +13,7 @@ The layers are [restricted Boltzmann machines](./restrictedboltzmannmachine.html
 
 Processing the benchmark dataset [MNIST](http://yann.lecun.com/exdb/mnist/), a deep autoencoder would use binary transformations after each RBM. Deep autoencoders can also be used for other types of datasets with real-valued data, on which you would use Gaussian rectified transformations for the RBMs instead. 
 
-### Encoding
+### Encoding Input Data
 
 Let’s sketch out an example encoder:
     
@@ -29,7 +29,7 @@ This is due to the representational capacity of sigmoid-belief units, a form of 
 
 The layers will be 1000, 500, 250, 100 nodes wide, respectively, until the end, where the net produces a vector 30 numbers long. This 30-number vector is the last layer of the first half of the deep autoencoder, the pretraining half, and it is the product of a normal RBM, rather than an classification output layer such as Softmax or logistic regression, as you would normally see at the end of a deep-belief network. 
 
-### Decoding
+### Decoding Representations
 
 Those 30 numbers are an encoded version of the 28x28 pixel image. The second half of a deep autoencoder actually learns how to decode the condensed vector, which becomes the input as it makes its way back.
 
@@ -150,13 +150,7 @@ public class DeepAutoEncoderExample {
             DataSet next = iter.next();
             model.fit(new DataSet(next.getFeatureMatrix(),next.getFeatureMatrix()));
         }
-
-
     }
-
-
-
-
 }
 
 ```
@@ -166,14 +160,22 @@ To construct a deep autoencoder, please make sure you have the most recent versi
 
 For questions about Deep Autoencoders, contact us on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j). 
 
-## <a name="resources">Other Beginner's Guides</a>
+## <a name="resources">Other Beginner's Guides for Machine Learning</a>
 
-* [Regression & Neural Networks](./linear-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Regression & Neural Networks](./logistic-regression.html)
+* [Word2vec: Neural Embeddings for Natural Language Processing](./word2vec.html)
 * [Convolutional Networks](./convolutionalnets)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
-* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Inference: Machine Learning Model Server](./machine-learning-modelserver)
-* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
-* [Eigenvectors & PCA](./eigenvector)
+* [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
+* [Eigenvectors, Eigenvalues, PCA & Entropy](./eigenvector)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
+* [Graph Data & Deep Learning](./graphdata)
+* [Open Data Sets for Machine Learning](./opendata)
+* [ETL Data Pipelines for Machine Learning](./datavec)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
+* [Inference: Machine Learning Model Server](./modelserver)
