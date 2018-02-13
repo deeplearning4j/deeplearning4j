@@ -1,6 +1,7 @@
 package org.deeplearning4j.largevis;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -24,22 +25,19 @@ public class LargeVisTest {
 
     @Test
     public void testLargeVisRun() throws Exception {
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         DataSet iris = new IrisDataSetIterator(150,150).next();
         LargeVis largeVis = LargeVis.builder().iterationCount(300)
                 .vec(iris.getFeatureMatrix()).updater(new Nadam(1.0))
-                .normalize(true).numTrees(10)
+                .normalize(true)
                 .seed(42).build();
         largeVis.fit();
         assertNotNull(largeVis.getResult());
         List<String> list = new ArrayList<>();
-        for(int i = 0; i < 50; i++)
-            list.add("0");
-        for(int i = 0; i < 50; i++)
-            list.add("1");
-        for(int i = 0; i < 50; i++)
-            list.add("2");
+        INDArray labels = Nd4j.argMax(iris.getLabels(),1);
+        for(int i = 0; i < iris.numExamples(); i++) {
+            list.add(String.valueOf(labels.getInt(i)));
+        }
         largeVis.saveAsFile(list,"/tmp/iris-vis.txt");
     }
 
@@ -63,21 +61,20 @@ public class LargeVisTest {
         double currLr = 1;
         Nd4j.getRandom().setSeed(12345);
 
-        INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr,false);
+        INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr,true);
         INDArray visX = largeVis.getVis().slice(x);
         INDArray visY = largeVis.getVis().slice(y);
-        INDArray yGrad = grads[1];
-        double epsilon = 1e-3;
+        double epsilon = 1e-6;
 
         for (int v = 0; v < visX.length(); v++) {
-            double backpropGradient = yGrad.getDouble(v);
-
+            double backpropGradient = grads[1].getDouble(v);
+            Nd4j.getRandom().setSeed(12345);
             double origParamValue = visY.getDouble(v);
             visY.putScalar(v, origParamValue + epsilon);
-            double scorePlus = largeVis.errorWrt(x, y, 0, currLr, false,false).getDouble(v);
+            double scorePlus = largeVis.errorWrt(x, y, 2, currLr, false,false).getDouble(v);
             visY.putScalar(v, origParamValue - epsilon);
             Nd4j.getRandom().setSeed(12345);
-            double scoreMinus = largeVis.errorWrt(x, y, 0, currLr, false,false).getDouble(v);
+            double scoreMinus = largeVis.errorWrt(x, y, 2, currLr, false,false).getDouble(v);
             visY.putScalar(v, origParamValue); //reset param so it doesn't affect later calcs
 
 

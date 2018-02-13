@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.randomprojection.RPForest;
 import org.deeplearning4j.clustering.randomprojection.RPUtils;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -15,7 +19,9 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.MathUtils;
 import org.nd4j.list.FloatNDArrayList;
 import org.nd4j.list.IntNDArrayList;
@@ -29,6 +35,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -78,6 +85,10 @@ public class LargeVis {
     @Builder.Default
     private IUpdater updater = new Sgd(0.01);
     private WeightInitScheme weightInitScheme;
+    private ThreadLocal<INDArray> scalars = new ThreadLocal<>();
+    @Builder.Default
+    private WorkspaceMode workspaceMode = WorkspaceMode.SINGLE;
+    private WorkspaceConfiguration workspaceConfiguration;
 
     /**
      * KNNVec is a pointer to a vector.
@@ -123,7 +134,7 @@ public class LargeVis {
     @Builder.Default
     private long seed = 42;
     @Builder.Default
-    private Boolean normalize = true;
+    private Boolean normalize;
     @Builder.Default
     private int iterationCount = 200;
     private int negSize = (int) 1e8;
@@ -131,7 +142,7 @@ public class LargeVis {
     private double gradClipValue = 5.0;
     @Builder.Default
     private GradientNormalization gradientNormalization = GradientNormalization.ClipElementWiseAbsoluteValue;
-    private int edgeCountActual = 0;
+    private AtomicInteger edgeCountActual = new AtomicInteger(0);
 
     private AtomicInteger updateCount = new AtomicInteger(0);
     private AtomicInteger epochCount = new AtomicInteger(0);
@@ -165,7 +176,20 @@ public class LargeVis {
                     IUpdater updater,
                     WeightInitScheme weightInitScheme,
                     GradientNormalization gradientNormalization
-            ,double gradClipValue) {
+            ,double gradClipValue,
+                    WorkspaceMode workspaceMode) {
+
+        if(workspaceMode != null) {
+            this.workspaceMode = workspaceMode;
+        }
+
+        if(workspaceMode != WorkspaceMode.NONE)
+            workspaceConfiguration = WorkspaceConfiguration.builder().cyclesBeforeInitialization(1)
+                    .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                    .policyMirroring(MirroringPolicy.FULL).policyReset(ResetPolicy.BLOCK_LEFT)
+                    .policySpill(SpillPolicy.REALLOCATE).build();
+
+
         if(iterationCount > 0) {
             this.iterationCount = iterationCount;
         }
@@ -267,7 +291,10 @@ public class LargeVis {
 
         }
 
+        // opening workspace
+        MemoryWorkspace workspace = getWorkspace();
 
+        workspace.notifyScopeEntered();
         Nd4j.getRandom().setSeed(seed);
         knnVec = new IntMatrixNDArrayList();
         //pre allocate up to vec.rows() (vertices) for the knn vectors
@@ -277,6 +304,19 @@ public class LargeVis {
             knnVec.add(ndArrayList);
         }
 
+        workspace.notifyScopeLeft();
+
+
+
+    }
+
+    public MemoryWorkspace getWorkspace() {
+        // opening workspace
+        MemoryWorkspace workspace =
+                workspaceMode == null || workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace() :
+                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "LargeVisWorkspace");
+
+        return workspace;
     }
 
 
@@ -427,17 +467,18 @@ public class LargeVis {
 
 
             Counter<Integer> distances = new Counter<>();
+            PriorityQueue<Pair<Integer, Double>> distancesPq = distances.asReversedPriorityQueue();
             for(int x = low; x < hi; x++) {
                 check[x] = x;
                 List<Integer> v1 = oldKnnVec.get(x);
                 for(int i = 0; i < v1.size(); i++) {
                     y = v1.get(i);
                     check[y] = x;
-                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
-                    distances.incrementCount(y, yDistance);
-                    if(distances.size() == nNeighbors + 1) {
+                    double yDistance = RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    distancesPq.add(Pair.of(y,yDistance));
+                    if(distancesPq.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
-                        distances.removeKey(distances.argMax());
+                        distancesPq.poll();
                     }
                 }
 
@@ -446,23 +487,22 @@ public class LargeVis {
                     for(int j = 0; j < v2.size(); j++) {
                         if(check[y = v2.get(j)] != x) {
                             check[y] = x;
-                            float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
-                            distances.incrementCount(y,yDistance);
+                            double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                            distancesPq.add(Pair.of(y,yDistance));
                         }
                     }
 
-                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
-                    distances.incrementCount(y, yDistance);
-                    if(distances.size() == nNeighbors + 1) {
+                    double yDistance = (RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                    distancesPq.add(Pair.of(y,yDistance));
+                    if(distancesPq.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
-                        distances.removeKey(distances.argMax());
-
+                        distancesPq.poll();
                     }
                 }
 
-                while(!distances.isEmpty()) {
-                    knnVec.get(x).add(distances.argMax());
-                    distances.removeKey(distances.argMax());
+                while(!distancesPq.isEmpty()) {
+                    knnVec.get(x).add(distancesPq.peek().getFirst());
+                    distancesPq.poll();
                 }
             }
 
@@ -481,21 +521,22 @@ public class LargeVis {
     public int testAccuracy() {
         int testCase = 100;
         Counter<Integer> heap = new Counter<>();
+        PriorityQueue<Pair<Integer, Double>> heapPq = heap.asReversedPriorityQueue();
         int hitCase = 0;
         for(int i = 0; i < testCase; i++) {
-            int x = MathUtils.randomNumberBetween(0,vec.rows() - 1,Nd4j.getRandom().nextGaussian());
+            int x = MathUtils.randomNumberBetween(0,vec.rows() - 1,Nd4j.getRandom().nextDouble());
             for(int y = 0; y < vec.rows(); y++) {
                 if(x != y) {
-                    float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
-                    heap.incrementCount(y,yDistance);
+                    double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    heapPq.add(Pair.of(y,yDistance));
                     if(heap.size() == nNeighbors + 1)  {
-                        heap.removeKey(heap.argMax());
+                        heapPq.poll();
                     }
                 }
             }
 
-            while(!heap.isEmpty()) {
-                int y = heap.argMax();
+            while(!heapPq.isEmpty()) {
+                int y = heapPq.peek().getFirst();
                 IntNDArrayList ndArrayList = knnVec.get(x);
                 for (int j = 0; j <ndArrayList.size(); j++) {
                     if (knnVec.get(x).get(j) == y) {
@@ -504,7 +545,7 @@ public class LargeVis {
                 }
 
 
-                heap.removeKey(heap.argMax());
+                heapPq.poll();
             }
         }
 
@@ -822,6 +863,8 @@ public class LargeVis {
      * @return the error wrt the given parameters
      */
     public INDArray errorWrt(INDArray visX, INDArray visY, int y, int p, double currLr, boolean updateY,boolean normalize) {
+        MemoryWorkspace workspace = getWorkspace();
+        workspace.notifyScopeEntered();
         if(negTable == null) {
             initNegTable();
         }
@@ -841,6 +884,8 @@ public class LargeVis {
 
 
         }
+
+
 
         return err;
 
@@ -883,36 +928,45 @@ public class LargeVis {
 
         @Override
         public void run() {
+
+
             log.info("Starting visualize thread " + id);
             int edgeCount = 0;
             int lastEdgeCount = 0;
             int p,x,y;
-            double currLr = initialAlpha;
-            while(true) {
-                if(edgeCount > nSamples / numWorkers + 2) {
-                    break;
+            // opening workspace
+            MemoryWorkspace workspace = getWorkspace();
+            try(MemoryWorkspace workspace2 = workspace.notifyScopeEntered()) {
+
+                double currLr = initialAlpha;
+                while (true) {
+                    if (edgeCount > nSamples / numWorkers + 2) {
+                        break;
+                    }
+
+                    if (edgeCount - lastEdgeCount > 10000) {
+                        edgeCountActual.addAndGet(edgeCount - lastEdgeCount);
+                        lastEdgeCount = edgeCount;
+                        currLr = updater.getLearningRate(updateCount.get(), epochCount.get());
+                        epochCount.getAndIncrement();
+                        //(real)edge_count_actual / (real)(n_samples + 1) * 100
+                        log.info("Progress " + String.valueOf((double) (edgeCountActual.get() / (double) (nSamples + 1)) * 100));
+                    }
+
+                    p = sampleAnEdge(Nd4j.getRandom().nextGaussian(), Nd4j.getRandom().nextDouble());
+                    x = edgeFrom.get(p);
+                    y = edgeTo.get(p);
+                    INDArray err = errorWrt(x, y, p, currLr, true, true);
+                    //update the error for the given vector
+                    INDArray visX = vis.slice(x);
+                    visX.addi(err);
+                    edgeCount++;
+                    updateCount.getAndIncrement();
+
                 }
 
-                if(edgeCount - lastEdgeCount > 10000) {
-                    edgeCountActual += edgeCount - lastEdgeCount;
-                    lastEdgeCount = edgeCount;
-                    currLr = updater.getLearningRate(updateCount.get(),epochCount.get());
-                    epochCount.getAndIncrement();
-                }
-
-                p = sampleAnEdge(Nd4j.getRandom().nextGaussian(),Nd4j.getRandom().nextDouble());
-                x = edgeFrom.get(p);
-                y = edgeTo.get(p);
-                INDArray err = errorWrt(x,y,p,currLr, true,true);
-                //update the error for the given vector
-                INDArray visX = vis.slice(x);
-                visX.addi(err);
-                edgeCount++;
-                updateCount.getAndIncrement();
-                log.info("Updating visualize thread " + id + " with error " + err.sumNumber());
-
+                workspace.notifyScopeLeft();
             }
-
             done.set(true);
         }
     }
@@ -1037,6 +1091,25 @@ public class LargeVis {
 
 
     public void fit() {
+        if(nSamples <= 0) {
+            if (nVertices < 10000)
+                nSamples = 1000;
+            else if (nVertices < 1000000)
+                nSamples = (nVertices - 10000) * 9000 / (1000000 - 10000) + 1000;
+            else nSamples = nVertices / 100;
+        }
+
+        nSamples *= 1000000;
+        if (nTrees < 0) {
+            if (nVertices < 100000)
+                nTrees = 10;
+            else if (nVertices < 1000000)
+                nTrees = 20;
+            else if (nVertices < 5000000)
+                nTrees = 50;
+            else nTrees = 100;
+        }
+
         constructKnn();
         visualize();
         log.info("Finished LargeVis training");
