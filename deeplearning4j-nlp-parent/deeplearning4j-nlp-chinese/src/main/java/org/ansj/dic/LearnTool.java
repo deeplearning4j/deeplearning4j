@@ -41,7 +41,7 @@ public class LearnTool {
     /**
      * 新词发现的结果集.可以序列化到硬盘.然后可以当做训练集来做.
      */
-    private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
+    private final SmartForest<NewWord> sf = new SmartForest<>();
 
     /**
      * 学习新词排除用户自定义词典那中的词语
@@ -138,7 +138,7 @@ public class LearnTool {
         if (sf.branches == null) {
             return null;
         }
-        HashMap<String, Double> hm = new HashMap<String, Double>();
+        HashMap<String, Double> hm = new HashMap<>();
         for (int i = 0; i < sf.branches.length; i++) {
             valueResult(sf.branches[i], hm, nature);
         }

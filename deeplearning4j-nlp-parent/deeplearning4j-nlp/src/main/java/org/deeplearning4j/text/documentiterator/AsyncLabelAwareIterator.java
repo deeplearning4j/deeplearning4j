@@ -19,7 +19,7 @@ public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<Lab
     public AsyncLabelAwareIterator(@NonNull LabelAwareIterator iterator, int bufferSize) {
         this.backedIterator = iterator;
         this.bufferSize = bufferSize;
-        this.asyncIterator = new AsyncIterator<LabelledDocument>(backedIterator, bufferSize);
+        this.asyncIterator = new AsyncIterator<>(backedIterator, bufferSize);
     }
 
     @Override
@@ -41,7 +41,7 @@ public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<Lab
     public void reset() {
         asyncIterator.shutdown();
         backedIterator.reset();
-        asyncIterator = new AsyncIterator<LabelledDocument>(backedIterator, bufferSize);
+        asyncIterator = new AsyncIterator<>(backedIterator, bufferSize);
     }
 
     @Override

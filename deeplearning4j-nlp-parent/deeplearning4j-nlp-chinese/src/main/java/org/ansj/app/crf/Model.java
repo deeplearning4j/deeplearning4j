@@ -148,7 +148,7 @@ public abstract class Model {
             oos.writeObject(status);
             oos.writeObject(config.getTemplate());
             Map<String, float[]> map = featureTree.toMap();
-            MapCount<Integer> mc = new MapCount<Integer>();
+            MapCount<Integer> mc = new MapCount<>();
             for (float[] v : map.values()) {
                 mc.add(v.length);
             }

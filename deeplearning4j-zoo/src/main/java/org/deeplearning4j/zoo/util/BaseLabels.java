@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 /**
  * Base functionality for helper classes that return label descriptions.
@@ -44,7 +43,7 @@ public abstract class BaseLabels implements Labels {
      * Returns labels based on the text file resource.
      */
     protected ArrayList<String> getLabels(String textResource) throws IOException {
-        ArrayList<String> labels = new ArrayList<String>();
+        ArrayList<String> labels = new ArrayList<>();
         try (Scanner s = new Scanner(this.getClass().getResourceAsStream(textResource))) {
             while (s.hasNextLine()) {
                 labels.add(s.nextLine());
@@ -67,12 +66,12 @@ public abstract class BaseLabels implements Labels {
             rows = predictions.size(0);
             cols = predictions.size(1);
         }
-        List<List<ClassPrediction>> descriptions = new ArrayList<List<ClassPrediction>>();
+        List<List<ClassPrediction>> descriptions = new ArrayList<>();
         for (int batch = 0; batch < rows; batch++) {
             INDArray result = predictions.getRow(batch);
             result = Nd4j.vstack(Nd4j.linspace(0, cols, cols), result);
             result = Nd4j.sortColumns(result, 1, false);
-            List<ClassPrediction> current = new ArrayList<ClassPrediction>();
+            List<ClassPrediction> current = new ArrayList<>();
             for (int i = 0; i < n; i++) {
                 int label = result.getInt(0, i);
                 double prob = result.getDouble(1, i);

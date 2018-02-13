@@ -458,7 +458,7 @@ public class SparkComputationGraph extends SparkListenable {
                                             + "( has: " + network.getNumInputArrays() + " inputs, "
                                             + network.getNumOutputArrays() + " outputs");
         }
-        PairToArrayPair<K> p = new PairToArrayPair<K>();
+        PairToArrayPair<K> p = new PairToArrayPair<>();
         JavaPairRDD<K, INDArray[]> rdd = featuresData.mapToPair(p);
         return feedForwardWithKey(rdd, batchSize).mapToPair(new ArrayPairToPair<K>());
     }

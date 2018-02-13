@@ -24,11 +24,11 @@ public class StopRecognition implements Recognition {
      */
     private static final long serialVersionUID = 7041503137429986566L;
 
-    private Set<String> stop = new HashSet<String>();
+    private Set<String> stop = new HashSet<>();
 
-    private Set<String> natureStop = new HashSet<String>();
+    private Set<String> natureStop = new HashSet<>();
 
-    private Set<Pattern> regexList = new HashSet<Pattern>();
+    private Set<Pattern> regexList = new HashSet<>();
 
     /**
      * 批量增加停用词

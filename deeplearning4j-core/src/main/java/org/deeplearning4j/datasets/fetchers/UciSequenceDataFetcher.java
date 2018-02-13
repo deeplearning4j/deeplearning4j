@@ -125,7 +125,7 @@ public class UciSequenceDataFetcher extends CacheableExtractableDataSetFetcher {
         int lineCount = 0;
         int index = 0;
 
-        ArrayList<String> linesList = new ArrayList<String>();
+        ArrayList<String> linesList = new ArrayList<>();
 
         for (String line : lines) {
 

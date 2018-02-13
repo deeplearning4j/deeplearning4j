@@ -27,12 +27,12 @@ public class TagContent {
     }
 
     public String tagContent(List<Keyword> keyWords, String content) {
-        SmartForest<Double> sf = new SmartForest<Double>();
+        SmartForest<Double> sf = new SmartForest<>();
         for (Keyword keyWord : keyWords) {
             sf.add(keyWord.getName().toLowerCase(), keyWord.getScore());
         }
 
-        SmartGetWord<Double> sgw = new SmartGetWord<Double>(sf, content.toLowerCase());
+        SmartGetWord<Double> sgw = new SmartGetWord<>(sf, content.toLowerCase());
 
         int beginOffe = 0;
         String temp = null;
