@@ -17,11 +17,11 @@ import java.util.*;
  */
 public class ForeignPersonRecognition implements TermArrRecognition {
 
-    private static final LinkedList<NameChar> PRLIST = new LinkedList<NameChar>();
+    private static final LinkedList<NameChar> PRLIST = new LinkedList<>();
 
     private static NameChar INNAME = null;
 
-    private static HashSet<Character> ISNOTFIRST = new HashSet<Character>();
+    private static HashSet<Character> ISNOTFIRST = new HashSet<>();
 
     static {
         NameChar trans_english = new NameChar(StringUtil.sortCharArray(
@@ -44,7 +44,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
         ISNOTFIRST.add('—');
     }
 
-    private List<Term> tempList = new ArrayList<Term>();
+    private List<Term> tempList = new ArrayList<>();
     private LinkedList<NameChar> prList = null;
     private Term[] terms = null;
 
@@ -137,7 +137,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
 
     public List<NewWord> getNewWords(Term[] terms) {
         this.terms = terms;
-        List<NewWord> all = new ArrayList<NewWord>();
+        List<NewWord> all = new ArrayList<>();
         String name = null;
         Term term = null;
         reset();
@@ -179,7 +179,7 @@ public class ForeignPersonRecognition implements TermArrRecognition {
     }
 
     public List<Term> getNewTerms() {
-        LinkedList<Term> result = new LinkedList<Term>();
+        LinkedList<Term> result = new LinkedList<>();
         String name = null;
         Term term = null;
         reset();

@@ -188,7 +188,7 @@ public class TermUtil {
      */
     public static List<Term> getSubTerm(Term from, Term to) {
 
-        List<Term> subTerm = new ArrayList<Term>(3);
+        List<Term> subTerm = new ArrayList<>(3);
 
         while ((from = from.to()) != to) {
             subTerm.add(from);

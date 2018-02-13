@@ -221,7 +221,7 @@ public class ParagraphVectors extends Word2Vec {
             synchronized (this) {
                 if (sequenceLearningAlgorithm == null) {
                     log.info("Creating new PV-DM learner...");
-                    learner = new DM<VocabWord>();
+                    learner = new DM<>();
                     learner.configure(vocab, lookupTable, configuration);
                     sequenceLearningAlgorithm = learner;
                 } else {

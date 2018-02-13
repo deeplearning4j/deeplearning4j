@@ -23,7 +23,7 @@ public class KuromojiBinFilesFetcher {
     }
 
     public static boolean kuromojiExist() {
-        List<File> binFileList = new ArrayList<File>();
+        List<File> binFileList = new ArrayList<>();
 
         binFileList.add(new File(KUROMOJI_BIN_ROOT));
         binFileList.add(new File(KUROMOJI_BIN_ROOT, "characterDefinitions.bin"));

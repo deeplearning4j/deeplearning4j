@@ -26,7 +26,7 @@ public class NatureLibrary {
     /**
      * 词性的字符串对照索引位的hashmap(我发现我又效率狂了.不能这样啊)
      */
-    private static final HashMap<String, Nature> NATUREMAP = new HashMap<String, Nature>();
+    private static final HashMap<String, Nature> NATUREMAP = new HashMap<>();
 
     /**
      * 词与词之间的关系.对照natureARRAY,natureMap

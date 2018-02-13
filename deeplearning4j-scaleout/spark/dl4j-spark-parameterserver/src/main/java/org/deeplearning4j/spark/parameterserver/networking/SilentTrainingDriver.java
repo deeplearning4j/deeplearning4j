@@ -63,7 +63,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.updatesCount = new AtomicLong(0);
 
         // TODO: make this configurable
-        this.updatesBuffer = new FancyBlockingQueue<INDArray>(new LinkedBlockingQueue<>(1024));
+        this.updatesBuffer = new FancyBlockingQueue<>(new LinkedBlockingQueue<>(1024));
 
         // FBQ will guarantee that all workers using given queue will be applying the same updates in the same order
         this.accumulator.setExternalSource(updatesBuffer);

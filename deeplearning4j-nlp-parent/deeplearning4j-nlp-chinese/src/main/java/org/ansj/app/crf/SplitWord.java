@@ -34,7 +34,7 @@ public class SplitWord {
 
         List<Element> elements = vterbi(line);
 
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
 
         Element e = null;
         int begin = 0;

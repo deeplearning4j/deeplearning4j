@@ -110,7 +110,7 @@ public class PopularityWalker<T extends SequenceElement> extends RandomWalker<T>
 
 
                         for (int connected : connections) {
-                            Node<T> tNode = new Node<T>(connected, sourceGraph.getConnectedVertices(connected).size());
+                            Node<T> tNode = new Node<>(connected, sourceGraph.getConnectedVertices(connected).size());
                             queue.add(tNode);
                         }
 

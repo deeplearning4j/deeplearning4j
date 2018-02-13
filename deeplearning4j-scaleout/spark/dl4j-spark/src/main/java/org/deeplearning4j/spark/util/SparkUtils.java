@@ -300,7 +300,7 @@ public class SparkUtils {
                                 .mapToPair(new PairFunction<Tuple2<T, Long>, Tuple2<Long, Integer>, T>() {
                                     @Override
                                     public Tuple2<Tuple2<Long, Integer>, T> call(Tuple2<T, Long> tLongTuple2) {
-                                        return new Tuple2<Tuple2<Long, Integer>, T>(
+                                        return new Tuple2<>(
                                                         new Tuple2<Long, Integer>(tLongTuple2._2(), 0),
                                                         tLongTuple2._1());
                                     }
@@ -391,7 +391,7 @@ public class SparkUtils {
         return rdd.zipWithIndex().mapToPair(new PairFunction<Tuple2<T, Long>, Integer, T>() {
             @Override
             public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
-                return new Tuple2<Integer, T>(elemIdx._2().intValue(), elemIdx._1());
+                return new Tuple2<>(elemIdx._2().intValue(), elemIdx._1());
             }
         });
     }

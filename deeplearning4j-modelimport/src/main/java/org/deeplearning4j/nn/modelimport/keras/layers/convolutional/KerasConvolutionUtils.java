@@ -160,7 +160,7 @@ public class KerasConvolutionUtils {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
             /* 2D Convolutional layers. */
-                List<Integer> kernelSizeList = new ArrayList<Integer>();
+                List<Integer> kernelSizeList = new ArrayList<>();
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
