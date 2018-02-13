@@ -1,54 +1,24 @@
-language: java
-
+branches:
+  only:
+    - master
+notifications:
+  email: false
+dist: trusty
+sudo: false
 cache:
   directories:
-  - $HOME/.m2
-
-jdk:
-  - oraclejdk7
-
-# for running tests on Travis CI container infrastructure for faster builds
-sudo: true
-
-env:
-  global:
-    JAVA_OPTS=-Xmx2g
-
-before_install:
-  - sudo apt-get install build-essential git
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
-  - ls /opt/OpenBLAS/lib
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/libblas.so.3
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
-  - git clone https://github.com/deeplearning4j/nd4j
-  - cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-  - cd .. && git clone https://github.com/deeplearning4j/Canova && cd Canova && mvn clean install -DskipTests -Dmaven.javadoc.skip=true
-
-script:
+    - $HOME/.m2
 language: java
-
-cache:
-  directories:
-  - $HOME/.m2
-
 jdk:
-  - oraclejdk7
+  - openjdk8
+matrix:
+  include:
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.10
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
+    - os: linux
+      env: OS=linux-x86_64 SCALA=2.11
+      install: true
+      script: bash ./ci/build-linux-x86_64.sh
 
-# for running tests on Travis CI container infrastructure for faster builds
-sudo: true
-
-before_install:
-  - sudo apt-get install build-essential git
-  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
-  - git clone https://github.com/xianyi/OpenBLAS && cd OpenBLAS && sudo make && sudo make install
-  - ls /opt/OpenBLAS/lib
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/libblas.so.3
-  - sudo ln -s /opt/OpenBLAS/lib/libopenblas_haswellp-*.so /usr/lib/liblapack.so.3
-  - git clone https://github.com/deeplearning4j/nd4j && cd nd4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
-  - git clone https://github.com/deeplearning4j/Canova && cd Canova && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
-  - git clone https://github.com/deeplearning4j/deeplearning4j && cd deeplearning4j && mvn clean install -DskipTests -Dmaven.javadoc.skip=true && cd ..
-
-
-script:
-  -  cd /home/travis/build/deeplearning4j/Arbiter && chmod +x ./runtests.sh && ./runtests.sh
