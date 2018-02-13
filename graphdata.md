@@ -74,12 +74,12 @@ Any ontology or knowledge graph charts the interrelationship of entities (combin
 ### <a name="beginner">Other Deep-learning Tutorials</a>
 
 * [Introduction to Neural Networks](./neuralnet-overview)
-* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [LSTMs and Recurrent Networks](./lstm)
 * [Word2Vec: Neural Embeddings for Java](./word2vec)
-* [Combining Symbolic Learning & Deep Learning](./deepsymboliclearning)
+* [Combining Symbolic Learning & Deep Learning](./symbolicreasoning)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
