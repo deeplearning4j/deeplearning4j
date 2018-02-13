@@ -65,10 +65,11 @@ Deep artificial neural networks are a set of algorithms that have set new record
 
 So you could apply the same definition to deep learning that Arthur Samuel did to machine learning -- a "field of study that gives computers the ability to learn without being explicitly programmed" -- while adding that it tends to result in higher accuracy, require more hardware or training time, and perform exceptionally well on machine perception tasks that involved unstructured data such as blobs of pixels or text.  
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
+### <a name="resources">Other Beginner's Guides for Machine Learning</a>
+
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [Deep Reinforcement Learning](./deepreinforcementlearning)
-* [Deep Learning & Symbolic Reasoning](./symbolicreasoning)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
 * [Convolutional Networks for Images (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2Vec: Neural Word Embeddings for Machine Learning](./word2vec)
@@ -77,4 +78,7 @@ So you could apply the same definition to deep learning that Arthur Samuel did t
 * [LSTMs & Recurrent Networks](./lstm)
 * [Deep Learning & Graph Data](./graphdata)
 * [Neural Networks & Regression](./logistic-regression)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Inference: Machine Learning Model Server](./machinelearningserver)
+* [Open Data Sets for Machine Learning](./opendata)
+* [ETL Data Pipelines for Machine Learning](./datavec)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
