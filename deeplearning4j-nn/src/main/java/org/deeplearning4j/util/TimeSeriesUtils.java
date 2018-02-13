@@ -128,6 +128,23 @@ public class TimeSeriesUtils {
         if(in == null){
             return null;
         }
+
+        if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)){
+            in = in.dup('f');
+        }
+
+        int[] idxs = new int[in.size(2)];
+        int j=0;
+        for( int i=idxs.length-1; i>=0; i--){
+            idxs[j++] = i;
+        }
+
+        INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
+
+        INDArray outReshape = Nd4j.pullRows(inReshape, 0, idxs, 'f');
+        return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
+
+        /*
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
                 .addIntegerArguments(new int[]{0,1})
@@ -137,6 +154,7 @@ public class TimeSeriesUtils {
                 .build();
         Nd4j.getExecutioner().exec(op);
         return out;
+        */
     }
 
     /**
@@ -156,6 +174,15 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
+        int[] idxs = new int[mask.size(1)];
+        int j=0;
+        for( int i=idxs.length-1; i>=0; i--){
+            idxs[j++] = i;
+        }
+
+        return Nd4j.pullRows(mask, 0, idxs);
+
+        /*
         //Assume input mask is 2d: [minibatch, tsLength]
         INDArray out = Nd4j.createUninitialized(mask.shape(), 'f');
         CustomOp op = DynamicCustomOp.builder("reverse")
@@ -166,6 +193,7 @@ public class TimeSeriesUtils {
                 .build();
         Nd4j.getExecutioner().exec(op);
         return out;
+        */
     }
 
     /**
