@@ -185,7 +185,7 @@ public class RPUtils {
         switch(function) {
             case "euclidean": return Transforms.euclideanDistance(x,y);
             case "cosinedistance": return Transforms.cosineDistance(x,y);
-            case "cosinesimiliarty": return Transforms.cosineDistance(x,y);
+            case "cosinesimiliarty": return -Transforms.cosineDistance(x,y);
             case "manhattan": return Transforms.manhattanDistance(x,y);
             case "jaccard": return Transforms.jaccardDistance(x,y);
             case "hamming": return Transforms.hammingDistance(x,y);

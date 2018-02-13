@@ -1,6 +1,7 @@
 package org.deeplearning4j.largevis;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -8,6 +9,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Nadam;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
@@ -18,18 +23,24 @@ public class LargeVisTest {
 
 
     @Test
-    public void testLargeVisRun() {
+    public void testLargeVisRun() throws Exception {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         DataSet iris = new IrisDataSetIterator(150,150).next();
-        LargeVis largeVis = LargeVis.builder()
-                .vec(iris.getFeatureMatrix())
-                .normalize(true)
+        LargeVis largeVis = LargeVis.builder().iterationCount(300)
+                .vec(iris.getFeatureMatrix()).updater(new Nadam(1.0))
+                .normalize(true).numTrees(10)
                 .seed(42).build();
         largeVis.fit();
         assertNotNull(largeVis.getResult());
-
-
+        List<String> list = new ArrayList<>();
+        for(int i = 0; i < 50; i++)
+            list.add("0");
+        for(int i = 0; i < 50; i++)
+            list.add("1");
+        for(int i = 0; i < 50; i++)
+            list.add("2");
+        largeVis.saveAsFile(list,"/tmp/iris-vis.txt");
     }
 
 
@@ -39,9 +50,9 @@ public class LargeVisTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         DataSet iris = new IrisDataSetIterator(150,150).next();
-        LargeVis largeVis = LargeVis.builder()
+        LargeVis largeVis = LargeVis.builder().gamma(1.0)
                 .vec(iris.getFeatureMatrix())
-                .normalize(true)
+                .normalize(true).gradientNormalization(GradientNormalization.None)
                 .seed(42).build();
 
         largeVis.initWeights();
@@ -49,21 +60,21 @@ public class LargeVisTest {
         int x = 0;
         int y = 1;
         int i = 0;
-        double currLr = 1e-1;
+        double currLr = 1e-3;
         INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr);
         INDArray visX = largeVis.getVis().slice(x);
         INDArray visY = largeVis.getVis().slice(y);
         INDArray yGrad = grads[1];
-        double epsilon = 1e-6;
+        double epsilon = 1e-3;
 
         for (int v = 0; v < visX.length(); v++) {
             double backpropGradient = yGrad.getDouble(v);
 
             double origParamValue = visY.getDouble(v);
             visY.putScalar(v, origParamValue + epsilon);
-            double scorePlus = largeVis.errorWrt(x, y, 0, currLr).sumNumber().doubleValue();
+            double scorePlus = largeVis.errorWrt(x, y, 0, currLr, false).getDouble(v);
             visY.putScalar(v, origParamValue - epsilon);
-            double scoreMinus = largeVis.errorWrt(x, y, 0, currLr).sumNumber().doubleValue();
+            double scoreMinus = largeVis.errorWrt(x, y, 0, currLr, false).getDouble(v);
             visY.putScalar(v, origParamValue); //reset param so it doesn't affect later calcs
 
 
@@ -77,8 +88,7 @@ public class LargeVisTest {
                         / (Math.abs(backpropGradient) + Math.abs(numericalGradient));
             }
 
-            String msg = "innerNode grad: i=" + i + ", -" +   relError + ": "
-                    + relError + ", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus
+            String msg = "grad: i=" + i + ", -" +   relError +", scorePlus=" + scorePlus + ", scoreMinus=" + scoreMinus
                     + ", numGrad=" + numericalGradient + ", backpropGrad = " + backpropGradient;
 
             if (relError > MAX_REL_ERROR)

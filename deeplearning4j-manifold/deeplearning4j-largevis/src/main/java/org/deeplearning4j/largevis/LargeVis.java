@@ -13,7 +13,6 @@ import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.primitives.Counter;
@@ -24,6 +23,10 @@ import org.nd4j.list.matrix.IntMatrixNDArrayList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.XavierFanInInitScheme;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -74,7 +77,6 @@ public class LargeVis {
     private INDArray vec,vis,prob;
     @Builder.Default
     private IUpdater updater = new Sgd(0.01);
-    private GradientUpdater gradientUpdater;
     private WeightInitScheme weightInitScheme;
 
     /**
@@ -86,7 +88,6 @@ public class LargeVis {
      */
     private IntMatrixNDArrayList knnVec,oldKnnVec;
     private int[] negTable;
-    //may not need this?
     @Builder.Default
     private IntNDArrayList head = new IntNDArrayList();
     @Builder.Default
@@ -128,6 +129,7 @@ public class LargeVis {
     private int negSize = (int) 1e8;
     @Builder.Default
     private double gradClipValue = 5.0;
+    @Builder.Default
     private GradientNormalization gradientNormalization = GradientNormalization.ClipElementWiseAbsoluteValue;
     private int edgeCountActual = 0;
 
@@ -804,14 +806,19 @@ public class LargeVis {
      * Compute the error wrt the given parameters given a sampled edge(p)
      * and 2 vectors to compute the distance and error for
      *
+     * Note that there is a side effect of updating y as a part of calling this method.
+     * This method should mainly be used in gradient checking tests or internally within this class
+     * not directly by a user.
+     *
      * @param visX the x component to compute the error for
      * @param visY the y component to compute the error for
      * @param y the index of y
      * @param p the sample edge for random access
      * @param currLr the current learning rate for the gradient update
+     * @param updateY
      * @return the error wrt the given parameters
      */
-    public INDArray errorWrt(INDArray visX,INDArray visY,int y,int p,double currLr) {
+    public INDArray errorWrt(INDArray visX, INDArray visY, int y, int p, double currLr, boolean updateY) {
         if(negTable == null) {
             initNegTable();
         }
@@ -826,7 +833,8 @@ public class LargeVis {
             //get the gradient wrt x and y
             INDArray[] grads = gradientsFor(visX,visY,i,currLr);
             err.addi(grads[0]);
-            visY.addi(grads[1]);
+            if(updateY)
+                visY.addi(grads[1]);
 
 
         }
@@ -840,14 +848,19 @@ public class LargeVis {
      * Compute the error wrt the given parameters given a sampled edge(p)
      * and 2 vectors to compute the distance and error for
      *
+     * Note that there is a side effect of updating y as a part of calling this method.
+     * This method should mainly be used in gradient checking tests or internally within this class
+     * not directly by a user.
+     *
      * @param x the x component to compute the error for
      * @param y the index of y
      * @param p the sampled edge for random access
      * @param currLr the current learning rate for the gradient update
+     * @param updateY whether to update y or not
      * @return the error wrt the given parameters
      */
-    public INDArray errorWrt(int x,int y,int p,double currLr) {
-        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr);
+    public INDArray errorWrt(int x, int y, int p, double currLr, boolean updateY) {
+        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr,updateY);
 
     }
 
@@ -886,7 +899,7 @@ public class LargeVis {
                 p = sampleAnEdge(Nd4j.getRandom().nextGaussian(),Nd4j.getRandom().nextDouble());
                 x = edgeFrom.get(p);
                 y = edgeTo.get(p);
-                INDArray err = errorWrt(x,y,p,currLr);
+                INDArray err = errorWrt(x,y,p,currLr, true);
                 //update the error for the given vector
                 INDArray visX = vis.slice(x);
                 visX.addi(err);
@@ -901,8 +914,50 @@ public class LargeVis {
     }
 
 
+    /**
+     * Save the model as a file with a csv format, adding the label as the last column.
+     * @param labels
+     * @param path the path to write
+     * @throws IOException
+     */
+    public void saveAsFile(List<String> labels, String path) throws IOException {
+        BufferedWriter write = null;
+        try {
+            write = new BufferedWriter(new FileWriter(new File(path)));
+            for (int i = 0; i < vis.rows(); i++) {
+                if (i >= labels.size())
+                    break;
+                String word = labels.get(i);
+                if (word == null)
+                    continue;
+                StringBuilder sb = new StringBuilder();
+                INDArray wordVector = vis.getRow(i);
+                for (int j = 0; j < wordVector.length(); j++) {
+                    sb.append(wordVector.getDouble(j));
+                    if (j < wordVector.length() - 1)
+                        sb.append(",");
+                }
+
+                sb.append(",");
+                sb.append(word);
+                sb.append(" ");
+
+                sb.append("\n");
+                write.write(sb.toString());
+
+            }
+            write.flush();
+            write.close();
+        } finally {
+            if (write != null)
+                write.close();
+        }
+    }
+
+
     private void normalize(INDArray input) {
         switch (gradientNormalization) {
+            case None: break;
             case RenormalizeL2PerLayer:
                 double l2 = input.norm2Number().doubleValue();
                 input.divi(l2);

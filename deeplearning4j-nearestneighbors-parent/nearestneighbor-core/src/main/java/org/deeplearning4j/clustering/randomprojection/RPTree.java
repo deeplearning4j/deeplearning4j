@@ -67,36 +67,9 @@ public class RPTree {
         }
 
 
-        if (searchExecutor == null) {
-
-            searchExecutor = Executors.newFixedThreadPool(searchWorkers, new ThreadFactory() {
-                @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = Executors.defaultThreadFactory().newThread(r);
-
-                    t.setDaemon(true);
-                    t.setName("VPTree thread");
-
-                    // we don't want threads to be working on different devices
-                    Nd4j.getAffinityManager().attachThreadToDevice(t,
-                            Nd4j.getAffinityManager().getDeviceForCurrentThread());
-
-                    return t;
-                }
-            });
-
-            }
-
-        // opening workspace, and creating it if that's the first call
-        MemoryWorkspace workspace =
-                Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "RPTREE_WORSKPACE");
-
 
         RPUtils.buildTree(this,root,rpHyperPlanes,
                 x,maxSize,0,similarityFunction);
-
-        // closing workspace
-        workspace.notifyScopeLeft();
     }
 
 
