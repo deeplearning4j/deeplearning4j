@@ -176,8 +176,7 @@ Once you've loaded and tested the model, save it using DeepLearning4J's `ModelSe
 ```
 File locationToSave = new File("vgg16.zip");
 ModelSerializer.writeModel(model,locationToSave,saveUpdater);
-		
-```		
+```
 
 ### Code to Load saved model from file
 
@@ -190,14 +189,14 @@ ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave)
 ## <a name="Build Web App to Take Input Image">Build Web App to take input images</a>
 
 The following HTML for a form element will present the user with a page to select and upload or "post" an image to our server. This one itself is not hooked. (WIP!) 
-
+```
 <pre>
 <form method='post' action='getPredictions' enctype='multipart/form-data'>
     <input type='file' name='uploaded_file'>
     <button>Upload picture</button>
 </form>
 </pre>
-
+```
 The action attribute of the form element is the URL that the user-selected image will be posted to. 
 
 We used [Spark Java](http://sparkjava.com/) for the web application as it was straightforward. Just add the Spark Java code to a class that's already written. There are many other choices available. 
@@ -223,7 +222,6 @@ Once running, it uses incrementally more RAM in about 60MB chunks until it hits 
 
 
 ```
-
 package org.deeplearning4j.VGGwebDemo;
 
 import org.datavec.image.loader.NativeImageLoader;
@@ -341,3 +339,23 @@ For this dog found on the internet, which VGG-16 may have seen during training, 
 ![a dog for inference](./../img/dog_320x240.png)
 
 	53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'
+
+## <a name="resources">Other Beginner's Guides for Machine Learning</a>
+
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Regression & Neural Networks](./logistic-regression.html)
+* [Word2vec: Neural Embeddings for Natural Language Processing](./word2vec.html)
+* [Convolutional Networks](./convolutionalnets)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
+* [Eigenvectors, Eigenvalues, PCA & Entropy](./eigenvector)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
+* [Graph Data & Deep Learning](./graphdata)
+* [Open Data Sets for Machine Learning](./opendata)
+* [ETL Data Pipelines for Machine Learning](./datavec)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
+* [Inference: Machine Learning Model Server](./modelserver)
