@@ -13,6 +13,5 @@ set(CMAKE_C_LINK_EXECUTABLE "libtool -static <FLAGS> <CMAKE_C_LINK_FLAGS> <LINK_
 set(CMAKE_CXX_LINK_EXECUTABLE "libtool -static <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> <LINK_LIBRARIES> -L$ENV{IOS_SDK}/usr/lib/ -syslibroot $ENV{IOS_SDK}")
 set(CMAKE_CXX_CREATE_STATIC_LIBRARY "libtool -o <TARGET> <OBJECTS> <LINK_LIBRARIES> -syslibroot $ENV{IOS_SDK} -L$ENV{IOS_SDK}/usr/lib/")
 
-add_definitions("-DIOS -fopenmp -stdlib=libc++ -miphoneos-version-min=6.0 -arch arm64 -isysroot $ENV{IOS_SDK} -I/usr/local/opt/llvm/4.0.0/include/c++/v1 -I/usr/local/opt/llvm/4.0.0/lib/clang/4.0.0/include -fPIC -ffunction-sections -funwind-tables -fstack-protector -fomit-frame-pointer -fstrict-aliasing")
-# when using Xcode's clang as in 8.3.3 or 9.0, disable openmp
-#add_definitions("-DIOS -stdlib=libc++ -miphoneos-version-min=6.0 -arch arm64 -isysroot $ENV{IOS_SDK} -I/usr/local/opt/llvm/4.0.0/include/c++/v1 -I/usr/local/opt/llvm/4.0.0/lib/clang/4.0.0/include -fPIC -ffunction-sections -funwind-tables -fstack-protector -fomit-frame-pointer -fstrict-aliasing")
+add_definitions("-DIOS -stdlib=libc++ -miphoneos-version-min=6.0 -arch arm64 -isysroot $ENV{IOS_SDK} -I/usr/local/opt/llvm/4.0.0/include/c++/v1 -I/usr/local/opt/llvm/4.0.0/lib/clang/4.0.0/include -fPIC -ffunction-sections -funwind-tables -fstack-protector -fomit-frame-pointer -fstrict-aliasing")
+
