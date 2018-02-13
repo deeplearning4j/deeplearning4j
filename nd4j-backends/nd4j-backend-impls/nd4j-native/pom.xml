@@ -42,12 +42,12 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <version>${openblas.version}-1.4.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>openblas</artifactId>
-            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <version>${openblas.version}-1.4.1-SNAPSHOT</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
