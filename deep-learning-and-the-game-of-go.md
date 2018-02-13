@@ -239,3 +239,23 @@ We've covered a lot of ground in this article and hope we have sparked your inte
 [Deep Learning: A Practitioner's Approach](https://www.amazon.com/Deep-Learning-Practitioners-Josh-Patterson/dp/1491914254/) This book shows you how to get started with deep learning in a very pragmatic way, giving you an in-depth introduction to Eclipse DL4J and its ecosystem. If you know Java, but are new to deep learning, this might be a very interesting read, and the first four chapters are [freely available](http://go.pardot.com/l/456082/2017-11-29/dtc682).
 
 [Deep Learning and the Game of Go](https://www.manning.com/books/deep-learning-and-the-game-of-go) In this book, you learn all about deep learning as it can be applied in the running example of mastering computer Go. This article contains an excerpt of the first two chapters that are [freely available](https://livebook.manning.com/#!/book/deep-learning-and-the-game-of-go/chapter-1). The online version of the book is packed with interactive tutorials and demos, a few of which you've seen here. Notably, apart from knowing Python at an intermediate level, it does not make any assumptions about your knowledge of machine learning. So, if you're new to this and want an introduction to deep learning by example, this book might be for you (make sure to use "smpumperla40" to save 40%).
+
+## <a name="resources">Other Beginner's Guides for Machine Learning</a>
+
+* [Introduction to Deep Neural Networks](./neuralnet-overview)
+* [Regression & Neural Networks](./logistic-regression.html)
+* [Word2vec: Neural Embeddings for Natural Language Processing](./word2vec.html)
+* [Convolutional Networks](./convolutionalnets)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
+* [Eigenvectors, Eigenvalues, PCA & Entropy](./eigenvector)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
+* [Graph Data & Deep Learning](./graphdata)
+* [Open Data Sets for Machine Learning](./opendata)
+* [ETL Data Pipelines for Machine Learning](./datavec)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
+* [Inference: Machine Learning Model Server](./modelserver)
