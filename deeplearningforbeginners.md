@@ -85,12 +85,12 @@ Most of what we know about deep learning is contained in academic papers. We've 
 
 While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
 
-## DL4J Beginner's Guides
+## Beginner's Guides for Deep Learning and Machine Learning
 
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
 * [Regression & Neural Networks](./logistic-regression)
 * [Generative Adversarial Networks (GANs)](/generative-adversarial-network)
-* [Word2vec: Extracting Relations From Raw Text With Neural Word Embeddings](./word2vec)
+* [Word2vec: Neural Word Embeddings for Natural Language Processing](./word2vec)
 * [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm)
 * [Convolutional Networks for Image Processing](./convolutionalnets)
@@ -98,3 +98,10 @@ While individual courses have limits on what they can teach, the Internet does n
 * [Comparing Open-Source Deep Learning Frameworks](./compare-dl4j-torch7-pylearn)
 * [Eigenvectors, PCA, Covariance and Entropy](/eigenvector)
 * [The AI Hierarchy of Needs](https://hackernoon.com/the-ai-hierarchy-of-needs-18f111fcc007)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
+* [Graph Data & Deep Learning](./graphdata)
+* [Open Data Sets for Machine Learning](./opendata)
+* [ETL Data Pipelines for Machine Learning](./datavec)
+* [A Glossary of Deep-Learning Terms](./glossary.html)
+* [Inference: Machine Learning Model Server](./modelserver)
