@@ -14,4 +14,13 @@ public class IntNDArrayList extends BaseNDArrayList<Integer> {
     public IntNDArrayList(INDArray container) {
         super(container);
     }
+
+
+    @Override
+    public Integer get(int i) {
+        Number ret = container.getDouble(i);
+        return ret.intValue();
+    }
+
+
 }

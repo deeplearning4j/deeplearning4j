@@ -1258,6 +1258,21 @@ public class MathUtils {
      *
      * @param begin the begin of the interval
      * @param end   the end of the interval
+     * @param anchor the base number (assuming to be generated from an external rng)
+     * @return an int between begin and end
+     */
+    public static int randomNumberBetween(double begin, double end,double anchor) {
+        if (begin > end)
+            throw new IllegalArgumentException("Begin must not be less than end");
+        return (int) begin + (int) (anchor * ((end - begin) + 1));
+    }
+
+
+    /**
+     * Generates a random integer between the specified numbers
+     *
+     * @param begin the begin of the interval
+     * @param end   the end of the interval
      * @return an int between begin and end
      */
     public static int randomNumberBetween(double begin, double end) {

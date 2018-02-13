@@ -14,4 +14,10 @@ public class FloatNDArrayList extends BaseNDArrayList<Float> {
     public FloatNDArrayList(INDArray container) {
         super(container);
     }
+
+    @Override
+    public Float get(int i) {
+        Number ret = container.getDouble(i);
+        return ret.floatValue();
+    }
 }

@@ -711,7 +711,7 @@ public class Shape {
         long offset = 0;
         int size_0 = sizeUnsafe(shapeInformation, 0);
         int size_1 = sizeUnsafe(shapeInformation, 1);
-        if (row >= size_0 || col >= size_1)
+        if (row >= size_0 || col >= size_1 && !Shape.isVector(Shape.shape(shapeInformation)) && !Shape.shapeIsScalar(Shape.shape(shapeInformation)))
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
                     + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
