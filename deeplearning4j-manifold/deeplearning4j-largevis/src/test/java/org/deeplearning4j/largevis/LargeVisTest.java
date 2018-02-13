@@ -61,7 +61,9 @@ public class LargeVisTest {
         int y = 1;
         int i = 0;
         double currLr = 1e-3;
-        INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr);
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr,false);
         INDArray visX = largeVis.getVis().slice(x);
         INDArray visY = largeVis.getVis().slice(y);
         INDArray yGrad = grads[1];
@@ -72,9 +74,10 @@ public class LargeVisTest {
 
             double origParamValue = visY.getDouble(v);
             visY.putScalar(v, origParamValue + epsilon);
-            double scorePlus = largeVis.errorWrt(x, y, 0, currLr, false).getDouble(v);
+            double scorePlus = largeVis.errorWrt(x, y, 0, currLr, false,false).getDouble(v);
             visY.putScalar(v, origParamValue - epsilon);
-            double scoreMinus = largeVis.errorWrt(x, y, 0, currLr, false).getDouble(v);
+            Nd4j.getRandom().setSeed(12345);
+            double scoreMinus = largeVis.errorWrt(x, y, 0, currLr, false,false).getDouble(v);
             visY.putScalar(v, origParamValue); //reset param so it doesn't affect later calcs
 
 

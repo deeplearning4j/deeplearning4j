@@ -483,7 +483,7 @@ public class LargeVis {
         Counter<Integer> heap = new Counter<>();
         int hitCase = 0;
         for(int i = 0; i < testCase; i++) {
-            int x = MathUtils.randomNumberBetween(0,vec.rows() - 1);
+            int x = MathUtils.randomNumberBetween(0,vec.rows() - 1,Nd4j.getRandom().nextGaussian());
             for(int y = 0; y < vec.rows(); y++) {
                 if(x != y) {
                     float yDistance = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
@@ -514,7 +514,7 @@ public class LargeVis {
 
 
     public int sampleAnEdge(double rand1,double rand2) {
-        int k = MathUtils.randomNumberBetween(0,nEdges - 1);
+        int k = MathUtils.randomNumberBetween(0,nEdges - 1,Nd4j.getRandom().nextDouble());
         return rand2 <= prob.getDouble(k) ? k : alias[k];
     }
 
@@ -762,10 +762,10 @@ public class LargeVis {
      * @param currLr the current learning rate
      * @return the gradients wrt x and y (in that order)
      */
-    public INDArray[] gradientsFor(int x,int y,int i,double currLr) {
+    public INDArray[] gradientsFor(int x,int y,int i,double currLr,boolean normalize) {
         INDArray visY = vis.slice(y);
         INDArray visX = vis.slice(x);
-        return gradientsFor(visX,visY,i,currLr);
+        return gradientsFor(visX,visY,i,currLr,normalize);
     }
 
 
@@ -776,9 +776,10 @@ public class LargeVis {
      * @param visY the slice of y to take the gradient of
      * @param i the current iteration
      * @param currLr the current learning rate
+     * @param normalize wehther to normalize the gradient or not
      * @return the gradients wrt x and y (in that order)
      */
-    public INDArray[] gradientsFor(INDArray visX,INDArray visY,int i,double currLr) {
+    public INDArray[] gradientsFor(INDArray visX,INDArray visY,int i,double currLr,boolean normalize) {
         INDArray[] grads = new INDArray[2];
         double g;
         double f = RPUtils.computeDistance(distanceFunction,visX,visY);
@@ -791,12 +792,14 @@ public class LargeVis {
 
         //gradient wrt distance to x and y
         grads[0] = visX.sub(visY).muli(g * currLr);
-        normalize(grads[0]);
+        if(normalize)
+            normalize(grads[0]);
 
 
         //gradients wrt distance from y to x
         grads[1]  = visY.sub(visX);
-        normalize(grads[1].muli(currLr));
+        if(normalize)
+            normalize(grads[1].muli(currLr));
 
         return grads;
     }
@@ -818,7 +821,7 @@ public class LargeVis {
      * @param updateY
      * @return the error wrt the given parameters
      */
-    public INDArray errorWrt(INDArray visX, INDArray visY, int y, int p, double currLr, boolean updateY) {
+    public INDArray errorWrt(INDArray visX, INDArray visY, int y, int p, double currLr, boolean updateY,boolean normalize) {
         if(negTable == null) {
             initNegTable();
         }
@@ -826,12 +829,12 @@ public class LargeVis {
         INDArray err = Nd4j.create(outDim);
         for(int i = 0; i < nNegatives + 1; i++) {
             if(y > 0) {
-                y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1))];
+                y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1,Nd4j.getRandom().nextDouble()))];
                 if (y == edgeTo.get(p)) continue;
             }
 
             //get the gradient wrt x and y
-            INDArray[] grads = gradientsFor(visX,visY,i,currLr);
+            INDArray[] grads = gradientsFor(visX,visY,i,currLr,normalize);
             err.addi(grads[0]);
             if(updateY)
                 visY.addi(grads[1]);
@@ -857,10 +860,11 @@ public class LargeVis {
      * @param p the sampled edge for random access
      * @param currLr the current learning rate for the gradient update
      * @param updateY whether to update y or not
+     * @param normalize whether to apply gradient normalization or not
      * @return the error wrt the given parameters
      */
-    public INDArray errorWrt(int x, int y, int p, double currLr, boolean updateY) {
-        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr,updateY);
+    public INDArray errorWrt(int x, int y, int p, double currLr, boolean updateY,boolean normalize) {
+        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr,updateY,normalize);
 
     }
 
@@ -899,7 +903,7 @@ public class LargeVis {
                 p = sampleAnEdge(Nd4j.getRandom().nextGaussian(),Nd4j.getRandom().nextDouble());
                 x = edgeFrom.get(p);
                 y = edgeTo.get(p);
-                INDArray err = errorWrt(x,y,p,currLr, true);
+                INDArray err = errorWrt(x,y,p,currLr, true,true);
                 //update the error for the given vector
                 INDArray visX = vis.slice(x);
                 visX.addi(err);
