@@ -94,9 +94,6 @@
         <profile>
             <id>test-nd4j-cuda-8.0</id>
         </profile>
-        <profile>
-          <id>test-nd4j-cuda-9.0</id>
-        </profile>
     </profiles>
 
 </project>
