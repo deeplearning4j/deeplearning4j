@@ -89,12 +89,11 @@ public class Spectrogram {
         if (overlapFactor > 1) {
             int numOverlappedSamples = numSamples * overlapFactor;
             int backSamples = fftSampleSize * (overlapFactor - 1) / overlapFactor;
-            int fftSampleSize_1 = fftSampleSize - 1;
             short[] overlapAmp = new short[numOverlappedSamples];
             pointer = 0;
             for (int i = 0; i < amplitudes.length; i++) {
                 overlapAmp[pointer++] = amplitudes[i];
-                if (pointer % fftSampleSize == fftSampleSize_1) {
+                if (pointer % fftSampleSize == 0) {
                     // overlap
                     i -= backSamples;
                 }
@@ -126,7 +125,7 @@ public class Spectrogram {
         // for each frame in signals, do fft on it
         FastFourierTransform fft = new FastFourierTransform();
         for (int i = 0; i < numFrames; i++) {
-            absoluteSpectrogram[i] = fft.getMagnitudes(signals[i]);
+            absoluteSpectrogram[i] = fft.getMagnitudes(signals[i], false);
         }
 
         if (absoluteSpectrogram.length > 0) {

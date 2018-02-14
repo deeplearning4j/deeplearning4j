@@ -20,17 +20,42 @@ import com.sun.media.sound.FFT;
 
 /**
  * FFT object, transform amplitudes to frequency intensities
- * 
+ *
  * @author Jacquet Wong
- * 
  */
 public class FastFourierTransform {
 
     /**
      * Get the frequency intensities
-     * 
-     * @param amplitudes
-     *            amplitudes of the signal
+     *
+     * @param amplitudes amplitudes of the signal. Format depends on value of complex
+     * @param complex if true, amplitudes is assumed to be complex interlaced (re = even, im = odd), if false amplitudes
+     *                are assumed to be real valued.
+     * @return intensities of each frequency unit: mag[frequency_unit]=intensity
+     */
+    public double[] getMagnitudes(double[] amplitudes, boolean complex) {
+
+        if(complex) {
+            return getMagnitudes(amplitudes);
+        }
+
+        // FFT expects complex input where even indexes are real parts
+        // and odd indexes are img parts.
+        // Here we assume amplitudes to be real-valued and double the size of
+        // the input array and set img indexes to zero
+        int sampleSize = 2 * amplitudes.length;
+        double[] amplitudesAsComplex = new double[sampleSize];
+        for (int j = 0; j < sampleSize; j += 2) {
+            amplitudesAsComplex[j] = amplitudes[j / 2];
+            amplitudesAsComplex[j + 1] = 0;
+        }
+        return getMagnitudes(amplitudesAsComplex);
+    }
+
+    /**
+     * Get the frequency intensities
+     *
+     * @param amplitudes complex-valued signal to transform. Even indexes are real and odd indexes are img
      * @return intensities of each frequency unit: mag[frequency_unit]=intensity
      */
     public double[] getMagnitudes(double[] amplitudes) {
@@ -53,8 +78,8 @@ public class FastFourierTransform {
         int positiveSize = indexSize / 2;
 
         double[] mag = new double[positiveSize];
-        for (int i = 0; i < indexSize; i += 2) {
-            mag[i / 2] = Math.sqrt(amplitudes[i] * amplitudes[i] + amplitudes[i + 1] * amplitudes[i + 1]);
+        for (int j = 0; j < indexSize; j += 2) {
+            mag[j / 2] = Math.sqrt(amplitudes[j] * amplitudes[j] + amplitudes[j + 1] * amplitudes[j + 1]);
         }
 
         return mag;
