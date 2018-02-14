@@ -82,6 +82,14 @@ echo "Updating CUDA versions in pom.xml files to CUDA $1";
 
 BASEDIR=$(dirname $0)
 
+#Artifact ids, ending with "-8.0", "-9.0", etc. nd4j-cuda, etc.
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(artifactId>nd4j-cuda-\)...<\/artifactId>/\1'$VERSION'<\/artifactId>/g' {}" \;
+
+#Profiles ids, ending with "-8.0", "-9.0", etc. test-nd4j-cuda, etc.
+find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
+  -exec bash -c "sed_i 's/\(test-nd4j-cuda-\)...</\1'$VERSION'</g' {}" \;
+
 #Artifact ids, ending with "-8.0", "-9.0", etc. deeplearning4j-cuda, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>deeplearning4j-cuda-\)...<\/artifactId>/\1'$VERSION'<\/artifactId>/g' {}" \;
