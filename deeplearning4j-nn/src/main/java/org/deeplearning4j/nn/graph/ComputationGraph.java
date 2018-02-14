@@ -2084,6 +2084,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if(truncatedBPTT && clearTbpttState){
             rnnClearPreviousState();
         }
+
+        //Clear inputs and epsilons:
+        for(GraphVertex gv : vertices){
+            gv.clear();
+        }
     }
 
     @Override
