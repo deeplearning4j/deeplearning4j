@@ -118,7 +118,32 @@ public class GradCheckTransforms {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    @Test
+    public void testDiag() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {4,2});
+        SDVariable in = sd.var("in", new int[]{1, 2});
+        INDArray expOut = Nd4j.create(new int[] {2,2});
+        DynamicCustomOp diag = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(diag);
+        SDVariable t = sd.diag(in);
+
+        SDVariable loss = sd.max("loss", t, 0, 1);
+
+        sd.associateArrayWithVariable(ia, in);
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if(!expOut.equals(out)){log.info("forward failed");}
+
+        try{
+            GradCheckUtil.checkGradients(sd);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     @Test
@@ -127,7 +152,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 53; i++) {
+        for (int i = 0; i < 54; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -414,6 +439,13 @@ public class GradCheckTransforms {
                             .addIntegerArguments(dim)
                             .addInputs(ia).addOutputs(expOut).build();
                     Nd4j.getExecutioner().exec(cumprod);
+                case 53:
+                    ia = Nd4j.create(new float[] {4,2});
+                    in = sd.var("in", new int[]{1, 2});
+                    expOut = Nd4j.create(new int[] {2,2});
+                    DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
+                    Nd4j.getExecutioner().exec(op);
+                    t = sd.diag(in);
                     break;
                 default:
                     throw new RuntimeException();
@@ -427,8 +459,8 @@ public class GradCheckTransforms {
             String msg = "test: " + i + " - " + name;
             log.info("*** Starting test: " + msg);
 
-
             SDVariable loss = sd.mean("loss", t);
+
 
             sd.associateArrayWithVariable(ia, in);
             sd.exec();

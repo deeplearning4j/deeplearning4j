@@ -817,8 +817,18 @@ public class DifferentialFunctionFactory   {
         for (SDVariable df: differentialFunctions)
             validateDifferentialFunctionsameDiff(df);
         return new MergeAddOp(sameDiff(), differentialFunctions,false).outputVariables()[0];
-
     }
+
+    public  SDVariable diag(SDVariable sdVariable) {
+        validateDifferentialFunctionsameDiff(sdVariable);
+        return new Diag(sameDiff(), new SDVariable[] {sdVariable}, false).outputVariables()[0];
+    }
+
+    public  SDVariable diagPart(SDVariable sdVariable) {
+        validateDifferentialFunctionsameDiff(sdVariable);
+        return new DiagPart(sameDiff(), new SDVariable[] {sdVariable}, false).outputVariables()[0];
+    }
+
 
     public SDVariable batchToSpace(SDVariable differentialFunction, int[] blocks, int[][] crops) {
         validateDifferentialFunctionsameDiff(differentialFunction);
