@@ -2,16 +2,16 @@ package org.deeplearning4j.clustering.randomprojection;
 
 import com.google.common.primitives.Doubles;
 import lombok.val;
+import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * A port of:
@@ -21,6 +21,105 @@ import java.util.List;
  * @author
  */
 public class RPUtils {
+
+
+    private static ThreadLocal<Map<String,DifferentialFunction>> functionInstances = new ThreadLocal<>();
+
+    public static <T extends DifferentialFunction> DifferentialFunction getOp(String name,
+                                                                              INDArray x,
+                                                                              INDArray y,
+                                                                              INDArray result) {
+        Map<String,DifferentialFunction> ops = functionInstances.get();
+        if(ops == null) {
+            ops = new HashMap<>();
+            functionInstances.set(ops);
+        }
+
+        switch(name) {
+            case "cosinedistance":
+                if(!ops.containsKey(name)) {
+                    CosineDistance cosineDistance = new CosineDistance(x,y,result,x.length());
+                    ops.put(name,cosineDistance);
+                    return cosineDistance;
+                }
+                else {
+                    CosineDistance cosineDistance = (CosineDistance) ops.get(name);
+                    return cosineDistance;
+                }
+            case "cosinesimilarity":
+                if(!ops.containsKey(name)) {
+                    CosineSimilarity cosineSimilarity = new CosineSimilarity(x,y,result,x.length());
+                    ops.put(name,cosineSimilarity);
+                    return cosineSimilarity;
+                }
+                else {
+                    CosineSimilarity cosineSimilarity = (CosineSimilarity) ops.get(name);
+                    cosineSimilarity.setX(x);
+                    cosineSimilarity.setY(y);
+                    cosineSimilarity.setZ(result);
+                    cosineSimilarity.setN(x.length());
+                    return cosineSimilarity;
+
+                }
+            case "manhattan":
+                if(!ops.containsKey(name)) {
+                    ManhattanDistance manhattanDistance = new ManhattanDistance(x,y,result,x.length());
+                    ops.put(name,manhattanDistance);
+                    return manhattanDistance;
+                }
+                else {
+                    ManhattanDistance manhattanDistance = (ManhattanDistance) ops.get(name);
+                    manhattanDistance.setX(x);
+                    manhattanDistance.setY(y);
+                    manhattanDistance.setZ(result);
+                    manhattanDistance.setN(x.length());
+                    return  manhattanDistance;
+                }
+            case "jaccard":
+                if(!ops.containsKey(name)) {
+                    JaccardDistance jaccardDistance = new JaccardDistance(x,y,result,x.length());
+                    ops.put(name,jaccardDistance);
+                    return jaccardDistance;
+                }
+                else {
+                    JaccardDistance jaccardDistance = (JaccardDistance) ops.get(name);
+                    jaccardDistance.setX(x);
+                    jaccardDistance.setY(y);
+                    jaccardDistance.setZ(result);
+                    jaccardDistance.setN(x.length());
+                    return jaccardDistance;
+                }
+            case "hamming":
+                if(!ops.containsKey(name)) {
+                    HammingDistance hammingDistance = new HammingDistance(x,y,result,x.length());
+                    ops.put(name,hammingDistance);
+                    return hammingDistance;
+                }
+                else {
+                    HammingDistance hammingDistance = (HammingDistance) ops.get(name);
+                    hammingDistance.setX(x);
+                    hammingDistance.setY(y);
+                    hammingDistance.setZ(result);
+                    hammingDistance.setN(x.length());
+                    return hammingDistance;
+                }
+                //euclidean
+            default:
+                if(!ops.containsKey(name)) {
+                    EuclideanDistance euclideanDistance = new EuclideanDistance(x,y,result,x.length());
+                    ops.put(name,euclideanDistance);
+                    return euclideanDistance;
+                }
+                else {
+                    EuclideanDistance euclideanDistance = (EuclideanDistance) ops.get(name);
+                    euclideanDistance.setX(x);
+                    euclideanDistance.setY(y);
+                    euclideanDistance.setZ(result);
+                    euclideanDistance.setN(x.length());
+                    return euclideanDistance;
+                }
+        }
+    }
 
 
     /**
@@ -183,15 +282,8 @@ public class RPUtils {
      * @return the distance between the 2 vectors given the inputs
      */
     public static double computeDistance(String function,INDArray x,INDArray y,INDArray result) {
-        switch(function) {
-            case "euclidean": return Nd4j.getExecutioner().exec(new EuclideanDistance(x,y,result,x.length())).z().getDouble(0);
-            case "cosinedistance":return Nd4j.getExecutioner().exec(new CosineDistance(x,y,result,x.length())).z().getDouble(0);
-            case "cosinesimiliarty":return Nd4j.getExecutioner().exec(new CosineSimilarity(x,y,result,x.length())).z().getDouble(0);
-            case "manhattan":return Nd4j.getExecutioner().exec(new ManhattanDistance(x,y,result,x.length())).z().getDouble(0);
-            case "jaccard": return Nd4j.getExecutioner().exec(new JaccardDistance(x,y,result,x.length())).z().getDouble(0);
-            case "hamming":return Nd4j.getExecutioner().exec(new HammingDistance(x,y,result,x.length())).z().getDouble(0);
-            default: return Nd4j.getExecutioner().exec(new EuclideanDistance(x,y,result,x.length())).z().getDouble(0);
-        }
+        Accumulation op = (Accumulation) getOp(function, x, y, result);
+        return op.z().getDouble(0);
     }
 
     /**
