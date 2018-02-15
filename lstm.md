@@ -216,17 +216,17 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 
 ### <a name="beginner">Other Deep-learning Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
-* [Beginner's Guide to Reinforcement Learning](./reinforcementlearning)
+* [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Deep Learning for Graph Data](./graphdata)
-* [Word2Vec: Neural Embeddings for Java](./word2vec)
-* [Combining Symbolic Learning & Deep Learning](./deepsymboliclearning)
+* [Graph Data and Deep Learning](./graphdata)
+* [Word2Vec: Neural Embeddings for NLP](./word2vec)
+* [Symbolic Reasoning (Symbolic AI) & Deep Learning](./symbolicreasoning)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
 * [Open Datasets for Machine Learning](./opendata)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Inference: Machine Learning Model Server](./modelserver)
 
 ### Footnotes
 
