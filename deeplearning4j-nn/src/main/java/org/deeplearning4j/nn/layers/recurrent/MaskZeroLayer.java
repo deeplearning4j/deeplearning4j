@@ -9,7 +9,16 @@ import org.nd4j.linalg.primitives.Pair;
 
 import lombok.NonNull;
 
+/**
+ *
+ * Masks timesteps with 0 activation. Assumes that the input shape is [batch_size, input_size, timesteps].
+ */
 public class MaskZeroLayer extends BaseWrapperLayer {
+
+    /**
+     *
+     */
+    private static final long serialVersionUID = -7369482676002469854L;
 
     public MaskZeroLayer(@NonNull Layer underlying){
         super(underlying);
