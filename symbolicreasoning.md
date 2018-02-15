@@ -1,10 +1,10 @@
 ---
-title: Symbolic Reasoning (Symbolic AI) & Deep Learning
+title: A Beginner's Guide to Symbolic Reasoning (Symbolic AI) & Deep Learning
 layout: default
 redirect_from: deepsymboliclearning
 ---
 
-# Symbolic Reasoning & Deep Learning
+# A Beginner's Guide to Symbolic Reasoning & Deep Learning
 
 Deep learning has its discontents, and many of them look to other branches of AI when they hope for the future. Symbolic reasoning is one of those branches. 
 
