@@ -93,7 +93,7 @@ public class Transforms {
 
 
     public static INDArray reverse(INDArray x, boolean dup) {
-        return Nd4j.getExecutioner().exec(new Reverse(x, dup ? Nd4j.createUninitialized(x.shape(), x.ordering()) : x))
+        return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? Nd4j.createUninitialized(x.shape(), x.ordering()) : x))
                         .z();
     }
 

@@ -57,7 +57,7 @@ public interface INDArrayIndex {
     long next();
 
     /**
-     * Reverse the indexes
+     * OldReverse the indexes
      */
     void reverse();
 

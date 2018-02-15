@@ -54,8 +54,8 @@ public class ClipByNorm extends DynamicCustomOp {
         SDVariable isClippedBC = f().gte(broadcastableNorm, clipValue);
         SDVariable notClippedBC = isClippedBC.rsub(1.0);
 
-        SDVariable dnormdx = arg().div(broadcastableNorm);
-        SDVariable sqNorm = f().square(broadcastableNorm);
+//        SDVariable dnormdx = arg().div(broadcastableNorm);
+//        SDVariable sqNorm = f().square(broadcastableNorm);
 //        SDVariable dOutdInClipped = sqNorm.rdiv(-1).mul(dnormdx).mul(arg()) //-1/(norm2(x))^2 * x/norm2(x)
 //                .add(broadcastableNorm.rdiv(1.0))
 //                .mul(clipValue);

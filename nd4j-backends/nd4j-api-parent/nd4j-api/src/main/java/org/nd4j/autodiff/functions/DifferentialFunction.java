@@ -345,7 +345,7 @@ public abstract class DifferentialFunction {
      * @param args
      */
     public DifferentialFunction(SameDiff sameDiff, SDVariable[] args) {
-        this(sameDiff,false,args);
+        this(sameDiff,false, args);
     }
 
 

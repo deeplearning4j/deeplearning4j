@@ -2,31 +2,55 @@ package org.nd4j.linalg.api.ops.impl.accum;
 
 import lombok.val;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.BooleanAdapter;
-import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
+/**
+ * Cumulative sum operation, optionally along dimension.
+ *
+ * @author Alex Black
+ */
 public class CumSum extends DynamicCustomOp {
+
     protected boolean exclusive = false;
     protected boolean reverse = false;
+
+    public CumSum(){}
+
+
+    public CumSum(SameDiff sameDiff, SDVariable x, int... dimension){
+        super(null, sameDiff, new SDVariable[]{x});
+        this.sameDiff = sameDiff;
+        this.dimensions = dimension;
+        addArgs();
+    }
+
+    public CumSum(SameDiff sameDiff, SDVariable x, boolean exclusive, boolean reverse, int... dimension){
+        super(null, sameDiff, new SDVariable[]{x});
+        this.sameDiff = sameDiff;
+        this.dimensions = dimension;
+        this.exclusive = exclusive;
+        this.reverse = reverse;
+        addArgs();
+    }
+
+
 
     @Override
     public String opName() {
         return "cumsum";
     }
-
-
 
     @Override
     public String tensorflowName() {
@@ -78,12 +102,23 @@ public class CumSum extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0);
+        addIArgument(exclusive ? 1 : 0, reverse ? 1 : 0, dimensions[0]);
     }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grad){
+        // Output gradient is the reversed cumulative sum of the reversed input gradient
+        SDVariable gradient = sameDiff.setupFunction(grad.get(0));
+
+        SDVariable reverseGrad = sameDiff.reverse(gradient, 1- dimensions[0]);
+        SDVariable ret = sameDiff.cumsum(reverseGrad, exclusive, reverse, dimensions);
+        SDVariable reversedRet = sameDiff.reverse(ret, 1- dimensions[0]);
+        return Collections.singletonList(reversedRet);
     }
 
 }

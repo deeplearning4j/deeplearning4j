@@ -188,6 +188,14 @@ public class DifferentialFunctionFactory   {
     }
 
 
+    public SDVariable cumsum(SDVariable in, boolean exclusive, boolean reverse, int... dimensions){
+        return new CumSum(sameDiff(), in, exclusive, reverse, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... dimensions){
+        return new CumProd(sameDiff(), in, exclusive, reverse, dimensions).outputVariables()[0];
+    }
+
     public SDVariable norm1(SDVariable i_x, int... dimensions) {
         return new  Norm1(sameDiff(),i_x,dimensions).outputVariables()[0];
 
@@ -582,6 +590,10 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable reshape(SDVariable iX, int[] shape) {
         return new Reshape(sameDiff(),iX,shape).outputVariables()[0];
+    }
+
+    public SDVariable reverse(SDVariable x, int... dimensions){
+        return new Reverse(sameDiff(),x, dimensions).outputVariables()[0];
     }
 
 

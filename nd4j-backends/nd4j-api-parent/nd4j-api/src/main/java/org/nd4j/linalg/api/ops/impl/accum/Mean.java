@@ -83,8 +83,8 @@ public class Mean extends Sum {
         int rank = Shape.rankFromShape(arg().getShape());
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(rank, dimensions, i_v1.get(0));
         SDVariable ret = sameDiff.onesLike(arg()).div(n);      //1/N with shape equal to input
-        ret = ret.mul(broadcastableGrad);
 
+        ret = ret.mul(broadcastableGrad);
         return Collections.singletonList(ret);
     }
 
