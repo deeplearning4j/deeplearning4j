@@ -21,9 +21,15 @@ Important note: this won't be sufficient to take us to "true" AI. Other concepts
 
 Differentiable programming will never be the buzzword that deep learning is. It's too much of a mouthful. LeCun has proposed DP, DiffProg or dProg as less unwieldy substitutes.
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DIFFERENTIABLE PROGRAMMING</a>
+</p>
+
 ### See Also
 
 * [Software 2.0, by Andrej Karpathy](https://medium.com/@karpathy/software-2-0-a64152b37c35)
+* [Slides: Differentiable Programming, Microsoft Research (2016)](http://www.cs.nuim.ie/~gunes/files/Baydin-MSR-Slides-20160201.pdf)
+* [Differentiable Programming @Edge.org](https://www.edge.org/response-detail/26794)
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
 
