@@ -54,15 +54,13 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     @Override
     public INDArray activate(TrainingMode training) {
         INDArray input = input();
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        setMaskFromInput(input);
         return underlying.activate(training);
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        setMaskFromInput(input);
         return underlying.activate(input, training);
     }
 
@@ -74,31 +72,32 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     @Override
     public INDArray activate(boolean training) {
         INDArray input = input();
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        setMaskFromInput(input);
         return underlying.activate(training);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        setMaskFromInput(input);
         return underlying.activate(input, training);
     }
 
     @Override
     public INDArray activate() {
         INDArray input = input();
-        INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
-        underlying.setMaskArray(mask);
+        setMaskFromInput(input);
         return underlying.activate();
     }
 
     @Override
     public INDArray activate(INDArray input) {
+        setMaskFromInput(input);
+        return underlying.activate(input);
+    }
+
+    private void setMaskFromInput(INDArray input) {
         INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
         underlying.setMaskArray(mask);
-        return underlying.activate(input);
     }
 
     @Override
