@@ -61,13 +61,13 @@ public class LargeVisTest {
         double currLr = 1;
         Nd4j.getRandom().setSeed(12345);
 
-        INDArray[] grads = largeVis.gradientsFor(x,y,0,currLr,true);
+        INDArray grads = largeVis.gradientsFor(x,y,0,currLr,true);
         INDArray visX = largeVis.getVis().slice(x);
         INDArray visY = largeVis.getVis().slice(y);
         double epsilon = 1e-6;
 
         for (int v = 0; v < visX.length(); v++) {
-            double backpropGradient = grads[1].getDouble(v);
+            double backpropGradient = grads.getRow(1).getDouble(v);
             Nd4j.getRandom().setSeed(12345);
             double origParamValue = visY.getDouble(v);
             visY.putScalar(v, origParamValue + epsilon);

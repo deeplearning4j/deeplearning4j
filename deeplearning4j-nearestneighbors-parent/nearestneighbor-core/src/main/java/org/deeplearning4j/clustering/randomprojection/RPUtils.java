@@ -3,6 +3,7 @@ package org.deeplearning4j.clustering.randomprojection;
 import com.google.common.primitives.Doubles;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -181,16 +182,34 @@ public class RPUtils {
      * @param y the second vector
      * @return the distance between the 2 vectors given the inputs
      */
-    public static double computeDistance(String function,INDArray x,INDArray y) {
+    public static double computeDistance(String function,INDArray x,INDArray y,INDArray result) {
         switch(function) {
-            case "euclidean": return Transforms.euclideanDistance(x,y);
-            case "cosinedistance": return Transforms.cosineDistance(x,y);
-            case "cosinesimiliarty": return -Transforms.cosineDistance(x,y);
-            case "manhattan": return Transforms.manhattanDistance(x,y);
-            case "jaccard": return Transforms.jaccardDistance(x,y);
-            case "hamming": return Transforms.hammingDistance(x,y);
-            default: return Transforms.euclideanDistance(x,y);
+            case "euclidean": return Nd4j.getExecutioner().exec(new EuclideanDistance(x,y,result,x.length())).z().getDouble(0);
+            case "cosinedistance":return Nd4j.getExecutioner().exec(new CosineDistance(x,y,result,x.length())).z().getDouble(0);
+            case "cosinesimiliarty":return Nd4j.getExecutioner().exec(new CosineSimilarity(x,y,result,x.length())).z().getDouble(0);
+            case "manhattan":return Nd4j.getExecutioner().exec(new ManhattanDistance(x,y,result,x.length())).z().getDouble(0);
+            case "jaccard": return Nd4j.getExecutioner().exec(new JaccardDistance(x,y,result,x.length())).z().getDouble(0);
+            case "hamming":return Nd4j.getExecutioner().exec(new HammingDistance(x,y,result,x.length())).z().getDouble(0);
+            default: return Nd4j.getExecutioner().exec(new EuclideanDistance(x,y,result,x.length())).z().getDouble(0);
         }
+    }
+
+    /**
+     * Compute the distance between 2 vectors
+     * given a function name. Valid function names:
+     * euclidean: euclidean distance
+     * cosinedistance: cosine distance
+     * cosine similarity: cosine similarity
+     * manhattan: manhattan distance
+     * jaccard: jaccard distance
+     * hamming: hamming distance
+     * @param function the function to use (default euclidean distance)
+     * @param x the first vector
+     * @param y the second vector
+     * @return the distance between the 2 vectors given the inputs
+     */
+    public static double computeDistance(String function,INDArray x,INDArray y) {
+        return computeDistance(function,x,y,Nd4j.scalar(0.0));
     }
 
     /**

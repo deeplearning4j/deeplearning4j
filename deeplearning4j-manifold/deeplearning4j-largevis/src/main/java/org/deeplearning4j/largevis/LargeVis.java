@@ -3,6 +3,7 @@ package org.deeplearning4j.largevis;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.clustering.randomprojection.RPForest;
 import org.deeplearning4j.clustering.randomprojection.RPUtils;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -14,6 +15,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -88,6 +91,7 @@ public class LargeVis {
     private ThreadLocal<INDArray> scalars = new ThreadLocal<>();
     @Builder.Default
     private WorkspaceMode workspaceMode = WorkspaceMode.SINGLE;
+    private ThreadLocal<MemoryWorkspace>  workspaceThread = new ThreadLocal<>();
     private WorkspaceConfiguration workspaceConfiguration;
 
     /**
@@ -143,13 +147,21 @@ public class LargeVis {
     @Builder.Default
     private GradientNormalization gradientNormalization = GradientNormalization.ClipElementWiseAbsoluteValue;
     private AtomicInteger edgeCountActual = new AtomicInteger(0);
-
+    private  MemoryWorkspace workspace;
     private AtomicInteger updateCount = new AtomicInteger(0);
     private AtomicInteger epochCount = new AtomicInteger(0);
     private IntNDArrayList edgeFrom = new IntNDArrayList();
     private IntNDArrayList edgeTo = new IntNDArrayList();
     private ExecutorService executorService;
     protected final AtomicInteger workerCounter = new AtomicInteger(0);
+
+
+    private ThreadLocal<INDArray> errors = new ThreadLocal<>();
+    private ThreadLocal<INDArray> grads = new ThreadLocal<>();
+    private ThreadLocal<INDArray> gradsFirstRow = new ThreadLocal<>();
+    private ThreadLocal<INDArray> gradsSecondRow = new ThreadLocal<>();
+
+
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -157,6 +169,9 @@ public class LargeVis {
             ex.printStackTrace();
         }
     };
+
+
+
 
 
     @Builder
@@ -305,18 +320,17 @@ public class LargeVis {
         }
 
         workspace.notifyScopeLeft();
-
-
-
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
     }
 
     public MemoryWorkspace getWorkspace() {
-        // opening workspace
-        MemoryWorkspace workspace =
-                workspaceMode == null || workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace() :
-                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "LargeVisWorkspace");
+        if(this.workspaceThread.get() == null) {
+            // opening workspace
+            workspaceThread.set(workspaceMode == null || workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace() :
+                    Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "LargeVisWorkspace-" + Thread.currentThread().getName()));
+        }
 
-        return workspace;
+        return workspaceThread.get();
     }
 
 
@@ -454,6 +468,10 @@ public class LargeVis {
 
         @Override
         public void run() {
+            if (scalars.get() == null)
+                scalars.set(Nd4j.scalar(0.0));
+
+
             log.info("Starting propagation thread " + id);
             int[] check = new int[vec.rows()];
             int low = id * vec.rows() / numWorkers;
@@ -474,7 +492,7 @@ public class LargeVis {
                 for(int i = 0; i < v1.size(); i++) {
                     y = v1.get(i);
                     check[y] = x;
-                    double yDistance = RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    double yDistance = RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y),scalars.get());
                     distancesPq.add(Pair.of(y,yDistance));
                     if(distancesPq.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
@@ -487,12 +505,12 @@ public class LargeVis {
                     for(int j = 0; j < v2.size(); j++) {
                         if(check[y = v2.get(j)] != x) {
                             check[y] = x;
-                            double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                            double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y),scalars.get());
                             distancesPq.add(Pair.of(y,yDistance));
                         }
                     }
 
-                    double yDistance = (RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y)));
+                    double yDistance = (RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y),scalars.get()));
                     distancesPq.add(Pair.of(y,yDistance));
                     if(distancesPq.size() == nNeighbors + 1) {
                         //heap.pop() here which is it?
@@ -519,6 +537,10 @@ public class LargeVis {
      * @return
      */
     public int testAccuracy() {
+        if (scalars.get() == null)
+            scalars.set(Nd4j.scalar(0.0));
+
+
         int testCase = 100;
         Counter<Integer> heap = new Counter<>();
         PriorityQueue<Pair<Integer, Double>> heapPq = heap.asReversedPriorityQueue();
@@ -527,7 +549,7 @@ public class LargeVis {
             int x = MathUtils.randomNumberBetween(0,vec.rows() - 1,Nd4j.getRandom().nextDouble());
             for(int y = 0; y < vec.rows(); y++) {
                 if(x != y) {
-                    double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                    double yDistance =  RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y),scalars.get());
                     heapPq.add(Pair.of(y,yDistance));
                     if(heap.size() == nNeighbors + 1)  {
                         heapPq.poll();
@@ -623,6 +645,9 @@ public class LargeVis {
      * for each data point
      */
     public void computeSimilarity() {
+        if (scalars.get() == null)
+            scalars.set(Nd4j.scalar(0.0));
+
         head = new IntNDArrayList();
         for(int i = 0; i < vec.rows(); i++) {
             head.add(-1);
@@ -633,7 +658,7 @@ public class LargeVis {
                 edgeFrom.add(x);
                 int y = knnVec.get(x).get(i);
                 edgeTo.add(y);
-                float dist = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y));
+                float dist = (float) RPUtils.computeDistance(distanceFunction,vec.slice(x),vec.slice(y),scalars.get());
                 edgeWeight.add(dist);
                 next.add(head.get(x));
                 reverse.add(-1);
@@ -803,10 +828,10 @@ public class LargeVis {
      * @param currLr the current learning rate
      * @return the gradients wrt x and y (in that order)
      */
-    public INDArray[] gradientsFor(int x,int y,int i,double currLr,boolean normalize) {
+    public INDArray gradientsFor(int x,int y,int i,double currLr,boolean normalize) {
         INDArray visY = vis.slice(y);
         INDArray visX = vis.slice(x);
-        return gradientsFor(visX,visY,i,currLr,normalize);
+        return gradientsFor(visX,y,i,currLr,normalize);
     }
 
 
@@ -817,32 +842,53 @@ public class LargeVis {
      * @param visY the slice of y to take the gradient of
      * @param i the current iteration
      * @param currLr the current learning rate
-     * @param normalize wehther to normalize the gradient or not
+     * @param normalize whether to normalize the gradient or not
      * @return the gradients wrt x and y (in that order)
      */
-    public INDArray[] gradientsFor(INDArray visX,INDArray visY,int i,double currLr,boolean normalize) {
-        INDArray[] grads = new INDArray[2];
-        double g;
-        double f = RPUtils.computeDistance(distanceFunction,visX,visY);
-        if(i == 0) {
-            g = (-2 / (1 + f));
+    public INDArray gradientsFor(INDArray grads,INDArray visX,INDArray visY,int i,double currLr,boolean normalize) {
+        MemoryWorkspace workspace = getWorkspace();
+        try(MemoryWorkspace w2 = workspace.notifyScopeEntered()) {
+
+            if (scalars.get() == null)
+                scalars.set(Nd4j.scalar(0.0));
+
+            double g;
+            double f = RPUtils.computeDistance(distanceFunction,visX,visY,scalars.get());
+            if(i == 0) {
+                g = (-2 / (1 + f));
+            }
+            else {
+                g = 2 * gamma / (1 + f) / (0.1 + f);
+            }
+
+            //gradient wrt distance to x and y
+            INDArray gradsFirstRow = Nd4j.getExecutioner().execAndReturn(new OldSubOp(visX,visY,createGradFirstRow()));
+            INDArray gradsSecondRow = Nd4j.getExecutioner().execAndReturn(new OldSubOp(visY,visX,createGradSecondRow()));
+            grads.putRow(0,gradsFirstRow.muli(g * currLr));
+            grads.putRow(1,gradsSecondRow);
+            if(normalize) {
+                normalizeBatch(grads);
+            }
+
+
+            return grads;
         }
-        else {
-            g = 2 * gamma / (1 + f) / (0.1 + f);
-        }
-
-        //gradient wrt distance to x and y
-        grads[0] = visX.sub(visY).muli(g * currLr);
-        if(normalize)
-            normalize(grads[0]);
 
 
-        //gradients wrt distance from y to x
-        grads[1]  = visY.sub(visX);
-        if(normalize)
-            normalize(grads[1].muli(currLr));
+    }
 
-        return grads;
+    /**
+     * Return the gradients wrt the distances of x and y
+     * relative to each other
+     * @param visX the slice of vis to take the gradient of
+     *  @param y the initial y for sampling
+     * @param i the current iteration
+     * @param currLr the current learning rate
+     * @param normalize whether to normalize the gradient or not
+     * @return the gradients wrt x and y (in that order)
+     */
+    public INDArray gradientsFor(INDArray visX,int y,int i,double currLr,boolean normalize) {
+        return gradientsFor(Nd4j.create(2,visX.columns()),visX,vis.slice(y),i,currLr,normalize);
     }
 
 
@@ -855,40 +901,76 @@ public class LargeVis {
      * not directly by a user.
      *
      * @param visX the x component to compute the error for
-     * @param visY the y component to compute the error for
      * @param y the index of y
      * @param p the sample edge for random access
      * @param currLr the current learning rate for the gradient update
      * @param updateY
      * @return the error wrt the given parameters
      */
-    public INDArray errorWrt(INDArray visX, INDArray visY, int y, int p, double currLr, boolean updateY,boolean normalize) {
+    public INDArray errorWrt(INDArray visX,  int y, int p, double currLr, boolean updateY,boolean normalize) {
         MemoryWorkspace workspace = getWorkspace();
-        workspace.notifyScopeEntered();
         if(negTable == null) {
             initNegTable();
         }
 
-        INDArray err = Nd4j.create(outDim);
-        for(int i = 0; i < nNegatives + 1; i++) {
-            if(y > 0) {
-                y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1,Nd4j.getRandom().nextDouble()))];
-                if (y == edgeTo.get(p)) continue;
+        try(MemoryWorkspace w2 = workspace.notifyScopeEntered()) {
+            INDArray err = createError();
+            INDArray grads = createGrad();
+            for(int i = 0; i < nNegatives + 1; i++) {
+                if(y > 0) {
+                    y = negTable[(MathUtils.randomNumberBetween(0, negSize - 1,Nd4j.getRandom().nextDouble()))];
+                    if (y == edgeTo.get(p)) continue;
+                }
+
+                INDArray visY = vis.slice(y);
+                //get the gradient wrt x and y
+                gradientsFor(grads,visX,visY,i,currLr,normalize);
+                INDArray gradsFirst = createGradFirstRow();
+                INDArray gradsSecond = createGradSecondRow();
+                err.addi(gradsFirst);
+                if(updateY)
+                    visY.addi(gradsSecond);
+
+
             }
 
-            //get the gradient wrt x and y
-            INDArray[] grads = gradientsFor(visX,visY,i,currLr,normalize);
-            err.addi(grads[0]);
-            if(updateY)
-                visY.addi(grads[1]);
-
+            return err;
 
         }
 
+    }
 
 
-        return err;
+    public INDArray createGradSecondRow() {
+        if(gradsSecondRow.get() == null) {
+            gradsSecondRow.set(grads.get().slice(1));
+        }
 
+        return gradsSecondRow.get();
+    }
+
+    public INDArray createGradFirstRow() {
+        if(gradsFirstRow.get() == null) {
+            gradsFirstRow.set(grads.get().slice(0));
+        }
+
+        return gradsFirstRow.get();
+    }
+
+    public INDArray createGrad() {
+        if(grads.get() == null) {
+            grads.set(Nd4j.create(2,vis.columns()));
+        }
+
+        return grads.get();
+    }
+
+    public INDArray createError() {
+        if(errors.get() == null) {
+            errors.set(Nd4j.create(outDim));
+        }
+
+        return errors.get();
     }
 
 
@@ -901,7 +983,7 @@ public class LargeVis {
      * not directly by a user.
      *
      * @param x the x component to compute the error for
-     * @param y the index of y
+     * @param y the initial index of y (changes with various negative sampling
      * @param p the sampled edge for random access
      * @param currLr the current learning rate for the gradient update
      * @param updateY whether to update y or not
@@ -909,7 +991,7 @@ public class LargeVis {
      * @return the error wrt the given parameters
      */
     public INDArray errorWrt(int x, int y, int p, double currLr, boolean updateY,boolean normalize) {
-        return errorWrt(vis.slice(x),vis.slice(y),y,p,currLr,updateY,normalize);
+        return errorWrt(vis.slice(x),y,p,currLr,updateY,normalize);
 
     }
 
@@ -937,7 +1019,6 @@ public class LargeVis {
             // opening workspace
             MemoryWorkspace workspace = getWorkspace();
             try(MemoryWorkspace workspace2 = workspace.notifyScopeEntered()) {
-
                 double currLr = initialAlpha;
                 while (true) {
                     if (edgeCount > nSamples / numWorkers + 2) {
@@ -945,12 +1026,14 @@ public class LargeVis {
                     }
 
                     if (edgeCount - lastEdgeCount > 10000) {
-                        edgeCountActual.addAndGet(edgeCount - lastEdgeCount);
+                        int progress = edgeCountActual.addAndGet(edgeCount - lastEdgeCount);
                         lastEdgeCount = edgeCount;
                         currLr = updater.getLearningRate(updateCount.get(), epochCount.get());
                         epochCount.getAndIncrement();
                         //(real)edge_count_actual / (real)(n_samples + 1) * 100
-                        log.info("Progress " + String.valueOf((double) (edgeCountActual.get() / (double) (nSamples + 1)) * 100));
+                        double progress2 = (double) progress / (double) (nSamples + 1) * 100;
+                        log.info("Progress " + String.valueOf(progress2));
+
                     }
 
                     p = sampleAnEdge(Nd4j.getRandom().nextGaussian(), Nd4j.getRandom().nextDouble());
@@ -965,7 +1048,6 @@ public class LargeVis {
 
                 }
 
-                workspace.notifyScopeLeft();
             }
             done.set(true);
         }
@@ -1012,6 +1094,29 @@ public class LargeVis {
         }
     }
 
+    private void normalizeBatch(INDArray input) {
+        switch (gradientNormalization) {
+            case None: break;
+            case RenormalizeL2PerParamType:
+            case RenormalizeL2PerLayer:
+                Norm2 norm2 = new Norm2(input);
+                Nd4j.getExecutioner().exec(norm2,1);
+                input.diviRowVector(norm2.z());
+                break;
+            case ClipElementWiseAbsoluteValue:
+                ClipByValue clipByValue = new ClipByValue(new INDArray[] {input},null,-gradClipValue,gradClipValue,true);
+                Nd4j.getExecutioner().exec(clipByValue);
+                break;
+            case ClipL2PerLayer:
+                throw new UnsupportedOperationException("Clip l2 per layer not supported");
+            case ClipL2PerParamType:
+                throw new UnsupportedOperationException("Clip l2 per layer not supported");
+            default:
+                throw new RuntimeException(
+                        "Unknown (or not implemented) gradient normalization strategy: " + gradientNormalization);
+        }
+    }
+
 
     private void normalize(INDArray input) {
         switch (gradientNormalization) {
@@ -1027,12 +1132,8 @@ public class LargeVis {
 
                 break;
             case ClipElementWiseAbsoluteValue:
-                CustomOp op = DynamicCustomOp.builder("clipbyvalue")
-                        .addInputs(input)
-                        .callInplace(true)
-                        .addFloatingPointArguments(-gradClipValue, gradClipValue)
-                        .build();
-                Nd4j.getExecutioner().exec(op);
+                ClipByValue clipByValue = new ClipByValue(new INDArray[] {input},null,-gradClipValue,gradClipValue,true);
+                Nd4j.getExecutioner().exec(clipByValue);
 
                 break;
             case ClipL2PerLayer:
