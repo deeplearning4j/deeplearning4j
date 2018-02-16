@@ -1132,47 +1132,63 @@ public class MultiLayerTest extends BaseDL4JTest {
         //Simple test: same network, but in one case: one less layer (the OutputLayer), where the epsilons are passed in externally
         // instead. Should get identical results
 
-        Nd4j.getRandom().setSeed(12345);
-        INDArray inData = Nd4j.rand(3, 10);
-        INDArray outData = Nd4j.rand(3, 10);
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("Workspace mode: " + ws);
 
-        Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
-                .seed(12345).list()
-                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
-                        .nOut(10).build())
-                .build();
-        MultiLayerNetwork s = new MultiLayerNetwork(standard);
-        s.init();
+            Nd4j.getRandom().setSeed(12345);
+            INDArray inData = Nd4j.rand(3, 10);
+            INDArray outData = Nd4j.rand(3, 10);
+
+            Nd4j.getRandom().setSeed(12345);
+            MultiLayerConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .seed(12345).list()
+                    .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
+                            .nOut(10).build())
+                    .build();
+            MultiLayerNetwork s = new MultiLayerNetwork(standard);
+            s.init();
 
 
-        Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
-                .seed(12345).list()
-                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .build();
+            Nd4j.getRandom().setSeed(12345);
+            MultiLayerConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .seed(12345).list()
+                    .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                    .build();
 
-        MultiLayerNetwork e = new MultiLayerNetwork(external);
-        e.init();
+            MultiLayerNetwork e = new MultiLayerNetwork(external);
+            e.init();
 
-        s.setInput(inData);
-        s.setLabels(outData);
-        s.computeGradientAndScore();
-        Gradient sGrad = s.gradient();
+            s.setInput(inData);
+            s.setLabels(outData);
+            s.computeGradientAndScore();
+            Gradient sGrad = s.gradient();
 
-        org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-        Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+            s.setInput(inData);
+            s.feedForward(true, false); //FF without clearing inputs as we need them later
 
-        INDArray olEpsilon = olPairStd.getSecond();
+            e.setInput(inData);
+            e.feedForward(true, false); //FF without clearing inputs as we need them later
 
-        e.setInput(inData);
-        e.feedForward(true, false);
-        Pair<Gradient,INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+            org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
 
-        int nParamsDense = 10 * 10 + 10;
-        assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
-                extErrorGrad.getFirst().gradient());
+            INDArray olEpsilon = olPairStd.getSecond().detach();
+
+            e.setInput(inData);
+            e.feedForward(true, false);
+            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+
+            int nParamsDense = 10 * 10 + 10;
+            assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
+                    extErrorGrad.getFirst().gradient());
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
     }
 
     @Test
@@ -1220,6 +1236,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             Pair<Gradient,INDArray> gradient = graph.backpropGradient(error);
             graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch);
 
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }
 
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
