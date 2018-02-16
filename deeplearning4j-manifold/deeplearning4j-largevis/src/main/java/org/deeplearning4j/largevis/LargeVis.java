@@ -273,7 +273,7 @@ public class LargeVis {
 
         edgeWeight = new FloatNDArrayList();
 
-        this.executorService = Executors.newFixedThreadPool(numWorkers, new ThreadFactory() {
+        this.executorService = Executors.newFixedThreadPool(this.numWorkers, new ThreadFactory() {
             @Override
             public Thread newThread( Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
@@ -838,7 +838,6 @@ public class LargeVis {
      * @return the gradients wrt x and y (in that order)
      */
     public INDArray gradientsFor(int x,int y,int i,double currLr,boolean normalize) {
-        INDArray visY = vis.slice(y);
         INDArray visX = vis.slice(x);
         return gradientsFor(visX,y,i,currLr,normalize);
     }
@@ -895,7 +894,7 @@ public class LargeVis {
      * @return the gradients wrt x and y (in that order)
      */
     public INDArray gradientsFor(INDArray visX,int y,int i,double currLr,boolean normalize) {
-        return gradientsFor(Nd4j.create(2,visX.columns()),visX,vis.slice(y),i,currLr,normalize);
+        return gradientsFor(createGrad(),visX,vis.slice(y),i,currLr,normalize);
     }
 
 
@@ -950,7 +949,12 @@ public class LargeVis {
 
     public INDArray createGradSecondRow() {
         if(gradsSecondRow.get() == null) {
-            gradsSecondRow.set(grads.get().slice(1));
+            if(grads.get() == null) {
+                INDArray grads = createGrad();
+                gradsSecondRow.set(grads.slice(1));
+            }
+            else
+                gradsSecondRow.set(grads.get().slice(1));
         }
 
         return gradsSecondRow.get();
@@ -1009,7 +1013,12 @@ public class LargeVis {
 
     public INDArray createGradFirstRow() {
         if(gradsFirstRow.get() == null) {
-            gradsFirstRow.set(grads.get().slice(0));
+            if(grads.get() == null) {
+                INDArray grads = createGrad();
+                gradsFirstRow.set(grads.slice(0));
+            }
+            else
+                gradsFirstRow.set(grads.get().slice(0));
         }
 
         return gradsFirstRow.get();

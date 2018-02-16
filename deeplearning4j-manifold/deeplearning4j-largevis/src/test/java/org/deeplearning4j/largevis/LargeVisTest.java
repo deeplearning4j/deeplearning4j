@@ -26,7 +26,7 @@ public class LargeVisTest {
     @Test
     public void testLargeVisRun() throws Exception {
         DataSet iris = new IrisDataSetIterator(150,150).next();
-        LargeVis largeVis = LargeVis.builder().iterationCount(300).numWorkers(1)
+        LargeVis largeVis = LargeVis.builder().iterationCount(300).numWorkers(4)
                 .vec(iris.getFeatureMatrix()).updater(new Nadam(1.0))
                 .normalize(true)
                 .seed(42).build();

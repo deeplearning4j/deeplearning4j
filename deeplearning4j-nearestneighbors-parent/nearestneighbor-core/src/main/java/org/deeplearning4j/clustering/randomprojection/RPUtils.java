@@ -283,6 +283,7 @@ public class RPUtils {
      */
     public static double computeDistance(String function,INDArray x,INDArray y,INDArray result) {
         Accumulation op = (Accumulation) getOp(function, x, y, result);
+        Nd4j.getExecutioner().exec(op);
         return op.z().getDouble(0);
     }
 
