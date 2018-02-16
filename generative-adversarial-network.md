@@ -102,14 +102,17 @@ GANs take a long time to train. On a single GPU a GAN might take hours, and on a
 
 ### <a name="beginner">Other Machine Learning Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Symbolic AI and Deep Learning](./symbolicreasoning)
+* [Using Graph Data with Deep Learning](./graphdata)
 * [Recurrent Networks and LSTMs](./lstm)
-* [Word2Vec: Neural Embeddings for Java](./word2vec)
+* [Word2Vec: Neural Embeddings for NLP](./word2vec)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Open Datasets for Deep Learning](./opendata)
+* [Inference: Machine Learning Model Server](./modelserver)
 
 ## GAN Use Cases
 
