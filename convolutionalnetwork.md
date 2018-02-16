@@ -20,14 +20,14 @@ Contents
 
 Convolutional networks are deep artificial neural networks that can be used to classify images (name what they see), cluster them by similarity (photo search), and perform object recognition within scenes. They are algorithms that can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. 
 
-Convolutional networks overlap with text analysis via optical character recognition (OCR), where the images are symbols to be transcribed, and they can also be applied to sound when it is represented visually.
+Convolutional networks perform optical character recognition (OCR) to digitize text and make natural-language processing possible on analog and hand-written documents, where the images are symbols to be transcribed. CNNs can also be applied to sound when it is represented visually as a spectrogram. More recently, convolutional networks have been applied directly to text analytics as well as graph data with [graph convolutional networks](./graphdata). 
 
 The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to the efficacy of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, security, medical diagnoses, and treatments for the visually impaired. 
 
-Deeplearning4j wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy to Android here](./android).
+Skymind wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy CNNs to Android here](./android).
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH CONVOLUTIONAL NETWORKS</a>
 </p>
 
 ## <a name="tensors">Images Are 4-D Tensors?</a>
