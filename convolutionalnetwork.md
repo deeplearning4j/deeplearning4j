@@ -24,8 +24,6 @@ Convolutional networks perform optical character recognition (OCR) to digitize t
 
 The efficacy of convolutional nets (ConvNets or CNNs) in image recognition is one of the main reasons why the world has woken up to the efficacy of deep learning. They are powering major advances in machine vision, which has obvious applications for self-driving cars, robotics, drones, security, medical diagnoses, and treatments for the visually impaired. 
 
-Skymind wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy CNNs to Android here](./android).
-
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH CONVOLUTIONAL NETWORKS</a>
 </p>
@@ -172,6 +170,8 @@ All Deeplearning4j [examples of convolutional networks are available here](https
 ## <a name="resource">Other Resources</a>
 
 To see DL4J convolutional networks in action, please run our [examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/) after following the instructions on the [Quickstart page](./quickstart). 
+
+Skymind wraps NVIDIA's cuDNN and integrates with OpenCV. Our convolutional nets run on distributed GPUs using Spark, making them among the fastest in the world. You can learn how to build a [image recognition web app with VGG16 here](./build_vgg_webapp) and how to [deploy CNNs to Android here](./android).
 
 ## Resources Table of Contents
 - [Papers](#papers)
