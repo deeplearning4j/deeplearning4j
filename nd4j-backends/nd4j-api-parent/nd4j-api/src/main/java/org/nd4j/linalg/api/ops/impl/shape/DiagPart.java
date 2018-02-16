@@ -12,6 +12,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ * Return the diagonal part of a tensor. The input tensor has to
+ * have dimensions [d1,..., dk, d1,..., dk], so that the diagonal
+ * blocks have shape [d1,..., dk].
+ *
+ * A simple special case of this is returning the diagonal of a
+ * matrix as vector.
+ *
+ * @author  Max Pumperla
+ */
 public class DiagPart extends DynamicCustomOp {
 
     public DiagPart() {

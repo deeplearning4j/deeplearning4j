@@ -2114,6 +2114,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable cross(SDVariable a, SDVariable b) {
+        return cross(null, a, b);
+    }
+
+    public SDVariable cross(String name, SDVariable a, SDVariable b) {
+        SDVariable ret = f().cross(a, b);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable diag(SDVariable iX) {
         return diag(null, iX);
     }

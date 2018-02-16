@@ -34,6 +34,43 @@ public class GradCheckTransforms {
     }
 
     @Test
+    public void testCross() {
+        INDArray a = Nd4j.create(new float[] {4, 2 , 1}, new int[] {1, 3});
+        INDArray b = Nd4j.create(new float[] {1, 3 , 4}, new int[] {1, 3});
+
+        INDArray expOut = Nd4j.create(1,3);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("cross").addInputs(a, b).addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable sdA = sd.var("a", expOut.shape());
+        SDVariable sdB = sd.var("a", expOut.shape());
+
+
+        sd.associateArrayWithVariable(a, sdA);
+        sd.associateArrayWithVariable(b, sdB);
+
+        SDVariable t = sd.cross(sdA, sdB);
+        SDVariable loss = sd.mean("loss", t);
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if (!expOut.equals(out)) {
+            log.info("batch to space failed on forward");
+        }
+
+        try {
+            GradCheckUtil.checkGradients(sd);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    @Test
     public void testBatchToSpace() {
         Nd4j.getRandom().setSeed(1337);
 

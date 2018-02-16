@@ -842,6 +842,11 @@ public class DifferentialFunctionFactory   {
                 .outputVariables()[0];
     }
 
+    public SDVariable cross(SDVariable a, SDVariable b) {
+        validateDifferentialFunctionsameDiff(a);
+        return new Cross(sameDiff(), new SDVariable[]{a,b}).outputVariables()[0];
+    }
+
     public SDVariable addi(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new AddOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},true).outputVariables()[0];
