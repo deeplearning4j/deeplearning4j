@@ -24,7 +24,6 @@ represents a radial basis function network. The radial basis functions act as ac
 
 The approximant `f(x)` is differentiable with respect to the weights `W`, which are learned using iterative updater methods commong among neural networks.
 
-
 ### <a name="beginner">Other Machine Learning Tutorials</a>
 
 * [Introduction to Neural Networks](./neuralnet-overview)
@@ -39,3 +38,8 @@ The approximant `f(x)` is differentiable with respect to the weights `W`, which 
 * [Convolutional Networks (CNNs)](./convolutionalnets)
 * [Open Datasets for Deep Learning](./opendata)
 * [Inference: Machine Learning Model Server](./modelserver)
+
+### Further Reading
+
+* [Radial basis functions, multi-variable functional interpolation and adaptive networks (Technical report)](http://www.dtic.mil/cgi-bin/GetTRDoc?AD=ADA196234)
+* [Universal Approximation Using Radial-Basis-Function Networks](http://www.mitpressjournals.org/doi/abs/10.1162/neco.1991.3.2.246)
