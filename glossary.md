@@ -341,8 +341,8 @@ Momentum also known as Nesterov’s momentum, influences the speed of learning. 
 
 * [Nesterov's Momentum Updater in Deeplearnign4j](https://github.com/deeplearning4j/deeplearning4j/blob/b585d6c1ae75e48e06db86880a5acd22593d3889/deeplearning4j-core/src/main/java/org/deeplearning4j/nn/updater/NesterovsUpdater.java)
 
-### <a name="mlp">Multilayer Perceptron</a>
-MLPs are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
+### <a name="mlp">Multilayer Perceptron (MLP)</a>
+[Multi-Layer Perceptrons](./perceptron) are perhaps the oldest form of deep neural network. They consist of multiple, fully connected feedforward layers. Examples of [Deeplearning4j's multilayer perceptrons can be seen here](https://github.com/deeplearning4j/dl4j-examples/tree/master/src/main/java/org/deeplearning4j/examples/mlp). 
 
 ### <a name="nmt">Neural Machine Translation</a>
 Neural machine translation maps one language to another using neural networks. Typically, recurrent neural networks are use to ingest a sequence from the input language and output a sequence in the target language. 
