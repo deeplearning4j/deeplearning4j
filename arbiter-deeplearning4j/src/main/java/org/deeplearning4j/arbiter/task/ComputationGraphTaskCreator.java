@@ -30,6 +30,8 @@ import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
@@ -43,9 +45,11 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.BiConsumer;
 import org.nd4j.linalg.function.BiFunction;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -126,7 +130,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
 
                 CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Failed, null, startTime,
                         null, null, candidate.getFlatParameters(), stackTrace);
-                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci);
+                return new OptimizationResult(candidate, null, null, candidate.getIndex(), null, ci, null);
             }
 
         }
@@ -179,6 +183,7 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 }
                 ci.setCandidateStatus(CandidateStatus.Complete);
             }
+            Nd4j.getExecutioner().commit();
 
             Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
@@ -196,7 +201,21 @@ public class ComputationGraphTaskCreator implements TaskCreator {
                 taskListener.postProcess(net, candidate);
             }
 
-            return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
+            OptimizationResult result = new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci, null);
+
+            //Save the model:
+            ResultSaver saver = runner.getConfiguration().getResultSaver();
+            ResultReference resultReference = null;
+            if (saver != null) {
+                try {
+                    resultReference = saver.saveModel(result);
+                } catch (IOException e) {
+                    //TODO: Do we want ta warn or fail on IOException?
+                    log.warn("Error saving model (id={}): IOException thrown. ", result.getIndex(), e);
+                }
+            }
+            result.setResultReference(resultReference);
+            return result;
         }
     }
 }

@@ -18,7 +18,9 @@
 package org.deeplearning4j.arbiter.optimize.api;
 
 import lombok.Data;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -32,6 +34,7 @@ import java.io.Serializable;
  */
 @Data
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@JsonIgnoreProperties({"resultReference"})
 public class OptimizationResult implements Serializable {
     @JsonProperty
     private Candidate candidate;
@@ -45,14 +48,17 @@ public class OptimizationResult implements Serializable {
     private Object modelSpecificResults;
     @JsonProperty
     private CandidateInfo candidateInfo;
+    private ResultReference resultReference;
+
 
     public OptimizationResult(Candidate candidate, Object result, Double score, int index, Object modelSpecificResults,
-                    CandidateInfo candidateInfo) {
+                    CandidateInfo candidateInfo, ResultReference resultReference) {
         this.candidate = candidate;
         this.result = result;
         this.score = score;
         this.index = index;
         this.modelSpecificResults = modelSpecificResults;
         this.candidateInfo = candidateInfo;
+        this.resultReference = resultReference;
     }
 }
