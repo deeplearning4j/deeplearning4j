@@ -93,7 +93,7 @@ public class DefaultGradient implements Gradient {
                 }
             }
             flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, toFlatten);
-        } else {
+        } else if( !gradients.values().isEmpty() ){ //Edge case: can be empty for nets with 0 params
             //Standard case: flatten all to f order
             flattenedGradient = Nd4j.toFlattened(DEFAULT_FLATTENING_ORDER, gradients.values());
         }

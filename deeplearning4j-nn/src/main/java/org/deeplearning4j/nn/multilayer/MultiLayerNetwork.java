@@ -604,9 +604,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     flattenedParams = parameters;
 
                 initializeParams = false;
-            } else {
+            } else if(paramLength > 0){
                 flattenedParams = Nd4j.create(1, paramLength);
                 initializeParams = true;
+            } else {
+                //Edge case: 0 params in network
+                flattenedParams = null;
+                initializeParams = false;
             }
 
             //Set RNG seed, for repeatability between initializations when set
@@ -693,7 +697,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 paramLength += nParamsPerLayer[i];
             }
 
-            flattenedGradients = Nd4j.zeros(new int[] {1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+            if(paramLength > 0) {
+                flattenedGradients = Nd4j.zeros(new int[]{1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+            }
 
             int backpropParamsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {
@@ -1861,6 +1867,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
     public void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
+        if(numParams() == 0){
+            //No op: can't fit a network with 0 parameters
+            return;
+        }
 
         setInput(features);
         setLabels(labels);

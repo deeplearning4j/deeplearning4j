@@ -1245,4 +1245,32 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertEquals(30, net.layerSize(2));
         assertEquals(13, net.layerSize(3));
     }
+
+
+    @Test
+    public void testZeroParamNet() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build())
+                .setInputType(InputType.convolutionalFlat(28,28,1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSet ds = new MnistDataSetIterator(16, true, 12345).next();
+
+        INDArray out = net.output(ds.getFeatures());
+
+        INDArray labelTemp = Nd4j.create(out.shape());
+        ds.setLabels(labelTemp);
+
+        net.fit(ds);
+
+        MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
+        INDArray out2 = net2.output(ds.getFeatures());
+        assertEquals(out, out2);
+    }
 }
