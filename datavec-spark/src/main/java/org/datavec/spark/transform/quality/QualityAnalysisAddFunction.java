@@ -28,6 +28,7 @@ import org.datavec.spark.transform.quality.integer.IntegerQualityAnalysisState;
 import org.datavec.spark.transform.quality.longq.LongQualityAnalysisState;
 import org.datavec.spark.transform.quality.real.RealQualityAnalysisState;
 import org.datavec.spark.transform.quality.string.StringQualityAnalysisState;
+import org.datavec.spark.transform.quality.time.TimeQualityAnalysisState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,11 +66,10 @@ public class QualityAnalysisAddFunction
                         analysisStates.add(new RealQualityAnalysisState((DoubleMetaData) columnMetaDatas.get(i)));
                         break;
                     case Categorical:
-                        analysisStates.add(new CategoricalQualityAnalysisState(
-                                        (CategoricalMetaData) columnMetaDatas.get(i)));
+                        analysisStates.add(new CategoricalQualityAnalysisState((CategoricalMetaData) columnMetaDatas.get(i)));
                         break;
                     case Time:
-                        analysisStates.add(new LongQualityAnalysisState((LongMetaData) columnMetaDatas.get(i)));
+                        analysisStates.add(new TimeQualityAnalysisState((TimeMetaData)columnMetaDatas.get(i)));
                         break;
                     case Bytes:
                         analysisStates.add(new BytesQualityAnalysisState()); //TODO
