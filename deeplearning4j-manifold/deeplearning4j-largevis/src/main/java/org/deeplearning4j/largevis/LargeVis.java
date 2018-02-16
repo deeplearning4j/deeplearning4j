@@ -162,6 +162,10 @@ public class LargeVis {
     private ThreadLocal<INDArray> gradsSecondRow = new ThreadLocal<>();
 
 
+    private ThreadLocal<Norm2> norm2 = new ThreadLocal<>();
+    private ThreadLocal<ClipByValue> clip = new ThreadLocal<>();
+    private ThreadLocal<OldSubOp> visXMinusVisY = new ThreadLocal<>();
+    private ThreadLocal<OldSubOp> visYMinusVisX = new ThreadLocal<>();
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -190,12 +194,17 @@ public class LargeVis {
                     int iterationCount,
                     IUpdater updater,
                     WeightInitScheme weightInitScheme,
-                    GradientNormalization gradientNormalization
-            ,double gradClipValue,
-                    WorkspaceMode workspaceMode) {
+                    GradientNormalization gradientNormalization,
+                    double gradClipValue,
+                    WorkspaceMode workspaceMode,
+                    int numWorkers) {
 
         if(workspaceMode != null) {
             this.workspaceMode = workspaceMode;
+        }
+
+        if(numWorkers > 0) {
+            this.numWorkers = numWorkers;
         }
 
         if(workspaceMode != WorkspaceMode.NONE)
@@ -862,10 +871,8 @@ public class LargeVis {
             }
 
             //gradient wrt distance to x and y
-            INDArray gradsFirstRow = Nd4j.getExecutioner().execAndReturn(new OldSubOp(visX,visY,createGradFirstRow()));
-            INDArray gradsSecondRow = Nd4j.getExecutioner().execAndReturn(new OldSubOp(visY,visX,createGradSecondRow()));
-            grads.putRow(0,gradsFirstRow.muli(g * currLr));
-            grads.putRow(1,gradsSecondRow);
+            Nd4j.getExecutioner().execAndReturn(getVisXMinusVisY(visX,visY,createGradFirstRow().muli(g * currLr)));
+            Nd4j.getExecutioner().execAndReturn(getVisYMinusVisX(visY,visX,createGradSecondRow()));
             if(normalize) {
                 normalizeBatch(grads);
             }
@@ -948,6 +955,57 @@ public class LargeVis {
 
         return gradsSecondRow.get();
     }
+
+
+    public OldSubOp getVisYMinusVisX(INDArray x,INDArray y,INDArray result) {
+        return getSubOp(visYMinusVisX,x,y,result);
+
+    }
+
+
+    public OldSubOp getVisXMinusVisY(INDArray x,INDArray y,INDArray result) {
+        return getSubOp(visXMinusVisY,x,y,result);
+    }
+
+    private OldSubOp getSubOp(ThreadLocal<OldSubOp> threadLocal,INDArray x,INDArray y,INDArray result) {
+        if(threadLocal.get() == null) {
+            OldSubOp clipByValue = new OldSubOp(x,y,result);
+            threadLocal.set(clipByValue);
+            return clipByValue;
+        }
+
+        OldSubOp clipByValue = threadLocal.get();
+        clipByValue.setX(x);
+        clipByValue.setY(y);
+        return clipByValue;
+    }
+
+
+    public ClipByValue getClipByValue(INDArray input) {
+        if(clip.get() == null) {
+            ClipByValue clipByValue = new ClipByValue(new INDArray[] {input},null,-gradClipValue,gradClipValue,true);
+            clip.set(clipByValue);
+            return clipByValue;
+        }
+
+        ClipByValue clipByValue = clip.get();
+        clipByValue.setInputArgument(0,input);
+        return clipByValue;
+    }
+
+
+    public Norm2 getNorm2(INDArray input) {
+        if(clip.get() == null) {
+            Norm2 norm2 = new Norm2(input);
+            this.norm2.set(norm2);
+            return norm2;
+        }
+
+        Norm2 ret = norm2.get();
+        ret.setX(input);
+        return ret;
+    }
+
 
     public INDArray createGradFirstRow() {
         if(gradsFirstRow.get() == null) {
@@ -1099,12 +1157,12 @@ public class LargeVis {
             case None: break;
             case RenormalizeL2PerParamType:
             case RenormalizeL2PerLayer:
-                Norm2 norm2 = new Norm2(input);
+                Norm2 norm2 = getNorm2(input);
                 Nd4j.getExecutioner().exec(norm2,1);
                 input.diviRowVector(norm2.z());
                 break;
             case ClipElementWiseAbsoluteValue:
-                ClipByValue clipByValue = new ClipByValue(new INDArray[] {input},null,-gradClipValue,gradClipValue,true);
+                ClipByValue clipByValue = getClipByValue(input);
                 Nd4j.getExecutioner().exec(clipByValue);
                 break;
             case ClipL2PerLayer:

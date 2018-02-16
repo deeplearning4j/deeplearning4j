@@ -25,9 +25,8 @@ public class LargeVisTest {
 
     @Test
     public void testLargeVisRun() throws Exception {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         DataSet iris = new IrisDataSetIterator(150,150).next();
-        LargeVis largeVis = LargeVis.builder().iterationCount(300)
+        LargeVis largeVis = LargeVis.builder().iterationCount(300).numWorkers(1)
                 .vec(iris.getFeatureMatrix()).updater(new Nadam(1.0))
                 .normalize(true)
                 .seed(42).build();
