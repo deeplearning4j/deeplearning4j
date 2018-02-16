@@ -597,7 +597,7 @@ public interface INDArray extends Serializable {
     INDArray negi();
 
     /**
-     * OldReverse division with a scalar - i.e., (n / thisArrayValues)
+     * Reverse division with a scalar - i.e., (n / thisArrayValues)
      *
      * @param n Value to use for reverse division
      * @return  Copy of array after applying reverse division
@@ -613,7 +613,7 @@ public interface INDArray extends Serializable {
     INDArray rdivi(Number n);
 
     /**
-     * OldReverse subtraction with duplicates - i.e., (n - thisArrayValues)
+     * Reverse subtraction with duplicates - i.e., (n - thisArrayValues)
      *
      * @param n Value to use for reverse subtraction
      * @return Copy of array after reverse subtraction
@@ -622,7 +622,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * OldReverse subtraction in place - i.e., (n - thisArrayValues)
+     * Reverse subtraction in place - i.e., (n - thisArrayValues)
      *
      * @param n Value to use for reverse subtraction
      * @return This array after reverse subtraction
@@ -699,7 +699,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * OldReverse division (number / ndarray)
+     * Reverse division (number / ndarray)
      *
      * @param n      the number to divide by
      * @param result Array to place the result in. Must match shape of this array
@@ -709,7 +709,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * OldReverse in place division
+     * Reverse in place division
      *
      * @param n      the number to divide by  by
      * @param result the result ndarray
@@ -718,7 +718,7 @@ public interface INDArray extends Serializable {
     INDArray rdivi(Number n, INDArray result);
 
     /**
-     * OldReverse subtraction
+     * Reverse subtraction
      *
      * @param n      the number to subtract by
      * @param result the result ndarray
@@ -727,7 +727,7 @@ public interface INDArray extends Serializable {
     INDArray rsub(Number n, INDArray result);
 
     /**
-     * OldReverse in place subtraction
+     * Reverse in place subtraction
      *
      * @param n      the number to subtract by
      * @param result the result ndarray
@@ -817,7 +817,7 @@ public interface INDArray extends Serializable {
     INDArray getRows(int... rows);
 
     /**
-     * OldReverse division, elements wise. i.e., other / this
+     * Reverse division, elements wise. i.e., other / this
      *
      * @param other the matrix to divide from
      * @return Copy of this array after performing element wise reverse division
@@ -825,7 +825,7 @@ public interface INDArray extends Serializable {
     INDArray rdiv(INDArray other);
 
     /**
-     * OldReverse divsion (in place). i.e., other / this
+     * Reverse divsion (in place). i.e., other / this
      *
      * @param other The matrix to divide from
      * @return This array after performing element wise reverse division
@@ -834,7 +834,7 @@ public interface INDArray extends Serializable {
 
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -843,7 +843,7 @@ public interface INDArray extends Serializable {
     INDArray rdiv(INDArray other, INDArray result);
 
     /**
-     * OldReverse division (in-place)
+     * Reverse division (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
@@ -852,7 +852,7 @@ public interface INDArray extends Serializable {
     INDArray rdivi(INDArray other, INDArray result);
 
     /**
-     * OldReverse subtraction
+     * Reverse subtraction
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -878,7 +878,7 @@ public interface INDArray extends Serializable {
     INDArray rsubi(INDArray other);
 
     /**
-     * OldReverse subtraction (in-place)
+     * Reverse subtraction (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
@@ -1140,7 +1140,7 @@ public interface INDArray extends Serializable {
     INDArray rdiviColumnVector(INDArray columnVector);
 
     /**
-     * OldReverse division of a column vector (copy)
+     * Reverse division of a column vector (copy)
      *
      * @param columnVector the column vector used for division
      * @return the result of the division 
@@ -1156,7 +1156,7 @@ public interface INDArray extends Serializable {
     INDArray rdiviRowVector(INDArray rowVector);
 
     /**
-     * OldReverse division of a column vector (copy)
+     * Reverse division of a column vector (copy)
      *
      * @param rowVector the row vector used for division
      * @return the result of the division 
@@ -1206,7 +1206,7 @@ public interface INDArray extends Serializable {
     INDArray rsubiColumnVector(INDArray columnVector);
 
     /**
-     * OldReverse subtraction of a column vector (copy)
+     * Reverse subtraction of a column vector (copy)
      *
      * @param columnVector the column vector to subtract
      * @return the result of the subtraction
@@ -1222,7 +1222,7 @@ public interface INDArray extends Serializable {
     INDArray rsubiRowVector(INDArray rowVector);
 
     /**
-     * OldReverse subtraction of a row vector (copy)
+     * Reverse subtraction of a row vector (copy)
      *
      * @param rowVector the row vector to subtract
      * @return the result of the subtraction

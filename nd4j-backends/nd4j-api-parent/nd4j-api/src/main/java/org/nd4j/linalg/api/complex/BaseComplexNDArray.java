@@ -3129,7 +3129,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other the matrix to divide from
      * @return
@@ -3140,7 +3140,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     /**
-     * OldReverse divsion (in place)
+     * Reverse divsion (in place)
      *
      * @param other
      * @return
@@ -3151,7 +3151,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -3163,7 +3163,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     /**
-     * OldReverse division (in-place)
+     * Reverse division (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
@@ -3175,7 +3175,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     /**
-     * OldReverse subtraction
+     * Reverse subtraction
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -3205,7 +3205,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
     }
 
     /**
-     * OldReverse subtraction (in-place)
+     * Reverse subtraction (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray

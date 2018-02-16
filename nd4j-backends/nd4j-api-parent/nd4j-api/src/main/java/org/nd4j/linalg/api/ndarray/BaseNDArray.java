@@ -92,9 +92,6 @@ import static org.nd4j.linalg.factory.Nd4j.*;
 public abstract class BaseNDArray implements INDArray, Iterable {
 
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 3285982317165542614L;
 
     protected transient volatile DataBuffer shapeInformation;
@@ -3318,7 +3315,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other the matrix to divide from
      * @return
@@ -3329,7 +3326,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse divsion (in place)
+     * Reverse divsion (in place)
      *
      * @param other
      * @return
@@ -3340,7 +3337,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -3352,7 +3349,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse division (in-place)
+     * Reverse division (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
@@ -3364,7 +3361,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse subtraction
+     * Reverse subtraction
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -3394,7 +3391,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     /**
-     * OldReverse subtraction (in-place)
+     * Reverse subtraction (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray

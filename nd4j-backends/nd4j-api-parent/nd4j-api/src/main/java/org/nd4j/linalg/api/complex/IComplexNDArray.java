@@ -719,7 +719,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray assign(Number value);
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other the matrix to divide from
      * @return
@@ -728,7 +728,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rdiv(INDArray other);
 
     /**
-     * OldReverse divsion (in place)
+     * Reverse divsion (in place)
      *
      * @param other
      * @return
@@ -737,7 +737,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rdivi(INDArray other);
 
     /**
-     * OldReverse division
+     * Reverse division
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -747,7 +747,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rdiv(INDArray other, INDArray result);
 
     /**
-     * OldReverse division (in-place)
+     * Reverse division (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
@@ -757,7 +757,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rdivi(INDArray other, INDArray result);
 
     /**
-     * OldReverse subtraction
+     * Reverse subtraction
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
@@ -781,7 +781,7 @@ public interface IComplexNDArray extends INDArray {
     IComplexNDArray rsubi(INDArray other);
 
     /**
-     * OldReverse subtraction (in-place)
+     * Reverse subtraction (in-place)
      *
      * @param other  the other ndarray to subtract
      * @param result the result ndarray
