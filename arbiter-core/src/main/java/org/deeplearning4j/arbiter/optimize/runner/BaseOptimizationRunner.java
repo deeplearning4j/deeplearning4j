@@ -224,10 +224,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
                 currentTime, status.getFlatParams(), result.getCandidateInfo().getExceptionStackTrace());
         currentStatus.put(result.getIndex(), newStatus);
 
-        //Listeners:
-        for (StatusListener listener : statusListeners) {
-            listener.onCandidateStatusChange(newStatus, this, result);
-        }
+        //Listeners (on complete, etc) should be executed in underlying task
 
 
         if (result.getCandidateInfo().getCandidateStatus() == CandidateStatus.Failed) {

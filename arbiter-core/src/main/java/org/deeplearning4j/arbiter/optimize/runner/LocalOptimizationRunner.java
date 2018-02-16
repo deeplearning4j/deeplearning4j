@@ -78,7 +78,7 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
         List<ListenableFuture<OptimizationResult>> list = new ArrayList<>(candidates.size());
         for (Candidate candidate : candidates) {
             Callable<OptimizationResult> task =
-                            taskCreator.create(candidate, dataProvider, scoreFunction, statusListeners);
+                            taskCreator.create(candidate, dataProvider, scoreFunction, statusListeners, this);
             list.add(executor.submit(task));
         }
         return list;
