@@ -11,7 +11,7 @@ The perceptron holds a special place in the history of neural networks and artif
 
 Frank Rosenblatt, godfather of the perceptron, popularized it as a device rather than an algorithm. The perceptron first entered the world as hardware. Rosenblatt, a psychologist who studied and later lectured at Cornell University, received funding from the U.S. Office of Naval Research to build a machine that could learn. His machine, the Mark I perceptron, looked like this. 
 
-![Alt text](./img/Mark_I_perceptron.png)
+![Alt text](./img/Mark_I_perceptron.jpg)
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH PERCEPTRONS</a>
