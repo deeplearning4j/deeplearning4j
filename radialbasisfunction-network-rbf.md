@@ -16,6 +16,8 @@ Euclidean distance, the straight-line distance between two points in Euclidean s
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH RBF NETWORKS</a>
 </p>
 
+## Radial Basis Function Networks
+
 Radial basis functions are used to approximate functions, much as [neural networks](./neuralnet-overview) act as function approximators. The following sum:
 
 ![Alt text](./img/RBF-Network.png)
