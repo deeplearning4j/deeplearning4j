@@ -29,6 +29,7 @@ import org.datavec.api.transform.quality.DataQualityAnalysis;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.comparator.Comparators;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
 import org.datavec.spark.transform.analysis.SelectColumnFunction;
 import org.datavec.spark.transform.analysis.SequenceFlatMapFunction;
@@ -471,4 +472,33 @@ public class AnalyzeSpark {
 
         return map;
     }
+
+    /**
+     * Get the minimum value for the specified column
+     *
+     * @param allData    All data
+     * @param columnName Name of the column to get the minimum value for
+     * @param schema     Schema of the data
+     * @return           Minimum value for the column
+     */
+    public static Writable min(JavaRDD<List<Writable>> allData, String columnName, Schema schema){
+        int columnIdx = schema.getIndexOfColumn(columnName);
+        JavaRDD<Writable> col = allData.map(new SelectColumnFunction(columnIdx));
+        return col.min(Comparators.forType(schema.getType(columnName).getWritableType()));
+    }
+
+    /**
+     * Get the maximum value for the specified column
+     *
+     * @param allData    All data
+     * @param columnName Name of the column to get the minimum value for
+     * @param schema     Schema of the data
+     * @return           Maximum value for the column
+     */
+    public static Writable max(JavaRDD<List<Writable>> allData, String columnName, Schema schema){
+        int columnIdx = schema.getIndexOfColumn(columnName);
+        JavaRDD<Writable> col = allData.map(new SelectColumnFunction(columnIdx));
+        return col.max(Comparators.forType(schema.getType(columnName).getWritableType()));
+    }
+
 }
