@@ -38,13 +38,13 @@ Rosenblatt built a single-layer perceptron. That is, his hardware-algorithm did 
 
 Subsequent work with multilayer perceptrons has shown that they are capable of approximating an XOR operator as well as many other non-linear functions. 
 
-Just as Rosenblatt based the perceptron on the McCulloch-Pitts neuron, conceived in 1943, so too, perceptrons themselves are building blocks that only prove to be useful in these larger functions called multilayer perceptrons. 
+Just as Rosenblatt based the perceptron on the McCulloch-Pitts neuron, conceived in 1943, so too, perceptrons themselves are building blocks that only prove to be useful in such larger functions as multilayer perceptrons.<a name="two">2)</a> 
 
 The multilayer perceptron is the hello world of deep learning: a good place to start when you are learning about deep learning. 
 
 A multilayer perceptron (MLP) is a [deep, artificial neural network](./neuralnet-overview). It is composed of more than one perceptron. They are composed of an input layer to receive the signal, an output layer that makes a decision or prediction about the input, and in between those two, an arbitrary number of hidden layers that are the true computational engine of the MLP. MLPs with one hidden layer are capable of approximating any continuous function. 
 
-Multilayer perceptrons are often applied to supervised learning problems<sup>[2](#two)</sup>: they train on a set of input-output pairs and learn to model the correlation (or dependencies) between those inputs and outputs. Training involves adjusting the parameters, or the weights and biases, of the model in order to minimize error. Backpropagation is used to make those weigh and bias adjustments relative to the error, and the error itself can be measured in a variety of ways, including by root mean squared error (RMSE).
+Multilayer perceptrons are often applied to supervised learning problems<sup>[3](#three)</sup>: they train on a set of input-output pairs and learn to model the correlation (or dependencies) between those inputs and outputs. Training involves adjusting the parameters, or the weights and biases, of the model in order to minimize error. Backpropagation is used to make those weigh and bias adjustments relative to the error, and the error itself can be measured in a variety of ways, including by root mean squared error (RMSE).
 
 Feedforward networks like MLPs are like tennis, or ping pong. They are mainly involved in two motions, a constant back and forth. 
 
@@ -93,7 +93,9 @@ model = Sequential([
 
 <a name="one">1)</a> *The interesting thing to point out here is that software and hardware exist on a flowchart: software can be expressed as hardware and vice versa. When chips such as FPGAs are programmed, or ASICs are constructed to bake a certain algorithm into silicon, we are simply implementing software one level down to make it work faster. Likewise, what is baked in silicon or wired together with lights and potentiometers, like Rosenblatt's Mark I, can also be expressed symbolically in code. This is why Alan Kay has said "People who are really serious about software should make their own hardware." But there's no free lunch; i.e. what you gain in speed by baking algorithms into silicon, you lose in flexibility, and vice versa. This happens to be a real problem with regards to machine learning, since the algorithms alter themselves through exposure to data. The challenge is to find those parts of the algorithm that remain stable even as parameters change; e.g. the linear algebra operations that are currently processed most quickly by GPUs.*  
 
-<a name="two">2)</a> *They are widely used at Google, which is probably the most sophisticated AI company in the world, for a wide array of tasks crucial to its ad business, despite the existence of more complex, state-of-the-art methods.* 
+<a name="two">2)</a> *Your thoughts may incline towards the next step in ever more complex and also more useful algorithms. We move from one neuron to several, called a layer; we move from one layer to several, called a multilayer perceptron. Can we move from one MLP to several, or do we simply keep piling on layers, as Microsoft did with its ImageNet winner, ResNet, which had more than 150 layers?*
+
+<a name="three">3)</a> *They are widely used at Google, which is probably the most sophisticated AI company in the world, for a wide array of tasks crucial to its ad business, despite the existence of more complex, state-of-the-art methods.* 
 
 ## <a name="reading">Further Reading</a>
 
