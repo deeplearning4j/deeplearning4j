@@ -215,15 +215,19 @@ public class A3CALE {
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
 * [LSTMs and Recurrent Networks](./lstm)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
 * [Convolutional Networks](./convolutionalnets)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [Deeplearning4j Quickstart Examples](./quickstart)
-* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+* [ND4J: A Tensor Library for the JVM Using C++](http://nd4j.org)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Symbolic AI and Deep Learning](./symbolicreasoning)
+* [Using Graph Data with Deep Learning](./graphdata)
+* [Open Datasets for Deep Learning](./opendata)
+
 * [Word2vec and Natural-Language Processing](./word2vec.html)
 
 ## <a name="footnote">Footnotes</a>
