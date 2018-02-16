@@ -1,6 +1,5 @@
 ---
 title: A Beginner's Guide to Radial Basis Function Networks
-author: Chris V. Nicholson
 layout: default
 ---
 
