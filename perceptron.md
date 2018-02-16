@@ -1,10 +1,10 @@
 ---
-title: A Beginner's Guide to MultiLayer Perceptrons
+title: A Beginner's Guide to Multilayer Perceptrons
 layout: default
 redirect: perceptron
 ---
 
-# A Beginner's Guide to MultiLayer Perceptrons
+# A Beginner's Guide to Multilayer Perceptrons
 
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#footnote">FootNotes</a>
@@ -24,13 +24,21 @@ Frank Rosenblatt, godfather of the perceptron, popularized it as a device rather
 
 A perceptron is a linear classifier; that is, it is an algorithm that classifies input by separating two categories with a straight line. Input is typically a feature vector `x` multiplied by weights `w` and added to a bias `b`: `y = w * x + b`. 
 
+A perceptron produces a single output based on several real-valued inputs by forming a linear combination using its input weights (and sometimes passing the output through a nonlinear activation function). Here's how you can write that in math:
+
+![Alt text](./img/perceptron_formula.jpg)
+
+where **w** denotes the vector of weights, **x** is the vector of inputs, **b** is the bias and phi is the non-linear activation function.
+
 Rosenblatt built a single-layer perceptron. That is, his hardware-algorithm did not include multiple layers, which allow neural networks to model a feature hierarchy. It was, therefore, a shallow neural network, which prevented his perceptron from performing non-linear classification, such as the XOR function (an XOR operator trigger when input exhibits either one trait or another, but not both; it stands for "exclusive OR"), as Minsky and Papert showed in their book. 
 
 ![Alt text](./img/XORfunction.png)
 
-## Multilayer Perceptrons
+## Multilayer Perceptrons (MLP)
 
-Subsequent work with multilayer perceptrons has shown that they are capable of approximating an XOR operator as well as many other non-linear functions. The multilayer perceptron is the hello world of deep learning. 
+Subsequent work with multilayer perceptrons has shown that they are capable of approximating an XOR operator as well as many other non-linear functions. The multilayer perceptron is the hello world of deep learning: a good place to start when you are learning about deep learning. 
+
+A multilayer perceptron (MLP) is a [deep, artificial neural network](./neuralnet-overview). It is composed of more than one perceptron. 
 
 ## <a name="code">Just Show Me the Code</a>
 
