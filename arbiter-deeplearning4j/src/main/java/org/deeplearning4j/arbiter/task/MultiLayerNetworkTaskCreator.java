@@ -33,6 +33,7 @@ import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -67,9 +68,10 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
     @Override
     public Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider,
-                    ScoreFunction scoreFunction, List<StatusListener> statusListeners) {
+                                               ScoreFunction scoreFunction, List<StatusListener> statusListeners,
+                                               IOptimizationRunner runner) {
 
-        return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners, taskListener);
+        return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners, taskListener, runner);
 
     }
 
@@ -82,17 +84,20 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
         private TaskListener taskListener;
+        private IOptimizationRunner runner;
 
         private long startTime;
 
         public DL4JLearningTask(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
-                        ModelEvaluator modelEvaluator, List<StatusListener> listeners, TaskListener taskListener) {
+                        ModelEvaluator modelEvaluator, List<StatusListener> listeners, TaskListener taskListener,
+                                IOptimizationRunner runner) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
             this.listeners = listeners;
             this.taskListener = taskListener;
+            this.runner = runner;
         }
 
 
@@ -100,7 +105,19 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
         public OptimizationResult call() {
 
             try {
-                return callHelper();
+                OptimizationResult result = callHelper();
+                if(listeners != null && !listeners.isEmpty()){
+                    CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Complete, result.getScore(),
+                            startTime, startTime, System.currentTimeMillis(), candidate.getFlatParameters(), null);
+                    for(StatusListener sl : listeners){
+                        try{
+                            sl.onCandidateStatusChange(ci, runner, result);
+                        } catch (Exception e){
+                            log.error("Error in status listener for candidate {}", candidate.getIndex(), e);
+                        }
+                    }
+                }
+                return result;
             } catch (Exception e) {
                 String stackTrace = ExceptionUtils.getStackTrace(e);
                 log.warn( "Execution failed for task {}", candidate.getIndex(), e );

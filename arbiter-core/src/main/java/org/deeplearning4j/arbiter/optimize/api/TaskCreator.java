@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
 import java.util.List;
@@ -42,5 +43,5 @@ public interface TaskCreator {
      * @return A callable that returns an OptimizationResult, once optimization is complete
      */
     Callable<OptimizationResult> create(Candidate candidate, DataProvider dataProvider, ScoreFunction scoreFunction,
-                    List<StatusListener> statusListeners);
+                                        List<StatusListener> statusListeners, IOptimizationRunner runner);
 }

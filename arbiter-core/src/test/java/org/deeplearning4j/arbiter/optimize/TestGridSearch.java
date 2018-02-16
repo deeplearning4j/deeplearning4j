@@ -26,6 +26,7 @@ import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerato
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.junit.Test;
 
@@ -189,7 +190,8 @@ public class TestGridSearch {
     public static class BraninTaskCreator implements TaskCreator {
         @Override
         public Callable<OptimizationResult> create(final Candidate c, DataProvider dataProvider,
-                        final ScoreFunction scoreFunction, final List<StatusListener> statusListeners) {
+                                                   final ScoreFunction scoreFunction, final List<StatusListener> statusListeners,
+                                                   IOptimizationRunner runner) {
 
             return new Callable<OptimizationResult>() {
                 @Override
