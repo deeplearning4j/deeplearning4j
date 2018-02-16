@@ -46,7 +46,7 @@ Eclipse Deeplearning4j includes [several examples of multilayer perceptrons](htt
                 .pretrain(false).backprop(true).build();
 ```
 
-In Keras, you would use `SequentialModel` to create a linear stack of layers:
+[In Keras](https://keras.io/getting-started/sequential-model-guide/), you would use `SequentialModel` to create a linear stack of layers:
 
 ```
 from keras.models import Sequential
