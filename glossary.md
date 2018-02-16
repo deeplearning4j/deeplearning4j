@@ -333,9 +333,8 @@ In neural networks, the model is the collection of weights and biases that trans
 MNIST is the "hello world" of deep-learning datasets. Everyone uses MNIST to test their neural networks, just to see if the net actually works at all. MNIST contains 60,000 training examples and 10,000 test examples of the handwritten numerals 0-9. These images are 28x28 pixels, which means they require 784 nodes on the first input layer of a neural network. MNIST is [available for download here](http://yann.lecun.com/exdb/mnist/). Here is an example of [training a DBN on MNIST](http://deeplearning4j.org/deepbeliefnetwork.html) with Deeplearning4j. 
 
 ### <a name="model score">Model Score</a>
-As your model trains the goal of training is to improve the "score" for the output or the overall error rate. The webui will present a graph of the score for each iteration. For text based console output of the score as the model trains you would use [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
 
-
+The goal of training is to improve the "score" for the output, or the overall error rate. The Web UI will present a graph of the score for each iteration. For text-based console output of the score, you would use [ScoreIterationListener](http://deeplearning4j.org/doc/org/deeplearning4j/optimize/listeners/ScoreIterationListener.html)
 
 ### <a name="momentum">Nesterov's Momentum</a>
 Momentum also known as Nesterov’s momentum, influences the speed of learning. It causes the model to converge faster to a point of minimal error. Momentum adjusts the size of the next step, the weight update, based on the previous step’s gradient. That is, it takes the gradient’s history and multiplies it. Before each new step, a provisional gradient is calculated by taking partial derivatives from the model, and the hyperparameters are applied to it to produce a new gradient. Momentum influences the gradient your model uses for the next step.
@@ -361,7 +360,7 @@ Noise-contrastive estimation offers a balance of computational and statistical e
 A function that maps input on a nonlinear scale such as [sigmoid](http://en.wikipedia.org/wiki/Sigmoid_function) or [tanh](http://en.wikipedia.org/wiki/Hyperbolic_function). By definition, a nonlinear function's output is not directly proportional to its input.
 
 ### <a name="normalization">Normalization</a> 
-The process of transforming the data to span a range from 0 to 1. 
+The process of transforming the data to span a range from 0 to 1. Standardizing the range of input data makes it easier for algorithms to learned from that data. 
 
 ### <a name="OOP">Object-Oriented Programming (OOP)</a> 
 While deep learning and opject oriented programming don't necessarily go together, Deeplearning4j is written in Java following the principles of OOP. In object-oriented programming, you create so-called objects, which are generally abstract nouns representing a part in a larger symbolic machine (e.g. in Deeplearning4j, the object class DataSetIterator traverses across datasets and feeds parts of those datasets into another process, iteratively, piece by piece). 
@@ -381,7 +380,6 @@ Also called a loss function or a cost function, an objective function defines wh
 
 ### <a name="hot">One-Hot Encoding</a> 
 Used in classification and bag of words. The label for each example is all 0s, except for a 1 at the index of the actual class to which the example belongs. For BOW, the one represents the word encountered. 
-
 
 Below is an example of one-hot encoding for the phrase "The quick brown fox" 
 ![One Hot Encoding for words](./img/onehot.svg)
@@ -411,6 +409,10 @@ So, for more complex probability distributions, the way that the distribution is
 The percentages in the shaded areas are also important. Just like earlier when I said that the sum of all the probabilities has to equal 1 or 100%, the area under the curve of a probability distribution has to equal 1, too. You don't need to know why that is (it involves calculus), but it's worth mentioning. You can see that the graph I linked is actually helpfully labeled; the reason they do that is to show you that you what percentage of the time you're going to end up somewhere in that area.
 
 So, for example, about 68% of the time, you'll end up between -1σ and 1σ." *[--u/corpuscle634](https://www.reddit.com/r/explainlikeimfive/comments/1aglls/eli5_probability_distributions/)*
+
+### <a name="radialbasisfunction">Radial Basis Function Network</a> 
+
+A [radial basis function network](./radialbasisfunction-network-rbf) calculates absolute values such as Euclidean distances as part of its activation function. It acts as a function approximator, much like other neural networks. 
 
 ### <a name="reconstructionentropy">Reconstruction Entropy</a> 
 After applying Gaussian noise, a kind of statistical white noise, to the data, this [objective function](#objectivefunction) punishes the network for any result that is not closer to the original input. That signal prompts the network to learn different features in an attempt to reconstruct the input better and minimize error. 
