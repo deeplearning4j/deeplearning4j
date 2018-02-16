@@ -449,9 +449,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 flattenedParams = parameters;
 
             initializeParams = false;
-        } else {
+        } else if(numParams > 0){
             flattenedParams = Nd4j.create(1, numParams);
             initializeParams = true;
+        } else {
+            flattenedParams = null;
+            initializeParams = false;
         }
 
         //Set RNG seed, for repeatability between initializations when set
@@ -632,7 +635,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParams += numParamsForVertex[i];
                 i++;
             }
-            flattenedGradients = Nd4j.create(1, numParams);
+
+            if(numParams > 0) {
+                flattenedGradients = Nd4j.create(1, numParams);
+            }
 
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
             int paramOffsetSoFar = 0;
@@ -1138,6 +1144,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+        if (numParams() == 0) {
+            return; //Edge case: net with no params: fitting is a no-op
+        }
+
         if (flattenedGradients == null) {
             initGradientsView();
         }

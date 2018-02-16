@@ -125,12 +125,18 @@ public class ModelSerializer {
         ZipEntry coefficients = new ZipEntry("coefficients.bin");
         zipfile.putNextEntry(coefficients);
         DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
-        try {
-            Nd4j.write(model.params(), dos);
-        } finally {
-            dos.flush();
-            if (!saveUpdater)
-                dos.close();
+        INDArray params = model.params();
+        if(params != null) {
+            try {
+                Nd4j.write(model.params(), dos);
+            } finally {
+                dos.flush();
+                if (!saveUpdater)
+                    dos.close();
+            }
+        } else {
+            ZipEntry noParamsMarker = new ZipEntry("noParams.marker");
+            zipfile.putNextEntry(noParamsMarker);
         }
 
         if (saveUpdater) {
@@ -225,13 +231,18 @@ public class ModelSerializer {
 
 
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
-        if (coefficients != null) {
-            InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
-            params = Nd4j.read(dis);
+        if (coefficients != null ) {
+            if(coefficients.getSize() > 0) {
+                InputStream stream = zipFile.getInputStream(coefficients);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
+                params = Nd4j.read(dis);
 
-            dis.close();
-            gotCoefficients = true;
+                dis.close();
+                gotCoefficients = true;
+            } else {
+                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                gotCoefficients = (noParamsMarker != null);
+            }
         }
 
         if (loadUpdater) {
@@ -470,12 +481,17 @@ public class ModelSerializer {
 
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
         if (coefficients != null) {
-            InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
-            params = Nd4j.read(dis);
+            if(coefficients.getSize() > 0) {
+                InputStream stream = zipFile.getInputStream(coefficients);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
+                params = Nd4j.read(dis);
 
-            dis.close();
-            gotCoefficients = true;
+                dis.close();
+                gotCoefficients = true;
+            } else {
+                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                gotCoefficients = (noParamsMarker != null);
+            }
         }
 
 
