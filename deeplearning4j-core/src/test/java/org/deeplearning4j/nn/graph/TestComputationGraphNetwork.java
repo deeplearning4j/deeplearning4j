@@ -688,12 +688,14 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             s.computeGradientAndScore();
             Gradient sGrad = s.gradient();
 
+            s.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
+
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
             Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
 
             INDArray olEpsilon = olPairStd.getSecond();
 
-            e.feedForward(new INDArray[]{inData}, true, false);
+            e.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
             Gradient extErrorGrad = e.backpropGradient(olEpsilon);
 
             int nParamsDense = 10 * 10 + 10;
