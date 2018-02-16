@@ -1,9 +1,10 @@
 ---
-title: A Beginner's Guide to Perceptrons
+title: A Beginner's Guide to MultiLayer Perceptrons
 layout: default
+redirect: perceptron
 ---
 
-# A Beginner's Guide to Perceptrons
+# A Beginner's Guide to MultiLayer Perceptrons
 
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#footnote">FootNotes</a>
