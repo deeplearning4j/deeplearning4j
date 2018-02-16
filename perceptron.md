@@ -64,9 +64,9 @@ model = Sequential([
 
 ### Further Reading
 
-* [Perceptron (Wikipedia)](https://en.wikipedia.org/wiki/Perceptron)
 * [The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain, Cornell Aeronautical Laboratory, Psychological Review, by Frank Rosenblatt (PDF)](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.335.3398&rep=rep1&type=pdf)
 * [Perceptrons: An Introduction to Computational Geometry, by Marvin Minsky & Seymour Papert](https://drive.google.com/file/d/1UsoYSWypNjRth-Xs81FsoyqWDSdnhjIB/view?usp=sharing)
+* [Multi-Layer Perceptrons (MLP)](http://users.ics.aalto.fi/ahonkela/dippa/node41.html) 
 
 ### <a name="beginner">Other Machine Learning Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
