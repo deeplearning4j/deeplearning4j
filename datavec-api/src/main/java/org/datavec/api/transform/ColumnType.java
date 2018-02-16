@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import org.datavec.api.transform.metadata.*;
+import org.datavec.api.writable.WritableType;
 
 /**
  * The type of column.
@@ -49,6 +50,36 @@ public enum ColumnType {
                                 "Cannot create new NDArray column using this method: shape information would be unknown");
             default: //And Bytes
                 throw new UnsupportedOperationException("Unknown or not supported column type: " + this);
+        }
+    }
+
+    /**
+     * @return The type of writable for this column
+     */
+    public WritableType getWritableType(){
+        switch (this){
+            case String:
+                return WritableType.Text;
+            case Integer:
+                return WritableType.Int;
+            case Long:
+                return WritableType.Long;
+            case Double:
+                return WritableType.Double;
+            case Float:
+                return WritableType.Float;
+            case Categorical:
+                return WritableType.Text;
+            case Time:
+                return WritableType.Long;
+            case Bytes:
+                return WritableType.Byte;
+            case Boolean:
+                return WritableType.Boolean;
+            case NDArray:
+                return WritableType.Image;
+            default:
+                throw new IllegalStateException("Unknown writable type for column type: " + this);
         }
     }
 
