@@ -15,6 +15,8 @@ Frank Rosenblatt, the godfather of the perceptron, popularized it as a device ra
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH PERCEPTRONS</a>
 </p>
 
+A perceptron is a linear classifier; that is, it is an algorithm that classifies input by separating two categories with a straight line. Input is typically a feature vector `x` multiplied by weights `w` and added to a bias `b`: `y = w * x + b`. 
+
 
 
 ### Further Reading
