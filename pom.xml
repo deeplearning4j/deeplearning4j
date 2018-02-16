@@ -101,6 +101,7 @@
         <jetbrains-annotations.version>13.0</jetbrains-annotations.version>
         <opencsv.version>2.3</opencsv.version>
         <tdigest.version>3.2</tdigest.version>
+        <jtransforms.version>3.1</jtransforms.version>
     </properties>
 
     <repositories>
@@ -693,6 +694,12 @@
         <artifactId>junit</artifactId>
         <version>${junit.version}</version>
         <scope>test</scope>
+      </dependency>
+      <dependency>
+          <groupId>com.github.wendykierp</groupId>
+          <artifactId>JTransforms</artifactId>
+          <version>${jtransforms.version}</version>
+          <classifier>with-dependencies</classifier>
       </dependency>
     </dependencies>
 

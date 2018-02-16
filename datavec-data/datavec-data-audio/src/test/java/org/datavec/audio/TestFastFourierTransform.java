@@ -33,6 +33,16 @@ public class TestFastFourierTransform {
     }
 
     @Test
+    public void testFastFourierTransformComplexLong() {
+        FastFourierTransform fft = new FastFourierTransform();
+        double[] amplitudes = new double[] {3.0, 4.0, 0.5, 7.8, 6.9, -6.5, 8.5, 4.6};
+        double[] frequencies = fft.getMagnitudes(amplitudes, true);
+
+        Assert.assertEquals(4, frequencies.length);
+        Assert.assertArrayEquals(new double[] {21.335, 18.5132, 14.927, 7.527}, frequencies, 0.005);
+    }
+
+    @Test
     public void testFastFourierTransformReal() {
         FastFourierTransform fft = new FastFourierTransform();
         double[] amplitudes = new double[] {3.0, 4.0, 0.5, 7.8, 6.9, -6.5, 8.5, 4.6};
@@ -40,5 +50,15 @@ public class TestFastFourierTransform {
 
         Assert.assertEquals(4, frequencies.length);
         Assert.assertArrayEquals(new double[] {28.8, 2.107, 14.927, 19.874}, frequencies, 0.005);
+    }
+
+    @Test
+    public void testFastFourierTransformRealOddSize() {
+        FastFourierTransform fft = new FastFourierTransform();
+        double[] amplitudes = new double[] {3.0, 4.0, 0.5, 7.8, 6.9, -6.5, 8.5};
+        double[] frequencies = fft.getMagnitudes(amplitudes, false);
+
+        Assert.assertEquals(3, frequencies.length);
+        Assert.assertArrayEquals(new double[] {24.2, 3.861, 16.876}, frequencies, 0.005);
     }
 }
