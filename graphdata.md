@@ -6,6 +6,14 @@ redirect_from: graphtheory
 
 # A Beginner's Guide to Graph Data for Deep Learning
 
+Contents
+
+* [Concrete Examples of Graph Data Structures](#example)
+* [Difficulties of Graph Data: Size and Structure](#difficulty)
+* [Representing and Traversing Graphs for Machine Learning](#represent)
+* [Footnotes](#footnote)
+* [Further Resources on Graph Data Structures and Deep Learning](#reading)
+
 Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
 
 TL;DR: here's one way to make graph data ingestable for the algorithms: 
@@ -16,7 +24,7 @@ Data (graph, words) -> Real number vector -> Deep neural network
 
 Algorithms can “embed” each node of a graph into a real vector (similar to the embedding a [word](./word2vec)). The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
 
-## Concrete Examples of Graphs
+## <a name="example">Concrete Examples of Graph Data Structures</a>
 
 The simplest definition of a graph is "a collection of items connected by edges." There are many problems where it's helpful to think of things as a graph.<sup>[1](#one)</sup> The items are often called *nodes* or *points* and the edges are often called *vertices*, the plural of vertex. Here are a few concrete examples of a graph:  
 
@@ -38,7 +46,7 @@ Any ontology or knowledge graph charts the interrelationship of entities (combin
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH GRAPHS & DEEP LEARNING</a>
 </p>
 
-## Difficulties of Graph Data: Size and Structure
+## <a name="difficulty">Difficulties of Graph Data: Size and Structure</a>
 
 Applying neural networks and other machine-learning techniques to graph data can de difficult. 
 
@@ -62,7 +70,7 @@ The second question when dealing with graphs is: What kind of question are you t
 
 Since that's the case, you can address the uncomputable size of a Facebook-scale graph by looking at a node and its neighbors maybe 1-3 degrees away; i.e. a subgraph. The immediate neighborhood of the node, taking `k` steps down the graph in all directions, probably captures most of the information you care about. You're filtering out the giant graph's overwhelming size.
 
-## Traversing and Representing the Graph for Machine Learning
+## <a name="represent">Representing and Traversing Graphs for Machine Learning</a>
 
 Let's say you decide to give each node an arbitrary representation vector, like a low-dimensional word embedding, each node's vector being the same length. The next step would be to traverse the graph, and that traversal could be represented by arranging the node vectors next to each other in a matrix. You could then feed that matrix representing the graph to a recurrent neural net. That's basically DeepWalk (see below), which treats truncated random walks across a large graph as sentences. 
 
@@ -93,7 +101,7 @@ Finally, you can compute derivative functions such as graph Lapalians from the t
 
 <a name="one">1)</a> *In a weird meta way it's just graphs all the way down, [not turtles](https://en.wikipedia.org/wiki/Turtles_all_the_way_down). A human scientist whose head is full of firing synapses (graph) is both embedded in a larger social network (graph) and engaged in constructing ontologies of knowledge (graph) and making predictions about data with neural nets (graph).*
 
-## Further Resources on Graph Data and Deep Learning
+## <a name="reading">Further Resources on Graph Data Structures and Deep Learning</a>
 
 Below are a few papers discussing how neural nets can be applied to data in graphs. 
 
