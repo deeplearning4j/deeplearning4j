@@ -16,6 +16,24 @@ Data (graph, words) -> Real number vector -> Deep neural network
 
 Algorithms can “embed” each node of a graph into a real vector (similar to the embedding a [word](./word2vec)). The result will be vector representation of each node in the graph with some information preserved. Once you have the real number vector, you can feed it to the neural network.
 
+## Concrete Examples of Graphs
+
+The simplest definition of a graph is "a collection of items connected by edges." There are many problems where it's helpful to think of things as a graph.<sup>[1](#one)</sup> The items are often called *nodes* or *points* and the edges are often called *vertices*, the plural of vertex. Here are a few concrete examples of a graph:  
+
+* Cities are nodes and highways are edges
+* Humans are nodes and relationships between them are edges (in a social network)
+* States are nodes and the transitions between them are edges (for more on states, see our post on [deep reinforcement learning](./deepreinforcementlearning)). For example, a video game is a graph of states connected by actions that lead from one state to the next...
+* Atoms are nodes and chemical bonds are edges (in a molecule)
+* Web pages are nodes and hyperlinks are edges 
+* A thought is a graph of synaptic firings (edges) between neurons (nodes)
+* A [neural network](./neuralnet-overview) is a graph ... that makes predictions about other graphs. The nodes are places where computation happens and the edges are the paths by which signal flows through the mathematical operations
+
+Any ontology or knowledge graph charts the interrelationship of entities (combining [symbolic AI](./symbolicreasoning) with the graph structure):
+
+* Taxonomies of animal species
+* Diseases that share etiologies and symptoms
+* Medications that share ingredients
+
 ## Difficulties of Graph Data: Size and Structure
 
 Applying neural networks and other machine-learning techniques to graph data can de difficult. 
@@ -55,21 +73,6 @@ Another more recent approach is a *graph convolutional network*, which very simi
 One interesting aspect of graph is so-called side information, or the attributes and features associated with each node. For example, each node could have an image associated to it, in which case an algorithm attempting to make a decision about that graph might have a CNN subroutine embedded in it for those image nodes. Or the side data could be text, and the graph could be a tree (the leaves are words, intermediate nodes are phrases combining the words) over which we run a recursive neural net, an algorithm popolarized by Richard Socher. 
 
 Finally, you can compute derivative functions such as graph Lapalians from the tensors that represent the graphs, much like you might perform an eigen analysis on a tensor. These functions will tell you things about the graph that may help you classify or cluster it. (See below for more information.)  
-
-## Types of Graphs
-
-There are many problems beyond just social networks where it's helpful to think of things as a graph.<sup>[1](#one)</sup>   
-
-* A molecule is a graph of atoms
-* A thought is a graph of synaptic firings (edges) between neurons (nodes)
-* The Web is a graph of hyperlinks
-* [A video game is a graph of states connected by actions that lead from one state to the next](./deepreinforcementlearning)
-* A [neural network](./neuralnet-overview) is a graph ... that makes predictions about other graphs
-
-Any ontology or knowledge graph charts the interrelationship of entities (combining [symbolic reasoning](./symbolicreasoning) with the graph structure):
-* Taxonomies of animal species
-* Diseases that share etiologies and symptoms
-* Medications that share ingredients
 
 ### <a name="beginner">Other Deep-learning Tutorials</a>
 
