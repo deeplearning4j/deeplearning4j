@@ -34,6 +34,10 @@ Any ontology or knowledge graph charts the interrelationship of entities (combin
 * Diseases that share etiologies and symptoms
 * Medications that share ingredients
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH GRAPHS & DEEP LEARNING</a>
+</p>
+
 ## Difficulties of Graph Data: Size and Structure
 
 Applying neural networks and other machine-learning techniques to graph data can de difficult. 
@@ -52,13 +56,9 @@ Graphs have an **arbitrary structure**: they are collections of things without a
 
 You usually don't feed whole graphs into neural networks, for example. They would have to be the same shape and size, and you'd have to line up your graph nodes with your network's input nodes. But the whole point of graph-structured input is to not know or have that order. There's no first, there's no last. 
 
-![Alt text](./img/graph-data-example.png)
+![Alt text](./img/graph-data-structure.png)
 
 The second question when dealing with graphs is: What kind of question are you trying to answer by applying machine learning to them? In social networks, you're usually trying to make a decision about what kind person you're looking at, represented by the node, or what kind of friends and interactions does that person have. So you're making predictions about the node itself or the edges. 
-
-<p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
-</p>
 
 Since that's the case, you can address the uncomputable size of a Facebook-scale graph by looking at a node and its neighbors maybe 1-3 degrees away; i.e. a subgraph. The immediate neighborhood of the node, taking `k` steps down the graph in all directions, probably captures most of the information you care about. You're filtering out the giant graph's overwhelming size.
 
