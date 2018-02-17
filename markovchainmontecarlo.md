@@ -29,11 +29,17 @@ With a little more jargon, you might say it's a simulation using a pseudo-random
 
 ## Concrete Examples of Monte Carlo Sampling
 
-Let's say you're a gambler in the saloon of a Gold Rush town and you roll a suspicious die without knowing if it is fair or loaded. You roll a six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
+Let's say you're a gambler in the saloon of a Gold Rush town and you roll a suspicious die without knowing if it is fair or loaded. You roll a six-sided die a hundred times, count the number of times you roll a four, and divide by a hundred. That gives you the probability of four in the total distribution. If it's close to 16.7 (1/6 * 100), the die is probably fair. 
 
-Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is an inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
+Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is an inductive method, drawing from experience. The die has a state space of six, one for each side.
 
-The states in question can vary. Instead of surf and turf or games of chance, the states might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, weather conditions (rainy, sunny, overcast), notes on a scale, electoral outcomes, or pixel colors in a JPEG file. These are all systems of discrete states that can occur in seriatim, one after another. 
+The states in question can vary. Instead of games of chance, the states might be letters in the Roman alphabet, which has a state space of 26. ("e" happens to be the most frequently occurring letter in the English language....) They might be stock prices, weather conditions (rainy, sunny, overcast), notes on a scale, electoral outcomes, or pixel colors in a JPEG file. These are all systems of discrete states that can occur *in seriatim*, one after another. Here are some other ways Monte Carlo is used:
+
+* In finance, to model risk and return
+* In search and rescue, the calculate the probably location of vessels lost at sea
+* In AI and gaming, to calculate the best moves (more on that later)
+* In computational biology, to calculate the most likely evolutionary tree (phylogeny)
+* In telecommunications, to predict optimal network configurations
 
 [An origin story](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.13.7133&rep=rep1&type=pdf): 
 
