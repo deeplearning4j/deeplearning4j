@@ -123,16 +123,16 @@ MCMC can be used in the context of deep reinforcement learning to sample from th
 ## Further Deeplearning4j Tutorials
 
 * [Regression & Neural Networks](./logistic-regression.html)
-* [Word2vec: Neural Embeddings for NLP](./word2vec.html)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Word2vec: Neural Embeddings for NLP](./word2vec.html)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Restricted Boltzmann Machines (RBM): The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
 * [Inference: Machine Learning Model Server](./modelserver)
 
