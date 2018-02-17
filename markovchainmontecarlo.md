@@ -27,6 +27,8 @@ Markov Chain Monte Carlo is a mathematical method used to predict the probabilit
 
 With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's "James Bond math." 
 
+## Concrete Examples of Monte Carlo Sampling
+
 Let's say you're a gambler in the saloon of a Gold Rush town and you roll a suspicious die without knowing if it is fair or loaded. You roll a six-sided die a thousand times, count the number of times you roll a four, and divide by a thousand. That gives you the probability of four in the total distribution. If it's close to 167 (1/6 * 1000), the die is probably fair. 
 
 Monte Carlo looks at the results of rolling the die many times and tallies the results to determine the probabilities of different states. It is an inductive method, drawing from experience. The die has a state space of six, one for each side; the earth under the alien has a state space of two, land and water.
