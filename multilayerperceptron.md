@@ -6,9 +6,13 @@ redirect: perceptron
 
 # A Beginner's Guide to Multilayer Perceptrons
 
+* <a href="#perceptron">A Brief History of Perceptrons</a>
+* <a href="#mlp">Multilayer Perceptrons</a>
 * <a href="#code">Just Show Me the Code</a>
 * <a href="#footnote">FootNotes</a>
 * <a href="#reading">Further Reading</a>
+
+## <a name="perceptron">A Brief History of Perceptrons</a>
 
 The perceptron, that neural network whose name evokes how the future looked in the 1950s, is a simple algorithm intended to perform binary classification; i.e. it predicts whether input belongs to a certain category of interest or not: `fraud` or `not_fraud`, `cat` or `not_cat`. 
 
@@ -34,11 +38,11 @@ Rosenblatt built a single-layer perceptron. That is, his hardware-algorithm did 
 
 ![Alt text](./img/XORfunction.png)
 
-## Multilayer Perceptrons (MLP)
+## <a name="mlp">Multilayer Perceptrons (MLP)</a>
 
 Subsequent work with multilayer perceptrons has shown that they are capable of approximating an XOR operator as well as many other non-linear functions. 
 
-Just as Rosenblatt based the perceptron on the McCulloch-Pitts neuron, conceived in 1943, so too, perceptrons themselves are building blocks that only prove to be useful in such larger functions as multilayer perceptrons.<a name="two">2)</a> 
+Just as Rosenblatt based the perceptron on a [McCulloch-Pitts neuron](http://web.csulb.edu/~cwallis/artificialn/History.htm), conceived in 1943, so too, perceptrons themselves are building blocks that only prove to be useful in such larger functions as multilayer perceptrons.<a name="two">2)</a> 
 
 The multilayer perceptron is the hello world of deep learning: a good place to start when you are learning about deep learning. 
 
@@ -46,7 +50,7 @@ A multilayer perceptron (MLP) is a [deep, artificial neural network](./neuralnet
 
 Multilayer perceptrons are often applied to supervised learning problems<sup>[3](#three)</sup>: they train on a set of input-output pairs and learn to model the correlation (or dependencies) between those inputs and outputs. Training involves adjusting the parameters, or the weights and biases, of the model in order to minimize error. Backpropagation is used to make those weigh and bias adjustments relative to the error, and the error itself can be measured in a variety of ways, including by root mean squared error (RMSE).
 
-Feedforward networks like MLPs are like tennis, or ping pong. They are mainly involved in two motions, a constant back and forth. 
+Feedforward networks such as MLPs are like tennis, or ping pong. They are mainly involved in two motions, a constant back and forth. 
 
 In the *forward pass*, the signal flow moves from the input layer through the hidden layers to the output layer, and the decision of the output layer is measured against the ground truth labels. 
 
@@ -103,6 +107,7 @@ model = Sequential([
 * [A Logical Calculus of Ideas Immanent in Nervous Activity, W. S. McCulloch & Walter Pitts, 1943](http://www.cs.cmu.edu/~./epxing/Class/10715/reading/McCulloch.and.Pitts.pdf)
 * [Perceptrons: An Introduction to Computational Geometry, by Marvin Minsky & Seymour Papert](https://drive.google.com/file/d/1UsoYSWypNjRth-Xs81FsoyqWDSdnhjIB/view?usp=sharing)
 * [Multi-Layer Perceptrons (MLP)](http://users.ics.aalto.fi/ahonkela/dippa/node41.html) 
+* [Hebbian Theory](https://en.wikipedia.org/wiki/Hebbian_theory)
 
 ### <a name="beginner">Other Machine Learning Tutorials</a>
 * [Introduction to Neural Networks](./neuralnet-overview)
