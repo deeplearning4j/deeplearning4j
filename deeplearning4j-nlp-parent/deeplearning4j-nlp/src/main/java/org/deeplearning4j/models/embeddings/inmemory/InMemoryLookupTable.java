@@ -222,13 +222,25 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
             connection.setRequestMethod("POST");
             connection.setRequestProperty("User-Agent", "Mozilla/5.0");
             //            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Content-Type", "multipart/form-data");
+            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=-----TSNE-POST-DATA-----");
             connection.setDoOutput(true);
 
-            DataOutputStream dos = new DataOutputStream(connection.getOutputStream());
+            final OutputStream outputStream = connection.getOutputStream();
+            final PrintWriter writer = new PrintWriter(outputStream);
+            writer.println("-------TSNE-POST-DATA-----");
+            writer.println("Content-Disposition: form-data; name=\"fileupload\"; filename=\"tsne.csv\"");
+            writer.println("Content-Type: text/plain; charset=UTF-16");
+            writer.println("Content-Transfer-Encoding: binary");
+            writer.println();
+            writer.flush();
+
+            DataOutputStream dos = new DataOutputStream(outputStream);
             dos.writeBytes(sb.toString());
             dos.flush();
+            writer.println();
+            writer.flush();
             dos.close();
+            outputStream.close();
 
             try {
                 int responseCode = connection.getResponseCode();
