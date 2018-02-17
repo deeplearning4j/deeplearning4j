@@ -120,13 +120,13 @@ MCMC can be used in the context of deep reinforcement learning to sample from th
 * [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
 * [Convolutional Networks](./convolutionalnets.html)
-* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
 * [Deeplearning4j Examples via Quickstart](./quickstart.html)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Inference: Machine Learning Model Server](./modelserver)
 
 ## Further Reading on Markov Chain Monte Carlo 
 
