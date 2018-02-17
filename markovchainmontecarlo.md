@@ -3,7 +3,7 @@ title: Markov Chain Monte Carlo and Machine Learning
 layout: default
 ---
 
-# Monte Carlo Methods, Markov Chains and Machine Learning
+# Markov Chains, Monte Carlo Methods, and Machine Learning
 
 Markov Chain Monte Carlo is a method to sample from a population with a complicated distribution. OK.
 
