@@ -102,7 +102,7 @@ public class LocalFileNetResultReference implements ResultReference {
             additionalResults = null;
         }
 
-        return new OptimizationResult(candidate, m, d, index, additionalResults, null);
+        return new OptimizationResult(candidate, m, d, index, additionalResults, null, this);
     }
 
     @Override

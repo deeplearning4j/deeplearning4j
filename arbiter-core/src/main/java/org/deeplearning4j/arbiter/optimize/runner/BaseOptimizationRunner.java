@@ -254,17 +254,8 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
             }
             numCandidatesCompleted.getAndIncrement();
 
-            //TODO: In general, we don't want to save EVERY model, only the best ones
-            ResultSaver saver = config.getResultSaver();
-            ResultReference resultReference = null;
-            if (saver != null) {
-                try {
-                    resultReference = saver.saveModel(result);
-                } catch (IOException e) {
-                    //TODO: Do we want ta warn or fail on IOException?
-                    log.warn("Error saving model (id={}): IOException thrown. ", result.getIndex(), e);
-                }
-            }
+            //Model saving is done in the optimization tasks, to avoid CUDA threading issues
+            ResultReference resultReference = result.getResultReference();
 
             if (resultReference != null)
                 allResults.add(resultReference);
