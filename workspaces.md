@@ -99,3 +99,13 @@ There are also some situations, say, where you're short on RAM, and might want d
 That could be done like so: `Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();`
 
 This method will destroy all workspaces that were created within the calling thread. If you've created workspaces in some external threads on your own, you can use the same method in that thread, after the workspaces are no longer needed.
+
+## Workspace Exceptions
+
+If workspaces are used incorrectly (such as a bug in a custom layer or data pipeline, for example), you may see an error message such as:
+```
+org.nd4j.linalg.exception.ND4JIllegalStateException: Op [set] Y argument uses leaked workspace pointer from workspace [LOOP_EXTERNAL]
+For more details, see the ND4J User Guide: nd4j.org/userguide#workspaces-panic
+```
+
+For more details on these exceptions, see <a href="https://nd4j.org/userguide#workspaces-panic">ND4J User Guide - Workspaces</a>
