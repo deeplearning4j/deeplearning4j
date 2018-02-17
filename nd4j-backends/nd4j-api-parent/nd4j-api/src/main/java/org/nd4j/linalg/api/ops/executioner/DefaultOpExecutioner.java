@@ -51,6 +51,8 @@ import java.util.Properties;
 @Slf4j
 public class DefaultOpExecutioner implements OpExecutioner {
 
+    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: nd4.org/userguide#workspaces-panic";
+
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
     protected ExecutionMode executionMode = ExecutionMode.JAVA;
 
@@ -430,11 +432,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
 
                 if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses leaked workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != x.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] X argument uses outdated workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
             }
 
         }
@@ -445,11 +449,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
                 if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses leaked workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != y.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Y argument uses outdated workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
             }
         }
 
@@ -459,11 +465,13 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
             if (ws.getWorkspaceType() != MemoryWorkspace.Type.CIRCULAR) {
                 if (!ws.isScopeActive()) {
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses leaked workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
                 }
 
                 if (ws.getGenerationId() != z.data().getGenerationId())
-                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace [" + ws.getId() + "]");
+                    throw new ND4JIllegalStateException("Op [" + op.opName() + "] Z argument uses outdated workspace pointer from workspace ["
+                            + ws.getId() + "]\n" + SCOPE_PANIC_MSG);
             }
         }
     }
