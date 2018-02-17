@@ -99,7 +99,7 @@ model = Sequential([
 
 <a name="two">2)</a> *Your thoughts may incline towards the next step in ever more complex and also more useful algorithms. We move from one neuron to several, called a layer; we move from one layer to several, called a multilayer perceptron. Can we move from one MLP to several, or do we simply keep piling on layers, as Microsoft did with its ImageNet winner, ResNet, which had more than 150 layers? Or is the right combination of MLPs an ensemble of many algorithms voting in a sort of computational democracy on the best prediction? Or is it embedding one algorithm within another, as we do with [graph convolutional networks](./graphdata)?* 
 
-<a name="three">3)</a> *They are widely used at Google, which is probably the most sophisticated AI company in the world, for a wide array of tasks crucial to its ad business, despite the existence of more complex, state-of-the-art methods.* 
+<a name="three">3)</a> *They are widely used at Google, which is probably the most sophisticated AI company in the world, for a wide array of tasks, despite the existence of more complex, state-of-the-art methods.* 
 
 ## <a name="reading">Further Reading</a>
 
