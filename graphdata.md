@@ -1,10 +1,10 @@
 ---
-title: Graph Data for Deep Learning
+title: A Beginner's Guide to Graph Data for Deep Learning
 layout: default
 redirect_from: graphtheory
 ---
 
-# Graph Data for Deep Learning
+# A Beginner's Guide to Graph Data for Deep Learning
 
 Graphs are data structures that can be ingested by various algorithms, notably neural nets, learning to perform tasks such as classification, clustering and regression. 
 
