@@ -3731,9 +3731,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test1) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3776,9 +3776,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test2) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3821,9 +3821,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test3) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3866,9 +3866,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test4) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3911,9 +3911,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test5) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -3956,9 +3956,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test6) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4001,9 +4001,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test7) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4047,9 +4047,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4092,9 +4092,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test9) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4137,9 +4137,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test10) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4182,9 +4182,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test11) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);
@@ -4227,9 +4227,9 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
     NDArray<double> ct_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 4*numUnits});
     NDArray<double> Wh  ('c', {numProj, 4*numUnits});
-    NDArray<double> Wc  ('c', {1, 3*numUnits});
+    NDArray<double> Wc  ('c', {3*numUnits});
     NDArray<double> Wp  ('c', {numUnits, numProj});
-    NDArray<double> b   ('c', {1, 4*numUnits});
+    NDArray<double> b   ('c', {4*numUnits});
 
     xt.assign(1.);
     ht_1.assign(2.);

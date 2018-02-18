@@ -1539,4 +1539,99 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
 }
 
 
- 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, lstm_test1) {
+    
+    const int time      = 5;
+    const int batchSize = 3;
+    const int inSize    = 3;
+    const int numProj   = 3;
+    const int numUnits  = 3;
+
+    NDArray<double> x  ('c', {time, batchSize, inSize});
+    NDArray<double> h0 ('c', {batchSize, numProj});
+    NDArray<double> c0 ('c', {batchSize, numUnits});
+    NDArray<double> Wx ('c', {inSize, 4*numUnits});
+    NDArray<double> Wh ('c', {numProj, 4*numUnits});
+    NDArray<double> Wc ('c', {3*numUnits});
+    NDArray<double> Wp ('c', {numUnits, numProj});
+    NDArray<double> b  ('c', {4*numUnits});
+
+    NDArrayFactory<double>::linspace(0.5, x, 0.5);
+    h0 = 1.;
+    c0 = 2.;
+    Wx = 0.003;
+    Wh = 0.006;
+    Wc = 0.;
+    Wp = 0.;
+    b = 0.5;
+
+    NDArray<double> expH('c', {time, batchSize, numProj}, {0.57574,0.57574,0.57574,0.58006,0.58006,0.58006,0.58434,0.58434,0.58434,
+                                                           0.55114,0.55114,0.55114,0.55732,0.55732,0.55732,0.56338,0.56338,0.56338,
+                                                           0.53763,0.53763,0.53763,0.54534,0.54534,0.54534,0.55287,0.55287,0.55287,
+                                                           0.53626,0.53626,0.53626,0.54487,0.54487,0.54487,0.55327,0.55327,0.55327,
+                                                           0.54484,0.54484,0.54484,0.55379,0.55379,0.55379,0.5625 ,0.5625 ,0.5625});    
+
+    NDArray<double> expClast('c', {1, batchSize, numProj}, {1.1589154,1.1589154,1.1589154,1.1892855,1.1892855,1.1892855,1.219861 ,1.219861 ,1.219861});
+
+    nd4j::ops::lstm<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &h0, &c0, &Wx, &Wh, &Wc, &Wp, &b}, {0., 0., 0.}, {0, 0});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);    
+    NDArray<double> *c = results->at(1);
+    NDArray<double> cLast = (*c)({{4,5},{},{}});    
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));    
+
+    ASSERT_TRUE(expClast.isSameShape(&cLast));
+    ASSERT_TRUE(expClast.equalsTo(&cLast));            
+
+    delete results;
+} 
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, gru_test1) {
+    
+    const int time      = 5;
+    const int batchSize = 3;
+    const int inSize    = 3;    
+    const int numUnits  = 3;
+
+    NDArray<double> x  ('c', {time, batchSize, inSize});
+    NDArray<double> h0 ('c', {batchSize, numUnits});
+    NDArray<double> Wx ('c', {inSize, 3*numUnits});
+    NDArray<double> Wh ('c', {numUnits, 3*numUnits});
+    NDArray<double> b  ('c', {3*numUnits});
+
+    NDArrayFactory<double>::linspace(0.5, x, 0.5);
+    h0 = 1.;    
+    Wx = 0.003;
+    Wh = 0.006;
+    b = 0.5;
+
+    NDArray<double> expH('c', {time, batchSize, numUnits},{0.8062 ,0.8062 ,0.8062 ,0.81167,0.81167,0.81167,0.81702,0.81702,0.81702,
+                                                           0.69772,0.69772,0.69772,0.70577,0.70577,0.70577,0.71366,0.71366,0.71366,
+                                                           0.64041,0.64041,0.64041,0.64952,0.64952,0.64952,0.65847,0.65847,0.65847,
+                                                           0.61392,0.61392,0.61392,0.62331,0.62331,0.62331,0.63254,0.63254,0.63254,
+                                                           0.60603,0.60603,0.60603,0.61531,0.61531,0.61531,0.62443,0.62443,0.62443});    
+    
+    nd4j::ops::gru<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &h0, &Wx, &Wh, &b}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);    
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));    
+
+    delete results;
+} 
+
+
+
+

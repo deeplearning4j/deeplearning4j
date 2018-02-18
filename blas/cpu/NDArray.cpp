@@ -509,7 +509,7 @@ template<typename T>
     NDArray<T>& NDArray<T>::operator=(const NDArray<T>& other) {
 	if (this == &other) return *this;
 
-    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsStrict(_shapeInfo, other._shapeInfo))
+    if (_shapeInfo != nullptr && _buffer != nullptr && shape::equalsSoft(_shapeInfo, other._shapeInfo))
         this->assign(&other);
         // memcpy(_buffer, other._buffer, arrLength*sizeOfT());               // copy elements of other current array
     else {

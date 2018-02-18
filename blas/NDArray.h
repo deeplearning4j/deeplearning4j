@@ -841,7 +841,7 @@ namespace nd4j {
         friend NDArray<T> mmul<>(const NDArray<T>& left, const NDArray<T>& right);
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
         *  other - input array to assign elements from
         *  idx - intervals of indexes which define the sub-array
         */ 

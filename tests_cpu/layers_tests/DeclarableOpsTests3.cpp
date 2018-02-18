@@ -953,7 +953,7 @@ TEST_F(DeclarableOpsTests3, gruCell_test1) {
     NDArray<double> ht_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 3*numUnits});
     NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {1, 3*numUnits});
+    NDArray<double> b   ('c', {3*numUnits});
 
     xt.assign(1.);    
     ht_1.assign(2.);
@@ -987,7 +987,7 @@ TEST_F(DeclarableOpsTests3, gruCell_test2) {
     NDArray<double> ht_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 3*numUnits});
     NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {1, 3*numUnits});
+    NDArray<double> b   ('c', {3*numUnits});
 
     xt.assign(1.);    
     ht_1.assign(0.);
@@ -1021,7 +1021,7 @@ TEST_F(DeclarableOpsTests3, gruCell_test3) {
     NDArray<double> ht_1('c', {batchSize, numUnits});
     NDArray<double> Wx  ('c', {inSize, 3*numUnits});
     NDArray<double> Wh  ('c', {numUnits, 3*numUnits});
-    NDArray<double> b   ('c', {1, 3*numUnits});
+    NDArray<double> b   ('c', {3*numUnits});
 
     xt.assign(1.);    
     ht_1.assign(0.);

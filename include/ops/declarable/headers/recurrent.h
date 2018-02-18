@@ -143,9 +143,9 @@ namespace nd4j {
        *    2: previous cell state  [batchSize x numUnits], that is at previous time step t-1   
        *    3: input-to-hidden  weights, [inSize  x 4*numUnits] 
        *    4: hidden-to-hidden weights, [numProj x 4*numUnits] 
-       *    5: diagonal weights for peephole connections [1 x 3*numUnits] 
+       *    5: diagonal weights for peephole connections [3*numUnits] 
        *    6: projection weights [numUnits x numProj] 
-       *    7: biases, [1 x 4*numUnits] 
+       *    7: biases, [4*numUnits] 
        * 
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
@@ -191,11 +191,59 @@ namespace nd4j {
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
        *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
        *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [1 x 3*numUnits]        
+       *    4: biases, [3*numUnits]        
        *  
        * Output arrays: 
        *    0: current cell output [batchSize x numUnits], that is at current time step t       
        */                  
         DECLARE_CUSTOM_OP(gruCell, 5, 1, false, 0, 0);
+
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation "LSTM time sequences" with peep hole connections:
+       *
+       * Input arrays: 
+       *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features
+       *    1: initial cell output [batchSize x numProj],  that is at time step = 0, in case of projection=false -> numProj=numUnits!!! 
+       *    2: initial cell state  [batchSize x numUnits], that is at time step = 0   
+       *    3: input-to-hidden  weights, [inSize  x 4*numUnits] 
+       *    4: hidden-to-hidden weights, [numProj x 4*numUnits] 
+       *    5: diagonal weights for peephole connections [3*numUnits] 
+       *    6: projection weights [numUnits x numProj] 
+       *    7: biases, [4*numUnits] 
+       * 
+       *  Input integer arguments:
+       *    0: if not zero, provide peephole connections
+       *    1: if not zero, then projection is performed, if zero then numProj==numUnits is mandatory!
+       *
+       *  Input float arguments:
+       *    0: clipping value for cell state, if it is not equal to zero, then cell state is clipped
+       *    1: clipping value for projected cell output, if it is not equal to zero, then projected cell output is clipped
+       *    2: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
+       *  
+       * Output arrays: 
+       *    0: cell outputs [time x batchSize x numProj], that is per each time step
+       *    1: cell states  [time x batchSize x numUnits], that is per each time step
+       */                  
+        DECLARE_CUSTOM_OP(lstm, 8, 2, false, 3, 2);
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of gated Recurrent Unit:
+       *
+       * Input arrays: 
+       *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features
+       *    1: initial cell output [batchSize x numUnits],  that is at time step = 0
+       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
+       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
+       *    4: biases, [3*numUnits]        
+       *  
+       * Output arrays: 
+       *    0: cell outputs [time x batchSize x numUnits], that is per each time step    
+       */                  
+        DECLARE_CUSTOM_OP(gru, 5, 1, false, 0, 0);
+
+
     }
 }
