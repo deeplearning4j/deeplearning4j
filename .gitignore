@@ -5,6 +5,7 @@ CMakeScripts/
 libnd4j.xcodeproj/
 runtests*/
 .csettings/
+.project
 *.so
 *.a
 *.dll

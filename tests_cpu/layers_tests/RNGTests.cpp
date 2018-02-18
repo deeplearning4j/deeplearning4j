@@ -221,8 +221,8 @@ TEST_F(RNGTests, Test_Binomial_1) {
 
     ASSERT_TRUE(x0.equalsTo(&x1));
 
-    nexp2->printIndexedBuffer("nexp2");
-    x0.printIndexedBuffer("x0");
+    //nexp2->printIndexedBuffer("nexp2");
+    //x0.printIndexedBuffer("x0");
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -349,5 +349,93 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
+    delete result;
+}
+
+TEST_F(RNGTests, Test_GaussianDistribution_1) {
+    NDArray<float> x('c', {2}, {10, 10});
+    NDArray<float> exp0('c', {10, 10});
+
+
+    nd4j::ops::random_normal<float> op;
+    auto result = op.execute({&x}, {0.0, 1.0f}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(RNGTests, Test_BernoulliDistribution_1) {
+    NDArray<float> x('c', {2}, {10, 10});
+    NDArray<float> exp0('c', {10, 10});
+
+
+    nd4j::ops::random_bernoulli<float> op;
+    auto result = op.execute({&x}, {}, {3});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+
+    delete result;
+}
+
+
+TEST_F(RNGTests, Test_ExponentialDistribution_1) {
+    NDArray<float> x('c', {2}, {10, 10});
+    NDArray<float> exp0('c', {10, 10});
+
+
+    nd4j::ops::random_exponential<float> op;
+    auto result = op.execute({&x}, {0.25f}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(RNGTests, Test_ExponentialDistribution_2) {
+    NDArray<float> x('c', {2}, {10, 10});
+    NDArray<float> y('c', {10, 10});
+    NDArray<float> exp0('c', {10, 10});
+
+    y.assign(1.0);
+
+
+    nd4j::ops::random_exponential<float> op;
+    auto result = op.execute({&x, &y}, {0.25f}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+
     delete result;
 }

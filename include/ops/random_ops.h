@@ -25,6 +25,7 @@
 #endif
 
 #include <helpers/helper_generator.h>
+#include <array/DataTypeUtils.h>
 
 namespace randomOps {
 
@@ -84,6 +85,30 @@ namespace randomOps {
 
         random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
             return valueX >= helper->relativeT<T>(idx) ? (T) 1.0f : (T) 0.0f;
+        }
+    };
+
+
+    /**
+     * This op produces single bernoulli trial
+     */
+    template <typename T>
+    class ExponentialDistribution {
+    public:
+        no_exec_special
+        no_exec_special_cuda
+
+        method_XY
+
+        random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+            T lambda = extraParams[0];
+            T x = helper->relativeT(idx, nd4j::DataTypeUtils::template min<T>(), (T) 1.0f);
+            return (T) 1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * x));
+        }
+
+        random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+            T lambda = extraParams[0];
+            return valueX <= (T) 0.f ? (T) 0.f : (T) 1.f - nd4j::math::nd4j_pow<T>((T) M_E, -(lambda * valueX));
         }
     };
 

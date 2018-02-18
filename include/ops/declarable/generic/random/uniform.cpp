@@ -15,26 +15,33 @@ namespace nd4j {
          * TArgs[0] - min for rng
          * TArgs[1] - max for rng
          */
-        CONFIGURABLE_OP_IMPL(randomuniform, 1, 1, true, 2, 0) {
+        CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 2, 0) {
             // uniform distribution
             auto rng = block.getRNG();
 
             if (rng == nullptr)
-                return ND4J_STATUS_BAD_RNG;
+                return Status::THROW("RNG is null, aborting...");
 
-            if (block.getTArguments()->size() != 2)
-                return ND4J_STATUS_BAD_ARGUMENTS;
-
-            NDArray<T> *x = INPUT_VARIABLE(0);
-            auto z = x;
-            if (!block.isInplace())
-                z = new NDArray<T>(x);
+            auto x = INPUT_VARIABLE(0);
+            auto z = OUTPUT_VARIABLE(0);
 
             functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
 
             STORE_RESULT(*z);
 
             return ND4J_STATUS_OK;
+        }
+
+
+        DECLARE_SHAPE_FN(randomuniform) {
+            auto in = INPUT_VARIABLE(0);
+            auto shape = in->template asVectorT<int>();
+
+            int *newShape;
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
+            shape::shapeBuffer(shape.size(), shape.data(), newShape);
+
+            return new ShapeList(newShape);
         }
     }
 }

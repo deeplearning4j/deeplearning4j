@@ -134,8 +134,6 @@ TEST_F(DeclarableOpsTests6, Test_StB_2) {
 
     auto z = result->at(0);
 
-    nd4j_printf("Mean: %f\n", z->meanNumber());
-
     delete result;
 
 }
@@ -151,7 +149,22 @@ TEST_F(DeclarableOpsTests6, Test_BtS_1) {
 
     auto z = result->at(0);
 
-    z->printShapeInfo("BtS shape");
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Order_1) {
+    NDArray<float> x('f', {2, 3});
+    NDArray<float> exp('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::order<float> op;
+    auto result = op.execute({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_NE(x.ordering(), z->ordering());
 
     delete result;
 }

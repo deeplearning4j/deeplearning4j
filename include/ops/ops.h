@@ -15,9 +15,6 @@
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 #define EPS 1e-5
 #define AFFINITY close
-#ifndef M_E
-#define M_E 2.718281828459
-#endif
 #define DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
 
 

@@ -19,6 +19,9 @@
 #define DOUBLE_MAX_VALUE 1.7976931348623157E308
 #define FLOAT_MIN_NORMAL 1.17549435e-38
 
+#ifndef M_E
+#define M_E 2.718281828459
+#endif
 
 #ifdef __CUDACC__
 #include <types/float16.h>
