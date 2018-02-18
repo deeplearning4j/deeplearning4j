@@ -565,5 +565,17 @@ namespace nd4j {
          */
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
 
+        /**
+         * This op calculates weighted logarithmic loss of input
+         * Input arguments
+         *  0 - input tensor
+         *  1 - noise_shape - (vector with shape to reduce) - optional
+         *  
+         *  int parameter - seed for random numbers
+         *  T parameter - probability (should be between 0 and 1)
+         *  return value - a tensor with the same shape as target or input
+         */
+        DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
+
     }
 }
