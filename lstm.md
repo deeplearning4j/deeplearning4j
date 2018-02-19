@@ -218,6 +218,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
 * [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Graph Data and Deep Learning](./graphdata)
 * [Word2Vec: Neural Embeddings for NLP](./word2vec)
