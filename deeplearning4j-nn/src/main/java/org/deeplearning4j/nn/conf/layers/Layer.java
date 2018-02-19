@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -80,7 +81,8 @@ import java.util.*;
                 @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
                 @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
                 @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
-                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer")}
+                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
+                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer")}
 )
 @Data
 @NoArgsConstructor

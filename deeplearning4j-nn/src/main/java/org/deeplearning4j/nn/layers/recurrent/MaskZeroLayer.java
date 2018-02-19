@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import java.util.Arrays;
+
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -12,6 +14,7 @@ import lombok.NonNull;
 /**
  *
  * Masks timesteps with 0 activation. Assumes that the input shape is [batch_size, input_size, timesteps].
+   @author Martin Boyanov mboyanov@gmail.com
  */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
@@ -96,8 +99,16 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     private void setMaskFromInput(INDArray input) {
+        if (input.rank() != 3) {
+            throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], got shape "+Arrays.toString(input.shape()) + " instead");
+        }
         INDArray mask = input.eq(0).sum(1).neq(input.shape()[1]);
         underlying.setMaskArray(mask);
+    }
+
+    @Override
+    public int numParams() {
+        return underlying.numParams();
     }
 
     @Override
