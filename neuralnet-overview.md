@@ -313,6 +313,7 @@ For people just getting started with deep learning, the following tutorials and 
 * [Deep Reinforcement Learning](./deepreinforcementlearning)
 * [Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
 * [Using Graph Data with Deep Learning](./graphdata)
