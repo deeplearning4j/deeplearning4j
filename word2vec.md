@@ -472,19 +472,21 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
-* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Convolutional Networks](./convolutionalnetwork)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Deep Reinforcement Learning](./deepreinforcementlearning)
-* [Quickstart Examples for Deeplearning4j](./quickstart)
+
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector.html)
+* [LSTMs and Recurrent Networks](./lstm.html)
+* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
+* [Deep Convolutional Networks](./convolutionalnetwork.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Quickstart Examples for Deeplearning4j](./quickstart.html)
 * [ND4J: A Tensor Library for the JVM](http://nd4j.org)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Inference: Machine Learning Model Server](./modelserver.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
