@@ -113,16 +113,16 @@ public class ScoringModel extends AdapterModel {
    */
   public static float outputScore(Model model, float[] modelFeatureValuesNormalized) {
 
+    final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
+
     if (model instanceof MultiLayerNetwork) {
       final MultiLayerNetwork multiLayerNetwork = (MultiLayerNetwork)model;
-      final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
       final INDArray output = multiLayerNetwork.output(input);
       return output.getFloat(0);
     }
 
     if (model instanceof ComputationGraph) {
       final ComputationGraph computationGraph = (ComputationGraph)model;
-      final INDArray input = Nd4j.create(modelFeatureValuesNormalized);
       final INDArray output = computationGraph.outputSingle(input);
       return output.getFloat(0);
     }
