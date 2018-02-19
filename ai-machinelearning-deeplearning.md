@@ -1,13 +1,13 @@
 ---
-title: Artificial Intelligence, Machine Learning and Deep Learning
+title: What's the Difference Between Artificial Intelligence, Machine Learning and Deep Learning?
 layout: default
 ---
 
-# Artificial Intelligence, Machine Learning and Deep Learning
+# What's the Difference Between Artificial Intelligence, Machine Learning and Deep Learning?
 
 You can think of deep learning, machine learning and artificial intelligence as a set of Russian dolls nested within each other, beginning with the smallest and working out. Deep learning is a subset of machine learning, and machine learning is a subset of AI, which is an umbrella term for any computer program that does something smart. In other words, all machine learning is AI, but not all AI is machine learning, and so forth. 
 
-## Artificial Intelligence
+## Artificial Intelligence, Symbolic AI and GOFAI
 
 ![Alt text](./img/John McCarthy.jpg)
 
@@ -21,11 +21,11 @@ Here are a few other definitions of artificial intelligence:
 
 There are a lot of ways to simulate human intelligence, and some methods are more intelligent than others. 
 
-AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called [rules engines, expert systems or symbolic reasoning](./symbolicreasoning). The intelligence they might mimic could be that of an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
+AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called [rules engines, expert systems, knowledge graphs or symbolic reasoning](./symbolicreasoning.html). Collectively, these are known as Good, Old-Fashioned AI (AI). The intelligence they mimic could be that of an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
 
 Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
 
-## Machine Learning 
+## Machine Learning: Programs That Alter Themselves
 
 Machine learning is a subset of AI. That is, all machine learning counts as AI, but not all AI counts as machine learning. For example, symbolic logic -- rules engines, expert systems and knowledge graphs -- could all be described as AI, and none of them are machine learning. 
 
@@ -42,7 +42,7 @@ In 1959, Arthur Samuel, one of the pioneers of machine learning, defined machine
 Samuel taught a computer program to play checkers. His goal was to teach it to play checkers better than himself, which is obviously not something he could program explicitly. He succeeded, and in 1962 his program beat the checkers champion of the state of Connecticut. 
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH AI</a>
 </p>
 
 The "learning" part of machine learning means that ML algorithms attempt to optimize along a certain dimension; i.e. they usually try to minimize error or maximize the likelihood of their predictions being true. This has three names: an error function, a loss function, or an objective function, because the algorithm has an objective... When someone says they are working with a machine-learning algorithm, you can get to the gist of its value by asking: What's the objective function?
@@ -51,7 +51,7 @@ How does one minimize error? Well, one way is to build a framework that multipli
 
 They are, in short, an optimization algorithm. If you tune them right, they minimize their error by guessing and guessing and guessing again.
 
-## Deep Learning
+## Deep Learning: The State of the Art ... For Now
 
 Deep learning is a subset of machine learning. Usually, when people use the term deep learning, they are referring to [deep artificial neural networks](./neuralnet-overview), and somewhat less frequently to [deep reinforcement learning](./deepreinforcementlearning). 
 
