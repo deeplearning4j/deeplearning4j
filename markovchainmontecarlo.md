@@ -122,19 +122,22 @@ MCMC can be used in the context of deep reinforcement learning to sample from th
 
 ## Further Deeplearning4j Tutorials
 
-* [Regression & Neural Networks](./logistic-regression.html)
-* [Recurrent Networks and Long Short-Term Memory Units](./lstm.html)
+* [Regressions & Neural Networks](./logistic-regression.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
-* [Convolutional Networks](./convolutionalnets.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Deep Convolutional Networks](./convolutionalnetwork.html)
+* [Symbolic AI and Machine Learning](./symbolicreasoning.html)
+* [Graph Data for Deep Learning](./graphdata.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
 * [Word2vec: Neural Embeddings for NLP](./word2vec.html)
 * [MNIST for Beginners](./mnist-for-beginners.html)
-* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Open Datasets for Machine Learning](./opendata.html)
+* [Eigenvectors, Eigenvalues, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Deeplearning4j Examples via Quickstart](./quickstart.html)
-* [Restricted Boltzmann Machines (RBM): The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
-* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Quickstart Examples for Deep Learning](./quickstart.html)
+* [Restricted Boltzmann Machines (RBMs)](./restrictedboltzmannmachine.html)
+* [Inference: Machine Learning Model Server](./modelserver.html)
+* [Multilayer Perceptrons (MLP) for Classification](./multilayerpercepton.html)
 
 ## Further Reading on Markov Chain Monte Carlo 
 
