@@ -353,6 +353,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     @Override
     public void clear() {
         input = null;
+        maskArray = null;
+        maskState = null;
     }
 
     protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
