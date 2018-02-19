@@ -43,7 +43,6 @@ namespace ops {
 
 
         if (block.width() >= 3) {
-            nd4j_printf("going through imported way\n","");
             auto blocks = INPUT_VARIABLE(1);
             auto padding = INPUT_VARIABLE(2);
 
@@ -56,9 +55,6 @@ namespace ops {
 
             block_shape = blocks->template asVectorT<int>();
             padding_shape = padding->template asVectorT<int>();
-
-            nd4j_printv("blocks_shape:", block_shape);
-            nd4j_printv("padding_shape:", padding_shape);
 
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();

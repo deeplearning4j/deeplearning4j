@@ -115,7 +115,7 @@ TEST_F(DeclarableOpsTests6, Test_StB_1) {
 
     auto z = result->at(0);
 
-    nd4j_printf("Mean: %f\n", z->meanNumber());
+    //nd4j_printf("Mean: %f\n", z->meanNumber());
 
     delete result;
 
@@ -290,8 +290,8 @@ TEST_F(DeclarableOpsTests6, TestDropout_3) {
     auto ress = op.execute({&x, &shape}, {0.4f}, {113});
 
     ASSERT_EQ(ND4J_STATUS_OK, ress->status());
-    x.printIndexedBuffer("Input is");
-    ress->at(0)->printIndexedBuffer("Result is ");
+    //x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
 
     delete ress;
 }

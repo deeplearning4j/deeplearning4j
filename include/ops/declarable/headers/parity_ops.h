@@ -188,12 +188,14 @@ namespace nd4j {
          * This operation extracts a strided (optionally) slice from a tensor, 
          */
         DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5); // TODO: new op type needed. that returns VIEW
+        DECLARE_CUSTOM_OP(strided_slice_bp, 2, 1, false, 0, 5);
 
         /**
          * This operation extracts a slice from a tensor.
          * 
          */
         DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(slice_bp, 2, 1, false, 0, -1);
 
         /**
          * This operation generate sequences. Basically from......to, with step used as increment.

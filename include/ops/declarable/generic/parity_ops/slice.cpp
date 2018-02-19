@@ -25,7 +25,7 @@ namespace nd4j {
                 int start = begin[e];
 
 
-                REQUIRE_TRUE(stop > 0, 0, "Slice interval for dimension %i is less then 1", e);
+                REQUIRE_TRUE(stop > 0, 0, "Slice: interval for dimension %i is less then 1", e);
 
                 indices.push_back(NDIndex::interval(start, start+stop, 1));
             }
@@ -36,7 +36,7 @@ namespace nd4j {
 
             STORE_RESULT(output);
 
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         DECLARE_SHAPE_FN(slice) {
@@ -61,6 +61,47 @@ namespace nd4j {
 
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), int);
             shape::shapeBuffer(x_rank, shape.data(), newShape);
+
+            return new ShapeList(newShape);
+        }
+
+
+
+        CUSTOM_OP_IMPL(slice_bp, 2, 1, false, 0, -1) {
+            auto input = INPUT_VARIABLE(0);
+            auto epsNext = INPUT_VARIABLE(1);
+            auto output = OUTPUT_VARIABLE(0);
+
+            std::vector<int> begin;
+            std::vector<int> end;
+
+            int x_rank = input->rankOf();
+
+            ShapeUtils<T>::copyVectorPart(begin, *(block.getIArguments()), x_rank, 0);
+            ShapeUtils<T>::copyVectorPart(end, *(block.getIArguments()), x_rank, x_rank);
+
+            IndicesList indices;
+            for (int e = 0; e < x_rank; e++) {
+                int stop = end[e];
+                int start = begin[e];
+
+
+                REQUIRE_TRUE(stop > 0, 0, "Slice: interval for dimension %i is less then 1", e);
+
+                indices.push_back(NDIndex::interval(start, start+stop, 1));
+            }
+            auto sub = output->subarray(indices);
+            sub->assign(epsNext);
+            delete sub;
+
+            return Status::OK();
+        }
+
+        DECLARE_SHAPE_FN(slice_bp) {
+            auto inShape = inputShape->at(0);
+            int *newShape;
+
+            COPY_SHAPE(inShape, newShape);
 
             return new ShapeList(newShape);
         }
