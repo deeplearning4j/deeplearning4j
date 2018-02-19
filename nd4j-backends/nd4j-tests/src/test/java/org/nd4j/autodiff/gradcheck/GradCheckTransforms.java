@@ -66,8 +66,84 @@ public class GradCheckTransforms {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    @Test
+    public void testSpaceToDepth() {
+        Nd4j.getRandom().setSeed(1337);
 
+        int miniBatch = 128;
+        int blockSize = 4;
+        String dataFormat = "NHWC";
+        int isNHWC = dataFormat.equals("NHWC")? 1: 0;
+        int[] inputShape = new int[]{miniBatch, 2 * blockSize, 2 * blockSize, 1};
+
+        INDArray input = Nd4j.randn(inputShape);
+        SameDiff sd = SameDiff.create();
+        SDVariable sdInput = sd.var("in", inputShape);
+
+        INDArray expOut = Nd4j.create(miniBatch, 2, 2, blockSize * blockSize);
+        DynamicCustomOp op = DynamicCustomOp.builder("space_to_depth")
+                .addInputs(input)
+                .addIntegerArguments(blockSize, isNHWC)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
+
+        sd.associateArrayWithVariable(input, sdInput);
+
+        SDVariable t = sd.spaceToDepth(sdInput, blockSize, dataFormat);
+        SDVariable loss = sd.mean("loss", t);
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if (!expOut.equals(out)) {
+            log.info("depth to space failed on forward");
+        }
+
+        try {
+            GradCheckUtil.checkGradients(sd);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testDepthToSpace() {
+        Nd4j.getRandom().setSeed(1337);
+
+        int miniBatch = 128;
+        int blockSize = 4;
+        String dataFormat = "NHWC";
+        int isNHWC = dataFormat.equals("NHWC")? 1: 0;
+        int[] inputShape = new int[]{miniBatch, 2, 2, blockSize * blockSize};
+
+        INDArray input = Nd4j.randn(inputShape);
+        SameDiff sd = SameDiff.create();
+        SDVariable sdInput = sd.var("in", inputShape);
+
+        INDArray expOut = Nd4j.create(miniBatch, 2 * blockSize, 2 * blockSize, 1);
+        DynamicCustomOp op = DynamicCustomOp.builder("depth_to_space")
+                .addInputs(input)
+                .addIntegerArguments(blockSize, isNHWC)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(op);
+
+        sd.associateArrayWithVariable(input, sdInput);
+
+        SDVariable t = sd.depthToSpace(sdInput, blockSize, dataFormat);
+        SDVariable loss = sd.mean("loss", t);
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if (!expOut.equals(out)) {
+            log.info("depth to space failed on forward");
+        }
+
+        try {
+            GradCheckUtil.checkGradients(sd);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

@@ -2105,12 +2105,30 @@ public class SameDiff {
     }
 
 
+    public SDVariable depthToSpace(SDVariable iX, int blockSize, String dataFormat) {
+        return depthToSpace(null, iX, blockSize, dataFormat);
+    }
+
+    public SDVariable depthToSpace(String name, SDVariable iX, int blockSize, String dataFormat) {
+        SDVariable ret = f().depthToSpace(iX, blockSize, dataFormat);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable spaceToBatch(SDVariable iX, int[] blocks, int[][] padding) {
         return spaceToBatch(null, iX, blocks, padding);
     }
 
     public SDVariable spaceToBatch(String name, SDVariable iX, int[] blocks, int[][] padding) {
         SDVariable ret = f().spaceToBatch(iX, blocks, padding);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable spaceToDepth(SDVariable iX, int blockSize, String dataFormat) {
+        return spaceToDepth(null, iX, blockSize, dataFormat);
+    }
+
+    public SDVariable spaceToDepth(String name, SDVariable iX, int blockSize, String dataFormat) {
+        SDVariable ret = f().spaceToDepth(iX, blockSize, dataFormat);
         return updateVariableNameAndReference(ret, name);
     }
 

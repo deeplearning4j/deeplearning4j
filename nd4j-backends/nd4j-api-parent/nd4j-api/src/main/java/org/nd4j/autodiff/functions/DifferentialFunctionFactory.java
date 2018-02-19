@@ -12,6 +12,8 @@ import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -839,6 +841,18 @@ public class DifferentialFunctionFactory   {
     public SDVariable spaceToBatch(SDVariable differentialFunction, int[] blocks, int[][] padding) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new SpaceToBatch(sameDiff(), new SDVariable[]{differentialFunction}, blocks, padding, false)
+                .outputVariables()[0];
+    }
+
+    public SDVariable depthToSpace(SDVariable differentialFunction, int blocksSize, String dataFormat ) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new DepthToSpace(sameDiff(), new SDVariable[]{differentialFunction}, blocksSize, dataFormat)
+                .outputVariables()[0];
+    }
+
+    public SDVariable spaceToDepth(SDVariable differentialFunction, int blocksSize, String dataFormat ) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new SpaceToDepth(sameDiff(), new SDVariable[]{differentialFunction}, blocksSize, dataFormat)
                 .outputVariables()[0];
     }
 
