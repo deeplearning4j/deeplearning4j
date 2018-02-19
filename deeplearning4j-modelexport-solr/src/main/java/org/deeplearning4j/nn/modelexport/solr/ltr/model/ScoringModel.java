@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.modelexport.solr.ltr.model;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
 import java.util.List;
@@ -77,7 +78,8 @@ public class ScoringModel extends AdapterModel {
    * Uses the {@link ModelGuesser#loadModelGuess(InputStream)} method.
    */
   protected Model restoreModel(InputStream inputStream) throws Exception {
-    return ModelGuesser.loadModelGuess(inputStream);
+    final File instanceDir = solrResourceLoader.getInstancePath().toFile();
+    return ModelGuesser.loadModelGuess(inputStream, instanceDir);
   }
 
   @Override
