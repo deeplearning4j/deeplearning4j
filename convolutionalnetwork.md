@@ -1,22 +1,22 @@
 ---
-title: A Beginner's Guide to Convolutional Networks
+title: A Beginner's Guide to Deep Convolutional Networks
 layout: default
 redirect_from: convolutionalnets
 ---
 
-# A Beginner's Guide to Convolutional Networks
+# A Beginner's Guide to Deep Convolutional Networks
 
 Contents
 
-* <a href="#intro">Convolutional Net Introduction</a>
+* <a href="#intro">Deep Convolutional Network Introduction</a>
 * <a href="#tensors">Images Are 4-D Tensors?</a>
 * <a href="#define">ConvNet Definition</a>
-* <a href="#work">How Convolutional Nets Work</a>
+* <a href="#work">How Deep Convolutional Nets Work</a>
 * <a href="#max">Maxpooling/Downsampling</a>
 * <a href="#code">DL4J Code Sample</a>
 * <a href="#resource">Other Resources</a>
 
-## <a name="intro">Introduction to Convolutional Networks</a>
+## <a name="intro">Introduction to Deep Convolutional Networks</a>
 
 Convolutional networks are deep artificial neural networks that can be used to classify images (name what they see), cluster them by similarity (photo search), and perform object recognition within scenes. They are algorithms that can identify faces, individuals, street signs, eggplants, platypuses and many other aspects of visual data. 
 
@@ -159,13 +159,26 @@ Here's one example of how you might configure a ConvNet with Deeplearning4j:
 
 All Deeplearning4j [examples of convolutional networks are available here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution).
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Introduction to Neural Networks](./neuralnet-overview)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Word2vec](./word2vec)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [Neural Networks and Regression](./linear-regression)
+### <a name="beginner">Other Machine Learning Tutorials</a>
+
+* [Introduction to Neural Networks](./neuralnet-overview.html)
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./modelserver.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
 
 ## <a name="resource">Other Resources</a>
 
