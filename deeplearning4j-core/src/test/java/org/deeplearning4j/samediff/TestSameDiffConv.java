@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.samediff.testlayers.SameDiffConv;
 import org.deeplearning4j.samediff.testlayers.SameDiffDense;
 import org.junit.Test;
@@ -86,7 +87,7 @@ public class TestSameDiffConv {
                     Activation.IDENTITY,
                     Activation.SOFTPLUS,
                     Activation.SOFTSIGN,
-//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                    Activation.CUBE,
                     Activation.HARDTANH,
                     Activation.RELU
             };
@@ -112,8 +113,10 @@ public class TestSameDiffConv {
                                             log.info("Starting test: " + msg);
 
                                             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                                    .seed(12345)
                                                     .list()
                                                     .layer(new SameDiffConv.Builder()
+                                                            .weightInit(WeightInit.XAVIER)
                                                             .nIn(nIn)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)
@@ -124,6 +127,7 @@ public class TestSameDiffConv {
                                                             .hasBias(hasBias)
                                                             .build())
                                                     .layer(new SameDiffConv.Builder()
+                                                            .weightInit(WeightInit.XAVIER)
                                                             .nIn(nOut)
                                                             .nOut(nOut)
                                                             .kernelSize(kernel)
@@ -141,6 +145,8 @@ public class TestSameDiffConv {
                                             assertNotNull(net.paramTable());
 
                                             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                                                    .weightInit(WeightInit.XAVIER)
+                                                    .seed(12345)
                                                     .list()
                                                     .layer(new ConvolutionLayer.Builder()
                                                             .nIn(nIn)
@@ -167,7 +173,7 @@ public class TestSameDiffConv {
                                             MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                                             net2.init();
 
-                                            net.params().assign(net2.params());
+                                            assertEquals(net2.params(), net.params());
 
                                             //Check params:
                                             assertEquals(msg, net2.params(), net.params());

@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.samediff.testlayers.SameDiffDense;
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -132,20 +133,24 @@ public class TestSameDiffDense {
                     Activation.IDENTITY,
                     Activation.SOFTPLUS,
                     Activation.SOFTSIGN,
-//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
                     Activation.HARDTANH,
-//                 Activation.RELU      //JVM crash
+                    Activation.RELU      //JVM crash
             };
 
             for (Activation a : afns) {
                 log.info("Starting test - " + a);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
                         .list()
                         .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                .weightInit(WeightInit.XAVIER)
                                 .activation(a).build())
                         .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut)
+                                .weightInit(WeightInit.XAVIER)
                                 .activation(a).build())
                         .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
+                                .weightInit(WeightInit.XAVIER)
                                 .activation(a).build())
                         .build();
 
@@ -155,6 +160,8 @@ public class TestSameDiffDense {
                 assertNotNull(net.paramTable());
 
                 MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .weightInit(WeightInit.XAVIER)
                         .list()
                         .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
                         .layer(new DenseLayer.Builder().activation(a).nIn(nOut).nOut(nOut).build())
@@ -165,7 +172,8 @@ public class TestSameDiffDense {
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                 net2.init();
 
-                net.params().assign(net2.params());
+//                net.params().assign(net2.params());
+                assertEquals(net2.params(), net.params());
 
                 //Check params:
                 assertEquals(net2.params(), net.params());
@@ -188,7 +196,7 @@ public class TestSameDiffDense {
         }
     }
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)   //Backprop not yet supported
     public void testSameDiffDenseBackward() {
 
         int nIn = 3;

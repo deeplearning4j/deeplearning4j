@@ -11,10 +11,12 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
@@ -121,6 +123,19 @@ public class SameDiffConv extends BaseSameDiffLayer {
             paramShapes = m;
         }
         return paramShapes;
+    }
+
+    @Override
+    public void initializeParams(Map<String, INDArray> params) {
+        for(Map.Entry<String,INDArray> e : params.entrySet()){
+            if(ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())){
+                e.getValue().assign(0);
+            } else {
+                double fanIn = nIn * kernel[0] * kernel[1];
+                double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
+                WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+            }
+        }
     }
 
     @Override

@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -25,9 +26,11 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
 
+    protected WeightInit weightInit;
 
     protected BaseSameDiffLayer(Builder builder){
         super(builder);
+        this.weightInit = builder.weightInit;
     }
 
     protected BaseSameDiffLayer(){
@@ -50,9 +53,15 @@ public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
         return ret;
     }
 
+    @SuppressWarnings("unchecked")
     public static abstract class Builder<T extends Builder<T>> extends AbstractSameDiffLayer.Builder<T> {
 
+        protected WeightInit weightInit = WeightInit.XAVIER;
 
+        public T weightInit(WeightInit weightInit){
+            this.weightInit = weightInit;
+            return (T)this;
+        }
 
     }
 }

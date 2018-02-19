@@ -10,10 +10,12 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
@@ -83,13 +85,24 @@ public class SameDiffDense extends BaseSameDiffLayer {
     }
 
     @Override
+    public void initializeParams(Map<String,INDArray> params){
+        for(Map.Entry<String,INDArray> e : params.entrySet()){
+            if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
+                e.getValue().assign(0.0);
+            } else {
+                //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer
+                WeightInitUtil.initWeights(nIn, nOut, new int[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
+            }
+        }
+    }
+
+    @Override
     public List<String> defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 
         SDVariable mmul = sd.mmul("mmul", layerInput, weights);
         SDVariable z = mmul.add("z", bias);
-//        SDVariable out = sd.sigmoid("out", z);
         SDVariable out = activation.asSameDiff("out", sd, z);
 
         return Collections.singletonList("out");

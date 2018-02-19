@@ -74,8 +74,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer) conf.getLayer();
         Map<String,INDArray> out = subsetAndReshape(sd.paramKeys(), sd.paramShapes(), paramsView, sd);
         if(initializeParams){
-            //TODO
-            log.warn("***** SameDiffParamInitializer: Parameter initialization not yet implemented *****");
+            sd.initializeParams(out);
         }
 
         for(String s : sd.paramKeys()){

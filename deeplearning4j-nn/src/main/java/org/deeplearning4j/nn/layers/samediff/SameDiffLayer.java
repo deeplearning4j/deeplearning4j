@@ -14,10 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
@@ -74,6 +71,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        throw new UnsupportedOperationException("Fitting DL4J SameDiff layers via backpropagation is not yet supported");
+
+        /*
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;
@@ -88,6 +88,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
 
         return new Pair<>(g, dLdIn);
+        */
     }
 
     @Override
@@ -133,7 +134,14 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParam(String key, INDArray val) {
-        throw new UnsupportedOperationException("Not supported");
+        if(!paramTable.containsKey(key)){
+            throw new IllegalArgumentException("Cannot set parameter, invalid/unknown parameter key: " + key);
+        }
+        INDArray current = paramTable.get(key);
+        if(!Arrays.equals(current.shape(), val.shape())){
+            throw new IllegalArgumentException("Cannot set parameter \"" + key + "\", invalid shape: parameter array has shape "
+                    + Arrays.toString(current.shape()) + ", trying to set parameter of shape " + Arrays.toString(val.shape()));
+        }
     }
 
     @Override
@@ -144,7 +152,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     protected void setParams(INDArray params, char order) {
-        throw new UnsupportedOperationException("Not supported");
+        setParams(params);
     }
 
     @Override
@@ -154,7 +162,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public INDArray getGradientsViewArray() {
-        return params;
+        return gradients;
     }
 
     @Override
@@ -164,7 +172,13 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        this.paramTable = paramTable;
+        if(this.paramTable == null){
+            this.paramTable = paramTable;
+        } else {
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                setParam(e.getKey(), e.getValue());
+            }
+        }
     }
 
     @Override

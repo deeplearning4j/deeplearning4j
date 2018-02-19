@@ -64,6 +64,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     public abstract Map<String,int[]> paramShapes();
 
+    public abstract void initializeParams(Map<String,INDArray> params);
+
     public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     @Override
@@ -208,6 +210,5 @@ public abstract class AbstractSameDiffLayer extends Layer {
             this.biasUpdater = biasUpdater;
             return (T) this;
         }
-
     }
 }
