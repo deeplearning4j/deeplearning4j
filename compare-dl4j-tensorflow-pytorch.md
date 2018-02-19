@@ -98,6 +98,10 @@ Pros and Cons
 * (-) Not very toolable
 * (-) Dynamic typing is error-prone on large software projects
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH TENSORFLOW</a>
+</p>
+
 ### <a name="caffe">Caffe</a>
 
 [**Caffe**](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library that ported Matlab's implementation of fast convolutional nets to C and C++ ([see Steve Yegge's rant about porting C++ from chip to chip if you want to consider the tradeoffs between speed and this particular form of technical debt](https://sites.google.com/site/steveyegge2/google-at-delphi)). Caffe is not intended for other deep-learning applications such as text, sound or time series data. Like other frameworks mentioned here, Caffe has chosen Python for its API.
@@ -192,12 +196,16 @@ Named after a subatomic particle, Gluon is an API over Amazon's MxNet that was [
 
 ### <a name="keras">Keras</a>
 
-[Keras](keras.io) is a deep-learning library that sits atop Theano and TensorFlow, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j relies on Keras as its [Python API](./keras) and [imports models from Keras and through Keras from Theano and TensorFlow](./model-import-keras). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google.
+[Keras](keras.io) is a deep-learning library that sits atop TensorFlow and Theano, providing an intuitive API inspired by Torch. Perhaps the best Python API in existence. Deeplearning4j relies on Keras as its [Python API](./keras-supported-features.html) and [imports models from Keras and through Keras from Theano and TensorFlow](./model-import-keras.html). It was created by [Francois Chollet](https://twitter.com/fchollet), a software engineer at Google.
 
 * (+) Intuitive API inspired by Torch
 * (+) Works with Theano, TensorFlow and Deeplearning4j backends (CNTK backend to come)
 * (+) Fast growing framework
 * (+) Likely to become standard Python API for NNs
+
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH KERAS</a>
+</p>
 
 ### <a name="mxnet">MxNet</a>
 
