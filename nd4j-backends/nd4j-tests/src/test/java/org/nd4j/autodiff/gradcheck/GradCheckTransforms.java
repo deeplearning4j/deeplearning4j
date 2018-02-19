@@ -265,7 +265,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 54; i++) {
+        for (int i = 0; i < 56; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -529,7 +529,6 @@ public class GradCheckTransforms {
                             .addIntegerArguments(dim)
                             .addInputs(ia).addOutputs(expOut).build();
                     Nd4j.getExecutioner().exec(reverse);
-
                     break;
                 case 51:
                     dim = 0;
@@ -559,6 +558,16 @@ public class GradCheckTransforms {
                     DynamicCustomOp op = DynamicCustomOp.builder("diag").addInputs(ia).addOutputs(expOut).build();
                     Nd4j.getExecutioner().exec(op);
                     t = sd.diag(in);
+                    break;
+                case 54:
+                    expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
+                    Nd4j.getExecutioner().exec(new Erf(ia, expOut));
+                    t = sd.erf(in);
+                    break;
+                case 55:
+                    expOut =  Nd4j.createUninitialized(ia.shape(), ia.ordering());
+                    Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
+                    t = sd.erfc(in);
                     break;
                 default:
                     throw new RuntimeException();

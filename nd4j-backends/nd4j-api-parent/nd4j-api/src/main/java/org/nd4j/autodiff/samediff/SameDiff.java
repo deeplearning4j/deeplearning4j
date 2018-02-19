@@ -2141,6 +2141,23 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public  SDVariable erf(SDVariable iX) {
+        return erf(null, iX);
+    }
+
+    public  SDVariable erf(String name, SDVariable iX) {
+        return erf(name, iX);
+    }
+
+
+    public  SDVariable erfc(SDVariable iX) {
+        return erfc(null, iX);
+    }
+
+    public  SDVariable erfc(String name, SDVariable iX) {
+        return erfc(name, iX);
+    }
+
     public SDVariable diag(SDVariable iX) {
         return diag(null, iX);
     }

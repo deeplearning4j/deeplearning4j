@@ -25,10 +25,13 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Erf function
+ * Gaussian error function (erf) function, which is defined as
+ *
+ * erf(x) = 1 / sqrt(pi) * integral_(-x, x) exp(-t^2) dt
  *
  * @author raver119@gmail.com
   */
@@ -83,11 +86,13 @@ public class Erf extends BaseTransformOp {
         return "Erf";
     }
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        // Derivative of erf(z) is 2 / sqrt(pi) * e^(-z^2)
+        SDVariable gradient = i_v.get(0);
+        SDVariable constant = sameDiff.onesLike(gradient).mul(2).div(Math.sqrt(Math.PI));
+        SDVariable ret = constant.mul(sameDiff.exp(gradient.mul(gradient).mul(-1)));
+        return Collections.singletonList(ret);
     }
 
 }
