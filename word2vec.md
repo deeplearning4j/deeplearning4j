@@ -472,18 +472,19 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 * [Advances in Pre-Training Distributed Word Representations - by Mikolov et al](https://arxiv.org/abs/1712.09405)
 
 ### <a name="beginner">Other Deep Learning Tutorials</a>
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
 * [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
 * [LSTMs and Recurrent Networks](./lstm)
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Convolutional Networks](./convolutionalnets)
-* [Deeplearning4j Quickstart Examples](./quickstart)
+* [Convolutional Networks](./convolutionalnetwork)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
+* [Deep Reinforcement Learning](./deepreinforcementlearning)
+* [Quickstart Examples for Deeplearning4j](./quickstart)
 * [ND4J: A Tensor Library for the JVM](http://nd4j.org)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Reinforcement Learning](./reinforcementlearning)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
+* [Inference: Machine Learning Model Server](./modelserver)
 
 ### <a name="doctorow">Word2Vec in Literature</a>
 
