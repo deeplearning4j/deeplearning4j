@@ -80,6 +80,10 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 <a name="four">4)</a> *According to science, the average American English speaker speaks at a rate of about 110–150 words per minute (wpm). Just how much reality do you think will fit into a ten-minute transmission?*
 
+## Further Reading on Symbolic AI
+
+* [Logical vs.Analogical or Symbolic vs. Connectionist or Neat vs. Scruffy, by Marvin Minsky](http://web.media.mit.edu/~minsky/papers/SymbolicVs.Connectionist.html)
+
 ## Resources for Deep Learning and Symbolic Reasoning
 
 This page includes some recent, notable research that attempts to combine deep learning with symbolic learning to answer those questions. 
