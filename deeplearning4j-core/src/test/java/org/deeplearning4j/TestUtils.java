@@ -55,6 +55,22 @@ public class TestUtils {
         }
     }
 
+    public static INDArray randomOneHot(int examples, int nOut){
+        return randomOneHot(examples, nOut, new Random(12345));
+    }
+
+    public static INDArray randomOneHot(int examples, int nOut, long rngSeed){
+        return randomOneHot(examples, nOut, new Random(rngSeed));
+    }
+
+    public static INDArray randomOneHot(int examples, int nOut, Random rng){
+        INDArray arr = Nd4j.create(examples, nOut);
+        for( int i=0; i<examples; i++ ){
+            arr.putScalar(i, rng.nextInt(nOut), 1.0);
+        }
+        return arr;
+    }
+
     public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength){
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random());
     }
