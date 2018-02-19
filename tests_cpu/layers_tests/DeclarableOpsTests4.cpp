@@ -1516,14 +1516,6 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
     NDArray<float> weights ({0.5f, 0.7f, 1.0f}) ;
     NDArray<float> expected('c', {2, 3}, {-159.5001f, -191.1f, -15.98185f, -210.f,  -24.001238f, -14.951412f});
     
-
-//Targets {15.5f, 15.7f,  5.f , 15.f,   5.f,   6.f};
-//----------
-//Inputs {11.f, 13.f,  4.f, 15.f,  6.f,  3.f};
-//----------
-//Weights [0.7]
-//Result {-159.50006,  -191.1,       -16.009075, -210., -24.001238,  -15.03887}
-
     nd4j::ops::weighted_cross_entropy_with_logits<float> op;
     ResultSet<float>* results = op.execute({&targets, &input, &weights}, {}, {});
     NDArray<float>* output = results->at(0);
@@ -1631,6 +1623,186 @@ TEST_F(DeclarableOpsTests4, gru_test1) {
 
     delete results;
 } 
+
+ 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, LrnTest_1) {
+
+    NDArray<double> x( 'c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5, 
+                                            8.6, 0.,  0., 0.4,
+                                            1.5, 1., 1.3, 1.5,
+                                            2.6, 2.,  3., 1.4}
+    );
+
+    NDArray<double> exp('c', {2, 2, 2, 2}, {
+                                            0.98386997,        0.,  0.05358852,  0.9824562,
+                                            0.99330735,        0.,          0., 0.37139067,
+                                            0.72760683, 0.4850712,   0.5848977, 0.67488194,
+                                            0.7581754,  0.58321184, 0.86747235, 0.4048204}
+    );
+
+    nd4j::ops::lrn<double> op;
+    ResultSet<double>*  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5});
+    NDArray<double>* out = results->at(0);
+        
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(out));
+    out->printIndexedBuffer("LRN out");
+    exp.printIndexedBuffer("LRN exp");
+    ASSERT_TRUE(exp.equalsTo(out));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, LrnTest_2) {
+
+    NDArray<double> x( 'c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5, 
+                                            8.6, 0.,  0., 0.4,
+                                            1.5, 1., 1.3, 1.5,
+                                            2.6, 2.,  3., 1.4});
+
+    NDArray<double> exp('c', {2, 2, 2, 2}, {
+                                            0.98386997,        0.,  0.05358852,  0.9824562,
+                                            0.99330735,        0.,          0., 0.37139067,
+                                            0.72760683, 0.4850712,   0.5848977, 0.67488194,
+                                            0.7581754,  0.58321184, 0.86747235, 0.4048204});
+
+    nd4j::ops::lrn<double> op;
+    ResultSet<double>*  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2});
+    NDArray<double>* out = results->at(0);
+        
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(out));
+    out->printIndexedBuffer("LRN out");
+    exp.printIndexedBuffer("LRN exp");
+    ASSERT_TRUE(exp.equalsTo(out));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, LrnTest_3) {
+
+    NDArray<double> x( 'c', {2, 2, 2, 4}, { 
+
+                5.5, 0., 0.3, 5.5,
+                1.5, 0., 1.3, 6.5,
+                8.6, 0.,  0., 0.4,
+                2.5, 1., 0.3, 4.5,
+                1.5, 1., 1.3, 1.5,
+                3.5, 0., 1.3, 2.5,
+                2.6, 2.,  3., 1.4,
+                4.5, 1., 0.3, 0.5}
+    );
+
+    NDArray<double> exp('c', {2, 2, 2, 4}, {
+                     0.9824562,          0., 0.03822664, 0.9824562,
+                    0.67488194,          0., 0.18924236, 0.96960944,
+                    0.99330735,          0.,         0., 0.37139067,
+                    0.86567914,  0.18702209, 0.05610663, 0.9520745,
+                     0.6154575,  0.34942827, 0.45425674, 0.6154575,
+                      0.905509,  0.        ,  0.2824086, 0.8361251,
+                    0.57063663,  0.41959068,   0.629386, 0.3504383,
+                     0.9520745,  0.21039814, 0.06311944, 0.3268602 }
+    );
+
+    nd4j::ops::lrn<double> op;
+    ResultSet<double>*  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2});
+    NDArray<double>* out = results->at(0);
+        
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(out));
+    out->printIndexedBuffer("LRN out");
+    exp.printIndexedBuffer("LRN exp");
+    ASSERT_TRUE(exp.equalsTo(out));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, LrnTest_4) {
+
+    NDArray<double> x( 'c', {2, 2, 2, 4}, { 
+
+                    5.5, 0., 0.3, 5.5,
+                    1.5, 0., 1.3, 6.5,
+                    8.6, 0.,  0., 0.4,
+                    2.5, 1., 0.3, 4.5,
+                    1.5, 1., 1.3, 1.5,
+                    3.5, 0., 1.3, 2.5,
+                    2.6, 2.,  3., 1.4,
+                    4.5, 1., 0.3, 0.5}
+    );
+
+    NDArray<double> exp('c', {2, 2, 2, 4}, {
+                    0.70082176,         0., 0.03822664, 0.70082176,
+                    0.21835658,         0., 0.18924236,  0.9462118,
+                     0.9922489,         0.,         0., 0.04615111,
+                    0.46755522, 0.18702209, 0.05610663,  0.8415994,
+                     0.5241424, 0.34942827, 0.45425674,  0.5241424,
+                    0.76033086,         0.,  0.2824086, 0.54309344,
+                    0.54546785, 0.41959068,   0.629386, 0.29371348,
+                    0.94679165, 0.21039814, 0.06311944, 0.10519907}
+    );
+
+    nd4j::ops::lrn<double> op;
+    ResultSet<double>*  results = op.execute({&x}, {1.0, 1.0, 0.5}, {5});
+    NDArray<double>* out = results->at(0);
+        
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(out));
+    out->printIndexedBuffer("LRN out");
+    exp.printIndexedBuffer("LRN exp");
+    ASSERT_TRUE(exp.equalsTo(out));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, LrnTest_5) {
+
+    NDArray<double> x('c', {2, 2, 2, 4}, { 
+
+                5.5,0., 0.3, 5.5,
+                1.5,0., 1.3, 6.5,
+                8.6,0.,  0., 0.4,
+                2.5,1., 0.3, 4.5,
+                1.5,1., 1.3, 1.5,
+                3.5,0., 1.3, 2.5,
+                2.6,2.,  3., 1.4,
+                4.5,1., 0.3, 0.5}
+    );
+
+    NDArray<double> eps('c', {2, 2, 2, 4}, {
+                0.70082176, 0.,         0.03822664, 0.70082176,
+                0.21835658, 0.,         0.18924236,  0.9462118,
+
+                0.9922489,  0.,         0.        , 0.04615111,
+                0.46755522, 0.18702209, 0.05610663,  0.8415994,
+
+
+                0.5241424,  0.34942827, 0.45425674,  0.5241424,
+                0.76033086, 0.,         0.2824086 , 0.54309344,
+
+                0.54546785, 0.41959068, 0.629386  , 0.29371348,
+                0.94679165, 0.21039814, 0.06311944, 0.10519907}
+    );
+
+    NDArray<double> exp('c', {2, 2, 2, 4});
+
+    nd4j::ops::lrn_bp<double> op;
+    ResultSet<double>*  results = op.execute({&x, &eps}, {1.0, 1.0, 0.5}, {5});
+    NDArray<double>* out = results->at(0);
+        
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(out));
+    out->printIndexedBuffer("LRN out");
+    exp.printIndexedBuffer("LRN exp");
+//    ASSERT_TRUE(exp.equalsTo(out));    
+    
+    delete results;
+}
 
 
 

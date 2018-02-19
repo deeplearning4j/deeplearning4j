@@ -22,7 +22,42 @@ namespace nd4j {
          * 2: bias
          * 3: depth
          */
-        DECLARE_CUSTOM_OP(lrn, 1, 3, true, 4, 0);
+        DECLARE_CUSTOM_OP(lrn_old, 1, 3, true, 4, 0);
+
+        /**
+         * Local response normalization implementation as TF.
+         * input: 4D array
+         * 
+         * T args:
+         *
+         * 0: bias
+         * 1: alpha
+         * 2: beta
+         *
+         * Int arg: depth - optional local radius
+         * 
+         * output - 4D array 
+         */
+        DECLARE_CONFIGURABLE_OP(lrn, 1, 1, true, 3, 0);
+
+        /**
+         * Local response normalization - backprop variant.
+         * input: 
+         *  0 - 4D array of data
+         *  1 - epsilon - 4D array of approximation
+         * 
+         * T args:
+         *
+         * 0: bias
+         * 1: alpha
+         * 2: beta
+         *
+         * Int arg: depth - optional local radius
+         *
+         * output - next approximation as 4D array
+         */
+
+        DECLARE_CONFIGURABLE_OP(lrn_bp, 2, 1, true, 3, 0);
 
         /**
         * Batch normalization implementation. 
