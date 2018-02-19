@@ -5,7 +5,7 @@ layout: default
 
 # Markov Chains, Monte Carlo Methods, and Machine Learning
 
-Markov Chain Monte Carlo is a method to sample from a population with a complicated distribution. OK.
+Markov Chain Monte Carlo is a method to sample from a population with a complicated probability distribution. *OK.*
 
 Let's define some terms:
 
@@ -23,7 +23,7 @@ There are just a few possible outcomes, and we assume H and T are equally likely
 
 Instead of attempting to measure the probability of states such as heads or tails, we could try to estimate the distribution of `land` and `water` over an unknown earth, where land and water would be states. Or the reading level of children in a school system, where each reading level from 1 through 10 is a state. 
 
-Markov Chain Monte Carlo is a mathematical method that draws samples randomly from a black-box to approximate the probability distribution of attributes over a range of objects (the height of men, the names of babies, the outcomes of events like coin tosses, the reading levels of school children, the rewards resulting from certain actions) or the futures of states. 
+Markov Chain Monte Carlo (MCMC) is a mathematical method that draws samples randomly from a black-box to approximate the probability distribution of attributes over a range of objects (the height of men, the names of babies, the outcomes of events like coin tosses, the reading levels of school children, the rewards resulting from certain actions) or the futures of states. 
 
 MCMC methods help gauge the distribution of an outcome or statistic you're trying to predict, by randomly sampling from a complex probabilistic space. 
 
