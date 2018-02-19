@@ -7,6 +7,10 @@ layout: default
 
 WIP.
 
+## Further Reading on Hopfield Networks
+
+* [The Hopfield Model, by Raul Rojas (PDF)](http://page.mi.fu-berlin.de/rojas/neural/chapter/K13.pdf)
+
 ### More Machine Learning Tutorials
 
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
