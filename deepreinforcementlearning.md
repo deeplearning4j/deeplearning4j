@@ -34,7 +34,7 @@ Reinforcement learning algorithms can be expected to perform better and better i
 Two reinforcement learning algorithms - Deep-Q learning and A3C - have been implemented in a Deeplearning4j library called [RL4J](https://github.com/deeplearning4j/rl4j). It can [already play Doom](https://www.youtube.com/watch?v=Pgktl6PWa-o).
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH REINFORCEMENT LEARNING</a>
 </p>
 
 ## <a name="define">Reinforcement Learning Definitions</a>
