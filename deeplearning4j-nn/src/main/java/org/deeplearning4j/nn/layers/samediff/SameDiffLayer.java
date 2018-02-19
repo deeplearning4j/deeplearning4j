@@ -58,10 +58,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             doInit();
         }
 
-        //Build map:
-//        Map<String, INDArray> map = new HashMap<>(paramTable());
-//        map.put(INPUT_KEY, input);
-
         sameDiff.associateArrayWithVariable(input, sameDiff.getVariable(INPUT_KEY));
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
