@@ -24,40 +24,39 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Division operation
+ * RealDivision operation
  *
  * @author Adam Gibson
  */
-public class DivOp extends BaseDynamicTransformOp {
+public class RealDivOp extends BaseDynamicTransformOp {
 
-    public DivOp() {}
+    public RealDivOp() {}
 
-    public DivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public RealDivOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
-    public DivOp( INDArray[] inputs, INDArray[] outputs) {
+    public RealDivOp(INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
 
 
     @Override
     public String opName() {
-        return "div";
+        return "realdiv";
     }
 
     @Override
     public String onnxName() {
-        return "Div";
+        return "RealDiv";
     }
 
     @Override
     public String tensorflowName() {
-        return "Div";
+        return "RealDiv";
     }
 
 

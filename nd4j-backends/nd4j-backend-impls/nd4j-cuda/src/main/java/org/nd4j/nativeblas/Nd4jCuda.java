@@ -6440,7 +6440,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
         *  other - input array to assign elements from
         *  idx - intervals of indexes which define the sub-array
         */ 
@@ -7508,7 +7508,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
         *  other - input array to assign elements from
         *  idx - intervals of indexes which define the sub-array
         */ 
@@ -8576,7 +8576,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         
 
         /**
-        *  this method assigns elements of other array to the sub-array of this array defined be given intervals
+        *  this method assigns elements of other array to the sub-array of this array defined by given intervals
         *  other - input array to assign elements from
         *  idx - intervals of indexes which define the sub-array
         */ 

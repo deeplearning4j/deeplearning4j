@@ -121,6 +121,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         else if(op instanceof ShapeOp) {
             ShapeOp shapeOp = (ShapeOp) op;
             exec(shapeOp);
+        } else if (op instanceof RandomOp) {
+            RandomOp rngOp = (RandomOp) op;
+            exec(rngOp, Nd4j.getRandom());
         }
 
         return op;

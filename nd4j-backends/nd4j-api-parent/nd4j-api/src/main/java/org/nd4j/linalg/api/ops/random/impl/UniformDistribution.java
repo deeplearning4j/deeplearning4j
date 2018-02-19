@@ -65,7 +65,7 @@ public class UniformDistribution extends BaseRandomOp {
 
     @Override
     public String tensorflowName() {
-        return "RandomUniform";
+        return "RandomUniformGG";
     }
 
 

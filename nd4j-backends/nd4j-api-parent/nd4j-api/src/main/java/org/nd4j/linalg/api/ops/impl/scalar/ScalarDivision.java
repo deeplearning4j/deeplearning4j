@@ -74,12 +74,12 @@ public class ScalarDivision extends BaseScalarOp {
 
     @Override
     public String onnxName() {
-        return "Div";
+        return "DivScalar";
     }
 
     @Override
     public String tensorflowName() {
-        return "RealDiv";
+        return "DivScalar";
     }
 
     @Override
