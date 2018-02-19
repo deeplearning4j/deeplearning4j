@@ -18,7 +18,7 @@ DL4J is portable and platform neutral, rather than being optimized on a specific
 
 ### Content
 
-Python Frameworks
+**Python Frameworks**
 
 * <a href="#torch">Pytorch & Torch</a>
 * <a href="#tensorflow">TensorFlow</a>
@@ -264,19 +264,20 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBM's machine-learning framework, which performs Descriptive Statistics, Classification, Clustering, Regression, Matrix Factorization and Survival Analysis, and includes support-vector machines.
 * [Microsoft DMTK](http://www.dmtk.io/) - Microsoft's distributed machine-learning toolkit. Distributed word embeddings and LDA.
 
-### <a name="tutorial">Deeplearning4j Tutorials</a>
+### <a name="tutorial">Other Deep Learning Tutorials</a>
 
-* [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Deep Convolutional Networks Tutorial](./convolutionalnets)
-* [LSTM & Recurrent Network Tutorial](./lstm)
-* [Generative Adversarial Networks (GAN)](./generative-adversarial-network)
-* [Deep Reinforcement Learning](./deepreinforcementlearning)
-* [Symbolic Reasoning & Deep Learning](./symbolicreasoning)
-* [Graph Data & Deep Learning](./graphdata)
-* [Open Data Sets for Machine Learning](./opendata)
-* [Restricted Boltzmann machines](./restrictedboltzmannmachine)
+* [Introduction to Deep Neural Networks](./neuralnet-overview.html)
+* [Deep Convolutional Networks](./convolutionalnetwork.html)
+* [LSTM & Recurrent Networks](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GAN)](./generative-adversarial-network.html)
+* [Deep Reinforcement Learning (RL)](./deepreinforcementlearning.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Graph Data & Deep Learning](./graphdata.html)
+* [Open Data Sets for Machine Learning](./opendata.html)
+* [Restricted Boltzmann Machines (RBM)](./restrictedboltzmannmachine.html)
 * [Eigenvectors, Eigenvalues, PCA and Entropy](./eigenvector.html)
-* [ETL Data Pipelines for Machine Learning](./datavec)
+* [ETL Data Pipelines for Machine Learning](./datavec.html)
 * [A Glossary of Deep-Learning Terms](./glossary.html)
-* [Word2vec, Doc2vec & GloVe for Natural Language Processing](./word2vec)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Word2vec, Doc2vec & GloVe for Natural Language Processing](./word2vec.html)
+* [Inference: Machine Learning Model Server](./modelserver.html)
