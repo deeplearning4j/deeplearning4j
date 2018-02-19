@@ -72,15 +72,13 @@ A list of all possible states is known as the "state space." The more states you
 
 ## Markov Chains
 
-Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next rather than sampling them independently from an alien ship. That's where Markov chains come in. 
-
-A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. It's a random walk across a graph. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are all, always, in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others close behind us. 
+Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next. A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. It's a random walk across a graph. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are all, always, in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others close behind us. 
 
 Traversing a Markov chain, you're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
 
 While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
 
-## On Markovian Time
+## On Markov Time
 
 Markov chains have a particular property: oblivion, or forgetting. 
 
