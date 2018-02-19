@@ -11,7 +11,7 @@ Let's define some terms:
 
 * **Sample** - A subset of data drawn from a larger population. (Also used as a verb *to sample*; i.e. the act of selecting that subset. Also, reusing a small piece of one song in another song, which is not so different from the statistical practice, but is more likely to [lead to lawsuits](https://www.theatlantic.com/entertainment/archive/2013/09/did-the-decline-of-sampling-cause-the-decline-of-political-hip-hop/279791/).) Sampling permits us to approximate data without exhaustively analyzing all of it, because some datasets are too large or complex to compute. We're often stuck behind a veil of ignorance, unable to gauge reality around us with much precision. So we sample.  
 * **Population** - The set of all things we want to know about; e.g. coin flips, whose outcomes we want to predict. Populations are often too large for us to study them *in toto*, so we sample. For example, humans will never have a record of the outcome of all coin flips since the dawn of time. It's physically impossible to collect, inefficient to compute, and politically unlikely to be allowed. Gathering information is expensive. So in the name of efficiency, we select subsets of the population and pretend they represent the whole. Flipping a coin 100 times would be a sample of the population of all coin tosses and would allow us to reason inductively about all the coin flips we cannot see. 
-* **Distribution** (or probability distribution) - You can think of a distribution as table that links outcomes with probabilities. A coin toss has two possible outcomes, heads (H) or tails (T). Flipping it twice can result in either HH, TT, HT or TH. So let's contruct a table that shows the outcomes of two coin tosses as measured by the number of H that result. 
+* **Distribution** (or probability distribution) - You can think of a distribution as table that links outcomes with probabilities. A coin toss has two possible outcomes, heads (H) or tails (T). Flipping it twice can result in either HH, TT, HT or TH. So let's contruct a table that shows the outcomes of two coin tosses as measured by the number of H that result. Here's a simple distribution: 
 
 | Number of H  |   | Probability |
 | :-------------: |:-------------:| :-----:| 
@@ -19,11 +19,13 @@ Let's define some terms:
 | 1 | | 0.50 | 
 | 2 | | 0.25 | 
 
-That's a simple distribution. There are just a few possible outcomes, and we assume H and T are equally likely. Another word for outcomes is *states*, as in: what is the end state of the coin flip? 
+There are just a few possible outcomes, and we assume H and T are equally likely. Another word for outcomes is *states*, as in: what is the end state of the coin flip? 
 
 Instead of attempting to measure the probability of states such as heads or tails, we could try to estimate the distribution of `land` and `water` over an unknown earth, where land and water would be states. Or the reading level of children in a school system, where each reading level from 1 through 10 is a state. 
 
-Markov Chain Monte Carlo is a mathematical method used to predict the probability of something: future events, coin tosses, reading levels, or any unknown distribution of states. MCMC methods help gauge the distribution of an outcome or statistic you're trying to predict, by randomly sampling from a complex probabilistic space. 
+Markov Chain Monte Carlo is a mathematical method that draws samples randomly from a black-box to approximate the probability distribution of attributes over a range of objects (the height of men, the names of babies, the outcomes of events like coin tosses, the reading levels of school children, the rewards resulting from certain actions) or the futures of states. 
+
+MCMC methods help gauge the distribution of an outcome or statistic you're trying to predict, by randomly sampling from a complex probabilistic space. 
 
 With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's "James Bond math." 
 
