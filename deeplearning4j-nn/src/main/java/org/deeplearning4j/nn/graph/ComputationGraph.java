@@ -3503,9 +3503,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                     }
                 }
-            }
 
-            clearLayerMaskArrays();
+                //Clear inputs, masks etc. Important to avoid leaking invalidated/out of scope arrays between iterations
+                clearLayersStates();
+            }
         }
 
         if (iterator.asyncSupported())
