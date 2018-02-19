@@ -227,14 +227,15 @@ You can see how we do [eigenvectors](https://github.com/deeplearning4j/nd4j/blob
 
 ## <a name="resources">Other Beginner's Guides</a>
 
-* [Regression & Neural Networks](./logistic-regression.html)
-* [Word2vec: Extracting Relations From Raw Text](./word2vec.html)
-* [Convolutional Networks](./convolutionalnets)
+* [Regression & Neural Networks](./logistic-regression)
+* [Word2vec: Extracting Relations From Raw Text](./word2vec)
+* [Convolutional Networks](./convolutionalnetwork)
 * [Deep Learning for Graph Data](./graphdata)
-* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm.html)
-* [Generative Adversarial Networks (GANs)](https://deeplearning4j.org/generative-adversarial-network)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Recurrent Networks and Long Short-Term Memory Units (LSTMs)](./lstm)
+* [Generative Adversarial Networks (GANs)](/generative-adversarial-network)
+* [Inference: Machine Learning Model Server](./modelserver)
 * [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
-* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine.html)
+* [Restricted Boltzmann Machines: The Building Blocks of Deep-Belief Networks](./restrictedboltzmannmachine)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
 
 <a name="ref">1)</a> *In some cases, matrices may not have a full set of eigenvectors; they can have at most as many linearly independent eigenvectors as their respective order, or number of dimensions.*
