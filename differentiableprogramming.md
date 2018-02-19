@@ -25,6 +25,14 @@ Differentiable programming will never be the buzzword that deep learning is. It'
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DIFFERENTIABLE PROGRAMMING</a>
 </p>
 
+In a more recent [Reddit AMA](https://www.reddit.com/r/science/comments/7yegux/aaas_ama_hi_were_researchers_from_google/), LeCun went on to say:
+
+```
+...With the ability to define dynamic deep architectures (i.e. computation graphs that are defined procedurally and whose structure changes for every new input) is a generalization of deep learning that some have called Differentiable Programming.
+```
+
+Frankly, dynamic computation graphs for deep neural networks sounds an awful lot like a kind of deep learning.
+
 ### See Also
 
 * [Software 2.0, by Andrej Karpathy](https://medium.com/@karpathy/software-2-0-a64152b37c35)
