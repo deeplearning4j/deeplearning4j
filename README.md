@@ -25,67 +25,90 @@ pip install jumpy
 Setting up the classpath
 --------------------------------------------------
 
-Jumpy currently requires building using snapshots. In order to use snapshots:
+Build an uberjar from the following pom.xml using `maven package`.
 
-Clone the [examples](https://github.com/deeplearning4j/dl4j-examples)
-```
-git clone https://github.com/deeplearning4j/dl4j-examples
-```
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.deeplearning4j</groupId>
+    <artifactId>dl4j</artifactId>
+    <packaging>jar</packaging>
+    <version>1.0-SNAPSHOT</version>
+    <name>dl4j</name>
+    <url>http://maven.apache.org</url>
 
-Modify the versions to include 0.8.1-SNAPSHOT:
-https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml#L21
+    <properties>
+        <dl4j.version>0.9.2-SNAPSHOT</dl4j.version>
+    </properties>
 
-Change the ND4J backend to be either (`nd4j-native` or `nd4j-cuda-8.0`) for CPU and GPU respectively:
-https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml#L14
+    <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-core</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
+    </dependencies>
 
-Paste:
-```
+    <build>
+        <plugins>
+            <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-shade-plugin</artifactId>
+            <version>3.1.0</version>
+            <executions>
+                <execution>
+                <phase>package</phase>
+                <goals>
+                    <goal>shade</goal>
+                </goals>
+                <configuration>
+                    <transformers>
+                    <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                        <mainClass>org.deeplearning4j.example.App</mainClass>
+                    </transformer>
+                    </transformers>
+                </configuration>
+                </execution>
+            </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>${maven-shade-plugin.version}</version>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
                 <configuration>
-                    <shadedArtifactAttached>true</shadedArtifactAttached>
-                    <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
-                    <createDependencyReducedPom>true</createDependencyReducedPom>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>org/datanucleus/**</exclude>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
+                    <source>1.8</source>
+                    <target>1.8</target>
                 </configuration>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>reference.conf</resource>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
-```
+        </plugins>
+    </build>
 
-in the `pom.xml` file. This will make Maven build one JAR you can use with Jumpy.
+<repositories>
+    <repository>
+        <id>snapshots-repo</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+            <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
+        </snapshots>
+    </repository>
+</repositories>
 
-Run:
-```
-cd dl4j-examples && mvn clean install -DskipTests
+</project>
 ```
 
 This will give you a JAR in the target directory. The target directory should contain a very large JAR with -bin in the name.
