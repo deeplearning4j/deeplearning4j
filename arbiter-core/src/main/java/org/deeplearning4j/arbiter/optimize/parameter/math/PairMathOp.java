@@ -7,6 +7,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * A simple parameter space that implements pairwise mathematical operations on another parameter space. This allows you
+ * to do things like Z = X + Y, where X and Y are parameter spaces.
+ *
+ * @param <T> Type of the parameter space
+ * @author Alex Black
+ */
 public class PairMathOp<T extends Number> extends AbstractParameterSpace<T> {
 
     private ParameterSpace<T> first;
