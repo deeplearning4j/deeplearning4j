@@ -158,3 +158,25 @@ SKIL Support: one-click deployment of trained or imported models, simple monitor
 * System Architect: monitor model status and performance
 * Data Scientist: consume reports on model accuracy
 * Stakeholder, Domain Expert: answer questions, as needed; consume reports on model accuracy, provide feedback
+
+## <a name="intro">Other Machine Learning Tutorials</a>
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
+
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./modelserver.html)
