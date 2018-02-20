@@ -214,15 +214,17 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Long Short-Term Memory in Recurrent Neural Networks](http://www.felixgers.de/papers/phd.pdf); Felix Gers
 * [LSTM: A Search Space Oddyssey](http://arxiv.org/pdf/1503.04069.pdf); Klaus Greff et al
 
-### <a name="beginner">Other Deep-learning Tutorials</a>
+### <a name="beginner">Other Deep Learning Tutorials</a>
+
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [Beginner's Guide to Reinforcement Learning](./deepreinforcementlearning)
-* [Convolutional Networks (CNNs)](./convolutionalnets)
+* [Convolutional Networks (CNNs)](./convolutionalnetwork.html)
 * [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Graph Data and Deep Learning](./graphdata)
 * [Word2Vec: Neural Embeddings for NLP](./word2vec)
 * [Symbolic Reasoning (Symbolic AI) & Deep Learning](./symbolicreasoning)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector)
 * [Neural Networks & Regression](./logistic-regression)
