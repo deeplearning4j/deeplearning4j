@@ -230,7 +230,7 @@ Here are a few ideas to keep in mind when manually optimizing hyperparameters fo
 * [Neural Networks & Regression](./logistic-regression)
 * [Open Datasets for Machine Learning](./opendata)
 * [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Machine Learning Workflow in Production (Model Server)](./machine-learning-workflow.html)
 
 ### Footnotes
 
