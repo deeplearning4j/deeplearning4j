@@ -21,6 +21,10 @@ Within each phase, we'll explain:
 * What specific tasks are performed?
 * Who is involved in each phase (businessperson, data scientist/engineer, DevOps)?
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH MACHINE LEARNING</a>
+</p>
+
 ### Relevant Personnel and Roles
 
 * **Decision Maker**: holds the purse strings, can wrangle funding and resources (might be same as Stakeholder).
@@ -73,6 +77,10 @@ People:
 
 SKIL Support: ETL, simple EDA, model training, and evaluation are supported by Workspaces/Experiments/notebooks
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">ETL FOR MACHINE LEARNING</a>
+</p>
+
 ## Phase 3: Model Design, Training, and Offline Evaluation
 
 Goals: 
@@ -97,6 +105,10 @@ People:
 * Data Scientist: plan and execute model training and evaluation, produce "reports" (in quotes because this should ideally be published in automatic fashion, so DS only needs to add context in meetings, etc.)
 * Stakeholder, Domain Expert: answer questions, as needed; consume "reports" on progress/performance; provide feedback
 * Decision Maker, Stakeholder: consume "reports" on progress/performance
+
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">TRAIN ON A SPARK-GPU CLUSTER</a>
+</p>
 
 ## Phase 4: Model Deployment, Online Evaluation, and Monitoring
 
@@ -129,7 +141,12 @@ People:
 
 SKIL Support: one-click deployment of trained or imported models, simple monitoring of model status
 
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">DEPLOY ML WITH ONE CLICK</a>
+</p>
+
 ## Phase 5: Model Maintenance, Diagnosis, and Retraining
+
 Goals: 
 * Monitor and log deployed model accuracy over longer periods of time
 * Gather statistics on deployed models to feed back into training and deployment
