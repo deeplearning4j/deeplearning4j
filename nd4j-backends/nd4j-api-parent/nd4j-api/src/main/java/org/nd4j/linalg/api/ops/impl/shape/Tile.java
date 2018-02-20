@@ -105,6 +105,9 @@ public class Tile extends DynamicCustomOp {
          *
          * And during actual op invocation both inputs should be available due to topo sort
          */
+        if (inputArguments().length < 2)
+            return Collections.emptyList();
+
         val array = inputArguments()[1];
         val reps = new int[array.length()];
 

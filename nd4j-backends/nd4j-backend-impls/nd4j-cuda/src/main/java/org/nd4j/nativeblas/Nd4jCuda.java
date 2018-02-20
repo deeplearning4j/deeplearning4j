@@ -15486,10 +15486,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);
-//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+//                                 REPLICATE_SHAPE(SRC, TGT);
 
 // #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), int);
-//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+//                                 REPLICATE_SHAPE(SRC, TGT);
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__

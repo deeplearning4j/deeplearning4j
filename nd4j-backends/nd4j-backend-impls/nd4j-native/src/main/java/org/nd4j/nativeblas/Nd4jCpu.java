@@ -23,7 +23,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_expose.class,
         float_softmax.class,
         float_softmax_bp.class,
+        float_lrn_old.class,
         float_lrn.class,
+        float_lrn_bp.class,
         float_batchnorm.class,
         float_apply_sgd.class,
         float_fused_batch_norm.class,
@@ -182,7 +184,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_tear.class,
         float_unstack.class,
         float_strided_slice.class,
+        float_strided_slice_bp.class,
         float_slice.class,
+        float_slice_bp.class,
         float_range.class,
         float_onehot.class,
         float_confusion_matrix.class,
@@ -297,7 +301,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_expose.class,
         half_softmax.class,
         half_softmax_bp.class,
+        half_lrn_old.class,
         half_lrn.class,
+        half_lrn_bp.class,
         half_batchnorm.class,
         half_apply_sgd.class,
         half_fused_batch_norm.class,
@@ -456,7 +462,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_tear.class,
         half_unstack.class,
         half_strided_slice.class,
+        half_strided_slice_bp.class,
         half_slice.class,
+        half_slice_bp.class,
         half_range.class,
         half_onehot.class,
         half_confusion_matrix.class,
@@ -571,7 +579,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_expose.class,
         double_softmax.class,
         double_softmax_bp.class,
+        double_lrn_old.class,
         double_lrn.class,
+        double_lrn_bp.class,
         double_batchnorm.class,
         double_apply_sgd.class,
         double_fused_batch_norm.class,
@@ -730,7 +740,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_tear.class,
         double_unstack.class,
         double_strided_slice.class,
+        double_strided_slice_bp.class,
         double_slice.class,
+        double_slice_bp.class,
         double_range.class,
         double_onehot.class,
         double_confusion_matrix.class,
@@ -16309,10 +16321,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #define COPY_SHAPE(SRC, TGT)    ALLOCATE(TGT, block.getWorkspace(), shape::shapeInfoLength(SRC), int);
-//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+//                                 REPLICATE_SHAPE(SRC, TGT);
 
 // #define COPY_SHAPE_EX(SRC, TGT, WORKSPACE)    ALLOCATE(TGT, WORKSPACE, shape::shapeInfoLength(SRC), int);
-//                                 memcpy(TGT, SRC, shape::shapeInfoByteLength(SRC));
+//                                 REPLICATE_SHAPE(SRC, TGT);
 
 // define macros for compiler enforcement to make function inline  
 // #ifdef __clang__
@@ -25971,6 +25983,48 @@ private native void allocate();
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 } // TODO: new op type needed. that returns VIEW
+        @Name("nd4j::ops::strided_slice_bp<float>") public static class float_strided_slice_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_strided_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_strided_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_strided_slice_bp position(long position) {
+                return (float_strided_slice_bp)super.position(position);
+            }
+        public float_strided_slice_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::strided_slice_bp<float16>") public static class half_strided_slice_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_strided_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_strided_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_strided_slice_bp position(long position) {
+                return (half_strided_slice_bp)super.position(position);
+            }
+        public half_strided_slice_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::strided_slice_bp<double>") public static class double_strided_slice_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_strided_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_strided_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_strided_slice_bp position(long position) {
+                return (double_strided_slice_bp)super.position(position);
+            }
+        public double_strided_slice_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
 
         /**
          * This operation extracts a slice from a tensor.
@@ -26015,6 +26069,48 @@ private native void allocate();
                 return (double_slice)super.position(position);
             }
         public double_slice() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+        @Name("nd4j::ops::slice_bp<float>") public static class float_slice_bp extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_slice_bp position(long position) {
+                return (float_slice_bp)super.position(position);
+            }
+        public float_slice_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::slice_bp<float16>") public static class half_slice_bp extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_slice_bp position(long position) {
+                return (half_slice_bp)super.position(position);
+            }
+        public half_slice_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::slice_bp<double>") public static class double_slice_bp extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_slice_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_slice_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_slice_bp position(long position) {
+                return (double_slice_bp)super.position(position);
+            }
+        public double_slice_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
@@ -28835,7 +28931,64 @@ private native void allocate();
          * 2: bias
          * 3: depth
          */
-        @Name("nd4j::ops::lrn<float>") public static class float_lrn extends FloatDeclarableCustomOp {
+        @Name("nd4j::ops::lrn_old<float>") public static class float_lrn_old extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_lrn_old(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_lrn_old(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_lrn_old position(long position) {
+                return (float_lrn_old)super.position(position);
+            }
+        public float_lrn_old() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::lrn_old<float16>") public static class half_lrn_old extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_lrn_old(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_lrn_old(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_lrn_old position(long position) {
+                return (half_lrn_old)super.position(position);
+            }
+        public half_lrn_old() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::lrn_old<double>") public static class double_lrn_old extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_lrn_old(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_lrn_old(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_lrn_old position(long position) {
+                return (double_lrn_old)super.position(position);
+            }
+        public double_lrn_old() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        /**
+         * Local response normalization implementation as TF.
+         * input: 4D array
+         * 
+         * T args:
+         *
+         * 0: bias
+         * 1: alpha
+         * 2: beta
+         *
+         * Int arg: depth - optional local radius
+         * 
+         * output - 4D array 
+         */
+        @Name("nd4j::ops::lrn<float>") public static class float_lrn extends FloatDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public float_lrn(Pointer p) { super(p); }
@@ -28849,7 +29002,7 @@ private native void allocate();
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::lrn<float16>") public static class half_lrn extends HalfDeclarableCustomOp {
+        @Name("nd4j::ops::lrn<float16>") public static class half_lrn extends HalfDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public half_lrn(Pointer p) { super(p); }
@@ -28863,7 +29016,7 @@ private native void allocate();
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::lrn<double>") public static class double_lrn extends DoubleDeclarableCustomOp {
+        @Name("nd4j::ops::lrn<double>") public static class double_lrn extends DoubleDeclarableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public double_lrn(Pointer p) { super(p); }
@@ -28874,6 +29027,68 @@ private native void allocate();
                 return (double_lrn)super.position(position);
             }
         public double_lrn() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        /**
+         * Local response normalization - backprop variant.
+         * input: 
+         *  0 - 4D array of data
+         *  1 - epsilon - 4D array of approximation
+         * 
+         * T args:
+         *
+         * 0: bias
+         * 1: alpha
+         * 2: beta
+         *
+         * Int arg: depth - optional local radius
+         *
+         * output - next approximation as 4D array
+         */
+
+        @Name("nd4j::ops::lrn_bp<float>") public static class float_lrn_bp extends FloatDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_lrn_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_lrn_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_lrn_bp position(long position) {
+                return (float_lrn_bp)super.position(position);
+            }
+        public float_lrn_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+
+        @Name("nd4j::ops::lrn_bp<float16>") public static class half_lrn_bp extends HalfDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_lrn_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_lrn_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_lrn_bp position(long position) {
+                return (half_lrn_bp)super.position(position);
+            }
+        public half_lrn_bp() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+
+        @Name("nd4j::ops::lrn_bp<double>") public static class double_lrn_bp extends DoubleDeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_lrn_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_lrn_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_lrn_bp position(long position) {
+                return (double_lrn_bp)super.position(position);
+            }
+        public double_lrn_bp() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }

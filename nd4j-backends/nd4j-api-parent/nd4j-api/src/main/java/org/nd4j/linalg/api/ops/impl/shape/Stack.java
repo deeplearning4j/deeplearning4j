@@ -73,7 +73,7 @@ public class Stack  extends DynamicCustomOp {
 
         val axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
-                .tfInputPosition(-1)
+                .tfAttrName("axis")
                 .propertyNames(new String[]{"axis"})
                 .build();
 

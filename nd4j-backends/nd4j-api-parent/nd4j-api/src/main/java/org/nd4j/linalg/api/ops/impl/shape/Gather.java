@@ -35,7 +35,7 @@ public class Gather extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"Gather","GatherV2","GatherNd"};
+        return new String[]{"Gather","GatherV2"};
     }
 
     @Override
@@ -89,15 +89,10 @@ public class Gather extends DynamicCustomOp {
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"broadcast"}).build();
 
-
-
         map.put("broadcast",broadcast);
-
 
         ret.put(tensorflowNames()[0],map);
         ret.put(onnxName(),map);
-
-
 
         Map<String,PropertyMapping> map2 = new HashMap<>();
         val broadcast2 = PropertyMapping.builder()
@@ -112,16 +107,6 @@ public class Gather extends DynamicCustomOp {
 
         ret.put("GatherV2",map2);
 
-
-
-        Map<String,PropertyMapping> mapNd = new HashMap<>();
-        val broadcastNd = PropertyMapping.builder()
-                .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
-        mapNd.put("broadcast",broadcastNd);
-
-
-        ret.put("GatherNd",mapNd);
 
         return ret;
     }
