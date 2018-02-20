@@ -9,6 +9,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -109,6 +111,10 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     public char paramReshapeOrder(String param){
         return 'c';
+    }
+
+    protected void initWeights(int fanIn, int fanOut, WeightInit weightInit, INDArray array){
+        WeightInitUtil.initWeights(fanIn, fanOut, array.shape(), weightInit, null, paramReshapeOrder(null), array);
     }
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b){

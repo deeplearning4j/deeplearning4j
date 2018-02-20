@@ -206,15 +206,18 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             SDVariable v = sameDiff.var(s, ps);
             params.put(s, v);
         }
-        List<String> outputKeys = bl.defineLayer(sameDiff, inputVar, params);
-        if(outputKeys == null || outputKeys.size() != 1){
-            throw new IllegalStateException("Invalid output keys: " + outputKeys);
+        List<SDVariable> layerOutputs = bl.defineLayer(sameDiff, inputVar, params);
+        if(layerOutputs == null || layerOutputs.size() != 1){
+            throw new IllegalStateException("Invalid outputs: " + layerOutputs);
         }
 
         for(Map.Entry<String,INDArray> e : p.entrySet()){
             sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
         }
 
-        this.outputKeys = outputKeys;
+        this.outputKeys = new ArrayList<>();
+        for(SDVariable sdv : layerOutputs){
+            outputKeys.add(sdv.getVarName());
+        }
     }
 }

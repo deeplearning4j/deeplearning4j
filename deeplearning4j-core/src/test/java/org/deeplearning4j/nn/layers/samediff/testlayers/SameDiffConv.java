@@ -22,7 +22,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import java.util.*;
 
 @Data
-@EqualsAndHashCode(callSuper = true, exclude = {"paramShapes"})
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"paramShapes"})
 public class SameDiffConv extends BaseSameDiffLayer {
 
@@ -103,7 +103,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public List<SDVariable> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String, SDVariable> paramTable) {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
@@ -125,9 +125,7 @@ public class SameDiffConv extends BaseSameDiffLayer {
 
         SDVariable conv = sameDiff.conv2d(vars, c);    //TODO can't set name
 
-        SDVariable out = activation.asSameDiff("out", sameDiff, conv);
-
-        return Collections.singletonList("out");
+        return Collections.singletonList(activation.asSameDiff("out", sameDiff, conv));
     }
 
     @Override

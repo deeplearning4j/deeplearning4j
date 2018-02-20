@@ -37,7 +37,23 @@ public abstract class BaseSameDiffLayer extends AbstractSameDiffLayer {
         //No op constructor for Jackson
     }
 
-    public abstract List<String> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
+    public abstract List<SDVariable> defineLayer(SameDiff sameDiff, SDVariable layerInput, Map<String,SDVariable> paramTable);
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        //Default implementation: no-op
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        //Default implementation: no-op
+        return null;
+    }
+
+    @Override
+    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+        //Default implementation: no op
+    }
 
     //==================================================================================================================
 

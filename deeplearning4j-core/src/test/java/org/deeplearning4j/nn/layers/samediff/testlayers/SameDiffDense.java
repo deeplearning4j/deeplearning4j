@@ -82,15 +82,13 @@ public class SameDiffDense extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<String> defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
+    public List<SDVariable> defineLayer(SameDiff sd, SDVariable layerInput, Map<String, SDVariable> paramTable) {
         SDVariable weights = paramTable.get(DefaultParamInitializer.WEIGHT_KEY);
         SDVariable bias = paramTable.get(DefaultParamInitializer.BIAS_KEY);
 
         SDVariable mmul = sd.mmul("mmul", layerInput, weights);
         SDVariable z = mmul.add("z", bias);
-        SDVariable out = activation.asSameDiff("out", sd, z);
-
-        return Collections.singletonList("out");
+        return Collections.singletonList(activation.asSameDiff("out", sd, z));
     }
 
     @Override
