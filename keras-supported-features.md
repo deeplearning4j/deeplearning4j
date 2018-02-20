@@ -18,7 +18,7 @@ While not every concept in DL4J has an equivalent in Keras and vice versa, many 
 * [Optimizers](#optimizers)
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH KERAS & DL4J</a>
 </p>
 
 ## <a name="layers">Layers</a>
