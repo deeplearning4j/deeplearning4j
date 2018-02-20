@@ -5,11 +5,11 @@ layout: default
 
 # About Us
 
-Eclipse Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.io), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
+Eclipse Deeplearning4j is an open-source, distributed deep-learning project in Java and Scala spearheaded by the people at [Skymind](http://www.skymind.ai), a San Francisco-based business intelligence and enterprise software firm. We're a team of data scientists, deep-learning specialists, Java systems engineers and semi-sentient robots.
 
-There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.io/contact/). 
+There are a lot of knobs to turn when you're training a distributed deep-learning network. We've done our best to explain them, so that Deeplearning4j can serve as a DIY tool for Java, Scala and Clojure programmers working on Hadoop and other file systems. If you require support or customization beyond these tutorials, please contact us at [Skymind](http://www.skymind.ai/contact/). 
 
-Our open-core product, the [Skymind Intelligence Layer](https://skymind.ai/quickstart), bundles the Deeplearning4j suite of libraries alongside a Conda environment with Tensorflow, Keras, scikit-learn and other popular machine learning tools. SKIL makes it easy to perform distributed training, testing against production environments, and deployment of trained models to production.
+Our open-core product, the [Skymind Intelligence Layer](https://docs.skymind.ai/docs/welcome), bundles the Deeplearning4j suite of libraries alongside a Conda environment with Tensorflow, Keras, scikit-learn and other popular machine learning tools. SKIL makes it easy to perform distributed training, testing against production environments, and deployment of trained models to production, automating redundant, everyday workflow tasks faced by data scientists.
 
 <p align="center">
 <a href="https://skymind.ai/contact" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">CONTACT US</a>
@@ -17,7 +17,7 @@ Our open-core product, the [Skymind Intelligence Layer](https://skymind.ai/quick
 
 ## ND4J & ND4S
 
-[ND4J is the Java scientific computing engine](http://nd4j.org/) powering our matrix manipulations. (See its [Github repo here](https://github.com/deeplearning4j/nd4j/).) [ND4S](https://github.com/deeplearning4j/nd4s) is its Scala wrapper.
+[ND4J is a scientific computing engine for the JVM](http://nd4j.org/) powering our matrix manipulations, using C++ for large-scale operations. (See its [Github repo here](https://github.com/deeplearning4j/nd4j/).) [ND4S](https://github.com/deeplearning4j/nd4s) is its Scala wrapper.
 
 ## Media
 
@@ -25,7 +25,7 @@ Deeplearning4j has been featured in [Wired](http://www.wired.com/2014/06/skymind
 
 ## Support
 
-Without the engagement of Skymind customers and community, and the generous backing of Skymind's investors -- [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)'s investment team, led by David Wallerstein; [Liquid 2 Ventures](http://liquid2.vc/); [Mandra Capital](https://angel.co/mandra-capital); [SV Angel](http://svangel.com/); Ullas Naik; Wei Guo and others -- Deeplearning4j would not exist in its present form.
+Without the engagement of Skymind customers and community, and the generous backing of Skymind's investors -- [Tencent](http://www.tencent.com/en-us/at/managementteam.shtml)'s investment team, led by David Wallerstein; [Liquid 2 Ventures](http://liquid2.vc/); [Mandra Capital](https://angel.co/mandra-capital); [SV Angel](http://svangel.com/); Ullas Naik; [Hemi Ventures](https://www.hemi.vc/); Wei Guo; Ray Lanes's GreatPoint Ventures and others -- Deeplearning4j would not exist in its present form.
 
 ## DL4J Co-founders
 
@@ -46,7 +46,6 @@ Without the engagement of Skymind customers and community, and the generous back
 | Dave Kale  |  turambar | [Skymind](http://skymind.io) | GMT -8 |
 | Paul Dubs  | treo | NA | GMT +2 |
 | Dae Hyun Kim  | kepricon | [Skymind](http://skymind.io) | GMT +9 |
-| Francois Garillot  |  huitseeker | [Skymind](http://skymind.io) | GMT -8 |
 | Eduardo Gonzales  |  wmeddie | [Skymind](http://skymind.io) | GMT +9 |
 | Justin Long  |  crockpotveggies | [Skymind](http://skymind.io) | GMT -8 |
 | Max Pumperla  | maxpumperla | [Skymind](http://skymind.io) | GMT +2 |
