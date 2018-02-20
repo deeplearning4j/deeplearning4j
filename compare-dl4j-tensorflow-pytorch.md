@@ -285,6 +285,7 @@ The deep-learning frameworks listed above are more specialized than general mach
 * [Open Data Sets for Machine Learning](./opendata.html)
 * [Restricted Boltzmann Machines (RBM)](./restrictedboltzmannmachine.html)
 * [Eigenvectors, Eigenvalues, PCA and Entropy](./eigenvector.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
 * [ETL Data Pipelines for Machine Learning](./datavec.html)
 * [A Glossary of Deep-Learning Terms](./glossary.html)
 * [Word2vec, Doc2vec & GloVe for Natural Language Processing](./word2vec.html)
