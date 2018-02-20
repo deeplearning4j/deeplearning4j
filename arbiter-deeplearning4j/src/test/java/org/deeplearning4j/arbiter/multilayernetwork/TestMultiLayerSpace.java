@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
+import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.data.MnistDataProvider;
 import org.deeplearning4j.arbiter.layers.*;
@@ -36,6 +37,8 @@ import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.math.MathOp;
+import org.deeplearning4j.arbiter.optimize.parameter.math.Op;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
@@ -468,6 +471,50 @@ public class TestMultiLayerSpace {
         assertEquals(10, ((LSTM)lstmFwd.conf().getLayer()).getNOut());
         assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNIn());
         assertEquals(10, ((LSTM)lstmBwd.conf().getLayer()).getNOut());
+    }
+
+
+    @Test
+    public void testMathOps() {
+
+        ParameterSpace<Integer> firstLayerSize = new IntegerParameterSpace(10,30);
+        ParameterSpace<Integer> secondLayerSize = new MathOp<>(firstLayerSize, Op.MUL, 3);
+        ParameterSpace<Double> firstLayerLR = new ContinuousParameterSpace(0.01, 0.1);
+        ParameterSpace<Double> secondLayerLR = new MathOp<>(firstLayerLR, Op.ADD, 0.2);
+
+        MultiLayerSpace mls =
+                new MultiLayerSpace.Builder().updater(new Sgd(0.005))
+                        .seed(12345)
+                        .layer(new DenseLayerSpace.Builder().nOut(firstLayerSize)
+                                .updater(new AdamSpace(firstLayerLR))
+                                .build())
+                        .layer(new OutputLayerSpace.Builder().nOut(secondLayerSize)
+                                .updater(new AdamSpace(secondLayerLR))
+                                .build())
+                        .setInputType(InputType.feedForward(10))
+                        .backprop(true).pretrain(false).build();
+
+        int nParams = mls.numParameters();
+        assertEquals(2, nParams);
+
+        new RandomSearchGenerator(mls, null);    //Initializes the indices
+
+        Random r = new Random(12345);
+        for( int i=0; i<10; i++ ){
+            double[] d = new double[nParams];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            MultiLayerConfiguration conf = mls.getValue(d).getMultiLayerConfiguration();
+            int l0Size = ((FeedForwardLayer)conf.getConf(0).getLayer()).getNOut();
+            int l1Size = ((FeedForwardLayer)conf.getConf(1).getLayer()).getNOut();
+            assertEquals(3*l0Size, l1Size);
+
+            double l0Lr = ((FeedForwardLayer)conf.getConf(0).getLayer()).getIUpdater().getLearningRate(0,0);
+            double l1Lr = ((FeedForwardLayer)conf.getConf(1).getLayer()).getIUpdater().getLearningRate(0,0);
+            assertEquals(l0Lr+0.2, l1Lr, 1e-6);
+        }
     }
 
 
