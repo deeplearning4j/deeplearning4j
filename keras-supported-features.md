@@ -4,7 +4,7 @@ layout: default
 redirect_from: keras
 ---
 
-# Keras Model import: Supported Features
+# Keras Model Import: Supported Features
 
 While not every concept in DL4J has an equivalent in Keras and vice versa, many of the key concepts can be matched. Importing keras models into DL4J is done in our [deeplearning4j-modelimport](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) module. Below is a comprehensive list of currently supported features.
 
@@ -18,7 +18,7 @@ While not every concept in DL4J has an equivalent in Keras and vice versa, many 
 * [Optimizers](#optimizers)
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH KERAS & DL4J</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">KERAS FOR PRODUCTION</a>
 </p>
 
 ## <a name="layers">Layers</a>
