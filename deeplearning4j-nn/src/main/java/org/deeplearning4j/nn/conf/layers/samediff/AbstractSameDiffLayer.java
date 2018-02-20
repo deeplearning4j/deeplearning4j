@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.samediff.impl.DefaultSDLayerParams;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
@@ -32,8 +33,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
     protected IUpdater updater;
     protected IUpdater biasUpdater;
 
-
-    private List<String> paramKeys;
+    private SDLayerParams layerParams;
 
     protected AbstractSameDiffLayer(Builder builder){
         super(builder);
@@ -43,6 +43,9 @@ public abstract class AbstractSameDiffLayer extends Layer {
         this.l2Bias = builder.l2Bias;
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
+
+        layerParams = new DefaultSDLayerParams();
+        defineParameters(layerParams);
     }
 
     protected AbstractSameDiffLayer(){
@@ -58,13 +61,15 @@ public abstract class AbstractSameDiffLayer extends Layer {
     @Override
     public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
 
-    public abstract List<String> weightKeys();
+//    public abstract List<String> weightKeys();
+//
+//    public abstract List<String> biasKeys();
+//
+//    public abstract Map<String,int[]> paramShapes();
 
-    public abstract List<String> biasKeys();
+    public abstract void defineParameters(SDLayerParams params);
 
-    public abstract Map<String,int[]> paramShapes();
-
-    public abstract void initializeParams(Map<String,INDArray> params);
+    public abstract void initializeParameters(Map<String,INDArray> params);
 
     public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
@@ -109,18 +114,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
         return new LayerMemoryReport(); //TODO
     }
 
-    public List<String> paramKeys(){
-        if(paramKeys == null){
-            List<String> pk = new ArrayList<>();
-            pk.addAll(weightKeys());
-            pk.addAll(biasKeys());
-            paramKeys = pk;
-        }
-        return paramKeys;
-    }
-
     public char paramReshapeOrder(String param){
-        return 'f';
+        return 'c';
     }
 
     public void applyGlobalConfig(NeuralNetConfiguration.Builder b){

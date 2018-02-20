@@ -1,38 +1,25 @@
-package org.deeplearning4j.samediff;
+package org.deeplearning4j.nn.layers.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.samediff.testlayers.SameDiffConv;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.samediff.testlayers.SameDiffConv;
-import org.deeplearning4j.samediff.testlayers.SameDiffDense;
 import org.junit.Test;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @Slf4j
 public class TestSameDiffConv {

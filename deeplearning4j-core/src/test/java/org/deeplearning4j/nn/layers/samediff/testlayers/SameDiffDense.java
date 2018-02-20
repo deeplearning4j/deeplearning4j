@@ -1,20 +1,18 @@
-package org.deeplearning4j.samediff.testlayers;
+package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
@@ -65,27 +63,14 @@ public class SameDiffDense extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<String> weightKeys() {
-        return W_KEYS;
+    public void defineParameters(SDLayerParams params) {
+        params.clear();
+        params.addWeightParam(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
+        params.addBiasParam(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
     }
 
     @Override
-    public List<String> biasKeys() {
-        return B_KEYS;
-    }
-
-    @Override
-    public Map<String, int[]> paramShapes() {
-        if(paramShapes == null){
-            paramShapes = new HashMap<>();
-            paramShapes.put(DefaultParamInitializer.WEIGHT_KEY, new int[]{nIn, nOut});
-            paramShapes.put(DefaultParamInitializer.BIAS_KEY, new int[]{1, nOut});
-        }
-        return paramShapes;
-    }
-
-    @Override
-    public void initializeParams(Map<String,INDArray> params){
+    public void initializeParameters(Map<String,INDArray> params){
         for(Map.Entry<String,INDArray> e : params.entrySet()){
             if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
                 e.getValue().assign(0.0);

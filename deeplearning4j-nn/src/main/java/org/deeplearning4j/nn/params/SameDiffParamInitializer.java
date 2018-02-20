@@ -33,7 +33,7 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public int numParams(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        Map<String,int[]> m = sd.paramShapes();
+        Map<String,int[]> m = sd.getLayerParams().getParamShapes();
         int n = 0;
         for(int[] arr : m.values()){
             n += ArrayUtil.prod(arr);
@@ -44,19 +44,19 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public List<String> paramKeys(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        return sd.paramKeys();
+        return sd.getLayerParams().getParameterKeys();
     }
 
     @Override
     public List<String> weightKeys(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        return sd.weightKeys();
+        return sd.getLayerParams().getWeightParameterKeys();
     }
 
     @Override
     public List<String> biasKeys(Layer layer) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer)layer;
-        return sd.biasKeys();
+        return sd.getLayerParams().getBiasParameterKeys();
     }
 
     @Override
@@ -72,12 +72,13 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer) conf.getLayer();
-        Map<String,INDArray> out = subsetAndReshape(sd.paramKeys(), sd.paramShapes(), paramsView, sd);
+        Map<String,INDArray> out = subsetAndReshape(sd.getLayerParams().getParameterKeys(),
+                sd.getLayerParams().getParamShapes(), paramsView, sd);
         if(initializeParams){
-            sd.initializeParams(out);
+            sd.initializeParameters(out);
         }
 
-        for(String s : sd.paramKeys()){
+        for(String s : sd.getLayerParams().getParameterKeys()){
             conf.addVariable(s);
         }
 
@@ -87,7 +88,8 @@ public class SameDiffParamInitializer implements ParamInitializer {
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
         AbstractSameDiffLayer sd = (AbstractSameDiffLayer) conf.getLayer();
-        return subsetAndReshape(sd.paramKeys(), sd.paramShapes(), gradientView, sd);
+        return subsetAndReshape(sd.getLayerParams().getParameterKeys(), sd.getLayerParams().getParamShapes(),
+                gradientView, sd);
     }
 
     private Map<String,INDArray> subsetAndReshape(List<String> params, Map<String,int[]> paramShapes, INDArray view,

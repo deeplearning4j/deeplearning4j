@@ -1,4 +1,4 @@
-package org.deeplearning4j.samediff.testlayers;
+package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -6,13 +6,12 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
+import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.Activation;
@@ -41,8 +40,6 @@ public class SameDiffConv extends BaseSameDiffLayer {
     private ConvolutionMode cm;
     private int[] dilation;
     private boolean hasBias;
-
-    private Map<String, int[]> paramShapes;
 
     protected SameDiffConv(Builder b) {
         super(b);
@@ -82,51 +79,38 @@ public class SameDiffConv extends BaseSameDiffLayer {
     }
 
     @Override
-    public List<String> weightKeys() {
-        return WEIGHT_KEYS;
+    public void defineParameters(SDLayerParams params) {
+        params.clear();
+        int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
+        params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
+        int[] biasShape = new int[]{1, nOut};
+        params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
     }
 
-    @Override
-    public List<String> biasKeys() {
-        if(hasBias) {
-            return BIAS_KEYS;
-        } else {
-            return Collections.emptyList();
-        }
-    }
+//    @Override
+//    public char paramReshapeOrder(String param) {
+//        //To match DL4J
+//        return 'c';
+//    }
+
+//    @Override
+//    public Map<String, int[]> paramShapes() {
+//        if (paramShapes == null) {
+//            int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
+//            Map<String, int[]> m = new HashMap<>();
+//            m.put(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
+//            if(hasBias) {
+//                int[] biasShape = new int[]{1, nOut};
+//                m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+//            }
+//            paramShapes = m;
+//        }
+//        return paramShapes;
+//    }
+
 
     @Override
-    public List<String> paramKeys() {
-        if(hasBias) {
-            return PARAM_KEYS;
-        } else {
-            return WEIGHT_KEYS;
-        }
-    }
-
-    @Override
-    public char paramReshapeOrder(String param) {
-        //To match DL4J
-        return 'c';
-    }
-
-    @Override
-    public Map<String, int[]> paramShapes() {
-        if (paramShapes == null) {
-            int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
-            Map<String, int[]> m = new HashMap<>();
-            m.put(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-            if(hasBias) {
-                int[] biasShape = new int[]{1, nOut};
-                m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
-            }
-            paramShapes = m;
-        }
-        return paramShapes;
-    }
-
-    @Override
-    public void initializeParams(Map<String, INDArray> params) {
+    public void initializeParameters(Map<String, INDArray> params) {
         for(Map.Entry<String,INDArray> e : params.entrySet()){
             if(ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())){
                 e.getValue().assign(0);
