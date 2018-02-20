@@ -21,52 +21,68 @@ package org.deeplearning4j.scalnet.layers.convolutional
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException
 import org.deeplearning4j.scalnet.layers.Node
 
-
 /**
   * Base class for convolutional layers.
   *
   * @author David Kale
   */
-abstract class Convolution(
-    protected val kernelSize: List[Int],
-    protected val stride: List[Int],
-    protected val padding: List[Int],
-    protected val nChannels: Int = 0,
-    protected val nIn: Option[List[Int]] = None,
-    protected val nFilter: Int = 0) extends Node {
+abstract class Convolution(protected val kernelSize: List[Int],
+                           protected val stride: List[Int],
+                           protected val padding: List[Int],
+                           protected val nChannels: Int = 0,
+                           protected val nIn: Option[List[Int]] = None,
+                           protected val nFilter: Int = 0)
+    extends Node {
 
   override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
-  if (kernelSize.length != stride.length || kernelSize.length != padding.length) {
+  if (kernelSize.lengthCompare(stride.length) != 0 || kernelSize.lengthCompare(padding.length) != 0) {
     throw new IllegalArgumentException("Kernel, stride, and padding must all have same shape.")
   }
 
-  private def validateShapes(inHeight: Int, inWidth: Int, kernelHeight: Int, kernelWidth: Int, strideHeight: Int,
-                    strideWidth: Int, padHeight: Int, padWidth: Int): Unit = {
+  private def validateShapes(inHeight: Int,
+                             inWidth: Int,
+                             kernelHeight: Int,
+                             kernelWidth: Int,
+                             strideHeight: Int,
+                             strideWidth: Int,
+                             padHeight: Int,
+                             padWidth: Int): Unit = {
 
     // Check filter > size + padding
     if (kernelHeight > (inHeight + 2 * padHeight))
       throw new InvalidInputTypeException(
-        s"Invalid input: activations into layer are h=$inHeight but kernel size is $kernelHeight with padding $padHeight")
+        s"Invalid input: activations into layer are h=$inHeight but kernel size is $kernelHeight with padding $padHeight"
+      )
 
     if (kernelWidth > (inWidth + 2 * padWidth))
       throw new InvalidInputTypeException(
-        s"Invalid input: activations into layer are w=$inWidth but kernel size is $kernelWidth with padding $padWidth")
+        s"Invalid input: activations into layer are w=$inWidth but kernel size is $kernelWidth with padding $padWidth"
+      )
 
     // Check stride
     if ((strideHeight <= 0) || (strideWidth <= 0))
       throw new InvalidInputTypeException(
-        s"Invalid stride: strideHeight is $strideHeight and strideWidth is $strideWidth and both should be great than 0")
+        s"Invalid stride: strideHeight is $strideHeight and strideWidth is $strideWidth and both should be great than 0"
+      )
   }
 
-
   override def outputShape: List[Int] = {
-    val nOutChannels: Int = if (nFilter > 0) nFilter else if (inputShape.nonEmpty) inputShape.last else 0
-    if (inputShape.length == 3) {
-      validateShapes(inputShape.head, inputShape.tail.head, kernelSize.head, kernelSize.tail.head,
-        stride.head, stride.tail.head, padding.head, padding.tail.head)
-      List[List[Int]](inputShape.init, kernelSize, padding, stride)
-        .transpose.map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
+    val nOutChannels: Int =
+      if (nFilter > 0) nFilter
+      else if (inputShape.nonEmpty) inputShape.last
+      else 0
+    if (inputShape.lengthCompare(3) == 0) {
+      validateShapes(inputShape.head,
+                     inputShape.tail.head,
+                     kernelSize.head,
+                     kernelSize.tail.head,
+                     stride.head,
+                     stride.tail.head,
+                     padding.head,
+                     padding.tail.head)
+      List[List[Int]](inputShape.init, kernelSize, padding, stride).transpose
+        .map(x => (x.head - x(1) + 2 * x(2)) / x(3) + 1) :+ nOutChannels
     } else if (nOutChannels > 0) List(nOutChannels)
     else List()
   }

@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
   * Simple LeNet convolutional neural net for MNIST, using
@@ -45,41 +45,59 @@ import org.slf4j.{Logger, LoggerFactory}
 object LeNetMnistExample extends App {
   private val log: Logger = LoggerFactory.getLogger(LeNetMnistExample.getClass)
 
-  private val nbRows: Int = 28
-  private val nbColumns: Int = 28
-  private val nbChannels: Int = 1
-  private val nbOutput: Int = 10
-  private val batchSize: Int = 64
-  private val nbEpochs: Int = 10
-  private val weightDecay: Double = 0.0005
-  private val momentum: Double = 0.9
+  private val nbRows: Int          = 28
+  private val nbColumns: Int       = 28
+  private val nbChannels: Int      = 1
+  private val nbOutput: Int        = 10
+  private val batchSize: Int       = 64
+  private val nbEpochs: Int        = 10
+  private val weightDecay: Double  = 0.0005
+  private val momentum: Double     = 0.9
   private val learningRate: Double = 0.01
-  private val seed: Int = 12345
+  private val seed: Int            = 12345
 
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, seed)
-  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, seed)
+  private val mnistTest: DataSetIterator  = new MnistDataSetIterator(batchSize, false, seed)
 
   log.info("Build model....")
   private val model: NeuralNet = NeuralNet(
-    inputType = InputType.convolutionalFlat(nbRows, nbColumns, nbChannels), rngSeed = seed)
-  model.add(Convolution2D(nFilter = 20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
-    weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+    inputType = InputType.convolutionalFlat(nbRows, nbColumns, nbChannels),
+    rngSeed = seed
+  )
+  model.add(
+    Convolution2D(nFilter = 20,
+                  nChannels = nbChannels,
+                  kernelSize = List(5, 5),
+                  stride = List(1, 1),
+                  weightInit = WeightInit.XAVIER,
+                  regularizer = L2(weightDecay))
+  )
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(Convolution2D(nFilter = 50, kernelSize = List(5, 5), stride = List(1, 1),
-    weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+  model.add(
+    Convolution2D(nFilter = 50,
+                  kernelSize = List(5, 5),
+                  stride = List(1, 1),
+                  weightInit = WeightInit.XAVIER,
+                  regularizer = L2(weightDecay))
+  )
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay)))
+  model.add(
+    Dense(nOut = 500,
+          weightInit = WeightInit.XAVIER,
+          activation = Activation.RELU,
+          regularizer = L2(weightDecay))
+  )
   model.add(Dense(nOut = nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
-    optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
   model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(nbOutput)
-  while(mnistTest.hasNext){
-    val next: DataSet = mnistTest.next()
+  while (mnistTest.hasNext) {
+    val next: DataSet    = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }
