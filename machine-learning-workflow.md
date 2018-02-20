@@ -6,7 +6,7 @@ redirect: workflow
 
 # Machine Learning Workflows in Production
 
-Machine learning in production happens in five phases. (There are few standardized best practice across teams and companies in the industry. Most machine-learning systems are ad hoc.)
+Machine learning in production happens in five phases. (There are few standardized best practices across teams and companies in the industry. Most machine-learning systems are ad hoc.)
 
 ### Phases in Machine Learning Workflows
 
