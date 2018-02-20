@@ -101,6 +101,41 @@ TEST_F(DeclarableOpsTests6, Test_Conv3D_NDHWC_11) {
     delete shapes;
 }
 
+TEST_F(DeclarableOpsTests6, Test_gather_Edge_1) {
+    NDArray<float> x('c', {2, 4, 3, 2});
+    NDArray<float> indices('c', {2}, {1.f, 0.f});
+
+    nd4j::ops::gather<float> op;
+    auto result = op.execute({&x, &indices}, {}, {-2});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
+    NDArray<float> x('c', {2, 4, 2, 2});
+    NDArray<float> indices('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
+    NDArray<float> exp('c', {3,2}, {11.f, 12.f, 5.f, 6.f, 31.f, 32.f});
+    NDArrayFactory<float>::linspace(1, x);
+
+    nd4j::ops::gather_nd<float> op;
+    auto result = op.execute({&x, &indices}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    z->printIndexedBuffer();
+    z->printShapeInfo("z shape");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 
 TEST_F(DeclarableOpsTests6, Test_StB_1) {
     NDArray<float> x('c', {4, 64, 64, 4});

@@ -88,6 +88,9 @@ namespace nd4j {
         if (dimensions.size() > 1)
             std::sort (copy.begin(), copy.end());
 
+        if(copy.back() >= ndArray->rankOf())
+            throw "NDArrayFactory::allTensorsAlongDimension static function: all input dimensions must be smaller than rank of input array !";
+
         Nd4jIndex tadLength = shape::tadLength(ndArray->getShapeInfo(), copy.data(), copy.size());
         Nd4jIndex numTads = ndArray->lengthOf() / tadLength;
 

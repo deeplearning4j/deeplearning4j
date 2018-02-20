@@ -21,7 +21,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
  	
  	if(input->rankOf() > 1)
- 		REQUIRE_TRUE(dim < input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input arrays shapes !");
+ 		REQUIRE_TRUE(dim <= input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input arrays shapes !");
  	
  	std::vector<NDArray<T>*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)

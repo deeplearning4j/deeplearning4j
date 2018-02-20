@@ -695,7 +695,9 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         }
 
         if (other->lengthOf() != lengthOf()) {
-            nd4j_printf("Can't assign new value to the array: this length [%i]; other length: [%i]\n", lengthOf(), other->lengthOf());
+            auto shapeThis = ShapeUtils<T>::shapeAsString(*this);
+            auto shapeThat = ShapeUtils<T>::shapeAsString(*const_cast<NDArray<T>*>(other));
+            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
             throw "Lengths of arrays are mismatched";
         }
 
@@ -721,7 +723,9 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (this == &other) 
             return;
         if (other.lengthOf() != lengthOf()) {
-            nd4j_printf("Can't assign new value to the array: this length [%i]; other length: [%i]\n", lengthOf(), other.lengthOf());
+            auto shapeThis = ShapeUtils<T>::shapeAsString(*this);
+            auto shapeThat = ShapeUtils<T>::shapeAsString(const_cast<NDArray<T>&>(other));
+            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
             throw "Lengths of arrays are mismatched";
         }
 

@@ -107,6 +107,8 @@ DECLARE_SHAPE_FN(gather) {
 
 	int axis = block.getIArguments()->at(0);
 	int inputRank = input->rankOf();
+	if(axis < 0)
+		axis += inputRank;
 
 	if (block.width() > 1) {
 		NDArray<T>* indices = INPUT_VARIABLE(1);
