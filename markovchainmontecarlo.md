@@ -27,9 +27,9 @@ Markov Chain Monte Carlo (MCMC) is a mathematical method that draws samples rand
 
 MCMC methods help gauge the distribution of an outcome or statistic you're trying to predict, by randomly sampling from a complex probabilistic space. 
 
-As with all statistical techniques, we sample from a distribution when we don't know the formula to succinctly describe the relation to two variables (actions and rewards). MCMC helps us approximate a black-box function. 
+As with all statistical techniques, we sample from a distribution when we don't know the function to succinctly describe the relation to two variables (actions and rewards). MCMC helps us approximate a black-box probability distribution. 
 
-With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, which borders southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's "James Bond math." 
+With a little more jargon, you might say it's a simulation using a pseudo-random number generator to produce samples covering many possible outcomes of a given system. The method goes by the name "Monte Carlo" because the capital of Monaco, a coastal enclave bordering southern France, is known for its casinos and games of chance, where winning and losing are a matter of probabilities. It's "James Bond math." 
 
 ## Concrete Examples of Monte Carlo Sampling
 
@@ -53,7 +53,7 @@ While convalescing from an illness in 1946, Stan Ulam was playing solitaire. It 
 
 ## Systems and States
 
-At a more abstract level, where words mean almost anything at all, a system is a set of things connected together (you might even call it a [graph](./graphdata)). It's a set of states, where each state is a condition of the system. But what are states? 
+At a more abstract level, where words mean almost anything at all, a system is a set of things connected together (you might even call it a [graph](./graphdata), where each state is a vertex, and each transition is an edge). It's a set of states, where each state is a condition of the system. But what are states? 
 
 * Cities on a map are "states". A road trip strings them together in transitions. The map represents the system. 
 * Words in a language are states. A sentence is just a series of transitions from word to word.
@@ -64,43 +64,37 @@ At a more abstract level, where words mean almost anything at all, a system is a
 * Social media profiles are states in the network. Follows, likes, messages and friending are the transitions. 
 * Rooms in a house are states. People walking through doorways are the transitions.
 
-So states are an abstraction used to describe all these discrete, separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others. 
+So states are an abstraction used to describe these discrete, separable, things. A group of those states bound together by transitions is a system. And those systems have structure, in that some states are more likely to occur than others (ocean, land), or that some states are more likely to follow others. 
 
 We are more like to read the sequence Paris -> France than Paris -> Texas, although both series exist, just as we are more likely to drive from Los Angeles to Las Vegas than from L.A. to [Slab City](https://www.google.com/maps/place/Slab+City,+CA+92233/@33.2579686,-117.7035463,7z/data=!4m5!3m4!1s0x80d0b20527ca5ebf:0xa7f292448cbd1988!8m2!3d33.2579703!4d-115.4623352), although both places are nearby. 
 
-A list of all possible states is known as the "state space." The more states you have, the larger the state space gets, and the more complex your combinatorial problem becomes. A space of connected states is also called a graph, in which each state is a vertex, and each transition is an edge. 
+A list of all possible states is known as the "state space." The more states you have, the larger the state space gets, and the more complex your combinatorial problem becomes. 
 
 ## Markov Chains
 
-Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next. A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. It's a random walk across a graph. Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are all, always, in such corridors of probabilities; from each state, we face an array of possible future states, and those change with each step. New possibilites open up, others close behind us. 
+Since states can occur one after another, it may make sense to traverse the state space, moving from one to the next. A Markov chain is a probabilistic way to traverse a system of states. It traces a series of transitions from one state to another. It's a random walk across a graph. 
 
-Traversing a Markov chain, you're not sampling with a God's-eye view any more, like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
+Each current state may have a set of possible future states that differs from any other. For example, you can't drive straight from Atlanta to Seattle - you'll need to hit other states in between. We are all, always, in such corridors of probabilities; from each state, we face an array of possible future states, which in turn offer an array of future states two degrees away from the start, changing with each step as the state tree unfolds. New possibilites open up, others close behind us. Since we generally don't have enough compute to explore every possible state of a game tree for complex games like go, one trick that organizations like DeepMind use is Monte Carlo Tree Search to narrow the beam of possibilities to only those states that promise the most likely reward. 
 
-While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. 
+Traversing a Markov chain, you're not sampling with a God's-eye view any more like a conquering alien. You are in the middle of things, groping your way toward one of several possible future states step by probabilistic step, through a Markov Chain. 
+
+While our journeys across a state space may seem unique, like road trips across America, an infinite number of road trips would slowly give us a picture of the country as a whole, and the network that links its cities together. This is known as an equilibrium distribution. That is, given infinite random walks through a state space, you can come to know how much total time would be spent in any given state. If this condition holds, you can use Monte Carlo methods to initiate randoms "draws", or walks through the state space, in order to sample it. 
 
 ## On Markov Time
 
 Markov chains have a particular property: oblivion, or forgetting. 
 
-That is, they have no long-term memory. They know nothing beyond the present, which means that the only factor determining the transition to a future state is a Markov chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without know why. Or you might say that Markov Chains assume the entirety of the past is encoded in the present, so we don't need to know anything more than where we are to infer where we will be next. 
+That is, they have no long-term memory. They know nothing beyond the present, which means that the only factor determining the transition to a future state is a Markov chain's current state. You could say the "m" in Markov stands for "memoryless": A woman with amnesia pacing through the rooms of a house without knowing why. 
+
+Or you might say that Markov Chains assume the entirety of the past is encoded in the present, so we don't need to know anything more than where we are to infer where we will be next.<sup>[1](#one)</sup>   
 
 For an excellent interactive demo of Markov Chains, [see the visual explanation on this site](http://setosa.io/ev/markov-chains/). 
 
-So imagine the current state as the input data, and the distribution of future states as the dependent data, or the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
-
-## MCMC: Markov Chain Monte Carlo & Marco Polo
-
-Markov Chains allow us to traverse a space, sampling as we go, with each new sample *dependent* only on the one before. 
-
-Imagine a Mongol emperor, Kublai Khan, enthroned in a distant palace in a city now known as Beijing. He rules a vast empire whose boundaries, inhabitants and vassal states he hardly knows, bordered by rival Khans whose strength he needs to assess. 
-
-He has heard of strange lands from the Venetian adventurer, Marco Polo, and he determines to gauge the extent of his conquests by sending out a thousand explorers, each of them under orders to observe, each day, the name of the Khanate they are passing through. Unlike an alien dropping socks, these explorers are land-bound. The states they can reach on any given day depend on where they were the day before. Given that they are explorers uncertain of their destination, the direction they take each day is somewhat random. They are taking a random walk across 13th-century Asia, and recording it for their emperor, so that he may know the size and nature of his lands, as opposed to his neighbors. 
-
-![Alt text](./img/Mongol_Empire.jpg) 
+So imagine the current state as the input data, and the distribution of attributes related to those states (perhaps that attribute is reward, or perhaps it is simply the most likely future states), as the output. From each state in the system, by sampling you can determine the probability of what will happen next, doing so recursively at each step of the walk through the system's states.
 
 ## Probability as Space
 
-When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, or khanates, each one of them a probability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line up the letters by their frequency for 11 different languages, and you get 11 different state spaces:
+When they call it a state space, they're not joking. You can picture it, just like you can picture land and water, each one of them a probability as much as they are a physical thing. Unfold a six-sided die and you have a flattened state space in six equal pieces, shapes on a plane. Line up the letters by their frequency for 11 different languages, and you get 11 different state spaces:
 
 ![Alt text](./img/letter_frequency_multilang.png) 
 
@@ -110,19 +104,11 @@ If you wanted to look at the English language alone, you would get this set of h
 
 ![Alt text](./img/english_letter_dist.png) 
 
-## Neural Networks Mapping Transitions
-
-Neural networks map inputs to outputs. They might treat the current state as the input and map it to an output; that is, they could describe the transitions from one set of states to the next, or from raw data to the final results of a classifier.
-
-That is, the nodes of a neural network are states in a system, and the weights between those nodes affect the transitions as information passes through the net, continuing all the way through to the output layer, where it is crystallized in a decision about the data. 
-
-Remember, the output layer of a classifier, for example, might be image labels like cat, dog or human. The activations of the layer just before the classifications are connected to those labels by weights, and those weights are essentially saying: "If you see these activations, then in all likelihood the input was an image of a cat." 
-
 ## MCMC and Deep Reinforcement Learning
 
-MCMC can be used in the context of deep reinforcement learning to sample from the array of possible moves available in any given state. For more information, please see our page on [Deep Reinforcement Learning](./deepreinforcementlearning).
+MCMC can be used in the context of deep reinforcement learning to sample from the array of possible actions available in any given state. For more information, please see our page on [Deep Reinforcement Learning](./deepreinforcementlearning).
 
-## Further Deeplearning4j Tutorials
+## More Deep Learning Tutorials
 
 * [Regressions & Neural Networks](./logistic-regression.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
@@ -146,3 +132,7 @@ MCMC can be used in the context of deep reinforcement learning to sample from th
 * [Markov Chain Monte Carlo Without all the Bullshit](https://jeremykun.com/2015/04/06/markov-chain-monte-carlo-without-all-the-bullshit/)
 * [A Zero-Math Introduction to Markov Chain Monte Carlo Methods](https://towardsdatascience.com/a-zero-math-introduction-to-markov-chain-monte-carlo-methods-dcba889e0c50)
 * [Hamiltonian Monte Carlo explained](http://arogozhnikov.github.io/2016/12/19/markov_chain_monte_carlo.html)
+
+## <a name="footnote">Footnotes</a>
+
+<a name="one">1)</a> *It's interesting to think about how these ways of thinking translate, or fail to translate, to real life. For example, while we might agree that the entirety of the past is encoded in the present moment, we cannot know the entirety of the present moment. The walk of any individual agent through life will reveal certain elements of the past at time step 1, and others at time step 10, and others still will not be revealed at all because in life we are faced with imperfect information -- unlike in Go or Chess. [Recurrent neural nets](./lstm.html) are structurally Markovian, in that the tensors passed forward through their hidden units contain everything the network needs to know about the past. LSTMs are thought to be more effective at retaining information about a larger state space (more of the past), than other algorithms such as Hidden Markov Models; i.e. they decrease how imperfect the information is upon which they base their decisions.* 
