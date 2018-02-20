@@ -311,13 +311,14 @@ To train complex neural networks on very large datasets, a deep learning cluster
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
-* [Convolutional Networks](./convolutionalnets.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
 * [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
 * [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
 * [Using Graph Data with Deep Learning](./graphdata.html)
 * [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
 * [MNIST for Beginners](./mnist-for-beginners.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
 * [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
