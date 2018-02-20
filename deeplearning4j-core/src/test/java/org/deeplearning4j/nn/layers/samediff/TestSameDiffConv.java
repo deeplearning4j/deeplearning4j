@@ -160,10 +160,7 @@ public class TestSameDiffConv {
                                             MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                                             net2.init();
 
-                                            assertEquals(net2.params(), net.params());
-
                                             //Check params:
-                                            assertEquals(msg, net2.params(), net.params());
                                             Map<String, INDArray> params1 = net.paramTable();
                                             Map<String, INDArray> params2 = net2.paramTable();
                                             assertEquals(msg, params2, params1);

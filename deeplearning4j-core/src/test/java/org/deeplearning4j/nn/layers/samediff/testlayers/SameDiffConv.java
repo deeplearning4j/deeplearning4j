@@ -83,31 +83,11 @@ public class SameDiffConv extends BaseSameDiffLayer {
         params.clear();
         int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-        int[] biasShape = new int[]{1, nOut};
-        params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+        if(hasBias) {
+            int[] biasShape = new int[]{1, nOut};
+            params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
+        }
     }
-
-//    @Override
-//    public char paramReshapeOrder(String param) {
-//        //To match DL4J
-//        return 'c';
-//    }
-
-//    @Override
-//    public Map<String, int[]> paramShapes() {
-//        if (paramShapes == null) {
-//            int[] weightsShape = new int[]{nOut, nIn, kernel[0], kernel[1]};
-//            Map<String, int[]> m = new HashMap<>();
-//            m.put(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
-//            if(hasBias) {
-//                int[] biasShape = new int[]{1, nOut};
-//                m.put(ConvolutionParamInitializer.BIAS_KEY, biasShape);
-//            }
-//            paramShapes = m;
-//        }
-//        return paramShapes;
-//    }
-
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {

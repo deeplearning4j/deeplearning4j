@@ -7,19 +7,13 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.samediff.impl.DefaultSDLayerParams;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.params.SameDiffParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @Data
@@ -43,13 +37,18 @@ public abstract class AbstractSameDiffLayer extends Layer {
         this.l2Bias = builder.l2Bias;
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
-
-        layerParams = new DefaultSDLayerParams();
-        defineParameters(layerParams);
     }
 
     protected AbstractSameDiffLayer(){
         //No op constructor for Jackson
+    }
+
+    public SDLayerParams getLayerParams(){
+        if(layerParams == null){
+            layerParams = new SDLayerParams();
+            defineParameters(layerParams);
+        }
+        return layerParams;
     }
 
     @Override
@@ -60,12 +59,6 @@ public abstract class AbstractSameDiffLayer extends Layer {
 
     @Override
     public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
-
-//    public abstract List<String> weightKeys();
-//
-//    public abstract List<String> biasKeys();
-//
-//    public abstract Map<String,int[]> paramShapes();
 
     public abstract void defineParameters(SDLayerParams params);
 

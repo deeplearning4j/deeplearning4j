@@ -64,9 +64,9 @@ public class TestSameDiffDense {
                     Activation.IDENTITY,
                     Activation.SOFTPLUS,
                     Activation.SOFTSIGN,
-//                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                    Activation.CUBE,
                     Activation.HARDTANH,
-//                 Activation.RELU      //JVM crash
+                    Activation.RELU
             };
 
             for (Activation a : afns) {

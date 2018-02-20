@@ -100,6 +100,11 @@ public class SameDiffDense extends BaseSameDiffLayer {
         }
     }
 
+    public char paramReshapeOrder(String param){
+        //To match DL4J
+        return 'f';
+    }
+
     public static class Builder extends BaseSameDiffLayer.Builder<Builder> {
 
         private int nIn;
