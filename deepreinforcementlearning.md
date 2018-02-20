@@ -251,6 +251,7 @@ public class A3CALE {
 * [Reinforcement Learning and DQN, learning to play from pixels](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
 * Video: [Richard Sutton on Temporal Difference Learning](https://www.youtube.com/watch?v=EeMCEQa85tw)
 * [A Brief Survey of Deep Reinforcement Learning](https://arxiv.org/pdf/1708.05866.pdf)
+* [The Policy of Truth, by Ben Recht](http://www.argmin.net/2018/02/20/reinforce/)
 
 ## Theory
 
