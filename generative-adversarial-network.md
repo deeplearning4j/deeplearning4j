@@ -271,6 +271,7 @@ if __name__ == '__main__':
 * [Regressions & Neural Networks](./logistic-regression)
 * [Deep Convolutional Networks (CNNs)](./convolutionalnetwork)
 * [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
 * [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
 * [Open Datasets for Deep Learning](./opendata)
 * [Inference: Machine Learning Model Server](./modelserver)
