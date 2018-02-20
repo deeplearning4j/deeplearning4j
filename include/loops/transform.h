@@ -1199,14 +1199,34 @@ __device__ void pullRowsKernelGeneric(T *x,
     int zEWS = shape::elementWiseStride(zTadShapeInfo);
     int tadLength = shape::length(tadShapeInfo);
 
-    for (int idx = blockIdx.x; idx < n; idx += gridDim.x) {
-        int tadOffsetForBlock = tadOffsets[indexes[idx]];
 
-        T *rX = x + tadOffsetForBlock;
-        T *rZ = z + zTadOffsets[idx];
+    if (xEWS >= 1 && zEWS >= 1) {
+        for (int idx = blockIdx.x; idx < n; idx += gridDim.x) {
+            T *rX = x + tadOffsets[indexes[idx]];
+            T *rZ = z + zTadOffsets[idx];
 
-        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            rZ[i * zEWS] = rX[i * xEWS];
+            for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                rZ[i * zEWS] = rX[i * xEWS];
+            }
+        }
+    } else {
+
+        int xCoord[MAX_RANK];
+		int zCoord[MAX_RANK];
+
+        for (int idx = blockIdx.x; idx < n; idx += gridDim.x) {
+            T *rX = x + tadOffsets[indexes[idx]];
+            T *rZ = z + zTadOffsets[idx];
+
+            for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+                shape::ind2subC(shape::rank(tadShapeInfo),shape::shapeOf(tadShapeInfo), i, xCoord);
+		    	shape::ind2subC(shape::rank(zTadShapeInfo),shape::shapeOf(zTadShapeInfo), i, zCoord);
+
+		    	Nd4jIndex xOffset = shape::getOffset(0, shape::shapeOf(tadShapeInfo), shape::stride(tadShapeInfo), xCoord, shape::rank(tadShapeInfo));
+	    		Nd4jIndex zOffset = shape::getOffset(0, shape::shapeOf(zTadShapeInfo), shape::stride(zTadShapeInfo), zCoord, shape::rank(zTadShapeInfo));
+
+                rZ[zOffset] = rX[xOffset];
+            }
         }
     }
 }
