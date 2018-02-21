@@ -25,10 +25,12 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Erfc function
+ * Element-wise exponential function minus 1, i.e. for each element x in a tensor computes the
+ * transformation exp(x) - 1.
  *
  * @author raver119@gmail.com
   */
@@ -84,10 +86,10 @@ public class Expm1 extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 }

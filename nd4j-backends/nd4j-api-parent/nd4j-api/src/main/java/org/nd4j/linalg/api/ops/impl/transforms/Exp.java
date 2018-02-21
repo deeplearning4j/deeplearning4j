@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Exp elementwise function
+ * Element-wise exponential function
  *
  * @author Adam Gibson
  */
@@ -45,7 +45,8 @@ public class Exp extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Exp() {}
+    public Exp() {
+    }
 
     public Exp(INDArray x, INDArray z) {
         super(x, z);
@@ -75,7 +76,7 @@ public class Exp extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-      return "Exp";
+        return "Exp";
     }
 
     @Override
@@ -83,10 +84,9 @@ public class Exp extends BaseTransformOp {
         return "Exp";
     }
 
-      @Override
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().mul(f().exp(arg()),i_v.get(0));
-
+        SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
         return Collections.singletonList(ret);
     }
 

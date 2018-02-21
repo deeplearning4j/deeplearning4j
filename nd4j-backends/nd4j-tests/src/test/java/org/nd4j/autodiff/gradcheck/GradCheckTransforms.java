@@ -265,7 +265,7 @@ public class GradCheckTransforms {
         Nd4j.getRandom().setSeed(12345);
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 56; i++) {
+        for (int i = 0; i < 57; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -568,6 +568,10 @@ public class GradCheckTransforms {
                     expOut =  Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
                     t = sd.erfc(in);
+                    break;
+                case 56:
+                    t = sd.expm1(in);
+                    expOut = Transforms.expm1(ia, true);
                     break;
                 default:
                     throw new RuntimeException();

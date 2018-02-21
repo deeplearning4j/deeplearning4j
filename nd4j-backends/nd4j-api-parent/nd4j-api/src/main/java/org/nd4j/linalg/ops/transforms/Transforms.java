@@ -909,6 +909,17 @@ public class Transforms {
     }
 
 
+    /**
+     * Elementwise exponential - 1 function
+     *
+     * @param ndArray
+     * @param dup
+     * @return
+     */
+    public static INDArray expm1(INDArray ndArray, boolean dup) {
+        return exec(dup ? new Exp(ndArray, ndArray.dup()) : new Expm1(ndArray));
+    }
+
 
     /**
      * Identity function
