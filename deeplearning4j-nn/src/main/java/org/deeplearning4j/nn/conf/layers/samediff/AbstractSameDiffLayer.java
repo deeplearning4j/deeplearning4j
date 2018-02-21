@@ -62,10 +62,23 @@ public abstract class AbstractSameDiffLayer extends Layer {
     @Override
     public abstract InputPreProcessor getPreProcessorForInputType(InputType inputType);
 
+    /**
+     * Define the parameters for the network. Use {@link SDLayerParams#addWeightParam(String, int...)} and
+     * {@link SDLayerParams#addBiasParam(String, int[])}
+     * @param params Object used to set parameters for this layer
+     */
     public abstract void defineParameters(SDLayerParams params);
 
+    /**
+     * Set the initial parameter values for this layer, if required
+     * @param params Parameter arrays that may be initialized
+     */
     public abstract void initializeParameters(Map<String,INDArray> params);
 
+    /**
+     * Apply the global configuration (weight init, activation function, etc) to this layer
+     * @param globalConfig Global configuration
+     */
     public abstract void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig);
 
     @Override
@@ -109,6 +122,12 @@ public abstract class AbstractSameDiffLayer extends Layer {
         return new LayerMemoryReport(); //TODO
     }
 
+    /**
+     * Returns the memory layout ('c' or 'f' order - i.e., row/column major) of the parameters. In most cases,
+     * this can/should be left
+     * @param param Name of the parameter
+     * @return Memory layout ('c' or 'f') of the parameter
+     */
     public char paramReshapeOrder(String param){
         return 'c';
     }

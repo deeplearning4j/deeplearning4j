@@ -1,6 +1,8 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import com.google.common.base.Preconditions;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -9,7 +11,11 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.*;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+/**
+ * SDLayerParams is used to define the parameters for a Deeplearning4j SameDiff layer
+ *
+ * @author Alex Black
+ */
 @JsonIgnoreProperties({"paramsList", "weightParamsList", "biasParamsList"})
 @NoArgsConstructor
 public class SDLayerParams {
@@ -27,20 +33,42 @@ public class SDLayerParams {
         this.biasParams = biasParams;
     }
 
-    public void addWeightParam(String paramKey, int[] paramShape) {
+    /**
+     * Add a weight parameter to the layer, with the specified shape. For example, a standard fully connected layer
+     * could have weight parameters with shape [numInputs, layerSize]
+     *
+     * @param paramKey   The parameter key (name) for the weight parameter
+     * @param paramShape Shape of the weight parameter array
+     */
+    public void addWeightParam(@NonNull String paramKey, @NonNull int... paramShape) {
+        Preconditions.checkArgument(paramShape.length > 0, "Provided weight parameter shape is" +
+                " invalid: length 0 provided for shape. Parameter: " + paramKey);
         weightParams.put(paramKey, paramShape);
         paramsList = null;
         weightParamsList = null;
         biasParamsList = null;
     }
 
-    public void addBiasParam(String paramKey, int[] paramShape) {
+    /**
+     * Add a bias parameter to the layer, with the specified shape. For example, a standard fully connected layer
+     * could have bias parameters with shape [1, layerSize]
+     *
+     * @param paramKey   The parameter key (name) for the bias parameter
+     * @param paramShape Shape of the bias parameter array
+     */
+    public void addBiasParam(@NonNull String paramKey, @NonNull int[] paramShape) {
+        Preconditions.checkArgument(paramShape.length > 0, "Provided mia- parameter shape is" +
+                " invalid: length 0 provided for shape. Parameter: " + paramKey);
         biasParams.put(paramKey, paramShape);
         paramsList = null;
         weightParamsList = null;
         biasParamsList = null;
     }
 
+    /**
+     * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, int...)} and
+     * {@link #addBiasParam(String, int[])}
+     */
     public List<String> getParameterKeys() {
         if(paramsList == null) {
             List<String> out = new ArrayList<>();
@@ -51,6 +79,10 @@ public class SDLayerParams {
         return paramsList;
     }
 
+    /**
+     * @return Get a list of parameter names / keys for weight parameters only, previously added via
+     * {@link #addWeightParam(String, int...)}
+     */
     public List<String> getWeightParameterKeys() {
         if(weightParamsList == null){
             weightParamsList = Collections.unmodifiableList(new ArrayList<>(weightParams.keySet()));
@@ -58,6 +90,10 @@ public class SDLayerParams {
         return weightParamsList;
     }
 
+    /**
+     * @return Get a list of parameter names / keys for weight parameters only, previously added via
+     * {@link #addWeightParam(String, int...)}
+     */
     public List<String> getBiasParameterKeys() {
         if(biasParamsList == null){
             biasParamsList = Collections.unmodifiableList(new ArrayList<>(biasParams.keySet()));
@@ -65,6 +101,11 @@ public class SDLayerParams {
         return biasParamsList;
     }
 
+    /**
+     * Get the parameter shapes for all parameters
+     *
+     * @return Map of parameter shapes, by parameter
+     */
     public Map<String, int[]> getParamShapes() {
         Map<String, int[]> map = new LinkedHashMap<>();
         map.putAll(weightParams);
@@ -72,6 +113,9 @@ public class SDLayerParams {
         return map;
     }
 
+    /**
+     * Clear any previously set weight/bias parameters (including their shapes)
+     */
     public void clear() {
         weightParams.clear();
         biasParams.clear();
@@ -80,6 +124,7 @@ public class SDLayerParams {
         biasParamsList = null;
     }
 
+    @Override
     public boolean equals(Object o) {
         if(!(o instanceof SDLayerParams)){
             return false;
@@ -101,11 +146,8 @@ public class SDLayerParams {
         return true;
     }
 
+    @Override
     public int hashCode() {
         return weightParams.hashCode() ^ biasParams.hashCode();
-    }
-
-    protected boolean canEqual(Object other) {
-        return other instanceof SDLayerParams;
     }
 }
