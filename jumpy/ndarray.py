@@ -171,8 +171,8 @@ def broadcast(x, y):
             yt.append(xd)
             rep_y = True
         else:
-            raise Exception('Unable to broadcast shapes ' + str(xs) + ''
-                            ' and ' + str(ys))
+            raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
+                            ' and ' + str(_ys))
     if rep_x:
         x = x.repmat(*xt)
     if rep_y:
