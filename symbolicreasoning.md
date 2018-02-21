@@ -62,7 +62,9 @@ A hard-coded rule is a preconception. It is one form of assumption, and a strong
 
 ## Problems with Symbolic AI (GOFAI)
 
+One of the main stumbling blocks of symbolic AI, or GOFAI, was the difficulty of revising beliefs once they were encoded in a rules engine. Expert systems are monotonic; that is, the more rules you add, the more knowledge is encoded in the system, but additional rules can't undo old knowledge. *Monotonic* basically means *one direction*; i.e. when one thing goes up, another thing goes up. Because machine learning algorithms can be retrained on new data, and will revise their parameters based on that new data, they are better at encoding tentative knowledge that can be retracted later if necessary. 
 
+A second flaw in symbolic reasoning is that the computer itself doesn't know what the symbols mean; i.e. they are not necessarily linked to any other representations of the world in a non-symbolic way. Again, this stands in contrast to neural nets, which can link symbols to vectorized representations of the data, which are in turn just translations of raw sensory data. So the main challenge, when we think about GOFAI and neural nets, is how to ground symbols, or relate them to other forms of meaning that would allow computers to map the changing raw sensations of the world to symbols and then reason about them. 
 
 ## Combining Deep Neural Nets and Symbolic Reasoning
 
