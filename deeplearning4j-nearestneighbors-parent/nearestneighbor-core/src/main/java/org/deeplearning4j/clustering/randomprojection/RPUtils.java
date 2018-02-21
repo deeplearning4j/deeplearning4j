@@ -7,6 +7,7 @@ import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Accumulation;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -131,7 +132,36 @@ public class RPUtils {
      * @param similarityFunction the similarity function to use
      * @return the indices (in order) in the ndarray
      */
+    public static List<Pair<Double,Integer>> queryAllWithDistances(INDArray toQuery,INDArray X,List<RPTree> trees,int n,String similarityFunction) {
+        if(trees.isEmpty()) {
+            throw new ND4JIllegalArgumentException("Trees is empty!");
+        }
+
+        List<Integer> candidates = getCandidates(toQuery, trees,similarityFunction);
+        val sortedCandidates = sortCandidates(toQuery,X,candidates,similarityFunction);
+        int numReturns = Math.min(n,sortedCandidates.size());
+        List<Pair<Double,Integer>> ret = new ArrayList<>(numReturns);
+        for(int i = 0; i < numReturns; i++) {
+            ret.add(sortedCandidates.get(i));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Query all trees using the given input and data
+     * @param toQuery the query vector
+     * @param X the input data to query
+     * @param trees the trees to query
+     * @param n the number of results to search for
+     * @param similarityFunction the similarity function to use
+     * @return the indices (in order) in the ndarray
+     */
     public static INDArray queryAll(INDArray toQuery,INDArray X,List<RPTree> trees,int n,String similarityFunction) {
+        if(trees.isEmpty()) {
+            throw new ND4JIllegalArgumentException("Trees is empty!");
+        }
+
         List<Integer> candidates = getCandidates(toQuery, trees,similarityFunction);
         val sortedCandidates = sortCandidates(toQuery,X,candidates,similarityFunction);
         int numReturns = Math.min(n,sortedCandidates.size());
@@ -161,7 +191,7 @@ public class RPUtils {
         List<Pair<Double,Integer>> ret = new ArrayList<>();
         for(int i = 0; i < candidates.size(); i++) {
             if(candidates.get(i) != prevIdx) {
-                ret.add(Pair.of(-computeDistance(similarityFunction,X.slice(candidates.get(i)),x),candidates.get(i)));
+                ret.add(Pair.of(computeDistance(similarityFunction,X.slice(candidates.get(i)),x),candidates.get(i)));
             }
 
             prevIdx = i;
@@ -228,14 +258,14 @@ public class RPUtils {
      * @return the list of indices as the search results
      */
     public static List<Integer> getCandidates(INDArray x,List<RPTree> roots,String similarityFunction) {
-        List<Integer> ret = new ArrayList<>();
+        Set<Integer> ret = new LinkedHashSet<>();
         for(RPTree tree : roots) {
             RPNode root = tree.getRoot();
             RPNode query = query(root,tree.getRpHyperPlanes(),x,similarityFunction);
             ret.addAll(query.getIndices());
         }
 
-        return ret;
+        return new ArrayList<>(ret);
     }
 
 
@@ -266,6 +296,28 @@ public class RPUtils {
 
     }
 
+
+    /**
+     * Compute the distance between 2 vectors
+     * given a function name. Valid function names:
+     * euclidean: euclidean distance
+     * cosinedistance: cosine distance
+     * cosine similarity: cosine similarity
+     * manhattan: manhattan distance
+     * jaccard: jaccard distance
+     * hamming: hamming distance
+     * @param function the function to use (default euclidean distance)
+     * @param x the first vector
+     * @param y the second vector
+     * @return the distance between the 2 vectors given the inputs
+     */
+    public static INDArray computeDistanceMulti(String function,INDArray x,INDArray y,INDArray result) {
+        Accumulation op = (Accumulation) getOp(function, x, y, result);
+        Nd4j.getExecutioner().exec(op,-1);
+        return op.z();
+    }
+
+    /**
 
     /**
      * Compute the distance between 2 vectors

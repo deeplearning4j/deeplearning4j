@@ -21,8 +21,8 @@ public class RPTreeTest {
 
     @Test
     public void testRPTree() throws Exception {
-        DataSetIterator mnist = new IrisDataSetIterator(150,150);
-        RPTree rpTree = new RPTree(4,50);
+        DataSetIterator mnist = new MnistDataSetIterator(150,150);
+        RPTree rpTree = new RPTree(784,50);
         DataSet d = mnist.next();
         NormalizerStandardize normalizerStandardize = new NormalizerStandardize();
         normalizerStandardize.fit(d);
@@ -48,7 +48,7 @@ public class RPTreeTest {
         minMaxNormalizer.fit(mnist);
         DataSet d = mnist.next();
         minMaxNormalizer.transform(d.getFeatures());
-        RPForest rpForest = new RPForest(50, 50, "euclidean");
+        RPForest rpForest = new RPForest(100, 100, "euclidean");
         rpForest.fit(d.getFeatures());
         for (int i = 0; i < 10; i++) {
             INDArray indexes = rpForest.queryAll(d.getFeatures().slice(i), 10);
@@ -57,8 +57,8 @@ public class RPTreeTest {
     }
 
     @Test
-    public void testRpTreeMaxNodes() {
-        DataSetIterator mnist = new IrisDataSetIterator(150,150);
+    public void testRpTreeMaxNodes() throws Exception {
+        DataSetIterator mnist = new MnistDataSetIterator(150,150);
         RPForest rpTree = new RPForest(4,4,"euclidean");
         DataSet d = mnist.next();
         NormalizerStandardize normalizerStandardize = new NormalizerStandardize();

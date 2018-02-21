@@ -1,10 +1,8 @@
-package org.deeplearning4j.largevis;
+package org.deeplearning4j.umap;
 
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.StopWatch;
-import org.deeplearning4j.clustering.randomprojection.RPForest;
 import org.deeplearning4j.clustering.randomprojection.RPUtils;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -13,23 +11,14 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.primitives.Counter;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.MathUtils;
-import org.nd4j.list.FloatNDArrayList;
 import org.nd4j.list.IntNDArrayList;
-import org.nd4j.list.matrix.IntMatrixNDArrayList;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.XavierFanInInitScheme;
 
@@ -39,7 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -79,7 +67,7 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Data
 @Slf4j
-public class LargeVis {
+public class UMap {
 
 
     private NNDescent nnDescent;
@@ -156,29 +144,29 @@ public class LargeVis {
 
 
     @Builder
-    public LargeVis(INDArray vec,
-                    int maxSize,
-                    String distanceFunction,
-                    int numTrees,
-                    int outDims,
-                    int nNegatives,
-                    double gamma,
-                    double initialAlpha,
-                    double perplexity,
-                    int nPropagations,
-                    long seed,
-                    int nNeighbors,
-                    Boolean normalize,
-                    int iterationCount,
-                    IUpdater updater,
-                    int nTrees,
-                    WeightInitScheme weightInitScheme,
-                    GradientNormalization gradientNormalization,
-                    double gradClipValue,
-                    WorkspaceMode workspaceMode,
-                    int numWorkers,
-                    int nSamples,
-                    Boolean sample) {
+    public UMap(INDArray vec,
+                int maxSize,
+                String distanceFunction,
+                int numTrees,
+                int outDims,
+                int nNegatives,
+                double gamma,
+                double initialAlpha,
+                double perplexity,
+                int nPropagations,
+                long seed,
+                int nNeighbors,
+                Boolean normalize,
+                int iterationCount,
+                IUpdater updater,
+                int nTrees,
+                WeightInitScheme weightInitScheme,
+                GradientNormalization gradientNormalization,
+                double gradClipValue,
+                WorkspaceMode workspaceMode,
+                int numWorkers,
+                int nSamples,
+                Boolean sample) {
 
 
 
@@ -276,12 +264,13 @@ public class LargeVis {
                 .iterationCount(iterationCount)
                 .nNegatives(nNegatives)
                 .normalize(normalize)
+                .numTrees(nTrees)
                 .nPropagations(nPropagations)
                 .numWorkers(numWorkers)
                 .perplexity(perplexity)
                 .nSamples(nSamples)
                 .sample(sample)
-                .nTrees(numTrees)
+                .numTrees(numTrees)
                 .nNeighbors(nNeighbors)
                 .seed(seed)
                 .workspaceMode(workspaceMode)

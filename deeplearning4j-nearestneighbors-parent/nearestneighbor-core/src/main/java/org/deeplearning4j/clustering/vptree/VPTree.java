@@ -132,7 +132,7 @@ public class VPTree {
      * @param similarityFunction
      */
     public VPTree(INDArray items, String similarityFunction) {
-        this(items, similarityFunction, 1, true);
+        this(items, similarityFunction, 1, false);
     }
 
     /**

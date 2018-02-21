@@ -48,7 +48,7 @@ public class LargeVisTest {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         DataSet iris = new IrisDataSetIterator(150,150).next();
         LargeVis largeVis = LargeVis.builder().gamma(1.0)
-                .vec(iris.getFeatureMatrix())
+                .vec(iris.getFeatureMatrix()).numWorkers(1).sample(false)
                 .normalize(true).gradientNormalization(GradientNormalization.None)
                 .seed(42).build();
 
@@ -60,20 +60,20 @@ public class LargeVisTest {
         double currLr = 1;
         Nd4j.getRandom().setSeed(12345);
 
-        INDArray grads = largeVis.gradientsFor(x,y,0,currLr,true);
+        double grad = largeVis.grad(x,y,0);
         INDArray visX = largeVis.getVis().slice(x);
         INDArray visY = largeVis.getVis().slice(y);
         double epsilon = 1e-6;
 
         for (int v = 0; v < visX.length(); v++) {
-            double backpropGradient = grads.getRow(1).getDouble(v);
+            double backpropGradient = largeVis.grad(x,y,0);
             Nd4j.getRandom().setSeed(12345);
             double origParamValue = visY.getDouble(v);
             visY.putScalar(v, origParamValue + epsilon);
-            double scorePlus = largeVis.errorWrt(x, y, 2, currLr, false,false).getDouble(v);
+            double scorePlus = largeVis.distance(x,y);
             visY.putScalar(v, origParamValue - epsilon);
             Nd4j.getRandom().setSeed(12345);
-            double scoreMinus = largeVis.errorWrt(x, y, 2, currLr, false,false).getDouble(v);
+            double scoreMinus = largeVis.distance(x,y);
             visY.putScalar(v, origParamValue); //reset param so it doesn't affect later calcs
 
 

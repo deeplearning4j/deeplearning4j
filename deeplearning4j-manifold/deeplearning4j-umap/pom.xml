@@ -7,13 +7,18 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-largevis</artifactId>
+    <artifactId>deeplearning4j-umap</artifactId>
     <packaging>jar</packaging>
 
-    <name>deeplearning4j-largevis</name>
+    <name>deeplearning4j-umap</name>
 
 
     <dependencies>
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-nn-descent</artifactId>
+            <version>${project.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
@@ -32,11 +37,6 @@
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>nearestneighbor-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-nn-descent</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>

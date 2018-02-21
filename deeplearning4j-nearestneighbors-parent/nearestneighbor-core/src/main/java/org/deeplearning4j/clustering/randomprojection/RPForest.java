@@ -2,8 +2,10 @@ package org.deeplearning4j.clustering.randomprojection;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -59,6 +61,19 @@ public class RPForest {
     public INDArray queryAll(INDArray toQuery,int n) {
         return RPUtils.queryAll(toQuery,data,trees,n,similarityFunction);
     }
+
+
+    /**
+     * Query all with the distances
+     * sorted by index
+     * @param query the query vector
+     * @param numResults the number of results to return
+     * @return a list of samples
+     */
+    public List<Pair<Double, Integer>> queryWithDistances(INDArray query, int numResults) {
+        return RPUtils.queryAllWithDistances(query,this.data, trees,numResults,similarityFunction);
+    }
+
 
 
 }

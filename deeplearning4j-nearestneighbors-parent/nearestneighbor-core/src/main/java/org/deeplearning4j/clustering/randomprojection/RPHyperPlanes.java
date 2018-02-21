@@ -20,6 +20,9 @@ public class RPHyperPlanes {
     }
 
 
+    /**
+     * Add a new random element to the hyper plane.
+     */
     public void addRandomHyperPlane() {
         INDArray newPlane = Nd4j.randn(new int[] {1,dim});
         newPlane.divi(newPlane.normmaxNumber());

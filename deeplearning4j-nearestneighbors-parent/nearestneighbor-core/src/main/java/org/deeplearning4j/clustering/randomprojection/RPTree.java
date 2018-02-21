@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 import org.omg.SendingContext.RunTime;
 
 import java.util.ArrayList;
@@ -59,6 +60,10 @@ public class RPTree {
        this(dim,maxSize,"euclidean");
     }
 
+    /**
+     *  Build the tree with the given input data
+     * @param x
+     */
 
     public void buildTree(INDArray x) {
         this.X = x;
@@ -86,6 +91,17 @@ public class RPTree {
         return nodes;
     }
 
+
+    /**
+     * Query all with the distances
+     * sorted by index
+     * @param query the query vector
+     * @param numResults the number of results to return
+     * @return a list of samples
+     */
+    public List<Pair<Double, Integer>> queryWithDistances(INDArray query, int numResults) {
+            return RPUtils.queryAllWithDistances(query,X,Arrays.asList(this),numResults,similarityFunction);
+    }
 
     public INDArray query(INDArray query,int numResults) {
         return RPUtils.queryAll(query,X,Arrays.asList(this),numResults,similarityFunction);
