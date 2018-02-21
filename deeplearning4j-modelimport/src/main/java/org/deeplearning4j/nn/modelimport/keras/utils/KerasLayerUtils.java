@@ -353,6 +353,7 @@ public class KerasLayerUtils {
     public static int[] getInputShapeFromConfig(Map<String, Object> layerConfig,
                                                 KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
+        // TODO: validate this. shouldn't we also have INPUT_SHAPE checked?
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE()))
             return null;

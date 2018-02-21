@@ -38,6 +38,12 @@ public class KerasWeightSettingTests {
                 importEmbeddingLstm(embeddingLstmPath);
                 System.out.println("***** Successfully imported " + embeddingLstmPath);
 
+                if (version == 2) {
+                    String embeddingConv1dPath = "weights/embedding_conv1d_" + backend + "_" + version + ".h5";
+                    importEmbeddingConv1D(embeddingConv1dPath);
+                    System.out.println("***** Successfully imported " + embeddingConv1dPath);
+                }
+
                 String simpleRnnPath = "weights/simple_rnn_" + backend + "_" + version + ".h5";
                 importSimpleRnn(simpleRnnPath);
                 System.out.println("***** Successfully imported " + simpleRnnPath);
@@ -96,7 +102,28 @@ public class KerasWeightSettingTests {
 
         INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
         INDArray output = model.output(inEmbedding);
-        assert Arrays.equals(output.shape(), new int[] {mb, nOut, inputLength});
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
+
+    }
+
+    private static void importEmbeddingConv1D(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        int nIn = 4;
+        int nOut = 6;
+        int outputDim = 5;
+        int inputLength = 10;
+        int kernel = 3;
+        int mb = 42;
+
+        INDArray embeddingWeight = model.getLayer(0).getParam("W");
+        int[] embeddingWeightShape = embeddingWeight.shape();
+        assert (embeddingWeightShape[0] == nIn);
+        assert (embeddingWeightShape[1] == outputDim);
+
+        INDArray inEmbedding = Nd4j.zeros(mb, 1, inputLength);
+        INDArray output = model.output(inEmbedding);
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
 
     }
 

@@ -98,10 +98,10 @@ public class KerasConvolutionUtils {
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DILATION_RATE()) && dimension == 1) {
             if ((int) layerConfig.get("keras_version") == 2) {
                 List<Integer> atrousRateList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-                atrousRate = ArrayUtil.toArray(atrousRateList);
+                atrousRate = new int[] {atrousRateList.get(0), atrousRateList.get(0)};
             } else {
                 int atrous = (int) innerConfig.get(conf.getLAYER_FIELD_DILATION_RATE());
-                atrousRate = new int[] { atrous };
+                atrousRate = new int[] { atrous, atrous };
             }
         } else {
             // If we are using keras 1, for regular convolutions, there is no "atrous" argument, for keras
