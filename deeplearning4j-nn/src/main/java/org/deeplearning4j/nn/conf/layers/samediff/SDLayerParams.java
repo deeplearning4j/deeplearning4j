@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.samediff;
 
 import com.google.common.base.Preconditions;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -18,6 +19,7 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"paramsList", "weightParamsList", "biasParamsList"})
 @NoArgsConstructor
+@Data
 public class SDLayerParams {
 
     private Map<String,int[]> weightParams = new LinkedHashMap<>();
@@ -69,6 +71,7 @@ public class SDLayerParams {
      * @return Get a list of parameter names / keys (previously added via {@link #addWeightParam(String, int...)} and
      * {@link #addBiasParam(String, int[])}
      */
+    @JsonIgnore
     public List<String> getParameterKeys() {
         if(paramsList == null) {
             List<String> out = new ArrayList<>();
@@ -83,6 +86,7 @@ public class SDLayerParams {
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
      * {@link #addWeightParam(String, int...)}
      */
+    @JsonIgnore
     public List<String> getWeightParameterKeys() {
         if(weightParamsList == null){
             weightParamsList = Collections.unmodifiableList(new ArrayList<>(weightParams.keySet()));
@@ -94,6 +98,7 @@ public class SDLayerParams {
      * @return Get a list of parameter names / keys for weight parameters only, previously added via
      * {@link #addWeightParam(String, int...)}
      */
+    @JsonIgnore
     public List<String> getBiasParameterKeys() {
         if(biasParamsList == null){
             biasParamsList = Collections.unmodifiableList(new ArrayList<>(biasParams.keySet()));
@@ -106,6 +111,7 @@ public class SDLayerParams {
      *
      * @return Map of parameter shapes, by parameter
      */
+    @JsonIgnore
     public Map<String, int[]> getParamShapes() {
         Map<String, int[]> map = new LinkedHashMap<>();
         map.putAll(weightParams);
