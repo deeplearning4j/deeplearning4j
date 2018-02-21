@@ -259,22 +259,22 @@ if __name__ == '__main__':
 * [On Discriminative vs. Generative classifiers: A comparison of logistic regression and naive Bayes, by Andrew Ng and Michael I. Jordan](http://papers.nips.cc/paper/2020-on-discriminative-vs-generative-classifiers-a-comparison-of-logistic-regression-and-naive-bayes.pdf) 
 * [The Math Behind Generative Adversarial Networks](https://lilianweng.github.io/lil-log/2017/08/20/from-GAN-to-WGAN.html)
 
-### <a name="beginner">Other Machine Learning Tutorials</a>
-* [Introduction to Neural Networks](./neuralnet-overview)
-* [Deep Reinforcement Learning](./deepreinforcementlearning)
-* [Symbolic AI and Deep Learning](./symbolicreasoning)
-* [Recurrent Networks and LSTMs](./lstm)
-* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron)
-* [Using Graph Data with Deep Learning](./graphdata)
-* [Word2Vec: Neural Embeddings for NLP](./word2vec)
-* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector)
-* [Regressions & Neural Networks](./logistic-regression)
-* [Deep Convolutional Networks (CNNs)](./convolutionalnetwork)
+### <a name="beginner">More Machine Learning Tutorials</a>
+* [Introduction to Neural Networks](./neuralnet-overview.html)
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Symbolic AI and Deep Learning](./symbolicreasoning.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [Word2Vec: Neural Embeddings for NLP](./word2vec.html)
+* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector.html)
+* [Regressions & Neural Networks](./logistic-regression.html)
+* [Deep Convolutional Networks (CNNs)](./convolutionalnetwork.html)
 * [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
 * [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Open Datasets for Deep Learning](./opendata)
-* [Inference: Machine Learning Model Server](./modelserver)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Open Datasets for Deep Learning](./opendata.html)
+* [Inference: Machine Learning Model Server](./modelserver.html)
 
 ## GAN Use Cases
 
