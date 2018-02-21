@@ -454,12 +454,6 @@ def from_np(np_arr):
     arr_shape = np_arr.shape
     return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0))
 
-def to_np(jp_array):
-    array = jp_array.array  # INDArray instance
-    shape = array.shape()
-    length = array.length()
-    scalars = [array.getDouble(i) for i in range(length)]
-    return np.array(scalars).reshape(shape)
 
 if __name__ == "__main__":
     init()
