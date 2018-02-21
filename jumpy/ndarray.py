@@ -125,12 +125,16 @@ class ndarray(object):
 
     def __init__(self, data, dtype=None):
         # we ignore dtype for now
+        self.is0d = False
+        self.is1d = False
         typ = type(data)
         if typ is INDArray:
             # Note that we don't make a copy here
             self.array = data
         elif typ is ndarray:
             self.array = data.array.dup()
+            self.is0d = data.is0d
+            self.is1d = data.is1d
         else:
             if typ is not np.ndarray:
                 data = np.array(data)
@@ -152,51 +156,124 @@ class ndarray(object):
 
     @property
     def shape(self):
-        return tuple(self.array.shape())
+        if self.is0d:
+            return ()
+        s = tuple(self.array.shape())
+        if self.is1d:
+            return s[1:]
+        return s
+
+    @property
+    def ndim(self):
+        if self.is0d:
+            return 0
+        if self.is1d:
+            return 1
+        return len(self.array.shape())
 
     @property
     def ndim(self):
         return len(self.array.shape())
 
     def __getitem__(self, key):
+        if self.is0d:
+            raise IndexError('Invalid index to scalar variable.')
         if type(key) is int:
-            array = ndarray(self.array.get(NDArrayIndex.point(key)))
             if self.is1d:
-                array.is1d = True
+                array = ndarray(self.array.get(NDArrayIndex.point(key)))
+                array.is0d = True
             else:
                 if self.array.shape()[0] == 1:
-                    assert key in (0, -1), 'Index ' + str(key) +
-                    'is out of bounds for axis 0 with size 1'
+                    assert key in (0, -1), 'Index ' + str(key) + ''
+                    ' is out of bounds for axis 0 with size 1'
+                    array = ndarray(self.array)
                     array.is1d = True
             return array
         if type(key) is slice:
             start = key.start
             stop = key.stop
             step = key.step
-            if start is None:
-                start = 0
-            if stop is None:
-                if self.is1d:
-                    stop = self.array.size(1)
+            if self.array.shape()[0] == 1 and not self.is1d:
+                if start is None:
+                    start = 0
+                if stop is None:
+                    stop = 1
+                if stop - start > 0:
+                    array = ndarray(self.array)
+                    array.is1d = True
+                    return array
                 else:
-                    stop = self.array.size(0)
-            if step is None or step == 1:
-                idx = NDArrayIndex.interval(start, stop)
+                    return None ## We differ from numpy here.
+                    # Instead of returning an empty array, 
+                    # we return None.
+            if key == slice(None):
+                idx = NDArrayIndex.all()
             else:
-                idx = NDArrayIndex.interval(start, step, stop)
+                if start is None:
+                    start = 0
+                if stop is None:
+                    if self.is1d:
+                        stop = self.array.size(1)
+                    else:
+                        stop = self.array.size(0)
+                if step is None or step == 1:
+                    idx = NDArrayIndex.interval(start, stop)
+                else:
+                    idx = NDArrayIndex.interval(start, step, stop)
             array = self.array.get(idx)
-            return ndarray(array)
-        if type(key) in (list, tuple):
+            array = ndarray(array)
+            array.is1d = self.is1d
+            return array
+        if type(key) is list:
+            raise NotImplemented('Sorry, this type of indexing is not supported yet.')
+        if type(key) is tuple:
             key = list(key)
+            ndim = len(self.array.shape())
+            ndim -= self.is1d
+            nk = len(key)
+            key += [slice(None)] * (ndim - nk)
             args = []
-            for i, k in enumerate(key):
+            set1d = False
+            set0d = False
+            if self.array.shape()[0] == 1:
+                if self.is1d:
+                    if type(key[0]) is int:
+                        set0d = True
+                    key.insert(0, 0)
+                else:
+                    zd = key[0]
+                    if type(zd) is int:
+                        assert zd in (0, -1), 'Index ' + str(zd) + ''
+                        ' is out of bounds for axis 0 with size 1'
+                        set1d = True
+            for size, dim in enumerate(key):
                 if type(dim) is int:
                     args.append(NDArrayIndex.point(dim))
-                if type(dim) is slice:
-                    pass
-
-
-
+                elif type(dim) is slice:
+                    if dim == slice(None):
+                        args.append(NDArrayIndex.all())
+                    else:
+                        start = dim.start
+                        stop = dim.stop
+                        step = dim.step
+                        if start is None:
+                            start = 0
+                        if stop is None:
+                            stop = size
+                        if stop - start <= 0:
+                            return None
+                        if step is None or step == 1:
+                            args.append(NDArrayIndex.interval(start, stop))
+                        else:
+                            args.append(NDArrayIndex.interval(start, step, stop))
+                if type(dim) in (list, tuple):
+                    raise NotImplemented('Sorry, this type of indexing is not supported yet.')
+            array = ndarray(self.array.get(*args))
+            if set0d:
+                array.is0d = True
+            elif set1d or self.is1d:
+                array.is1d = True
+            return array
 
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)
