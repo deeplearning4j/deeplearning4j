@@ -60,6 +60,10 @@ At that moment, Sussman was enlightened.
 
 A hard-coded rule is a preconception. It is one form of assumption, and a strong one, while deep neural architectures contain other assumptions, usually about *how* they should learn, rather than what conclusion they should reach. The ideal, obviously, is to choose assumptions that allow a system to learn flexibly and produce accurate decisions about their inputs. 
 
+## Problems with Symbolic AI (GOFAI)
+
+
+
 ## Combining Deep Neural Nets and Symbolic Reasoning
 
 How can we fuse the ability of deep neural nets to learn probabilistic correlations from scratch alongside abstract and higher-order concepts, which are useful in compressing data and combining it in new ways? How can we learn to attach new meanings to concepts, and to use [atomic concepts as elements in more complex and composable thoughts](https://medium.com/@GaryMarcus/in-defense-of-skepticism-about-deep-learning-6e8bfd5ae0f1) such as language allows us to express in all its natural plasticity? 
@@ -88,6 +92,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 * [The Symbol Grounding Problem](http://cogprints.org/3106/), Harnad, Stevan (1990) 
 * [Intentionality](http://plato.stanford.edu/entries/intentionality)
 * [Belief Revision](https://en.wikipedia.org/wiki/Belief_revision)
+* [Non-monotonic Logic](https://en.wikipedia.org/wiki/Non-monotonic_logic)
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
