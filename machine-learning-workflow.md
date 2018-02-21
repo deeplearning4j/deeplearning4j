@@ -78,8 +78,8 @@ Rapidly explore and de-risk a use case before significant engineering resources 
 <!-- SKIL Support: ETL, simple EDA, model training, and evaluation are supported by Workspaces/Experiments/notebooks -->
 
 <p align="center">
-<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROOF-OF-CONCEPT PROJECTS</a>
-<a href="https://deeplearning4j.org/datavec" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">ETL FOR MACHINE LEARNING</a>
+<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROOF-OF-CONCEPT PROJECTS</a></br>
+<a href="https://deeplearning4j.org/datavec" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">ETL FOR MACHINE LEARNING</a></br>
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">NOTEBOOKS FOR INTERACTIVE DATA EXPLORATION</a>
 </p>
 
