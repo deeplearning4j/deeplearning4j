@@ -54,14 +54,12 @@ Identify a data-intensive business problem and propose a potential machine learn
 * Other: Domain Expert (if Stakeholder doesn't know problem), Data Engineer (if DS doesn't know data systems), Systems Architect (if discussing deployment)
 
 
-## Phase 2 (optional): Feasibility Study and Exploratory Analysis
+## Phase 2: Feasibility Study and Exploratory Analysis
 
 **Goal**
 Rapidly explore and de-risk a use case before significant engineering resources are dedicated to it, make "go/no go" recommendation
 
-*NOTES: Akin to feasibility studies and short-term (1-2 month) POCs.*
-
-Overlaps with Phase 3 (model training) except that here you don't expect a fully tuned model, nor do you expect to produce a reusable software artifact.
+*NOTE: overlaps with Phase 3 (model training) except that here you don't expect a fully tuned model, nor do you expect to produce a reusable software artifact.*
 
 **Tasks**
 * Exploratory data analysis (EDA): descriptive statistics, visualization, detection of garbage data/noise/outlier values, quantify signal-to-noise ratio
@@ -77,10 +75,12 @@ Overlaps with Phase 3 (model training) except that here you don't expect a fully
 * Stakeholder, Domain Expert: answer questions, as needed
 * Decision Maker, Stakeholder: consume final report/recommendation
 
-SKIL Support: ETL, simple EDA, model training, and evaluation are supported by Workspaces/Experiments/notebooks
+<!-- SKIL Support: ETL, simple EDA, model training, and evaluation are supported by Workspaces/Experiments/notebooks -->
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">ETL FOR MACHINE LEARNING</a>
+<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROOF-OF-CONCEPT PROJECTS</a>
+<a href="https://deeplearning4j.org/datavec" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">ETL FOR MACHINE LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">NOTEBOOKS FOR INTERACTIVE DATA EXPLORATION</a>
 </p>
 
 ## Phase 3: Model Design, Training, and Offline Evaluation
@@ -89,7 +89,7 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
 * Train best performing model possible given available data, computational resources, and time.
 * Build reliable, reusable software pipeline for re-training models in the future.
 
-*NOTES: Overlaps with Phase 2 (feasibility study), but here you expect a fully tuned model and a reusable software artifact.*
+*NOTE: overlaps with Phase 2 (feasibility study), but here you expect a fully tuned model and a reusable software artifact.*
 
 **Tasks**
 * Plan full set of experiments
@@ -109,7 +109,9 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
 * Decision Maker, Stakeholder: consume "reports" on progress/performance
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">TRAIN ON A SPARK-GPU CLUSTER</a>
+<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROFESSIONAL SERVICES</a>
+<a href="https://deeplearning4j.org/spark" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SCALING UP TRAINING ON APACHE SPARK</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">MANAGING AND TRACKING TRAINED MODELS</a>
 </p>
 
 ## Phase 4: Model Deployment, Online Evaluation, and Monitoring
@@ -120,20 +122,19 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
 
 **Tasks**
 * Deploy models (and transforms) as consumable software services via, e.g., REST API
-* Plan and execute trial deployments and experiments, e.g.,
+* Plan and execute trial deployments and experiments, e.g., A/B tests to compare new vs. old models
 * Deploy to controlled staging environment, measure performance and accuracy on live data but don't expose
-* Set up and manage A/B tests to compare, e.g., new vs. old models
 * Log and detect errors in deployment, e.g.:
-    -Transform fails because schema does not match live data
-    -Model fails due to invalid vectorized data input size
-    -Transform or model servers die or become unreachable
+    * Transform fails because schema does not match live data
+    * Model fails due to invalid vectorized data input size
+    * Transform or model servers die or become unreachable
 * Log and track model performance and accuracy on live data, look for:
-    -Poor prediction throughput (might need to add more servers)
-    -Model drift, i.e., gradual decline in accuracy (might need to retrain model on more recent data)
-    -Unexpected poor accuracy (might need to roll back model)
+    * Poor prediction throughput (might need to add more servers)
+    * Model drift, i.e., gradual decline in accuracy (might need to retrain model on more recent data)
+    * Unexpected poor accuracy (might need to roll back model)
 
 **People**
-* "Gatekeeper:" someone or some group of people should be responsible for "blessing" models, i.e., deciding a model should go live
+* "Gatekeeper:" someone or some group of people responsible for "blessing" models, i.e., deciding whether and which a model should go live (probably Decision Maker or Stakeholder with advice and consent of Data Scientist and Dev Ops)
 * System Architect: deploy models, manage monitor model status and performance
 * Data Scientist: plan A/B tests (or other trial deployments), consume reports on model accuracy
 * Stakeholder, Domain Expert: answer questions, as needed; consume reports on model accuracy, provide feedback
@@ -158,6 +159,10 @@ SKIL Support: one-click deployment of trained or imported models, simple monitor
 * System Architect: monitor model status and performance
 * Data Scientist: consume reports on model accuracy
 * Stakeholder, Domain Expert: answer questions, as needed; consume reports on model accuracy, provide feedback
+
+<p align="center">
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">MONITORING AND LOGGING FOR DEPLOYED ML</a>
+</p>
 
 ## <a name="intro">Other Machine Learning Tutorials</a>
 
