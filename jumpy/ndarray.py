@@ -134,6 +134,52 @@ def _indarray(x):
     else:
         raise Exception('Data type not understood :' + str(type(x)))
 
+
+def broadcast(x, y):
+    xs = x.shape()
+    ys = ys.shape()
+    _xs = tuple(xs)
+    _ys = tuple(ys)
+    if xs == ys:
+        return x, y
+    nx = len(xs)
+    ny = len(xs)
+    if nx > ny:
+        diff = nx - ny
+        ys += [1] * diff
+        y = y.reshape(ys)
+        ny = nx
+    elif ny > nx:
+        diff = ny - nx
+        xs += [1] * diff
+        x = x.reshape(xs)
+        nx = ny
+    xt = []
+    yt = []
+    rep_x = False
+    rep_y = False
+    for xd, yd in enumerate(xs, ys):
+        if xd == yd:
+            xt.append(1)
+            yt.append(1)
+        elif xd == 1:
+            xt.append(yd)
+            yt.append(1)
+            rep_x = True
+        elif yd == 1:
+            xt.append(1)
+            yt.append(xd)
+            rep_y = True
+        else:
+            raise Exception('Unable to broadcast shapes ' + str(xs) + ''
+                            ' and ' + str(ys))
+        if rep_x:
+            x = x.repmat(xt)
+        if rep_y:
+            y = y.repmat(yt)
+    return x, y
+
+
 class ndarray(object):
 
     def __init__(self, data, dtype=None):
@@ -291,19 +337,24 @@ class ndarray(object):
 
     def __add__(self, other):
         other = _indarray(other)
-        return ndarray(self.array.add(other))
+        x, y = broadcast(self.array, other)
+        return ndarray(x.add(y))
 
     def __sub__(self, other):
         other = _indarray(other)
-        return ndarray(self.array.sub(other))
+        x, y = broadcast(self.array, other)
+        return ndarray(x.sub(y))
 
     def __mul__(self, other):
         other = _indarray(other)
-        return ndarray(self.array.mul(other))
+        x, y = broadcast(self.array, other)
+        return ndarray(x.mul(y))
 
     def __div__(self, other):
         other = _indarray(other)
-        return ndarray(self.array.div(other))
+        x, y = broadcast(self.array, other)
+        return ndarray(x.div(y))
+
 
 
 def array(*args, **kwargs):
