@@ -21,6 +21,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -187,7 +188,6 @@ public class GradCheckTransforms {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     @Test
@@ -231,6 +231,81 @@ public class GradCheckTransforms {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void testDynamicPartition() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {4, 3, 5, 7, 8, 0}, new int[] {1, 6} );
+        INDArray partitions = Nd4j.create(new float[] {1, 0, 1, 0, 0, 1});
+        int numPartitions = 2;
+
+        SDVariable in = sd.var("in", new int[]{1, 6});
+        SDVariable sdPartitions = sd.var("partitions", new int[] {1, 6});
+
+        INDArray expOut1 = Nd4j.create(new int[] {1,3});
+        INDArray expOut2 = Nd4j.create(new int[] {1,3});
+        INDArray[] expOut = new INDArray[] {expOut1, expOut2};
+
+        DynamicCustomOp dynamicPartition = DynamicCustomOp.builder("dynamic_partition")
+                .addInputs(ia, partitions)
+                .addIntegerArguments(numPartitions)
+                .addOutputs(expOut1, expOut2).build();
+        Nd4j.getExecutioner().exec(dynamicPartition);
+
+        SDVariable[] parts = sd.dynamicPartition(in, sdPartitions, numPartitions);
+
+        // merge the output partitions together again, to retrieve a single
+        // tensor and finally a scalar.
+        SDVariable t = sd.mergeAdd(parts);
+        SDVariable loss = sd.mean("loss", t);
+
+        sd.associateArrayWithVariable(ia, in);
+        sd.exec();
+        INDArray[] out = new INDArray[numPartitions];
+        for (int i = 0; i < parts.length; i++) {
+            out[i] = parts[i].getArr();
+        }
+
+        if(!expOut.equals(out)){log.error("forward failed");}
+    }
+
+    @Test
+    public void testDynamicStitch() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {5, 1, 3}, new int[] {1, 3} );
+        INDArray ib = Nd4j.create(new float[] {7, 2, 4}, new int[] {1, 3} );
+        INDArray indexA = Nd4j.create(new float[] {0, 1, 4}, new int[] {1, 3});
+        INDArray indexB = Nd4j.create(new float[] {2, 3, 5}, new int[] {1, 3});
+
+        INDArray expOut = Nd4j.create(new int[] {1,6});
+
+        DynamicCustomOp dynamicStitch = DynamicCustomOp.builder("dynamic_stitch")
+                .addInputs(indexA, indexB, ia, ib)
+                .addOutputs(expOut).build();
+        Nd4j.getExecutioner().exec(dynamicStitch);
+
+        SDVariable in1 = sd.var("in1", new int[]{1, 3});
+        SDVariable in2 = sd.var("in2", new int[]{1, 3});
+
+        SDVariable index1 = sd.var("index1", new int[] {1, 3});
+        SDVariable index2 = sd.var("index2", new int[] {1, 3});
+
+        sd.associateArrayWithVariable(ia, in1);
+        sd.associateArrayWithVariable(ib, in2);
+        sd.associateArrayWithVariable(indexA, index1);
+        sd.associateArrayWithVariable(indexB, index2);
+
+        SDVariable t = sd.dynamicStitch(new SDVariable[] {index1, index2}, new SDVariable[] {in1, in2});
+
+        SDVariable loss = sd.mean("loss", t);
+
+        sd.exec();
+        INDArray out = t.getArr();
+
+        if(!expOut.equals(out)){log.error("forward failed");}
     }
 
     @Test

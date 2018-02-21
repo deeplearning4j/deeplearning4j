@@ -2141,6 +2141,26 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+
+    public SDVariable[] dynamicPartition(SDVariable iX, SDVariable partitions, int numPartitions) {
+        return dynamicPartition(null, iX, partitions, numPartitions);
+    }
+
+    public SDVariable[] dynamicPartition(String[] name, SDVariable iX, SDVariable partitions, int numPartitions) {
+        SDVariable[] ret = f().dynamicPartition(iX, partitions, numPartitions);
+        return updateVariableNamesAndReferences(ret, name);
+    }
+
+    public SDVariable dynamicStitch(SDVariable[] indices, SDVariable[] iX) {
+        return dynamicStitch(null, indices, iX);
+    }
+
+    public SDVariable dynamicStitch(String name, SDVariable[] indices, SDVariable[] iX) {
+        SDVariable ret = f().dynamicStitch(indices, iX);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
     public SDVariable cross(SDVariable a, SDVariable b) {
         return cross(null, a, b);
     }
@@ -4679,6 +4699,29 @@ public class SameDiff {
         varToUpdate.setVarName(newVarName);
         updateVariableName(oldVarName, newVarName);
         return varToUpdate;
+    }
+
+
+    /**
+     * Updates the variable name property on the passed in variables,
+     * its reference in samediff, and returns the variable.
+     *
+     * @param variablesToUpdate the variable to update
+     * @param newVariableNames  the new variable name
+     * @return the updated, passed in variables
+     */
+    public SDVariable[] updateVariableNamesAndReferences(SDVariable[] variablesToUpdate, String[] newVariableNames) {
+
+        int numVariables = variablesToUpdate.length;
+        SDVariable[] updatedVariables = new SDVariable[numVariables];
+
+        for (int i = 0; i < numVariables; i++) {
+            SDVariable varToUpdate = variablesToUpdate[i];
+            String name = newVariableNames[i];
+            updatedVariables[i] = updateVariableNameAndReference(varToUpdate, name);
+        }
+
+        return updatedVariables;
     }
 
     /**
