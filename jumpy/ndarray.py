@@ -120,6 +120,19 @@ def from_numpy(np_array):
     nd4j_array = Nd4j.create(buff, shape, strides, 0)
     return nd4j_array
 
+def _indarray(x):
+    if type(x) is INDArray:
+        return x
+    elif type(x) is ndarray:
+        return x.array
+    elif 'numpy' in str(type(x)):
+        return from_numpy(x)
+    elif type(x) in (list, tuple):
+        return from_numpy(np.array(x))
+    elif type(x) in (int, float):
+        return Nd4j.scalar(x)
+    else:
+        raise Exception('Data type not understood :' + str(type(x)))
 
 class ndarray(object):
 
@@ -274,6 +287,24 @@ class ndarray(object):
             elif set1d or self.is1d:
                 array.is1d = True
             return array
+
+
+    def __add__(self, other):
+        other = _indarray(other)
+        return ndarray(self.array.add(other))
+
+    def __sub__(self, other):
+        other = _indarray(other)
+        return ndarray(self.array.sub(other))
+
+    def __mul__(self, other):
+        other = _indarray(other)
+        return ndarray(self.array.mul(other))
+
+    def __div__(self, other):
+        other = _indarray(other)
+        return ndarray(self.array.div(other))
+
 
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)
