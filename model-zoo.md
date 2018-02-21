@@ -5,7 +5,7 @@ layout: default
 
 # Deeplearning4j Model Zoo
 
-As of 0.9.0 (or 0.8.1-SNAPSHOT), Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained weights for different datasets that are downloaded automatically and checked for integrity. 🚀
+As of 0.9.1, Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained weights for different datasets that are downloaded automatically and checked for integrity. 🚀
 
 If you want to use the new model zoo, you will need to add it as a dependency. A Maven POM would add the following:
 
@@ -18,8 +18,6 @@ If you want to use the new model zoo, you will need to add it as a dependency. A
 ```
 
 `${deeplearning4j.version}` should match the version of DL4J you are currently using, and should be the latest version available in [Maven Central](http://mvnrepository.com/artifact/org.deeplearning4j).
-
-
 
 ## Getting Started
 
@@ -81,11 +79,24 @@ Note that for convolutional models, input shape information follows the NCHW con
 
 ## What's in the Zoo?
 
-The model zoo comes with well-known configurations in the deep learning community. This includes ImageNet models such as VGG-16, ResNet-50, AlexNet, Inception-ResNet-v1, GoogLeNet, LeNet, and more. The zoo also includes an LSTM for text generation, and a simple CNN for general image recognition.
+The model zoo comes with well-known image recognition configurations in the deep learning community. The zoo also includes an LSTM for text generation, and a simple CNN for general image recognition.
 
 You can find a complete list of models using this [deeplearning4j-zoo Github link](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model).
 
+This includes ImageNet models such as VGG-16, ResNet-50, AlexNet, Inception-ResNet-v1, GoogLeNet, LeNet, and more. 
 
+* [AlexNet](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/AlexNet.java)	
+* [Darknet19](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/Darknet19.java)	
+* [FaceNetNN4Small2](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/FaceNetNN4Small2.java)	
+* [GoogLeNet](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/GoogLeNet.java)	
+* [InceptionResNetV1](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/InceptionResNetV1.java)	
+* [LeNet](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/LeNet.java)
+* [ResNet50](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/ResNet50.java)
+* [SimpleCNN](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/SimpleCNN.java)
+* [TextGenerationLSTM](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/TextGenerationLSTM.java)
+* [TinyYOLO](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/TinyYOLO.java)
+* [VGG16](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/VGG16.java)	
+* [VGG19](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j-zoo/src/main/java/org/deeplearning4j/zoo/model/VGG19.java)
 
 ## Advanced Usage
 
