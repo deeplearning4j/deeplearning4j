@@ -22,7 +22,7 @@ Within each phase, we'll explain:
 * Who is involved in each phase (businessperson, data scientist/engineer, DevOps)?
 
 <p align="center">
-<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH MACHINE LEARNING</a>
+<a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH PRODUCTION ML</a>
 </p>
 
 ### Relevant Personnel and Roles
