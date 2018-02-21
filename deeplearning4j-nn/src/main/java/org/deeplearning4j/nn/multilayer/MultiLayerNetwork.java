@@ -1492,7 +1492,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
 
                 //log.info("This layer space: {}", ((Nd4jWorkspace) ws).getThisCycleAllocations());
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
+                throw e;
+            } catch(Exception e) {
                 throw new RuntimeException(e);
             }
         }
