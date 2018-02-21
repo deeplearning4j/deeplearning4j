@@ -166,11 +166,12 @@ For people just getting started with deep learning, the following tutorials and 
 
 * [Beginner's Guide to Deep Neural Networks](./neuralnet-overview)
 * [Deep Reinforcement Learning](./deepreinforcementlearning)
-* [Convolutional Networks](./convolutionalnets)
+* [Deep Convolutional Networks (CNNs) for Images](./convolutionalnets)
 * [Recurrent Networks and LSTMs](./lstm)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
-* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Generative Adversarial Networks (GAN)](./generative-adversarial-network)
+* [Multilayer Perceptron (MLP) for Classification](./multilayerperceptron)
+* [Restricted Boltzmann Machines (RBM)](./restrictedboltzmannmachine.html)
+* [Eigenvectors, Eigenvalues, PCA, Covariance and Entropy](./eigenvector.html)
 * [Markov Chain Monte Carlo and Reinforcement Learning](./markovchainmontecarlo)
 * [Graph Data and Deep Learning](./graphdata)
 * [Symbolic Reasoning and Deep Learning](./symbolicreasoning)
@@ -179,6 +180,6 @@ For people just getting started with deep learning, the following tutorials and 
 * [Word2vec and Natural-Language Processing](./word2vec)
 * [Deeplearning4j Examples via Quickstart](./quickstart)
 * [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
-* [Inference: Machine Learning Model Server](./machine-learning-modelserver)
+* [Inference: Machine Learning Model Server](./modelserver)
 
 *Thanks to deeplearning.net and [Luke de Oliveira](https://medium.com/startup-grind/fueling-the-ai-gold-rush-7ae438505bc2) for many of these links and dataset descriptions. Any suggestions of open data sets we should include for the Deeplearning4j community are welcome!*
