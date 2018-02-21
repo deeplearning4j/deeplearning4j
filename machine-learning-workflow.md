@@ -109,8 +109,8 @@ Rapidly explore and de-risk a use case before significant engineering resources 
 * Decision Maker, Stakeholder: consume "reports" on progress/performance
 
 <p align="center">
-<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROFESSIONAL SERVICES</a>
-<a href="https://deeplearning4j.org/spark" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SCALING UP TRAINING ON APACHE SPARK</a>
+<a href="https://skymind.ai/services" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SKYMIND PROFESSIONAL SERVICES</a></br>
+<a href="https://deeplearning4j.org/spark" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">SCALING UP TRAINING ON APACHE SPARK</a></br>
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">MANAGING AND TRACKING TRAINED MODELS</a>
 </p>
 
