@@ -158,7 +158,9 @@ Initialization methods often have an additional parameter named `workspaceMode`.
 
 ## Other Model Zoos
 
-* [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo)
+* [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo) (The original model zoo ;)
 * [Tensorflow Model Zoo](https://github.com/tensorflow/models)
 * [PyTorch Vision Model Zoo](https://github.com/pytorch/vision/tree/master/torchvision)
 * [Keras Model Zoo](https://github.com/fchollet/deep-learning-models)
+* [MxNet Model Zoo](https://mxnet.apache.org/model_zoo/index.html)
+* [CNTK Model Zoo](https://www.microsoft.com/en-us/cognitive-toolkit/features/model-gallery/)
