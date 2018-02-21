@@ -55,11 +55,22 @@ While simple, TF-IDF is incredibly powerful, and contributes to such ubiquitous 
 
 BoW is different from [Word2vec](./word2vec.html), which we'll cover next. The main difference is that Word2vec produces one vector per word, whereas BoW produces one number (a wordcount). Word2vec is great for digging into documents and identifying content and subsets of content. Its vectors represent each word's context, the ngrams of which it is a part. BoW is good for classifying documents as a whole. 
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
-* [Word2vec](./word2vec)
-* [Introduction to Neural Networks](./neuralnet-overview)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./linear-regression)
-* [Convolutional Networks for Images](./convolutionalnets)
+## <a name="intro">More Machine Learning Tutorials</a>
+
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./modelserver.html)
