@@ -95,6 +95,8 @@ Let's explore how they currently overlap and how they might. First of all, every
 * [Intentionality](http://plato.stanford.edu/entries/intentionality)
 * [Belief Revision](https://en.wikipedia.org/wiki/Belief_revision)
 * [Non-monotonic Logic](https://en.wikipedia.org/wiki/Non-monotonic_logic)
+* [The Yale shooting problem](https://en.wikipedia.org/wiki/Yale_shooting_problem)
+* [ALMECOM stands for Active Logic, MEtacognitive COmputation, and Mind](http://www.cs.umd.edu/active/)
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
