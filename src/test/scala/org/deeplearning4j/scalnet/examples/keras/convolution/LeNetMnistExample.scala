@@ -26,7 +26,7 @@ import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
+import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.optimizers.SGD
 import org.nd4j.linalg.activations.Activation
@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
   * Simple LeNet convolutional neural net for MNIST, using
@@ -64,24 +64,40 @@ object LeNetMnistExample extends App {
   log.info("Build model....")
   private val model: Sequential = Sequential(rngSeed = rngSeed)
   model.add(Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
-  model.add(Convolution2D(nFilter = 20, kernelSize = List(5, 5), stride = List(1, 1),
-    weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+  model.add(
+    Convolution2D(nFilter = 20,
+                  kernelSize = List(5, 5),
+                  stride = List(1, 1),
+                  weightInit = WeightInit.XAVIER,
+                  regularizer = L2(weightDecay))
+  )
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(Convolution2D(nFilter = 50, kernelSize = List(5, 5), stride = List(1, 1),
-    weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+  model.add(
+    Convolution2D(nFilter = 50,
+                  kernelSize = List(5, 5),
+                  stride = List(1, 1),
+                  weightInit = WeightInit.XAVIER,
+                  regularizer = L2(weightDecay))
+  )
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(Flatten3D())
-  model.add(Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay)))
+  model.add(
+    Dense(nOut = 500,
+          weightInit = WeightInit.XAVIER,
+          activation = Activation.RELU,
+          regularizer = L2(weightDecay))
+  )
   model.add(Dense(nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
 
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD, optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
+                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
   model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(nbOutput)
-  while(mnistTest.hasNext){
+  while (mnistTest.hasNext) {
     val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)

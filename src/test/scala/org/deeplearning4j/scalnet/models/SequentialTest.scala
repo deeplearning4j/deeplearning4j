@@ -21,16 +21,15 @@ package org.deeplearning4j.scalnet.models
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.scalatest._
-import org.deeplearning4j.scalnet.layers.{Dense, OutputLayer}
+import org.deeplearning4j.scalnet.layers.{ Dense, OutputLayer }
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
+import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
   * Created by maxpumperla on 29/06/17.
   */
-
 class SequentialTest extends FunSpec with BeforeAndAfter {
 
   var model: Sequential = Sequential()
@@ -75,11 +74,21 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
 
     it("should propagate the correct shape of all layers and preprocessors") {
       model.add(Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
-      model.add(Convolution2D(nFilter = 20, kernelSize = List(5, 5), stride = List(1, 1),
-        weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+      model.add(
+        Convolution2D(nFilter = 20,
+                      kernelSize = List(5, 5),
+                      stride = List(1, 1),
+                      weightInit = WeightInit.XAVIER,
+                      regularizer = L2(weightDecay))
+      )
       model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-      model.add(Convolution2D(nFilter = 50, kernelSize = List(5, 5), stride = List(1, 1),
-        weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))
+      model.add(
+        Convolution2D(nFilter = 50,
+                      kernelSize = List(5, 5),
+                      stride = List(1, 1),
+                      weightInit = WeightInit.XAVIER,
+                      regularizer = L2(weightDecay))
+      )
       model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
       model.add(Flatten3D())
 
@@ -87,8 +96,9 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
       assert(preprocessorOutShapes == List(List(nbRows, nbColumns, nbChannels), List(4 * 4 * 50)))
 
       val layerOutShapes = model.getLayers.map(_.outputShape)
-      assert(layerOutShapes == List(List(24, 24, 20), List(12, 12, 20),
-        List(8, 8, 50), List(4, 4, 50)))
+      assert(
+        layerOutShapes == List(List(24, 24, 20), List(12, 12, 20), List(8, 8, 50), List(4, 4, 50))
+      )
 
     }
   }

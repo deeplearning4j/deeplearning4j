@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
   * Two-layer MLP for MNIST using keras-style Sequential
@@ -56,20 +56,34 @@ object MLPMnistTwoLayerExample extends App {
 
   log.info("Build model....")
   private val model: Sequential = Sequential(rngSeed = rngSeed)
-  model.add(Dense(nOut = 500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = Activation.RELU,
-    regularizer = L2(learningRate * 0.005)))
-  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(learningRate * 0.005)))
-  model.add(Dense(nOut = outputNum, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX,
-    regularizer = L2(learningRate * 0.005)))
+  model.add(
+    Dense(nOut = 500,
+          nIn = numRows * numColumns,
+          weightInit = WeightInit.XAVIER,
+          activation = Activation.RELU,
+          regularizer = L2(learningRate * 0.005))
+  )
+  model.add(
+    Dense(nOut = 100,
+          weightInit = WeightInit.XAVIER,
+          activation = Activation.RELU,
+          regularizer = L2(learningRate * 0.005))
+  )
+  model.add(
+    Dense(nOut = outputNum,
+          weightInit = WeightInit.XAVIER,
+          activation = Activation.SOFTMAX,
+          regularizer = L2(learningRate * 0.005))
+  )
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
-    optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
   model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(1000)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(outputNum)
-  while(mnistTest.hasNext){
+  while (mnistTest.hasNext) {
     val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)

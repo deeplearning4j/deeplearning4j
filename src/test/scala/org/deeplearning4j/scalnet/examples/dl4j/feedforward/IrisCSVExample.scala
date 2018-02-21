@@ -34,10 +34,10 @@ import org.deeplearning4j.scalnet.optimizers.SGD
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
+import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 object IrisCSVExample extends App {
 
@@ -59,7 +59,8 @@ object IrisCSVExample extends App {
   log.info("Reading data set....")
   val recordReader = new CSVRecordReader(numLinesToSkip, delimiter)
   recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile))
-  val iterator: DataSetIterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses)
+  val iterator: DataSetIterator =
+    new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses)
 
   log.info("Prepare data set for training....")
   val next: DataSet = iterator.next()
@@ -71,14 +72,25 @@ object IrisCSVExample extends App {
 
   log.info("Build model....")
   val model: NeuralNet = NeuralNet()
-  model.add(Dense(numDenseOut, nIn = numIn, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
-  model.add(Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
-  model.add(Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(
+    Dense(numDenseOut,
+          nIn = numIn,
+          activation = Activation.RELU,
+          regularizer = L2(learningRate * decay))
+  )
+  model.add(
+    Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay))
+  )
+  model.add(
+    Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay))
+  )
   model.add(Dense(numOut, activation = Activation.SOFTMAX, regularizer = L2(learningRate * decay)))
   model.compile(lossFunction = LossFunction.MCXENT, optimizer = SGD(learningRate))
 
   log.info("Train model....")
-  model.fit(iter = training_data, nbEpoch = numEpochs, listeners = List(new ScoreIterationListener(scoreFrequency)))
+  model.fit(iter = training_data,
+            nbEpoch = numEpochs,
+            listeners = List(new ScoreIterationListener(scoreFrequency)))
 
   log.info("Evaluate model....")
   val evaluator = new Evaluation(3)

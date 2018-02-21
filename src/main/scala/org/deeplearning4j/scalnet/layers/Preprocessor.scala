@@ -20,7 +20,6 @@ package org.deeplearning4j.scalnet.layers
 
 import org.deeplearning4j.nn.conf.InputPreProcessor
 
-
 /**
   * Trait for preprocessing layers in DL4J neural networks and computational
   * graphs. Compiles out to DL4J InputPreProcessor.

@@ -18,9 +18,8 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.deeplearning4j.nn.conf.layers.{Layer => JLayer}
+import org.deeplearning4j.nn.conf.layers.{ Layer => JLayer }
 import org.nd4j.linalg.lossfunctions.LossFunctions
-
 
 /**
   * Trait for proper "layer" in DL4J neural networks and computational
@@ -41,5 +40,5 @@ trait Layer extends Node {
   */
 trait OutputLayer extends Layer {
   def output: Output
-  def toOutputLayer(lossFunction: LossFunctions.LossFunction) : OutputLayer
+  def toOutputLayer(lossFunction: LossFunctions.LossFunction): OutputLayer
 }

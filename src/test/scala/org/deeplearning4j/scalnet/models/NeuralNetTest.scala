@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.scalnet.layers.{Dense, OutputLayer}
+import org.deeplearning4j.scalnet.layers.{ Dense, OutputLayer }
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.scalatest.{BeforeAndAfter, FunSpec}
+import org.scalatest.{ BeforeAndAfter, FunSpec }
 
 /**
   * Created by maxpumperla on 19/07/17.
@@ -29,7 +29,6 @@ class NeuralNetTest extends FunSpec with BeforeAndAfter {
 
   var model: NeuralNet = NeuralNet()
   val shape = 100
-
 
   before {
     model = NeuralNet()

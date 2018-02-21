@@ -18,9 +18,6 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.slf4j.{Logger, LoggerFactory}
-
-
 /**
   * Trait for node in DL4J neural networks and computational graphs.
   * Nodes are assumed to have inputs and outputs with "shapes."
@@ -40,5 +37,3 @@ trait Node {
   def describe(): String = "in=" + inputShape + " out=" + outputShape
 
 }
-
-

@@ -40,21 +40,24 @@ import org.slf4j.{ Logger, LoggerFactory }
   * @author David Kale
   */
 object MLPMnistTwoLayerExample extends App {
+
+  System.setProperty("org.bytedeco.javacpp.logger.debug", "true")
+
   private val log: Logger = LoggerFactory.getLogger(MLPMnistTwoLayerExample.getClass)
 
-  private val numRows: Int         = 28
-  private val numColumns: Int      = 28
-  private val outputNum: Int       = 10
-  private val batchSize: Int       = 64
-  private val rngSeed: Int         = 123
-  private val numEpochs: Int       = 15
+  private val numRows: Int = 28
+  private val numColumns: Int = 28
+  private val outputNum: Int = 10
+  private val batchSize: Int = 64
+  private val rngSeed: Int = 123
+  private val numEpochs: Int = 15
   private val learningRate: Double = 0.0015
-  private val decay: Double        = 0.005
-  private val momentum: Double     = 0.98
-  private val scoreFrequency       = 5
+  private val decay: Double = 0.005
+  private val momentum: Double = 0.98
+  private val scoreFrequency = 5
 
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
-  private val mnistTest: DataSetIterator  = new MnistDataSetIterator(batchSize, false, rngSeed)
+  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
   private val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
@@ -87,7 +90,7 @@ object MLPMnistTwoLayerExample extends App {
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(outputNum)
   while (mnistTest.hasNext) {
-    val next: DataSet    = mnistTest.next()
+    val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }

@@ -18,15 +18,15 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers._
-import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.scalnet.optimizers.{ Optimizer, SGD }
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.JavaConverters._
 
@@ -54,25 +54,21 @@ class Sequential(val rngSeed: Long = 0) extends Model {
   def getPreprocessors: Map[Int, Node] = _preprocessors
 
   private val noLayers = inputShape.isEmpty && layers.isEmpty && _preprocessors.isEmpty
-  private def emptyShape(layer: Node): Boolean = {
+  private def emptyShape(layer: Node): Boolean =
     !(_preprocessors.contains(layers.length) || layers.nonEmpty) &&
-      layer.inputShape.length == 1 && layer.inputShape.head == 0
-  }
+    layer.inputShape.length == 1 && layer.inputShape.head == 0
 
-  def inferInputShape(layer: Node): List[Int] = {
+  def inferInputShape(layer: Node): List[Int] =
     if (_preprocessors.contains(layers.length)) {
       _preprocessors(layers.length).outputShape
-    }
-    else layers.lastOption.map(_.outputShape).getOrElse(layer.inputShape)
-  }
+    } else layers.lastOption.map(_.outputShape).getOrElse(layer.inputShape)
 
-  def checkShape(layer: Node): Unit = {
+  def checkShape(layer: Node): Unit =
     if (emptyShape(layer)) {
       throw new IllegalArgumentException("Input layer must have non-empty inputShape")
     } else if (noLayers) {
       _inputShape = layer.inputShape
     }
-  }
 
   def add(layer: Node): Unit = {
     val inferredInput: List[Int] = inferInputShape(layer)
@@ -86,7 +82,8 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     }
   }
 
-  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
+  override def compile(lossFunction: LossFunction,
+                       optimizer: Optimizer = defaultOptimizer): Unit = {
     val builder = buildModelConfig(optimizer, seed)
     buildOutput(lossFunction)
 
@@ -107,7 +104,9 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     model.init()
   }
 
-  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator,
+                   nbEpoch: Int = defaultEpochs,
+                   listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (_ <- 0 until nbEpoch)
       model.fit(iter)

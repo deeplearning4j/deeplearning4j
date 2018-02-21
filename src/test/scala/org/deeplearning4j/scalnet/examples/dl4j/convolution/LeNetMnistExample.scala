@@ -45,19 +45,19 @@ import org.slf4j.{ Logger, LoggerFactory }
 object LeNetMnistExample extends App {
   private val log: Logger = LoggerFactory.getLogger(LeNetMnistExample.getClass)
 
-  private val nbRows: Int          = 28
-  private val nbColumns: Int       = 28
-  private val nbChannels: Int      = 1
-  private val nbOutput: Int        = 10
-  private val batchSize: Int       = 64
-  private val nbEpochs: Int        = 10
-  private val weightDecay: Double  = 0.0005
-  private val momentum: Double     = 0.9
+  private val nbRows: Int = 28
+  private val nbColumns: Int = 28
+  private val nbChannels: Int = 1
+  private val nbOutput: Int = 10
+  private val batchSize: Int = 64
+  private val nbEpochs: Int = 10
+  private val weightDecay: Double = 0.0005
+  private val momentum: Double = 0.9
   private val learningRate: Double = 0.01
-  private val seed: Int            = 12345
+  private val seed: Int = 12345
 
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, seed)
-  private val mnistTest: DataSetIterator  = new MnistDataSetIterator(batchSize, false, seed)
+  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, seed)
 
   log.info("Build model....")
   private val model: NeuralNet = NeuralNet(
@@ -97,7 +97,7 @@ object LeNetMnistExample extends App {
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(nbOutput)
   while (mnistTest.hasNext) {
-    val next: DataSet    = mnistTest.next()
+    val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }

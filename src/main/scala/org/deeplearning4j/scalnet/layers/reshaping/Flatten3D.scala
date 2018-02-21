@@ -22,7 +22,6 @@ import org.deeplearning4j.nn.conf.InputPreProcessor
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor
 import org.deeplearning4j.scalnet.layers.Preprocessor
 
-
 /**
   * Flattens structured image-like inputs into vector. Input should have
   * three dimensions: height (number of rows), width (number of columns),
@@ -36,11 +35,10 @@ class Flatten3D(nIn: List[Int] = List(0, 0, 0)) extends Preprocessor {
   override val outputShape = List(inputShape.product)
   override val name = "Flatten3D"
 
-  override def reshapeInput(newIn: List[Int]): Flatten3D = {
+  override def reshapeInput(newIn: List[Int]): Flatten3D =
     new Flatten3D(newIn)
-  }
 
-    override def compile: InputPreProcessor = {
+  override def compile: InputPreProcessor = {
     if (inputShape.length != 3) {
       throw new IllegalArgumentException("Input shape must be length 3.")
     }

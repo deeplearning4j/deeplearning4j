@@ -1,47 +1,36 @@
 package org.deeplearning4j.scalnet.layers
 import org.deeplearning4j.nn.conf.distribution.Distribution
-import org.deeplearning4j.nn.conf.weightnoise.WeightNoise
-import org.deeplearning4j.nn.conf.{ GradientNormalization, Updater, layers }
+import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise
+import org.deeplearning4j.nn.conf.{ GradientNormalization, layers }
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.learning.config.IUpdater
 
 class EmbeddingLayer(nIn: Int,
                      nOut: Int,
-                     activationFn: Activation = Activation.IDENTITY,
+                     activation: Activation = Activation.IDENTITY,
                      weightInit: WeightInit = WeightInit.XAVIER,
-                     biasInit: Double,
-                     dist: Distribution,
-                     l1: Double,
-                     l2: Double,
-                     l1Bias: Double,
-                     l2Bias: Double,
-                     updater: IUpdater,
-                     biasUpdater: IUpdater,
-                     weightNoise: WeightNoise,
+                     biasInit: Double = Double.NaN,
+                     dist: Distribution = null,
+                     l1: Double = Double.NaN,
+                     l2: Double = Double.NaN,
+                     l1Bias: Double = Double.NaN,
+                     l2Bias: Double = Double.NaN,
+                     dropOut: Double = 0.0,
+                     updater: IUpdater = null,
+                     biasUpdater: IUpdater = null,
+                     weightNoise: IWeightNoise = null,
                      gradientNormalization: GradientNormalization = GradientNormalization.None,
                      gradientNormalizationThreshold: Double = 1.0,
-                     hasBias: Boolean = true,
+                     hasBias: Boolean = false,
                      override val name: String = "")
-    extends FeedForwardLayer(activationFn,
-                             weightInit,
-                             biasInit,
-                             dist,
-                             l1,
-                             l2,
-                             l1Bias,
-                             l2Bias,
-                             updater,
-                             biasUpdater,
-                             weightNoise,
-                             gradientNormalization,
-                             gradientNormalizationThreshold) {
+    extends FeedForwardLayer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new layers.EmbeddingLayer.Builder()
       .nIn(nIn)
       .nOut(nOut)
-      .activation(activationFn)
+      .activation(activation)
       .weightInit(weightInit)
       .biasInit(biasInit)
       .dist(dist)
@@ -55,6 +44,8 @@ class EmbeddingLayer(nIn: Int,
       .gradientNormalization(gradientNormalization)
       .gradientNormalizationThreshold(gradientNormalizationThreshold)
       .hasBias(hasBias)
+      .dropOut(dropOut)
+      .name(name)
       .build()
 
   override def inputShape: List[Int] = List(nIn, nOut)
@@ -65,7 +56,7 @@ class EmbeddingLayer(nIn: Int,
 object EmbeddingLayer {
   def apply(nIn: Int,
             nOut: Int,
-            activationFn: Activation = Activation.IDENTITY,
+            activation: Activation = Activation.IDENTITY,
             weightInit: WeightInit = WeightInit.XAVIER,
             biasInit: Double = Double.NaN,
             dist: Distribution = null,
@@ -73,16 +64,17 @@ object EmbeddingLayer {
             l2: Double = Double.NaN,
             l1Bias: Double = Double.NaN,
             l2Bias: Double = Double.NaN,
+            dropOut: Double = 0.0,
             updater: IUpdater = null,
             biasUpdater: IUpdater = null,
-            weightNoise: WeightNoise = null,
+            weightNoise: IWeightNoise = null,
             gradientNormalization: GradientNormalization = GradientNormalization.None,
             gradientNormalizationThreshold: Double = 1.0,
-            hasBias: Boolean = true): EmbeddingLayer =
+            hasBias: Boolean = false): EmbeddingLayer =
     new EmbeddingLayer(
       nIn,
       nOut,
-      activationFn,
+      activation,
       weightInit,
       biasInit,
       dist,
@@ -90,6 +82,7 @@ object EmbeddingLayer {
       l2,
       l1Bias,
       l2Bias,
+      dropOut,
       updater,
       biasUpdater,
       weightNoise,

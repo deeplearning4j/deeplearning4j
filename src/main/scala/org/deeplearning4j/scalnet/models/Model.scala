@@ -18,16 +18,16 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
-import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.scalnet.layers.{ Node, OutputLayer }
+import org.deeplearning4j.scalnet.optimizers.{ Optimizer, SGD }
 import org.deeplearning4j.scalnet.utils.Implicits._
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.learning.config.{Nesterovs, Sgd}
+import org.nd4j.linalg.learning.config.{ Nesterovs, Sgd }
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
@@ -63,7 +63,9 @@ abstract class Model {
       case sgd: SGD =>
         builder.updater(new Sgd(sgd.lr))
       case _ =>
-        builder.optimizationAlgo(optimizer.optimizationAlgorithm).updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
+        builder
+          .optimizationAlgo(optimizer.optimizationAlgorithm)
+          .updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
     }
   }
 
@@ -73,7 +75,7 @@ abstract class Model {
     *
     * @param lossFunction loss function to use
     */
-  def buildOutput(lossFunction: LossFunction): Unit = {
+  def buildOutput(lossFunction: LossFunction): Unit =
     layers.lastOption match {
       case Some(l) if !l.isInstanceOf[OutputLayer] =>
         throw new IllegalArgumentException("Last layer must have Output trait")
@@ -82,9 +84,10 @@ abstract class Model {
         layers = layers.updated(layers.length - 1, last)
       }
       case _ =>
-        throw new IllegalArgumentException("Last layer must be an output layer with a valid loss function")
+        throw new IllegalArgumentException(
+          "Last layer must be an output layer with a valid loss function"
+        )
     }
-  }
 
   /**
     * Compile neural net architecture. Call immediately
@@ -102,7 +105,9 @@ abstract class Model {
     * @param nbEpoch   number of epochs to train
     * @param listeners callbacks for monitoring training
     */
-  def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit
+  def fit(iter: DataSetIterator,
+          nbEpoch: Int = defaultEpochs,
+          listeners: List[IterationListener]): Unit
 
   /**
     * Use neural net to make prediction on input x

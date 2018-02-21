@@ -19,15 +19,15 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
+import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Layer, Node}
+import org.deeplearning4j.scalnet.layers.{ Layer, Node }
 import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{Logger, LoggerFactory}
+import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.JavaConverters._
 
@@ -41,17 +41,15 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-
-
 class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) extends Model {
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  def add(layer: Node): Unit = {
+  def add(layer: Node): Unit =
     layers = layers :+ layer
-  }
 
-  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
+  override def compile(lossFunction: LossFunction,
+                       optimizer: Optimizer = defaultOptimizer): Unit = {
     val builder = buildModelConfig(optimizer, rngSeed)
     buildOutput(lossFunction)
 
@@ -69,7 +67,9 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
     model.init()
   }
 
-  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator,
+                   nbEpoch: Int = defaultEpochs,
+                   listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (epoch <- 0 until nbEpoch) {
       log.info("Epoch " + epoch)
@@ -79,5 +79,6 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
 }
 
 object NeuralNet {
-  def apply(inputType: InputType = null, rngSeed: Long = 0): NeuralNet = new NeuralNet(Option(inputType), rngSeed)
+  def apply(inputType: InputType = null, rngSeed: Long = 0): NeuralNet =
+    new NeuralNet(Option(inputType), rngSeed)
 }

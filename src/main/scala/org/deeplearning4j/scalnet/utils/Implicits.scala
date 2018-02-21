@@ -42,7 +42,7 @@ object Implicits {
       */
     def asInstanceOfOpt[B: ClassTag]: Option[B] = obj match {
       case b: B => Some(b)
-      case _ => None
+      case _    => None
     }
   }
 

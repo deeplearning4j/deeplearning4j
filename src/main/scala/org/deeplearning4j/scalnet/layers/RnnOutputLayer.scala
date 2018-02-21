@@ -6,35 +6,34 @@ import org.deeplearning4j.nn.conf.{ GradientNormalization, layers }
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.learning.config.IUpdater
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
-class GravesLSTM(nIn: Int,
-                 nOut: Int,
-                 activation: Activation = Activation.IDENTITY,
-                 forgetGateBiasInit: Double = 1.0,
-                 gateActivation: Activation = Activation.SIGMOID,
-                 weightInit: WeightInit = WeightInit.XAVIER,
-                 biasInit: Double = Double.NaN,
-                 dist: Distribution = null,
-                 l1: Double = Double.NaN,
-                 l2: Double = Double.NaN,
-                 l1Bias: Double = Double.NaN,
-                 l2Bias: Double = Double.NaN,
-                 dropOut: Double = 0.0,
-                 updater: IUpdater = null,
-                 biasUpdater: IUpdater = null,
-                 weightNoise: IWeightNoise = null,
-                 gradientNormalization: GradientNormalization = GradientNormalization.None,
-                 gradientNormalizationThreshold: Double = 1.0,
-                 override val name: String = "")
-    extends AbstractLSTM {
+class RnnOutputLayer(nIn: Int,
+                     nOut: Int,
+                     activation: Activation,
+                     loss: LossFunction = LossFunction.MCXENT,
+                     weightInit: WeightInit = WeightInit.XAVIER,
+                     biasInit: Double = Double.NaN,
+                     dist: Distribution = null,
+                     l1: Double = Double.NaN,
+                     l2: Double = Double.NaN,
+                     l1Bias: Double = Double.NaN,
+                     l2Bias: Double = Double.NaN,
+                     dropOut: Double = 0.0,
+                     updater: IUpdater = null,
+                     biasUpdater: IUpdater = null,
+                     weightNoise: IWeightNoise = null,
+                     gradientNormalization: GradientNormalization = GradientNormalization.None,
+                     gradientNormalizationThreshold: Double = 1.0,
+                     override val name: String = "")
+    extends BaseOutputLayer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
-    new layers.GravesLSTM.Builder()
+    new layers.RnnOutputLayer.Builder()
       .nIn(nIn)
       .nOut(nOut)
       .activation(activation)
-      .forgetGateBiasInit(forgetGateBiasInit)
-      .gateActivationFunction(gateActivation)
+      .lossFunction(loss)
       .weightInit(weightInit)
       .biasInit(biasInit)
       .dist(dist)
@@ -54,15 +53,13 @@ class GravesLSTM(nIn: Int,
   override def inputShape: List[Int] = List(nIn, nOut)
 
   override def outputShape: List[Int] = List(nOut, nIn)
-
 }
 
-object GravesLSTM {
+object RnnOutputLayer {
   def apply(nIn: Int,
             nOut: Int,
-            activation: Activation = Activation.IDENTITY,
-            forgetGateBiasInit: Double = 1.0,
-            gateActivationFn: Activation = Activation.SIGMOID,
+            activation: Activation,
+            loss: LossFunction = LossFunction.MCXENT,
             weightInit: WeightInit = WeightInit.XAVIER,
             biasInit: Double = Double.NaN,
             dist: Distribution = null,
@@ -75,13 +72,12 @@ object GravesLSTM {
             biasUpdater: IUpdater = null,
             weightNoise: IWeightNoise = null,
             gradientNormalization: GradientNormalization = GradientNormalization.None,
-            gradientNormalizationThreshold: Double = 1.0): GravesLSTM =
-    new GravesLSTM(
+            gradientNormalizationThreshold: Double = 1.0): RnnOutputLayer =
+    new RnnOutputLayer(
       nIn,
       nOut,
       activation,
-      forgetGateBiasInit,
-      gateActivationFn,
+      loss,
       weightInit,
       biasInit,
       dist,

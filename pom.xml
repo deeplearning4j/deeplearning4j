@@ -221,54 +221,6 @@
           </classpathContainers>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.scalastyle</groupId>
-        <artifactId>scalastyle-maven-plugin</artifactId>
-        <version>0.8.0</version>
-        <configuration>
-          <verbose>false</verbose>
-          <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <failOnWarning>false</failOnWarning>
-          <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-          <configLocation>${basedir}/scalastyle_config.xml</configLocation>
-          <outputFile>${project.basedir}/scalastyle-output.xml</outputFile>
-          <outputEncoding>UTF-8</outputEncoding>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.lewisd</groupId>
-        <artifactId>lint-maven-plugin</artifactId>
-        <version>0.0.8</version>
-        <configuration>
-          <failOnViolation>true</failOnViolation>
-          <onlyRunRules>
-            <rule>DuplicateDep</rule>
-            <rule>RedundantDepVersion</rule>
-            <rule>RedundantPluginVersion</rule>
-            <rule>VersionProp</rule>
-            <rule>DotVersionProperty</rule>
-          </onlyRunRules>
-          <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
-        </configuration>
-        <executions>
-          <execution>
-            <id>pom-lint</id>
-            <phase>validate</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>

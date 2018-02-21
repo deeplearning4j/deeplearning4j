@@ -18,9 +18,9 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ DenseLayer, OutputLayer => JOutputLayer }
 import org.deeplearning4j.nn.weights.WeightInit
-import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -29,32 +29,30 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   *
   * @author David Kale
   */
-class Dense(
-             nOut: List[Int],
-             nIn: List[Int],
-             val weightInit: WeightInit,
-             val activation: Activation,
-             val regularizer: WeightRegularizer,
-             val dropOut: Double = 0.0,
-             override val name: String,
-             lossFunction: Option[LossFunction])
-  extends OutputLayer {
+class Dense(nOut: List[Int],
+            nIn: List[Int],
+            val weightInit: WeightInit,
+            val activation: Activation,
+            val regularizer: WeightRegularizer,
+            val dropOut: Double = 0.0,
+            override val name: String,
+            lossFunction: Option[LossFunction])
+    extends OutputLayer {
 
   override val outputShape: List[Int] = nOut
   override val inputShape: List[Int] = nIn
   // Make this an output layer if lossFunction is defined.
-  override val output: Output = Output(isOutput = lossFunction.isDefined, lossFunction = lossFunction.orNull)
+  override val output: Output =
+    Output(isOutput = lossFunction.isDefined, lossFunction = lossFunction.orNull)
 
-  override def reshapeInput(newIn: List[Int]): Dense = {
+  override def reshapeInput(newIn: List[Int]): Dense =
     new Dense(nOut, newIn, weightInit, activation, regularizer, dropOut, name, lossFunction)
-  }
 
-  override def toOutputLayer(lossFunction: LossFunction): Dense = {
+  override def toOutputLayer(lossFunction: LossFunction): Dense =
     new Dense(nOut, nIn, weightInit, activation, regularizer, dropOut, name, Option(lossFunction))
-  }
 
-  override def compile: org.deeplearning4j.nn.conf.layers.Layer = {
-    if (output.isOutput){
+  override def compile: org.deeplearning4j.nn.conf.layers.Layer =
+    if (output.isOutput) {
       new JOutputLayer.Builder(output.lossFunction)
         .nIn(inputShape.last)
         .nOut(outputShape.last)
@@ -65,8 +63,7 @@ class Dense(
         .dropOut(dropOut)
         .name(name)
         .build()
-    }
-    else {
+    } else {
       new DenseLayer.Builder()
         .nIn(inputShape.last)
         .nOut(outputShape.last)
@@ -78,7 +75,6 @@ class Dense(
         .name(name)
         .build()
     }
-  }
 }
 
 object Dense {
@@ -89,7 +85,13 @@ object Dense {
             regularizer: WeightRegularizer = NoRegularizer(),
             dropOut: Double = 0.0,
             name: String = "",
-            lossFunction: Option[LossFunction] = None): Dense = {
-    new Dense(List(nOut), List(nIn), weightInit, activation, regularizer, dropOut, name, lossFunction)
-  }
+            lossFunction: Option[LossFunction] = None): Dense =
+    new Dense(List(nOut),
+              List(nIn),
+              weightInit,
+              activation,
+              regularizer,
+              dropOut,
+              name,
+              lossFunction)
 }
