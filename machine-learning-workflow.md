@@ -43,7 +43,7 @@ Identify a data-intensive business problem and propose a potential machine learn
 * Identify use case, define business value (labor/cost savings, fraud prevention and reduction, increased clickthrough rate, etc.)
 * Re-state business problem as machine learning task, e.g., anomaly detection or classification
 * Define "success" -- choose metric, e.g., AUC, and minimum acceptable performance, quantify potential business value
-* Identify relevant (necessary?) data and available data sources
+* Identify relevant and necessary data and available data sources
 * Quick and dirty literature review
 * Define necessary system architecture
 * Assess potential sources of risk
@@ -61,12 +61,12 @@ Rapidly explore and de-risk a use case before significant engineering resources 
 
 *NOTES: Akin to feasibility studies and short-term (1-2 month) POCs.*
 
-Overlaps with Phase 3 (model training) except here we don't expect a fully tuned model, nor do we expect to produce a reusable software artifact.
+Overlaps with Phase 3 (model training) except that here you don't expect a fully tuned model, nor do you expect to produce a reusable software artifact.
 
 **Tasks**
 * Exploratory data analysis (EDA): descriptive statistics, visualization, detection of garbage data/noise/outlier values, quantify signal-to-noise ratio
 * Quantify suitability of data for ML: number of records and features, availability and quality of labels, 
-* Specify experimental (i.e., training/test split) protocol
+* Specify experimental (i.e. training/test split) protocol
 * Rapid data ETL (extract, transform, and load) and vectorization to build experimental data sets (which might be only a toy subset)
 * Thorough literature review with short list of proposed machine-learning approaches
 * Train and evaluate ML models to assess presence (or absence) of predictive signal
@@ -89,13 +89,13 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
 * Train best performing model possible given available data, computational resources, and time.
 * Build reliable, reusable software pipeline for re-training models in the future.
 
-*NOTES: Overlaps with Phase 2 (feasibility study), but here we expect a fully tuned model and a reusable software artifact.*
+*NOTES: Overlaps with Phase 2 (feasibility study), but here you expect a fully tuned model and a reusable software artifact.*
 
 **Tasks**
 * Plan full set of experiments
 * Data ETL and vectorization pipeline that is configurable, fully tested, scalable, automatable
 * Model training code that is configurable, fully tested, scalable, automatable
-* "Offline" (on held out, not live, data) model evaluation code that is configurable, fully tested, scalable, automatable
+* "Offline" (on held-out, not live, data) model evaluation code that is configurable, fully tested, scalable, automatable
 * Design, train, and evaluate models
 * Tune and debug model training
 * Thorough empirical comparison of competing models, hyperparameters
@@ -104,7 +104,7 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
 
 **People**
 * Data Engineer: ETL, assist DS with infrastructure as needed
-* Data Scientist: plan and execute model training and evaluation, produce "reports" (in quotes because this should ideally be published in automatic fashion, so DS only needs to add context in meetings, etc.)
+* Data Scientist: plan and execute model training and evaluation, produce "reports" (automated by tools)
 * Stakeholder, Domain Expert: answer questions, as needed; consume "reports" on progress/performance; provide feedback
 * Decision Maker, Stakeholder: consume "reports" on progress/performance
 
@@ -133,7 +133,7 @@ SKIL Support: ETL, simple EDA, model training, and evaluation are supported by W
     -Unexpected poor accuracy (might need to roll back model)
 
 **People**
-* "Gatekeeper:" dunno which role this is (or maybe it's a committee), but someone should be responsible for "blessing" models, i.e., deciding a model should go live
+* "Gatekeeper:" someone or some group of people should be responsible for "blessing" models, i.e., deciding a model should go live
 * System Architect: deploy models, manage monitor model status and performance
 * Data Scientist: plan A/B tests (or other trial deployments), consume reports on model accuracy
 * Stakeholder, Domain Expert: answer questions, as needed; consume reports on model accuracy, provide feedback
