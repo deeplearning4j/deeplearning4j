@@ -137,13 +137,13 @@ def _indarray(x):
 
 def broadcast(x, y):
     xs = x.shape()
-    ys = ys.shape()
+    ys = y.shape()
     _xs = tuple(xs)
     _ys = tuple(ys)
     if xs == ys:
         return x, y
     nx = len(xs)
-    ny = len(xs)
+    ny = len(ys)
     if nx > ny:
         diff = nx - ny
         ys += [1] * diff
@@ -158,7 +158,7 @@ def broadcast(x, y):
     yt = []
     rep_x = False
     rep_y = False
-    for xd, yd in enumerate(xs, ys):
+    for xd, yd in zip(xs, ys):
         if xd == yd:
             xt.append(1)
             yt.append(1)
@@ -173,10 +173,10 @@ def broadcast(x, y):
         else:
             raise Exception('Unable to broadcast shapes ' + str(xs) + ''
                             ' and ' + str(ys))
-        if rep_x:
-            x = x.repmat(xt)
-        if rep_y:
-            y = y.repmat(yt)
+    if rep_x:
+        x = x.repmat(*xt)
+    if rep_y:
+        y = y.repmat(*yt)
     return x, y
 
 
