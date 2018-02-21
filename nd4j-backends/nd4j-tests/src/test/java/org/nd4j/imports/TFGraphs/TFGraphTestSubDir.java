@@ -1,4 +1,4 @@
-package org.nd4j.imports;
+package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -9,9 +9,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.util.*;
-
-import static org.nd4j.imports.TFGraphTestAllHelper.checkOnlyOutput;
-import static org.nd4j.imports.TFGraphTestAllHelper.fetchTestParams;
 
 /**
  * Created by susaneraly on 12/14/17.
@@ -35,7 +32,7 @@ public class TFGraphTestSubDir {
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() throws IOException {
-        return fetchTestParams(modelDir,EXECUTE_WITH);
+        return TFGraphTestAllHelper.fetchTestParams(modelDir,EXECUTE_WITH);
     }
 
     public TFGraphTestSubDir(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
@@ -51,6 +48,6 @@ public class TFGraphTestSubDir {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH);
     }
 }

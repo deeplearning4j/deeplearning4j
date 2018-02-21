@@ -1,4 +1,4 @@
-package org.nd4j.imports;
+package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -10,18 +10,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
 import java.util.*;
 
-import static org.nd4j.imports.TFGraphTestAllHelper.*;
+import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.checkOnlyOutput;
+import static org.nd4j.imports.TFGraphs.TFGraphTestAllHelper.fetchTestParams;
 
 /**
  * Created by susaneraly on 11/29/17.
  */
-@Slf4j
 @RunWith(Parameterized.class)
-public class TFGraphTestAllSameDiff {
+@Slf4j
+public class TFGraphTestAllLibnd4j {
     private Map<String, INDArray> inputs;
     private Map<String, INDArray> predictions;
     private String modelName;
-    private static final ExecuteWith EXECUTE_WITH = ExecuteWith.SAMEDIFF;
+    private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.LIBND4J;
     private static final String[] SKIP_ARR = new String[] {
             "deep_mnist",
             "deep_mnist_no_dropout",
@@ -33,23 +34,23 @@ public class TFGraphTestAllSameDiff {
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() throws IOException {
-        return fetchTestParams(EXECUTE_WITH);
+        return TFGraphTestAllHelper.fetchTestParams(EXECUTE_WITH);
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
+    public TFGraphTestAllLibnd4j(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName) throws IOException {
         this.inputs = inputs;
         this.predictions = predictions;
         this.modelName = modelName;
     }
 
     @Test
-    public void testOutputOnly() throws Exception {
+    public void test() throws Exception {
         Nd4j.create(1);
         if (SKIP_SET.contains(modelName)) {
             log.info("\n\tSKIPPED MODEL: " + modelName);
             return;
         }
-        checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
+        TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, EXECUTE_WITH);
     }
 
 }

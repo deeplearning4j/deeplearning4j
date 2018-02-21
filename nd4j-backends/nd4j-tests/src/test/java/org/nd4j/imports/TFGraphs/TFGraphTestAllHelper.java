@@ -1,4 +1,4 @@
-package org.nd4j.imports;
+package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -25,8 +25,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
  * Created by susaneraly on 11/6/17.
@@ -39,11 +39,16 @@ public class TFGraphTestAllHelper {
         SAMEDIFF(SAMEDIFF_DEFAULT_BASE_DIR),
         LIBND4J(LIBND4J_DEFAULT_BASE_DIR),
         JUST_PRINT(COMMON_BASE_DIR);
+
         private ExecuteWith(String baseDir) {
             this.BASE_DIR = baseDir;
         }
+
         private final String BASE_DIR;
-        public String getDefaultBaseDir() {return BASE_DIR;}
+
+        public String getDefaultBaseDir() {
+            return BASE_DIR;
+        }
     }
 
     //TODO: Later, we can add this as a param so we can test different graphs in samediff and not samediff
@@ -59,11 +64,11 @@ public class TFGraphTestAllHelper {
             .build();
 
     protected static List<Object[]> fetchTestParams(ExecuteWith executeWith) throws IOException {
-        return fetchTestParams(executeWith.getDefaultBaseDir(),executeWith);
+        return fetchTestParams(executeWith.getDefaultBaseDir(), executeWith);
     }
 
     protected static List<Object[]> fetchTestParams(String baseDir, ExecuteWith executeWith) throws IOException {
-        String[] modelNames = modelDirNames(baseDir,executeWith);
+        String[] modelNames = modelDirNames(baseDir, executeWith);
         List<Object[]> modelParams = new ArrayList<>();
         for (int i = 0; i < modelNames.length; i++) {
             Object[] currentParams = new Object[3];
@@ -106,7 +111,7 @@ public class TFGraphTestAllHelper {
 
                 try {
                     tfPred = predictions.get(outputNode);
-                }  catch (NullPointerException e) {
+                } catch (NullPointerException e) {
                     throw new NullPointerException("Can't find predicted variable with name [" + outputNode + "]");
                 }
 
@@ -133,13 +138,18 @@ public class TFGraphTestAllHelper {
             for (String varName : graph.variableMap().keySet()) {
                 if (!inputs.containsKey(varName)) { //avoiding placeholders
                     INDArray tfValue = intermediateVars(modelName, baseDir, varName);
-                    if(tfValue == null) {
+                    if (tfValue == null) {
                         continue;
                     }
-                    assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getShape()));
-                    assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
-                    log.info("\n\tShapes equal for " + varName);
-                    log.info("\n\tValues equal for " + varName);
+                    if (skipNode(modelName, varName)) {
+                        log.info("\n\tFORCING no check on " + varName);
+                    } else {
+                        assertEquals("Shape not equal on node " + varName, ArrayUtils.toString(tfValue.shape()), ArrayUtils.toString(graph.getVariable(varName).getShape()));
+                        assertEquals("Value not equal on node " + varName, tfValue, graph.getVariable(varName).getArr());
+                        log.info("\n\tShapes equal for " + varName);
+                        log.info("\n\tValues equal for " + varName);
+                    }
+
                 }
             }
         }
@@ -181,13 +191,13 @@ public class TFGraphTestAllHelper {
         return graph;
     }
 
-    private static String[] modelDirNames(String base_dir,ExecuteWith executeWith) throws IOException {
+    private static String[] modelDirNames(String base_dir, ExecuteWith executeWith) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(base_dir).getClassLoader());
         Resource[] resources = resolver.getResources("classpath*:" + base_dir + "/**/frozen_model.pb");
         String[] exampleNames = new String[resources.length];
         for (int i = 0; i < resources.length; i++) {
             String nestedName = resources[i].getURL().toString().split(base_dir + "/")[1];
-            exampleNames[i] = nestedName.replaceAll(Pattern.quote(executeWith.getDefaultBaseDir()),"").replaceAll("/frozen_model.pb","");
+            exampleNames[i] = nestedName.replaceAll(Pattern.quote(executeWith.getDefaultBaseDir()), "").replaceAll("/frozen_model.pb", "");
         }
         return exampleNames;
     }
@@ -210,9 +220,8 @@ public class TFGraphTestAllHelper {
         //convert varName to convention used in naming files
         // "/" replaced by "____"; followed by a digit indicating the output number followed by prediction_inbw.(shape|csv)
         if (varName.contains(":")) {
-            varName = varName.replace(':','.');
-        }
-        else {
+            varName = varName.replace(':', '.');
+        } else {
             varName = varName + ".0";
         }
         Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, varName.replaceAll("/", "____") + ".prediction_inbw");
