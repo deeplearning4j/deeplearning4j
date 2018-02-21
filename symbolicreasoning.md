@@ -88,7 +88,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 ## Further Reading on Symbolic AI
 
-* [Logical vs.Analogical or Symbolic vs. Connectionist or Neat vs. Scruffy, by Marvin Minsky](http://web.media.mit.edu/~minsky/papers/SymbolicVs.Connectionist.html)
+* [Logical vs. Analogical or Symbolic vs. Connectionist or Neat vs. Scruffy, by Marvin Minsky](http://web.media.mit.edu/~minsky/papers/SymbolicVs.Connectionist.html)
 * [Answer to: What was GOFAI, and why did it fail?](https://www.reddit.com/r/artificial/comments/ziw60/what_was_gofai_and_why_did_it_fail/c6531lf/)
 * McDermott, D. (1987), [A critique of pure reason](http://onlinelibrary.wiley.com/doi/10.1111/j.1467-8640.1987.tb00183.x/full). Computational Intelligence, 3: 151–160. doi: 10.1111/j.1467-8640.1987.tb00183.x 
 * [The Symbol Grounding Problem](http://cogprints.org/3106/), Harnad, Stevan (1990) 
@@ -96,7 +96,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 * [Belief Revision](https://en.wikipedia.org/wiki/Belief_revision)
 * [Non-monotonic Logic](https://en.wikipedia.org/wiki/Non-monotonic_logic)
 * [The Yale shooting problem](https://en.wikipedia.org/wiki/Yale_shooting_problem)
-* [ALMECOM stands for Active Logic, MEtacognitive COmputation, and Mind](http://www.cs.umd.edu/active/)
+* [ALMECOM: Active Logic, MEtacognitive COmputation, and Mind](http://www.cs.umd.edu/active/)
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
