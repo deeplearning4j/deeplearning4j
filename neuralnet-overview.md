@@ -306,7 +306,7 @@ That said, gradient descent is not recombining every weight with every other to 
 
 To train complex neural networks on very large datasets, a deep learning cluster using multiple chips, distributed over both [GPUs](http://nd4j.org/gpu_native_backends.html) and CPUs, is necessary if one is to train the network in a reasonable amount of time. Software engineers training those nets may avail themselves of GPUs in the cloud, or choose to depend on proprietary racks. Deeplearning4j scales out equally well on both, using [Spark](./spark) as an access layer to orchestrate multiple host threads over many cores. For support, please contact [Skymind](https://www.skymind.io/contact).
 
-## <a name="intro">Other Machine Learning Tutorials</a>
+## <a name="intro">More Machine Learning Tutorials</a>
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
 
