@@ -42,8 +42,8 @@ public abstract class AbstractSameDiffLayer extends Layer {
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
 
-        //Check that this class has a no-arg constructor for JSON: better to detect this now and throw an actually
-        //useful exception, rather than have it fail for users with a difficult to understand message
+        //Check that this class has a no-arg constructor for JSON: better to detect this now provide useful information
+        // to pre-empt a failure later for users, which will have a more difficult to understand message
         try{
             getClass().getDeclaredConstructor();
         } catch (NoSuchMethodException e){
