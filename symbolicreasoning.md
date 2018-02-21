@@ -83,6 +83,11 @@ Let's explore how they currently overlap and how they might. First of all, every
 ## Further Reading on Symbolic AI
 
 * [Logical vs.Analogical or Symbolic vs. Connectionist or Neat vs. Scruffy, by Marvin Minsky](http://web.media.mit.edu/~minsky/papers/SymbolicVs.Connectionist.html)
+* [Answer to: What was GOFAI, and why did it fail?](https://www.reddit.com/r/artificial/comments/ziw60/what_was_gofai_and_why_did_it_fail/c6531lf/)
+* McDermott, D. (1987), A critique of pure reason. Computational Intelligence, 3: 151–160. doi: 10.1111/j.1467-8640.1987.tb00183.x 
+* [The Symbol Grounding Problem](http://cogprints.org/3106/), Harnad, Stevan (1990) 
+* [Intentionality](http://plato.stanford.edu/entries/intentionality)
+* [Belief Revision](https://en.wikipedia.org/wiki/Belief_revision)
 
 ## Resources for Deep Learning and Symbolic Reasoning
 
@@ -124,12 +129,13 @@ by Q. Liao and T.A. Poggio
 
 *We investigate an unconventional direction of research that aims at converting neural networks, a class of distributed, connectionist, sub-symbolic models into a symbolic level with the ultimate goal of achieving AI interpretability and safety. To that end, we propose Object-Oriented Deep Learning, a novel computational paradigm of deep learning that adopts interpretable “objects/symbols” as a basic representational atom instead of N-dimensional tensors (as in traditional “feature-oriented” deep learning). For visual processing, each “object/symbol” can explicitly package common properties of visual objects like its position, pose, scale, probability of being an object, pointers to parts, etc., providing a full spectrum of interpretable visual knowledge throughout all layers. It achieves a form of “symbolic disentanglement”, offering one solution to the important problem of disentangled representations and invariance. Basic computations of the network include predicting high-level objects and their properties from low-level objects and binding/aggregating relevant objects together. These computations operate at a more fundamental level than convolutions, capturing convolution as a special case while being significantly more general than it. All operations are executed in an input-driven fashion, thus sparsity and dynamic computation per sample are naturally supported, complementing recent popular ideas of dynamic networks and may enable new types of hardware accelerations. We experimentally show on CIFAR-10 that it can perform flexible visual processing, rivaling the performance of ConvNet, but without using any convolution. Furthermore, it can generalize to novel rotations of images that it was not trained for.*
 
-### <a name="beginner">Other Deep Learning Tutorials</a>
+### <a name="beginner">More Deep Learning Tutorials</a>
+
 * [LSTMs and Recurrent Networks](./lstm)
 * [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Convolutional Networks](./convolutionalnets)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
+* [Deep Convolutional Networks (CNNs) for Image Recognition](./convolutionalnets)
+* [Restricted Boltzmann Machines (RBM)](./restrictedboltzmannmachine)
+* [Eigenvectors, Eigenvalues, Covariance, PCA and Entropy](./eigenvector)
 * [Deep Reinforcement Learning](./deepreinforcementlearning)
 * [Deeplearning4j Quickstart Examples](./quickstart)
 * [ND4J: A Tensor Library for the JVM](http://nd4j.org)
