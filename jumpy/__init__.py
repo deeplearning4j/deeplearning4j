@@ -220,6 +220,9 @@ def get_array_address(np_arr):
     :param np_arr: The numpy array to get the pointer address for
     :return:  the pointer address as a long
     """
+    # We have to maintain references to all incoming arrays,
+    # else they might get GCed.
+    _refs.append(np_arr)
     pointer, read_only_flag = np_arr.__array_interface__['data']
     return pointer
 
@@ -422,6 +425,8 @@ def _assert_data_type_length(data_buffer):
         raise AssertionError("Data Type from nd4j is double. Data buffer size is not 8")
     elif data_type == np.int and element_size != 4:
         raise AssertionError("Data Type from nd4j is int. Data buffer size is not 4")
+
+_refs = []
 
 
 def from_np(np_arr):
