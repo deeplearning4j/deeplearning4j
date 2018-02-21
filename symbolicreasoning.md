@@ -90,7 +90,7 @@ Let's explore how they currently overlap and how they might. First of all, every
 
 * [Logical vs.Analogical or Symbolic vs. Connectionist or Neat vs. Scruffy, by Marvin Minsky](http://web.media.mit.edu/~minsky/papers/SymbolicVs.Connectionist.html)
 * [Answer to: What was GOFAI, and why did it fail?](https://www.reddit.com/r/artificial/comments/ziw60/what_was_gofai_and_why_did_it_fail/c6531lf/)
-* McDermott, D. (1987), A critique of pure reason. Computational Intelligence, 3: 151–160. doi: 10.1111/j.1467-8640.1987.tb00183.x 
+* McDermott, D. (1987), [A critique of pure reason](http://onlinelibrary.wiley.com/doi/10.1111/j.1467-8640.1987.tb00183.x/full). Computational Intelligence, 3: 151–160. doi: 10.1111/j.1467-8640.1987.tb00183.x 
 * [The Symbol Grounding Problem](http://cogprints.org/3106/), Harnad, Stevan (1990) 
 * [Intentionality](http://plato.stanford.edu/entries/intentionality)
 * [Belief Revision](https://en.wikipedia.org/wiki/Belief_revision)
