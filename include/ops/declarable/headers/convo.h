@@ -219,5 +219,18 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(dilation2d, 2, 1, false, 0, 1);
 
         DECLARE_CUSTOM_OP(conv3dNew, 2, 1, false, 0, 13);
+        
+        /**
+         * This op same as maxpool2d with a variant to return a matrix of indexes for max values
+         *
+         * Input - 4D tensor
+         * Output:
+         *     0 - 4D tensor as input
+         *     1 - 4D tensor with max value indexes
+         *     
+         * Int params:
+         *   9 int with 2x4 vectors and 1 bool value
+         */
+        DECLARE_CUSTOM_OP(max_pool_with_argmax, 1, 2, false, 0, 9);
     }
 }

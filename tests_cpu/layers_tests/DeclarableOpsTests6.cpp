@@ -330,3 +330,44 @@ TEST_F(DeclarableOpsTests6, TestDropout_3) {
 
     delete ress;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
+
+    NDArray<double> x('c', {2, 2, 2, 4}, {
+             5.5, 0.,   0.3,  5.5,
+             1.5, 0.,   1.3,  6.5,
+             8.6, 0.,    0.,  0.4,
+             2.5, 1.,   0.3,  4.5,
+             1.5, 1.,   1.3,  1.5,
+             3.5, 0.,   1.3,  2.5,
+             2.6, 2.,    3.,  1.4,
+             4.5, 1.,   0.3,  0.5}
+    );       
+    NDArray<double> expI('c', {2, 2, 2, 4}, {
+             0,  1,  2,  3,
+             4,  5,  6,  7,
+             8,  9, 10, 11,
+            12, 13, 14, 15,
+             0,  1,  2,  3,
+             4,  5,  6,  7,
+             8,  9, 10, 11,
+            12, 13, 14, 15}
+    );
+
+    nd4j::ops::max_pool_with_argmax<double> op;
+
+    auto ress = op.execute({&x}, {}, {1,1,1,1,1,1,1,1,1});
+
+    
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    ASSERT_TRUE(expI.isSameShape(ress->at(0)));
+    ASSERT_TRUE(expI.isSameShape(ress->at(1)));
+    ASSERT_TRUE(x.equalsTo(ress->at(0)));
+    ASSERT_TRUE(expI.equalsTo(ress->at(1)));
+    //x.printIndexedBuffer("Input is");
+    //ress->at(0)->printIndexedBuffer("Result is ");
+    ASSERT_TRUE(expI.equalsTo(ress->at(1)));
+    
+    delete ress;
+}

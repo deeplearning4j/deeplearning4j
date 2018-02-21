@@ -4,6 +4,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
+#include <ops/declarable/helpers/max_pooling.h>
 
 namespace nd4j {
     namespace ops {
@@ -132,43 +133,11 @@ namespace nd4j {
 
                 delete tz;
             }
-
-            const int bSize = x->sizeAt(0);
-            const int inD = x->sizeAt(1);
-            const int inY = x->sizeAt(2);
-            const int inX = x->sizeAt(3);
         
 
             std::vector<int> argI = *(block.getIArguments());
 
-            int kY = argI[0];
-            int kX = argI[1];
-
-            int sY = argI[2];
-            int sX = argI[3];
-
-            int pY = argI[4];
-            int pX = argI[5];
-
-            int dY = argI[6];
-            int dX = argI[7];
-
-            int oY = 0;
-            int oX = 0;
-
-            const bool isSameMode = INT_ARG(8) > 0;
-
-
-            ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
-
-            if (isSameMode)
-                ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, argI[0], argI[1], argI[2], argI[3], argI[6], argI[7]);            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-            // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8,9 - poolingMode; 10 - divisor;
-            std::vector<T> argT = {(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T)dX, (T)1.f, (T)0.f, (T)1.f, (T) oY, (T) oX};
-
-            x->template applyTransform<simdOps::Pooling2D<T>>(z, argT.data());
-
+            helpers::maxPoolingFunctor(x, z, argI, (NDArray<T>*)nullptr);
             STORE_RESULT(*z);
 
             //z->printShapeInfo("MaxPool2D result shape");
