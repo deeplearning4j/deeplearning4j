@@ -21,9 +21,13 @@ Here are a few other definitions of artificial intelligence:
 
 There are a lot of ways to simulate human intelligence, and some methods are more intelligent than others. 
 
-AI can be a pile of if-then statements, or a complex statistical model. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called [rules engines, expert systems, knowledge graphs or symbolic reasoning](./symbolicreasoning.html). Collectively, these are known as Good, Old-Fashioned AI (AI). The intelligence they mimic could be that of an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
+AI can be a pile of if-then statements, or a complex statistical model mapping raw sensory data to symbolic categories. The if-then statements are simply rules explicitly programmed by a human hand. Taken together, these if-then statements are sometimes called [rules engines, expert systems, knowledge graphs or symbolic AI](./symbolicreasoning.html). Collectively, these are known as Good, Old-Fashioned AI (AI). The intelligence they mimic could be that of an accountant with knowledge of the tax code, who takes information you feed it, runs the information through a set of static rules, and gives your the amount of taxes you owe as a result. 
 
-Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. So you could say that true AI is whatever computers can't do yet. ;)
+Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. A wag would say that true AI is whatever computers can't do yet. 
+
+<p align="center">
+<a href="https://deeplearning4j.org/symbolicreasoning" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">LEARN MORE ABOUT SYMBOLIC AI</a>
+</p>
 
 ## Machine Learning: Programs That Alter Themselves
 
@@ -65,7 +69,7 @@ Deep artificial neural networks are a set of algorithms that have set new record
 
 So you could apply the same definition to deep learning that Arthur Samuel did to machine learning -- a "field of study that gives computers the ability to learn without being explicitly programmed" -- while adding that it tends to result in higher accuracy, require more hardware or training time, and perform exceptionally well on machine perception tasks that involved unstructured data such as blobs of pixels or text.  
 
-### <a name="resources">Other Beginner's Guides for Machine Learning</a>
+### <a name="resources">More Machine Learning Tutorials</a>
 
 * [Introduction to Neural Networks](./neuralnet-overview)
 * [LSTMs & Recurrent Networks](./lstm)
