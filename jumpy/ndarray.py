@@ -355,7 +355,41 @@ class ndarray(object):
         x, y = broadcast(self.array, other)
         return ndarray(x.div(y))
 
+    def __iadd__(self, other):
+        other = _indarray(other)
+        if self.array.shape() == other.shape():
+            self.array = self.array.addi(other)
+        else:
+            x, y = broadcast(self.array, other)
+            self.array = x.add(y)
+        return self
 
+    def __isub__(self, other):
+        other = _indarray(other)
+        if self.array.shape() == other.shape():
+            self.array = self.array.subi(other)
+        else:
+            x, y = broadcast(self.array, other)
+            self.array = x.sub(y)
+        return self
+
+    def __imul__(self, other):
+        other = _indarray(other)
+        if self.array.shape() == other.shape():
+            self.array = self.array.muli(other)
+        else:
+            x, y = broadcast(self.array, other)
+            self.array = x.mul(y)
+        return self
+
+    def __idiv__(self, other):
+        other = _indarray(other)
+        if self.array.shape() == other.shape():
+            self.array = self.array.divi(other)
+        else:
+            x, y = broadcast(self.array, other)
+            self.array = x.div(y)
+        return self
 
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)
