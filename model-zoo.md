@@ -155,3 +155,10 @@ Pretrained models are perfect for transfer learning! You can read more about tra
 ### Workspaces
 
 Initialization methods often have an additional parameter named `workspaceMode`. For the majority of users you will not need to use this; however, if you have a large machine that has "beefy" specifications, you can pass `WorkspaceMode.SINGLE`. To learn more about workspaces, please see [this section](https://deeplearning4j.org/workspaces).
+
+## Other Model Zoos
+
+* [Caffe Model Zoo](https://github.com/BVLC/caffe/wiki/Model-Zoo)
+* [Tensorflow Model Zoo](https://github.com/tensorflow/models)
+* [PyTorch Vision Model Zoo](https://github.com/pytorch/vision/tree/master/torchvision)
+* [Keras Model Zoo](https://github.com/fchollet/deep-learning-models)
