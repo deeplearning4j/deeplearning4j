@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.layers.samediff;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -18,6 +19,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import java.util.Collection;
 import java.util.Map;
 
+@Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class AbstractSameDiffLayer extends Layer {
@@ -39,6 +41,19 @@ public abstract class AbstractSameDiffLayer extends Layer {
         this.l2Bias = builder.l2Bias;
         this.updater = builder.updater;
         this.biasUpdater = builder.biasUpdater;
+
+        //Check that this class has a no-arg constructor for JSON: better to detect this now and throw an actually
+        //useful exception, rather than have it fail for users with a difficult to understand message
+        try{
+            getClass().getDeclaredConstructor();
+        } catch (NoSuchMethodException e){
+            log.warn("***SameDiff layer {} does not have a zero argument (no-arg) constructor.***\nA no-arg constructor " +
+                    "is required for JSON deserialization, which is used for both model saving and distributed (Spark) " +
+                    "training.\nA no-arg constructor (private, protected or public) as well as setters (or simply a " +
+                    "Lombok @Data annotation) should be added to avoid JSON errors later.", getClass().getName());
+        } catch (SecurityException e){
+            //Ignore
+        }
     }
 
     protected AbstractSameDiffLayer(){
