@@ -1,5 +1,7 @@
 package org.deeplearning4j.datasets.iterator.file;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -22,6 +24,10 @@ import java.util.Random;
  * @author Alex BLack
  */
 public class FileDataSetIterator extends BaseFileIterator<DataSet, DataSetPreProcessor> implements DataSetIterator {
+
+    @Getter
+    @Setter
+    private List<String> labels;
 
     /**
      * Create a FileDataSetIterator with the following default settings:<br>
@@ -153,11 +159,6 @@ public class FileDataSetIterator extends BaseFileIterator<DataSet, DataSetPrePro
 
     @Override
     public int numExamples() {
-        throw new UnsupportedOperationException("Not supported for this iterator");
-    }
-
-    @Override
-    public List<String> getLabels() {
         throw new UnsupportedOperationException("Not supported for this iterator");
     }
 }
