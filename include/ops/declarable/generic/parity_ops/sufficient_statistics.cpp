@@ -1,0 +1,68 @@
+//
+// Created by george@skymind.io on 2/21/2018.
+//
+
+#include <ops/declarable/CustomOperations.h>
+
+namespace nd4j {
+    namespace ops {
+        CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
+            NDArray<T>* input = INPUT_VARIABLE(0);
+            NDArray<T>* axisVector = INPUT_VARIABLE(1);
+            NDArray<T>* dataCount = OUTPUT_VARIABLE(0);
+
+            NDArray<T>* sum = OUTPUT_VARIABLE(1);
+            NDArray<T>* squares = OUTPUT_VARIABLE(2);
+
+            std::vector<int> axis(axisVector->lengthOf());//*block.getIArguments();
+
+            // axis might be dynamic (i.e. tf mode)
+            for (int e = 0; e < axisVector->lengthOf(); e++) {
+                    int ca = (int) (*axisVector)(e);
+                    if (ca < 0)
+                        ca += input->rankOf();
+
+                    axis[e] = ca;
+            }
+
+            input->template reduceAlongDimension<simdOps::SquaredNorm<T>>(squares, axis);
+            input->template reduceAlongDimension<simdOps::Sum<T>>(sum, axis);
+            dataCount->putScalar(0, input->lengthOf() / sum->lengthOf());
+            if (block.numT() > 0) {
+                NDArray<T>* shift = OUTPUT_VARIABLE(3);
+                shift->putScalar(0, T_ARG(0));
+            }
+
+            return ND4J_STATUS_OK;
+        }
+
+        DECLARE_SHAPE_FN(sufficient_statistics) {
+
+            NDArray<T>* axisVector = INPUT_VARIABLE(1);
+            std::vector<int> axis(axisVector->lengthOf());
+
+            NDArray<T>* input = INPUT_VARIABLE(0);
+
+            for (int e = 0; e < axisVector->lengthOf(); e++) {
+                int ca = (int) axisVector->getScalar(e);
+                if (ca < 0)
+                        ca += input->rankOf();
+
+                    axis[e] = ca;
+            }
+            //std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(input->rankOf(), {axis});
+            int* scalarShape = shape::createScalarShapeInfo();
+            int* sumShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
+            int* squareShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
+            auto shapeList = new ShapeList(); 
+            shapeList->push_back(scalarShape);
+            shapeList->push_back(sumShape);
+            shapeList->push_back(squareShape);
+            if (block.numT() > 0)
+                shapeList->push_back(shape::createScalarShapeInfo());
+            
+            return shapeList;
+        }
+    }
+
+}

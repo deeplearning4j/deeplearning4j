@@ -371,3 +371,76 @@ TEST_F(DeclarableOpsTests6, MaxPoolWithArgmax_1) {
     
     delete ress;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, SufficientStatistics_1) {
+//    NDArray<float> x0('c', {10, 10});
+//    NDArray<float> x1('c', {10, 10});
+    NDArray<double> x('c', {2, 2, 2, 4}, {
+        5.5, 0.,  0.3, 5.5,
+        1.5, 0.,  1.3, 6.5,
+        8.6, 0.,   0., 0.4,
+        2.5, 1.,  0.3, 4.5,
+        1.5, 1.,  1.3, 1.5,
+        3.5, 0.,  1.3, 2.5,
+        2.6, 2.,   3., 1.4,
+        4.5, 1.,  0.3, 0.5}
+    );
+// ------------------------------------
+    double count = 8.0;
+    NDArray<double> sumExp({30.2, 5., 7.8, 22.8});
+    NDArray<double> sqrExp({154.22,   7.,    14.34, 103.62});
+
+    NDArray<double> axis({0.0, 1.0, 2.0});
+
+    nd4j::ops::sufficient_statistics<double> op;
+
+    auto ress = op.execute({&x, &axis}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    ASSERT_EQ(ress->at(0)->getScalar(0), count);
+    ASSERT_TRUE(sumExp.equalsTo(ress->at(1)));
+    ASSERT_TRUE(sqrExp.equalsTo(ress->at(2)));
+
+    delete ress;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
+//    NDArray<float> x0('c', {10, 10});
+//    NDArray<float> x1('c', {10, 10});
+    NDArray<double> x('c', {2, 2, 2, 4}, {
+        5.5, 0.,  0.3, 5.5,
+        1.5, 0.,  1.3, 6.5,
+        8.6, 0.,   0., 0.4,
+        2.5, 1.,  0.3, 4.5,
+        1.5, 1.,  1.3, 1.5,
+        3.5, 0.,  1.3, 2.5,
+        2.6, 2.,   3., 1.4,
+        4.5, 1.,  0.3, 0.5}
+    );
+// ------------------------------------
+    double count = 4.0;
+    NDArray<double> sumExp('c', {2, 4}, {
+        18.2,        3.,         4.6,        8.8,
+        12.,         2.,         3.2,        14.}
+    );
+
+    NDArray<double> sqrExp('c', {2, 4}, {
+        113.22, 5., 10.78, 34.62,
+           41., 2.,  3.56, 69.}
+    );
+
+    NDArray<double> axis({0.0, 1.0});
+
+    nd4j::ops::sufficient_statistics<double> op;
+
+    auto ress = op.execute({&x, &axis}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, ress->status());
+    ASSERT_EQ(ress->at(0)->getScalar(0), count);
+    ASSERT_TRUE(sumExp.equalsTo(ress->at(1)));
+    ASSERT_TRUE(sqrExp.equalsTo(ress->at(2)));
+
+    delete ress;
+}
