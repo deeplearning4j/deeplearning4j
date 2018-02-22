@@ -349,6 +349,27 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
+    }
+
+    @Test
+    public void testSpaceToDepth() {
+
+        int[] blocks = new int[] {2, 2};
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW").build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(7, proc.getInputHeight());
+        assertEquals(7, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
 
     }
 

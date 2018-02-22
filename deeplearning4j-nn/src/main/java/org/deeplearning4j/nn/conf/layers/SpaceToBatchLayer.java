@@ -182,6 +182,12 @@ public class SpaceToBatchLayer extends Layer {
         }
 
         @Override
+        public T name(String layerName) {
+            this.layerName = layerName;
+            return (T) this;
+        }
+
+        @Override
         @SuppressWarnings("unchecked")
         public SpaceToBatchLayer build() {
             return new SpaceToBatchLayer(this);
