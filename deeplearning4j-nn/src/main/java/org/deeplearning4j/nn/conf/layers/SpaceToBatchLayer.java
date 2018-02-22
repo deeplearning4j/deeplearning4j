@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -56,7 +58,7 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class SpaceToBatchLayer extends Layer {
+public class SpaceToBatchLayer extends Layer {
 
     // TODO: throw error when block and padding dims don't match
 
@@ -64,7 +66,7 @@ public abstract class SpaceToBatchLayer extends Layer {
     protected int[][] padding;
 
 
-    protected SpaceToBatchLayer(SpaceToBatchBuilder builder) {
+    protected SpaceToBatchLayer(Builder builder) {
         super(builder);
         this.blocks = builder.blocks;
         this.padding = builder.padding;
@@ -89,6 +91,17 @@ public abstract class SpaceToBatchLayer extends Layer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
         return ret;
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
+
+        return new LayerMemoryReport.Builder(layerName, SpaceToBatchLayer.class, inputType, outputType)
+                .standardMemory(0, 0) //No params
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     @Override
@@ -144,17 +157,16 @@ public abstract class SpaceToBatchLayer extends Layer {
 
 
     @NoArgsConstructor
-    protected static abstract class SpaceToBatchBuilder<T extends SpaceToBatchBuilder<T>>
-            extends Builder<T> {
+    public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
         protected int[] blocks;
         protected int[][] padding;
 
-        protected SpaceToBatchBuilder(int[] blocks) {
+        public Builder(int[] blocks) {
             this.blocks = blocks;
             this.padding = new int[][]{{0, 0}, {0, 0}};
         }
 
-        protected SpaceToBatchBuilder(int[] blocks, int[][] padding) {
+        public Builder(int[] blocks, int[][] padding) {
             this.blocks = blocks;
             this.padding = padding;
         }
@@ -167,6 +179,12 @@ public abstract class SpaceToBatchLayer extends Layer {
         public T padding(int[][] padding) {
             this.padding = padding;
             return (T) this;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public SpaceToBatchLayer build() {
+            return new SpaceToBatchLayer(this);
         }
     }
 
