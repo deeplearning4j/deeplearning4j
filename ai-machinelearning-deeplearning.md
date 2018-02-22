@@ -26,7 +26,7 @@ AI can be a pile of if-then statements, or a complex statistical model mapping r
 Usually, when a computer program designed by AI researchers actually succeeds at something -- like winning at chess -- many people say it's "not really intelligent", because the algorithm's internals are well understood. A wag would say that true AI is whatever computers can't do yet. 
 
 <p align="center">
-<a href="https://deeplearning4j.org/symbolicreasoning" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">LEARN MORE ABOUT SYMBOLIC AI</a>
+<a href="https://deeplearning4j.org/symbolicreasoning" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">LEARN ABOUT SYMBOLIC AI + DL >></a>
 </p>
 
 ## Machine Learning: Programs That Alter Themselves
