@@ -19,6 +19,8 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.deeplearning4j.arbiter.optimize.generator.util.SerializedSupplier;
+import org.nd4j.linalg.function.Supplier;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -31,14 +33,26 @@ import java.util.Map;
 @AllArgsConstructor
 public class Candidate<C> implements Serializable {
 
-    private C value;
+    private Supplier<C> supplier;
     private int index;
     private double[] flatParameters;
     private Map<String, Object> dataParameters;
     private Exception exception;
 
+    public Candidate(C value, int index, double[] flatParameters, Map<String,Object> dataParameters, Exception e) {
+        this(new SerializedSupplier<C>(value), index, flatParameters, dataParameters, e);
+    }
+
     public Candidate(C value, int index, double[] flatParameters) {
+        this(new SerializedSupplier<C>(value), index, flatParameters);
+    }
+
+    public Candidate(Supplier<C> value, int index, double[] flatParameters) {
         this(value, index, flatParameters, null, null);
+    }
+
+    public C getValue(){
+        return supplier.get();
     }
 
 }
