@@ -5,6 +5,7 @@ layout: default
 
 # Machine Learning and Deep Learning Demos
 
+<p>Alex Graves’s RNN handwriting generation demo:</p>
 <ul>
 <li><a href="http://www.cs.toronto.edu/~graves/handwriting.html">RNN based handwriting generation</a></li>
 </ul>
