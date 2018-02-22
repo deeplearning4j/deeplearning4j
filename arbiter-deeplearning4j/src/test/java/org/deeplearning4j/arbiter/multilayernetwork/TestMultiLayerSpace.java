@@ -22,6 +22,7 @@ import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.data.MnistDataProvider;
+import org.deeplearning4j.arbiter.dropout.DropoutSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
@@ -51,6 +52,8 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
@@ -515,6 +518,56 @@ public class TestMultiLayerSpace {
             double l1Lr = ((FeedForwardLayer)conf.getConf(1).getLayer()).getIUpdater().getLearningRate(0,0);
             assertEquals(l0Lr+0.2, l1Lr, 1e-6);
         }
+    }
+
+    @Test
+    public void testDropoutSpace(){
+
+        ParameterSpace<Double> dropout = new DiscreteParameterSpace<>(0.0, 0.5);
+
+        MultiLayerSpace mls =
+                new MultiLayerSpace.Builder().updater(new Sgd(0.005))
+                        .dropOut(dropout)
+                        .seed(12345)
+                        .layer(new DenseLayerSpace.Builder().nOut(10)
+                                .build())
+                        .layer(new OutputLayerSpace.Builder().nOut(10)
+                                .build())
+                        .setInputType(InputType.feedForward(10))
+                        .backprop(true).pretrain(false).build();
+
+        int nParams = mls.numParameters();
+        assertEquals(1, nParams);
+
+        new RandomSearchGenerator(mls, null);    //Initializes the indices
+
+        Random r = new Random(12345);
+        int countNull = 0;
+        int count05 = 0;
+        for( int i=0; i<10; i++ ){
+            double[] d = new double[nParams];
+            for( int j=0; j<d.length; j++ ){
+                d[j] = r.nextDouble();
+            }
+
+            MultiLayerConfiguration conf = mls.getValue(d).getMultiLayerConfiguration();
+            IDropout d0 = conf.getConf(0).getLayer().getIDropout();
+            IDropout d1 = conf.getConf(1).getLayer().getIDropout();
+
+            if(d0 == null){
+                assertNull(d1);
+                countNull++;
+            } else {
+                Dropout do0 = (Dropout)d0;
+                Dropout do1 = (Dropout)d1;
+
+                assertEquals(0.5, do0.getP(), 0.0);
+                assertEquals(0.5, do1.getP(), 0.0);
+                count05++;
+            }
+        }
+        assertTrue(countNull > 0);
+        assertTrue(count05 > 0);
     }
 
 
