@@ -5,9 +5,7 @@ layout: default
 
 # The Data You Need For Deep Learning
 
-The minimum requirements to successfully apply deep learning depends on the problem you’re trying to solve. In contrast to static, 
-benchmark datasets like MNIST and CIFAR-10, real-world data is messy, varied and evolving, and that is the data practical deep learning 
-solutions must deal with. 
+The minimum requirements to successfully apply deep learning depends on the problem you’re trying to solve. In contrast to static, benchmark datasets like MNIST and CIFAR-10, real-world data is messy, varied and evolving, and that is the data practical deep learning solutions must deal with. 
 
 ![Alt text](./img/dl-workflow-cats.png) 
 
@@ -25,19 +23,15 @@ trying to solve.
 
 ## Use Cases
 
-Deep learning can solve almost any problem of machine perception, including classifying data , clustering it, or making predictions about
-it.
+Deep learning can solve almost any problem of machine perception, including classifying data , clustering it, or making predictions about it.
 
 * Classification: This image represents a horse; this email looks like spam; this transaction is fraudulent
 * Clustering: These two sounds are similar. This document is probably what user X is looking for
 * Predictions: Given their web log activity, Customer A looks like they are going to stop using your service
 
-Deep learning is best applied to unstructured data like images, video, sound or text. An image is just a blob of pixels, a message is 
-just a blob of text. This data is not organized in a typical, relational database by rows and columns. That makes it more difficult to 
-specify its features manually. 
+Deep learning is best applied to unstructured data like images, video, sound or text. An image is just a blob of pixels, a message is just a blob of text. This data is not organized in a typical, relational database by rows and columns. That makes it more difficult to specify its features manually. 
 
-Common use cases for deep learning include sentiment analysis, classifying images, predictive analytics, recommendation systems, anomaly 
-detection and more. 
+Common use cases for deep learning include sentiment analysis, classifying images, predictive analytics, recommendation systems, anomaly detection and more. 
 
 If you are not sure whether deep learning makes sense for your use case, please [get in touch](https://skymind.io/contact).
 
@@ -81,5 +75,26 @@ each label; that is, 25,000 instances of A, 25,000 instances of B and so forth.
 ## Next Steps
 
 If you’re wondering whether a deep learning solution can be built for your organization, please go through [this 
-checklist](http://deeplearning4j.org/questions) or [get in touch](https://skymind.io/contact). These are the things you need to consider 
-when deploying a deep learning solution to production. 
+checklist](http://deeplearning4j.org/questions) or [get in touch](https://skymind.io/contact). These are the things you need to consider when deploying a deep learning solution to production. 
+
+## <a name="intro">More Machine Learning Tutorials</a>
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
+
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
+* [MNIST for Beginners](./mnist-for-beginners.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./modelserver.html)
