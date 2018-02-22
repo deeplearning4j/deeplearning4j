@@ -59,9 +59,6 @@ import java.util.Arrays;
 @Slf4j
 public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SpaceToBatchLayer> {
 
-    protected int[] blocks;
-    protected int[][] padding;
-
     public SpaceToBatch(NeuralNetConfiguration conf) {
         super(conf);
     }
@@ -70,12 +67,20 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         super(conf, input);
     }
 
-    protected INDArray getBlocksArray() {
+    private int[] getBlocks() {
+        return layerConf().getBlocks();
+    }
+
+    private int[][] getPadding() {
+        return layerConf().getPadding();
+    }
+
+    private INDArray getBlocksArray() {
         int[] intBlocks = layerConf().getBlocks();
         return Nd4j.create(new double[] {intBlocks[0], intBlocks[1]});
     }
 
-    protected INDArray getPaddingArray() {
+    private INDArray getPaddingArray() {
         int[][] intPad = layerConf().getPadding();
         return Nd4j.create( new double[][] { {intPad[0][0], intPad[0][1]}, {intPad[1][0], intPad[1][1]}});
     }
@@ -135,6 +140,9 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
+        int[] blocks = getBlocks();
+        int[][] padding = getPadding();
+
         int paddedH = inH + padding[0][0] + padding[0][1];
         int paddedW = inW + padding[1][0] + padding[1][1];
 
@@ -142,7 +150,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = paddedW / blocks[1];
         int outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
 
-        INDArray out = Nd4j.createUninitialized(outMiniBatch * depth * outH * outW);
+        INDArray out = Nd4j.create(outMiniBatch * depth * outH * outW);
         INDArray reshapedOut = out.reshape('c', outMiniBatch, depth, outH, outW);
 
         CustomOp op = DynamicCustomOp.builder("space_to_batch")
@@ -151,7 +159,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return input;
+        return reshapedOut;
     }
 
     @Override
