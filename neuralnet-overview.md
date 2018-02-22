@@ -1,9 +1,9 @@
 ---
-title: Introduction to Deep Neural Networks
+title: Introduction to Deep Neural Networks (Deep Learning)
 layout: default
 ---
 
-# Introduction to Deep Neural Networks
+# Introduction to Deep Neural Networks (Deep Learning)
 
 Contents
 
@@ -308,7 +308,7 @@ To train complex neural networks on very large datasets, a deep learning cluster
 
 ## <a name="intro">More Machine Learning Tutorials</a>
 
-For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
 
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
 * [Deep Convolutional Networks](./convolutionalnets.html)
