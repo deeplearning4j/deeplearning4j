@@ -600,5 +600,24 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
 
 
+        /**
+         * bincount operation return a vector with element counted.
+         * 
+         * input params:
+         *  - input tensor - only int part are accepted
+         *  - weights - the same shape tensor with integer weights for element (optional)
+         *  default weight - 1,1,1..,1 for all values in the tensor
+         * 
+         *  optional ints: 
+         *  - min_length - zero or greater
+         *  - max_length - between min_length and max(input) + 1
+         *
+         *  returns four tensors:
+         *     - vector tensor with length to min(max_len, max(input) + 1) with count
+         *  of values in indexed place
+         *
+         */
+        DECLARE_CUSTOM_OP(bincount, 1, 1, false, 0, 0);
+
     }
 }

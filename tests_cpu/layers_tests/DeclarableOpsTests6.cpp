@@ -444,3 +444,73 @@ TEST_F(DeclarableOpsTests6, SufficientStatistics_2) {
 
     delete ress;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_1) {
+
+    NDArray<double> x('c', {2, 2, 2}, {
+        1, 2, 0, 1, 2, 2, 1, 2}
+    );
+// ------------------------------------
+
+    NDArray<double> exp({1., 3., 4.});
+
+    nd4j::ops::bincount<double> op;
+
+    auto res = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_2) {
+
+    NDArray<double> x('c', {2, 2, 2}, {
+        1, 2, 0, 1, 2, 2, 1, 2}
+    );
+
+    NDArray<double> weights('c', {2, 2, 2}, {
+        2, 1, 3, 1, 5, 1, 1, 6}
+    );
+
+// ------------------------------------
+
+    NDArray<double> exp({3., 4., 13.});
+
+    nd4j::ops::bincount<double> op;
+
+    auto res = op.execute({&x, &weights}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BinCount_3) {
+
+    NDArray<double> x('c', {2, 2, 2}, {
+        1, 2, 0, 1, 2, 2, 1, 2}
+    );
+
+    NDArray<double> weights('c', {2, 2, 2}, {
+        2, 1, 3, 1, 5, 1, 1, 6}
+    );
+
+// ------------------------------------
+
+    NDArray<double> exp({3., 4.});
+
+    nd4j::ops::bincount<double> op;
+
+    auto res = op.execute({&x, &weights}, {}, {0, 2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
