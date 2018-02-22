@@ -191,7 +191,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray col2d = col6d.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
 
-
         switch (layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
@@ -326,6 +325,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 break;
             case AVG:
                 pt = LegacyPooling2D.Pooling2DType.AVG;
+                extra = 1.0;    //Divide by kH*kW not "number present" to match backward pass
                 break;
             case PNORM:
                 pt = LegacyPooling2D.Pooling2DType.PNORM;
