@@ -52,7 +52,6 @@ layout: default
 <li><a href="https://github.com/yechengxi/LightNet">Lightnet</a>  is a lightweight, versatile and purely Matlab-based deep learning framework. The aim of the design is to provide an easy-to-understand, easy-to-use and efficient computational platform for deep learning research.</li>
 <li><a href="https://github.com/KotlinNLP/SimpleDNN">SimpleDNN</a> is a machine learning lightweight open-source library written in Kotlin whose purpose is to support the development of feed-forward and recurrent Artificial Neural Networks.</li>
 </ol>
-<p>If your software belongs here, <a href="mailto:ca9lar@gmail.com">email us</a> and let us know.</p>
 
 ## <a name="intro">More Machine Learning Tutorials</a>
 
