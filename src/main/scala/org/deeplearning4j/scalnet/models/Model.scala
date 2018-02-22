@@ -121,7 +121,7 @@ abstract class Model {
     *
     * @param x input represented as DataSet
     */
-  def predict(x: DataSet): INDArray = predict(x.getFeatureMatrix)
+  def predict(x: DataSet): INDArray = predict(x.getFeatures)
 
   override def toString: String = model.getLayerWiseConfigurations.toString
 

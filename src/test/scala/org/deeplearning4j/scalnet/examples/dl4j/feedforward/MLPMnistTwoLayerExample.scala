@@ -18,20 +18,20 @@
 
 package org.deeplearning4j.scalnet.examples.dl4j.feedforward
 
+import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
-import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
+import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{ Logger, LoggerFactory }
 
 /**
   * Two-layer MLP for MNIST using DL4J-style NeuralNet
@@ -39,11 +39,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   *
   * @author David Kale
   */
-object MLPMnistTwoLayerExample extends App {
-
-  System.setProperty("org.bytedeco.javacpp.logger.debug", "true")
-
-  private val log: Logger = LoggerFactory.getLogger(MLPMnistTwoLayerExample.getClass)
+object MLPMnistTwoLayerExample extends App with LazyLogging {
 
   private val numRows: Int = 28
   private val numColumns: Int = 28
@@ -59,7 +55,7 @@ object MLPMnistTwoLayerExample extends App {
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
-  log.info("Build model....")
+  logger.info("Build model....")
   private val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
   model.add(
     Dense(nOut = 500,
@@ -84,16 +80,16 @@ object MLPMnistTwoLayerExample extends App {
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
                 optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
-  log.info("Train model....")
+  logger.info("Train model....")
   model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(scoreFrequency)))
 
-  log.info("Evaluate model....")
+  logger.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(outputNum)
   while (mnistTest.hasNext) {
     val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }
-  log.info(evaluator.stats())
-  log.info("****************Example finished********************")
+  logger.info(evaluator.stats())
+  logger.info("****************Example finished********************")
 }
