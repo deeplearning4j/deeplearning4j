@@ -80,7 +80,7 @@ public class FileModelSaver implements ResultSaver {
         File f = new File(dir);
         f.mkdir();
 
-        File modelFile = new File(FilenameUtils.concat(dir, "params.bin"));
+        File modelFile = new File(FilenameUtils.concat(dir, "model.bin"));
         File scoreFile = new File(FilenameUtils.concat(dir, "score.txt"));
         File additionalResultsFile = new File(FilenameUtils.concat(dir, "additionalResults.bin"));
         File esConfigFile = new File(FilenameUtils.concat(dir, "earlyStoppingConfig.bin"));
