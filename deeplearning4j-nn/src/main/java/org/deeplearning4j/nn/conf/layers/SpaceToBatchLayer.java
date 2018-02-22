@@ -23,16 +23,22 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Collection;
+import java.util.Map;
+
 /**
- * Space to batch utility layer for convolutional input types.
- *
- * N-dimensional space to batch operation. Transforms data from a tensor from M spatial dimensions into batch dimension
- * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally padded,
- * as specified in "padding", a tensor of dim (M, 2), denoting the padding range.
+ * Space to batch utility layer configuration for convolutional input types.
+ * <p>
+ * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions
+ * into batch dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial
+ * dimensions are optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
  * <p>
  * Example:
  * input:         [[[[1], [2]], [[3], [4]]]]
@@ -52,6 +58,7 @@ import org.nd4j.linalg.factory.Nd4j;
 @EqualsAndHashCode(callSuper = true)
 public abstract class SpaceToBatchLayer extends Layer {
 
+    // TODO: throw error when block and padding dims don't match
 
     protected int[] blocks;
     protected int[][] padding;
@@ -60,12 +67,42 @@ public abstract class SpaceToBatchLayer extends Layer {
     protected SpaceToBatchLayer(SpaceToBatchBuilder builder) {
         super(builder);
         this.blocks = builder.blocks;
+        this.padding = builder.padding;
     }
 
     @Override
     public SpaceToBatchLayer clone() {
-        SpaceToBatchLayer clone = (SpaceToBatchLayer) super.clone();
-        return clone;
+        return (SpaceToBatchLayer) super.clone();
+    }
+
+    @Override
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                                                       Collection<IterationListener> iterationListeners,
+                                                       int layerIndex, INDArray layerParamsView,
+                                                       boolean initializeParams) {
+        org.deeplearning4j.nn.layers.convolution.SpaceToBatch ret =
+                new org.deeplearning4j.nn.layers.convolution.SpaceToBatch(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        ret.setParamsViewArray(layerParamsView);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
+    }
+
+    @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
+                    + "\"): Expected CNN input, got " + inputType);
+        }
+        InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
+        return InputType.convolutional(
+                (i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
+                (i.getWidth()+ padding[1][0] + padding[1][1]) / blocks[1],
+                i.getDepth()
+        );
     }
 
     @Override
@@ -83,7 +120,7 @@ public abstract class SpaceToBatchLayer extends Layer {
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for space to batch layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
     }
@@ -108,24 +145,28 @@ public abstract class SpaceToBatchLayer extends Layer {
 
     @NoArgsConstructor
     protected static abstract class SpaceToBatchBuilder<T extends SpaceToBatchBuilder<T>>
-                    extends Builder<T> {
+            extends Builder<T> {
         protected int[] blocks;
         protected int[][] padding;
 
         protected SpaceToBatchBuilder(int[] blocks) {
-
             this.blocks = blocks;
-            int numBlocks = blocks.length;
-            padding = new int[numBlocks][2];
-            for (int i = 0; i < numBlocks; i++) {
-                padding[i] = new int[] {0, 0};
-            }
+            this.padding = new int[][]{{0, 0}, {0, 0}};
         }
 
         protected SpaceToBatchBuilder(int[] blocks, int[][] padding) {
             this.blocks = blocks;
             this.padding = padding;
+        }
 
+        public T blocks(int[] blocks) {
+            this.blocks = blocks;
+            return (T) this;
+        }
+
+        public T padding(int[][] padding) {
+            this.padding = padding;
+            return (T) this;
         }
     }
 
