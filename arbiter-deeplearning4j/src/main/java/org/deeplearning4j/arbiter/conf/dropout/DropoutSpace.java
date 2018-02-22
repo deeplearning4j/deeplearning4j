@@ -15,7 +15,12 @@ public class DropoutSpace extends AbstractParameterSpace<IDropout> {
 
     @Override
     public Dropout getValue(double[] parameterValues) {
-        return new Dropout(dropout.getValue(parameterValues));
+        double p = dropout.getValue(parameterValues);
+        if(p == 0){
+            //Special case: 0 dropout = "disabled" in DL4J. But Dropout class doesn't support this
+            return null;
+        }
+        return new Dropout(p);
     }
 
     @Override
