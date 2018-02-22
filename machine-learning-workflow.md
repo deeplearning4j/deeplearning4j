@@ -159,9 +159,9 @@ SKIL Support: one-click deployment of trained or imported models, simple monitor
 * Data Scientist: consume reports on model accuracy
 * Stakeholder, Domain Expert: answer questions, as needed; consume reports on model accuracy, provide feedback
 
-## <a name="intro">Other Machine Learning Tutorials</a>
+## <a name="intro">More Machine Learning Tutorials</a>
 
-For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of feedforward networks:
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
 
 * [Recurrent Networks and LSTMs](./lstm.html)
 * [Deep Reinforcement Learning](./deepreinforcementlearning.html)
