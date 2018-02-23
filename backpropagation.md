@@ -11,7 +11,7 @@ Neural networks are like new-born babies: They are created ignorant of the world
 
 The knowledge of a neural network with regard to the world is captured by its weights, the parameters that alter input data as the signal flows through the neural network towards the final layer that will make a decision about that input. Those decisions are often wrong, because the parameters transforming the signal into a decision are wrong. 
 
-So the parameters of the neural network have a relationship with the error the net produces, and when the parameters change, presumably the error does, too. We change the parameters using an optimization algorithm called gradient descent, which is useful for finding the minimum of a function. We are seeking to minimize the error, which is also known as the *loss function* or the *objective function*.
+So the parameters of the neural network have a relationship with the error the net produces, and when the parameters change, presumably the error does, too. We change the parameters using an optimization algorithm called [gradient descent](https://en.wikipedia.org/wiki/Gradient_descent), which is useful for finding the minimum of a function. We are seeking to minimize the error, which is also known as the *loss function* or the *objective function*.
 
 So a neural propagates the signal of the input data forward through its parameters towards the moment of decision, and then *backprogates* information about the error through the network so that it can alter the parameters one step at a time. 
 
