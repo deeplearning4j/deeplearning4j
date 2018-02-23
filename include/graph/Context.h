@@ -71,6 +71,8 @@ namespace nd4j {
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
 
+            VariableSpace<T> *getVariableSpace();
+
             // these fields define, if we can execute specific node in-place, without generating new array
 
 

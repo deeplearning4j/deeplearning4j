@@ -11,6 +11,30 @@
 
 namespace nd4j {
     namespace graph {
+
+        template <typename T>
+        template <typename N>
+        Variable<N>* Variable<T>::asT() {
+            auto result = new Variable<N>(this->isPlaceholder());
+
+            result->markExternal(this->_external);
+            result->setId(this->_id);
+            result->markReadOnly(this->_readOnly);
+            result->setName(&this->_name);
+            result->setIndex(this->_index);
+
+            if (this->_ndarray != nullptr)
+                result->setNDArray(this->_ndarray->template asT<N>());
+
+            // FIXME: add support for ArrayList
+            if (this->_list != nullptr) {
+                nd4j_printf("ArrayList not supported yet\n", "");
+                throw "ArrayList not supported yet";
+            }
+
+            return result;
+        }
+
         template <typename T>
         nd4j::graph::Variable<T>* nd4j::graph::Variable<T>::clone() {
             auto result = new Variable<T>(this->isPlaceholder());
@@ -18,6 +42,7 @@ namespace nd4j {
             result->_id = this->_id;
             result->_readOnly = this->_readOnly;
             result->_name = this->_name;
+            result->_index = this->_index;
 
             if (this->_ndarray != nullptr)
                 result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering());
@@ -26,6 +51,11 @@ namespace nd4j {
                 result->_list = this->_list->clone();
 
             return result;
+        }
+
+        template <typename T>
+        void nd4j::graph::Variable<T>::setIndex(int index) {
+            _index = index;
         }
 
         template <typename T>
@@ -261,5 +291,18 @@ namespace nd4j {
         template class ND4J_EXPORT Variable<float>;
         template class ND4J_EXPORT Variable<float16>;
         template class ND4J_EXPORT Variable<double>;
+
+
+        template Variable<float>* Variable<float>::asT<float>();
+        template Variable<float16>* Variable<float>::asT<float16>();
+        template Variable<double>* Variable<float>::asT<double>();
+
+        template Variable<float>* Variable<float16>::asT<float>();
+        template Variable<float16>* Variable<float16>::asT<float16>();
+        template Variable<double>* Variable<float16>::asT<double>();
+
+        template Variable<float>* Variable<double>::asT<float>();
+        template Variable<float16>* Variable<double>::asT<float16>();
+        template Variable<double>* Variable<double>::asT<double>();
     }
 }

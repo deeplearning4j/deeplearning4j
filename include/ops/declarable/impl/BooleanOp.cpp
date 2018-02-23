@@ -100,7 +100,7 @@ namespace nd4j {
             Nd4jStatus status = this->validateAndExecute(*block);
 
             auto timeEnd = std::chrono::system_clock::now();
-            auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+            auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
             block->setInnerTime(outerTime);
 
             // basically we're should be putting 0.0 as FALSE, and any non-0.0 value will be treated as TRUE

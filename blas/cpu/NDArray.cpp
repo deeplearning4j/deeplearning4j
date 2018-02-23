@@ -53,6 +53,21 @@ namespace nd4j {
         return view;
     }
 
+    template <typename T>
+    template <typename N>
+    NDArray<N>* NDArray<T>::asT() {
+        auto result = new NDArray<N>(this->ordering(), this->getShapeAsVector());
+        auto l = this->lengthOf();
+
+        // FIXME: we want to avoid put/get indexed scalars here really
+#pragma omp parallel for
+        for (int e = 0; e < l; e++) {
+            result->putIndexedScalar(e, (N) this->getIndexedScalar(e));
+        }
+
+        return result;
+    }
+
 ////////////////////////////////////////////////////////////////////////
 // default constructor, do not allocate memory, memory for array is passed from outside 
     template <typename T>
@@ -3060,6 +3075,19 @@ T NDArray<T>::getTrace() const {
 template class ND4J_EXPORT NDArray<float>;
 template class ND4J_EXPORT NDArray<float16>;
 template class ND4J_EXPORT NDArray<double>;
+
+
+template NDArray<float>* NDArray<float>::asT<float>();
+template NDArray<float16>* NDArray<float>::asT<float16>();
+template NDArray<double>* NDArray<float>::asT<double>();
+
+template NDArray<float>* NDArray<float16>::asT<float>();
+template NDArray<float16>* NDArray<float16>::asT<float16>();
+template NDArray<double>* NDArray<float16>::asT<double>();
+
+template NDArray<float>* NDArray<double>::asT<float>();
+template NDArray<float16>* NDArray<double>::asT<float16>();
+template NDArray<double>* NDArray<double>::asT<double>();
 
 
 #ifndef __CLION_IDE__

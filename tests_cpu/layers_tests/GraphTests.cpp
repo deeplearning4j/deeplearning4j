@@ -1269,3 +1269,76 @@ TEST_F(GraphTests, Test_Clone_2) {
     delete graph;
     delete clone;
 }
+
+TEST_F(GraphTests, Test_Dtype_Conversion_1) {
+    NDArray<double> expD('c', {3}, {3.0, 3.0, 3.0});
+    NDArray<float> expF('c', {3}, {3.0, 3.0, 3.0});
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/reduce_dim.fb");
+    graph->buildGraph();
+
+
+    auto gd = graph->template asT<double>();
+    auto gf = gd->template asT<float>();
+
+    // checking float graph
+    Nd4jStatus statusF = GraphExecutioner<float>::execute(gf);
+    ASSERT_EQ(ND4J_STATUS_OK, statusF);
+
+    ASSERT_TRUE(gf->getVariableSpace()->hasVariable(4));
+    auto z1 = gf->getVariableSpace()->getVariable(4)->getNDArray();
+
+    ASSERT_TRUE(expF.isSameShape(z1));
+    ASSERT_TRUE(expF.equalsTo(z1));
+
+
+    // checking double graph
+    Nd4jStatus statusD = GraphExecutioner<double>::execute(gd);
+    ASSERT_EQ(ND4J_STATUS_OK, statusD);
+
+    ASSERT_TRUE(gd->getVariableSpace()->hasVariable(4));
+    auto z2 = gd->getVariableSpace()->getVariable(4)->getNDArray();
+
+    ASSERT_TRUE(expD.isSameShape(z2));
+    ASSERT_TRUE(expD.equalsTo(z2));
+
+
+    delete graph;
+    delete gd;
+    delete gf;
+}
+
+TEST_F(GraphTests, Test_Dtype_Conversion_2) {
+    NDArray<float> expF('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
+    NDArray<double> expD('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    graph->buildGraph();
+
+
+    auto gd = graph->template asT<double>();
+    auto gf = gd->template asT<float>();
+
+    // checking float
+    auto resultF = GraphExecutioner<float>::execute(gf);
+    ASSERT_EQ(ND4J_STATUS_OK, resultF);
+    ASSERT_TRUE(gf->getVariableSpace()->hasVariable(18));
+    auto zF = gf->getVariableSpace()->getVariable(18)->getNDArray();
+
+    ASSERT_TRUE(expF.isSameShape(zF));
+    ASSERT_TRUE(expF.equalsTo(zF));
+
+
+    // checking double
+    auto resultD = GraphExecutioner<double>::execute(gd);
+    ASSERT_EQ(ND4J_STATUS_OK, resultD);
+    ASSERT_TRUE(gd->getVariableSpace()->hasVariable(18));
+    auto zD = gd->getVariableSpace()->getVariable(18)->getNDArray();
+
+    ASSERT_TRUE(expD.isSameShape(zD));
+    ASSERT_TRUE(expD.equalsTo(zD));
+
+    delete graph;
+    delete gd;
+    delete gf;
+}

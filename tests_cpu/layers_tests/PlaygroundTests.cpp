@@ -7,6 +7,7 @@
 #include <chrono>
 #include <Node.h>
 #include <ops/declarable/CustomOperations.h>
+#include <graph/profiling/GraphProfilingHelper.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -251,4 +252,55 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
 
     for (auto v: pool2)
         delete v;
+}
+
+TEST_F(PlaygroundTests, Test_Profile_1) {
+    GraphProfile prof;
+
+    prof.setBuildTime(70);
+    prof.setExecutionTime(130);
+
+    prof.startEvent("omega");
+    prof.spotEvent("alpha");
+    prof.spotEvent("beta");
+    prof.spotEvent("gamma");
+    prof.recordEvent("omega");
+
+    auto nodeA = prof.nodeById(1, "MatMul");
+    auto nodeB = prof.nodeById(2, "Sum");
+    auto nodeC = prof.nodeById(3, "Conv2D");
+
+    nodeA->setObjectsSize(512);
+    nodeA->setTemporarySize(65536);
+    nodeA->setActivationsSize(512387);
+    nodeA->setPreparationTime(127);
+    nodeA->setExecutionTime(6539);
+
+
+    nodeB->setObjectsSize(0);
+    nodeB->setTemporarySize(0);
+    nodeB->setActivationsSize(512387);
+    nodeB->setPreparationTime(132);
+    nodeB->setExecutionTime(2047);
+
+
+    nodeC->setObjectsSize(1536);
+    nodeC->setTemporarySize(2355674);
+    nodeC->setActivationsSize(1022092);
+    nodeC->setPreparationTime(129);
+    nodeC->setExecutionTime(12983);
+
+    prof.printOut();
+}
+
+
+TEST_F(PlaygroundTests, Test_Profile_2) {
+    Environment::getInstance()->setProfiling(true);
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+
+    auto profile = GraphProfilingHelper<float>::profile(graph, 100);
+    profile->printOut();
+
+    delete graph;
+    delete profile;
 }

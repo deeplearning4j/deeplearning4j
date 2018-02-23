@@ -184,4 +184,24 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     delete rv;
 }
 
+TEST_F(VariableTests, Test_Dtype_Conversion_1) {
+    auto x = new NDArray<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    Variable<float> v(x, "alpha", 12, 3);
+
+    auto vd = v.template asT<double>();
+    auto vf = vd->template asT<float>();
+
+    ASSERT_EQ(*v.getName(), *vf->getName());
+    ASSERT_EQ(v.id(), vf->id());
+    ASSERT_EQ(v.index(), vf->index());
+
+    auto xf = vf->getNDArray();
+
+    ASSERT_TRUE(x->isSameShape(xf));
+    ASSERT_TRUE(x->equalsTo(xf));
+
+    delete vd;
+    delete vf;
+}
+
 #endif //LIBND4J_VARIABLETESTS_H

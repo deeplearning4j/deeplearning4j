@@ -82,6 +82,8 @@ namespace nd4j {
 
             bool equals(Node *other);
 
+            DataType dataType();
+            ContextPrototype<T>* protoContext();
             OpType opType();
             Nd4jIndex opNum();
             int id();
@@ -130,6 +132,9 @@ namespace nd4j {
             void pickInput(int nodeId, int outputId);
             void pickInput(std::pair<int,int>& id);
 
+            bool isDeductable();
+            void setDeductable(bool reallyDeductable);
+
             void setName(std::string *name);
             void setName(const std::string& name);
             std::string * getName();
@@ -166,6 +171,45 @@ namespace nd4j {
 
             // clone Node
             Node<T>* clone();
+
+            // change Node data type
+            template <typename N>
+            Node<N>* asT();
+
+            template <typename N>
+            FORCEINLINE void pullValues(Node<N> *other) {
+
+                if (this->_protoContext != nullptr)
+                    delete _protoContext;
+
+                this->_dataType = other->dataType();
+                this->_protoContext = other->protoContext()->template asT<T>();
+                this->_scalar = (T) other->scalar();
+                this->_hasExternalInputs = other->hasExternalInputs();
+                this->_hasExternalOutputs = other->hasExternalOutputs();
+                this->_hasInternalInputs = other->hasInternalInputs();
+                this->_hasInternalOutputs = other->hasInternalOutputs();
+
+                this->markInplace(other->isInplace());
+                this->setActive(other->isActive());
+                this->setScopeInfo(other->scopeId(), other->scopeName()->c_str());
+                this->setLayer(other->getLayer());
+                this->setDeductable(other->isDeductable());
+
+
+                if (this->_customOp != nullptr && _isDeductable)
+                    delete this->_customOp;
+
+                for (auto v: *other->input())
+                    this->_input.emplace_back(v);
+
+                for (auto v: *other->output())
+                    this->_output.emplace_back(v);
+
+                for (auto v: *other->getDimensions())
+                    this->_dimensions.emplace_back(v);
+
+            }
 
             static nd4j::ops::DeclarableOp<T>* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, T scalar);
         };

@@ -223,6 +223,8 @@ namespace nd4j {
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Context<T>* block) {
             nd4j_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
+            auto timeEnter = std::chrono::system_clock::now();
+
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
 
@@ -233,12 +235,24 @@ namespace nd4j {
             this->prepareOutputs(*block);
 
             auto timeStart = std::chrono::system_clock::now();
+            auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeStart - timeEnter).count();
 
             Nd4jStatus status = this->validateAndExecute(*block);
 
             auto timeEnd = std::chrono::system_clock::now();
-            auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+            auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
             block->setInnerTime(outerTime);
+
+            if (Environment::getInstance()->isProfiling()) {
+                auto fp = block->getVariableSpace()->flowPath();
+                if (fp != nullptr) {
+                    auto p = block->getVariableSpace()->flowPath()->profile();
+                    if (p != nullptr) {
+                        block->getVariableSpace()->flowPath()->profile()->nodeById(block->nodeId())->setPreparationTime(prepTime);
+                        block->getVariableSpace()->flowPath()->profile()->nodeById(block->nodeId())->setExecutionTime(outerTime);
+                    }
+                }
+            }
 
             return status;
         }
@@ -423,7 +437,9 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(std::vector<NDArray<T>*>& inputs, std::vector<NDArray<T>*>& outputs, std::vector<T>& tArgs, std::vector<int>& iArgs, bool isInplace) {
-            VariableSpace<T> variableSpace;            
+            VariableSpace<T> variableSpace;
+            FlowPath fp;
+            variableSpace.setFlowPath(&fp);
 
             int cnt = -1;
             std::vector<int> in;
@@ -466,6 +482,8 @@ namespace nd4j {
             VariableSpace<T> variableSpace;
             auto arrayList = new ResultSet<T>();
             //ResultSet<T> arrayList;
+            FlowPath fp;
+            variableSpace.setFlowPath(&fp);
 
             if (isInplace)
                 arrayList->setNonRemovable();

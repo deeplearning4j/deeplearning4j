@@ -1005,15 +1005,31 @@ namespace nd4j {
         }
 
         template <typename T>
+        void Graph<T>::replaceState(VariableSpace<T> *state, ExecutorConfiguration *configuration) {
+            delete _variableSpace;
+            delete _configuration;
+
+            _variableSpace = state;
+            _configuration = configuration;
+        }
+
+        template <typename T>
+        template <typename N>
+        Graph<N>* Graph<T>::asT() {
+            auto clone = new Graph<N>();
+
+            clone->replaceState(this->_variableSpace->template asT<N>(), this->_configuration->clone());
+
+            clone->template pullState<T>(this);
+
+            return clone;
+        }
+
+        template <typename T>
         Graph<T>* Graph<T>::clone() {
             auto clone = new Graph<T>();
-            delete clone->_variableSpace;
-            delete clone->_configuration;
-            
-            // varspace and configuration are cloneable
-            clone->_variableSpace = this->_variableSpace->clone();
-            clone->_configuration = this->_configuration->clone();
-            
+
+            clone->replaceState(this->_variableSpace->clone(), this->_configuration->clone());
 
             // transfer nodes
             for (int e = 0; e < _nodes->size(); e++)
@@ -1079,6 +1095,19 @@ namespace nd4j {
         template class ND4J_EXPORT Graph<float>;
         template class ND4J_EXPORT Graph<float16>;
         template class ND4J_EXPORT Graph<double>;
+
+
+        template Graph<float>* Graph<float>::asT<float>();
+        template Graph<float16>* Graph<float>::asT<float16>();
+        template Graph<double>* Graph<float>::asT<double>();
+
+        template Graph<float>* Graph<float16>::asT<float>();
+        template Graph<float16>* Graph<float16>::asT<float16>();
+        template Graph<double>* Graph<float16>::asT<double>();
+
+        template Graph<float>* Graph<double>::asT<float>();
+        template Graph<float16>* Graph<double>::asT<float16>();
+        template Graph<double>* Graph<double>::asT<double>();
     }
 }
 

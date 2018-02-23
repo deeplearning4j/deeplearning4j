@@ -162,6 +162,9 @@ namespace nd4j {
              */
             Graph<T>* clone();
 
+            template <typename N>
+            Graph<N>* asT();
+
             /**
              * This method removes reference to VariableSpace from this Graph
              */
@@ -178,6 +181,63 @@ namespace nd4j {
              * @return
              */
             bool hasNode(int nodeId);
+
+            void replaceState(VariableSpace<T> *state, ExecutorConfiguration *configuration);
+
+            FORCEINLINE std::vector<int>* nodes() {
+                return _nodes;
+            }
+
+            FORCEINLINE std::vector<int>* autos() {
+                return &_autos;
+            }
+
+            FORCEINLINE std::vector<int>* output() {
+                return &_output;
+            }
+
+            FORCEINLINE std::map<int, Scope<T>*>* scopes() {
+                return &_mappedScopes;
+            }
+
+            FORCEINLINE bool built() {
+                return _built.load();
+            }
+
+            template <typename N>
+            FORCEINLINE void pullState(Graph<N> *other) {
+                for (int e = 0; e < other->nodes()->size(); e++)
+                    this->_nodes->emplace_back(other->nodes()->at(e));
+
+                for (int e = 0; e < other->output()->size(); e++)
+                    this->_output.emplace_back(other->output()->at(e));
+                
+                for (int e = 0; e < other->autos()->size(); e++)
+                    this->_autos.emplace_back(other->autos()->at(e));
+
+                for (auto &v: *other->scopes()) {
+                    auto scp = v.second->template asT<T>();
+                    this->_mappedScopes[v.first] = scp;
+                    this->_scopes.emplace_back(scp);
+                }
+                
+                for (auto &v: *other->getOnion()) {
+                    auto vec = this->_onion->count(v.first) > 0 ? this->_onion->at(v.first) : new std::vector<Node<T>*>();
+
+                    auto ovec = (*other->getOnion())[v.first];
+                    for (auto x: *(ovec)) {
+                        auto n = x->template asT<T>();
+                        vec->emplace_back(n);
+                        _handles.emplace_back(n);
+                        (*this->_mapped)[n->id()] = n;
+                    }
+
+                    if (this->_onion->count(v.first) < 1)
+                        (*this->_onion)[v.first] = vec;
+                }
+
+                this->_built.store(other->built());
+            }
         };
     }
 }

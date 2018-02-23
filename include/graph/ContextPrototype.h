@@ -63,6 +63,9 @@ namespace nd4j {
 
             // just a clone
             ContextPrototype<T>* clone();
+
+            template <typename N>
+            ContextPrototype<N>* asT();
         };
     }
 }

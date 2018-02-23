@@ -79,6 +79,9 @@ namespace nd4j {
              */
             Scope<T>* clone();
 
+            template <typename N>
+            Scope<N>* asT();
+
             /**
              * This method removes all Nodes from this scope
              */

@@ -81,6 +81,11 @@ namespace nd4j {
             _workspace = nullptr;
         }
 
+        template<typename T>
+        VariableSpace<T> *Context<T>::getVariableSpace() {
+            return _variableSpace;
+        }
+
         template <typename T>
         nd4j::memory::Workspace* Context<T>::getWorkspace() {
             return _workspace;

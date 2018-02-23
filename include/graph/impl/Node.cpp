@@ -135,7 +135,7 @@ namespace nd4j {
             _customOp = customOp;
 
             // divergent ops (Switch etc) are always inplace, they don't allocate anything
-            if (customOp->getOpDescriptor()->isDivergent())
+            if (_customOp != nullptr && customOp->getOpDescriptor()->isDivergent())
                 _isInplace = true;
         }
 
@@ -567,6 +567,16 @@ namespace nd4j {
         }
 
         template <typename T>
+        DataType Node<T>::dataType() {
+            return _dataType;
+        }
+
+        template <typename T>
+        ContextPrototype<T>* Node<T>::protoContext() {
+            return _protoContext;
+        }
+
+        template <typename T>
         nd4j::graph::Node<T>::~Node() {
             if (_extraParams != nullptr)
                 delete[] _extraParams;
@@ -637,37 +647,38 @@ namespace nd4j {
         }
 
         template <typename T>
+        bool Node<T>::isDeductable() {
+            return _isDeductable;
+        }
+
+        template <typename T>
+        void Node<T>::setDeductable(bool reallyDeductable) {
+            _isDeductable = reallyDeductable;
+        }
+
+        template <typename T>
+        template <typename N>
+        Node<N>* Node<T>::asT() {
+            auto clone = new Node<N>(_opType, _opNum, _id);
+
+            clone->pullValues(this);
+
+            if (!_isDeductable && this->_customOp != nullptr)
+                clone->setCustomOp(OpRegistrator::getInstance()->getOperationT<N>(this->_customOp->getOpHash()));
+            else if (_customOp != nullptr) {
+                // this->setCustomOp(Node<T>::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, scalar));
+                auto op = clone->buildOpByType(_opType, clone->input()->size(), clone->getContextPrototype()->getIArguments()->size(), clone->getContextPrototype()->getTArguments()->size(), _opNum, clone->scalar());
+                clone->setCustomOp(op);
+            }
+
+            return clone;
+        }
+
+        template <typename T>
         Node<T>* Node<T>::clone() {
             auto clone = new Node<T>(_opType, _opNum, _id);
 
-            if (clone->_protoContext != nullptr)
-                delete clone->_protoContext;
-
-            clone->_dataType = _dataType;
-            clone->_protoContext = _protoContext->clone();
-            clone->_scalar = _scalar;
-            clone->_hasExternalInputs = _hasExternalInputs;
-            clone->_hasExternalOutputs = _hasExternalOutputs;
-            clone->_hasInternalInputs = _hasInternalInputs;
-            clone->_hasInternalOutputs = _hasInternalOutputs;
-            clone->_isInplace = _isInplace;
-            clone->_isDeductable = _isDeductable;
-            clone->_active = _active;
-            clone->_scope_id = _scope_id;
-            clone->_scope_name = _scope_name;
-            clone->_layer = _layer;
-
-            if (clone->_customOp != nullptr)
-                delete clone->_customOp;
-
-            for (auto v: _input)
-                clone->_input.emplace_back(v);
-            
-            for (auto v: _output)
-                clone->_output.emplace_back(v);
-
-            for (auto v: _dimensions)
-                clone->_dimensions.emplace_back(v);
+            clone->pullValues(this);
 
             // op time
             if (!_isDeductable)
@@ -683,5 +694,18 @@ namespace nd4j {
         template class ND4J_EXPORT Node<float>;
         template class ND4J_EXPORT Node<float16>;
         template class ND4J_EXPORT Node<double>;
+
+
+        template Node<float>* Node<float>::asT<float>();
+        template Node<float16>* Node<float>::asT<float16>();
+        template Node<double>* Node<float>::asT<double>();
+
+        template Node<float>* Node<float16>::asT<float>();
+        template Node<float16>* Node<float16>::asT<float16>();
+        template Node<double>* Node<float16>::asT<double>();
+
+        template Node<float>* Node<double>::asT<float>();
+        template Node<float16>* Node<double>::asT<float16>();
+        template Node<double>* Node<double>::asT<double>();
     }
 }

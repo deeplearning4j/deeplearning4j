@@ -571,3 +571,18 @@ TEST_F(NDArrayTest2, Test_Indexed_Lambda) {
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
+
+
+TEST_F(NDArrayTest2, Test_DType_Conversion_1) {
+    NDArray<float> x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+
+    auto xd = x.template asT<double>();
+
+    auto xf = xd->template asT<float>();
+
+    ASSERT_TRUE(x.isSameShape(xf));
+    ASSERT_TRUE(x.equalsTo(xf));
+
+    delete xf;
+    delete xd;
+}

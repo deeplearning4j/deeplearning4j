@@ -15,6 +15,7 @@ namespace nd4j{
         std::atomic<int> _elementThreshold;
         std::atomic<bool> _verbose;
         std::atomic<bool> _debug;
+        std::atomic<bool> _profile;
         std::atomic<int> _maxThreads;
 
         static Environment* _instance;
@@ -27,8 +28,10 @@ namespace nd4j{
         bool isVerbose();
         void setVerbose(bool reallyVerbose);
         bool isDebug();
+        bool isProfiling();
         bool isDebugAndVerbose();
         void setDebug(bool reallyDebug);
+        void setProfiling(bool reallyProfile);
         
         int tadThreshold();
         void setTadThreshold(int threshold);

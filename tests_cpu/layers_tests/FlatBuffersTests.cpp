@@ -23,13 +23,15 @@ public:
     int *fShape = new int[8]{2, 2, 2, 1, 2, 0, 1, 102};
 
     FlatBuffersTest() {
-        Environment::getInstance()->setDebug(true);
-        Environment::getInstance()->setVerbose(true);
+        Environment::getInstance()->setDebug(false);
+        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance()->setProfiling(true);
     }
 
     ~FlatBuffersTest() {
         Environment::getInstance()->setDebug(false);
         Environment::getInstance()->setVerbose(false);
+        Environment::getInstance()->setProfiling(false);
 
         delete[] cShape;
         delete[] fShape;

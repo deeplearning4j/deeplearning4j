@@ -127,5 +127,9 @@ namespace nd4j {
         void FlowPath::markExecuted(int nodeId, bool wasExecuted) {
             _states[nodeId].markExecuted(wasExecuted);
         }
+
+        GraphProfile* FlowPath::profile() {
+            return &_profile;
+        }
     }
 }

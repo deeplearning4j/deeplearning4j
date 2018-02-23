@@ -9,6 +9,7 @@
 #include <pointercast.h>
 #include <graph/NodeState.h>
 #include <graph/FrameState.h>
+#include <graph/profiling/GraphProfile.h>
 #include <dll.h>
 
 namespace nd4j {
@@ -20,6 +21,8 @@ namespace nd4j {
 
             void ensureNode(int nodeId);
             void ensureFrame(int nodeId);
+
+            GraphProfile _profile;
         public:
             FlowPath() = default;
             ~FlowPath() = default;
@@ -56,6 +59,8 @@ namespace nd4j {
 
             void incrementNumberOfCycles(Nd4jIndex frameId);
             Nd4jIndex getNumberOfCycles(Nd4jIndex frameId);
+
+            GraphProfile* profile();
         };
     }
 }

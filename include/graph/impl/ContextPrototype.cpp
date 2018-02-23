@@ -123,6 +123,14 @@ namespace nd4j {
         }
 
         template <typename T>
+        template <typename N>
+        ContextPrototype<N>* ContextPrototype<T>::asT() {
+            auto clone = new ContextPrototype<N>(_nodeId, _isInplace);
+
+            return clone;
+        }
+
+        template <typename T>
         ContextPrototype<T>* ContextPrototype<T>::clone() {
             auto clone = new ContextPrototype<T>(_nodeId, _isInplace);
             clone->_opNum = _opNum;
@@ -143,5 +151,18 @@ namespace nd4j {
         template class ND4J_EXPORT ContextPrototype<float>;
         template class ND4J_EXPORT ContextPrototype<float16>;
         template class ND4J_EXPORT ContextPrototype<double>;
+
+
+        template ContextPrototype<float>* ContextPrototype<float>::asT<float>();
+        template ContextPrototype<float16>* ContextPrototype<float>::asT<float16>();
+        template ContextPrototype<double>* ContextPrototype<float>::asT<double>();
+
+        template ContextPrototype<float>* ContextPrototype<float16>::asT<float>();
+        template ContextPrototype<float16>* ContextPrototype<float16>::asT<float16>();
+        template ContextPrototype<double>* ContextPrototype<float16>::asT<double>();
+
+        template ContextPrototype<float>* ContextPrototype<double>::asT<float>();
+        template ContextPrototype<float16>* ContextPrototype<double>::asT<float16>();
+        template ContextPrototype<double>* ContextPrototype<double>::asT<double>();
     }
 }

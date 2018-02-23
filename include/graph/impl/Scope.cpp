@@ -62,9 +62,33 @@ namespace nd4j {
             return clone;
         }
 
+        template <typename T>
+        template <typename N>
+        Scope<N>* Scope<T>::asT() {
+            auto clone = new Scope<N>(_id, _name.c_str());
+
+            for (auto v: _nodes)
+                clone->push_back(v->template asT<N>());
+
+            return clone;
+        }
+
         template class Scope<float>;
         template class Scope<float16>;
         template class Scope<double>;
+
+
+        template Scope<float>* Scope<float>::asT<float>();
+        template Scope<float16>* Scope<float>::asT<float16>();
+        template Scope<double>* Scope<float>::asT<double>();
+
+        template Scope<float>* Scope<float16>::asT<float>();
+        template Scope<float16>* Scope<float16>::asT<float16>();
+        template Scope<double>* Scope<float16>::asT<double>();
+
+        template Scope<float>* Scope<double>::asT<float>();
+        template Scope<float16>* Scope<double>::asT<float16>();
+        template Scope<double>* Scope<double>::asT<double>();
     }
 }
 
