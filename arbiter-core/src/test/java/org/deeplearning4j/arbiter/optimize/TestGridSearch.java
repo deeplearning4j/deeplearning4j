@@ -30,6 +30,7 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.junit.Test;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -149,7 +150,7 @@ public class TestGridSearch {
 
     @AllArgsConstructor
     @Data
-    public static class BraninConfig {
+    public static class BraninConfig implements Serializable {
         private double x1;
         private double x2;
     }
