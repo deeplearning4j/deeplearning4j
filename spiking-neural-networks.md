@@ -7,6 +7,10 @@ layout: default
 
 WIP.
 
+## Further Reading on Spiking Neural Networks
+
+* [Spiking Neuron Models. Single Neurons, Populations, Plasticity](http://icwww.epfl.ch/~gerstner/SPNM/SPNM.html)
+
 ## <a name="intro">More Machine Learning Tutorials</a>
 
 For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
