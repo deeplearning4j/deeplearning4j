@@ -112,6 +112,10 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/mnist_mlp_constraint_tf_keras_2_config.json");
     }
 
+    @Test
+    public void embeddingFlattenThTest() throws Exception {
+        runModelConfigTest("configs/keras2/embedding_flatten_graph_th_keras_2.json");
+    }
 
     @Test
     public void mlpFapiConfigTest() throws Exception {
