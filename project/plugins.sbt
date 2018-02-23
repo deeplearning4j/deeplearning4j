@@ -10,4 +10,6 @@ addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "2.0")
 
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.0")
 
+addSbtPlugin("org.bytedeco" % "sbt-javacpp" % "1.13")
+
 parallelExecution in Test := false

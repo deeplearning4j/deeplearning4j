@@ -7,9 +7,10 @@ description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + D
 scalaVersion := "2.11.12"
 
 resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
+  Resolver.sonatypeRepo("snapshots")
 )
+
+javaCppPresetLibs ++= Seq("openblas" -> "0.2.20")
 
 libraryDependencies ++= {
 
