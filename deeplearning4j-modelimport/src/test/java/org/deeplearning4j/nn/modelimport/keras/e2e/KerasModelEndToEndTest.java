@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
@@ -218,16 +219,42 @@ public class KerasModelEndToEndTest {
     }
 
     /**
-     * DCGAN import test
+     * GAN import tests
+     */
+    @Test
+    public void importDcganMnistDiscriminator() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
+    }
+    @Test
+    public void importDcganMnistGenerator() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
+    }
+
+    /**
+     * Deep convolutional GAN import test
      */
     @Test
     public void importDcganDiscriminator() throws Exception {
-        importModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
+        importSequentialModelH5Test("modelimport/keras/examples/gans/dcgan_discriminator.h5");
     }
+    // TODO: importing generators fails due to differences in batch norm implementation.
+//    @Test
+//    public void importDcganGenerator() throws Exception {
+//        importSequentialModelH5Test("modelimport/keras/examples/gans/dcgan_generator.h5");
+//    }
+
+    /**
+     * Wasserstein GAN import test
+     */
     @Test
-    public void importDcganGenerator() throws Exception {
-        importModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
+    public void importWganDiscriminator() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_discriminator.h5");
     }
+//    @Test
+//    public void importWganGenerator() throws Exception {
+//        importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_generator.h5");
+//    }
+
 
     /**
      * DGA classifier test
@@ -235,10 +262,10 @@ public class KerasModelEndToEndTest {
     //   TODO: need to fix issue #4433 (3D output for Embedding layers) for this to work.
 //    @Test
 //    public void importDgaClassifier() throws Exception {
-//        importModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
+//        importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
 //    }
 
-    void importModelH5Test(String modelPath) throws Exception {
+    void importSequentialModelH5Test(String modelPath) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
