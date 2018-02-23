@@ -205,6 +205,128 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
+    public void testCnnWithSpaceToDepth() {
+        Nd4j.getRandom().setSeed(12345);
+        int nOut = 4;
+
+        int[] minibatchSizes = {2, 4};
+        int width = 5;
+        int height = 5;
+        int inputDepth = 1;
+
+        int[] kernel = {2, 2};
+        int[] blocks = {2, 2};
+
+        String[] activations = {"sigmoid", "tanh"};
+        SubsamplingLayer.PoolingType[] poolingTypes =
+                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
+                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+
+        for (String afn : activations) {
+            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+                for (int minibatchSize : minibatchSizes) {
+                    INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                    for (int i = 0; i < minibatchSize; i++) {
+                        labels.putScalar(new int[]{i, i % nOut}, 1.0);
+                    }
+
+                    MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                    .dist(new NormalDistribution(0, 1))
+                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
+                                    .nOut(3).build()) //output: (5-2+0)/1+1 = 4
+                                    .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW")
+                                            .build()) // (mb,3,4,4) -> (mb,12,2,2)
+                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nIn(2 * 2 * 12)
+                                            .nOut(nOut).build())
+                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
+                                    .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
+                            + afn;
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testCnnWithSpaceToBatch() {
+        Nd4j.getRandom().setSeed(12345);
+        int nOut = 4;
+
+        int[] minibatchSizes = {2, 4};
+        int width = 5;
+        int height = 5;
+        int inputDepth = 1;
+
+        int[] kernel = {2, 2};
+        int[] blocks = {1, 1};
+
+        String[] activations = {"sigmoid", "tanh"};
+        SubsamplingLayer.PoolingType[] poolingTypes =
+                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
+                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
+
+        for (String afn : activations) {
+            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
+                for (int minibatchSize : minibatchSizes) {
+                    INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                    for (int i = 0; i < minibatchSize; i++) {
+                        labels.putScalar(new int[]{i, i % nOut}, 1.0);
+                    }
+
+                    MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                    .dist(new NormalDistribution(0, 1))
+                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
+                                    .nOut(3).build())//output: (5-2+0)/1+1 = 4
+                                    .layer(new SpaceToBatchLayer.Builder(blocks).build()) //trivial space to batch
+                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nIn(4 * 4 * 3)
+                                            .nOut(nOut).build())
+                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
+                                    .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
+                            + afn;
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void testCnnWithUpsampling() {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
