@@ -33,7 +33,12 @@ public class KerasRegularizerUtils {
                         regularizerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals("L1L2")) {
                     Map<String, Object> innerRegularizerConfig =
                             KerasLayerUtils.getInnerLayerConfigFromConfig(regularizerConfig, conf);
-                    return (double) innerRegularizerConfig.get(regularizerType);
+                    try {
+                        return (double) innerRegularizerConfig.get(regularizerType);
+                    } catch (Exception e){
+                        return (double) (int) innerRegularizerConfig.get(regularizerType);
+                    }
+
 
                 }
             }
