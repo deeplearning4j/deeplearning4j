@@ -48,6 +48,7 @@ import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
+import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -57,11 +58,13 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.function.Supplier;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -212,7 +215,7 @@ public class TestGraphLocalExecution {
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
                 .epochTerminationConditions(new MaxEpochsTerminationCondition(15))
-                .scoreCalculator(new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true))
+                .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
@@ -264,5 +267,16 @@ public class TestGraphLocalExecution {
 
         assertEquals(0, runner.numCandidatesFailed());
         assertTrue(runner.numCandidatesCompleted() > 0);
+    }
+
+    private static class ScoreProvider implements Supplier<ScoreCalculator>, Serializable {
+        @Override
+        public ScoreCalculator get() {
+            try {
+                return new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true);
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
     }
 }
