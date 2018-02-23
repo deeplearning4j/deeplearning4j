@@ -69,7 +69,7 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> col2(new NDArray<T>('c', {batchSize, inDepth, kY, kX, oY, oX}));
 
             // col2d now has shape of [bS, inDepth, kY, kX, oY, oX]
-            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f, 0.0});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.data());
 
@@ -288,7 +288,7 @@ namespace nd4j {
 
                 // col2d now has shape of [bS, inDepth, kY, kX, oY, oX]
                 std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX,
-                                             isSameMode ? (T) 1.0f : (T) 0.0f});
+                                             isSameMode ? (T) 1.0f : (T) 0.0f, 0.0});
 
                 input->template applyTransform<simdOps::Im2col<T>>(col, extrasIm2Col.data());
             }

@@ -40,6 +40,7 @@ namespace nd4j {
             bool isNCHW = true;
             if (block.getIArguments()->size() > 9)
                 isNCHW = INT_ARG(9) == 0;
+            const double zeroPadVal = 0.0;
 
             if (!isNCHW) {
                 input = input->permute({0, 3, 1, 2});
@@ -103,7 +104,7 @@ namespace nd4j {
             std::unique_ptr<NDArray<T>> col(new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX}));
             std::unique_ptr<NDArray<T>> col2(col.get()->permute({0, 3, 4, 5, 1, 2}));
 
-            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f, (T)zeroPadVal});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2.get(), extrasIm2Col.data());
 
@@ -237,6 +238,8 @@ namespace nd4j {
                 weights = weights->permute({2, 3, 0, 1});
             }
 
+            double zeroPadVal = 0.0;
+
             int oY, oX;
 
             const int batchSize = input->sizeAt(0);
@@ -257,7 +260,7 @@ namespace nd4j {
             // we expect that activation was already calculated in next node
             auto col = new NDArray<T>('c', {batchSize, oY, oX, inDepth, kY, kX});
             auto col2 = col->permute({0, 3, 4, 5, 1, 2});
-            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f});
+            std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f, (T)zeroPadVal});
 
             input->template applyTransform<simdOps::Im2col<T>>(col2, extrasIm2Col.data());
             auto im2col2d = col->reshape('c', {batchSize * oY * oX, inDepth * kY * kX});

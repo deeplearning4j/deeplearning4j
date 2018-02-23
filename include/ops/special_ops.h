@@ -104,6 +104,10 @@ namespace simdOps {
             	strideX = shape::stride(xShapeBuffer)[3];
 
             	length = shape::length(resultShapeBuffer);
+				
+				//Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
+				kH = kH + (kH-1)*(dH-1);
+				kW = kW + (kW-1)*(dW-1);
             }
             __syncthreads();
 
@@ -114,8 +118,8 @@ namespace simdOps {
     			const int ph = (index / outW) % outH;
     			const int c = (index / outW / outH) % inChannels;
     			const int n = index / outW / outH / inChannels;
-    			int hstart = ph * dH - pH;
-    			int wstart = pw * dW - pW;
+    			int hstart = sH * ph - pH;
+    			int wstart = sW * pw - pW;
     			int hend = hstart + kH;
     			int wend = wstart + kW;
     			if(hstart < 0){
@@ -380,6 +384,7 @@ namespace simdOps {
 			int dY = (int)extraParams[6];			//Dilation, height/y dimension
 			int dX = (int)extraParams[7];			//Dilation, width/x dimension
 			int kSize = kernelWidth * kernelHeight;
+			double zeroPadVal = (T)extraParams[9];	//Value to use when value is padding. Usually 0 but not always
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
@@ -446,7 +451,7 @@ namespace simdOps {
 						}
 						if (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width){
 							result[i_f] = data_im_ptr[i * dY * strideh + j * dX * stridew];
-						} else result[i_f] = 0;
+						} else result[i_f] = zeroPadVal;
 
 						//result[i_f] = (h_im >= 0 && w_im >= 0 && h_im < height && w_im < width) ? data_im_ptr[i * strideh + j*stridew] : 0;
 						data_col_ptr += height_col * width_col;

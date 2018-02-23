@@ -197,7 +197,7 @@ namespace nd4j {
 
             NDArray<T>* col2d = col6d->reshape('c', {bS*iD*oH*oW, kH*kW});
 
-            T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW};
+            T extraParams1[] = {(T)kH, (T)kW, (T)sH, (T)sW, (T)pH, (T)pW, (T)dH, (T)dW, (T)0.0};
             input->template applyTransform<simdOps::Im2col<T>>(col6dPermuted, extraParams1);
 
             NDArray<T>* pNorm = new NDArray<T>(col2d->getShapeInfo(), block.getWorkspace());

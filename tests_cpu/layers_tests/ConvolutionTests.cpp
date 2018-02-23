@@ -729,7 +729,7 @@ TEST_F(ConvolutionTests, Test_im2col_col2im_1) {
 
     NDArray<double> im2col0('c', {2, 1, kY, kX, oY, oX});
 
-    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0});
+    std::vector<double> args2col({(double) kY, (double) kX, (double) sY, (double) sX, (double) pY, (double) pX, (double) dY, (double) dX, isSameMode ? (double) 1 : (double) 0, (double)0.0}, 0);
     x.template applyTransform<simdOps::Im2col<double>>(&im2col0, args2col.data());
 
     nd4j::ops::im2col<double> op;
