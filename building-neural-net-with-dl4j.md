@@ -249,17 +249,25 @@ uiServer.attach(statsStorage);
 
 ```
 
-### <a name="beginner">Other Deep Learning Tutorials</a>
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Introduction to Deep Neural Networks](./neuralnet-overview)
-* [Convolutional Networks](./convolutionalnets)
-* [Deeplearning4j Quickstart Examples](./quickstart)
-* [ND4J: A Tensor Library for the JVM](http://nd4j.org)
+## <a name="intro">More Machine Learning Tutorials</a>
+
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
+
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphdata.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
 * [MNIST for Beginners](./mnist-for-beginners.html)
+* [ND4J: A Tensor Library in C++ for the JVM](http://nd4j.org)
+* [Restricted Boltzmann Machines (RBM)](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
 * [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
-* [Generative Adversarial Networks (GANs)](./generative-adversarial-network)
 * [Word2vec and Natural-Language Processing](./word2vec.html)
-* [Reinforcement Learning](./reinforcementlearning)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Inference: Machine Learning Model Server](./modelserver.html)
 * [Deeplearning4j Programming Guide](https://deeplearning4j.org/programmingguide/01_intro)
