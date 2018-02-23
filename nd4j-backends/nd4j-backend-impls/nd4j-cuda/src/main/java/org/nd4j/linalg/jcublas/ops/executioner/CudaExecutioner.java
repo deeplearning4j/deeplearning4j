@@ -2575,7 +2575,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val xShape = AtomicAllocator.getInstance().getPointer(xArr.shapeInfoDataBuffer(), context);
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
-            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8]};
+            double zeroPad = 0.0;
+            if(op.tArgs() != null && op.tArgs().length > 0){
+                zeroPad = op.tArgs()[0];
+            }
+            val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8], zeroPad};
             val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
 
 
