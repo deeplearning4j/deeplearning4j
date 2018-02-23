@@ -222,9 +222,11 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_parallel_stack.class,
         float_log_poison_loss.class,
         float_normalize_moments.class,
+        float_sufficient_statistics.class,
         float_tf_atan2.class,
         float_weighted_cross_entropy_with_logits.class,
         float_dropout.class,
+        float_bincount.class,
         float_conv1d.class,
         float_conv1d_bp.class,
         float_conv2d.class,
@@ -256,6 +258,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_ismax.class,
         float_dilation2d.class,
         float_conv3dNew.class,
+        float_max_pool_with_argmax.class,
         float_set_seed.class,
         float_get_seed.class,
         float_randomuniform.class,
@@ -500,9 +503,11 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_parallel_stack.class,
         half_log_poison_loss.class,
         half_normalize_moments.class,
+        half_sufficient_statistics.class,
         half_tf_atan2.class,
         half_weighted_cross_entropy_with_logits.class,
         half_dropout.class,
+        half_bincount.class,
         half_conv1d.class,
         half_conv1d_bp.class,
         half_conv2d.class,
@@ -534,6 +539,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_ismax.class,
         half_dilation2d.class,
         half_conv3dNew.class,
+        half_max_pool_with_argmax.class,
         half_set_seed.class,
         half_get_seed.class,
         half_randomuniform.class,
@@ -778,9 +784,11 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_parallel_stack.class,
         double_log_poison_loss.class,
         double_normalize_moments.class,
+        double_sufficient_statistics.class,
         double_tf_atan2.class,
         double_weighted_cross_entropy_with_logits.class,
         double_dropout.class,
+        double_bincount.class,
         double_conv1d.class,
         double_conv1d_bp.class,
         double_conv2d.class,
@@ -812,6 +820,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_ismax.class,
         double_dilation2d.class,
         double_conv3dNew.class,
+        double_max_pool_with_argmax.class,
         double_set_seed.class,
         double_get_seed.class,
         double_randomuniform.class,
@@ -10345,6 +10354,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -10412,6 +10422,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -10479,6 +10490,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -10602,6 +10614,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <pointercast.h>
 // #include <graph/NodeState.h>
 // #include <graph/FrameState.h>
+// #include <graph/profiling/GraphProfile.h>
 // #include <dll.h>
         @Namespace("nd4j::graph") @NoOffset public static class FlowPath extends Pointer {
             static { Loader.load(); }
@@ -10649,6 +10662,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native void incrementNumberOfCycles(@Cast("Nd4jIndex") long frameId);
             public native @Cast("Nd4jIndex") long getNumberOfCycles(@Cast("Nd4jIndex") long frameId);
+
+            public native GraphProfile profile();
         }
     
 
@@ -11153,6 +11168,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native FloatVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, FloatVariable variable);
 
             public native FloatStash getStash();
 
@@ -11223,6 +11239,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native HalfVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, HalfVariable variable);
 
             public native HalfStash getStash();
 
@@ -11293,6 +11310,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native DoubleVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, DoubleVariable variable);
 
             public native DoubleStash getStash();
 
@@ -11629,6 +11647,152 @@ public static final long MAX_UINT = MAX_UINT();
 // #endif //LIBND4J_HELPER_GENERATOR_H
 
 
+// Parsed from graph/profiling/GraphProfile.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef ND4J_GRAPH_PROFILE_H
+// #define ND4J_GRAPH_PROFILE_H
+
+// #include "NodeProfile.h"
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <vector>
+// #include <string>
+// #include <map>
+// #include <chrono>
+        @Namespace("nd4j::graph") @NoOffset public static class GraphProfile extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public GraphProfile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public GraphProfile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public GraphProfile position(long position) {
+                return (GraphProfile)super.position(position);
+            }
+        
+            public GraphProfile() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            /**
+             * These methods just adding amount of bytes to various counters
+             */
+            public native void addToTotal(@Cast("Nd4jIndex") long bytes);
+            public native void addToActivations(@Cast("Nd4jIndex") long bytes);
+            public native void addToTemporary(@Cast("Nd4jIndex") long bytes);
+            public native void addToObjects(@Cast("Nd4jIndex") long bytes);
+
+            /**
+             * This method allows to set graph construction (i.e. deserialization) time in nanoseconds
+             */
+            public native void setBuildTime(@Cast("Nd4jIndex") long nanos);
+
+            /**
+             * This method sets graph execution time in nanoseconds.
+             */
+            public native void setExecutionTime(@Cast("Nd4jIndex") long nanos);
+
+            public native void startEvent(@Cast("char*") String name);
+            public native void startEvent(@Cast("char*") BytePointer name);
+            public native void recordEvent(@Cast("char*") String name);
+            public native void recordEvent(@Cast("char*") BytePointer name);
+            public native void deleteEvent(@Cast("char*") String name);
+            public native void deleteEvent(@Cast("char*") BytePointer name);
+
+            /**
+             * This method saves time as delta from last saved time
+             */
+            public native void spotEvent(@Cast("char*") String name);
+            public native void spotEvent(@Cast("char*") BytePointer name);
+
+            /**
+             * This method returns pointer to NodeProfile by ID
+             * PLEASE NOTE: this method will create new NodeProfile if there's none
+             */
+            public native NodeProfile nodeById(int id, @Cast("char*") String name/*=nullptr*/);
+            public native NodeProfile nodeById(int id);
+            public native NodeProfile nodeById(int id, @Cast("char*") BytePointer name/*=nullptr*/);
+            public native @Cast("bool") boolean nodeExists(int id);
+
+            /**
+             * This method merges values from other profile report
+             * @param other
+             */
+            public native void merge(GraphProfile other);
+            public native void assign(GraphProfile other);
+
+            /**
+             * These methods are just utility methods for time
+             */
+            public static native @Cast("Nd4jIndex") long currentTime();
+            public static native @Cast("Nd4jIndex") long relativeTime(@Cast("Nd4jIndex") long time);
+
+            public native void printOut();
+        }
+    
+
+
+// #endif
+
+// Parsed from graph/profiling/NodeProfile.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_NODE_PROFILE_H
+// #define LIBND4J_NODE_PROFILE_H
+
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <string>
+        @Namespace("nd4j::graph") @NoOffset public static class NodeProfile extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public NodeProfile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public NodeProfile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public NodeProfile position(long position) {
+                return (NodeProfile)super.position(position);
+            }
+        
+            public NodeProfile() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public NodeProfile(int id, @Cast("char*") String name) { super((Pointer)null); allocate(id, name); }
+            private native void allocate(int id, @Cast("char*") String name);
+            public NodeProfile(int id, @Cast("char*") BytePointer name) { super((Pointer)null); allocate(id, name); }
+            private native void allocate(int id, @Cast("char*") BytePointer name);
+
+            public native void setBuildTime(@Cast("Nd4jIndex") long time);
+            public native void setPreparationTime(@Cast("Nd4jIndex") long time);
+            public native void setExecutionTime(@Cast("Nd4jIndex") long time);
+            public native void setTotalTime(@Cast("Nd4jIndex") long time);
+
+            public native void setActivationsSize(@Cast("Nd4jIndex") long bytes);
+            public native void setTemporarySize(@Cast("Nd4jIndex") long bytes);
+            public native void setObjectsSize(@Cast("Nd4jIndex") long bytes);
+
+            public native @Cast("Nd4jIndex") long getActivationsSize();
+            public native @Cast("Nd4jIndex") long getTemporarySize();
+            public native @Cast("Nd4jIndex") long getObjectsSize();
+
+            public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
+
+            public native void merge(NodeProfile other);
+            public native void assign(NodeProfile other);
+
+            public native void printOut();
+        }
+    
+
+
+// #endif
+
 // Parsed from graph/Context.h
 
 //
@@ -11692,6 +11856,8 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native FloatVariableSpace getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -11787,6 +11953,8 @@ public static final long MAX_UINT = MAX_UINT();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
 
+            public native HalfVariableSpace getVariableSpace();
+
             // these fields define, if we can execute specific node in-place, without generating new array
 
 
@@ -11880,6 +12048,8 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native DoubleVariableSpace getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -22623,6 +22793,60 @@ private native void allocate();
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
+        
+        /**
+         * This op same as maxpool2d with a variant to return a matrix of indexes for max values
+         *
+         * Input - 4D tensor
+         * Output:
+         *     0 - 4D tensor as input
+         *     1 - 4D tensor with max value indexes
+         *     
+         * Int params:
+         *   9 int with 2x4 vectors and 1 bool value
+         */
+        @Name("nd4j::ops::max_pool_with_argmax<float>") public static class float_max_pool_with_argmax extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_max_pool_with_argmax(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_max_pool_with_argmax(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_max_pool_with_argmax position(long position) {
+                return (float_max_pool_with_argmax)super.position(position);
+            }
+        public float_max_pool_with_argmax() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::max_pool_with_argmax<float16>") public static class half_max_pool_with_argmax extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_max_pool_with_argmax(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_max_pool_with_argmax(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_max_pool_with_argmax position(long position) {
+                return (half_max_pool_with_argmax)super.position(position);
+            }
+        public half_max_pool_with_argmax() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::max_pool_with_argmax<double>") public static class double_max_pool_with_argmax extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_max_pool_with_argmax(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_max_pool_with_argmax(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_max_pool_with_argmax position(long position) {
+                return (double_max_pool_with_argmax)super.position(position);
+            }
+        public double_max_pool_with_argmax() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
     
 
 
@@ -27914,6 +28138,67 @@ private native void allocate();
                                                                                 }
 
         /**
+         * sufficient_statistics operation return calculated mean and variation with data count.
+         * this operation is invert for moments
+         * accordingly to shift and count.
+         * input params:
+         *  - input tensor
+         *  - axes vector
+         *  
+         * 
+         *  - optional floating point param shift.
+         *  - optional int (as bool) keep_dimension
+         *
+         *  returns four tensors:
+         *     - scalar tensor (data count)
+         *     - sum elements of input (accross axises)
+         *     - sum of squares of input (accross axises)
+         *     - shift (if was given by input floating param)
+         */
+        @Name("nd4j::ops::sufficient_statistics<float>") public static class float_sufficient_statistics extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_sufficient_statistics(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_sufficient_statistics(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_sufficient_statistics position(long position) {
+                return (float_sufficient_statistics)super.position(position);
+            }
+        public float_sufficient_statistics() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::sufficient_statistics<float16>") public static class half_sufficient_statistics extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_sufficient_statistics(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_sufficient_statistics(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_sufficient_statistics position(long position) {
+                return (half_sufficient_statistics)super.position(position);
+            }
+        public half_sufficient_statistics() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::sufficient_statistics<double>") public static class double_sufficient_statistics extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_sufficient_statistics(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_sufficient_statistics(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_sufficient_statistics position(long position) {
+                return (double_sufficient_statistics)super.position(position);
+            }
+        public double_sufficient_statistics() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        /**
          * Special atan2 op impl for TF's args order
          * \tparam T
          */
@@ -28061,6 +28346,67 @@ private native void allocate();
                 return (double_dropout)super.position(position);
             }
         public double_dropout() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+
+        /**
+         * bincount operation return a vector with element counted.
+         * 
+         * input params:
+         *  - input tensor - only int part are accepted
+         *  - weights - the same shape tensor with integer weights for element (optional)
+         *  default weight - 1,1,1..,1 for all values in the tensor
+         * 
+         *  optional ints: 
+         *  - min_length - zero or greater
+         *  - max_length - between min_length and max(input) + 1
+         *
+         *  returns four tensors:
+         *     - vector tensor with length to min(max_len, max(input) + 1) with count
+         *  of values in indexed place
+         *
+         */
+        @Name("nd4j::ops::bincount<float>") public static class float_bincount extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_bincount(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_bincount(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_bincount position(long position) {
+                return (float_bincount)super.position(position);
+            }
+        public float_bincount() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::bincount<float16>") public static class half_bincount extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_bincount(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_bincount(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_bincount position(long position) {
+                return (half_bincount)super.position(position);
+            }
+        public half_bincount() { super((Pointer)null); allocate(); }
+private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::bincount<double>") public static class double_bincount extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_bincount(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_bincount(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_bincount position(long position) {
+                return (double_bincount)super.position(position);
+            }
+        public double_bincount() { super((Pointer)null); allocate(); }
 private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }

@@ -5325,22 +5325,37 @@ public abstract class BaseNDArray implements INDArray, Iterable {
          2) we're out of any workspace
         */
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            if (!isView()) {
+                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
-            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+                Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
-            return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+                return Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+            } else {
+                INDArray copy = Nd4j.createUninitialized(this.shape(), this.ordering());
+                copy.assign(this);
+
+                return copy;
+            }
         } else {
             MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            INDArray copy = null;
+
+            if (!isView()) {
+
+                DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+
+                //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
+                Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+                copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer()); //this.dup(this.ordering());
 
 
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
-
-            //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
-            Nd4j.getMemoryManager().memcpy(buffer, this.data());
-
-            INDArray copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer()); //this.dup(this.ordering());
+            } else {
+                copy = Nd4j.createUninitialized(this.shape(), this.ordering());
+                copy.assign(this);
+            }
 
             Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 

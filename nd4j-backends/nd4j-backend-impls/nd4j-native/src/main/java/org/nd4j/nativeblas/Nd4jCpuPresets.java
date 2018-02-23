@@ -51,6 +51,8 @@ import java.util.Scanner;
                                               "graph/GraphState.h",
                                               "graph/VariableSpace.h",
                                               "helpers/helper_generator.h",
+                                              "graph/profiling/GraphProfile.h",
+                                              "graph/profiling/NodeProfile.h",
                                               "graph/Context.h",
                                               "graph/ContextPrototype.h",
                                               "helpers/shape.h",

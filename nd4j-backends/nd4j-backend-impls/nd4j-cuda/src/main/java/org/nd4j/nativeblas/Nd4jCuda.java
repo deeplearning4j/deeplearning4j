@@ -9510,6 +9510,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -9577,6 +9578,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -9644,6 +9646,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native int id();
             public native int index();
+            public native void setIndex(int index);
             public native void setId(int id);
             public native void setId(int id, int idx);
 
@@ -9767,6 +9770,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <pointercast.h>
 // #include <graph/NodeState.h>
 // #include <graph/FrameState.h>
+// #include <graph/profiling/GraphProfile.h>
 // #include <dll.h>
         @Namespace("nd4j::graph") @NoOffset public static class FlowPath extends Pointer {
             static { Loader.load(); }
@@ -9814,6 +9818,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
             public native void incrementNumberOfCycles(@Cast("Nd4jIndex") long frameId);
             public native @Cast("Nd4jIndex") long getNumberOfCycles(@Cast("Nd4jIndex") long frameId);
+
+            public native GraphProfile profile();
         }
     
 
@@ -10318,6 +10324,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native FloatVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, FloatVariable variable);
 
             public native FloatStash getStash();
 
@@ -10388,6 +10395,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native HalfVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, HalfVariable variable);
 
             public native HalfStash getStash();
 
@@ -10458,6 +10466,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native DoubleVariableSpace clone();
+            public native void injectVariable(@ByRef IntIntPair pair, DoubleVariable variable);
 
             public native DoubleStash getStash();
 
@@ -10794,6 +10803,152 @@ public static final long MAX_UINT = MAX_UINT();
 // #endif //LIBND4J_HELPER_GENERATOR_H
 
 
+// Parsed from graph/profiling/GraphProfile.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef ND4J_GRAPH_PROFILE_H
+// #define ND4J_GRAPH_PROFILE_H
+
+// #include "NodeProfile.h"
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <vector>
+// #include <string>
+// #include <map>
+// #include <chrono>
+        @Namespace("nd4j::graph") @NoOffset public static class GraphProfile extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public GraphProfile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public GraphProfile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public GraphProfile position(long position) {
+                return (GraphProfile)super.position(position);
+            }
+        
+            public GraphProfile() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            /**
+             * These methods just adding amount of bytes to various counters
+             */
+            public native void addToTotal(@Cast("Nd4jIndex") long bytes);
+            public native void addToActivations(@Cast("Nd4jIndex") long bytes);
+            public native void addToTemporary(@Cast("Nd4jIndex") long bytes);
+            public native void addToObjects(@Cast("Nd4jIndex") long bytes);
+
+            /**
+             * This method allows to set graph construction (i.e. deserialization) time in nanoseconds
+             */
+            public native void setBuildTime(@Cast("Nd4jIndex") long nanos);
+
+            /**
+             * This method sets graph execution time in nanoseconds.
+             */
+            public native void setExecutionTime(@Cast("Nd4jIndex") long nanos);
+
+            public native void startEvent(@Cast("char*") String name);
+            public native void startEvent(@Cast("char*") BytePointer name);
+            public native void recordEvent(@Cast("char*") String name);
+            public native void recordEvent(@Cast("char*") BytePointer name);
+            public native void deleteEvent(@Cast("char*") String name);
+            public native void deleteEvent(@Cast("char*") BytePointer name);
+
+            /**
+             * This method saves time as delta from last saved time
+             */
+            public native void spotEvent(@Cast("char*") String name);
+            public native void spotEvent(@Cast("char*") BytePointer name);
+
+            /**
+             * This method returns pointer to NodeProfile by ID
+             * PLEASE NOTE: this method will create new NodeProfile if there's none
+             */
+            public native NodeProfile nodeById(int id, @Cast("char*") String name/*=nullptr*/);
+            public native NodeProfile nodeById(int id);
+            public native NodeProfile nodeById(int id, @Cast("char*") BytePointer name/*=nullptr*/);
+            public native @Cast("bool") boolean nodeExists(int id);
+
+            /**
+             * This method merges values from other profile report
+             * @param other
+             */
+            public native void merge(GraphProfile other);
+            public native void assign(GraphProfile other);
+
+            /**
+             * These methods are just utility methods for time
+             */
+            public static native @Cast("Nd4jIndex") long currentTime();
+            public static native @Cast("Nd4jIndex") long relativeTime(@Cast("Nd4jIndex") long time);
+
+            public native void printOut();
+        }
+    
+
+
+// #endif
+
+// Parsed from graph/profiling/NodeProfile.h
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_NODE_PROFILE_H
+// #define LIBND4J_NODE_PROFILE_H
+
+// #include <pointercast.h>
+// #include <dll.h>
+// #include <string>
+        @Namespace("nd4j::graph") @NoOffset public static class NodeProfile extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public NodeProfile(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public NodeProfile(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public NodeProfile position(long position) {
+                return (NodeProfile)super.position(position);
+            }
+        
+            public NodeProfile() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public NodeProfile(int id, @Cast("char*") String name) { super((Pointer)null); allocate(id, name); }
+            private native void allocate(int id, @Cast("char*") String name);
+            public NodeProfile(int id, @Cast("char*") BytePointer name) { super((Pointer)null); allocate(id, name); }
+            private native void allocate(int id, @Cast("char*") BytePointer name);
+
+            public native void setBuildTime(@Cast("Nd4jIndex") long time);
+            public native void setPreparationTime(@Cast("Nd4jIndex") long time);
+            public native void setExecutionTime(@Cast("Nd4jIndex") long time);
+            public native void setTotalTime(@Cast("Nd4jIndex") long time);
+
+            public native void setActivationsSize(@Cast("Nd4jIndex") long bytes);
+            public native void setTemporarySize(@Cast("Nd4jIndex") long bytes);
+            public native void setObjectsSize(@Cast("Nd4jIndex") long bytes);
+
+            public native @Cast("Nd4jIndex") long getActivationsSize();
+            public native @Cast("Nd4jIndex") long getTemporarySize();
+            public native @Cast("Nd4jIndex") long getObjectsSize();
+
+            public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
+
+            public native void merge(NodeProfile other);
+            public native void assign(NodeProfile other);
+
+            public native void printOut();
+        }
+    
+
+
+// #endif
+
 // Parsed from graph/Context.h
 
 //
@@ -10857,6 +11012,8 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native FloatVariableSpace getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
@@ -10952,6 +11109,8 @@ public static final long MAX_UINT = MAX_UINT();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
 
+            public native HalfVariableSpace getVariableSpace();
+
             // these fields define, if we can execute specific node in-place, without generating new array
 
 
@@ -11045,6 +11204,8 @@ public static final long MAX_UINT = MAX_UINT();
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native DoubleVariableSpace getVariableSpace();
 
             // these fields define, if we can execute specific node in-place, without generating new array
 
