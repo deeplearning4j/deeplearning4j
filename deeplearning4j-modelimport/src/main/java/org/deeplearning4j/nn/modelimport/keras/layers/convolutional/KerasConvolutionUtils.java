@@ -287,12 +287,32 @@ public class KerasConvolutionUtils {
         int[] padding;
         if (dimension == 2) {
             List<Integer> paddingList;
-            // For 2D layers, padding can either be a pair [x, y] or a single integer x.
+            // For 2D layers, padding can either be a pair [[x_0, x_1].[y_0, y_1]] or a pair [x, y]
+            // or a single integer x. yeah, really.
             try {
-                paddingList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
-                if (paddingList.size() == 2) {
-                    paddingList.add(paddingList.get(1));
-                    paddingList.add(1, paddingList.get(0));
+                List paddingNoCast = (List) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+                boolean isNested;
+                try {
+                    List<Integer> firstItem = (List<Integer>) paddingNoCast.get(0);
+                    isNested = true;
+                    paddingList = new ArrayList<>(4);
+                } catch (Exception e) {
+                    int firstItem = (int) paddingNoCast.get(0);
+                    isNested = false;
+                    paddingList = new ArrayList<>(2);
+                }
+
+                if ((paddingNoCast.size() == 2) && !isNested) {
+                    paddingList.add((int) paddingNoCast.get(0));
+                    paddingList.add((int) paddingNoCast.get(1));
+                    padding = ArrayUtil.toArray(paddingList);
+                } else if ((paddingNoCast.size() == 2) && isNested) {
+                    List<Integer> first = (List<Integer>) paddingNoCast.get(0);
+                    paddingList.add((first.get(0)));
+                    paddingList.add((first.get(1)));
+                    List<Integer> second = (List<Integer>) paddingNoCast.get(1);
+                    paddingList.add((second.get(0)));
+                    paddingList.add((second.get(1)));
                     padding = ArrayUtil.toArray(paddingList);
                 }
                 else
