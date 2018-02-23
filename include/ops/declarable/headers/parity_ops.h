@@ -619,5 +619,16 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(bincount, 1, 1, false, 0, 0);
 
+        /**
+         * broadcast_dynamic_shape op.
+         *
+         * input params:
+         *    0 - the first shape (vector with shape)
+         *    1 - the second shape (vector with shape)
+         *
+         * return value:
+         *    vector with broadcasted shape 
+         */
+        DECLARE_CUSTOM_OP(broadcast_dynamic_shape, 2, 1, false, 0, 0);
     }
 }

@@ -514,3 +514,85 @@ TEST_F(DeclarableOpsTests6, BinCount_3) {
 
     delete res;
 }
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
+
+    NDArray<double> x( {2., 2., 2.} );
+
+    NDArray<double> y({ 2., 1., 2.});
+
+// ------------------------------------
+
+    NDArray<double> exp({2., 2., 2.});
+
+    nd4j::ops::broadcast_dynamic_shape<double> op;
+
+    auto res = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_2) {
+
+    NDArray<double> x( {2., 2.} );
+
+    NDArray<double> y({2.0, 1.0, 2.0});
+
+// ------------------------------------
+    NDArray<double> exp({2., 2., 2.});
+
+    nd4j::ops::broadcast_dynamic_shape<double> op;
+
+    auto res = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
+
+    NDArray<double> x( {2., 2., 2.} );
+
+    NDArray<double> y({ 2.0, 1.0});
+
+// ------------------------------------
+
+    NDArray<double> exp({2., 2., 2.});
+
+    nd4j::ops::broadcast_dynamic_shape<double> op;
+
+    auto res = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_4) {
+
+    NDArray<double> x({2., 2., 2.});
+
+    NDArray<double> y({2., 2.});
+
+// ------------------------------------
+
+    NDArray<double> exp({2., 2., 2.});
+
+    nd4j::ops::broadcast_dynamic_shape<double> op;
+
+    auto res = op.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, res->status());
+    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+
+    delete res;
+}
