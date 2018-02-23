@@ -88,6 +88,13 @@ public class KerasFlatten extends KerasLayer {
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             preprocessor = new RnnToFeedForwardPreProcessor();
+        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            // NOTE: The output of an embedding layer in DL4J is of feed-forward type. Only if an FF to RNN input
+            // preprocessor is set or we explicitly provide 3D input data to start with, will the its output be set
+            // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
+            InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
+            int[] inputShape = new int[]{it.getSize()};
+            preprocessor = new ReshapePreprocessor(inputShape, inputShape);
         }
         return preprocessor;
     }

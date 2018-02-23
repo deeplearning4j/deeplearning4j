@@ -39,25 +39,25 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
+     * @param layerConfig dictionary containing Keras layer configuration
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasEmbedding(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
      * @throws InvalidKerasConfigurationException
      * @throws UnsupportedKerasConfigurationException
      */
     public KerasEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
         int inputDim = getInputDimFromConfig(layerConfig);
@@ -82,10 +82,10 @@ public class KerasEmbedding extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
 
         EmbeddingLayer.Builder builder = new EmbeddingLayer.Builder().name(this.layerName).nIn(inputDim)
-                        .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
-                        .weightInit(weightInit)
-                        .biasInit(0.0)
-                        .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false);
+                .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout).activation(Activation.IDENTITY)
+                .weightInit(weightInit)
+                .biasInit(0.0)
+                .l1(this.weightL1Regularization).l2(this.weightL2Regularization).hasBias(false);
         if (distribution != null)
             builder.dist(distribution);
         if (embeddingConstraint != null)
@@ -96,7 +96,7 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Get DL4J DenseLayer.
      *
-     * @return  DenseLayer
+     * @return DenseLayer
      */
     public EmbeddingLayer getEmbeddingLayer() {
         return (EmbeddingLayer) this.layer;
@@ -105,8 +105,8 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
      * @throws InvalidKerasConfigurationException
      */
     @Override
@@ -122,7 +122,7 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Returns number of trainable parameters in layer.
      *
-     * @return          number of trainable parameters (1)
+     * @return number of trainable parameters (1)
      */
     @Override
     public int getNumParams() {
@@ -139,7 +139,7 @@ public class KerasEmbedding extends KerasLayer {
         this.weights = new HashMap<String, INDArray>();
         if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
+                    "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
         INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
         this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
 
@@ -148,21 +148,21 @@ public class KerasEmbedding extends KerasLayer {
             paramNames.remove(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
-                            + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
 
     /**
      * Get Keras input shape from Keras layer configuration.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @return                  input dim as int
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return input dim as int
      */
     private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
             throw new InvalidKerasConfigurationException(
-                            "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");
+                    "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");
         return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
     }
 }
