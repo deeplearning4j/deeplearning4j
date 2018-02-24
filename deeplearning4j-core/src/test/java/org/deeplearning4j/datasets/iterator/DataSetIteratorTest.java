@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -176,7 +177,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test @Ignore   //Ignored for now - CIFAR iterator needs work - https://github.com/deeplearning4j/deeplearning4j/issues/4673
     public void testCifarModel() throws Exception {
         // Streaming
         runCifar(false);

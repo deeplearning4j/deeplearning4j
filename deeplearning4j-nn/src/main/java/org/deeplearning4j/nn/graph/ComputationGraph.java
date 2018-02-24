@@ -2364,10 +2364,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-
-        if (hasMaskArrays)
-            clearLayerMaskArrays();
-
+        clearLayersStates();    //Clean up layer inputs/mask arrays - may be invalidated by workspace
         return score;
     }
 
