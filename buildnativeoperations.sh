@@ -114,7 +114,7 @@ if [ -z "$OS" ]; then
 fi
 
 if [[ -z ${ANDROID_NDK:-} ]]; then
-    ANDROID_NDK=~/Android/android-ndk/
+    export ANDROID_NDK=$HOME/Android/android-ndk/
 fi
 
 case "$OS" in
@@ -135,6 +135,16 @@ case "$OS" in
     export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake"
     ;;
 
+    android-arm64)
+    if [ -z "$ARCH" ]; then
+        ARCH="armv8-a"
+    fi
+    export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/bin/aarch64-linux-android"
+    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
+    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake"
+    ;;
+
     android-x86)
     if [ -z "$ARCH" ]; then
         ARCH="i686"
@@ -143,6 +153,16 @@ case "$OS" in
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
     export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake"
+    ;;
+
+    android-x86_64)
+    if [ -z "$ARCH" ]; then
+        ARCH="x86-64"
+    fi
+    export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/bin/x86_64-linux-android"
+    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/gnu-libstdc++/4.9/"
+    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake"
     ;;
 
     ios-x86_64)
