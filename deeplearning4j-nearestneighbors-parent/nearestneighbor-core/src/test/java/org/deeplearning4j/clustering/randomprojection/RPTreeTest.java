@@ -1,7 +1,5 @@
 package org.deeplearning4j.clustering.randomprojection;
 
-import org.datavec.api.transform.transform.doubletransform.MinMaxNormalizer;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,9 +10,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class RPTreeTest {
 
