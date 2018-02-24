@@ -56,5 +56,20 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(trace, 1, 1, false, 0, 0);
 
         DECLARE_OP(random_shuffle, 1, 1, true);
+
+        /**
+         * clip a list of given tensors with given average norm when needed
+         * 
+         * Input:
+         *    a list of tensors (at least one)
+         * 
+         * Input floating point argument:
+         *    clip_norm - a value that used as threshold value and norm to be used
+         *
+         * return a list of clipped tensors
+         *  and global_norm as scalar tensor at the end
+         */
+        DECLARE_CUSTOM_OP(clip_by_global_norm, 1, 2, true, 1, 0);
+
     }
 }

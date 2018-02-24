@@ -596,3 +596,114 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_4) {
 
     delete res;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_1) {
+
+    NDArray<double> x('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0}
+    );
+
+    NDArray<double> exp('c', {2, 3, 3}, {
+            -0.2771281,  0.,          0.,
+            0.36950415,  0.,          0.,
+            -0.2771281,  0.,          0.,
+            0.36950415,  0.,          0.,
+            -0.2771281,  0.,          0.,
+            0.36950415,  0.,          0.}
+    );
+//    8.660254
+//    NDArray<double> expNorm(8.660254);
+
+    nd4j::ops::clip_by_global_norm<double> op;
+    auto result = op.execute({&x}, {0.8}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    auto norm = result->at(1);
+    z->printIndexedBuffer("Output");
+    exp.printIndexedBuffer("Expected");
+    norm->printIndexedBuffer("Norm");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+//    ASSERT_TRUE(expNorm.equalsTo(norm));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_2) {
+
+    NDArray<double> x('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0}
+    );
+
+    NDArray<double> a('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0,
+                                      -3.0, 0.0, 0.0, 4.0, 0.0, 0.0}
+    );
+
+    NDArray<double> exp('c', {2, 3, 3}, {
+                                    -0.44090813,   0.,          0.,
+                                      0.5878775,   0.,          0.,
+                                    -0.44090813,   0.,          0.,
+                                      0.5878775,   0.,          0.,
+                                    -0.44090813,   0.,          0.,
+                                      0.5878775,   0.,          0.}
+//12.247449
+
+    );
+
+    nd4j::ops::clip_by_global_norm<double> op;
+    auto result = op.execute({&x, &a}, {1.8}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    auto y = result->at(1);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.isSameShape(y));
+    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_TRUE(exp.equalsTo(y));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, ClipByGlobalNorm_3) {
+
+    NDArray<double> x('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    NDArray<double> a('c', {2, 3, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0, 0.0, 0.0, -3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    NDArray<double> exp('c', {2, 3, 3}, {
+            -0.19595918,  0.,          0.,
+              0.2612789,  0.,          0.,
+            -0.19595918,  0.,          0.,
+              0.2612789,  0.,          0.,
+            -0.19595918,  0.,          0.,
+              0.2612789,   0.,          0.}
+    );
+
+    nd4j::ops::clip_by_global_norm<double> op;
+    auto result = op.execute({&x, &a}, {0.8}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    auto y = result->at(1);
+    z->printIndexedBuffer("Output 1");
+    y->printIndexedBuffer("Output 2");
+    result->at(2)->printIndexedBuffer("Global norm is");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.isSameShape(y));
+    ASSERT_TRUE(result->at(2)->isScalar());
+    ASSERT_TRUE(exp.equalsTo(z));
+    ASSERT_TRUE(exp.equalsTo(y));
+
+    delete result;
+}
