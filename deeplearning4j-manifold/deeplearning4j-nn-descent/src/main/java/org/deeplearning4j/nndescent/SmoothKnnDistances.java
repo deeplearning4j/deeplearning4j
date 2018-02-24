@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.annotation.NoOffset;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -17,6 +16,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+
+/**
+ * A port of the smooth knn algorithm to java
+ * based on the work done with umap:
+ * https://github.com/lmcinnes/umap/blob/f0c8761ef4be9bacf3976faf3f9a048d2a09f9ed/umap/umap_.py#L508
+ *
+ * Smoothed knn allows a continuous representation of knn over the discretized version
+ * allowing for a smoother distribution of nearest neighbors for distance calculations.
+ *
+ * @author Adam Gibson
+ */
 @Slf4j
 @Builder
 public class SmoothKnnDistances {
@@ -31,12 +41,21 @@ public class SmoothKnnDistances {
     private int knnIterations = 64;
 
     /**
-     *
-     * @param distances
-     * @param k
-     * @param iterations
-     * @param localConnectivity
-     * @param bandwidth
+     * Compute a continuous version of the distance to the kth nearest
+     neighbor. That is, this is similar to knn-distance but allows continuous
+     k values rather than requiring an integral k. In essence we are simply
+     computing the distance such that the cardinality of fuzzy set we generate
+     is k.
+     * @param distances the input distances
+     * @param k The number of nearest neighbors to approximate for
+     * @param iterations the number of iterations
+     * @param localConnectivity  The local connectivity required -- i.e. the number of nearest
+    neighbors that should be assumed to be connected at a local level.
+    The higher this value the more connected the manifold becomes
+    locally. In practice this should be not more than the local intrinsic
+    dimension of the manifold.
+     * @param bandwidth  The target bandwidth of the kernel, larger values will produce
+    larger return values.
      * @return
      */
     public INDArray[] smoothedDistances(
