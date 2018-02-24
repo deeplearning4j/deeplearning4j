@@ -246,6 +246,20 @@
           </properties>
         </profile>
         <profile>
+          <id>android-arm64-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-arm64</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-arm64</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/aarch64-linux-android-4.9/prebuilt/${os.name}-${os.arch}/bin/aarch64-linux-android-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+        <profile>
           <id>android-x86-default</id>
           <activation>
             <property>
@@ -257,6 +271,20 @@
             <javacpp.platform>android-x86</javacpp.platform>
             <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
             <javacpp.platform.compiler>toolchains/x86-4.9/prebuilt/${os.name}-${os.arch}/bin/i686-linux-android-g++</javacpp.platform.compiler>
+          </properties>
+        </profile>
+        <profile>
+          <id>android-x86_64-default</id>
+          <activation>
+            <property>
+              <name>javacpp.platform</name>
+              <value>android-x86_64</value>
+            </property>
+          </activation>
+          <properties>
+            <javacpp.platform>android-x86_64</javacpp.platform>
+            <javacpp.platform.root>${env.ANDROID_NDK}</javacpp.platform.root>
+            <javacpp.platform.compiler>toolchains/x86_64-4.9/prebuilt/${os.name}-${os.arch}/bin/x86_64-linux-android-g++</javacpp.platform.compiler>
           </properties>
         </profile>
         <profile>

@@ -18,22 +18,20 @@ matrix:
       install: true
       script: bash ./ci/build-android.sh
     - os: linux
-      env: OS=android-x86 SCALA=2.11
+      env: OS=android-arm64 SCALA=2.11
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: linux
+      env: OS=android-x86 SCALA=2.10
+      install: true
+      script: bash ./ci/build-android.sh
+    - os: linux
+      env: OS=android-x86_64 SCALA=2.11
       install: true
       script: bash ./ci/build-android.sh
     - os: osx
       osx_image: xcode7.3
-      env: OS=ios-arm SCALA=2.10
-      install: true
-      script: bash ./ci/build-ios.sh
-    - os: osx
-      osx_image: xcode7.3
-      env: OS=ios-arm64 SCALA=2.11
-      install: true
-      script: bash ./ci/build-ios.sh
-    - os: osx
-      osx_image: xcode7.3
-      env: OS=ios-x86 SCALA=2.10
+      env: OS=ios-arm64 SCALA=2.10
       install: true
       script: bash ./ci/build-ios.sh
     - os: osx
