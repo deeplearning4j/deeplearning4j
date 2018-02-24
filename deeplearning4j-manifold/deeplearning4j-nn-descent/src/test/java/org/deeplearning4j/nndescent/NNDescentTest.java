@@ -12,10 +12,9 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+
+import static org.junit.Assert.assertEquals;
 
 public class NNDescentTest {
 
@@ -72,7 +71,9 @@ public class NNDescentTest {
             vpTreeIndices.add(dataPoint.getIndex());
         }
 
-
+        Set<Integer> rpTreeIndicesSet = new HashSet<>(rpTreeIndices);
+        Set<Integer> vpTreeIndicesSet = new HashSet<>(vpTreeIndices);
+        assertEquals(rpTreeIndicesSet,vpTreeIndicesSet);
         System.out.println(rpTreeIndices);
         System.out.println(vpTreeIndices);
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.umap;
 
+import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -15,8 +16,12 @@ import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.conditions.GreaterThan;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.MathUtils;
 import org.nd4j.list.IntNDArrayList;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -26,8 +31,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -140,6 +144,11 @@ public class UMap {
     };
 
 
+    @Builder.Default
+    private double localConnectivity = 1.0;
+
+    @Builder.Default
+    private int knnIterations = 64;
 
 
 
@@ -147,7 +156,6 @@ public class UMap {
     public UMap(INDArray vec,
                 int maxSize,
                 String distanceFunction,
-                int numTrees,
                 int outDims,
                 int nNegatives,
                 double gamma,
@@ -166,9 +174,14 @@ public class UMap {
                 WorkspaceMode workspaceMode,
                 int numWorkers,
                 int nSamples,
-                Boolean sample) {
+                Boolean sample,
+                double localConnectivity
+            ,int knnIterations) {
 
 
+
+        this.knnIterations = knnIterations;
+        this.localConnectivity = localConnectivity;
 
         if(workspaceMode != null) {
             this.workspaceMode = workspaceMode;
@@ -264,13 +277,12 @@ public class UMap {
                 .iterationCount(iterationCount)
                 .nNegatives(nNegatives)
                 .normalize(normalize)
-                .numTrees(nTrees)
+                .nTrees(nTrees)
                 .nPropagations(nPropagations)
                 .numWorkers(numWorkers)
                 .perplexity(perplexity)
                 .nSamples(nSamples)
                 .sample(sample)
-                .numTrees(numTrees)
                 .nNeighbors(nNeighbors)
                 .seed(seed)
                 .workspaceMode(workspaceMode)
@@ -356,10 +368,157 @@ public class UMap {
     }
 
 
-    public double grad(int i,int x,int y) {
-        return grad(i,vis.slice(x),vis.slice(y));
+
+    public INDArray[] smoothedDistances(
+            INDArray distances,
+            int k,
+            int iterations,
+            double localConnectivity,
+            double bandwidth) {
+        INDArray rho = Nd4j.zeros(distances.size(0));
+        INDArray result = Nd4j.zeros(distances.size(0));
+        LinkedList<SmoothKnnThread> list = new LinkedList<>();
+        for(int i = 0; i < numWorkers; i++) {
+            SmoothKnnThread propagationThread = SmoothKnnThread.builder()
+                    .bandwidth(bandwidth).localConnectivity(localConnectivity)
+                    .iterations(iterations)
+                    .id(i).k(k).build();
+            list.add(propagationThread);
+            executorService.submit(propagationThread);
+        }
+
+
+        while(!list.isEmpty()) {
+            SmoothKnnThread curr = list.removeFirst();
+            while(!curr.isDone()) {
+                LockSupport.parkNanos(1000L);
+            }
+        }
+
+
+        return new INDArray[] {rho,result};
     }
 
+
+    @Builder
+    private class SmoothKnnThread implements Runnable {
+        private int id;
+        private AtomicBoolean isDone = new AtomicBoolean(false);
+        private INDArray distances;
+        private int iterations;
+        private double localConnectivity;
+        private double bandwidth;
+        private int k;
+        public final static double SMOOTH_K_TOLERANCE = 1e-5;
+        public final static double MIN_K_DIST_SCALE = 1e-3;
+        public SmoothKnnThread(int id) {
+            this.id = id;
+        }
+
+        public boolean isDone() {
+            return isDone.get();
+        }
+
+        @Override
+        public void run() {
+            if (scalars.get() == null)
+                scalars.set(Nd4j.scalar(0.0));
+
+            double target = Math.log(k) * bandwidth;
+
+            log.info("Starting propagation thread " + id);
+            int[] check = new int[vec.rows()];
+            int low = id * distances.rows() / numWorkers;
+            int hi = (id + 1) * distances.rows() / numWorkers;
+
+            for(int i = 0; i < check.length; i++) {
+                check[i] = -1;
+            }
+
+            int y = -1;
+
+            double smoothKTolerance = 1e-12;
+            INDArray rho = Nd4j.create(distances.size(0));
+            INDArray result = null;
+            /**
+             * Find vectorization if possible
+             */
+            for(int x = low; x < hi; x++) {
+                double lowBound = 0.0;
+                double mid = 1.0;
+                double hiEnd = Double.POSITIVE_INFINITY;
+                INDArray ithDistances = distances.slice(x);
+                INDArray nonZeroDistances = BooleanIndexing.chooseFrom(new INDArray[]{ithDistances}, Arrays.asList(0.0), Collections.<Integer>emptyList(),new GreaterThan());
+                if(nonZeroDistances.size(0) >= localConnectivity) {
+                    int index = (int) Math.floor(localConnectivity);
+                    double interpolation = localConnectivity - index;
+                    if(index > 0) {
+                        if(interpolation <= smoothKTolerance) {
+                            rho.putScalar(x,nonZeroDistances.getDouble(index - 1));
+                        }
+                        else {
+                            rho.putScalar(x,nonZeroDistances.getDouble(index - 1) + interpolation * (nonZeroDistances.getDouble(index) - nonZeroDistances.getDouble(index - 1)));
+                        }
+                    }
+                    else {
+                        rho.putScalar(x,interpolation * nonZeroDistances.getDouble(0));
+                    }
+
+                }
+                else if(nonZeroDistances.size(0) > 0) {
+                    rho.putScalar(x,nonZeroDistances.maxNumber().doubleValue());
+                }
+                else
+                    rho.putScalar(x,0.0);
+
+                for(int iter = 0; iter < knnIterations; iter++) {
+                    double pSum = 0.0;
+                    for(int j = 1; j < distances.size(1); j++) {
+                        double dist = Math.max(0,distances.getDouble(x,j) - rho.getDouble(x));
+                        pSum += Math.exp(-dist / mid);
+                    }
+
+                    if(Math.abs(pSum - target) < smoothKTolerance) {
+                        break;
+                    }
+
+                    if(pSum > target) {
+                        hiEnd = mid;
+                        mid = (lowBound + hiEnd) / 2.0;
+                    }
+                    else {
+                        lowBound = mid;
+                        if(hiEnd == Double.MAX_VALUE) {
+                            mid  *= 2;
+                        }
+                        else {
+                            mid = (lowBound + hiEnd) / 2.0;
+                        }
+                    }
+
+                    result.putScalar(x,mid);
+
+                    if(rho.getDouble(x) > 0.0) {
+                        if(result.getDouble(x) < MIN_K_DIST_SCALE * ithDistances.meanNumber().doubleValue()) {
+                            result.putScalar(x,MIN_K_DIST_SCALE * ithDistances.meanNumber().doubleValue());
+                        }
+                    }
+                    else {
+                        if(result.getDouble(x) < MIN_K_DIST_SCALE * distances.meanNumber().doubleValue()) {
+                            result.putScalar(x,MIN_K_DIST_SCALE * distances.meanNumber().doubleValue());
+                        }
+
+                    }
+                }
+
+            }
+
+
+
+            isDone.set(true);
+            log.info("Finished with propagation thread " + id);
+        }
+    }
 
 
 
@@ -504,10 +663,6 @@ public class UMap {
     }
 
 
-
-    public double distance(int x,int y) {
-        return RPUtils.computeDistance(distanceFunction,vis.slice(x),vis.slice(y));
-    }
 
     /**
      * Compute the error wrt the given parameters given a sampled edge(p)
