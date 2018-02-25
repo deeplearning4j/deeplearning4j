@@ -35,7 +35,7 @@ import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
+import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 

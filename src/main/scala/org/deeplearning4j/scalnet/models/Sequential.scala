@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential(val rngSeed: Long = 0) extends Model  with LazyLogging {
+class Sequential(val rngSeed: Long = 0) extends Model with LazyLogging {
 
   private var _preprocessors: Map[Int, Node] = Map()
   private var _inputShape: List[Int] = List()

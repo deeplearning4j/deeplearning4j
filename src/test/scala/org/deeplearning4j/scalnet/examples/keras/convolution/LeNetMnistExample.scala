@@ -26,7 +26,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
+import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.optimizers.SGD
 import org.deeplearning4j.scalnet.regularizers.L2
