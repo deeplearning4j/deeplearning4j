@@ -68,6 +68,11 @@ lazy val standardSettings = Seq(
 
 scalafmtOnCompile in ThisBuild := true
 scalafmtTestOnCompile in ThisBuild := false
+test in assembly := {}
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x                             => MergeStrategy.first
+}
 
 lazy val root = (project in file("."))
   .settings(standardSettings)
