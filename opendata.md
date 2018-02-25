@@ -18,7 +18,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [Data Portals](http://dataportals.org/)
 * [Open Data Monitor](https://opendatamonitor.eu/)
 * [Quandl Data Portal](https://www.quandl.com/)
-
+* [Mut1ny Face/Head segmentation dataset] (http://www.mut1ny.com/face-headsegmentation-dataset)
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING</a>
 </p>
@@ -77,6 +77,7 @@ Here you'll find an organized list of interesting, high-quality datasets for mac
 * [mmifacedb](http://www.mmifacedb.com/): MMI Facial Expression Database
 * [IndianFaceDatabase](http://vis-www.cs.umass.edu/~vidit/IndianFaceDatabase/)
 * [The Yale Face Database](http://vision.ucsd.edu/content/yale-face-database) and [The Yale Face Database B](http://vision.ucsd.edu/~leekc/ExtYaleDatabase/ExtYaleB.html)).
+* [Mut1ny Face/Head segmentation dataset] (http://www.mut1ny.com/face-headsegmentation-dataset) Over 16k pixel-level segmented images of faces/head images  
 
 <p align="center">
 <a href="https://docs.skymind.ai/docs/welcome" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">GET STARTED WITH DEEP LEARNING FOR VIDEO</a>
