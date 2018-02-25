@@ -47,7 +47,7 @@ lazy val standardSettings = Seq(
   scmInfo := Some(
     ScmInfo(url("https://github.com/deeplearning4j/ScalNet"), "scm:git:git@github.com:deeplearning4j/ScalNet.git")
   ),
-  crossScalaVersions := Seq("2.11.12", "2.10.6"),
+  crossScalaVersions := Seq("2.11.12"),
   publishMavenStyle := true,
   publishTo := {
     if (version.value.trim.endsWith("SNAPSHOT")) Some(Opts.resolver.sonatypeSnapshots)
