@@ -82,10 +82,7 @@ object LeNetMnistExample extends App {
   )
   model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
   model.add(
-    Dense(nOut = 500,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.RELU,
-          regularizer = L2(weightDecay))
+    Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay))
   )
   model.add(Dense(nOut = nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
   model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,

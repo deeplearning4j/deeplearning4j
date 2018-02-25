@@ -1,5 +1,6 @@
 package org.deeplearning4j.scalnet.examples.dl4j
 
+import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
@@ -14,7 +15,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 import scala.util.Random
 
-object RNNEmbedding extends App {
+object RNNEmbedding extends App with LazyLogging {
 
   val nClassesIn = 10
   val batchSize = 3
@@ -59,5 +60,5 @@ object RNNEmbedding extends App {
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }
-  evaluator.stats()
+  logger.info(evaluator.stats())
 }

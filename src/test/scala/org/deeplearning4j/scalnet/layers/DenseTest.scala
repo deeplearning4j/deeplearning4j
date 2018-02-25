@@ -19,7 +19,7 @@
 package org.deeplearning4j.scalnet.layers
 
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ DenseLayer, OutputLayer => JOutputLayer }
 import org.scalatest.FunSpec
 
 /**

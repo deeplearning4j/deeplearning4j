@@ -18,15 +18,14 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
+import com.typesafe.scalalogging.LazyLogging
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers._
-import org.deeplearning4j.scalnet.optimizers.{ Optimizer, SGD }
-import org.nd4j.linalg.api.ndarray.INDArray
+import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.slf4j.{ Logger, LoggerFactory }
 
 import scala.collection.JavaConverters._
 
@@ -42,9 +41,7 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential(val rngSeed: Long = 0) extends Model {
-
-  private val log: Logger = LoggerFactory.getLogger(this.getClass)
+class Sequential(val rngSeed: Long = 0) extends Model  with LazyLogging {
 
   private var _preprocessors: Map[Int, Node] = Map()
   private var _inputShape: List[Int] = List()
@@ -82,20 +79,19 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     }
   }
 
-  override def compile(lossFunction: LossFunction,
-                       optimizer: Optimizer = defaultOptimizer): Unit = {
+  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
     val builder = buildModelConfig(optimizer, seed)
     buildOutput(lossFunction)
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
     for ((layer, layerIndex) <- layers.zipWithIndex) {
-      log.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
-      log.info(" size: " + layer.describe())
+      logger.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
+      logger.info(" size: " + layer.describe())
       listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
     for ((layerIndex, preprocessor) <- _preprocessors) {
-      log.info("Preprocessor " + layerIndex + ": " + preprocessor.getClass.getSimpleName)
-      log.info(" size: " + preprocessor.describe())
+      logger.info("Preprocessor " + layerIndex + ": " + preprocessor.getClass.getSimpleName)
+      logger.info(" size: " + preprocessor.describe())
       listBuilder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
     }
     listBuilder = listBuilder.pretrain(false).backprop(true)
@@ -104,9 +100,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     model.init()
   }
 
-  override def fit(iter: DataSetIterator,
-                   nbEpoch: Int = defaultEpochs,
-                   listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (_ <- 0 until nbEpoch)
       model.fit(iter)

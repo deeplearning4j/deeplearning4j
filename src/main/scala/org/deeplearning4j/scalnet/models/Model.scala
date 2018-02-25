@@ -105,9 +105,7 @@ abstract class Model {
     * @param nbEpoch   number of epochs to train
     * @param listeners callbacks for monitoring training
     */
-  def fit(iter: DataSetIterator,
-          nbEpoch: Int = defaultEpochs,
-          listeners: List[IterationListener]): Unit
+  def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit
 
   /**
     * Use neural net to make prediction on input x

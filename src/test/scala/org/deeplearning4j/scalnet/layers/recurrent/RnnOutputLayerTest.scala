@@ -2,7 +2,7 @@ package org.deeplearning4j.scalnet.layers.recurrent
 
 import org.deeplearning4j.scalnet.layers.RnnOutputLayer
 import org.nd4j.linalg.activations.Activation
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class RnnOutputLayerTest extends WordSpec with Matchers {
 

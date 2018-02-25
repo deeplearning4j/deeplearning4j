@@ -86,12 +86,5 @@ object Dense {
             dropOut: Double = 0.0,
             name: String = "",
             lossFunction: Option[LossFunction] = None): Dense =
-    new Dense(List(nOut),
-              List(nIn),
-              weightInit,
-              activation,
-              regularizer,
-              dropOut,
-              name,
-              lossFunction)
+    new Dense(List(nOut), List(nIn), weightInit, activation, regularizer, dropOut, name, lossFunction)
 }
