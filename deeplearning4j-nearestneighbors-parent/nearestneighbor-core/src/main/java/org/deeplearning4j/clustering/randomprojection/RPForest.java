@@ -20,6 +20,12 @@ public class RPForest {
     private int maxSize = 1000;
     private String similarityFunction;
 
+    /**
+     * Create the rp forest with the specified number of trees
+     * @param numTrees the number of trees in the forest
+     * @param maxSize the max size of each tree
+     * @param similarityFunction the distance function to use
+     */
     public RPForest(int numTrees,int maxSize,String similarityFunction) {
         this.numTrees = numTrees;
         this.maxSize = maxSize;

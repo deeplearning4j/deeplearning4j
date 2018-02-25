@@ -14,6 +14,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class NNDescentTest {
@@ -76,6 +77,9 @@ public class NNDescentTest {
         assertEquals(rpTreeIndicesSet,vpTreeIndicesSet);
         System.out.println(rpTreeIndices);
         System.out.println(vpTreeIndices);
+
+        INDArray allDistances = nnDescent.distancesForEachNearestNeighbors();
+        assertArrayEquals(new int[] {mnist.rows(),nnDescent.getNNeighbors()},allDistances.shape());
 
     }
 

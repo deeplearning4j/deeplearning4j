@@ -1,5 +1,6 @@
 package org.deeplearning4j.nndescent;
 
+import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Data;
@@ -45,6 +46,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Collectors;
 
 
 /**
@@ -91,13 +93,7 @@ public class NNDescent {
     private ThreadLocal<MemoryWorkspace>  workspaceThread = new ThreadLocal<>();
     private WorkspaceConfiguration workspaceConfiguration;
 
-    /**
-     * KNNVec is a pointer to a vector.
-     * This tends to be a list of vectors.
-     *
-     * Double indexing is actually just a get(i,j)
-     * in a matrix.
-     */
+
     private List<List<Integer>> knnVec,oldKnnVec;
     private int[] negTable;
     @Builder.Default
@@ -289,16 +285,42 @@ public class NNDescent {
         Nd4j.getMemoryManager().togglePeriodicGc(false);
     }
 
+    /**
+     * Get and create the {@link MemoryWorkspace} used for nndescent
+     * @return
+     */
     public MemoryWorkspace getWorkspace() {
         if(this.workspaceThread.get() == null) {
             // opening workspace
             workspaceThread.set(workspaceMode == null || workspaceMode == WorkspaceMode.NONE ? new DummyWorkspace() :
-                    Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "LargeVisWorkspace-" + Thread.currentThread().getName()));
+                    Nd4j.getWorkspaceManager().getAndActivateWorkspace(workspaceConfiguration, "NNDescent-" + Thread.currentThread().getName()));
         }
 
         return workspaceThread.get();
     }
 
+
+    /**
+     * Return the distances for each row in the vector.
+     * The number of nearest neighbors is determined by
+     * {@link #nNeighbors}
+     *
+     * @return
+     */
+    public INDArray distancesForEachNearestNeighbors() {
+      try(MemoryWorkspace memoryWorkspace = getWorkspace().notifyScopeEntered()) {
+          INDArray ret = Nd4j.create(vec.rows(), nNeighbors);
+          for (int i = 0; i < vec.rows(); i++) {
+              INDArray queryWithDistances = Nd4j.create(Doubles.toArray(rpTree
+                      .queryWithDistances(vec.slice(i), nNeighbors).stream()
+                      .map(entry -> entry.getFirst())
+                      .collect(Collectors.toList())));
+              ret.putSlice(i, queryWithDistances);
+          }
+          return ret;
+
+      }
+    }
 
     /**
      * Initializes the neg table
