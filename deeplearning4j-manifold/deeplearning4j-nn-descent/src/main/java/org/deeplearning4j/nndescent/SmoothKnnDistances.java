@@ -171,7 +171,6 @@ public class SmoothKnnDistances {
             log.info("Starting smooth knn thread " + id);
             int low = numWorkers > 1 ? id * distances.rows() / numWorkers : 0;
             int hi = numWorkers > 1 ?  (id + 1) * distances.rows() / numWorkers : distances.rows();
-            double[] parallel = new double[result.length()];
             try (MemoryWorkspace workspace = getWorkspace().notifyScopeEntered()) {
 
                 /**
@@ -179,6 +178,9 @@ public class SmoothKnnDistances {
                  */
 
                 for(int x = low; x < hi; x++) {
+                    if(x >= distances.slices()) {
+                        break;
+                    }
                     double lowBound = 0.0;
                     double mid = 1.0;
                     double hiEnd = Double.POSITIVE_INFINITY;
@@ -235,14 +237,10 @@ public class SmoothKnnDistances {
                     }
 
                     result.putScalar(x,mid);
-                    parallel[x] =  mid;
-                    System.out.println(String.format("Result at %d in ith distances %f" ,x,mid));
                     if(rho.getDouble(x) > 0.0) {
                         double ithDistancesMean = ithDistances.meanNumber().doubleValue();
                         if(result.getDouble(x) < MIN_K_DIST_SCALE * ithDistancesMean) {
                             result.putScalar(x,MIN_K_DIST_SCALE * ithDistancesMean);
-                            parallel[x] = MIN_K_DIST_SCALE * ithDistancesMean;
-                            System.out.println(String.format("Result at %d in ith distances %f" ,x,MIN_K_DIST_SCALE * ithDistancesMean));
 
                         }
                     }
@@ -250,8 +248,6 @@ public class SmoothKnnDistances {
                         double distanceMeanNumber = distances.meanNumber().doubleValue();
                         if(result.getDouble(x) < MIN_K_DIST_SCALE * distanceMeanNumber) {
                             result.putScalar(x,MIN_K_DIST_SCALE * distanceMeanNumber);
-                            parallel[x] = MIN_K_DIST_SCALE * distanceMeanNumber;
-                            System.out.println(String.format("Result at %d in ith distances %f" ,x,MIN_K_DIST_SCALE * distanceMeanNumber));
                         }
 
                     }

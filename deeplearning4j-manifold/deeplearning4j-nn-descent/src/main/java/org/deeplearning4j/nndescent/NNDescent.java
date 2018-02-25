@@ -307,19 +307,46 @@ public class NNDescent {
      *
      * @return
      */
-    public INDArray distancesForEachNearestNeighbors() {
-      try(MemoryWorkspace memoryWorkspace = getWorkspace().notifyScopeEntered()) {
-          INDArray ret = Nd4j.create(vec.rows(), nNeighbors);
-          for (int i = 0; i < vec.rows(); i++) {
-              INDArray queryWithDistances = Nd4j.create(Doubles.toArray(rpTree
-                      .queryWithDistances(vec.slice(i), nNeighbors).stream()
-                      .map(entry -> entry.getFirst())
-                      .collect(Collectors.toList())));
-              ret.putSlice(i, queryWithDistances);
-          }
-          return ret;
+    public Pair<List<List<Integer>>,INDArray> indicesAnddistancesForEachNearestNeighbors() {
+        try(MemoryWorkspace memoryWorkspace = getWorkspace().notifyScopeEntered()) {
+            INDArray ret = Nd4j.create(vec.rows(), nNeighbors);
+            List<List<Integer>> retIndices = new ArrayList<>(vec.rows());
+            for (int i = 0; i < vec.rows(); i++) {
+                List<Pair<Double, Integer>> pairs = rpTree.queryWithDistances(vec.slice(i), nNeighbors);
+                INDArray queryWithDistances = Nd4j.create(Doubles.toArray(pairs.stream()
+                        .map(entry -> entry.getFirst())
+                        .collect(Collectors.toList())));
 
-      }
+                ret.putSlice(i, queryWithDistances);
+                List<Integer> list = pairs.stream().map(entry ->entry.getRight()).collect(Collectors.toList());
+                retIndices.add(list);
+            }
+
+
+            return Pair.of(retIndices,ret);
+
+        }
+    }
+    /**
+     * Return the distances for each row in the vector.
+     * The number of nearest neighbors is determined by
+     * {@link #nNeighbors}
+     *
+     * @return
+     */
+    public INDArray distancesForEachNearestNeighbors() {
+        try(MemoryWorkspace memoryWorkspace = getWorkspace().notifyScopeEntered()) {
+            INDArray ret = Nd4j.create(vec.rows(), nNeighbors);
+            for (int i = 0; i < vec.rows(); i++) {
+                INDArray queryWithDistances = Nd4j.create(Doubles.toArray(rpTree
+                        .queryWithDistances(vec.slice(i), nNeighbors).stream()
+                        .map(entry -> entry.getFirst())
+                        .collect(Collectors.toList())));
+                ret.putSlice(i, queryWithDistances);
+            }
+            return ret;
+
+        }
     }
 
     /**
