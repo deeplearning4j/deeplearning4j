@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.util;
 
 import java.util.Collection;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -37,11 +36,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
 
         org.deeplearning4j.nn.api.Layer underlyingLayer = underlying.instantiate(conf2, iterationListeners, layerIndex, layerParamsView, initializeParams);
         return new org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer(underlyingLayer);
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return underlying.initializer();
     }
 
     @Override
@@ -83,4 +77,5 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     public String toString(){
         return "MaskZeroLayer(" + underlying.toString() + ")";
     }
+
 }

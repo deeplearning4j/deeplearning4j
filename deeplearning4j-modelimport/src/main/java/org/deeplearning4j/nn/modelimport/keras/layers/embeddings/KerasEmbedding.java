@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
@@ -77,10 +78,8 @@ public class KerasEmbedding extends KerasLayer {
 
         this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
-            log.warn("Masking in keras and DL4J work differently. We do not support mask_zero flag" +
-                    "on Embedding layers. If you want to have this behaviour for your imported model" +
-                    "in DL4J, apply masking as a pre-processing step to your input." +
-                    "See https://deeplearning4j.org/usingrnns#masking for more on this.");
+            log.warn("Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
+                    + "For Bidirectional layers, you can set the mask yourself.");
 
         Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -150,6 +149,9 @@ public class KerasEmbedding extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
         INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
+        if (this.hasZeroMasking) {
+            kernel.putRow(0, Nd4j.zeros(kernel.columns()));
+        }
         this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
 
         if (weights.size() > 2) {
