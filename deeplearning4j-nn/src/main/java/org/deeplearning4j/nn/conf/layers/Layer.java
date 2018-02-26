@@ -32,8 +32,10 @@ import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -56,6 +58,7 @@ import java.util.*;
                 @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
                 @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
                 @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
+                @JsonSubTypes.Type(value = CenterLossOutputLayer.class, name = "CenterLossOutputLayer"),
                 @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
                 @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
                 @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
@@ -77,7 +80,9 @@ import java.util.*;
                 @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
                 @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
                 @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
-                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult")}
+                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
+                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
+                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer")}
 )
 @Data
 @NoArgsConstructor
@@ -99,7 +104,7 @@ public abstract class Layer implements Serializable, Cloneable {
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
         List<LayerConstraint> allConstraints = new ArrayList<>();
-        if (builder.allParamConstraints != null && initializer().paramKeys(this).size() > 0) {
+        if (builder.allParamConstraints != null && !initializer().paramKeys(this).isEmpty()) {
             for (LayerConstraint c : builder.allParamConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().paramKeys(this)));
@@ -107,7 +112,7 @@ public abstract class Layer implements Serializable, Cloneable {
             }
         }
 
-        if (builder.weightConstraints != null && initializer().weightKeys(this).size() > 0) {
+        if (builder.weightConstraints != null && !initializer().weightKeys(this).isEmpty()) {
             for (LayerConstraint c : builder.weightConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().weightKeys(this)));
@@ -115,14 +120,14 @@ public abstract class Layer implements Serializable, Cloneable {
             }
         }
 
-        if (builder.biasConstraints != null && initializer().biasKeys(this).size() > 0) {
+        if (builder.biasConstraints != null && !initializer().biasKeys(this).isEmpty()) {
             for (LayerConstraint c : builder.biasConstraints) {
                 LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().biasKeys(this)));
                 allConstraints.add(c2);
             }
         }
-        if(allConstraints.size() > 0) {
+        if(!allConstraints.isEmpty()) {
             this.constraints = allConstraints;
         } else {
             this.constraints = null;

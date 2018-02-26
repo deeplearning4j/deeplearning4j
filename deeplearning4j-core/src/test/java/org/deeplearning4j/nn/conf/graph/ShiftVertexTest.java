@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,7 +29,7 @@ import java.util.TreeMap;
  * Created by binesh on 6/13/2017. 
  */
 
-public class ShiftVertexTest {
+public class ShiftVertexTest extends BaseDL4JTest {
     @Test
     public void testShiftVertexNumParamsTrue() {
         /*
@@ -86,13 +87,13 @@ public class ShiftVertexTest {
                         .addLayer("identityshiftvertex",
                                         new ActivationLayer.Builder().activation(Activation.IDENTITY).build(),
                                         "shiftvertex")
-                        .setOutputs("identityshiftvertex").build();
+                        .setOutputs("identityshiftvertex", "denselayer").build();
 
         ComputationGraph cg = new ComputationGraph(cgc);
         cg.init();
 
         // We can call outputSingle, because we only have a single output layer. It has nothing to do with minibatches.
-        INDArray output = cg.outputSingle(true, input);
+        INDArray output = cg.output(true, input)[0];
         INDArray target = Nd4j.zeros(input.shape());
         target.addi(input);
         target.addi(sf);

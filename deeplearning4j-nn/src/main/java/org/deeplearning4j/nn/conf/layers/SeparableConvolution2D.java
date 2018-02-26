@@ -153,7 +153,6 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
 
-        System.out.println(layerParamsView);
         return ret;
     }
 

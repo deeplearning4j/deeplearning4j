@@ -4,6 +4,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -37,13 +38,12 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-@Ignore
-public class ConvolutionLayerSetupTest {
+public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
-        builder.setInputType(InputType.convolutional(28, 28, 1));
+        builder.setInputType(InputType.convolutionalFlat(28, 28, 1));
         MultiLayerConfiguration completed = complete().build();
         MultiLayerConfiguration test = builder.build();
         assertEquals(completed, test);
@@ -329,6 +329,49 @@ public class ConvolutionLayerSetupTest {
         assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
+    @Test
+    public void testSpaceToBatch() {
+
+        int[] blocks = new int[] {2, 2};
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new SpaceToBatchLayer.Builder(blocks).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                .layer(new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(7, proc.getInputHeight());
+        assertEquals(7, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+    }
+
+    @Test
+    public void testSpaceToDepth() {
+
+        int[] blocks = new int[] {2, 2};
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW").build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(7, proc.getInputHeight());
+        assertEquals(7, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+
+    }
+
 
     @Test
     public void testCNNDBNMultiLayer() throws Exception {
@@ -349,7 +392,7 @@ public class ConvolutionLayerSetupTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, 1)).build();
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();

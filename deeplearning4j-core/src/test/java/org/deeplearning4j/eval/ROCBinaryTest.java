@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 21/03/2017.
  */
-public class ROCBinaryTest {
+public class ROCBinaryTest extends BaseDL4JTest {
 
     @Test
     public void testROCBinary() {

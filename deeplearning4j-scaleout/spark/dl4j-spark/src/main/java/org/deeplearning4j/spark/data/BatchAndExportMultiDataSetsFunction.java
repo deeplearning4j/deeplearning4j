@@ -76,7 +76,7 @@ public class BatchAndExportMultiDataSetsFunction
             //DataSet must be either smaller or larger than minibatch size...
             tempList.add(next);
             Pair<Integer, List<String>> countAndPaths = processList(tempList, partitionIdx, count, false);
-            if (countAndPaths.getSecond() != null && countAndPaths.getSecond().size() > 0) {
+            if (countAndPaths.getSecond() != null && !countAndPaths.getSecond().isEmpty()) {
                 outputPaths.addAll(countAndPaths.getSecond());
             }
             count = countAndPaths.getFirst();
@@ -84,7 +84,7 @@ public class BatchAndExportMultiDataSetsFunction
 
         //We might have some left-over examples...
         Pair<Integer, List<String>> countAndPaths = processList(tempList, partitionIdx, count, true);
-        if (countAndPaths.getSecond() != null && countAndPaths.getSecond().size() > 0) {
+        if (countAndPaths.getSecond() != null && !countAndPaths.getSecond().isEmpty()) {
             outputPaths.addAll(countAndPaths.getSecond());
         }
 
@@ -99,7 +99,7 @@ public class BatchAndExportMultiDataSetsFunction
             numExamples += ds.getFeatures(0).size(0);
         }
 
-        if (tempList.size() == 0 || (numExamples < minibatchSize && !finalExport)) {
+        if (tempList.isEmpty() || (numExamples < minibatchSize && !finalExport)) {
             //No op
             return new Pair<>(countBefore, Collections.<String>emptyList());
         }
@@ -111,7 +111,7 @@ public class BatchAndExportMultiDataSetsFunction
         //Batch the required number together
         int countSoFar = 0;
         List<MultiDataSet> tempToMerge = new ArrayList<>();
-        while (tempList.size() > 0 && countSoFar != minibatchSize) {
+        while (!tempList.isEmpty() && countSoFar != minibatchSize) {
             MultiDataSet next = tempList.removeFirst();
             if (countSoFar + next.getFeatures(0).size(0) <= minibatchSize) {
                 //Add the entire DataSet object

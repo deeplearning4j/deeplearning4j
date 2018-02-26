@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.evaluation.EvaluationTools;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -23,10 +24,10 @@ import java.util.Random;
 /**
  * Created by Alex on 07/01/2017.
  */
-public class EvaluationToolsTests {
+public class EvaluationToolsTests extends BaseDL4JTest {
 
     @Test
-    public void testRocHtml() throws Exception {
+    public void testRocHtml() {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 

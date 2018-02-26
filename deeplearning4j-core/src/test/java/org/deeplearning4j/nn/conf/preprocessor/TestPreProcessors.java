@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,7 +22,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-public class TestPreProcessors {
+public class TestPreProcessors extends BaseDL4JTest {
 
     @Test
     public void testRnnToFeedForwardPreProcessor() {

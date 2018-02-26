@@ -58,9 +58,9 @@ public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements 
 
     protected BaseSparkEarlyStoppingTrainer(JavaSparkContext sc, EarlyStoppingConfiguration<T> esConfig, T net,
                     JavaRDD<DataSet> train, JavaRDD<MultiDataSet> trainMulti, EarlyStoppingListener<T> listener) {
-        if ((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().size() == 0)
+        if ((esConfig.getEpochTerminationConditions() == null || esConfig.getEpochTerminationConditions().isEmpty())
                         && (esConfig.getIterationTerminationConditions() == null
-                                        || esConfig.getIterationTerminationConditions().size() == 0)) {
+                                        || esConfig.getIterationTerminationConditions().isEmpty())) {
             throw new IllegalArgumentException(
                             "Cannot conduct early stopping without a termination condition (both Iteration "
                                             + "and Epoch termination conditions are null/empty)");

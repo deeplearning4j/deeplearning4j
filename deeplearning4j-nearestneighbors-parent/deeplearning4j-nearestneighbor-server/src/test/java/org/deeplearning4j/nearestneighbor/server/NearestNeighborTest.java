@@ -8,6 +8,7 @@ import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.binary.BinarySerde;
 
@@ -16,6 +17,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,6 +37,18 @@ public class NearestNeighborTest {
         request.setInputIndex(0);
         NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
         assertEquals(1, nearestNeighbor.search().get(0).getIndex());
+    }
+
+    @Test
+    public void vpTreeTest() throws Exception {
+        INDArray matrix = Nd4j.rand(new int[] {400,10});
+        INDArray rowVector = matrix.getRow(70);
+        INDArray resultArr = Nd4j.zeros(400,1);
+        Executor executor = Executors.newSingleThreadExecutor();
+        VPTree vpTree = new VPTree(matrix);
+        System.out.println("Ran!");
+
+        Thread.sleep(600000);
     }
 
 
@@ -61,7 +76,7 @@ public class NearestNeighborTest {
         BinarySerde.writeArrayToDisk(rand, writeToTmp);
         NearestNeighborsServer server = new NearestNeighborsServer();
         server.runMain("--ndarrayPath", writeToTmp.getAbsolutePath(), "--nearestNeighborsPort",
-                        String.valueOf(localPort));
+                String.valueOf(localPort));
 
         NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
         NearstNeighborsResults result = client.knnNew(5, rand.getRow(0));

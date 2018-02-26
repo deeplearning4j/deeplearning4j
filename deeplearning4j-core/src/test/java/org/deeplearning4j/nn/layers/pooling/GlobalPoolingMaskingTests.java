@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.pooling;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 18/01/2017.
  */
-public class GlobalPoolingMaskingTests {
+public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test
     public void testMaskingRnn() {

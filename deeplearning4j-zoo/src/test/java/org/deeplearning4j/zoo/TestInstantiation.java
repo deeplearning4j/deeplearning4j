@@ -5,6 +5,7 @@ import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.TransferLearningHelper;
 import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.GoogLeNet;
 import org.deeplearning4j.zoo.model.ResNet50;
@@ -137,6 +138,18 @@ public class TestInstantiation {
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 416, 416}));
         assertArrayEquals(result[0].shape(), new int[] {1, 125, 13, 13});
+    }
+
+
+    @Test
+    public void testYolo4635() throws Exception {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4635
+
+        int nClasses = 10;
+        int seed = 12345;
+        TinyYOLO model = new TinyYOLO(nClasses, seed);
+        ComputationGraph computationGraph = (ComputationGraph) model.initPretrained();
+        TransferLearningHelper transferLearningHelper = new TransferLearningHelper(computationGraph, "conv2d_9");
     }
 
 }

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
@@ -152,6 +153,24 @@ public class KerasConvolution1D extends KerasConvolution {
         }
         return this.getConvolution1DLayer().getOutputType(-1, inputType[0]);
     }
+
+
+    /**
+     * Gets appropriate DL4J InputPreProcessor for given InputTypes.
+     *
+     * @param inputType Array of InputTypes
+     * @return DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration exception
+     * @see org.deeplearning4j.nn.conf.InputPreProcessor
+     */
+    @Override
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+    }
+
 
     /**
      * Set weights for layer.

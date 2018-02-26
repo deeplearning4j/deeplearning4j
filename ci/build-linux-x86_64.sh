@@ -7,8 +7,8 @@ else
     MAVEN_PHASE="install"
 fi
 
-source change-cuda-versions.sh $CUDA
-source change-scala-versions.sh $SCALA
-source change-spark-versions.sh $SPARK
+bash change-cuda-versions.sh $CUDA
+bash change-scala-versions.sh $SCALA
+bash change-spark-versions.sh $SPARK
 mvn clean $MAVEN_PHASE -B -U --settings ./ci/settings.xml -Dmaven.test.skip=true -Dlocal.software.repository=sonatype
 

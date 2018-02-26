@@ -19,7 +19,6 @@
 package org.deeplearning4j.clustering.sptree;
 
 import com.google.common.util.concurrent.AtomicDouble;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -70,7 +69,7 @@ public class SpTree implements Serializable {
         INDArray maxY = data.max(0);
         INDArray width = Nd4j.create(meanY.shape());
         for (int i = 0; i < width.length(); i++) {
-            width.putScalar(i, FastMath.max(maxY.getDouble(i) - meanY.getDouble(i),
+            width.putScalar(i, Math.max(maxY.getDouble(i) - meanY.getDouble(i),
                             meanY.getDouble(i) - minY.getDouble(i) + Nd4j.EPS_THRESHOLD));
         }
 
@@ -221,7 +220,7 @@ public class SpTree implements Serializable {
         // Check whether we can use this node as a "summary"
         double maxWidth = boundary.width().max(Integer.MAX_VALUE).getDouble(0);
         // Check whether we can use this node as a "summary"
-        if (isLeaf() || maxWidth / FastMath.sqrt(D) < theta) {
+        if (isLeaf() || maxWidth / Math.sqrt(D) < theta) {
 
             // Compute and add t-SNE force between point and current node
             double Q = 1.0 / (1.0 + D);
@@ -262,7 +261,7 @@ public class SpTree implements Serializable {
                 // Compute pairwise distance and Q-value
                 buf.assign(data.slice(n)).subi(data.slice(colP.getInt(i)));
 
-                D = Nd4j.getBlasWrapper().dot(buf, buf);
+                D = 1e-12 + Nd4j.getBlasWrapper().dot(buf, buf);
                 D = valP.getDouble(i) / D;
 
                 // Sum positive force

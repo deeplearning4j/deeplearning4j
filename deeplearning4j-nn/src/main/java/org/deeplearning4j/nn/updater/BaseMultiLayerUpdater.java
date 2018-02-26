@@ -299,7 +299,11 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 gradient.gradient().divi(batchSize);
             } else {
                 //Standard case
-                getFlattenedGradientsView().divi(batchSize);
+                INDArray grad = getFlattenedGradientsView();
+                if(grad != null) {
+                    //May be null for nets with no parameters
+                    grad.divi(batchSize);
+                }
             }
         }
     }

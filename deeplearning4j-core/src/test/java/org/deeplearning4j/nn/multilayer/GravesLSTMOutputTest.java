@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -32,7 +33,7 @@ import java.util.Random;
 /**
  * Created by Kirill Lebedev (drlebedev.com) on 8/31/2015.
  */
-public class GravesLSTMOutputTest {
+public class GravesLSTMOutputTest extends BaseDL4JTest {
 
     private static int nIn = 20;
     private static int layerSize = 15;

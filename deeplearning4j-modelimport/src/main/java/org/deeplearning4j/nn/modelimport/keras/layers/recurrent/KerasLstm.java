@@ -129,13 +129,7 @@ public class KerasLstm extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
-        if (weightInit != recurrentWeightInit || distribution != recurrentDistribution)
-            if (enforceTrainingConfig)
-                throw new UnsupportedKerasConfigurationException(
-                        "Specifying different initialization for recurrent weights not supported.");
-            else
-                log.warn("Specifying different initialization for recurrent weights not supported.");
-        KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -153,11 +147,14 @@ public class KerasLstm extends KerasLayer {
                 .dropOut(this.dropout)
                 .activation(getActivationFromConfig(layerConfig, conf))
                 .weightInit(weightInit)
+                .weightInitRecurrent(recurrentWeightInit)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
         if (distribution != null)
             builder.dist(distribution);
+        if (recurrentDistribution != null)
+            builder.weightInitRecurrent(recurrentDistribution);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -195,12 +192,11 @@ public class KerasLstm extends KerasLayer {
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null) {
             if (returnSequences) {
-                return  preProcessor.getOutputType(inputType[0]);
+                return preProcessor.getOutputType(inputType[0]);
             } else {
                 return this.getLSTMLayer().getOutputType(-1, preProcessor.getOutputType(inputType[0]));
             }
-        }
-        else
+        } else
             return this.getLSTMLayer().getOutputType(-1, inputType[0]);
 
     }

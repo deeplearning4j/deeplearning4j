@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -25,7 +26,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 10/07/2017.
  */
-public class TestTransferLearningModelSerializer {
+public class TestTransferLearningModelSerializer extends BaseDL4JTest {
 
     @Test
     public void testModelSerializerFrozenLayers() throws Exception {

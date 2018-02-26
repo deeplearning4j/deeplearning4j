@@ -67,7 +67,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
         List<File> files = new ArrayList<>(FileUtils.listFiles(rootFolder, fileFilter, null));
         log.debug("Files found: {}; Producers: {}", files.size(), numProducers);
 
-        if (files.size() < 1)
+        if (files.isEmpty())
             throw new DL4JInvalidInputException("No suitable files were found");
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();

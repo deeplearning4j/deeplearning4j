@@ -319,7 +319,7 @@ public class CheckpointListener extends BaseTrainingListener {
      */
     public Checkpoint lastCheckpoint(){
         List<Checkpoint> all = availableCheckpoints();
-        if(all.size() == 0){
+        if(all.isEmpty()){
             return null;
         }
         return all.get(all.size()-1);

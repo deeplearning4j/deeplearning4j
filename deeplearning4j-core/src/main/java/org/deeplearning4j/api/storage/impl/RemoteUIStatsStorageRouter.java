@@ -221,6 +221,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                 try {
                     t = queue.take(); //Blocking operation
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     continue;
                 }
                 list.add(t);
@@ -260,6 +261,7 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter {
                 try {
                     Thread.sleep(nextDelayMs);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                 }
                 nextDelayMs *= retryBackoffFactor;
             }

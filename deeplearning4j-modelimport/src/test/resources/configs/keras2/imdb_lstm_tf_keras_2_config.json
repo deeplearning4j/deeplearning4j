@@ -35,14 +35,13 @@
     "recurrent_activation": "hard_sigmoid", 
     "trainable": true, 
     "recurrent_initializer": {
-     "class_name": "VarianceScaling",
+     "class_name": "RandomUniform",
      "config": {
-      "distribution": "uniform",
-      "scale": 1.0,
+      "maxval": 0.05,
       "seed": null,
-      "mode": "fan_avg"
+      "minval": -0.05
      }
-    }, 
+    },
     "use_bias": true, 
     "bias_regularizer": null, 
     "return_state": false, 

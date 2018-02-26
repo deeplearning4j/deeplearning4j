@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -14,7 +15,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestSetGetParameters {
+public class TestSetGetParameters extends BaseDL4JTest {
 
     @Test
     public void testSetParameters() {

@@ -79,7 +79,7 @@ public class CRFppTxtModel extends Model {
     private TreeMap<Integer, Pair<String, String>> loadFeatureName(Map<String, Integer> featureIndex, BufferedReader br)
                     throws Exception {
 
-        TreeMap<Integer, Pair<String, String>> featureNames = new TreeMap<Integer, Pair<String, String>>();
+        TreeMap<Integer, Pair<String, String>> featureNames = new TreeMap<>();
 
         String temp = null;
         while (StringUtil.isNotBlank(temp = br.readLine())) {
@@ -266,17 +266,17 @@ public class CRFppTxtModel extends Model {
 
     private Map<String, Integer> loadConfig(BufferedReader br) throws IOException {
 
-        Map<String, Integer> featureIndex = new HashMap<String, Integer>();
+        Map<String, Integer> featureIndex = new HashMap<>();
 
         String temp = br.readLine();// #rdr#8/0/0
 
-        List<int[]> list = new ArrayList<int[]>();
+        List<int[]> list = new ArrayList<>();
 
         while (StringUtil.isNotBlank((temp = br.readLine()))) {
 
             List<String> matcherAll = StringUtil.matcherAll("\\[.*?\\]", temp);
 
-            if (matcherAll.size() == 0) {
+            if (matcherAll.isEmpty()) {
                 continue;
             }
 

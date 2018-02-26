@@ -201,6 +201,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
         this.thread.shutdown();
@@ -239,6 +240,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
         this.thread.shutdown();
@@ -435,6 +437,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
                 shouldWork.set(false);
             } catch (RuntimeException e) {

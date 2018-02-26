@@ -115,7 +115,8 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             case 3:
                 return InputType.recurrent(shape[1]);
             case 4:
-                return InputType.convolutional(shape[2], shape[3], shape[1]);
+                // TODO: make sure to cover TF/NHWC and TH/NCHW orderings
+                return InputType.convolutional(shape[1], shape[2], shape[3]);
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));

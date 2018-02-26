@@ -209,7 +209,7 @@ public class MyStaticValue {
      */
     @SuppressWarnings("unchecked")
     public static Map<String, int[][]> getPersonFreqMap() {
-        Map<String, int[][]> map = new HashMap<String, int[][]>(0);
+        Map<String, int[][]> map = new HashMap<>(0);
         try (InputStream inputStream = DicReader.getInputStream("person/asian_name_freq.data")) {
             ObjectInputStream objectInputStream = new ObjectInputStream(inputStream);
             map = (Map<String, int[][]>) objectInputStream.readObject();

@@ -63,8 +63,8 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
-        <javacpp.version>1.3.4-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.3</javacpp-presets.version>
+        <javacpp.version>1.4.1-SNAPSHOT</javacpp.version>
+        <javacpp-presets.version>1.4</javacpp-presets.version>
         <hadoop.version>2.2.0</hadoop.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.4</commonslang.version>
@@ -79,7 +79,6 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <lombok.version>1.16.16</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
-        <lucene.version>5.3.1</lucene.version>
         <json.version>20131018</json.version>
         <google.protobuf.version>2.6.1</google.protobuf.version>
         <failIfNoTests>false</failIfNoTests>
@@ -396,7 +395,7 @@
                 </dependency>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-9.0</artifactId>
+                    <artifactId>nd4j-cuda-8.0</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>

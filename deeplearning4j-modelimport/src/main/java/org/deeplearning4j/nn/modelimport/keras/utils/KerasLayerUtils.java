@@ -127,7 +127,9 @@ public class KerasLayerUtils {
         if (regularizerConfig != null) {
             for (String field : regularizerConfig.keySet()) {
                 if (!field.equals(conf.getREGULARIZATION_TYPE_L1()) && !field.equals(conf.getREGULARIZATION_TYPE_L2())
-                        && !field.equals(conf.getLAYER_FIELD_NAME())) {
+                        && !field.equals(conf.getLAYER_FIELD_NAME())
+                        && !field.equals(conf.getLAYER_FIELD_CLASS_NAME())
+                        && !field.equals(conf.getLAYER_FIELD_CONFIG())) {
                     if (enforceTrainingConfig)
                         throw new UnsupportedKerasConfigurationException("Unknown regularization field " + field);
                     else
@@ -351,6 +353,7 @@ public class KerasLayerUtils {
     public static int[] getInputShapeFromConfig(Map<String, Object> layerConfig,
                                                 KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
+        // TODO: validate this. shouldn't we also have INPUT_SHAPE checked?
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE()))
             return null;
@@ -404,7 +407,7 @@ public class KerasLayerUtils {
         List<String> inboundLayerNames = new ArrayList<>();
         if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
             List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
-            if (inboundNodes.size() > 0) {
+            if (!inboundNodes.isEmpty()) {
                 inboundNodes = (List<Object>) inboundNodes.get(0);
                 for (Object o : inboundNodes) {
                     String nodeName = (String) ((List<Object>) o).get(0);

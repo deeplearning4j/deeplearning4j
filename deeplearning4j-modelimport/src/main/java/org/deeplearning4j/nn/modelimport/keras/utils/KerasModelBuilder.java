@@ -89,10 +89,18 @@ public class KerasModelBuilder implements Cloneable {
                     "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
         String initialModelJson = this.weightsArchive.readAttributeAsJson(
                 config.getTrainingModelConfigAttribute());
+
         String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
                 config.getFieldKerasVersion(), 5);
         Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
         modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
+
+        int majorKerasVersion = Character.getNumericValue(kerasVersion.charAt(0));
+        if (majorKerasVersion == 2) {
+            String backend = this.weightsArchive.readAttributeAsString(config.getFieldBackend());
+            modelMapper.put(config.getFieldBackend(), backend);
+        }
+
         this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
         if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
             this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());

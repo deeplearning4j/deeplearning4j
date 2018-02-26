@@ -64,11 +64,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode trainingWorkspaceMode;
+    protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
 
     @Getter
     @Setter
-    protected WorkspaceMode inferenceWorkspaceMode;
+    protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
 
     @Getter
     @Setter
@@ -275,11 +275,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     public void validate(boolean allowDisconnected){
 
-        if (networkInputs == null || networkInputs.size() < 1) {
+        if (networkInputs == null || networkInputs.isEmpty()) {
             throw new IllegalStateException(
                             "Invalid configuration: network has no inputs. Use .addInputs(String...) to label (and give an ordering to) the network inputs");
         }
-        if (networkOutputs == null || networkOutputs.size() < 1) {
+        if (networkOutputs == null || networkOutputs.isEmpty()) {
             throw new IllegalStateException(
                             "Invalid configuration: network has no outputs. Use .setOutput(String...) to specify (and give an ordering to) the output vertices");
         }
@@ -329,7 +329,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             disconnected.addAll(networkInputs);
             disconnected.addAll(vertices.keySet());
             disconnected.removeAll(seenAsInput);
-            if(disconnected.size() > 0){
+            if(!disconnected.isEmpty()){
                 throw new IllegalStateException("Invalid configuration: disconnected vertices found - " + disconnected
                         + ". Disconnected vertices are those that do not connect to either another vertex, and are also"
                         + " not a network output. To disable this error (i.e., allow network configurations with" +

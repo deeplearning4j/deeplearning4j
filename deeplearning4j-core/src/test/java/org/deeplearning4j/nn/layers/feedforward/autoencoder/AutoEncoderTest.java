@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.feedforward.autoencoder;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.fetchers.MnistDataFetcher;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -38,7 +39,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
-public class AutoEncoderTest {
+public class AutoEncoderTest extends BaseDL4JTest {
 
     @Test
     public void testAutoEncoderBiasInit() {

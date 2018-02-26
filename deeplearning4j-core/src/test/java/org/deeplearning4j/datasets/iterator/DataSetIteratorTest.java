@@ -4,6 +4,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.CifarLoader;
 import org.datavec.image.loader.LFWLoader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.impl.*;
@@ -20,6 +21,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +38,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class DataSetIteratorTest {
+public class DataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testBatchSizeOfOneIris() throws Exception {
@@ -175,7 +177,7 @@ public class DataSetIteratorTest {
     }
 
 
-    @Test
+    @Test @Ignore   //Ignored for now - CIFAR iterator needs work - https://github.com/deeplearning4j/deeplearning4j/issues/4673
     public void testCifarModel() throws Exception {
         // Streaming
         runCifar(false);

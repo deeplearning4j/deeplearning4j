@@ -44,7 +44,7 @@ public class KoreanTokenizer implements Tokenizer {
         // Tokenize
         Seq<com.twitter.penguin.korean.tokenizer.KoreanTokenizer.KoreanToken> tokens =
                         TwitterKoreanProcessorJava.tokenize(toTokenize);
-        tokenList = new ArrayList<String>();
+        tokenList = new ArrayList<>();
         Iterator<KoreanTokenJava> iter = TwitterKoreanProcessorJava.tokensToJavaKoreanTokenList(tokens).iterator();
 
         while (iter.hasNext()) {

@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.multilayer;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -26,12 +28,14 @@ import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
@@ -41,10 +45,10 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -55,6 +59,8 @@ import org.nd4j.linalg.heartbeat.reports.Event;
 import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -72,9 +78,25 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 12/27/14.
  */
-public class MultiLayerTest {
+@Slf4j
+public class MultiLayerTest extends BaseDL4JTest {
 
-    private static final Logger log = LoggerFactory.getLogger(MultiLayerTest.class);
+    private static OpExecutioner.ProfilingMode origMode;
+
+    @BeforeClass
+    public static void beforeClass(){
+        origMode = Nd4j.getExecutioner().getProfilingMode();
+    }
+
+    @Before
+    public void before(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @AfterClass
+    public static void afterClass(){
+        Nd4j.getExecutioner().setProfilingMode(origMode);
+    }
 
     @Test
     public void testSetParams() {
@@ -1102,5 +1124,170 @@ public class MultiLayerTest {
         for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
             assertNull(l.input());
         }
+    }
+
+
+    @Test
+    public void testExternalErrors() {
+        //Simple test: same network, but in one case: one less layer (the OutputLayer), where the epsilons are passed in externally
+        // instead. Should get identical results
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("Workspace mode: " + ws);
+
+            Nd4j.getRandom().setSeed(12345);
+            INDArray inData = Nd4j.rand(3, 10);
+            INDArray outData = Nd4j.rand(3, 10);
+
+            Nd4j.getRandom().setSeed(12345);
+            MultiLayerConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .seed(12345).list()
+                    .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                    .layer(new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
+                            .nOut(10).build())
+                    .build();
+            MultiLayerNetwork s = new MultiLayerNetwork(standard);
+            s.init();
+
+
+            Nd4j.getRandom().setSeed(12345);
+            MultiLayerConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .seed(12345).list()
+                    .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                    .build();
+
+            MultiLayerNetwork e = new MultiLayerNetwork(external);
+            e.init();
+
+            s.setInput(inData);
+            s.setLabels(outData);
+            s.computeGradientAndScore();
+            Gradient sGrad = s.gradient();
+
+            s.setInput(inData);
+            s.feedForward(true, false); //FF without clearing inputs as we need them later
+
+            e.setInput(inData);
+            e.feedForward(true, false); //FF without clearing inputs as we need them later
+
+            org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+
+            INDArray olEpsilon = olPairStd.getSecond().detach();
+
+            e.setInput(inData);
+            e.feedForward(true, false);
+            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+
+            int nParamsDense = 10 * 10 + 10;
+            assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
+                    extErrorGrad.getFirst().gradient());
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+    }
+
+    @Test
+    public void testExternalErrors2(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        int nIn = 4;
+        int nOut = 3;
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("***** WORKSPACE: " + ws);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam(0.01))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .list()
+                    .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.RELU).build())
+                    .layer(new ActivationLayer.Builder().activation(Activation.IDENTITY).build())
+                    .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+                    .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
+                    .build();
+
+            MultiLayerNetwork graph = new MultiLayerNetwork(conf);
+            graph.init();
+
+            final int minibatch = 5;
+            final int seqLen = 6;
+
+            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
+            graph.setParams(param);
+
+            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);
+            INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
+
+            graph.setInput(input);
+            INDArray output = graph.feedForward(false, false).get(2);
+            INDArray error = output.sub(expected);
+
+            for (org.deeplearning4j.nn.api.Layer l : graph.getLayers()) {
+                assertNotNull(l.input());
+                assertFalse(l.input().isAttached());
+            }
+
+            // Compute Gradient
+            Pair<Gradient,INDArray> gradient = graph.backpropGradient(error);
+            graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch);
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+    }
+
+    @Test
+    public void testLayerSize(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .list()
+                .layer(new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build())
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).build())
+                .layer(new DenseLayer.Builder().nOut(30).build())
+                .layer(new OutputLayer.Builder().nOut(13).build())
+                .setInputType(InputType.convolutional(28,28,3))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        assertEquals(6, net.layerSize(0));
+        assertEquals(0, net.layerSize(1));
+        assertEquals(30, net.layerSize(2));
+        assertEquals(13, net.layerSize(3));
+    }
+
+
+    @Test
+    public void testZeroParamNet() throws Exception {
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build())
+                .layer(new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build())
+                .setInputType(InputType.convolutionalFlat(28,28,1))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSet ds = new MnistDataSetIterator(16, true, 12345).next();
+
+        INDArray out = net.output(ds.getFeatures());
+
+        INDArray labelTemp = Nd4j.create(out.shape());
+        ds.setLabels(labelTemp);
+
+        net.fit(ds);
+
+        MultiLayerNetwork net2 = TestUtils.testModelSerialization(net);
+        INDArray out2 = net2.output(ds.getFeatures());
+        assertEquals(out, out2);
     }
 }

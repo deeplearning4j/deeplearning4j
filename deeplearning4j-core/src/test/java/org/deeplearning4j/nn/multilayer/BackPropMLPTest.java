@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -21,13 +22,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
-public class BackPropMLPTest {
+public class BackPropMLPTest extends BaseDL4JTest {
 
     @Test
     public void testMLPTrivial() {
@@ -393,11 +395,11 @@ public class BackPropMLPTest {
     }
 
     public static INDArray doSoftmax(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", input.dup()));
+        return Transforms.softmax(input, true);
     }
 
     public static INDArray doSigmoid(INDArray input) {
-        return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("sigmoid", input.dup()));
+        return Transforms.sigmoid(input, true);
     }
 
     public static INDArray doSigmoidDerivative(INDArray input) {

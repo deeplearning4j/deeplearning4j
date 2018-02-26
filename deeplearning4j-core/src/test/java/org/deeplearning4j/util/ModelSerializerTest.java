@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -25,13 +26,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
  */
-public class ModelSerializerTest {
+public class ModelSerializerTest extends BaseDL4JTest {
 
     @Test
     public void testWriteMLNModel() throws Exception {
@@ -229,5 +229,60 @@ public class ModelSerializerTest {
         NormalizerStandardize restored = ModelSerializer.restoreNormalizerFromInputStream(fis);
 
         assertEquals(null, restored);
+    }
+
+    @Test
+    public void testInvalidLoading1() throws Exception {
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                .graphBuilder().addInputs("in")
+                .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in")
+                .addLayer("out",new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(),
+                        "dense")
+                .setOutputs("out").pretrain(false).backprop(true).build();
+
+        ComputationGraph cg = new ComputationGraph(config);
+        cg.init();
+
+        File tempFile = File.createTempFile("modelSerializer", "bin");
+        tempFile.deleteOnExit();
+
+        ModelSerializer.writeModel(cg, tempFile, true);
+
+        try {
+            ModelSerializer.restoreMultiLayerNetwork(tempFile);
+            fail();
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("JSON") && msg.contains("restoreComputationGraph"));
+        }
+    }
+
+    @Test
+    public void testInvalidLoading2() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        File tempFile = File.createTempFile("modelSerializer", "bin");
+        tempFile.deleteOnExit();
+
+        ModelSerializer.writeModel(net, tempFile, true);
+
+        try {
+            ModelSerializer.restoreComputationGraph(tempFile);
+            fail();
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("JSON") && msg.contains("restoreMultiLayerNetwork"));
+        }
     }
 }

@@ -1085,6 +1085,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             try {
                                 buffer.put(newSequence);
                             } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 //
                             }
 
@@ -1218,7 +1219,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
 
-                        if (eventListeners != null && eventListeners.size() > 0) {
+                        if (eventListeners != null && !eventListeners.isEmpty()) {
                             for (VectorsListener listener : eventListeners) {
                                 if (listener.validateEvent(ListenerEvent.ITERATION, i))
                                     listener.processEvent(ListenerEvent.ITERATION, SequenceVectors.this, i);

@@ -1,11 +1,9 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
@@ -33,7 +31,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class MultiLayerTestRNN {
+public class MultiLayerTestRNN extends BaseDL4JTest {
 
     @Test
     public void testGravesLSTMInit() {
@@ -343,7 +341,9 @@ public class MultiLayerTestRNN {
         int nIn = 5;
         int nOut = 4;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
                                         .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build())
@@ -360,7 +360,9 @@ public class MultiLayerTestRNN {
                         .backprop(true).build();
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
-        MultiLayerConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345).list()
+        MultiLayerConfiguration confTBPTT = new NeuralNetConfiguration.Builder().seed(12345)
+                .trainingWorkspaceMode(WorkspaceMode.NONE).inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(7)
                                         .activation(Activation.TANH).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 0.5)).build())
@@ -385,9 +387,11 @@ public class MultiLayerTestRNN {
         MultiLayerNetwork mlnTBPTT = new MultiLayerNetwork(confTBPTT);
         mlnTBPTT.init();
 
-        assertTrue(mlnTBPTT.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT);
-        assertTrue(mlnTBPTT.getLayerWiseConfigurations().getTbpttFwdLength() == timeSeriesLength);
-        assertTrue(mlnTBPTT.getLayerWiseConfigurations().getTbpttBackLength() == timeSeriesLength);
+        mlnTBPTT.clearTbpttState = false;
+
+        assertEquals(BackpropType.TruncatedBPTT, mlnTBPTT.getLayerWiseConfigurations().getBackpropType());
+        assertEquals(timeSeriesLength, mlnTBPTT.getLayerWiseConfigurations().getTbpttFwdLength());
+        assertEquals(timeSeriesLength, mlnTBPTT.getLayerWiseConfigurations().getTbpttBackLength());
 
         INDArray inputData = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
         INDArray labels = Nd4j.rand(new int[] {miniBatchSize, nOut, timeSeriesLength});
@@ -424,9 +428,9 @@ public class MultiLayerTestRNN {
         assertTrue(l1StateTBPTT.isEmpty());
 
         assertTrue(l0TBPTTStateMLN.isEmpty());
-        assertTrue(l0TBPTTStateTBPTT.size() == 2);
+        assertEquals(2, l0TBPTTStateTBPTT.size());
         assertTrue(l1TBPTTStateMLN.isEmpty());
-        assertTrue(l1TBPTTStateTBPTT.size() == 2);
+        assertEquals(2, l1TBPTTStateTBPTT.size());
 
         INDArray tbpttActL0 = l0TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);
         INDArray tbpttActL1 = l1TBPTTStateTBPTT.get(GravesLSTM.STATE_KEY_PREV_ACTIVATION);

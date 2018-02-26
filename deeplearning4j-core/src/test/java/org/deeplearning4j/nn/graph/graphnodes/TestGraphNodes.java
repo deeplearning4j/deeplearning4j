@@ -222,7 +222,8 @@ public class TestGraphNodes {
                         .addInputs("in2d", "in3d")
                         .addVertex("duplicateTS", new DuplicateToTimeSeriesVertex("in3d"), "in2d")
                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "duplicateTS")
-                        .setOutputs("out").build();
+                        .addLayer("out3d", new RnnOutputLayer.Builder().nIn(1).nOut(1).build(), "in3d")
+                        .setOutputs("out", "out3d").build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -529,7 +530,7 @@ public class TestGraphNodes {
                                         .addVertex("v7", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in")
                                         .addVertex("v8", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0, 1), "in")
                                         .addLayer("out", new OutputLayer.Builder().nIn(1).nOut(1).build(), "in")
-                                        .setOutputs("out").build();
+                                        .setOutputs("out", "v1", "v2", "v3", "v4", "v5", "v6", "v7", "v8").build();
 
         String json = conf.toJson();
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);

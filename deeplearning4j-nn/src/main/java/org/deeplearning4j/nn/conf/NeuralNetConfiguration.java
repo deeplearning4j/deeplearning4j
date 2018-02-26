@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
@@ -49,6 +50,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -289,11 +291,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
                 list.add(layerwise.get(i).build());
             }
+
+            WorkspaceMode wsmTrain = (globalConfig.setTWM ? globalConfig.trainingWorkspaceMode : trainingWorkspaceMode);
+            WorkspaceMode wsmTest = (globalConfig.setIWM ? globalConfig.inferenceWorkspaceMode : inferenceWorkspaceMode);
+
+
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).setInputType(this.inputType)
-                            .trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).cacheMode(globalConfig.cacheMode)
-                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .trainingWorkspaceMode(wsmTrain).cacheMode(globalConfig.cacheMode)
+                            .inferenceWorkspaceMode(wsmTest).confs(list).build();
         }
 
         /** Helper class for setting input types */
@@ -595,8 +602,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected List<LayerConstraint> weightConstraints;
         protected List<LayerConstraint> biasConstraints;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected boolean setTWM = false;
+        protected boolean setIWM = false;
         protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
@@ -638,6 +647,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.trainingWorkspaceMode = workspaceMode;
+            this.setTWM = true;
             return this;
         }
 
@@ -652,6 +662,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            this.setIWM = true;
             return this;
         }
 
@@ -1067,6 +1078,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 layerName = "Layer not named";
             else
                 layerName = layer.getLayerName();
+
+            if(layer instanceof BaseSameDiffLayer){
+                BaseSameDiffLayer sdl = (BaseSameDiffLayer)layer;
+                sdl.applyGlobalConfig(this);
+            }
 
             if (layer != null) {
                 copyConfigToLayer(layerName, layer);

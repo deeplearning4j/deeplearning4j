@@ -22,7 +22,7 @@ import java.util.Set;
  */
 public class SummaryComputer {
 
-    private static final Set<String> FILTER_SET = new HashSet<String>();
+    private static final Set<String> FILTER_SET = new HashSet<>();
 
     static {
         FILTER_SET.add("w");
@@ -74,7 +74,7 @@ public class SummaryComputer {
 
         List<Term> parse = NlpAnalysis.parse(query).getTerms();
 
-        List<Keyword> keywords = new ArrayList<Keyword>();
+        List<Keyword> keywords = new ArrayList<>();
         for (Term term : parse) {
             if (FILTER_SET.contains(term.natrue().natureStr)) {
                 continue;
@@ -93,10 +93,10 @@ public class SummaryComputer {
     public Summary toSummary(List<Keyword> keywords) {
 
         if (keywords == null) {
-            keywords = new ArrayList<Keyword>();
+            keywords = new ArrayList<>();
         }
 
-        if (keywords.size() == 0) {
+        if (keywords.isEmpty()) {
 
             KeyWordComputer kc = new KeyWordComputer(10);
             keywords = kc.computeArticleTfidf(title, content);
@@ -113,7 +113,7 @@ public class SummaryComputer {
      */
     private Summary explan(List<Keyword> keywords, String content) {
 
-        SmartForest<Double> sf = new SmartForest<Double>();
+        SmartForest<Double> sf = new SmartForest<>();
 
         for (Keyword keyword : keywords) {
             sf.add(keyword.getName(), keyword.getScore());
@@ -219,7 +219,7 @@ public class SummaryComputer {
      * @param sf
      */
     private void computeScore(Sentence sentence, SmartForest<Double> forest) {
-        SmartGetWord<Double> sgw = new SmartGetWord<Double>(forest, sentence.value);
+        SmartGetWord<Double> sgw = new SmartGetWord<>(forest, sentence.value);
         String name = null;
         while ((name = sgw.getFrontWords()) != null) {
             sentence.updateScore(name, sgw.getParam());
@@ -235,7 +235,7 @@ public class SummaryComputer {
 
         StringBuilder sb = new StringBuilder();
 
-        List<Sentence> sentences = new ArrayList<Sentence>();
+        List<Sentence> sentences = new ArrayList<>();
 
         for (int i = 0; i < chars.length; i++) {
             if (sb.length() == 0 && (Character.isWhitespace(chars[i]) || chars[i] == ' ')) {

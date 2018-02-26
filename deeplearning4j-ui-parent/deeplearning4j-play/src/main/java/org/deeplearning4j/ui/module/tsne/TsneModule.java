@@ -47,8 +47,7 @@ public class TsneModule implements UIModule {
         Route r2 = new Route("/tsne/sessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r3 = new Route("/tsne/coords/:sid", HttpMethod.GET, FunctionType.Function, this::getCoords);
         Route r4 = new Route("/tsne/upload", HttpMethod.POST, FunctionType.Supplier, this::uploadFile);
-        //        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
-        Route r5 = new Route("/tsne/post/:sid", HttpMethod.GET, FunctionType.Function, this::postFile);
+        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
         return Arrays.asList(r1, r2, r3, r4, r5);
     }
 
@@ -89,7 +88,7 @@ public class TsneModule implements UIModule {
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if (fileParts.size() <= 0) {
+        if (fileParts.isEmpty()) {
             return badRequest("No file uploaded");
         }
 
@@ -113,7 +112,7 @@ public class TsneModule implements UIModule {
         Http.MultipartFormData body = request().body().asMultipartFormData();
         List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
 
-        if (fileParts.size() <= 0) {
+        if (fileParts.isEmpty()) {
             //            System.out.println("**** NO FILE ****");
             return badRequest("No file uploaded");
         }
@@ -126,7 +125,8 @@ public class TsneModule implements UIModule {
 
         List<String> lines;
         try {
-            lines = FileUtils.readLines(file);
+            // Set to uploadedFileLines as well, as the TSNE UI doesn't allow to properly select Sessions yet
+            lines = uploadedFileLines = FileUtils.readLines(file);
         } catch (IOException e) {
             //            System.out.println("**** COULD NOT READ FILE ****");
             return badRequest("Could not read from uploaded file");

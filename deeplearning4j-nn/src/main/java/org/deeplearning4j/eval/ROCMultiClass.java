@@ -200,6 +200,18 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     }
 
     /**
+     * Calculate the macro-average (one-vs-all) AUCPR (area under precision recall curve) for all classes
+     */
+    public double calculateAverageAUCPR() {
+        double sum = 0.0;
+        for (int i = 0; i < underlying.length; i++) {
+            sum += calculateAUCPR(i);
+        }
+
+        return sum / underlying.length;
+    }
+
+    /**
      * Get the actual positive count (accounting for any masking) for  the specified class
      *
      * @param outputNum Index of the class

@@ -69,7 +69,7 @@ public class VocabRddFunctionFlat<T extends SequenceElement> extends BaseFlatMap
 
             // FIXME: this is PROBABLY bad, we might want to ensure, there's no duplicates.
             if (configuration.isTrainSequenceVectors())
-                if (sequence.getSequenceLabels().size() > 0)
+                if (!sequence.getSequenceLabels().isEmpty())
                     elements.addAll(sequence.getSequenceLabels());
 
             return elements;

@@ -75,7 +75,7 @@ public class Result implements Iterable<Term> {
      */
     public String toStringWithOutNature(String split) {
 
-        if (terms == null || terms.size() == 0) {
+        if (terms == null || terms.isEmpty()) {
             return "";
         }
 

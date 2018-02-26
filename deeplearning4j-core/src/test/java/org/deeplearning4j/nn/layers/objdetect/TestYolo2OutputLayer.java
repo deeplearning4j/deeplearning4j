@@ -8,6 +8,7 @@ import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -45,10 +46,10 @@ import java.util.List;
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-public class TestYolo2OutputLayer {
+public class TestYolo2OutputLayer extends BaseDL4JTest {
 
     @Test
-    public void testYoloActivateScoreBasic() throws Exception {
+    public void testYoloActivateScoreBasic() {
 
         //Note that we expect some NaNs here - 0/0 for example in IOU calculation. This is handled explicitly in the
         //implementation

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -27,7 +28,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class TestVariableLengthTSCG {
+public class TestVariableLengthTSCG extends BaseDL4JTest {
 
     @Test
     public void testVariableLengthSimple() {
@@ -206,6 +207,7 @@ public class TestVariableLengthTSCG {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
                 net.setInput(0, in2);
+                net.setLayerMaskArrays(new INDArray[]{inputMask}, null);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();

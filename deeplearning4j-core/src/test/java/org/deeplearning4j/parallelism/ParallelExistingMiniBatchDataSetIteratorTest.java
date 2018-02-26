@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
 import org.deeplearning4j.datasets.iterator.parallel.FileSplitParallelDataSetIterator;
 import org.junit.Before;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertNotNull;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class ParallelExistingMiniBatchDataSetIteratorTest {
+public class ParallelExistingMiniBatchDataSetIteratorTest extends BaseDL4JTest {
 
     private static File rootFolder;
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.fetchers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.io.File;
@@ -9,7 +10,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author saudet
  */
-public class SvhnDataFetcherTest {
+public class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Test
     public void testSvhnDataFetcher() throws Exception {

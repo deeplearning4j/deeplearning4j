@@ -167,7 +167,7 @@ public class WapitiCRFModel extends Model {
         String temp = br.readLine();// #qrk#num
         int featureNum = ObjConver.getIntValue(StringUtil.matcherFirst("\\d+", temp)); // 找到特征个数
 
-        List<Pair<String, String>> featureNames = new ArrayList<Pair<String, String>>();
+        List<Pair<String, String>> featureNames = new ArrayList<>();
 
         for (int i = 0; i < featureNum; i++) {
             temp = br.readLine();
@@ -289,20 +289,20 @@ public class WapitiCRFModel extends Model {
      */
     private Map<String, Integer> loadConfig(BufferedReader br) throws IOException {
 
-        Map<String, Integer> featureIndex = new HashMap<String, Integer>();
+        Map<String, Integer> featureIndex = new HashMap<>();
 
         String temp = br.readLine();// #rdr#8/0/0
 
         int featureNum = ObjConver.getIntValue(StringUtil.matcherFirst("\\d+", temp)); // 找到特征个数
 
-        List<int[]> list = new ArrayList<int[]>();
+        List<int[]> list = new ArrayList<>();
 
         for (int i = 0; i < featureNum; i++) {
             temp = br.readLine();
 
             List<String> matcherAll = StringUtil.matcherAll("\\[.*?\\]", temp);
 
-            if (matcherAll.size() == 0) {
+            if (matcherAll.isEmpty()) {
                 continue;
             }
 

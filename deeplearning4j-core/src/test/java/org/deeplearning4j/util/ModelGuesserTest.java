@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -29,7 +30,7 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * Created by agibsonccc on 12/29/16.
  */
-public class ModelGuesserTest {
+public class ModelGuesserTest extends BaseDL4JTest {
 
 
     @Test
@@ -86,6 +87,26 @@ public class ModelGuesserTest {
         NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
         normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
         ModelSerializer.addNormalizerToModel(tempFile, normalizer);
+        Model model = ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
+        Normalizer<?> normalizer1 = ModelGuesser.loadNormalizer(tempFile.getAbsolutePath());
+        assertEquals(model, net);
+        assertEquals(normalizer, normalizer1);
+
+    }
+
+
+    @Test
+    public void testNormalizerInPlace() throws Exception {
+        MultiLayerNetwork net = getNetwork();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+
+
+        NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
+        normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
+        ModelSerializer.writeModel(net, tempFile, true,normalizer);
+
         Model model = ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
         Normalizer<?> normalizer1 = ModelGuesser.loadNormalizer(tempFile.getAbsolutePath());
         assertEquals(model, net);

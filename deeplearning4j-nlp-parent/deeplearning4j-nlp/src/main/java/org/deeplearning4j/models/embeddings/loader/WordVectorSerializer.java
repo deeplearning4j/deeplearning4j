@@ -956,7 +956,7 @@ public class WordVectorSerializer {
                     }
 
                     // it's possible to have full model without syn1Neg
-                    if (rows.size() > 0) {
+                    if (!rows.isEmpty()) {
                         INDArray syn1Neg = Nd4j.vstack(rows);
                         ((InMemoryLookupTable) w2v.getLookupTable()).setSyn1Neg(syn1Neg);
                     }
@@ -1026,7 +1026,7 @@ public class WordVectorSerializer {
         reader.close();
 
         // it's possible to have full model without syn1
-        if (rows.size() > 0) {
+        if (!rows.isEmpty()) {
             INDArray syn1 = Nd4j.vstack(rows);
             lookupTable.setSyn1(syn1);
         }
@@ -2705,11 +2705,12 @@ public class WordVectorSerializer {
                 VocabWord element = new VocabWord(1.0, word);
                 element.setIndex(idxCounter.getAndIncrement());
 
-
                 float[] vector = new float[vectorLength];
                 for (int i = 0; i < vectorLength; i++) {
                     vector[i] = readFloat(stream);
                 }
+
+                stream.readByte();
 
                 return Pair.makePair(element, vector);
             } catch (Exception e) {

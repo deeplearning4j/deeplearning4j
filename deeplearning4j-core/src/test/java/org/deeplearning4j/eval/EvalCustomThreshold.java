@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
@@ -15,7 +16,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 19/06/2017.
  */
-public class EvalCustomThreshold {
+public class EvalCustomThreshold extends BaseDL4JTest {
 
     @Test
     public void testEvaluationCustomBinaryThreshold() {

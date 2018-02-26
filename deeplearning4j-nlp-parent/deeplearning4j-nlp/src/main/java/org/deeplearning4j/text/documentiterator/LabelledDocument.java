@@ -45,7 +45,7 @@ public class LabelledDocument {
 
     @Deprecated
     public void setLabel(String label) {
-        if (labels.size() > 0)
+        if (!labels.isEmpty())
             labels.set(0, label);
         else
             labels.add(label);

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -9,9 +10,12 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -27,7 +31,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class TestVariableLengthTS {
+public class TestVariableLengthTS extends BaseDL4JTest {
 
     @Test
     public void testVariableLengthSimple() {
@@ -543,5 +547,48 @@ public class TestVariableLengthTS {
                 }
             }
         }
+    }
+
+
+    @Test
+    public void testReverse(){
+
+        for(char c : new char[]{'f','c'}) {
+
+            INDArray in = Nd4j.linspace(1, 3 * 5 * 10, 3 * 5 * 10).reshape('f', 3, 5, 10).dup(c);
+            INDArray inMask = Nd4j.linspace(1, 30, 30).reshape('f', 3, 10).dup(c); //Minibatch, TS length
+
+            INDArray inReverseExp = reverseTimeSeries(in);
+            INDArray inMaskReverseExp = Nd4j.create(inMask.shape());
+            for (int i = 0; i < inMask.size(1); i++) {
+                inMaskReverseExp.putColumn(i, inMask.getColumn(inMask.size(1) - i - 1));
+            }
+
+            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in);
+            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask);
+
+            assertEquals(inReverseExp, inReverse);
+            assertEquals(inMaskReverseExp, inMaskReverse);
+        }
+    }
+
+
+
+    /**
+     * CPU ONLY VERSION FOR TESTING
+     */
+    public static INDArray reverseTimeSeries(INDArray in){
+        if(in == null){
+            return null;
+        }
+        INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
+        CustomOp op = DynamicCustomOp.builder("reverse")
+                .addIntegerArguments(new int[]{0,1})
+                .addInputs(in)
+                .addOutputs(out)
+                .callInplace(false)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        return out;
     }
 }

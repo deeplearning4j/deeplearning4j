@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.updater;
 
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -34,7 +35,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class TestUpdaters {
+public class TestUpdaters extends BaseDL4JTest {
 
     protected int nIn = 3;
     protected int nOut = 2;

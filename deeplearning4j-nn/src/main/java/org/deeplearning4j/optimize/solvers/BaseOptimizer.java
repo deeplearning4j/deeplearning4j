@@ -172,7 +172,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         oldScore = score;
         model.computeGradientAndScore();
 
-        if (iterationListeners != null && iterationListeners.size() > 0) {
+        if (iterationListeners != null && !iterationListeners.isEmpty()) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener l : iterationListeners) {
                     if (l instanceof TrainingListener) {
@@ -202,7 +202,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         Pair<Gradient, Double> pair = gradientAndScore();
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
-            setupSearchState(pair); //Only do this once
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                setupSearchState(pair); //Only do this once
+            }
         } else {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
         }
@@ -219,7 +221,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         }
 
         //calculate initial search direction
-        preProcessLine();
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            preProcessLine();
+        }
 
         gradient = (INDArray) searchState.get(GRADIENT_KEY);
         searchDirection = (INDArray) searchState.get(SEARCH_DIR);
@@ -245,7 +249,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         pair = gradientAndScore();
 
         //updates searchDirection
-        postStep(pair.getFirst().gradient());
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            postStep(pair.getFirst().gradient());
+        }
 
         //invoke listeners
         int iterationCount = BaseOptimizer.getIterationCount(model);

@@ -210,7 +210,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         }
         Pair<String, String> p = sentenceProvider.nextSentence();
         List<String> tokens = tokenizeSentence(p.getFirst());
-        if (tokens.size() > 0) {
+        if (!tokens.isEmpty()) {
             preLoadedTokens = new Pair<>(tokens, p.getSecond());
         }
     }
@@ -243,7 +243,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             Pair<String, String> p = sentenceProvider.nextSentence();
             List<String> tokens = tokenizeSentence(p.getFirst());
 
-            if (tokens.size() > 0) {
+            if (!tokens.isEmpty()) {
                 //Handle edge case: no tokens from sentence
                 maxLength = Math.max(maxLength, tokens.size());
                 minLength = Math.min(minLength, tokens.size());

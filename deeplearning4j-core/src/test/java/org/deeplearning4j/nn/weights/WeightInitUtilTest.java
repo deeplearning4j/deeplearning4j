@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.weights;
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.junit.Before;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by nyghtowl on 11/14/15.
  */
-public class WeightInitUtilTest {
+public class WeightInitUtilTest extends BaseDL4JTest {
     protected int fanIn = 3;
     protected int fanOut = 2;
     protected int[] shape = new int[] {fanIn, fanOut};

@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class RandomTests {
+public class RandomTests extends BaseDL4JTest {
 
     /**
      * In this test we check for equality of model params after initialization in different threads

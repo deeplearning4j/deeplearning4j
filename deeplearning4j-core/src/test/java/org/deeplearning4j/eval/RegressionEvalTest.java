@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -26,7 +27,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 /**
  * @author Alex Black
  */
-public class RegressionEvalTest {
+public class RegressionEvalTest extends BaseDL4JTest {
 
     @Test(expected = java.lang.IllegalArgumentException.class)
     public void testEvalParameters() {
