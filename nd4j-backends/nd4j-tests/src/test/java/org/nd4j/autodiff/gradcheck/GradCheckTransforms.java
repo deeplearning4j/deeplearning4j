@@ -47,7 +47,7 @@ public class GradCheckTransforms {
         SameDiff sd = SameDiff.create();
 
         SDVariable sdA = sd.var("a", expOut.shape());
-        SDVariable sdB = sd.var("a", expOut.shape());
+        SDVariable sdB = sd.var("b", expOut.shape());
 
 
         sd.associateArrayWithVariable(a, sdA);
