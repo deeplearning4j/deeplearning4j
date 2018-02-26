@@ -366,6 +366,16 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     }
 
     private INDArray convertWritables(List<List<Writable>> list, int minValues, SubsetDetails details) {
+        try{
+            return convertWritablesHelper(list, minValues, details);
+        } catch (NumberFormatException e){
+            throw new RuntimeException("Error parsing data (writables) from record readers - value is non-numeric", e);
+        } catch (Throwable t){
+            throw new RuntimeException("Error parsing data (writables) from record readers", t);
+        }
+    }
+
+    private INDArray convertWritablesHelper(List<List<Writable>> list, int minValues, SubsetDetails details) {
         INDArray arr;
         if (details.entireReader) {
             if (list.get(0).size() == 1 && list.get(0).get(0) instanceof NDArrayWritable) {

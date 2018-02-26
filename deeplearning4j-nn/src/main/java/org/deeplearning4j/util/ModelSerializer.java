@@ -290,7 +290,20 @@ public class ModelSerializer {
         zipFile.close();
 
         if (gotConfig && gotCoefficients) {
-            MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
+            MultiLayerConfiguration confFromJson;
+            try{
+               confFromJson = MultiLayerConfiguration.fromJson(json);
+            } catch (Exception e){
+                try{
+                    ComputationGraphConfiguration.fromJson(json);
+                } catch (Exception e2){
+                    //Invalid, and not a compgraph
+                    throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model JSON is" +
+                            " not a valid MultiLayerConfiguration");
+                }
+                throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model appears to be " +
+                        "a ComputationGraph - use ModelSerializer.restoreComputationGraph instead");
+            }
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
             network.init(params, false);
 
@@ -539,7 +552,24 @@ public class ModelSerializer {
         zipFile.close();
 
         if (gotConfig && gotCoefficients) {
-            ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
+            ComputationGraphConfiguration confFromJson;
+            try{
+                confFromJson = ComputationGraphConfiguration.fromJson(json);
+                if(confFromJson.getNetworkInputs() == null && (confFromJson.getVertices() == null || confFromJson.getVertices().size() == 0)){
+                    //May be deserialized correctly, but mostly with null fields
+                    throw new RuntimeException("Invalid JSON - not a ComputationGraphConfiguration");
+                }
+            } catch (Throwable e){
+                try{
+                    MultiLayerConfiguration.fromJson(json);
+                } catch (Exception e2){
+                    //Invalid, and not a compgraph
+                    throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model JSON is" +
+                            " not a valid ComputationGraphConfiguration");
+                }
+                throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model appears to be " +
+                        "a MultiLayerNetwork - use ModelSerializer.restoreMultiLayerNetwork instead");
+            }
             ComputationGraph cg = new ComputationGraph(confFromJson);
             cg.init(params, false);
 
