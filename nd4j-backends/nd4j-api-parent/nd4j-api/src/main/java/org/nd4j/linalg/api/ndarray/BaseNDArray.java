@@ -5334,6 +5334,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } else {
                 INDArray copy = Nd4j.createUninitialized(this.shape(), this.ordering());
                 copy.assign(this);
+                Nd4j.getExecutioner().commit();
 
                 return copy;
             }
@@ -5355,6 +5356,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             } else {
                 copy = Nd4j.createUninitialized(this.shape(), this.ordering());
                 copy.assign(this);
+                Nd4j.getExecutioner().commit();
             }
 
             Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
@@ -5403,6 +5405,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
             } else {
                 copy = this.dup(this.ordering());
+                Nd4j.getExecutioner().commit();
             }
 
             // restore current ws
@@ -5470,6 +5473,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
         } else {
             copy = this.dup(this.ordering());
+            Nd4j.getExecutioner().commit();
         }
 
         Nd4j.getMemoryManager().setCurrentWorkspace(current);
@@ -5543,6 +5547,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
         } else {
             copy = this.dup(this.ordering());
+            Nd4j.getExecutioner().commit();
         }
 
         return copy;
