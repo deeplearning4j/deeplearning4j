@@ -72,7 +72,7 @@ public class DefaultI18N implements I18N {
         Map<String, String> messages = new HashMap<>();
 
         for (String s : resources) {
-            if (!s.endsWith(languageCode))
+            if (!s.endsWith("." + languageCode))
                 continue;
 
             log.trace("Attempting to parse file: {}", s);
