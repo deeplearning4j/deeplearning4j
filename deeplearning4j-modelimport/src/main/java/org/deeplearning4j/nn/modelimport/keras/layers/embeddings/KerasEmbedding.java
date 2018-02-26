@@ -37,6 +37,14 @@ public class KerasEmbedding extends KerasLayer {
     private final int NUM_TRAINABLE_PARAMS = 1;
     private boolean hasZeroMasking;
 
+
+    /**
+     * Pass through constructor for unit tests
+     * @throws UnsupportedKerasConfigurationException
+     */
+    public KerasEmbedding() throws UnsupportedKerasConfigurationException {
+    }
+
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *

@@ -11,6 +11,11 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+/*
+ Wrapper which masks timesteps with 0 activation.
+ Assumes that the input shape is [batch_size, input_size, timesteps].
+ @author Martin Boyanov mboyanov@gmail.com
+ */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
 
@@ -22,6 +27,7 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     public MaskZeroLayer(Layer underlying) {
         this.underlying = underlying;
     }
+
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                                                        int layerIndex, INDArray layerParamsView, boolean initializeParams) {
