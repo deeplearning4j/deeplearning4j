@@ -1,10 +1,11 @@
 ---
-title: A Beginner's Guide to Graph Data for Deep Learning
+title: A Beginner's Guide to Graph Analytics and Deep Learning
 layout: default
 redirect_from: graphtheory
+redirect_from: graphdata
 ---
 
-# A Beginner's Guide to Graph Data for Deep Learning
+# A Beginner's Guide to Graph Analytics and Deep Learning
 
 Contents
 
