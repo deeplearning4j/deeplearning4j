@@ -38,13 +38,12 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-@Ignore
 public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
-        builder.setInputType(InputType.convolutional(28, 28, 1));
+        builder.setInputType(InputType.convolutionalFlat(28, 28, 1));
         MultiLayerConfiguration completed = complete().build();
         MultiLayerConfiguration test = builder.build();
         assertEquals(completed, test);
@@ -393,7 +392,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, 1)).build();
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
