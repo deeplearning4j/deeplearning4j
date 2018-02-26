@@ -695,12 +695,6 @@
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
-      <dependency>
-          <groupId>com.github.wendykierp</groupId>
-          <artifactId>JTransforms</artifactId>
-          <version>${jtransforms.version}</version>
-          <classifier>with-dependencies</classifier>
-      </dependency>
     </dependencies>
 
 
