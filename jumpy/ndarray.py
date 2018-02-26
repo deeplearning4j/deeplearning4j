@@ -134,14 +134,48 @@ def _indarray(x):
     else:
         raise Exception('Data type not understood :' + str(type(x)))
 
+def broadcast_like(y, x):
+    xs = x.shape()
+    ys = y.shape()
+    if xs == ys:
+        return y
+    _xs = tuple(xs)
+    _ys = tuple(ys)
+    nx = len(xs)
+    ny = len(ys)
+    if nx > ny:
+        diff = nx - ny
+        ys += [1] * diff
+        y = y.reshape(ys)
+        ny = nx
+    elif ny > nx:
+        raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
+                        ' and ' + str(_ys))
+    yt = []
+    rep_y = False
+    for xd, yd in zip(xs, ys):
+        if xd == yd:
+            yt.append(1)
+        elif xd == 1:
+            raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
+                            ' and ' + str(_ys))   
+        elif yd == 1:
+            yt.append(xd)
+            rep_y = True
+        else:
+            raise Exception('Unable to broadcast shapes ' + str(_xs) + ''
+                            ' and ' + str(_ys))    
+    if rep_y:
+        y = y.repmat(*yt)
+    return y
 
 def broadcast(x, y):
     xs = x.shape()
     ys = y.shape()
-    _xs = tuple(xs)
-    _ys = tuple(ys)
     if xs == ys:
         return x, y
+    _xs = tuple(xs)
+    _ys = tuple(ys)
     nx = len(xs)
     ny = len(ys)
     if nx > ny:
@@ -241,13 +275,17 @@ class ndarray(object):
             if self.is1d:
                 array = ndarray(self.array.get(NDArrayIndex.point(key)))
                 array.is0d = True
+                return array
             else:
                 if self.array.shape()[0] == 1:
                     assert key in (0, -1), 'Index ' + str(key) + ''
                     ' is out of bounds for axis 0 with size 1'
                     array = ndarray(self.array)
                     array.is1d = True
-            return array
+                    return array
+                else:
+                    array = ndarray(self.array.get(NDArrayIndex.point(key)))
+                    return array
         if type(key) is slice:
             start = key.start
             stop = key.stop
@@ -334,6 +372,14 @@ class ndarray(object):
                 array.is1d = True
             return array
 
+    def __setitem__(self, key, other):
+        other = _indarray(other)
+        view = self[key]
+        if view is None:
+            return
+        view = view.array
+        other = broadcast_like(other, view)
+        view.assign(other)
 
     def __add__(self, other):
         other = _indarray(other)
