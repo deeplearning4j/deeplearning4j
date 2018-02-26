@@ -149,9 +149,10 @@ public class KerasLayerUtils {
      */
     public static KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig,
                                               KerasLayerConfiguration conf,
-                                              Map<String, Class<? extends KerasLayer>> customLayers)
+                                              Map<String, Class<? extends KerasLayer>> customLayers,
+                                              Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers);
+        return getKerasLayerFromConfig(layerConfig, false, conf, customLayers, previousLayers);
     }
 
     /**
@@ -165,9 +166,12 @@ public class KerasLayerUtils {
      * @return KerasLayer
      * @see Layer
      */
-    public static KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig,
+    public static KerasLayer getKerasLayerFromConfig(Map<String, Object> layerConfig,
+            boolean enforceTrainingConfig,
                                               KerasLayerConfiguration conf,
-                                              Map<String, Class<? extends KerasLayer>> customLayers)
+                                              Map<String, Class<? extends KerasLayer>> customLayers,
+                                              Map<String, ? extends KerasLayer> previousLayers
+                                              )
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         String layerClassName = getClassNameFromConfig(layerConfig, conf);
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_TIME_DISTRIBUTED())) {
@@ -194,7 +198,7 @@ public class KerasLayerUtils {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_BIDIRECTIONAL())) {
             layer = new KerasBidirectional(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LSTM())) {
-            layer = new KerasLstm(layerConfig, enforceTrainingConfig);
+            layer = new KerasLstm(layerConfig, enforceTrainingConfig, previousLayers);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_SIMPLE_RNN())) {
             layer = new KerasSimpleRnn(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONVOLUTION_2D())) {
@@ -306,7 +310,7 @@ public class KerasLayerUtils {
         Map<String, Object> innerLayer = (Map<String, Object>) outerConfig.get(conf.getLAYER_FIELD_LAYER());
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
         layerConfig.put(conf.getLAYER_FIELD_NAME(), innerLayer.get(conf.getLAYER_FIELD_CLASS_NAME()));
-        Map<String, Object> innerConfig = (Map<String, Object>) getInnerLayerConfigFromConfig(innerLayer, conf);
+        Map<String, Object> innerConfig = getInnerLayerConfigFromConfig(innerLayer, conf);
         outerConfig.putAll(innerConfig);
         outerConfig.remove(conf.getLAYER_FIELD_LAYER());
         return layerConfig;
@@ -464,7 +468,7 @@ public class KerasLayerUtils {
                 dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
             } catch (Exception e) {
                 int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT());
-                dropout = 1.0 - (double) kerasDropout;
+                dropout = 1.0 - kerasDropout;
             }
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_DROPOUT_W())) {
             /* For LSTMs. */
@@ -472,7 +476,7 @@ public class KerasLayerUtils {
                 dropout = 1.0 - (double) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
             } catch (Exception e) {
                 int kerasDropout = (int) innerConfig.get(conf.getLAYER_FIELD_DROPOUT_W());
-                dropout = 1.0 - (double) kerasDropout;
+                dropout = 1.0 - kerasDropout;
             }
         }
         return dropout;

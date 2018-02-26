@@ -35,6 +35,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
+    private boolean hasZeroMasking;
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
@@ -66,7 +67,7 @@ public class KerasEmbedding extends KerasLayer {
         this.inputShape[0] = inputShapeOld[0];
         this.inputShape[1] = inputDim;
 
-        boolean hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
+        this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
             log.warn("Masking in keras and DL4J work differently. We do not support mask_zero flag" +
                     "on Embedding layers. If you want to have this behaviour for your imported model" +
@@ -136,7 +137,7 @@ public class KerasEmbedding extends KerasLayer {
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String, INDArray>();
+        this.weights = new HashMap<>();
         if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
