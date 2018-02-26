@@ -475,8 +475,7 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray permutei(int... rearrange) {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().push();
 
         return super.permutei(rearrange);
     }
@@ -654,8 +653,7 @@ public class JCublasNDArray extends BaseNDArray {
         INDArray copy = null;
 
         if (!this.isView()) {
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+            Nd4j.getExecutioner().commit();
 
             DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 

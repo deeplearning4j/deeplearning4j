@@ -5326,6 +5326,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         */
         if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
             if (!isView()) {
+                Nd4j.getExecutioner().commit();
                 DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
@@ -5344,7 +5345,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray copy = null;
 
             if (!isView()) {
-
+                Nd4j.getExecutioner().commit();
                 DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
                 //Pointer.memcpy(buffer.pointer(), this.data.pointer(), this.lengthLong() * Nd4j.sizeOfDataType(this.data.dataType()));
@@ -5399,6 +5400,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             INDArray copy = null;
             if (!this.isView()) {
+                Nd4j.getExecutioner().commit();
                 DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
                 Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -5467,6 +5469,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
         INDArray copy = null;
         if (!this.isView()) {
+            Nd4j.getExecutioner().commit();
             DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
@@ -5541,6 +5544,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         INDArray copy = null;
 
         if (!this.isView()) {
+            Nd4j.getExecutioner().commit();
             DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
