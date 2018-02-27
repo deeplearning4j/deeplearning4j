@@ -471,7 +471,7 @@ public class StringGrid extends ArrayList<List<String>> {
             checkInvalidColumn(column);
         StringGrid grid = new StringGrid(sep, numColumns);
         for (List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            double sim = org.nd4j.linalg.util.MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
             if (sim >= threshold)
                 grid.addRow(list);
         }
@@ -553,7 +553,7 @@ public class StringGrid extends ArrayList<List<String>> {
             checkInvalidColumn(column);
         List<List<String>> remove = new ArrayList<>();
         for (List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            double sim = org.nd4j.linalg.util.MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
             if (sim < threshold)
                 remove.add(list);
         }
