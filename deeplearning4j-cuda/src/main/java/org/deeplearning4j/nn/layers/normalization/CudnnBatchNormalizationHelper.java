@@ -138,7 +138,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         int[] gammaStride = gamma.stride();
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, tensorFormat, dataType, shape[0],
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
                         shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 
         Allocator allocator = AtomicAllocator.getInstance();
@@ -187,7 +187,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         int[] gammaStride = gamma.stride();
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, tensorFormat, dataType, shape[0],
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.gammaBetaTensorDesc, TENSOR_FORMAT, dataType, shape[0],
                         shape[1], shape.length > 2 ? shape[2] : 1, shape.length > 3 ? shape[3] : 1));
 
         Allocator allocator = AtomicAllocator.getInstance();

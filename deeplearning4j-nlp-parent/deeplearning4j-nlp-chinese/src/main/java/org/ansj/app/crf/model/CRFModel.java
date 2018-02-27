@@ -17,7 +17,7 @@ import java.util.zip.ZipException;
  */
 public class CRFModel extends Model {
 
-    public static final String version = "ansj1";
+    public static final String VERSION = "ansj1";
 
     @Override
     public CRFModel loadModel(String modelPath) throws Exception {
