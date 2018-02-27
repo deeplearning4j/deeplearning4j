@@ -16,7 +16,7 @@ public class Word2VecTestsSmall {
 
     @Before
     public void setUp() throws Exception {
-        word2vec = WordVectorSerializer.loadGoogleModel(new ClassPathResource("vec.bin").getFile(), true, true);
+        word2vec = WordVectorSerializer.readWord2VecModel(new ClassPathResource("vec.bin").getFile());
     }
 
     @Test
