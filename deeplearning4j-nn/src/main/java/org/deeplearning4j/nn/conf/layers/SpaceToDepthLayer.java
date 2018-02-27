@@ -56,8 +56,12 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SpaceToDepthLayer extends Layer {
 
+    public enum DataFormat {
+        NCHW, NHWC
+    }
+
     protected int[] blocks;
-    protected String dataFormat;
+    protected DataFormat dataFormat;
 
 
     protected SpaceToDepthLayer(Builder builder) {
@@ -151,13 +155,13 @@ public class SpaceToDepthLayer extends Layer {
     @NoArgsConstructor
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
         protected int[] blocks;
-        protected String dataFormat = "NCHW";
+        protected DataFormat dataFormat = DataFormat.NCHW;
 
         public Builder(int[] blocks) {
             this.blocks = blocks;
         }
 
-        public Builder(int[] blocks, String dataFormat) {
+        public Builder(int[] blocks, DataFormat dataFormat) {
             this.blocks = blocks;
             this.dataFormat = dataFormat;
         }
@@ -167,7 +171,7 @@ public class SpaceToDepthLayer extends Layer {
             return (T) this;
         }
 
-        public T dataFormat(String dataFormat) {
+        public T dataFormat(DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return (T) this;
         }

@@ -48,7 +48,7 @@ public class KerasYolo9000Test {
     private static final String TEMP_MODEL_FILENAME = "tempModel";
     private static final String H5_EXTENSION = ".h5";
 
-    // @Test
+     @Test
     // TODO: yolo and yolo-voc output are too large for github, find smaller equivalents
     public void testCustomLayerYoloImport() throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);

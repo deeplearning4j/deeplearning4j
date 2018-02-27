@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -204,6 +205,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
+    @Ignore
     @Test
     public void testCnnWithSpaceToDepth() {
         Nd4j.getRandom().setSeed(12345);
@@ -237,7 +239,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                     .dist(new NormalDistribution(0, 1))
                                     .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
                                     .nOut(3).build()) //output: (5-2+0)/1+1 = 4
-                                    .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW")
+                                    .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
                                             .build()) // (mb,3,4,4) -> (mb,12,2,2)
                                     .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(2 * 2 * 12)

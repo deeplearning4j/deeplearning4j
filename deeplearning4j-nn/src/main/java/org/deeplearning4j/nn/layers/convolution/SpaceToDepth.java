@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
@@ -65,7 +66,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return layerConf().getBlocks();
     }
 
-    private int isNHWC() {return layerConf().getDataFormat().equals("NHWC")? 1: 0;}
+    private int isNHWC() {return layerConf().getDataFormat().equals(SpaceToDepthLayer.DataFormat.NHWC)? 1: 0;}
 
     @Override
     public Type type() {
