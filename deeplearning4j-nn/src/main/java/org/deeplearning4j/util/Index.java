@@ -33,13 +33,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class Index implements Serializable {
 
-    /**
-     *
-     */
     private static final long serialVersionUID = 1160629777026141078L;
-    Map<Integer, Object> objects = new ConcurrentHashMap<>();
-
-    Map<Object, Integer> indexes = new ConcurrentHashMap<>();
+    private Map<Integer, Object> objects = new ConcurrentHashMap<>();
+    private Map<Object, Integer> indexes = new ConcurrentHashMap<>();
 
     public synchronized boolean add(Object o, int idx) {
         if (o instanceof String && o.toString().isEmpty()) {

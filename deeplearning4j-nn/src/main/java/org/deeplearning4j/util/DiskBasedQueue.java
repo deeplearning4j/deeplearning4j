@@ -191,13 +191,9 @@ public class DiskBasedQueue<E> implements Queue<E>, Serializable {
         throw new UnsupportedOperationException();
     }
 
-
-
     private void addAndSave(E e) {
         File path = new File(dir, UUID.randomUUID().toString());
         SerializationUtils.saveObject(e, path);
         paths.add(path.getAbsolutePath());
     }
-
-
 }
