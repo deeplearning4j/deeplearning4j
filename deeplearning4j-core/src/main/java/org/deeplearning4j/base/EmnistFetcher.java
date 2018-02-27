@@ -32,7 +32,7 @@ import java.io.File;
 public class EmnistFetcher extends MnistFetcher {
     protected static final String LOCAL_DIR_NAME = "EMNIST";
 
-    private static final String baseURL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/emnist/";
+    private static final String BASE_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/emnist/";
 
     private final EmnistDataSetIterator.Set ds;
 
@@ -88,7 +88,7 @@ public class EmnistFetcher extends MnistFetcher {
     // --- Train files ---
     @Override
     public String getTrainingFilesURL() {
-        return baseURL + getImagesFileName(ds, true);
+        return BASE_URL + getImagesFileName(ds, true);
     }
 
     @Override
@@ -129,7 +129,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTrainingFileLabelsURL() {
-        return baseURL + getLabelsFileName(ds, true);
+        return BASE_URL + getLabelsFileName(ds, true);
     }
 
     @Override
@@ -173,7 +173,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTestFilesURL() {
-        return baseURL + getImagesFileName(ds, false);
+        return BASE_URL + getImagesFileName(ds, false);
     }
 
     @Override
@@ -214,7 +214,7 @@ public class EmnistFetcher extends MnistFetcher {
 
     @Override
     public String getTestFileLabelsURL() {
-        return baseURL + getLabelsFileName(ds, false);
+        return BASE_URL + getLabelsFileName(ds, false);
     }
 
     @Override
