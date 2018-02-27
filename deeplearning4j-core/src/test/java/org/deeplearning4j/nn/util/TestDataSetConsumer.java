@@ -1,4 +1,4 @@
-package org.deeplearning4j.util;
+package org.deeplearning4j.nn.util;
 
 import lombok.NonNull;
 import org.nd4j.linalg.dataset.DataSet;
