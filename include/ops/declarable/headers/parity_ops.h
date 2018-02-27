@@ -630,5 +630,17 @@ namespace nd4j {
          *    vector with broadcasted shape 
          */
         DECLARE_CUSTOM_OP(broadcast_dynamic_shape, 2, 1, false, 0, 0);
+
+        /**
+         * matrix_determinant op.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: *) with determinant for all 
+         * M x M matricies
+         */
+        DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
     }
 }
