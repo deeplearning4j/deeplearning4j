@@ -528,7 +528,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
                     predicted = resolveLabelForClass(clazz2);
-                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual,
+                    builder.append(String.format("Predictions labeled as %s classified by model as %s: %d times%n", actual,
                                     predicted, count));
                 }
             }

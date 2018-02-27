@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
@@ -87,75 +88,12 @@ import java.util.zip.ZipOutputStream;
  * @author Adam Gibson
  * @author raver119
  */
+@Slf4j
 public class WordVectorSerializer {
-    private static final boolean DEFAULT_LINEBREAKS = false;
-    private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
     private static final String whitespaceReplacement = "_Az92_";
-    private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
 
     private WordVectorSerializer() {}
-
-    /**
-     * Loads the google model
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     *            the path to the google model
-     * @param binary
-     *            read from binary file format (if set to true) or from text file format.
-     * @return the loaded model
-     * @throws IOException
-     */
-    @Deprecated
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary) throws IOException {
-        return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
-    }
-
-    /**
-     * Loads the Google model.
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     *            the input file
-     * @param binary
-     *            read from binary or text file format
-     * @param lineBreaks
-     *            if true, the input file is expected to terminate each line with a line break. This
-     *            is typically the case for files created with recent versions of Word2Vec, but not
-     *            for the downloadable model files.
-     * @return a {@link Word2Vec} object
-     * @throws IOException
-     * @author Carsten Schnober
-     */
-    @Deprecated
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks) throws IOException {
-        return binary ? readBinaryModel(modelFile, lineBreaks, true)
-                        : WordVectorSerializer.fromPair(loadTxt(modelFile));
-    }
-
-    /**
-     *
-     * Loads the Google model without normalization being applied.
-     *
-     * PLEASE NOTE: Use this method only if you understand why you need not-normalized model. In all other cases please use loadGoogleModel() instead.
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     * @param binary
-     * @param lineBreaks
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    public static WordVectors loadGoogleModelNonNormalized(File modelFile, boolean binary, boolean lineBreaks)
-                    throws IOException {
-        return binary ? readBinaryModel(modelFile, lineBreaks, false)
-                        : WordVectorSerializer.fromPair(loadTxt(modelFile));
-    }
 
     /**
      * @param modelFile
@@ -2464,7 +2402,7 @@ public class WordVectorSerializer {
 
                     Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                    vec = loadGoogleModel(file, true, true);
+                    vec = readBinaryModel(file, true, true);
                     return vec;
                 } catch (Exception ey) {
                     // try to load without linebreaks
@@ -2474,7 +2412,7 @@ public class WordVectorSerializer {
 
                         Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                        vec = loadGoogleModel(file, true, false);
+                        vec = readBinaryModel(file, false, true);
                         return vec;
                     } catch (Exception ez) {
                         throw new RuntimeException(
