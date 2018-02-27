@@ -357,7 +357,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW").build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
                 .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
                 .setInputType(InputType.convolutional(28, 28, 1));
 
