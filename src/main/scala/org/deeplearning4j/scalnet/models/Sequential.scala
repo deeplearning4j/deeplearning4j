@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers._
 import org.deeplearning4j.scalnet.optimizers.Optimizer
+import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -41,7 +42,7 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class Sequential(val rngSeed: Long = 0) extends Model with LazyLogging {
+class Sequential(rngSeed: Long) extends Model with LazyLogging {
 
   private var _preprocessors: Map[Int, Node] = Map()
   private var _inputShape: List[Int] = List()
@@ -53,7 +54,7 @@ class Sequential(val rngSeed: Long = 0) extends Model with LazyLogging {
   private val noLayers = inputShape.isEmpty && layers.isEmpty && _preprocessors.isEmpty
   private def emptyShape(layer: Node): Boolean =
     !(_preprocessors.contains(layers.length) || layers.nonEmpty) &&
-    layer.inputShape.length == 1 && layer.inputShape.head == 0
+    layer.inputShape.lengthCompare(1) == 0 && layer.inputShape.head == 0
 
   def inferInputShape(layer: Node): List[Int] =
     if (_preprocessors.contains(layers.length)) {
@@ -100,7 +101,13 @@ class Sequential(val rngSeed: Long = 0) extends Model with LazyLogging {
     model.init()
   }
 
-  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
+    model.setListeners(listeners.asJavaCollection)
+    for (_ <- 0 until nbEpoch)
+      model.fit(iter)
+  }
+
+  override def fit(iter: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (_ <- 0 until nbEpoch)
       model.fit(iter)

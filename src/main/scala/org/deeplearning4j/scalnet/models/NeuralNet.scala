@@ -20,11 +20,12 @@ package org.deeplearning4j.scalnet.models
 
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration }
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{ Layer, Node }
+import org.deeplearning4j.scalnet.layers.{Layer, Node}
 import org.deeplearning4j.scalnet.optimizers.Optimizer
+import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -63,7 +64,15 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
     model.init()
   }
 
-  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
+    model.setListeners(listeners.asJavaCollection)
+    for (epoch <- 0 until nbEpoch) {
+      logger.info("Epoch " + epoch)
+      model.fit(iter)
+    }
+  }
+
+  override def fit(iter: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
     for (epoch <- 0 until nbEpoch) {
       logger.info("Epoch " + epoch)

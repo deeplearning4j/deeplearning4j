@@ -18,35 +18,52 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 import org.deeplearning4j.nn.conf.layers.{ DenseLayer, OutputLayer => JOutputLayer }
-import org.scalatest.FunSpec
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import org.scalatest.{ Matchers, WordSpec }
 
-/**
-  * Created by maxpumperla on 29/06/17.
-  */
-class DenseTest extends FunSpec {
+class DenseTest extends WordSpec with Matchers {
 
-  describe("A dense layer of size 100") {
-    val nOut = 100
-    val dense = Dense(nOut)
-    it("should have inputShape List(0)") {
-      assert(dense.inputShape == List(0))
+  "A Dense layer" should {
+
+    "have an input layer of shape (0, 100)" in {
+      val DenseLayer = Dense(100)
+      DenseLayer.inputShape shouldBe List(0)
     }
-    it("should have an outputShape of List(100)") {
-      assert(dense.outputShape == List(nOut))
+
+    "have an ouput layer of shape (0, 100)" in {
+      val DenseLayer = Dense(100)
+      DenseLayer.outputShape shouldBe List(100)
     }
-    it("when calling toOutputLayer without proper loss, it does not become an output layer") {
-      val denseOut = dense.toOutputLayer(null)
-      assert(!denseOut.output.isOutput)
-      val compiledLayer = denseOut.compile
-      assert(compiledLayer.isInstanceOf[DenseLayer])
+
+    "compile to a DL4J Dense" in {
+      val DenseLayer = Dense(100)
+      val compiledLayer = DenseLayer.compile
+      compiledLayer.isInstanceOf[DenseLayer] shouldBe true
     }
-    it("when calling toOutputLayer, it becomes an output layer") {
-      val denseOut = dense.toOutputLayer(LossFunction.NEGATIVELOGLIKELIHOOD)
-      assert(denseOut.output.isOutput)
-      val compiledLayer = denseOut.compile
-      assert(compiledLayer.isInstanceOf[JOutputLayer])
+
+    "does not become an output layer when compiled without proper loss" in {
+      val DenseLayer = Dense(100)
+      val compiledLayer = DenseLayer.compile
+      compiledLayer.isInstanceOf[JOutputLayer] shouldBe false
+    }
+
+    "does not become an output layer when converted to ouput layer without proper loss" in {
+      val DenseLayer = Dense(100)
+      val compiledLayer = DenseLayer.toOutputLayer(null)
+      compiledLayer.isInstanceOf[JOutputLayer] shouldBe false
+    }
+
+    "become an output layer when compiled with proper loss" in {
+      val DenseLayer = Dense(100, lossFunction = Option(LossFunction.NEGATIVELOGLIKELIHOOD))
+      val compiledLayer = DenseLayer.compile
+      compiledLayer.isInstanceOf[JOutputLayer] shouldBe true
+    }
+
+    "become an output layer when when converted to ouput layer with proper loss" in {
+      val DenseLayer = Dense(100)
+      val compiledLayer = DenseLayer.toOutputLayer(LossFunction.NEGATIVELOGLIKELIHOOD)
+      compiledLayer.isInstanceOf[OutputLayer] shouldBe true
     }
   }
 }

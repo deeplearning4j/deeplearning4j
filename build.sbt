@@ -12,7 +12,14 @@ resolvers in ThisBuild ++= Seq(
 )
 
 cleanFiles += baseDirectory.value / "lib"
-update := { "mvn install" !; update.value }
+val mvnInstall = Seq("mvn", "install")
+val operatingSystem = sys.props("os.name").toLowerCase
+update := {
+  operatingSystem match {
+    case "windows" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
+    case _         => { mvnInstall !; update.value }
+  }
+}
 
 libraryDependencies ++= {
 

@@ -18,16 +18,16 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{ Node, OutputLayer }
-import org.deeplearning4j.scalnet.optimizers.{ Optimizer, SGD }
-import org.deeplearning4j.scalnet.utils.Implicits._
+import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
+import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.learning.config.{ Nesterovs, Sgd }
+import org.nd4j.linalg.learning.config.{Nesterovs, Sgd}
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
@@ -35,7 +35,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   *
   * @author David Kale
   */
-abstract class Model {
+trait Model {
 
   protected var layers: List[Node] = List()
   protected var model: MultiLayerNetwork = _
@@ -49,7 +49,7 @@ abstract class Model {
     * Build model configuration from optimizer and seed.
     *
     * @param optimizer optimization algorithm to use in model
-    * @param seed seed to use
+    * @param seed      seed to use
     * @return NeuralNetConfiguration.Builder
     */
   def buildModelConfig(optimizer: Optimizer, seed: Long): NeuralNetConfiguration.Builder = {
@@ -79,10 +79,9 @@ abstract class Model {
     layers.lastOption match {
       case Some(l) if !l.isInstanceOf[OutputLayer] =>
         throw new IllegalArgumentException("Last layer must have Output trait")
-      case Some(l) if !l.asInstanceOf[OutputLayer].output.isOutput => {
+      case Some(l) if !l.asInstanceOf[OutputLayer].output.isOutput =>
         val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
         layers = layers.updated(layers.length - 1, last)
-      }
       case _ =>
         throw new IllegalArgumentException(
           "Last layer must be an output layer with a valid loss function"
@@ -105,7 +104,9 @@ abstract class Model {
     * @param nbEpoch   number of epochs to train
     * @param listeners callbacks for monitoring training
     */
-  def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit
+  def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit
+
+  def fit(iter: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit
 
   /**
     * Use neural net to make prediction on input x
