@@ -17,11 +17,11 @@
 package org.datavec.api.conf;
 
 import org.datavec.api.util.ReflectionUtils;
-import org.datavec.api.util.StringUtils;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.JsonGenerator;
+import org.nd4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.*;
