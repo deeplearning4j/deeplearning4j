@@ -933,8 +933,7 @@ public class ParagraphVectorsTest {
     @Ignore
     @Test
     public void testGoogleModelForInference() throws Exception {
-        WordVectors googleVectors = WordVectorSerializer.loadGoogleModelNonNormalized(
-                        new File("/ext/GoogleNews-vectors-negative300.bin.gz"), true, false);
+        WordVectors googleVectors = WordVectorSerializer.readWord2VecModel(new File("/ext/GoogleNews-vectors-negative300.bin.gz"));
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
