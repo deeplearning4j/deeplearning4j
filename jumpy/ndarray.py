@@ -437,5 +437,32 @@ class ndarray(object):
             self.array = x.div(y)
         return self
 
+
+
+
+    # Array manipulation routines
+
+    ## Changing array shape
+
+
+    def reshape(self, *args):
+        if self.is0d:
+            raise Exception('Reshape not supported for scalars')
+        if len(args) == 0:
+            args = tuple(args[0])
+        array = ndarray(self.array.reshape(*args))
+        array.is1d = len(args) == 1
+        return array
+
+    def ravel(self):
+        array = ndarray(self.array.ravel())
+        array.is1d = True
+        return array
+
+    def flatten(self):
+        array = ndarray(self.array.ravel().dup())
+        array.is1d = True
+
+
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)
