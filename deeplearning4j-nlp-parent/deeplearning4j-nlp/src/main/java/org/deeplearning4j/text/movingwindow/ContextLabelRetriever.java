@@ -20,8 +20,8 @@ package org.deeplearning4j.text.movingwindow;
 
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.util.MultiDimensionalMap;
 import org.deeplearning4j.util.StringUtils;
+import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
@@ -50,7 +50,7 @@ public class ContextLabelRetriever {
      * the labels
      */
     public static Pair<String, MultiDimensionalMap<Integer, Integer, String>> stringWithLabels(String sentence,
-                    TokenizerFactory tokenizerFactory) {
+                                                                   TokenizerFactory tokenizerFactory) {
         MultiDimensionalMap<Integer, Integer, String> map = MultiDimensionalMap.newHashBackedMap();
         Tokenizer t = tokenizerFactory.create(sentence);
         List<String> currTokens = new ArrayList<>();

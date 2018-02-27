@@ -36,6 +36,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class StringGrid extends ArrayList<List<String>> {
 
 

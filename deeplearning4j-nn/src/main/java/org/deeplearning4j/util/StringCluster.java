@@ -27,6 +27,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class StringCluster extends HashMap<String, Map<String, Integer>> {
 
     /**

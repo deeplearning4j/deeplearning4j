@@ -49,7 +49,7 @@ public class ContextLabelTest {
     @Test
     public void testBasicLabel() {
         String labeledSentence = "<NEGATIVE> This sucks really bad </NEGATIVE> .";
-        Pair<String, MultiDimensionalMap<Integer, Integer, String>> ret =
+        Pair<String, org.nd4j.linalg.collection.MultiDimensionalMap<Integer, Integer, String>> ret =
                         ContextLabelRetriever.stringWithLabels(labeledSentence, tokenizerFactory);
         //positive and none
         assertEquals(2, ret.getSecond().size());
