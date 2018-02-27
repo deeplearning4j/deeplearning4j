@@ -900,8 +900,8 @@ public class EvalTest extends BaseDL4JTest {
         apply(e, 3, c2, c0); //Predicted class 2 when actually class 0, 3 times
         apply(e, 2, c0, c1); //Predicted class 0 when actually class 1, 2 times
 
-        String s1 = "Examples labeled as 0 classified by model as 2: 3 times";
-        String s2 = "Examples labeled as 1 classified by model as 0: 2 times";
+        String s1 = "Predictions labeled as 0 classified by model as 2: 3 times";
+        String s2 = "Predictions labeled as 1 classified by model as 0: 2 times";
 
         String stats = e.stats();
         assertTrue(stats, stats.contains(s1));

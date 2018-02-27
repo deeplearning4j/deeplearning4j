@@ -270,8 +270,10 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     public void testDeconvolution() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
+                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                //(56-2+2*1)/2+1 = 29 -> 29x29x3
+                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -280,11 +282,11 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         assertNotNull(conf.getInputPreProcess(2));
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
         CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
-        assertEquals(8, proc.getInputHeight());
-        assertEquals(8, proc.getInputWidth());
+        assertEquals(29, proc.getInputHeight());
+        assertEquals(29, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(29 * 29 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
     @Test
@@ -356,8 +358,10 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         int[] blocks = new int[] {2, 2};
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                //(28-2+0)/2+1 = 14 -> 14x14x3 out
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                // Divide space dimensions by blocks, i.e. 14/2 = 7 -> 7x7x12 out (3x2x2 depth)
+                .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW").build())
                 .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -368,7 +372,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
         assertEquals(7, proc.getInputHeight());
         assertEquals(7, proc.getInputWidth());
-        assertEquals(3, proc.getNumChannels());
+        assertEquals(12, proc.getNumChannels());
 
     }
 
@@ -436,10 +440,12 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     public void testDeconv2D() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
                 .layer( new Deconvolution2D.Builder(2, 2)
                         .padding(0, 0)
-                        .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                        .stride(2, 2).nIn(1).nOut(3).build())
+                //(56-2+2*1)/2+1 = 29 -> 29x29x3
+                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -448,11 +454,11 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
         assertNotNull(conf.getInputPreProcess(2));
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
         CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
-        assertEquals(8, proc.getInputHeight());
-        assertEquals(8, proc.getInputWidth());
+        assertEquals(29, proc.getInputHeight());
+        assertEquals(29, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(29 * 29 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
 }

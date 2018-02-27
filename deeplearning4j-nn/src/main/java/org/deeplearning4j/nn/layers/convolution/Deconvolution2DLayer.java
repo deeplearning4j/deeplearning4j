@@ -249,9 +249,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceCache)) {
+                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();
             }
         }
