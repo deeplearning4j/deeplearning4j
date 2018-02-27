@@ -19,10 +19,10 @@ package org.datavec.api.split;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
-import org.datavec.api.util.RandomUtils;
 import org.datavec.api.util.files.URIUtil;
 import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -104,7 +104,7 @@ public class FileSplit extends BaseInputSplit {
                 for (int i = 0; i < iterationOrder.length; i++) {
                     iterationOrder[i] = i;
                 }
-                RandomUtils.shuffleInPlace(iterationOrder, random);
+                MathUtils.shuffleArray(iterationOrder, random);
             }
             for (File f : subFiles) {
                 uriStrings.add(URIUtil.fileToURI(f).toString());
@@ -127,7 +127,7 @@ public class FileSplit extends BaseInputSplit {
     public void reset() {
         if (randomize) {
             //Shuffle the iteration order
-            RandomUtils.shuffleInPlace(iterationOrder, random);
+            MathUtils.shuffleArray(iterationOrder, random);
         }
     }
 

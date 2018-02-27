@@ -25,10 +25,10 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.RandomUtils;
 import org.datavec.api.writable.Writable;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -167,7 +167,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             for (int i = 0; i < order.length; i++) {
                 order[i] = i;
             }
-            RandomUtils.shuffleInPlace(order, rng);
+            MathUtils.shuffleArray(order, rng);
         }
     }
 
@@ -277,7 +277,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     public void reset() {
         position = 0;
         if (order != null) {
-            RandomUtils.shuffleInPlace(order, rng);
+            MathUtils.shuffleArray(order, rng);
         }
     }
 

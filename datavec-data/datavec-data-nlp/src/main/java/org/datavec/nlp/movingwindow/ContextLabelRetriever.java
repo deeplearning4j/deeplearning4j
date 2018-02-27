@@ -18,8 +18,8 @@ package org.datavec.nlp.movingwindow;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
-import org.datavec.api.util.MultiDimensionalMap;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
@@ -51,7 +51,7 @@ public class ContextLabelRetriever {
      * the labels
      */
     public static Pair<String, MultiDimensionalMap<Integer, Integer, String>> stringWithLabels(String sentence,
-                    TokenizerFactory tokenizerFactory) {
+                                                       TokenizerFactory tokenizerFactory) {
         MultiDimensionalMap<Integer, Integer, String> map = MultiDimensionalMap.newHashBackedMap();
         Tokenizer t = tokenizerFactory.create(sentence);
         List<String> currTokens = new ArrayList<>();
