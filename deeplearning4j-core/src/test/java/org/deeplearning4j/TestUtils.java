@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.ByteArrayInputStream;
@@ -87,5 +88,15 @@ public class TestUtils {
             }
         }
         return out;
+    }
+
+    public static INDArray randomBernoulli(int... shape) {
+        return randomBernoulli(0.5, shape);
+    }
+
+    public static INDArray randomBernoulli(double p, int... shape){
+        INDArray ret = Nd4j.createUninitialized(shape);
+        Nd4j.getExecutioner().exec(new BernoulliDistribution(ret, p));
+        return ret;
     }
 }
