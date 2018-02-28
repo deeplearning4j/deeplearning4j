@@ -83,7 +83,6 @@ def from_numpy(np_array):
 
     # We have to maintain references to all incoming
     # numpy arrays. Else they will get GCed
-    _refs.append(np_array)
 
     # creates a Nd4j array from a numpy array
     # To create an Nd4j array, we need 3 things:
@@ -93,6 +92,8 @@ def from_numpy(np_array):
     # A buffer is basically an array. To get the buffer object
     # we need a pointer to the first element and the size.
     pointer_address, _ = np_array.__array_interface__['data']
+    _refs.append(np_array)
+    print(pointer_address)
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
     mapping = {
@@ -101,7 +102,8 @@ def from_numpy(np_array):
     }
     pointer = mapping[required_dtype](pointer)
     buff = Nd4j.createBuffer(pointer, size)
-
+    assert buff.address() == pointer_address
+    _refs.append(buff)
     # Get the strides
     # strides = tuple of bytes to step in each 
     # dimension when traversing an array.
@@ -118,6 +120,7 @@ def from_numpy(np_array):
     shape = np_array.shape
 
     nd4j_array = Nd4j.create(buff, shape, strides, 0)
+    assert buff.address() == nd4j_array.data().address()
     return nd4j_array
 
 def _indarray(x):
@@ -462,6 +465,7 @@ class ndarray(object):
     def flatten(self):
         array = ndarray(self.array.ravel().dup())
         array.is1d = True
+
 
 
 def array(*args, **kwargs):
