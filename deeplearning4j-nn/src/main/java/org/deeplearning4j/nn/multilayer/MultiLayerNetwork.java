@@ -1071,11 +1071,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     @Override
-    /**
-     * Get the gradient. Note that this method will not calculate the gradient, it will rather return the gradient
-     * that has been computed before.
-     * @return the gradient as calculated before. 
-     */
     public Gradient gradient() {
         return gradient;
     }
