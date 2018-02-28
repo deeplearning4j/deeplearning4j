@@ -104,9 +104,6 @@ public class SentenceIteratorTest {
         assertEquals("SENT42", labels.get(3));
 
         assertEquals(4, count);
-
-
-
     }
 
 

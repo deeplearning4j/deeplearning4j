@@ -15,7 +15,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.util.TestDataSetConsumer;
+import org.deeplearning4j.nn.util.TestDataSetConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;

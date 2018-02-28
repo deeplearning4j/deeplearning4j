@@ -21,10 +21,10 @@ package org.deeplearning4j.datasets.fetchers;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
-import org.deeplearning4j.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;

@@ -27,6 +27,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class StringCluster extends HashMap<String, Map<String, Integer>> {
 
     /**
@@ -37,7 +38,7 @@ public class StringCluster extends HashMap<String, Map<String, Integer>> {
     public StringCluster(List<String> list) {
         for (int i = 0; i < list.size(); i++) {
             String s = list.get(i);
-            FingerPrintKeyer keyer = new FingerPrintKeyer();
+            org.nd4j.util.FingerPrintKeyer keyer = new org.nd4j.util.FingerPrintKeyer();
             String key = keyer.key(s);
             if (containsKey(key)) {
                 Map<String, Integer> m = get(key);

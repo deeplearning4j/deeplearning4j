@@ -25,6 +25,7 @@ public class MaskedReductionUtil {
     private static final int[] CNN_DIM_MASK_H = new int[] {0, 2};
     private static final int[] CNN_DIM_MASK_W = new int[] {0, 3};
 
+    private MaskedReductionUtil(){ }
 
     public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask,
                     int pnorm) {
