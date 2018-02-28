@@ -155,7 +155,7 @@ DECLARE_SHAPE_FN(conv3dNew) {
     
     shape::updateStrides(outputShapeInfo, shape::order(inputShapeInfo));
 
-    return new ShapeList(outputShapeInfo);
+    return SHAPELIST(outputShapeInfo);
 }
 
 

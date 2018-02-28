@@ -123,7 +123,7 @@ DECLARE_SHAPE_FN(mean_sqerr_loss) {
     	shape::updateStrides(outShapeInfo, labels->ordering());    
     }
  
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

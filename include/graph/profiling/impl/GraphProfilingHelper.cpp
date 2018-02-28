@@ -21,6 +21,7 @@ namespace nd4j {
                 FlowPath fp;
 
                 auto _vs = varSpace->clone();
+                //_vs->workspace()->expandTo(100000);
                 _vs->setFlowPath(&fp);
                 GraphExecutioner<T>::execute(graph, _vs);
 
@@ -34,6 +35,7 @@ namespace nd4j {
 
                 // we're always starting from "fresh" varspace here
                 auto _vs = varSpace->clone();
+                //_vs->workspace()->expandTo(100000);
                 _vs->setFlowPath(&fp);
                 GraphExecutioner<T>::execute(graph, _vs);
 

@@ -80,7 +80,7 @@ namespace nd4j {
             std::vector<int> shape({shape::shapeOf(inP)[0], (int) block.getIArguments()->size()});
             shape::shapeBuffer(2, shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

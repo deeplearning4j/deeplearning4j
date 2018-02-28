@@ -30,7 +30,7 @@ namespace nd4j {
 
             int* outputShape = ShapeUtils<T>::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false, block.getWorkspace()); 
             
-            return new ShapeList(outputShape);
+            return SHAPELIST(outputShape);
         }
 
     }

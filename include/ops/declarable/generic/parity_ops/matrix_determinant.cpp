@@ -37,7 +37,7 @@ namespace nd4j {
                 else
                     shape::shapeBufferFortran(targetRank, shape::shapeOf(inShape), determinantShape);
             }
-            return new ShapeList(determinantShape);
+            return SHAPELIST(determinantShape);
         }
     }
 }

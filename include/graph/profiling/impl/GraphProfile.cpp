@@ -150,13 +150,15 @@ namespace nd4j {
             Nd4jIndex tmp = 0L;
             Nd4jIndex obj = 0L;
             Nd4jIndex act = 0L;
+            Nd4jIndex ttl = 0L;
             for (auto v: _profiles) {
                 tmp += v->getTemporarySize();
                 obj += v->getObjectsSize();
                 act += v->getActivationsSize();
+                ttl += v->getTotalSize();
             }
 
-            nd4j_printf("ACT: %lld; TMP: %lld; OBJ: %lld; \n", act / _merges, tmp / _merges, obj / _merges);
+            nd4j_printf("ACT: %lld; TMP: %lld; OBJ: %lld; TTL: %lld;\n", act / _merges, tmp / _merges, obj / _merges, ttl / _merges);
 
             nd4j_printf("\nTime:\n", "");
             nd4j_printf("Construction time: %lld ns;\n", _buildTime / _merges);

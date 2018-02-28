@@ -41,7 +41,7 @@ DECLARE_SHAPE_FN(trace) {
 
     shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
 
-    return new ShapeList(outShapeInfo);
+    return SHAPELIST(outShapeInfo);
 }
 
 

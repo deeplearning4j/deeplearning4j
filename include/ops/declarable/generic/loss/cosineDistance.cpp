@@ -131,7 +131,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), true, false, block.getWorkspace());
     }
     
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

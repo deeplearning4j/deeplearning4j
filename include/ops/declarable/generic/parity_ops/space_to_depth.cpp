@@ -54,7 +54,7 @@ namespace ops {
             shape = {{bS, oD, oH, oW }};
         shape::shapeBuffer(4, shape.data(), newShape);
 
-        return new ShapeList(newShape);
+        return SHAPELIST(newShape);
     }
 }
 }

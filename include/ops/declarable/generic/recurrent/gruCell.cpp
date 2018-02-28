@@ -70,7 +70,7 @@ DECLARE_SHAPE_FN(gruCell) {
     
     shape::updateStrides(outShapeInfo, shape::order(inputShape->at(1)));
          
-    return new ShapeList({outShapeInfo});
+    return SHAPELIST(outShapeInfo);
 }   
 
 

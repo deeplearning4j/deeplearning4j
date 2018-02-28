@@ -40,7 +40,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(tile) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
             auto inShape = inputShape->at(0);
 
             int *newShape;

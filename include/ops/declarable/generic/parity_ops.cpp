@@ -81,7 +81,7 @@ namespace nd4j {
 
             RELEASE(shapeOf, block.getWorkspace());
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {

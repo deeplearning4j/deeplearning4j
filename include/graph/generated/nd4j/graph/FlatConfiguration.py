@@ -53,10 +53,26 @@ class FlatConfiguration(object):
             return self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos)
         return 0
 
-def FlatConfigurationStart(builder): builder.StartObject(5)
+    # FlatConfiguration
+    def FootprintForward(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(14))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int64Flags, o + self._tab.Pos)
+        return 0
+
+    # FlatConfiguration
+    def FootprintBackward(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(16))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int64Flags, o + self._tab.Pos)
+        return 0
+
+def FlatConfigurationStart(builder): builder.StartObject(7)
 def FlatConfigurationAddId(builder, id): builder.PrependInt64Slot(0, id, 0)
 def FlatConfigurationAddExecutionMode(builder, executionMode): builder.PrependInt8Slot(1, executionMode, 0)
 def FlatConfigurationAddProfilingMode(builder, profilingMode): builder.PrependInt8Slot(2, profilingMode, 0)
 def FlatConfigurationAddOutputMode(builder, outputMode): builder.PrependInt8Slot(3, outputMode, 0)
 def FlatConfigurationAddTimestats(builder, timestats): builder.PrependBoolSlot(4, timestats, 0)
+def FlatConfigurationAddFootprintForward(builder, footprintForward): builder.PrependInt64Slot(5, footprintForward, 0)
+def FlatConfigurationAddFootprintBackward(builder, footprintBackward): builder.PrependInt64Slot(6, footprintBackward, 0)
 def FlatConfigurationEnd(builder): return builder.EndObject()

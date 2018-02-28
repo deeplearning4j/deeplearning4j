@@ -134,8 +134,8 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), false, true, block.getWorkspace());
     
     // if scalar is required
-    if(INT_ARG(0) != 0) {	
-    	delete []reducedShapeInfo;
+    if(INT_ARG(0) != 0) {
+    	RELEASE(reducedShapeInfo, block.workspace());
     	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, int);
     	reducedShapeInfo[0] = 2;
     	reducedShapeInfo[1] = reducedShapeInfo[2] = reducedShapeInfo[3] = reducedShapeInfo[4] = 1;
@@ -144,7 +144,7 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     	reducedShapeInfo[7] = 99;    	
     }    
 
-    return new ShapeList(reducedShapeInfo);    
+    return SHAPELIST(reducedShapeInfo);    
 
 }
 

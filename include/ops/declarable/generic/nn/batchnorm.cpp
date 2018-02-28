@@ -184,8 +184,7 @@ DECLARE_SHAPE_FN(batchnorm) {
     // evaluate output shapeInfo which is common broadcast shape for all input arrays
     ShapeUtils<T>::evalCommonBroadcastShapeInfo({INPUT_VARIABLE(0),INPUT_VARIABLE(1),INPUT_VARIABLE(2),INPUT_VARIABLE(3),INPUT_VARIABLE(4)}, outShapeInfo, block.getWorkspace());
  
-    return new ShapeList(outShapeInfo);    
-
+    return SHAPELIST(outShapeInfo);
 }
 
 

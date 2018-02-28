@@ -101,7 +101,7 @@ namespace nd4j {
 
             shape::updateStrides(newShapeInfo, order);
 
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
 
         //////////////////////////////////////////////////////////////////////////

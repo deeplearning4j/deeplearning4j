@@ -158,7 +158,7 @@ DECLARE_SHAPE_FN(gather) {
 		shape::updateStrides(outputShapeInfo, input->ordering());    
 	}
 
-    return new ShapeList(outputShapeInfo);
+    return SHAPELIST(outputShapeInfo);
     
 }
 

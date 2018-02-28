@@ -586,3 +586,14 @@ TEST_F(NDArrayTest2, Test_DType_Conversion_1) {
     delete xf;
     delete xd;
 }
+
+TEST_F(NDArrayTest2, Test_ScalarArray_Assign_1) {
+    NDArray<float> x('c', {2, 2});
+    NDArray<float> y(2.0f);
+    NDArray<float> exp('c', {2, 2}, {2.0f, 2.0f, 2.0f, 2.0f});
+
+    x.assign(y);
+
+    ASSERT_TRUE(exp.isSameShape(&x));
+    ASSERT_TRUE(exp.equalsTo(&x));
+}

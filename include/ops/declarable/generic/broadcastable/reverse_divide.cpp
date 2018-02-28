@@ -49,7 +49,7 @@ namespace nd4j {
         DECLARE_SYN(RDiv, reversedivide);
 
         DECLARE_SHAPE_FN(reversedivide) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);
 
@@ -73,7 +73,7 @@ namespace nd4j {
                 shapeList->push_back(newshape);
             } else if (ShapeUtils<T>::areShapesBroadcastable(x, y)) {
                 int *newshape = nullptr;
-                ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape);
+                ShapeUtils<T>::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
 
                 shapeList->push_back(newshape);
             } else {
@@ -173,7 +173,7 @@ namespace nd4j {
             REPLICATE_SHAPE(x, shapeE);
             REPLICATE_SHAPE(y, shapeG);
 
-            auto shapeList = new ShapeList({shapeE, shapeG});
+            auto shapeList = SHAPELIST(shapeE, shapeG);
 
             return shapeList;
         }

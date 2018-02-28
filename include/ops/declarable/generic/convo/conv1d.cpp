@@ -73,7 +73,7 @@ namespace nd4j {
             std::vector<int> shape({batchSize, outDepth, oY});
             shape::shapeBuffer(3, shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 3) {
@@ -165,7 +165,7 @@ namespace nd4j {
             ALLOCATE(newWShape, block.getWorkspace(), shape::shapeInfoLength(wShape), int);
             memcpy(newWShape, wShape, shape::shapeInfoByteLength(wShape));
 
-            auto shapeList = new ShapeList({newIShape, newWShape});
+            auto shapeList = SHAPELIST(newIShape, newWShape);
 
             if (bShape != nullptr) {
                 int *newBShape;

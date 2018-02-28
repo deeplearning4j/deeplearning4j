@@ -114,7 +114,7 @@ namespace nd4j {
             std::vector<int> shape({B, oC, oY, oX});
             shape::shapeBuffer(4, shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         //////////////////////////////////////////////////////////////////////////
@@ -226,7 +226,7 @@ namespace nd4j {
             memcpy(newInShape, inShape, shape::shapeInfoByteLength(inShape));
             memcpy(newWShape, wShape, shape::shapeInfoByteLength(wShape));
 
-            auto shapes = new ShapeList({newInShape, newWShape});
+            auto shapes = SHAPELIST(newInShape, newWShape);
 
             if (bShape != nullptr) {
                 int *newBShape;

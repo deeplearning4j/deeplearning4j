@@ -78,10 +78,11 @@ namespace nd4j {
             ALLOCATE(epsShape, block.getWorkspace(), shape::shapeInfoLength(input), int);
             ALLOCATE(gradShape, block.getWorkspace(), shape::shapeInfoLength(bias), int);
 
+            // FIXME: remove memcpy here
             memcpy(epsShape, input, shape::shapeInfoByteLength(input));
             memcpy(gradShape, bias, shape::shapeInfoByteLength(gradShape));
 
-            return new ShapeList({epsShape, gradShape});
+            return SHAPELIST(epsShape, gradShape);
         }
     }
 }

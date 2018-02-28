@@ -74,7 +74,7 @@ namespace nd4j {
                 shape::shapeBuffer(rank+1, shape.data(), newShape);
             }
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

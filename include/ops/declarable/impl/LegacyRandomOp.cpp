@@ -320,14 +320,15 @@ namespace nd4j {
         *
         */
         template <typename T>
-        ShapeList *LegacyRandomOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &ctx) {
+        ShapeList *LegacyRandomOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
+            // FIXME: remove memcpy
             int *newShape;
-            ALLOCATE(newShape, ctx.getWorkspace(), shape::shapeInfoLength(inShape), int);
+            ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         template <typename T>
@@ -386,8 +387,13 @@ namespace nd4j {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);
-                    var->markRemovable(false);
-                    arrayList->push_back(var->getNDArray());
+                    auto arr = var->getNDArray();
+                    if (!arr->isAttached()) {
+                        var->markRemovable(false);
+                        arrayList->push_back(arr);
+                    } else {
+                        arrayList->push_back(arr->detach());
+                    }
                 } else
                     break;
             }

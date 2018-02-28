@@ -56,7 +56,7 @@ namespace ops {
         auto input = inputShape->at(0);
         //auto sizes = inputShape->at(1);
 
-        auto shapeList = new ShapeList();
+        auto shapeList = SHAPELIST();
         int rank = shape::rank(input);
 
         // 0 is just default axis

@@ -79,6 +79,11 @@ namespace shape {
     ND4J_EXPORT bool shapeEquals(int shape1Rank,int *shape1,int shape2Rank,int *shape2);
 
 #ifdef __CUDACC__
+    __host__
+#endif
+    ND4J_EXPORT int* detachShape(int *originalShape);
+
+#ifdef __CUDACC__
     __host__ __device__
 #endif
     ND4J_EXPORT bool shapeEquals(int *shapeInfo1,int *shapeInfo2);
@@ -2879,6 +2884,16 @@ __host__ __device__
         }
         
         return numOfNonUnity == 1 && shapeInfo[0] > 2;
+    }
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    INLINEDEF int* detachShape(int *originalShape) {
+        int *newShape = new int[shape::shapeInfoLength(originalShape)];
+        memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
+
+        return newShape;
     }
 
 

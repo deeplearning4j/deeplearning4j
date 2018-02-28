@@ -119,7 +119,9 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_EXECUTIONMODE = 6,
     VT_PROFILINGMODE = 8,
     VT_OUTPUTMODE = 10,
-    VT_TIMESTATS = 12
+    VT_TIMESTATS = 12,
+    VT_FOOTPRINTFORWARD = 14,
+    VT_FOOTPRINTBACKWARD = 16
   };
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
@@ -136,6 +138,12 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   bool timestats() const {
     return GetField<uint8_t>(VT_TIMESTATS, 0) != 0;
   }
+  int64_t footprintForward() const {
+    return GetField<int64_t>(VT_FOOTPRINTFORWARD, 0);
+  }
+  int64_t footprintBackward() const {
+    return GetField<int64_t>(VT_FOOTPRINTBACKWARD, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
@@ -143,6 +151,8 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<int8_t>(verifier, VT_PROFILINGMODE) &&
            VerifyField<int8_t>(verifier, VT_OUTPUTMODE) &&
            VerifyField<uint8_t>(verifier, VT_TIMESTATS) &&
+           VerifyField<int64_t>(verifier, VT_FOOTPRINTFORWARD) &&
+           VerifyField<int64_t>(verifier, VT_FOOTPRINTBACKWARD) &&
            verifier.EndTable();
   }
 };
@@ -165,6 +175,12 @@ struct FlatConfigurationBuilder {
   void add_timestats(bool timestats) {
     fbb_.AddElement<uint8_t>(FlatConfiguration::VT_TIMESTATS, static_cast<uint8_t>(timestats), 0);
   }
+  void add_footprintForward(int64_t footprintForward) {
+    fbb_.AddElement<int64_t>(FlatConfiguration::VT_FOOTPRINTFORWARD, footprintForward, 0);
+  }
+  void add_footprintBackward(int64_t footprintBackward) {
+    fbb_.AddElement<int64_t>(FlatConfiguration::VT_FOOTPRINTBACKWARD, footprintBackward, 0);
+  }
   explicit FlatConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -183,8 +199,12 @@ inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
     ExecutionMode executionMode = ExecutionMode_SEQUENTIAL,
     ProfilingMode profilingMode = ProfilingMode_NONE,
     OutputMode outputMode = OutputMode_IMPLICIT,
-    bool timestats = false) {
+    bool timestats = false,
+    int64_t footprintForward = 0,
+    int64_t footprintBackward = 0) {
   FlatConfigurationBuilder builder_(_fbb);
+  builder_.add_footprintBackward(footprintBackward);
+  builder_.add_footprintForward(footprintForward);
   builder_.add_id(id);
   builder_.add_timestats(timestats);
   builder_.add_outputMode(outputMode);

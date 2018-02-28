@@ -33,13 +33,14 @@ namespace nd4j {
             int it = INT_ARG(0);
             DataType newType = DataTypeUtils::fromInt(it);
 
+            // FIXME: remove memcpy here
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
             // TODO: put sign of dtype into shapeinfo?
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

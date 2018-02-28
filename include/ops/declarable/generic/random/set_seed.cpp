@@ -41,7 +41,7 @@ namespace nd4j {
             newshape[6] = 1;
             newshape[7] = 99;
 
-            return new ShapeList(newshape);
+            return SHAPELIST(newshape);
         }
     }
 }

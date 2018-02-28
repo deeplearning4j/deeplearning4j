@@ -48,7 +48,7 @@ namespace nd4j {
 
                 int x = 1;
                 shape::shapeBuffer(1, &x, newShape);
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
 
             // FIXME: temp workaround for TF
@@ -57,7 +57,7 @@ namespace nd4j {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
 
                 shape::shapeBuffer(2, shape::shapeOf(inShape), newShape);
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
 
             auto x_rank = shape::rank(inShape);
@@ -83,7 +83,7 @@ namespace nd4j {
                 shape::shapeBufferFortran(x_rank+1, shape.data(), newShape);
 
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

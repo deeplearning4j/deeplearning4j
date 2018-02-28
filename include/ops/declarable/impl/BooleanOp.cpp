@@ -34,7 +34,7 @@ namespace nd4j {
             shapeNew[6] = 1;
             shapeNew[7] = 99;
 
-            return new ShapeList(shapeNew);
+            return SHAPELIST(shapeNew);
         }
 
         template <typename T>

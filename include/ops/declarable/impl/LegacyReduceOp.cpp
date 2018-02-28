@@ -150,7 +150,7 @@ namespace nd4j {
                 delete array;
             }
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 

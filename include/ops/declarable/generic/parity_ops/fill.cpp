@@ -43,7 +43,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape::length(inp)), int);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         };
     }
 }

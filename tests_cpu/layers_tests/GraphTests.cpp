@@ -1342,3 +1342,25 @@ TEST_F(GraphTests, Test_Dtype_Conversion_2) {
     delete gd;
     delete gf;
 }
+
+TEST_F(GraphTests, Test_Hash_Function_1) {
+    auto graph0 = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    auto graph1 = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    auto graph2 = GraphExecutioner<float>::importFromFlatBuffers("./resources/conv_0.fb");
+
+    ASSERT_EQ(graph0->hashCode(), graph1->hashCode());
+    ASSERT_NE(0L, graph1->hashCode());
+    ASSERT_NE(graph0->hashCode(), graph2->hashCode());
+
+    auto graph0D = graph0->template asT<double>();
+    auto graph1D = graph1->template asT<double>();
+
+    ASSERT_NE(graph0->hashCode(), graph0D->hashCode());
+    ASSERT_EQ(graph0D->hashCode(), graph1D->hashCode());
+
+    delete graph0;
+    delete graph1;
+    delete graph2;
+    delete graph0D;
+    delete graph1D;
+}

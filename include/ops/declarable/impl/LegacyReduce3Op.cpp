@@ -82,7 +82,7 @@ namespace nd4j {
                 delete array;
             }
 
-            return new ShapeList(zShape);
+            return SHAPELIST(zShape);
         }
 
         template class ND4J_EXPORT LegacyReduce3Op<float>;

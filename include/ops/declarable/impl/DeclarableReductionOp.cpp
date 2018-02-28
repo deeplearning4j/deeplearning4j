@@ -44,7 +44,7 @@ namespace nd4j {
                 newShape[6] = 1;
                 newShape[7] = 99;
 
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
 
             shape::TAD tad(inputShape->at(0), dims.data(), dims.size());
@@ -55,7 +55,7 @@ namespace nd4j {
 
             int *newShape = ShapeUtils<T>::evalReduceShapeInfo('c', dims, inputShape->at(0), false, true,block.getWorkspace());
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         template class ND4J_EXPORT DeclarableReductionOp<float>;

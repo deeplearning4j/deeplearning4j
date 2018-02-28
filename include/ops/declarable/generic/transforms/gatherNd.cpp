@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 	shape::updateStrides(outShapeInfo, 'c');
 
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 }
 
 

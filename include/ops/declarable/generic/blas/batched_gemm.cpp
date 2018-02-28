@@ -68,7 +68,7 @@ namespace nd4j {
 
 
         DECLARE_SHAPE_FN(batched_gemm) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
             int transA = INT_ARG(0);
             int transB = INT_ARG(1);
             int M = INT_ARG(2);

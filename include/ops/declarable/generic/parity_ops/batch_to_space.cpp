@@ -223,7 +223,7 @@ namespace ops {
             // just return input shape here
             int *newShape;
             COPY_SHAPE(in, newShape);
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         // go full route otherwise
@@ -269,7 +269,7 @@ namespace ops {
         // we always give out C order here
         shape::shapeBuffer((int) external_output_shape.size(), external_output_shape.data(), newShape);
 
-        return new ShapeList(newShape);
+        return SHAPELIST(newShape);
     }
 }
 }

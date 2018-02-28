@@ -182,6 +182,11 @@ namespace nd4j {
              */
             bool hasNode(int nodeId);
 
+            /**
+             * This method returns hash of given Graph instance
+             */
+            Nd4jIndex hashCode();
+
             void replaceState(VariableSpace<T> *state, ExecutorConfiguration *configuration);
 
             FORCEINLINE std::vector<int>* nodes() {

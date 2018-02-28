@@ -44,7 +44,7 @@ DECLARE_SHAPE_FN(parallel_stack) {
 	
 	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));
   	
-  	return new ShapeList(outShapeInfo);
+  	return SHAPELIST(outShapeInfo);
 }
 
 

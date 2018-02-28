@@ -52,6 +52,23 @@ TEST_F(DeclarableOpsTests6, Test_Dilation2D_Again_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
+    NDArray<float> x('c', {1, 1}, {2.0f});
+    NDArray<float> exp('c', {1, 1}, {4.0f});
+
+    nd4j::ops::test_scalar<float> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Conv3D_NDHWC_11) {
     NDArray<float> x('c', {4, 2, 28, 28, 3});
     NDArray<float> w('c', {2, 5, 5, 3, 4});

@@ -67,7 +67,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(squeeze) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
 
             int* newShape;
             auto in = inputShape->at(0);

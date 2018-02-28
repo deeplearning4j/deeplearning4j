@@ -124,7 +124,7 @@ DECLARE_SHAPE_FN(log_loss) {
     	shape::updateStrides(outShapeInfo, labels->ordering());    
     }
  
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

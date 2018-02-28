@@ -129,7 +129,7 @@ DECLARE_SHAPE_FN(sru) {
     shape::updateStrides(newShapeInfo1, order);
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }   
 
 //////////////////////////////////////////////////////////////////////////
@@ -215,7 +215,7 @@ DECLARE_SHAPE_FN(sru_logic) {
     shape::updateStrides(newShapeInfo1, order);
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }   
 
 //////////////////////////////////////////////////////////////////////////
@@ -413,7 +413,7 @@ DECLARE_SHAPE_FN(sru_bp) {
     newShapeInfo4[2] = K;    
     shape::updateStrides(newShapeInfo4, order);
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
 }   
  
 
@@ -575,7 +575,7 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
     newShapeInfo4[2] = K;    
     shape::updateStrides(newShapeInfo4, order);
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
 }   
 
 //////////////////////////////////////////////////////////////////////////
@@ -685,10 +685,11 @@ DECLARE_SHAPE_FN(sru_bi) {
     newShapeInfo1[2] = bS;
     newShapeInfo1[3] = 2*K;
     
+    // FIXME: remove memcpy
     shape::updateStrides(newShapeInfo1, order);
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }   
 
 
@@ -861,7 +862,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     newShapeInfo4[2] = 2*K;
     shape::updateStrides(newShapeInfo4, order);
     
-    return new ShapeList({newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4});
+    return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
 }   
 
 }

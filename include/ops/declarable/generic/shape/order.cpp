@@ -28,7 +28,7 @@ namespace nd4j {
             else
                 shape::shapeBuffer(shape::rank(input), shape::shapeOf(input), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

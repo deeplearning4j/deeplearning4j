@@ -35,7 +35,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(unique) {
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST(); 
             for (int e = 0; e < 2; e++) {
                 int* newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);

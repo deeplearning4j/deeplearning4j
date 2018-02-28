@@ -55,7 +55,7 @@ namespace nd4j {
 
 			shape::updateStrides(outShapeInfo, input->ordering());
 
-    		return new ShapeList(outShapeInfo);
+    		return SHAPELIST(outShapeInfo);
 		}
 	}
 }

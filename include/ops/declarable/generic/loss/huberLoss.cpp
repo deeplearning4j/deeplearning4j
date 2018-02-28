@@ -128,7 +128,7 @@ DECLARE_SHAPE_FN(huber_loss) {
     	shape::updateStrides(outShapeInfo, labels->ordering());    
     }
  
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

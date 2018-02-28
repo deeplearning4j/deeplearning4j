@@ -31,7 +31,7 @@ namespace ops {
         else 
             shape::shapeBufferFortran(block.numI(), block.getIArguments()->data(), newShape);
 
-        return new ShapeList(newShape);
+        return SHAPELIST(newShape);
     }
 
 
@@ -61,7 +61,7 @@ namespace ops {
         int *newShape;
         COPY_SHAPE(in, newShape);
 
-        return new ShapeList(newShape);
+        return SHAPELIST(newShape);
     }
 }
 }

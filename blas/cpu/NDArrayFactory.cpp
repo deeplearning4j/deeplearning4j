@@ -365,9 +365,9 @@ namespace nd4j {
 
             //_C = new NDArray<T>(C, cShapeInfo);
 
-            auto tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo());
-            auto tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo());
-            auto tC = new nd4j::NDArray<T>(result->getBuffer(), result->getShapeInfo());
+            auto tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
+            auto tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
+            auto tC = new nd4j::NDArray<T>(result->getBuffer(), result->getShapeInfo(), result->getWorkspace());
 
             if (cOrder != 'f') {
                 pC = tC->dup('f');
@@ -427,6 +427,7 @@ namespace nd4j {
                 transA = 'N';
                 transB = 'N';
             }
+
 
             // we'll use platform-specific gemm here eventually. maybe tomorrow.
             // TODO: put proper _gemm here

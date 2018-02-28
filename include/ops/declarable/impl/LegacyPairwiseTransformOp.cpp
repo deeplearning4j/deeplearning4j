@@ -51,11 +51,12 @@ namespace nd4j {
         ShapeList *LegacyPairwiseTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
+            // FIXME: remove memcpy 
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         template class ND4J_EXPORT LegacyPairwiseTransformOp<float>;

@@ -60,7 +60,7 @@ DECLARE_SHAPE_FN(eye) {
         
     shape::updateStrides(outShapeInfo, (char)(params[0]));
         
-    return new ShapeList(outShapeInfo);
+    return SHAPELIST(outShapeInfo);
 }
 
 

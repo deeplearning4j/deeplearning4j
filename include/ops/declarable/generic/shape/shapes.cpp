@@ -20,7 +20,7 @@ namespace nd4j {
         DECLARE_SYN(shape_n, shapes_of);
 
         DECLARE_SHAPE_FN(shapes_of) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);

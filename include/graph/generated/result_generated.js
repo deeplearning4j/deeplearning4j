@@ -193,10 +193,26 @@ nd4j.graph.FlatResult.prototype.timingLength = function() {
 };
 
 /**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.FlatResult.prototype.footprintForward = function() {
+  var offset = this.bb.__offset(this.bb_pos, 10);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
+ * @returns {flatbuffers.Long}
+ */
+nd4j.graph.FlatResult.prototype.footprintBackward = function() {
+  var offset = this.bb.__offset(this.bb_pos, 12);
+  return offset ? this.bb.readInt64(this.bb_pos + offset) : this.bb.createLong(0, 0);
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatResult.startFlatResult = function(builder) {
-  builder.startObject(3);
+  builder.startObject(5);
 };
 
 /**
@@ -263,6 +279,22 @@ nd4j.graph.FlatResult.createTimingVector = function(builder, data) {
  */
 nd4j.graph.FlatResult.startTimingVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} footprintForward
+ */
+nd4j.graph.FlatResult.addFootprintForward = function(builder, footprintForward) {
+  builder.addFieldInt64(3, footprintForward, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Long} footprintBackward
+ */
+nd4j.graph.FlatResult.addFootprintBackward = function(builder, footprintBackward) {
+  builder.addFieldInt64(4, footprintBackward, builder.createLong(0, 0));
 };
 
 /**

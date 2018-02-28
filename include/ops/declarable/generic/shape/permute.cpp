@@ -63,7 +63,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(permute) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
             std::vector<int>* arguments = block.getIArguments();
             if (shape::rank(inputShape->at(0)) == 0) {
                 int *newshape;
@@ -74,7 +74,7 @@ namespace nd4j {
                 newshape[3] = 99;
                 shapeList->push_back(newshape);
             } else if (inputShape->size() == 1 && arguments->size() > 0) {
-                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0));
+                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {
                 // dead end
@@ -87,7 +87,7 @@ namespace nd4j {
                 for (int e = rank - 1; e >= 0; e--)
                     arguments->emplace_back(e);
 
-                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0));
+                int* outputShapeInfo = ShapeUtils<T>::evalPermShapeInfo(arguments->data(), arguments->size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             }
     

@@ -145,7 +145,7 @@ namespace nd4j {
             //shape::shapeBuffer(1, shape.data(), newShape);
             shape::shapeVector(shape[0], newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

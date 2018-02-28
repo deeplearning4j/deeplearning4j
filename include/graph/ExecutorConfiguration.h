@@ -6,6 +6,7 @@
 #define LIBND4J_EXECUTORCONFIGURATION_H
 
 #include <graph/generated/config_generated.h>
+#include <pointercast.h>
 
 namespace nd4j {
     namespace graph {
@@ -15,6 +16,8 @@ namespace nd4j {
             nd4j::graph::ExecutionMode _executionMode;
             nd4j::graph::OutputMode _outputMode;
             bool _timestats;
+            Nd4jIndex _footprintForward = 0L;
+            Nd4jIndex _footprintBackward = 0L;
 
             ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr) {
                 if (conf != nullptr) {
@@ -22,6 +25,8 @@ namespace nd4j {
                     _executionMode = conf->executionMode();
                     _outputMode = conf->outputMode();
                     _timestats = conf->timestats();
+                    _footprintForward = conf->footprintForward();
+                    _footprintBackward = conf->footprintBackward();
                 } else {
                     _profilingMode = ProfilingMode_NONE;
                     _executionMode = ExecutionMode_SEQUENTIAL;

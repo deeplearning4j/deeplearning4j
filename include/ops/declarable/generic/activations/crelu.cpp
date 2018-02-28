@@ -41,7 +41,7 @@ namespace nd4j {
             else
                 shape::shapeBufferFortran(shape.size(), shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -87,7 +87,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace ops {
                     partitionSizes[i]++;
         }
 
-        auto shapes = new ShapeList();
+        auto shapes = SHAPELIST();
         for (int e = 0; e < numPartition; e++) {
             int *newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);

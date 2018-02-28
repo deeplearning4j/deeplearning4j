@@ -20,17 +20,17 @@ namespace nd4j {
         static std::vector<int> evalShapeForTensorDot(const NDArray<T>* a,   const NDArray<T>* b,   std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
 
         // evaluate resulting shape after reduce operation
-        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims = false, const bool supportOldShapes = false);
+        static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
         static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const int* shape, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<int> evalRepeatShape(int dimension, const std::vector<int>& repeats, const NDArray<T>& arr);
 
         // evaluate shapeInfo of permuted array
-        static int* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray<T>& arr);
+        static int* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray<T>& arr, nd4j::memory::Workspace* workspace);
 
         // evaluate shapeInfo of transposed array
-        static int* evalTranspShapeInfo(const NDArray<T>& arr);
+        static int* evalTranspShapeInfo(const NDArray<T>& arr, nd4j::memory::Workspace* workspace);
 
         static bool insertDimension(int rank, int *shape, int axis, int dimension);
 
@@ -52,7 +52,7 @@ namespace nd4j {
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
         // if evalMinMax == false then array with larger rank has to be passed as first argument
-        static bool evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min, const bool evalMinMax, int*& resultShapeInfo);
+        static bool evalBroadcastShapeInfo(const NDArray<T>& max, const NDArray<T>& min, const bool evalMinMax, int*& resultShapeInfo, nd4j::memory::Workspace* workspace);
         static bool evalBroadcastShapeInfo(int *max, int *min, const bool evalMinMax, int*& resultShapeInfo, nd4j::memory::Workspace* workspace);
 
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
@@ -65,7 +65,7 @@ namespace nd4j {
         static int getSubArrayIndex(const int* maxShapeInfo, const int* minShapeInfo, const int maxIdx);
 
         // evaluate shapeInfo for resulting array of tile operation
-        static int* evalTileShapeInfo(const NDArray<T>& arr, const std::vector<int>& reps);
+        static int* evalTileShapeInfo(const NDArray<T>& arr, const std::vector<int>& reps, nd4j::memory::Workspace* workspace);
 
         // returns shape part of shapeInfo as std::vector
         static std::vector<int> pullShapeFromShapeInfo(int *shapeInfo);
@@ -74,7 +74,7 @@ namespace nd4j {
         static std::string shapeAsString(std::vector<int>& shape);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-        static int* evalDiagShapeInfo(const NDArray<T>& arr);
+        static int* evalDiagShapeInfo(const NDArray<T>& arr, nd4j::memory::Workspace* workspace);
 
         static std::vector<int> evalBroadcastBackwardAxis(int *operand, int *result);
 

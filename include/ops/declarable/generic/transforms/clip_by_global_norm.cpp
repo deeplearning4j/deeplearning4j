@@ -41,7 +41,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(clip_by_global_norm) {
 
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST();
             
             for (int e = 0; e < block.width(); e++) {
                 auto in = inputShape->at(e);

@@ -298,7 +298,7 @@ TEST_F(PlaygroundTests, Test_Profile_2) {
     Environment::getInstance()->setProfiling(true);
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
 
-    auto profile = GraphProfilingHelper<float>::profile(graph, 100);
+    auto profile = GraphProfilingHelper<float>::profile(graph, 1000);
     profile->printOut();
 
     delete graph;

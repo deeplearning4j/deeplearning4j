@@ -40,7 +40,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(broadcast_dynamic_shape) {
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST();
             
             auto theFirst = inputShape->at(0);
             auto theSecond = inputShape->at(1);

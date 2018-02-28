@@ -75,7 +75,7 @@ DECLARE_SHAPE_FN(lstmCell) {
     shape::updateStrides(outShapeInfo1, (INPUT_VARIABLE(1))->ordering());
     shape::updateStrides(outShapeInfo2, (INPUT_VARIABLE(2))->ordering());
          
-    return new ShapeList({outShapeInfo1, outShapeInfo2});
+    return SHAPELIST(outShapeInfo1, outShapeInfo2);
 }   
 
 

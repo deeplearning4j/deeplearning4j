@@ -86,7 +86,7 @@ namespace ops {
             if (block.numI() < 9) {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(0), int);
                 shape::shapeScalar(newShape);
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
                 
             int e = 1;
@@ -108,7 +108,7 @@ namespace ops {
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(4), int);
         shape::shapeBuffer(4, shape.data(), newShape);
 
-        return new ShapeList(newShape);
+        return SHAPELIST(newShape);
     }
 }
 }

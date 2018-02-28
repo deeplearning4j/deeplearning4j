@@ -176,7 +176,7 @@ namespace nd4j {
             newShapeInfo[4] = oW;
             shape::updateStrides(newShapeInfo, order);
 
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
     }
 }

@@ -65,10 +65,26 @@ class FlatResult(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatResultStart(builder): builder.StartObject(3)
+    # FlatResult
+    def FootprintForward(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(10))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int64Flags, o + self._tab.Pos)
+        return 0
+
+    # FlatResult
+    def FootprintBackward(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(12))
+        if o != 0:
+            return self._tab.Get(flatbuffers.number_types.Int64Flags, o + self._tab.Pos)
+        return 0
+
+def FlatResultStart(builder): builder.StartObject(5)
 def FlatResultAddId(builder, id): builder.PrependInt64Slot(0, id, 0)
 def FlatResultAddVariables(builder, variables): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(variables), 0)
 def FlatResultStartVariablesVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatResultAddTiming(builder, timing): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(timing), 0)
 def FlatResultStartTimingVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatResultAddFootprintForward(builder, footprintForward): builder.PrependInt64Slot(3, footprintForward, 0)
+def FlatResultAddFootprintBackward(builder, footprintBackward): builder.PrependInt64Slot(4, footprintBackward, 0)
 def FlatResultEnd(builder): return builder.EndObject()

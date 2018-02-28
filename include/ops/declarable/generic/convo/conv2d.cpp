@@ -193,7 +193,7 @@ namespace nd4j {
                 shape::shapeBuffer(4, shape.data(), newShape);
             }
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -334,7 +334,7 @@ namespace nd4j {
             ALLOCATE(newWShape, block.getWorkspace(), shape::shapeInfoLength(wShape), int);
             memcpy(newWShape, wShape, shape::shapeInfoByteLength(wShape));
 
-            auto shapeList = new ShapeList({newIShape, newWShape});
+            auto shapeList = SHAPELIST(newIShape, newWShape);
 
             if (bShape != nullptr) {
                 int *newBShape;

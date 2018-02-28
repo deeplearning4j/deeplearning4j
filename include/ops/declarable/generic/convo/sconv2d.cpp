@@ -184,7 +184,7 @@ namespace nd4j {
             }
 
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -397,8 +397,9 @@ namespace nd4j {
             memcpy(newInShape, inShape, shape::shapeInfoByteLength(inShape));
             memcpy(newWdShape, wdShape, shape::shapeInfoByteLength(wdShape));
 
-            auto shapes = new ShapeList({newInShape, newWdShape});
+            auto shapes = SHAPELIST(newInShape, newWdShape);
 
+            // FIXME: remove memcpy here
             if (wpShape != nullptr) {
                 int *newWpShape;
                 ALLOCATE(newWpShape, block.getWorkspace(), shape::shapeInfoLength(wpShape), int);

@@ -62,7 +62,7 @@ DECLARE_SHAPE_FN(stack) {
   		outShapeInfo[3] = 1;
   		outShapeInfo[4] = 0;
   		outShapeInfo[5] = (int)shape::order(inShapeInfo);
-  		return new ShapeList(outShapeInfo);
+  		return SHAPELIST(outShapeInfo);
 	}
 	
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(stack) {
   	
   	shape::updateStrides(outShapeInfo, shape::order(inShapeInfo));    
   	
-  	return new ShapeList(outShapeInfo);
+  	return SHAPELIST(outShapeInfo);
 }
 
 // 1) 1х4 + 1х4 = 2х1х4 (along dim=0) = 2x4 

@@ -55,7 +55,7 @@ namespace nd4j {
 
             int* meanShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
             int* varianceShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST(); 
             shapeList->push_back(meanShape);
             shapeList->push_back(varianceShape);
 

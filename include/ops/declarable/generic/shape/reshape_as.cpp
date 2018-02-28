@@ -33,11 +33,12 @@ namespace nd4j {
     int* inputShapeInfo = inputShape->at(1);    
     int shapeInfoLength = inputShapeInfo[0]*2 + 4;
 
+    // FIXME: remove memcpy
     int* outputShapeInfo(nullptr);
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shapeInfoLength, int); 
     memcpy(outputShapeInfo, inputShapeInfo, shapeInfoLength*sizeof(int));
     
-    return new ShapeList(outputShapeInfo);
+    return SHAPELIST(outputShapeInfo);
 }
 
 

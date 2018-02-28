@@ -97,7 +97,9 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
     VT_VARIABLES = 6,
-    VT_TIMING = 8
+    VT_TIMING = 8,
+    VT_FOOTPRINTFORWARD = 10,
+    VT_FOOTPRINTBACKWARD = 12
   };
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
@@ -108,6 +110,12 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<FlatTiming>> *timing() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<FlatTiming>> *>(VT_TIMING);
   }
+  int64_t footprintForward() const {
+    return GetField<int64_t>(VT_FOOTPRINTFORWARD, 0);
+  }
+  int64_t footprintBackward() const {
+    return GetField<int64_t>(VT_FOOTPRINTBACKWARD, 0);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
@@ -117,6 +125,8 @@ struct FlatResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_TIMING) &&
            verifier.Verify(timing()) &&
            verifier.VerifyVectorOfTables(timing()) &&
+           VerifyField<int64_t>(verifier, VT_FOOTPRINTFORWARD) &&
+           VerifyField<int64_t>(verifier, VT_FOOTPRINTBACKWARD) &&
            verifier.EndTable();
   }
 };
@@ -132,6 +142,12 @@ struct FlatResultBuilder {
   }
   void add_timing(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatTiming>>> timing) {
     fbb_.AddOffset(FlatResult::VT_TIMING, timing);
+  }
+  void add_footprintForward(int64_t footprintForward) {
+    fbb_.AddElement<int64_t>(FlatResult::VT_FOOTPRINTFORWARD, footprintForward, 0);
+  }
+  void add_footprintBackward(int64_t footprintBackward) {
+    fbb_.AddElement<int64_t>(FlatResult::VT_FOOTPRINTBACKWARD, footprintBackward, 0);
   }
   explicit FlatResultBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -149,8 +165,12 @@ inline flatbuffers::Offset<FlatResult> CreateFlatResult(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatVariable>>> variables = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatTiming>>> timing = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<FlatTiming>>> timing = 0,
+    int64_t footprintForward = 0,
+    int64_t footprintBackward = 0) {
   FlatResultBuilder builder_(_fbb);
+  builder_.add_footprintBackward(footprintBackward);
+  builder_.add_footprintForward(footprintForward);
   builder_.add_id(id);
   builder_.add_timing(timing);
   builder_.add_variables(variables);
@@ -161,12 +181,16 @@ inline flatbuffers::Offset<FlatResult> CreateFlatResultDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int64_t id = 0,
     const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
-    const std::vector<flatbuffers::Offset<FlatTiming>> *timing = nullptr) {
+    const std::vector<flatbuffers::Offset<FlatTiming>> *timing = nullptr,
+    int64_t footprintForward = 0,
+    int64_t footprintBackward = 0) {
   return nd4j::graph::CreateFlatResult(
       _fbb,
       id,
       variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0,
-      timing ? _fbb.CreateVector<flatbuffers::Offset<FlatTiming>>(*timing) : 0);
+      timing ? _fbb.CreateVector<flatbuffers::Offset<FlatTiming>>(*timing) : 0,
+      footprintForward,
+      footprintBackward);
 }
 
 inline const nd4j::graph::FlatResult *GetFlatResult(const void *buf) {

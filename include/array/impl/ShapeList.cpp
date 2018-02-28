@@ -25,6 +25,10 @@ namespace nd4j {
             _shapes.push_back(v);
     }
 
+    ShapeList::ShapeList(std::initializer_list<int*> shapes, bool isWorkspace) : ShapeList(shapes){
+        _workspace = isWorkspace;
+    }
+
     ShapeList::ShapeList(std::vector<int*>& shapes) {
         for (auto v:shapes)
             _shapes.push_back(v);
@@ -35,8 +39,9 @@ namespace nd4j {
     }
 
     void ShapeList::destroy() {
-        for (auto v:_shapes)
-            delete[] v;
+        if (!_workspace)
+            for (auto v:_shapes)
+                delete[] v;
     }
 
     int ShapeList::size() {
@@ -61,5 +66,12 @@ namespace nd4j {
         std::memcpy(nShape, shape.data(), shape::shapeInfoByteLength(shape.at(0)));
 
         _shapes.push_back(nShape);
+    }
+
+    void ShapeList::detach() {
+        for (int e = 0; e < _shapes.size(); e++) {
+            _shapes[e] = shape::detachShape(_shapes[e]);
+        }
+        _workspace = false;
     }
 }

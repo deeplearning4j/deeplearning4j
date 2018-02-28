@@ -100,7 +100,7 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
     outShapeInfo[6] = 1;
     outShapeInfo[7] = 99;
 
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

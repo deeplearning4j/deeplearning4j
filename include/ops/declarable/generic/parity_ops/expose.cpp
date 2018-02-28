@@ -31,7 +31,7 @@ namespace nd4j {
         DECLARE_SYN(enter, expose);
 
         DECLARE_SHAPE_FN(expose) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
 
             for (int e = 0; e < block.width(); e++) {
                 auto p = block.input(e);

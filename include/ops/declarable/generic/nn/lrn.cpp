@@ -74,12 +74,10 @@ namespace nd4j {
         DECLARE_SHAPE_FN(lrn_old) {
             int *inp = inputShape->at(0);
 
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
             for(int e = 0; e < 3; e++) {
                 int *newShape;
-                ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inp), int);
-                memcpy(newShape, inp, shape::shapeInfoByteLength(inp));
-
+                COPY_SHAPE(inp, newShape);
                 shapeList->push_back(newShape);
             }
 

@@ -37,7 +37,7 @@ namespace nd4j {
             copy(outShape.begin(), outShape.end(), newShapeInfo+1);
             shape::updateStrides(newShapeInfo, x->ordering());
 
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
     }
 }

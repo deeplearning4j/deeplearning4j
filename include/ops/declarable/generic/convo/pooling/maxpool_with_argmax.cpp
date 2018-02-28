@@ -30,9 +30,7 @@ namespace nd4j {
             int* indicesShape = nullptr;
             COPY_SHAPE(in, valuesShape);
             COPY_SHAPE(in, indicesShape);
-            ShapeList* shapes = new ShapeList;
-            shapes->push_back(valuesShape);
-            shapes->push_back(indicesShape);
+            auto shapes = SHAPELIST(valuesShape, indicesShape);
 
             return shapes;
     }

@@ -22,7 +22,7 @@ namespace nd4j {
 
             shape::shapeScalar(newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

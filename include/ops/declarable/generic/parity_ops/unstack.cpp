@@ -64,7 +64,7 @@ namespace nd4j {
             if (shape.size() == 2 && shape[0] == 1)
                 shape.erase(shape.begin());
             
-            auto result = new ShapeList();
+            auto result = SHAPELIST();
             for (int e = 0; e < numTads; e++) {
                 int *newShape;
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);

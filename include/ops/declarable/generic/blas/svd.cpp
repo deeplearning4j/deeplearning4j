@@ -103,9 +103,9 @@ DECLARE_SHAPE_FN(svd) {
         shape::updateStrides(uShapeInfo, shape::order(inShapeInfo));
         shape::updateStrides(vShapeInfo, shape::order(inShapeInfo));
     
-        return new ShapeList({sShapeInfo, uShapeInfo, vShapeInfo});        
+        return SHAPELIST(sShapeInfo, uShapeInfo, vShapeInfo);        
     }         
-    return new ShapeList(sShapeInfo);
+    return SHAPELIST(sShapeInfo);
 }
 
 

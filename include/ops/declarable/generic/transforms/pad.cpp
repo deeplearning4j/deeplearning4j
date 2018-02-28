@@ -57,14 +57,14 @@ DECLARE_SHAPE_FN(pad) {
     int rank =  input->rankOf();    	
 		
 	int* outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, block.getWorkspace(), rank*2+4, int);
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
     outShapeInfo[0] = rank;
     for(int i=1; i <= rank; ++i)
     	outShapeInfo[i] = input->shapeOf()[i-1] + paddings->getScalar(i-1,0) + paddings->getScalar(i-1,1);
 	
     shape::updateStrides(outShapeInfo, input->ordering());    
 
-    return new ShapeList(outShapeInfo);
+    return SHAPELIST(outShapeInfo);
     
 }
 

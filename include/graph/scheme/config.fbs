@@ -26,6 +26,8 @@ table FlatConfiguration {
     profilingMode:ProfilingMode; // current profiling mode
     outputMode:OutputMode; // current output mode
     timestats:bool; // are we gathering time info. false by default
+    footprintForward:long; // optional: amount of memory needed for FF pass
+    footprintBackward:long; // optional: amount of memory needed for BP pass
 }
 
 root_type FlatConfiguration;

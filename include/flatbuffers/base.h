@@ -99,7 +99,7 @@
 #endif // !defined(FLATBUFFERS_LITTLEENDIAN)
 
 #define FLATBUFFERS_VERSION_MAJOR 1
-#define FLATBUFFERS_VERSION_MINOR 7
+#define FLATBUFFERS_VERSION_MINOR 8
 #define FLATBUFFERS_VERSION_REVISION 0
 #define FLATBUFFERS_STRING_EXPAND(X) #X
 #define FLATBUFFERS_STRING(X) FLATBUFFERS_STRING_EXPAND(X)
@@ -186,14 +186,20 @@ template<typename T> T EndianSwap(T t) {
   if (sizeof(T) == 1) {   // Compile-time if-then's.
     return t;
   } else if (sizeof(T) == 2) {
-    auto r = FLATBUFFERS_BYTESWAP16(*reinterpret_cast<uint16_t *>(&t));
-    return *reinterpret_cast<T *>(&r);
+    union { T t; uint16_t i; } u;
+    u.t = t;
+    u.i = FLATBUFFERS_BYTESWAP16(u.i);
+    return u.t;
   } else if (sizeof(T) == 4) {
-    auto r = FLATBUFFERS_BYTESWAP32(*reinterpret_cast<uint32_t *>(&t));
-    return *reinterpret_cast<T *>(&r);
+    union { T t; uint32_t i; } u;
+    u.t = t;
+    u.i = FLATBUFFERS_BYTESWAP32(u.i);
+    return u.t;
   } else if (sizeof(T) == 8) {
-    auto r = FLATBUFFERS_BYTESWAP64(*reinterpret_cast<uint64_t *>(&t));
-    return *reinterpret_cast<T *>(&r);
+    union { T t; uint64_t i; } u;
+    u.t = t;
+    u.i = FLATBUFFERS_BYTESWAP64(u.i);
+    return u.t;
   } else {
     assert(0);
   }

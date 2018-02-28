@@ -67,7 +67,7 @@ namespace nd4j {
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newshape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return new ShapeList(newshape);
+            return SHAPELIST(newshape);
         }
     }
 }

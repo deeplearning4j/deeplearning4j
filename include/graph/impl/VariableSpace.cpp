@@ -32,6 +32,11 @@ namespace nd4j {
             return result;
         }
 
+        template<typename T>
+        void VariableSpace<T>::setWorkspace(nd4j::memory::Workspace *workspace) {
+            //_workspace = *workspace;
+        }
+
         template <typename T>
         template <typename N>
         nd4j::graph::VariableSpace<N>* nd4j::graph::VariableSpace<T>::asT() {
@@ -338,6 +343,11 @@ namespace nd4j {
         template <typename T>
         nd4j::memory::Workspace * nd4j::graph::VariableSpace<T>::workspace() {
             return &_workspace;
+        }
+
+        template <typename T>
+        std::vector<Variable<T>*>* nd4j::graph::VariableSpace<T>::handles() {
+            return _handles;
         }
 
 /*

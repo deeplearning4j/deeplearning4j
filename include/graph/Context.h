@@ -63,8 +63,18 @@ namespace nd4j {
             bool hasWorkspaceProvided();
             void attachWorkspace(nd4j::memory::Workspace* workspace);
             void forgetWorkspace();
+
+            // these methods return full-time workspace
             nd4j::memory::Workspace* getWorkspace();
             nd4j::memory::Workspace* workspace();
+            nd4j::memory::Workspace* fWorkspace();
+
+            // this method returns workspace for temporary allocations
+            nd4j::memory::Workspace* tWorkspace();
+
+            // this method returns workspace for object allocations
+            nd4j::memory::Workspace* oWorkspace();
+
 
             void setVariableSpace(VariableSpace<T> *variableSpace);
 

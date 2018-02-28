@@ -69,7 +69,7 @@ DECLARE_SHAPE_FN(gru) {
     
     shape::updateStrides(hShapeInfo, shape::order(inputShape->at(1)));        
          
-    return new ShapeList(hShapeInfo);
+    return SHAPELIST(hShapeInfo);
 }   
 
 

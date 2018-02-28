@@ -89,7 +89,7 @@ namespace nd4j {
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
                 memcpy(newshape, inShape, shape::shapeInfoByteLength(inShape));
 
-                return new ShapeList(newshape);
+                return SHAPELIST(newshape);
             } else {
                 // FIXME: we can't estimate result here in this case
                 auto inShape = inputShape->at(0);
@@ -106,7 +106,7 @@ namespace nd4j {
                 newshape[6] = 1;
                 newshape[7] = 99;
 
-                return new ShapeList(newshape);
+                return SHAPELIST(newshape);
             }
         }
     }

@@ -35,7 +35,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
             memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 

@@ -54,6 +54,8 @@
 #define ELEMENT_THRESHOLD nd4j::Environment::getInstance()->elementwiseThreshold()
 #define TAD_THRESHOLD nd4j::Environment::getInstance()->tadThreshold()
 
+#define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
+
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
 #define PASTE(x, ...) x ## __VA_ARGS__ 
@@ -1196,7 +1198,7 @@ struct __registratorDouble_##NAME {\
                                                 template class ND4J_EXPORT NAME<double>; \
                                                 template <typename T>\
                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) { \
-                                                    auto shapeList = new nd4j::ShapeList(); \
+                                                    auto shapeList = SHAPELIST(); \
                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                         int* newshape; \
                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int); \
@@ -1298,7 +1300,7 @@ struct __registratorSynonymDouble_##NAME {\
                                                             template class ND4J_EXPORT NAME<double>; \
                                                             template <typename T>\
                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) { \
-                                                                auto shapeList = new nd4j::ShapeList(); \
+                                                                auto shapeList = SHAPELIST(); \
                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                                     int* newshape; \
                                                                     COPY_SHAPE(inputShape->at(0), newshape); \
@@ -1350,7 +1352,7 @@ struct __registratorDouble_##NAME {\
                                                                                 template class ND4J_EXPORT NAME<double>; \
                                                                                 template <typename T>\
                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) { \
-                                                                                    auto shapeList = new nd4j::ShapeList(); \
+                                                                                    auto shapeList = SHAPELIST(); \
                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) { \
                                                                                         int* newshape; \
                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int); \
@@ -1548,7 +1550,6 @@ struct __registratorDouble_##NAME {\
 #define _CUDA_HD
 
 #endif // CUDACC
-
 
 #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16

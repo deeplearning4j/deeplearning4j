@@ -62,7 +62,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(x_rank), int);
             shape::shapeBuffer(x_rank, shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -103,7 +103,7 @@ namespace nd4j {
 
             COPY_SHAPE(inShape, newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

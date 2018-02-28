@@ -52,7 +52,7 @@ namespace ops {
             }
         }
 
-        auto shapes = new ShapeList();
+        auto shapes = SHAPELIST();
         int *newShape;
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
 

@@ -74,7 +74,7 @@ namespace nd4j {
             shape::shapeBuffer(5, shapeOf, newShape);
 
             RELEASE(shapeOf, block.getWorkspace());
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -158,7 +158,7 @@ namespace nd4j {
             int* newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
             memcpy(newShape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -450,7 +450,7 @@ namespace nd4j {
 
             memcpy(newShapeInfo1, newShapeInfo0, shape::shapeInfoByteLength(newShapeInfo0));
 
-            return new ShapeList({newShapeInfo0, newShapeInfo1});
+            return SHAPELIST(newShapeInfo0, newShapeInfo1);
 
         }   
 
@@ -557,10 +557,11 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(maxpool3d_bp) {
             // output shape equals to input shape, all out of sudden
+            // FIXME: remove memcpy here
             int* newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
             memcpy(newShape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

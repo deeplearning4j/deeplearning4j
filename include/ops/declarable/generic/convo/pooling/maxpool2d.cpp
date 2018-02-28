@@ -102,11 +102,12 @@ namespace nd4j {
         DECLARE_SYN(MaxPool_bp, maxpool2d_bp);
 
         DECLARE_SHAPE_FN(maxpool2d_bp) {
-
+            
+            // FIXME: remove memcpy here
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
             memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
 
 
@@ -209,7 +210,7 @@ namespace nd4j {
             }
             shape::updateStrides(newShapeInfo, order);
 
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
     }
 }

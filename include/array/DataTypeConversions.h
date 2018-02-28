@@ -24,7 +24,7 @@ namespace nd4j {
                 case DataType_FLOAT: {
                         auto tmp = (float *) src;
 
-                        #pragma omp parallel for simd schedule(guided)
+                        //#pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++) {
                             buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                         }
@@ -33,7 +33,7 @@ namespace nd4j {
                 case DataType_DOUBLE: {
                         auto tmp = (double *) src;
 
-                        #pragma omp parallel for simd schedule(guided)
+                        //#pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++)
                             buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                     }
@@ -41,7 +41,7 @@ namespace nd4j {
                 case DataType_HALF: {
                         auto tmp = (float16 *) src;
 
-                        #pragma omp parallel for simd schedule(guided)
+                        //#pragma omp parallel for simd schedule(guided)
                         for (Nd4jIndex e = 0; e < length; e++)
                             buffer[e] = canKeep ? (T) tmp[e] : BitwiseUtils::swap_bytes<T>((T) tmp[e]);
                     }

@@ -93,7 +93,7 @@ DECLARE_SHAPE_FN(lstm) {
     shape::updateStrides(hShapeInfo, shape::order(inputShape->at(1)));    
     shape::updateStrides(cShapeInfo, shape::order(inputShape->at(2)));
          
-    return new ShapeList({hShapeInfo, cShapeInfo});
+    return SHAPELIST(hShapeInfo, cShapeInfo);
 }   
 
 

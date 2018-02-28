@@ -131,7 +131,7 @@ namespace nd4j {
             }
             shape::updateStrides(newShapeInfo, order);
 
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
 
 
@@ -218,11 +218,11 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(avgpool2d_bp) {
-
+            // FIXME: memcpy should be removed
             int* newShapeInfo = nullptr;
             ALLOCATE(newShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
             memcpy(newShapeInfo, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return new ShapeList(newShapeInfo);
+            return SHAPELIST(newShapeInfo);
         }
     }
 }

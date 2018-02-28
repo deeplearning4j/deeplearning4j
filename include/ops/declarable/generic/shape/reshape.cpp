@@ -143,7 +143,7 @@ namespace nd4j {
 
                 shape::updateStrides(newShape, order);
 
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             } else {
                 // or, with second input "as shape"
                 auto y = INPUT_VARIABLE(1);
@@ -195,7 +195,7 @@ namespace nd4j {
 
                 shape::shapeBuffer(shapeNew.size(), shapeNew.data(), newShape);
 
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
         }
     }

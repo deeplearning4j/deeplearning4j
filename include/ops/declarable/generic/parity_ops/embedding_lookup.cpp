@@ -61,7 +61,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     else
         shape::shapeBufferFortran(outRank, shapeInfo.data(),  outShapeInfo);
 
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 }
 
 

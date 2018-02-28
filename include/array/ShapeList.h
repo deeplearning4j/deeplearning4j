@@ -14,9 +14,11 @@ namespace nd4j {
         std::vector<int*> _shapes;
 
         bool _autoremovable = false;
+        bool _workspace = false;
     public:
         ShapeList(int* shape = nullptr);
         ShapeList(std::initializer_list<int*> shapes);
+        ShapeList(std::initializer_list<int*> shapes, bool isWorkspace);
         ShapeList(std::vector<int*>& shapes);
         //ShapeList(bool autoRemovable);
 
@@ -28,6 +30,11 @@ namespace nd4j {
         int* at(int idx);
         void push_back(int *shape);
         void push_back(std::vector<int>& shape);
+
+        /**
+         * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory leak
+         */
+        void detach();
     };
 }
 

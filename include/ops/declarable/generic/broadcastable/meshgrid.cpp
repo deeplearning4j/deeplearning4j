@@ -61,13 +61,12 @@ DECLARE_SHAPE_FN(meshgrid) {
     
     shape::updateStrides(outShapeInfo, shape::order(inputShape->at(0)));
 
-    ShapeList* shapes = new ShapeList();
+    auto shapes = SHAPELIST();
     shapes->push_back(outShapeInfo);
     
     int* tempShapeInfo = nullptr;
     for(int i = 2; i <= rank; ++i) {
-        ALLOCATE(tempShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
-        memcpy(tempShapeInfo, outShapeInfo, shape::shapeInfoByteLength(rank));
+        COPY_SHAPE(outShapeInfo, tempShapeInfo);
         shapes->push_back(tempShapeInfo);
     }
     

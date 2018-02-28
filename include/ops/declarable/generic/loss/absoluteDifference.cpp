@@ -125,7 +125,7 @@ DECLARE_SHAPE_FN(absolute_difference_loss) {
     	shape::updateStrides(outShapeInfo, labels->ordering());    
     }
  
-    return new ShapeList(outShapeInfo);    
+    return SHAPELIST(outShapeInfo);    
 
 }
 

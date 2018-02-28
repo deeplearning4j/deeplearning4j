@@ -11,6 +11,7 @@
 #include "../Workspace.h"
 #include <helpers/logger.h>
 #include <templatemath.h>
+#include <cstring>
 
 
 namespace nd4j {
@@ -23,6 +24,7 @@ namespace nd4j {
                 if (this->_ptrHost == nullptr)
                     throw "Workspace allocation failed";
 
+                memset(this->_ptrHost, 0, initialSize);
                 this->_allocatedHost = true;
             } else
                 this->_allocatedHost = false;
@@ -40,9 +42,18 @@ namespace nd4j {
                     free((void *)this->_ptrHost);
 
                 this->_ptrHost =(char *) malloc(bytes);
+                memset(this->_ptrHost, 0, bytes);
                 this->_currentSize = bytes;
                 this->_allocatedHost = true;
             }
+        }
+
+        void Workspace::expandBy(Nd4jIndex numBytes) {
+            this->init(_currentSize + numBytes);
+        }
+
+        void Workspace::expandTo(Nd4jIndex numBytes) {
+            this->init(numBytes);
         }
 
         void Workspace::freeSpills() {
@@ -64,6 +75,9 @@ namespace nd4j {
             freeSpills();
         }
 
+        Nd4jIndex Workspace::getUsedSize() {
+            return getCurrentOffset();
+        }
 
         Nd4jIndex Workspace::getCurrentSize() {
             return _currentSize;
@@ -75,11 +89,13 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jIndex numBytes) {
+            //numBytes += 32;
             void* result = nullptr;
             this->_cycleAllocations += numBytes;
             this->_mutexAllocation.lock();
 
             if (_offset.load() + numBytes > _currentSize) {
+                nd4j_debug("Allocating %lld bytes in spills\n", numBytes);
                 this->_mutexAllocation.unlock();
 
                 void *p = malloc(numBytes);
@@ -93,12 +109,19 @@ namespace nd4j {
                 return p;
             }
 
-            _offset += numBytes;
             result = (void *)(_ptrHost + _offset.load());
+            _offset += numBytes;
+            //memset(result, 0, (int) numBytes);
+
+            nd4j_debug("Allocating %lld bytes from workspace; Current PTR: %p; Current offset: %lld\n", numBytes, result, _offset.load());
 
             this->_mutexAllocation.unlock();
 
             return result;
+        }
+
+        Nd4jIndex Workspace::getAllocatedSize() {
+            return getCurrentSize() + getSpilledSize();
         }
 
         void Workspace::scopeIn() {

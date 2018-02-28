@@ -108,6 +108,7 @@ namespace nd4j {
 
         _isShapeAlloc = true;
         _isBuffAlloc = true;
+        _workspace = workspace;
     }
 
 ////////////////////////////////////////////////////////////////////////
@@ -401,7 +402,7 @@ template <typename T>
 template <typename T>
 NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memory::Workspace* workspace) {
     int arrLength = shape::length(other->_shapeInfo);
-    int shapeLength = shape::rank(other->_shapeInfo)*2 + 4;
+    int shapeLength = shape::shapeInfoByteLength(other->_shapeInfo);
 
     _workspace = workspace;
     if (workspace == nullptr) {
@@ -409,13 +410,13 @@ NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memor
         _shapeInfo = new int[shapeLength];
     } else {
         _buffer = (T*) _workspace->allocateBytes(arrLength * sizeOfT());
-        _shapeInfo = (int*) _workspace->allocateBytes(shapeLength * 4);
+        _shapeInfo = (int*) _workspace->allocateBytes(shapeLength);
     }
 
     // FIXME: memcpy should be removed
     memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
 
-    memcpy(_shapeInfo, other->_shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+    memcpy(_shapeInfo, other->_shapeInfo, shapeLength);     // copy shape information into new array
 
     if(!copyStrides) 
         shape::updateStrides(_shapeInfo, ordering());
@@ -448,7 +449,7 @@ template <typename T>
     NDArray<T>::NDArray(const NDArray<T>& other)
 {
     int arrLength = shape::length(other._shapeInfo);
-    int shapeLength = shape::rank(other._shapeInfo)*2 + 4;
+    int shapeLength = shape::shapeInfoByteLength(other._shapeInfo);
 
     _workspace = other._workspace;
     if (_workspace == nullptr) {
@@ -456,11 +457,11 @@ template <typename T>
         _shapeInfo = new int[shapeLength];
     } else {
         _buffer = (T*) _workspace->allocateBytes(arrLength * sizeOfT());
-        _shapeInfo = (int*) _workspace->allocateBytes(shapeLength * sizeof(int));
+        _shapeInfo = (int*) _workspace->allocateBytes(shapeLength);
     }
 
     // memcpy(_buffer, other._buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
-    memcpy(_shapeInfo, other._shapeInfo, shapeLength*sizeof(int));     // copy shape information into new array
+    memcpy(_shapeInfo, other._shapeInfo, shapeLength);     // copy shape information into new array
     shape::updateStrides(_shapeInfo, other.ordering());
 
     _isBuffAlloc = true; 
@@ -581,7 +582,7 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (rank > MAX_RANK)
             throw std::invalid_argument("Rank of NDArray can't exceed 32");
 
-        int *shapeOf = new int[rank];
+        int shapeOf[MAX_RANK];
         int cnt = 0;
 
         for (auto &item: shape)
@@ -596,14 +597,15 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 
             _buffer =  new T[shape::length(_shapeInfo)];
         } else {
-            int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
-
+            _buffer = (T*) _workspace->allocateBytes(data.size() * sizeOfT());
             _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
+            if (order == 'f')
+                shape::shapeBufferFortran(rank, shapeOf, _shapeInfo);
+            else
+                shape::shapeBuffer(rank, shapeOf, _shapeInfo);
 
-            _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
+            //_buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
 
-            delete[] shapeInfo;
         }
 
         if (shape::length(_shapeInfo) != data.size()) {
@@ -618,8 +620,6 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 		_isShapeAlloc = true;
 
         shape::updateStrides(_shapeInfo, order);
-
-        delete[] shapeOf;
     }
 
     template<typename T>
@@ -645,14 +645,14 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
 
             _buffer =  new T[shape::length(_shapeInfo)];
         } else {
-            int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
-
             _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
+
+            if (order == 'f')
+                shape::shapeBufferFortran(rank, shapeOf, _shapeInfo);
+            else
+                shape::shapeBuffer(rank, shapeOf, _shapeInfo);
 
             _buffer = (T*) _workspace->allocateBytes(shape::length(_shapeInfo) * sizeOfT());
-
-            delete[] shapeInfo;
         }
 
         memset(_buffer, 0, sizeOfT() * shape::length(_shapeInfo));
@@ -689,10 +689,12 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
             else
                 _shapeInfo = shape::shapeBuffer(rank, shapeOf);
         } else {
-            int *shapeInfo = order == 'f' ? shape::shapeBufferFortran(rank, shapeOf) : shape::shapeBuffer(rank, shapeOf);
             _shapeInfo = (int*) _workspace->allocateBytes(shape::shapeInfoByteLength(rank));
-            memcpy(_shapeInfo, shapeInfo, shape::shapeInfoByteLength(rank));
-            delete[] shapeInfo;
+
+            if (order == 'f')
+                shape::shapeBufferFortran(rank, shapeOf, _shapeInfo);
+            else
+                shape::shapeBuffer(rank, shapeOf, _shapeInfo);
         }
 
         _isBuffAlloc = false;
@@ -707,6 +709,9 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (this->isScalar() && other->isScalar()) {
             this->_buffer[0] = other->_buffer[0];
             return;
+        } else if (other->isScalar()) {
+            this->assign(other->_buffer[0]);
+            return;;
         }
 
         if (other->lengthOf() != lengthOf()) {
@@ -720,10 +725,8 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (ordering() == other->ordering() && shape::elementWiseStride(this->_shapeInfo) == 1 && shape::elementWiseStride(other->_shapeInfo) == 1) {
             memcpy(_buffer, other->_buffer, lengthOf() * sizeOfT());
         } else {
-
             // now we invoke dup pwt against target buffer
-            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo,
-                                                         _buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other->_buffer, other->_shapeInfo, _buffer, _shapeInfo, nullptr);
         }
     }
 
@@ -733,6 +736,9 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         if (this->isScalar() && other.isScalar()) {
             this->_buffer[0] = other._buffer[0];
             return;
+        } else if (other.isScalar()) {
+            this->assign(other._buffer[0]);
+            return;;
         }
 
         if (this == &other) 
@@ -749,10 +755,8 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
             
             memcpy(_buffer, other._buffer, lengthOf() * sizeOfT());
         } else {
-
             // now we invoke dup pwt against target buffer
-            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other._buffer, other._shapeInfo,
-                                                         _buffer, _shapeInfo, nullptr);
+            NativeOpExcutioner<T>::execPairwiseTransform(1, _buffer, _shapeInfo, other._buffer, other._shapeInfo, _buffer, _shapeInfo, nullptr);
         }
     }
 
@@ -764,6 +768,32 @@ void NDArray<T>::replacePointers(T *buffer, int *shapeInfo, const bool releaseEx
         NativeOpExcutioner<T>::execScalar(13, _buffer, _shapeInfo, _buffer, _shapeInfo, value, nullptr);
     }
 
+
+    template<typename T>
+    NDArray<T>* NDArray<T>::detach() {
+        if (!isAttached())
+            return this;
+
+        Nd4jIndex newLength = shape::length(_shapeInfo);
+        T* newBuffer;
+        int* newShapeInfo;
+
+        newBuffer = new T[newLength];
+
+        if (this->ordering() == 'f')
+            newShapeInfo = shape::shapeBufferFortran(rankOf(), shapeOf());
+        else
+            newShapeInfo = shape::shapeBuffer(rankOf(), shapeOf());
+
+
+        auto result = new NDArray<T>(newBuffer, newShapeInfo, nullptr);
+        result->_isBuffAlloc = true;
+        result->_isShapeAlloc = true;
+
+        result->assign(this);
+
+        return result;
+    }
 
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
@@ -799,7 +829,7 @@ template <typename T>
     // FIXME: we know that EWS is always 1 after dup() result
     newShapeInfo[rankOf() * 2 + 2] = 1;
 
-    NDArray<T> *result = new NDArray<T>(newBuffer, newShapeInfo, _workspace);
+    auto result = new NDArray<T>(newBuffer, newShapeInfo, _workspace);
     // this values should be set, to avoid memleak
     result->_isBuffAlloc = true;
     result->_isShapeAlloc = true;
@@ -1196,7 +1226,7 @@ template <typename T>
     template <typename T>
     void NDArray<T>::transpose(NDArray<T>& target) const {
         
-        int* correctShape = ShapeUtils<T>::evalTranspShapeInfo(*this);
+        int* correctShape = ShapeUtils<T>::evalTranspShapeInfo(*this, _workspace);
         if(!shape::equalsStrict(correctShape, target.getShapeInfo()))
             throw "NDArray::transpose method: the shapeInfo of target array is wrong !";
 
@@ -1502,7 +1532,7 @@ bool NDArray<T>::reshapei(const std::vector<int>& shape) {
 
         char order = o == 'a' ? this->ordering() : o;
 
-        if (o == 'c')
+        if (order == 'c')
             shape::shapeBuffer(dimensions.size(), dimensions.data(), newShape);
         else
             shape::shapeBufferFortran(dimensions.size(), dimensions.data(), newShape);
@@ -1688,7 +1718,7 @@ NDArray<T> NDArray<T>::tile(const std::vector<int>& reps) const {
     }   
     
     // evaluate shapeInfo for resulting array
-    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps);    
+    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps, _workspace);
     // create new buffer, in any case the memory amount new buffer points to is bigger then those for old _buffer   
     T* newBuff = nullptr;
     ALLOCATE(newBuff, _workspace, shape::length(newShapeInfo), T);
@@ -1712,7 +1742,7 @@ template <typename T>
 void NDArray<T>::tile(const std::vector<int>& reps, NDArray<T>& target) const {
         
     // evaluate true tile shapeInfo for comparison with target shapeInfo
-    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps);  
+    int* newShapeInfo = ShapeUtils<T>::evalTileShapeInfo(*this, reps, _workspace);
     if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
         delete []newShapeInfo;    
         throw "NDArray::tile method - shapeInfo of target array is not suitable for tile operation !";
@@ -1822,7 +1852,7 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
 
     // check if current object is _shapeInfo owner
     if (!_isShapeAlloc) {             // if _shapeInfo is not its own
-        _shapeInfo = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this);    
+        _shapeInfo = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, _workspace);
         _isShapeAlloc = true;
     } else {
         if (!nonNull() || rank != rankOf())
@@ -1852,7 +1882,7 @@ template <typename T>
 NDArray<T>* NDArray<T>::permute(const int* dimensions, const int rank) const {
 
     // evaluate shapeInfo for output (permuted) array ret
-    int* shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this);    
+    int* shapeInfoNew = ShapeUtils<T>::evalPermShapeInfo(dimensions, rank, *this, _workspace);
     // create array to be returned
     NDArray<T>* ret = new NDArray<T>(_buffer, shapeInfoNew, _workspace);
     // don't forget to indicate that memory for new array was allocated
@@ -1956,11 +1986,14 @@ void NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, NDArray<T>* target,
 
     if(checkTargetShape) {
         int* newShapeInfo = nullptr;
-        if(!ShapeUtils<T>::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo))          // the rank of target array must be equal to max->rankOf)()
+        if(!ShapeUtils<T>::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, _workspace))          // the rank of target array must be equal to max->rankOf)()
             throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
         if(!shape::equalsSoft(target->getShapeInfo(), newShapeInfo))
-            throw "NDArray::applyTrueBroadcast method: the shape of target array is wrong !";    
-        delete[] newShapeInfo;
+            throw "NDArray::applyTrueBroadcast method: the shape of target array is wrong !";
+
+        // if workspace is not null - do not call delete.
+        if (_workspace == nullptr)
+            delete[] newShapeInfo;
     }
 
     // check whether min array have to be tiled
@@ -1999,10 +2032,13 @@ template <typename OpName>
 NDArray<T>* NDArray<T>::applyTrueBroadcast(const NDArray<T>* other, T *extraArgs) const {
 
     int* newShapeInfo = nullptr;
-    if(!ShapeUtils<T>::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo))          // the rank of new array = max->rankOf)()
+    if(!ShapeUtils<T>::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, _workspace))          // the rank of new array = max->rankOf)()
         throw "NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !" ;
-    NDArray<T>* result = new NDArray<T>(newShapeInfo, _workspace);
-    delete[] newShapeInfo;
+    NDArray<T>* result = new NDArray<T>(newShapeInfo, false, this->_workspace);
+
+    // if workspace is not null - do not call delete.
+    if (_workspace == nullptr)
+        delete[] newShapeInfo;
 
     this->template applyTrueBroadcast<OpName>(other, result, false, extraArgs);
   

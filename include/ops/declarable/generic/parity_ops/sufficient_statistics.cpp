@@ -54,10 +54,7 @@ namespace nd4j {
             int* scalarShape = shape::createScalarShapeInfo();
             int* sumShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
             int* squareShape = ShapeUtils<T>::evalReduceShapeInfo('c', axis, *input, false);
-            auto shapeList = new ShapeList(); 
-            shapeList->push_back(scalarShape);
-            shapeList->push_back(sumShape);
-            shapeList->push_back(squareShape);
+            auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape); 
             if (block.numT() > 0)
                 shapeList->push_back(shape::createScalarShapeInfo());
             

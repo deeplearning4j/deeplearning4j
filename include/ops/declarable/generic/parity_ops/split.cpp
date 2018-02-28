@@ -100,7 +100,7 @@ namespace ops {
             else 
                 shape[e] = shape::sizeAt(input, e);
 
-        auto shapes = new ShapeList();
+        auto shapes = SHAPELIST();
 
         for (int e = 0; e < num_splits; e++) {
             int *newShape;

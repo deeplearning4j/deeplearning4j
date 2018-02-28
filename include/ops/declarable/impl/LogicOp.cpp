@@ -22,7 +22,7 @@ namespace nd4j {
         template <typename T>
         ShapeList* LogicOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             // FIXME: we probably want these ops to evaluate scopes
-            return new ShapeList();
+            return SHAPELIST();
         }
 
         template class ND4J_EXPORT LogicOp<float>;

@@ -9,6 +9,7 @@
 #include <NDArray.h>
 #include <Workspace.h>
 #include <MemoryRegistrator.h>
+#include <NDArrayFactory.h>
 
 using namespace nd4j;
 using namespace nd4j::memory;
@@ -169,6 +170,39 @@ TEST_F(WorkspaceTests, CloneTest1) {
     ASSERT_EQ(0, clone->getSpilledSize());
 
     delete clone;
+}
+
+TEST_F(WorkspaceTests, Test_Arrays_1) {
+    Workspace ws(65536);
+    NDArray<float> x('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9}, &ws);
+
+    x.printIndexedBuffer("x0");
+
+    NDArray<float> y('c', {3, 3}, {-1, -2, -3, -4, -5, -6, -7, -8, -9}, &ws);
+
+    x.printIndexedBuffer("x2");
+
+    NDArray<float> z('c', {3, 3}, {0, 0, 0, 0, 0, 0, 0, 0, 0}, &ws);
+
+    NDArrayFactory<float>::mmulHelper(&x, &y, &z);
+
+    y.assign(&x);
+
+
+    x.printIndexedBuffer("x3");
+    y.printIndexedBuffer("y");
+    z.printIndexedBuffer("z");
+}
+
+
+TEST_F(WorkspaceTests, Test_Graph_1) {
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    auto workspace = graph->getVariableSpace()->workspace();
+
+    auto status = GraphExecutioner<float>::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+
+    delete graph;
 }
 
 

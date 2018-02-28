@@ -52,9 +52,14 @@ namespace nd4j {
             Workspace(Nd4jIndex initialSize = 0);
             ~Workspace();
 
+            Nd4jIndex getAllocatedSize();
             Nd4jIndex getCurrentSize();
             Nd4jIndex getCurrentOffset();
             Nd4jIndex getSpilledSize();
+            Nd4jIndex getUsedSize();
+
+            void expandBy(Nd4jIndex numBytes);
+            void expandTo(Nd4jIndex numBytes);
 
 //            bool resizeSupported();
 

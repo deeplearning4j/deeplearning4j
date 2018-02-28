@@ -104,6 +104,16 @@ namespace nd4j {
         template <typename T>
         bool nd4j::ops::DeclarableOp<T>::prepareOutputs(Context<T> &ctx) {
             auto workspace = ctx.getWorkspace();
+            GraphProfile *prof = nullptr;
+            NodeProfile *node = nullptr;
+            std::chrono::time_point<std::chrono::system_clock> inputEnd, inputStart, shapeStart, shapeEnd, arrayStart, arrayEnd;
+
+            if (Environment::getInstance()->isProfiling()) {
+                if (ctx.getVariableSpace() != nullptr && ctx.getVariableSpace()->flowPath() != nullptr) {
+                    prof = ctx.getVariableSpace()->flowPath()->profile();
+                    node = prof->nodeById(ctx.nodeId());
+                }
+            }
 
             if (ctx.isInplace()) {
                 // do nothing, getZ result will do the trick
@@ -111,6 +121,9 @@ namespace nd4j {
                 // if op is not inplace - we should pre-allocate arrays
 
                 ShapeList inSha;
+
+                if (Environment::getInstance()->isProfiling() && node != nullptr)
+                    inputStart = std::chrono::system_clock::now();
 
                 int cntIn = 0;
                 // we build list of input shapes
@@ -124,7 +137,26 @@ namespace nd4j {
                     cntIn++;
                 }
 
+                // optionally saving input time
+                if (Environment::getInstance()->isProfiling() && node != nullptr) {
+                    inputEnd = std::chrono::system_clock::now();
+                    auto inputTime = std::chrono::duration_cast<std::chrono::nanoseconds>(inputEnd - inputStart).count();
+                    node->setInputTime(inputTime);
+
+                    shapeStart = std::chrono::system_clock::now();
+                }
+
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
+
+                // optionally saving shapeTime
+                if (Environment::getInstance()->isProfiling() && node != nullptr) {
+                    shapeEnd = std::chrono::system_clock::now();
+                    auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(shapeEnd - shapeStart).count();
+                    node->setShapeFunctionTime(prepTime);
+
+                    arrayStart = std::chrono::system_clock::now();
+                }
+
                 int cnt = 0;
                 for (auto out: *outSha->asVector()) {
                     // we need to check, if Z is really needed
@@ -141,6 +173,13 @@ namespace nd4j {
 
                 outSha->destroy();
                 delete outSha;
+
+                // saving arrayTime
+                if (Environment::getInstance()->isProfiling() && node != nullptr) {
+                    arrayEnd = std::chrono::system_clock::now();
+                    auto arrayTime = std::chrono::duration_cast<std::chrono::nanoseconds>(arrayEnd - arrayStart).count();
+                    node->setArrayTime(arrayTime);
+                }
             }
 
             return true;
@@ -223,7 +262,12 @@ namespace nd4j {
         Nd4jStatus nd4j::ops::DeclarableOp<T>::execute(Context<T>* block) {
             nd4j_debug("Executing op: [%s]\n", this->getOpName()->c_str());
 
-            auto timeEnter = std::chrono::system_clock::now();
+            std::chrono::time_point<std::chrono::system_clock> timeEnter, timeStart, timeEnd;
+            Nd4jIndex prepTime, outerTime;
+
+            Nd4jIndex memoryBefore = block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize();
+            if (Environment::getInstance()->isProfiling())
+                timeEnter = std::chrono::system_clock::now();
 
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
@@ -234,22 +278,30 @@ namespace nd4j {
             // this method will allocate output NDArrays for this op
             this->prepareOutputs(*block);
 
-            auto timeStart = std::chrono::system_clock::now();
-            auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeStart - timeEnter).count();
+            if (Environment::getInstance()->isProfiling()) {
+                timeStart = std::chrono::system_clock::now();
+                prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
+            }
 
             Nd4jStatus status = this->validateAndExecute(*block);
 
-            auto timeEnd = std::chrono::system_clock::now();
-            auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
-            block->setInnerTime(outerTime);
+            // optionally saving execution time
+            if (Environment::getInstance()->isProfiling()) {
+                timeEnd = std::chrono::system_clock::now();
+                outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+                block->setInnerTime(outerTime);
+            }
 
             if (Environment::getInstance()->isProfiling()) {
                 auto fp = block->getVariableSpace()->flowPath();
                 if (fp != nullptr) {
-                    auto p = block->getVariableSpace()->flowPath()->profile();
+                    auto p = fp->profile();
                     if (p != nullptr) {
-                        block->getVariableSpace()->flowPath()->profile()->nodeById(block->nodeId())->setPreparationTime(prepTime);
-                        block->getVariableSpace()->flowPath()->profile()->nodeById(block->nodeId())->setExecutionTime(outerTime);
+                        Nd4jIndex memoryAfter = block->workspace() == nullptr ? 0L : block->workspace()->getSpilledSize() + block->workspace()->getUsedSize(); 
+                        Nd4jIndex memoryUsed = memoryAfter - memoryBefore;
+                        p->nodeById(block->nodeId())->setPreparationTime(prepTime);
+                        p->nodeById(block->nodeId())->setExecutionTime(outerTime);
+                        p->nodeById(block->nodeId())->setTotalSize(memoryUsed);
                     }
                 }
             }
@@ -522,8 +574,13 @@ namespace nd4j {
                 std::pair<int,int> pair(1, e);
                 if (variableSpace.hasVariable(pair)) {
                     auto var = variableSpace.getVariable(pair);
-                    var->markRemovable(false);
-                    arrayList->push_back(var->getNDArray());
+                    auto arr = var->getNDArray();
+                    if (!arr->isAttached()) {
+                        var->markRemovable(false);
+                        arrayList->push_back(arr);
+                    } else {
+                        arrayList->push_back(arr->detach());
+                    }
                 } else
                     break;
             }

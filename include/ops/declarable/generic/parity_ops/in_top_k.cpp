@@ -42,7 +42,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(in_top_k) {
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 

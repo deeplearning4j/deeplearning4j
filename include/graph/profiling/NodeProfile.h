@@ -30,6 +30,14 @@ namespace nd4j {
             // total time spent during node execution
             Nd4jIndex _totalTime = 0L;
 
+            // time spent for output shape creation
+            Nd4jIndex _shapeTime = 0L;
+
+            // time spent for output arrays creation
+            Nd4jIndex _arrayTime = 0L;
+
+            Nd4jIndex _inputTime = 0L;
+
             // amount of memory used for outputs
             Nd4jIndex _memoryActivations = 0L;
 
@@ -38,6 +46,9 @@ namespace nd4j {
 
             // amount of memory used internally for objects
             Nd4jIndex _memoryObjects = 0L;
+
+            // total amount of memory used during execution
+            Nd4jIndex _memoryTotal = 0L;
         public:
             NodeProfile() = default;
             ~NodeProfile() = default;
@@ -48,14 +59,19 @@ namespace nd4j {
             void setPreparationTime(Nd4jIndex time);
             void setExecutionTime(Nd4jIndex time);
             void setTotalTime(Nd4jIndex time);
+            void setShapeFunctionTime(Nd4jIndex time);
+            void setArrayTime(Nd4jIndex time);
+            void setInputTime(Nd4jIndex time);
 
             void setActivationsSize(Nd4jIndex bytes);
             void setTemporarySize(Nd4jIndex bytes);
             void setObjectsSize(Nd4jIndex bytes);
+            void setTotalSize(Nd4jIndex bytes);
 
             Nd4jIndex getActivationsSize();
             Nd4jIndex getTemporarySize();
             Nd4jIndex getObjectsSize();
+            Nd4jIndex getTotalSize();
 
             std::string& name();
 

@@ -3142,6 +3142,9 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 
     auto shapeList = op->calculateOutputShape(&inShapes, block);
 
+    if (varSpace.workspace() != nullptr)
+        shapeList->detach();
+
     return shapeList;
 }
 

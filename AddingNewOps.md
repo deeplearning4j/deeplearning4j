@@ -101,7 +101,7 @@ DECLARE_SHAPE_FN(tear) {
     tad.createTadOnlyShapeInfo();
     Nd4jIndex numTads = shape::tadLength(inShape, dims.data(), (int) dims.size());
 
-    auto result = new ShapeList();
+    auto result = SHAPELIST();
     for (int e = 0; e < numTads; e++) {
         int *newShape;
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(tad.tadOnlyShapeInfo), int);

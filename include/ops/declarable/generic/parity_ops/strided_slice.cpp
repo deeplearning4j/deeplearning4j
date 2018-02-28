@@ -406,7 +406,7 @@ namespace nd4j {
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
                 shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
-                return new ShapeList(newShape);
+                return SHAPELIST(newShape);
             }
 
             int delta2 = dim_values / x_rank;
@@ -455,7 +455,7 @@ namespace nd4j {
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(shape.size()), int);
             shape::shapeBuffer(shape.size(), shape.data(), newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -552,7 +552,7 @@ namespace nd4j {
 
             COPY_SHAPE(inShape, newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

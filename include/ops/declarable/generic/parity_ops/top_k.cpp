@@ -26,7 +26,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(top_k) {
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(0);
             int shapeRank = shape::rank(in);
             int k = 1; // default output shape is size 1

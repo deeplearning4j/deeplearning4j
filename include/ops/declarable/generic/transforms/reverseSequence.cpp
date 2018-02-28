@@ -76,7 +76,7 @@ DECLARE_SHAPE_FN(reverse_sequense) {
     int* outShapeInfo = nullptr;
     COPY_SHAPE(inShapeInfo, outShapeInfo);
         
-    return new ShapeList(outShapeInfo);
+    return SHAPELIST(outShapeInfo);
 }
 
 

@@ -26,7 +26,7 @@ namespace nd4j {
             ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(1), int);
             shape::shapeVector(shape::rank(inShape), newshape);
 
-            return new ShapeList(newshape);
+            return SHAPELIST(newshape);
         };
     }
 }

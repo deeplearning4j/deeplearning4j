@@ -44,7 +44,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(bincount) {
-            auto shapeList = new ShapeList(); 
+            auto shapeList = SHAPELIST(); 
             auto in = INPUT_VARIABLE(0);
 
             int maxIndex = in->argMax();

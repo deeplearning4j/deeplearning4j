@@ -99,7 +99,7 @@ namespace nd4j {
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(1), int);
 
                     shape::shapeBuffer(1, &elements, newShape);
-                    return new ShapeList(newShape);
+                    return SHAPELIST(newShape);
                 }
 
                 // any scalar
@@ -111,7 +111,7 @@ namespace nd4j {
                     }
 
                     shape::shapeBuffer(1, &length, newShape);
-                    return new ShapeList(newShape);
+                    return SHAPELIST(newShape);
                 }
             }
 
@@ -128,7 +128,7 @@ namespace nd4j {
 
             shape::updateStrides(newShape, shape::order(inp));
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -169,7 +169,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(concat_bp) {
-            auto shapeList = new ShapeList();
+            auto shapeList = SHAPELIST();
 
             for (int e = 0; e < inputShape->size() - 1; e++) {
                 auto inShape = inputShape->at(e);

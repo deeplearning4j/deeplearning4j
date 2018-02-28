@@ -31,7 +31,7 @@ namespace nd4j {
             
             NDArray<T>* input = INPUT_VARIABLE(0);
 
-            return new ShapeList(ShapeUtils<T>::evalDiagShapeInfo(*input));
+            return SHAPELIST(ShapeUtils<T>::evalDiagShapeInfo(*input, block.workspace()));
         }
     }
 }

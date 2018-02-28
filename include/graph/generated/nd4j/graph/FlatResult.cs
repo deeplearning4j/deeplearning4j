@@ -22,19 +22,25 @@ public struct FlatResult : IFlatbufferObject
   public int VariablesLength { get { int o = __p.__offset(6); return o != 0 ? __p.__vector_len(o) : 0; } }
   public FlatTiming? Timing(int j) { int o = __p.__offset(8); return o != 0 ? (FlatTiming?)(new FlatTiming()).__assign(__p.__indirect(__p.__vector(o) + j * 4), __p.bb) : null; }
   public int TimingLength { get { int o = __p.__offset(8); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public long FootprintForward { get { int o = __p.__offset(10); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
+  public long FootprintBackward { get { int o = __p.__offset(12); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
 
   public static Offset<FlatResult> CreateFlatResult(FlatBufferBuilder builder,
       long id = 0,
       VectorOffset variablesOffset = default(VectorOffset),
-      VectorOffset timingOffset = default(VectorOffset)) {
-    builder.StartObject(3);
+      VectorOffset timingOffset = default(VectorOffset),
+      long footprintForward = 0,
+      long footprintBackward = 0) {
+    builder.StartObject(5);
+    FlatResult.AddFootprintBackward(builder, footprintBackward);
+    FlatResult.AddFootprintForward(builder, footprintForward);
     FlatResult.AddId(builder, id);
     FlatResult.AddTiming(builder, timingOffset);
     FlatResult.AddVariables(builder, variablesOffset);
     return FlatResult.EndFlatResult(builder);
   }
 
-  public static void StartFlatResult(FlatBufferBuilder builder) { builder.StartObject(3); }
+  public static void StartFlatResult(FlatBufferBuilder builder) { builder.StartObject(5); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddVariables(FlatBufferBuilder builder, VectorOffset variablesOffset) { builder.AddOffset(1, variablesOffset.Value, 0); }
   public static VectorOffset CreateVariablesVector(FlatBufferBuilder builder, Offset<FlatVariable>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
@@ -42,6 +48,8 @@ public struct FlatResult : IFlatbufferObject
   public static void AddTiming(FlatBufferBuilder builder, VectorOffset timingOffset) { builder.AddOffset(2, timingOffset.Value, 0); }
   public static VectorOffset CreateTimingVector(FlatBufferBuilder builder, Offset<FlatTiming>[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static void StartTimingVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddFootprintForward(FlatBufferBuilder builder, long footprintForward) { builder.AddLong(3, footprintForward, 0); }
+  public static void AddFootprintBackward(FlatBufferBuilder builder, long footprintBackward) { builder.AddLong(4, footprintBackward, 0); }
   public static Offset<FlatResult> EndFlatResult(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatResult>(o);

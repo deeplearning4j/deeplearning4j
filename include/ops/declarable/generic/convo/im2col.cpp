@@ -80,7 +80,7 @@ namespace nd4j {
 
             shape::updateStrides(zShape, 'c');
 
-            return new ShapeList(zShape);
+            return SHAPELIST(zShape);
         }
     }
 }

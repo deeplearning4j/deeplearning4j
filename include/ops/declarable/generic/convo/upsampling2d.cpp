@@ -79,7 +79,7 @@ namespace nd4j {
             int shape[] = {shape::shapeOf(inShape)[0], shape::shapeOf(inShape)[1], shape::shapeOf(inShape)[2] * scale, shape::shapeOf(inShape)[3] * scale};
             shape::shapeBuffer(4, shape, newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
@@ -174,7 +174,7 @@ namespace nd4j {
             int shape[] = {shape::shapeOf(inShape)[0], shape::shapeOf(inShape)[1], shape::shapeOf(inShape)[2] / scale, shape::shapeOf(inShape)[3] / scale};
             shape::shapeBuffer(4, shape, newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
     }
 }

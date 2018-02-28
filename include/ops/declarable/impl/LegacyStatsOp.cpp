@@ -90,7 +90,7 @@ namespace nd4j {
                 delete array;
             }
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
         template class ND4J_EXPORT LegacyStatsOp<float>;

@@ -173,7 +173,7 @@ namespace nd4j {
 
             RELEASE(shapeOf, block.getWorkspace());
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -271,7 +271,7 @@ namespace nd4j {
             int* newShape;
             ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
             memcpy(newShape, inputShape->at(0), shape::shapeInfoByteLength(inputShape->at(0)));
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -378,7 +378,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
         DECLARE_SHAPE_FN(fullconv3d_grad) {
-            auto list = new ShapeList();
+            auto list = SHAPELIST();
 
             // _grad ops MUST have output arrays provided
 

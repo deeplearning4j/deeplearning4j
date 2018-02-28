@@ -44,14 +44,15 @@ namespace nd4j {
         *
         */
         template <typename T>
-        ShapeList *LegacyTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &ctx) {
+        ShapeList *LegacyTransformOp<T>::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context<T> &block) {
             auto inShape = inputShape->at(0);
 
             int *newShape;
-            ALLOCATE(newShape, ctx.getWorkspace(), shape::shapeInfoLength(inShape), int);
-            memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            //ALLOCATE(newShape, ctx.getWorkspace(), shape::shapeInfoLength(inShape), int);
+            //memcpy(newShape, inShape, shape::shapeInfoByteLength(inShape));
+            COPY_SHAPE(inShape, newShape);
 
-            return new ShapeList(newShape);
+            return SHAPELIST(newShape);
         }
 
 
