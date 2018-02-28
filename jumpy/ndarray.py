@@ -309,6 +309,8 @@ class ndarray(object):
                     return array
                 else:
                     array = ndarray(self.array.get(NDArrayIndex.point(key)))
+                    if self.ndim == 2:
+                        array.is1d = True
                     return array
         if type(key) is slice:
             start = key.start
@@ -367,9 +369,11 @@ class ndarray(object):
                         assert zd in (0, -1), 'Index ' + str(zd) + ''
                         ' is out of bounds for axis 0 with size 1'
                         set1d = True
+            ndim = self.ndim
             for size, dim in enumerate(key):
                 if type(dim) is int:
                     args.append(NDArrayIndex.point(dim))
+                    ndim -= 1
                 elif type(dim) is slice:
                     if dim == slice(None):
                         args.append(NDArrayIndex.all())
@@ -390,7 +394,11 @@ class ndarray(object):
                 if type(dim) in (list, tuple):
                     raise NotImplemented('Sorry, this type of indexing is not supported yet.')
             array = ndarray(self.array.get(*args))
-            if set0d:
+            if ndim == 0:
+                array.is0d = True
+            elif ndim == 1:
+                array.is1d = True
+            elif set0d:
                 array.is0d = True
             elif set1d or self.is1d:
                 array.is1d = True
