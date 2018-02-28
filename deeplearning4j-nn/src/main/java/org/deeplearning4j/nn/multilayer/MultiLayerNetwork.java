@@ -542,6 +542,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /**
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
+     * This is functionally equivalent to calling
+     * {@code init(null, false)}.
+     * @see MultiLayerNetwork#init(INDArray, boolean)
      */
     public void init() {
         init(null, false);
