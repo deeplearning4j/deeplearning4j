@@ -36,6 +36,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -191,7 +192,8 @@ public class TestMapFileRecordReader {
         f.setAccessible(true);
         int[] order = (int[]) f.get(seqRR);
         assertNotNull(order);
-        int[] expOrder = new int[] {1, 2, 0}; //Fixed RNG seed -> always this order
+        int[] expOrder = new int[]{0,1,2};
+        MathUtils.shuffleArray(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
 
         count = 0;
@@ -230,7 +232,9 @@ public class TestMapFileRecordReader {
         f.setAccessible(true);
         int[] order = (int[]) f.get(rr);
         assertNotNull(order);
-        int[] expOrder = new int[] {1, 2, 0}; //Fixed RNG seed -> always this order
+
+        int[] expOrder = new int[]{0,1,2};
+        MathUtils.shuffleArray(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
 
         count = 0;

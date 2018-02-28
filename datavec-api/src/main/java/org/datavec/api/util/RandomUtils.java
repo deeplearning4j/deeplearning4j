@@ -16,25 +16,21 @@
 
 package org.datavec.api.util;
 
+import org.nd4j.linalg.util.MathUtils;
+
 import java.util.Random;
 
 /**
- * Created by Alex on 24/01/2017.
+ * @deprecated Use {@link MathUtils}
  */
+@Deprecated
 public class RandomUtils {
 
     /**
-     * Randomly shuffle the specified integer array using a Fisher-Yates shuffle algorithm
-     * @param toShuffle Array to shuffle
-     * @param random    RNG to use for shuffling
+     * @deprecated Use {@link MathUtils#shuffleArray(int[], Random)}
      */
+    @Deprecated
     public static void shuffleInPlace(int[] toShuffle, Random random) {
-        //Fisher-Yates shuffle: https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle
-        for (int i = 0; i < toShuffle.length - 1; i++) {
-            int j = i + random.nextInt(toShuffle.length - i);
-            int temp = toShuffle[i];
-            toShuffle[i] = toShuffle[j];
-            toShuffle[j] = temp;
-        }
+        MathUtils.shuffleArray(toShuffle, random);
     }
 }

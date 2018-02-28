@@ -20,7 +20,7 @@ package org.datavec.api.io.serializers;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.conf.Configured;
 import org.datavec.api.util.ReflectionUtils;
-import org.datavec.api.util.StringUtils;
+import org.nd4j.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

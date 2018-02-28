@@ -131,7 +131,7 @@ public class ClassPathResource {
                     if (dir.mkdir()) {
                         dir.deleteOnExit();
                     }
-                    ArchiveUtils.unzipFileTo(url.getFile(), dir.getAbsolutePath());
+                    org.nd4j.util.ArchiveUtils.unzipFileTo(url.getFile(), dir.getAbsolutePath());
                     return new File(dir, this.resourceName);
                 }
 

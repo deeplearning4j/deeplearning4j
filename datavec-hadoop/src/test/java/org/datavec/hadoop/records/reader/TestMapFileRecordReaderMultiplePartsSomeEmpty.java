@@ -24,7 +24,6 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.RandomUtils;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -38,6 +37,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -238,7 +238,7 @@ public class TestMapFileRecordReaderMultiplePartsSomeEmpty {
         for (int i = 0; i < expOrder.length; i++) {
             expOrder[i] = i;
         }
-        RandomUtils.shuffleInPlace(expOrder, new Random(12345));
+        MathUtils.shuffleArray(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
         //        System.out.println(Arrays.toString(expOrder));
 
@@ -296,7 +296,7 @@ public class TestMapFileRecordReaderMultiplePartsSomeEmpty {
         for (int i = 0; i < expOrder.length; i++) {
             expOrder[i] = i;
         }
-        RandomUtils.shuffleInPlace(expOrder, new Random(12345));
+        MathUtils.shuffleArray(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
 
         count = 0;

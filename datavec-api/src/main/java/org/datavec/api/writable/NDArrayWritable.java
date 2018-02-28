@@ -16,7 +16,6 @@
 package org.datavec.api.writable;
 
 import org.datavec.api.io.WritableComparable;
-import org.datavec.api.util.MathUtils;
 import org.datavec.api.util.ndarray.DataInputWrapperStream;
 import org.datavec.api.util.ndarray.DataOutputWrapperStream;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -24,6 +23,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import org.jetbrains.annotations.NotNull;
+import org.nd4j.linalg.util.MathUtils;
+
 import java.io.*;
 import java.util.Arrays;
 
