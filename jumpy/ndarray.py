@@ -13,8 +13,8 @@ def set_context_dtype(dtype):
     # Arguments
         dtype: 'float' or 'double'
     '''
-    dtype = DateTypeUtil.getDTypeFromContext(dtype)
-    DateTypeUtil.setDTypeForContext(dtype)
+    dtype = DataTypeUtil.getDtypeFromContext(dtype)
+    DataTypeUtil.setDTypeForContext(dtype)
 
 def get_context_dtype():
     '''
@@ -64,6 +64,10 @@ def get_np_dtype(nd4j_dtype):
         raise Exception('Invalid nd4j data type : ' + nd4j_dtype)
     return np_dtype
 
+
+set_context_dtype('double')
+
+
 _refs = []
 
 def from_numpy(np_array):
@@ -74,7 +78,7 @@ def from_numpy(np_array):
     # Convert the numpy array to nd4j context dtype
     required_dtype = get_np_dtype(get_context_dtype())
     if np_array.dtype != required_dtype:
-        np_array = np.cast[required_dtype](np_array)
+        raise Exception(required_dtype + ' required.')
 
     # Nd4j does not have 1-d vectors.
     # So we add a dummy dimension.
@@ -93,7 +97,6 @@ def from_numpy(np_array):
     # we need a pointer to the first element and the size.
     pointer_address, _ = np_array.__array_interface__['data']
     _refs.append(np_array)
-    print(pointer_address)
     pointer = native_ops.pointerForAddress(pointer_address)
     size = np_array.size
     mapping = {
