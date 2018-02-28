@@ -22,10 +22,13 @@ package org.nd4j.linalg.util;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
+import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.util.SetUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 
 /**
@@ -214,7 +217,39 @@ public class MathUtils {
             ret += Math.pow(targetAttribute[i] - predictedValues[i], 2);
         }
         return ret;
+    }
 
+    /**
+     * Calculate string similarity with tfidf weights relative to each character
+     * frequency and how many times a character appears in a given string
+     * @param strings the strings to calculate similarity for
+     * @return the cosine similarity between the strings
+     */
+    public static double stringSimilarity(String... strings) {
+        if (strings == null)
+            return 0;
+        Counter<String> counter = new Counter<>();
+        Counter<String> counter2 = new Counter<>();
+
+        for (int i = 0; i < strings[0].length(); i++)
+            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0f);
+
+        for (int i = 0; i < strings[1].length(); i++)
+            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0f);
+        Set<String> v1 = counter.keySet();
+        Set<String> v2 = counter2.keySet();
+
+
+        Set<String> both = SetUtils.intersection(v1, v2);
+
+        double sclar = 0, norm1 = 0, norm2 = 0;
+        for (String k : both)
+            sclar += counter.getCount(k) * counter2.getCount(k);
+        for (String k : v1)
+            norm1 += counter.getCount(k) * counter.getCount(k);
+        for (String k : v2)
+            norm2 += counter2.getCount(k) * counter2.getCount(k);
+        return sclar / Math.sqrt(norm1 * norm2);
     }
 
     /**
@@ -1315,4 +1350,29 @@ public class MathUtils {
     public double slope(double x1, double x2, double y1, double y2) {
         return (y2 - y1) / (x2 - x1);
     }//end slope
+
+    public static void shuffleArray(int[] array, long rngSeed) {
+        shuffleArray(array, new Random(rngSeed));
+    }
+
+    public static void shuffleArray(int[] array, Random rng) {
+        //https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
+        for (int i = array.length - 1; i > 0; i--) {
+            int j = rng.nextInt(i + 1);
+            int temp = array[j];
+            array[j] = array[i];
+            array[i] = temp;
+        }
+    }
+
+    /**
+     * hashCode method, taken from Java 1.8 Double.hashCode(double) method
+     *
+     * @param value Double value to hash
+     * @return Hash code for the double value
+     */
+    public static int hashCode(double value) {
+        long bits = Double.doubleToLongBits(value);
+        return (int) (bits ^ (bits >>> 32));
+    }
 }

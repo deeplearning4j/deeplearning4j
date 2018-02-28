@@ -29,7 +29,7 @@ import java.io.*;
  */
 public class SerializationUtils {
 
-    private SerializationUtils() {}
+    protected SerializationUtils() {}
 
     @SuppressWarnings("unchecked")
     public static <T> T readObject(File file) {
