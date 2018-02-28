@@ -11,6 +11,7 @@ import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 import scala.util.Random
 
@@ -49,11 +50,17 @@ object RNNEmbeddingExample extends App with LazyLogging {
   }
 
   model.fit(timeSeries, nEpochs, List(new ScoreIterationListener(1)))
-  val evaluator: Evaluation = new Evaluation(4)
-  while (timeSeries.hasNext) {
-    val next = timeSeries.next()
-    val output = model.predict(next)
-    evaluator.eval(next.getLabels, output)
+
+  def accuracy(dataset: DataSetIterator): Double = {
+    val evaluator = new Evaluation(4)
+    dataset.reset()
+    for (dataSet <- dataset.asScala) {
+      val output = model.predict(dataSet)
+      evaluator.eval(dataSet.getLabels, output)
+    }
+    evaluator.accuracy()
   }
-  logger.info(evaluator.stats())
+
+  logger.info(s"Train accuracy = ${accuracy(timeSeries)}")
+  logger.info(s"Test accuracy = ${accuracy(timeSeries)}")
 }

@@ -1,15 +1,12 @@
 package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import com.typesafe.scalalogging.LazyLogging
-import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
-import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.examples.dl4j.recurrent.RNNEmbeddingExample.{ logger, model, timeSeries }
-import org.deeplearning4j.scalnet.layers.{ GravesLSTM, RnnOutputLayer }
+import org.deeplearning4j.scalnet.layers.{GravesLSTM, RnnOutputLayer}
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
+import org.nd4j.linalg.api.ops.impl.indexaccum.IMax
 import org.nd4j.linalg.dataset.DataSet
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -23,12 +20,12 @@ object BasicRNNExample extends App with LazyLogging {
   val LEARNSTRING_CHARS = LEARNSTRING.distinct.sorted
 
   // Training data
-  val inputs = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
+  val input = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
   val labels = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
 
   // RNN dimensions
-  val HIDDEN_LAYER_WIDTH = 64
-  val nEpochs = 100
+  val HIDDEN_LAYER_WIDTH = 128
+  val nEpochs = 1000
   val rngSeed = 1234
   val rand = new Random(rngSeed)
 
@@ -36,10 +33,10 @@ object BasicRNNExample extends App with LazyLogging {
     LEARNSTRING.zipWithIndex.foreach {
       case (currentChar, index) =>
         val nextChar = if (index + 1 > LEARNSTRING.indices.max) LEARNSTRING(0) else LEARNSTRING(index + 1)
-        inputs.putScalar(Array(0, LEARNSTRING_CHARS.indexOf(currentChar), index), 1)
-        labels.putScalar(Array(0, LEARNSTRING_CHARS.indexOf(nextChar), index), 1)
+        input.putScalar(Array[Int](0, LEARNSTRING_CHARS.indexOf(currentChar), index), 1)
+        labels.putScalar(Array[Int](0, LEARNSTRING_CHARS.indexOf(nextChar), index), 1)
     }
-    new DataSet(inputs, labels)
+    new DataSet(input, labels)
   }
 
   val model: NeuralNet = {
@@ -52,9 +49,18 @@ object BasicRNNExample extends App with LazyLogging {
   }
 
   model.fit(trainingData, nEpochs, List(new ScoreIterationListener(1)))
-  val evaluator: Evaluation = new Evaluation(4)
-  val output = model.predict(inputs).reshape(1, 21, 65)
-  evaluator.eval(labels, output)
-  logger.info(evaluator.stats())
+
+  model.getNetwork.rnnClearPreviousState()
+  val init = Nd4j.zeros(LEARNSTRING_CHARS.length)
+  init.putScalar(LEARNSTRING_CHARS.indexOf(LEARNSTRING(0)), 1)
+  var output = model.getNetwork.rnnTimeStep(init)
+
+  LEARNSTRING.foreach { _ =>
+    val sampledCharacterIdx = Nd4j.getExecutioner.exec(new IMax(output), 1).getInt(0)
+    println(LEARNSTRING_CHARS(sampledCharacterIdx))
+    val nextInput = Nd4j.zeros(LEARNSTRING_CHARS.length)
+    nextInput.putScalar(sampledCharacterIdx, 1)
+    output = model.getNetwork.rnnTimeStep(nextInput)
+  }
 
 }
