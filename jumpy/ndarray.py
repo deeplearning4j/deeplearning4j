@@ -486,7 +486,7 @@ class ndarray(object):
     def flatten(self):
         array = ndarray(self.array.ravel().dup())
         array.is1d = True
-
+        return array
 
 
 def array(*args, **kwargs):
