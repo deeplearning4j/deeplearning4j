@@ -205,65 +205,56 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         }
     }
 
-    @Ignore
     @Test
     public void testCnnWithSpaceToDepth() {
+        // TODO: Figure out why this fails with conv layer right before SpaceToDepth
+
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
 
         int[] minibatchSizes = {2, 4};
-        int width = 5;
-        int height = 5;
-        int inputDepth = 1;
-
-        int[] kernel = {2, 2};
+        int width = 4;
+        int height = 4;
+        int inputDepth = 3;
         int[] blocks = {2, 2};
 
-        String[] activations = {"sigmoid", "tanh"};
-        SubsamplingLayer.PoolingType[] poolingTypes =
-                new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
-                        SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
-
-        for (String afn : activations) {
-            for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
-                for (int minibatchSize : minibatchSizes) {
-                    INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
-                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                    for (int i = 0; i < minibatchSize; i++) {
-                        labels.putScalar(new int[]{i, i % nOut}, 1.0);
-                    }
-
-                    MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder()
-                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
-                                    .dist(new NormalDistribution(0, 1))
-                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
-                                    .nOut(3).build()) //output: (5-2+0)/1+1 = 4
-                                    .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
-                                            .build()) // (mb,3,4,4) -> (mb,12,2,2)
-                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(2 * 2 * 12)
-                                            .nOut(nOut).build())
-                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
-                                    .build();
-
-                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                    net.init();
-
-                    String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
-                            + afn;
-
-                    if (PRINT_RESULTS) {
-                        System.out.println(msg);
-                        for (int j = 0; j < net.getnLayers(); j++)
-                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
-                    }
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                    assertTrue(msg, gradOK);
-                }
+        for (int minibatchSize : minibatchSizes) {
+            INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+            INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+            for (int i = 0; i < minibatchSize; i++) {
+                labels.putScalar(new int[]{i, i % nOut}, 1.0);
             }
+
+            MultiLayerConfiguration conf =
+                    new NeuralNetConfiguration.Builder()
+                            .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                            .dist(new NormalDistribution(0, 1))
+                            .list()
+//                            .layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
+//                            .nOut(3).build()) //output: (5-2+0)/1+1 = 4
+                            .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
+                                    .build()) // (mb,3,4,4) -> (mb,12,2,2)
+                            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(2 * 2 * 12)
+                                    .nOut(nOut).build())
+                            .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
+                            .build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            String msg = "Minibatch=" + minibatchSize;
+
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
+                for (int j = 0; j < net.getnLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+            }
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+            assertTrue(msg, gradOK);
+
         }
     }
 
@@ -824,7 +815,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int[] kernelSizes = new int[]{1, 1, 3, 3, 1, 1, 3, 3};
         int[] strides = {1, 1, 1, 1, 2, 2, 2, 2};
         int[] dilation = {1, 2, 2, 1, 1, 1, 2, 2};
-        Activation[] activations = new Activation[]{Activation.SIGMOID, Activation.TANH, Activation.TANH, Activation.TANH, Activation.TANH,  Activation.SIGMOID, Activation.SIGMOID, Activation.SIGMOID};
+        Activation[] activations = new Activation[]{Activation.SIGMOID, Activation.TANH, Activation.TANH, Activation.TANH, Activation.TANH, Activation.SIGMOID, Activation.SIGMOID, Activation.SIGMOID};
         ConvolutionMode[] cModes = new ConvolutionMode[]{Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
         int width = 7;
         int height = 7;
@@ -887,7 +878,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
     public void testSeparableConv2D() {
         int nOut = 2;
 
-        int[] minibatchSizes = new int[] {1, 3};
+        int[] minibatchSizes = new int[]{1, 3};
         int width = 8;
         int height = 8;
         int inputDepth = 3;
@@ -898,13 +889,13 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        int[] ks = new int[]{1,3,1,3,1,3,1,3};
-        int[] ss = new int[]{1,1,2,2,1,1,2,2};
-        int[] ds = new int[]{1,1,1,1,2,2,2,2};
+        int[] ks = new int[]{1, 3, 1, 3, 1, 3, 1, 3};
+        int[] ss = new int[]{1, 1, 2, 2, 1, 1, 2, 2};
+        int[] ds = new int[]{1, 1, 1, 1, 2, 2, 2, 2};
         ConvolutionMode[] cms = new ConvolutionMode[]{Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate, Truncate};
-        int[] mb = new int[]{1,1,3,3,3,1,3,3};
+        int[] mb = new int[]{1, 1, 3, 3, 3, 1, 3, 3};
 
-        for( int t=0; t<ks.length; t++ ){
+        for (int t = 0; t < ks.length; t++) {
 
             int k = ks[t];
             int s = ss[t];
@@ -967,14 +958,14 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        boolean[] sub = new boolean[]{true,false,true,false,true,false,true,false};
-        int[] stride = new int[]{1,1,2,2,1,1,2,2};
-        int[] kernel = new int[]{2,2,2,2,3,3,3,3};
-        int[] ds = new int[]{2,3,3,2,2,3,3,2};
+        boolean[] sub = new boolean[]{true, false, true, false, true, false, true, false};
+        int[] stride = new int[]{1, 1, 2, 2, 1, 1, 2, 2};
+        int[] kernel = new int[]{2, 2, 2, 2, 3, 3, 3, 3};
+        int[] ds = new int[]{2, 3, 3, 2, 2, 3, 3, 2};
         ConvolutionMode[] cms = new ConvolutionMode[]{Same, Same, Same, Truncate, Truncate, Truncate, Same, Truncate};
 
 
-        for(int t=0; t<sub.length; t++ ){
+        for (int t = 0; t < sub.length; t++) {
 
             boolean subsampling = sub[t];
             int s = stride[t];
