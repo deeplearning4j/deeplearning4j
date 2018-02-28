@@ -1,5 +1,6 @@
 from .java_classes import *
 import numpy as np
+import ctypes
 
 # Java instance initializations
 native_ops = NativeOpsHolder.getInstance().getDeviceNativeOps()
@@ -70,7 +71,7 @@ set_context_dtype('double')
 
 _refs = []
 
-def from_numpy(np_array):
+def _from_numpy(np_array):
     '''
     Convert numpy array to nd4j array
     '''
@@ -126,15 +127,32 @@ def from_numpy(np_array):
     assert buff.address() == nd4j_array.data().address()
     return nd4j_array
 
+
+def _to_numpy(nd4j_array):
+    '''
+    Convert nd4j array to numpy array
+    '''
+    buff = nd4j_array.data()
+    address = buff.pointer().address()
+    dtype = get_context_dtype()
+    mapping = {
+    'double': ctypes.c_double,
+    'float': ctypes.c_float
+    }
+    Pointer = ctypes.POINTER(mapping[dtype])
+    pointer = ctypes.cast(address, Pointer)
+    np_array = np.ctypeslib.as_array(pointer, tuple(nd4j_array.shape()))
+    return np_array
+
 def _indarray(x):
     if type(x) is INDArray:
         return x
     elif type(x) is ndarray:
         return x.array
     elif 'numpy' in str(type(x)):
-        return from_numpy(x)
+        return _from_numpy(x)
     elif type(x) in (list, tuple):
-        return from_numpy(np.array(x))
+        return _from_numpy(np.array(x))
     elif type(x) in (int, float):
         return Nd4j.scalar(x)
     else:
@@ -238,16 +256,16 @@ class ndarray(object):
             if typ is not np.ndarray:
                 data = np.array(data)
             self.is1d = data.ndim == 1
-            self.array = from_numpy(data)
+            self.array = _from_numpy(data)
 
     def numpy(self):
         # TODO: Too expensive. Make it cheaper.
-        array = self.array
-        get = array.getDouble
-        shape = array.shape()
-        length = array.length()
-        scalars = [get(i) for i in range(length)]
-        return np.array(scalars).reshape(shape)
+        if self.is0d:
+            return self.array.getDouble(0)
+        np_array = _to_numpy(self.array)
+        if self.is1d:
+            np_array = np_array.squeeze(0)
+        return np_array
 
     @property
     def size(self):
