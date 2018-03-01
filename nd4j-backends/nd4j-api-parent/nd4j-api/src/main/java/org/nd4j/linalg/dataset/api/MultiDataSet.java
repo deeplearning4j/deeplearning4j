@@ -186,4 +186,14 @@ public interface MultiDataSet extends Serializable {
      */
     void detach();
 
+    /**
+     * @return True if the MultiDataSet is empty (all features/labels arrays are empty)
+     */
+    boolean isEmpty();
+
+    /**
+     * Shuffle the order of the examples in the MultiDataSet. Note that this generally won't make any difference in
+     * practice unless the MultiDataSet is later split.
+     */
+    void shuffle();
 }

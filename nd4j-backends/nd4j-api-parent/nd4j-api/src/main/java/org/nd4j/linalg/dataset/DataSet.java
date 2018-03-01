@@ -22,17 +22,14 @@ package org.nd4j.linalg.dataset;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.util.MathUtils;
@@ -137,15 +134,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         return new DataSet(null, null);
     }
 
-
-    /**
-     * @deprecated Use {@link #merge(List)}
-     */
-    @Deprecated
-    public static DataSet merge(List<DataSet> data, boolean clone) {
-        return merge(data);
-    }
-
     /**
      * Merge the list of datasets in to one list.
      * All the rows are merged in to one dataset
@@ -156,14 +144,37 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     public static DataSet merge(List<DataSet> data) {
         if (data.isEmpty())
             throw new IllegalArgumentException("Unable to merge empty dataset");
-        DataSet first = data.get(0);
 
-        INDArray[] featuresToMerge = new INDArray[data.size()];
-        INDArray[] labelsToMerge = new INDArray[data.size()];
+        int nonEmpty = 0;
+        boolean anyFeaturesPreset = false;
+        boolean anyLabelsPreset = false;
+        boolean first = true;
+        for(DataSet ds : data){
+            if(ds.isEmpty()){
+                continue;
+            }
+            nonEmpty++;
+
+            if(anyFeaturesPreset && ds.getFeatures() == null || (!first && !anyFeaturesPreset && ds.getFeatures() != null)){
+                throw new IllegalStateException("Cannot merge features: encountered null features in one or more DataSets");
+            }
+            if(anyLabelsPreset && ds.getLabels() == null || (!first && !anyLabelsPreset && ds.getLabels() != null)){
+                throw new IllegalStateException("Cannot merge labels: enountered null labels in one or more DataSets");
+            }
+
+            anyFeaturesPreset |= ds.getFeatures() != null;
+            anyLabelsPreset |= ds.getLabels() != null;
+            first = false;
+        }
+
+        INDArray[] featuresToMerge = new INDArray[nonEmpty];
+        INDArray[] labelsToMerge = new INDArray[nonEmpty];
         INDArray[] featuresMasksToMerge = null;
         INDArray[] labelsMasksToMerge = null;
         int count = 0;
         for (DataSet ds : data) {
+            if(ds.isEmpty())
+                continue;
             featuresToMerge[count] = ds.getFeatureMatrix();
             labelsToMerge[count] = ds.getLabels();
 
@@ -1359,4 +1370,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         if (labelsMask != null)
             labelsMask = labelsMask.detach();
     }
+
+    @Override
+    public boolean isEmpty() {
+        return features == null && labels == null && featuresMask == null && labelsMask == null;
+    }
+
+
 }
