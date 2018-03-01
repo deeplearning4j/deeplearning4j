@@ -745,3 +745,165 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_1) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
+
+    NDArray<double> x('c', {2, 5, 5}, {
+                    2.,  4., 60.,  8., 10.,
+                    0.,  1.,  2.,  3.,  4.,
+                    0.,  0.,  2.,  4.,  6.,
+                    0.,  0.,  0.,  1.,  2.,
+                    0.,  0.,  0.,  0.,  4.,
+
+                     1.,  0.,  0.,  0.,  0.,
+                     2.,  1.,  0.,  0.,  0.,
+                    30.,  2.,  1.,  0.,  0.,
+                     4.,  3.,  2.,  1.,  0.,
+                     5.,  4.,  3.,  2.,  1.,
+    });
+
+    NDArray<double> exp('c', {2, 5, 5}, {
+                    0.5, -2.0, -13.0, 54.0, -6.75,
+                    0.0,  1.0,  -1.0,  1.0,   0.0,
+                      0,    0,   0.5, -2.0,  0.25,
+                      0,    0,     0,  1.0,  -0.5,
+                      0,    0,     0,    0,  0.25,
+    
+                    1.0,  0.0,  0.0,  0.0, 0.,
+                   -2.0,  1.0,   0.,   0., 0.,
+                  -26.0, -2.0,    1,    0, 0.,
+                   54.0,  1.0, -2.0,    1, 0.,
+                  -27.0,  0.0,  1.0, -2.0, 1.
+    });
+
+    nd4j::ops::matrix_inverse<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Output ");
+//    exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+TEST_F(DeclarableOpsTests6, MatrixInverse_2) {
+
+    NDArray<double> x('c', {2, 5, 5}, {
+                    1.,  2., 30.,  4.,  5.,
+                    0.,  1.,  2.,  3.,  4.,
+                    0.,  0.,  1.,  2.,  3.,
+                    0.,  0.,  0.,  1.,  2.,
+                    0.,  0.,  0.,  0.,  1.,
+
+                     4.,   0.,  0.,  0.,  0.,
+                     4.,   2.,  0.,  0.,  0.,
+                    30.,   2.,  1.,  0.,  0.,
+                     8.,   6.,  4.,  2.,  0.,
+                    15.,  12.,  9.,  6.,  3.,
+    });
+
+    NDArray<double> exp('c', {2, 5, 5}, {
+     1.0,  -2.0,  -26.0,  54.0, -27.0,
+     0.0,   1.0,  -2.0,    1.0,   0.0,
+     0.0,   0.0,   1.0,   -2.0,   1.0, 
+     0.0,   0.0,   0.0,    1.0,  -2.0, 
+     0.0,   0.0,   0.0,    0.0,   1.0, 
+
+     0.25,  0.0,    0.0,   0.0,   0.0,
+    -0.50,  0.5,    0.0,   0.0,   0.0,
+    -6.50, -1.0,    1.0,   0.0,   0.0,
+    13.50,  0.5,   -2.0,   0.5,   0.0,
+    -6.75,  0.0,    1.0,  -1.0,   0.33333333
+    });
+
+    nd4j::ops::matrix_inverse<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Output ");
+    exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+*/
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
+
+    NDArray<double> x('c', {5, 5}, {
+                     4.,   0.,  0.,  0.,  0.,
+                     4.,   2.,  0.,  0.,  0.,
+                    30.,   2.,  1.,  0.,  0.,
+                     8.,   6.,  4.,  2.,  0.,
+                    15.,  12.,  9.,  6.,  3.,
+    });
+
+    NDArray<double> exp('c', {5, 5}, {
+     0.25,  0.0,    0.0,   0.0,   0.0,
+    -0.50,  0.5,    0.0,   0.0,   0.0,
+    -6.50, -1.0,    1.0,   0.0,   0.0,
+    13.50,  0.5,   -2.0,   0.5,   0.0,
+    -6.75,  0.0,    1.0,  -1.0,   0.33333333
+    });
+
+    nd4j::ops::matrix_inverse<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    //z->printIndexedBuffer("Output ");
+    //exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
+
+    NDArray<double> x('c', {5, 5}, {
+                    1.,  2., 30.,  4.,  5.,
+                    0.,  1.,  2.,  3.,  4.,
+                    0.,  0.,  1.,  2.,  3.,
+                    0.,  0.,  0.,  1.,  2.,
+                    0.,  0.,  0.,  0.,  1.
+    });
+
+    NDArray<double> exp('c', {5, 5}, {
+     1.0,  -2.0,  -26.0,  54.0, -27.0,
+     0.0,   1.0,  -2.0,    1.0,   0.0,
+     0.0,   0.0,   1.0,   -2.0,   1.0, 
+     0.0,   0.0,   0.0,    1.0,  -2.0, 
+     0.0,   0.0,   0.0,    0.0,   1.0 
+    });
+
+    nd4j::ops::matrix_inverse<double> op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Output ");
+    exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

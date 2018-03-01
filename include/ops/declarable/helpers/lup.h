@@ -15,6 +15,10 @@ namespace helpers {
 
     template <typename T>
     int determinant(NDArray<T>* input, NDArray<T>* output);
+
+    template <typename T>
+    int inverse(NDArray<T>* input, NDArray<T>* output);
+
 }
 }
 }

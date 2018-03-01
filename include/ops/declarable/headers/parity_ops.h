@@ -642,5 +642,16 @@ namespace nd4j {
          * M x M matricies
          */
         DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
+
+        /**
+         * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it 
+         */
+        DECLARE_OP(matrix_inverse, 1, 1, true);
     }
 }

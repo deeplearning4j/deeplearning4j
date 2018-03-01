@@ -2174,9 +2174,11 @@ bool NDArray<T>::isIdentityMatrix() {
 			return false;
 
 	for(int i=0; i<rows(); ++i)
-		for(int j=0; j!=i && j<columns(); ++j)
+		for(int j=0; j<columns(); ++j) {
+			if (i == j) continue;
 			if(nd4j::math::nd4j_abs(getScalar(i,j)) > eps)
 				return false;
+		}
 	return true;
 }
 
