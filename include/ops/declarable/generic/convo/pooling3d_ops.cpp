@@ -242,11 +242,11 @@ namespace nd4j {
 
                 ConvolutionUtils<T>::_avgPool3D(
                         input_data + p * istride, output_data + p * ostride, nslices,
-                        itime, iwidth, iheight,
-                        otime, owidth, oheight,
-                        kT, kW, kH,
-                        dT, dW, dH,
-                        padT, padW, padH,
+                        itime, iheight, iwidth,
+                        otime, oheight, owidth,
+                        kT, kH, kW, 
+                        dT, dH, dW, 
+                        padT, padH, padW,
                         count_include_pad
                 );
 

@@ -7,7 +7,7 @@
 namespace nd4j {
 namespace ops  {
 
-
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_im2col(const T* data_im, const int channels,
                                 const int height, const int width, const int kernel_h, const int kernel_w,
@@ -38,6 +38,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_calcPadding2D(int& pH, int& pW, int oH, int oW, int inH, int inW, int kH, int kW, int sH, int sW, int dH, int dW) {
             int eKH, eKW;
@@ -54,7 +55,7 @@ namespace ops  {
             pW = ((oW - 1) * sW + eKW - inW) / 2;
         }
 
-
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD, const int iH, const int iW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int dD, const int dH, const int dW) {
 
@@ -76,17 +77,25 @@ namespace ops  {
 
         }
 
-
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
-        void ConvolutionUtils<T>::vol2col(const T *inBuff, T* outBuff, const int iC, 
-                                            const int iD, const int iH, const int iW, 
-                                            const int oD, const int oH, const int oW, 
-                                            const int kD, const int kH, const int kW, 
-                                            const int sD, const int sH, const int sW,
-                                            const int pD, const int pH, const int pW,  
-                                            const int dD, const int dH, const int dW ) {
+        void ConvolutionUtils<T>::vol2col(NDArray<T>& vol, NDArray<T>& col,
+                                          const int colD, const int colH, const int colW, 
+                                          const int kD,   const int kH,   const int kW, 
+                                          const int sD,   const int sH,   const int sW,
+                                          const int pD,   const int pH,   const int pW,  
+                                          const int dD,   const int dH,   const int dW ) {
+
+            T* volBuff = vol.getBuffer();
+            T* colBuff = col.getBuffer();
+
+            int volC = vol.sizeAt(0);
+            int volD = vol.sizeAt(1);
+            int volH = vol.sizeAt(2);
+            int volW = vol.sizeAt(3);
+
             int c, d, h, w;    
-            int outDim = iC * kD * kH * kW;
+            int outDim = volC * kD * kH * kW;
             
             for (c = 0; c < outDim; ++c) {
                 
@@ -95,25 +104,169 @@ namespace ops  {
                 int d_offset = (c / kW / kH) % kD;
                 int c_vol = c / kD / kH / kW;
                 
-                for (d = 0; d < oD; ++d) {
-                    for (h = 0; h < oH; ++h) {
-                        for (w = 0; w < oW; ++w) {
+                for (d = 0; d < colD; ++d) {
+                    for (h = 0; h < colH; ++h) {
+                        for (w = 0; w < colW; ++w) {
                             
                             int d_pad = d * sD - pD + d_offset * dD;
                             int h_pad = h * sH - pH + h_offset * dH;
                             int w_pad = w * sW - pW + w_offset * dW;
                             
-                            if (d_pad >= 0 && d_pad < iD && h_pad >= 0 && h_pad < iH && w_pad >= 0 && w_pad < iW)
-                                outBuff[((c * oD + d) * oH + h) * oW + w] = inBuff[((c_vol * iD + d_pad) * iH + h_pad) * iW + w_pad];
+                            if (d_pad >= 0 && d_pad < volD && h_pad >= 0 && h_pad < volH && w_pad >= 0 && w_pad < volW)
+                                colBuff[((c * colD + d) * colH + h) * colW + w] = volBuff[((c_vol * volD + d_pad) * volH + h_pad) * volW + w_pad];
                             else
-                                outBuff[((c * oD + d) * oH + h) * oW + w] = 0;
+                                colBuff[((c * colD + d) * colH + h) * colW + w] = 0;
                         }
                     }
                 }
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
+        template<typename T>
+        void ConvolutionUtils<T>::col2vol(NDArray<T>& col, NDArray<T>& vol, 
+                                          const int colD, const int colH, const int colW, 
+                                          const int kD, const int kH, const int kW, 
+                                          const int sD, const int sH, const int sW, 
+                                          const int pD, const int pH, const int pW, 
+                                          const int dD, const int dH, const int dW) {
+            
+            T* colBuff = col.getBuffer();
+            T* volBuff = vol.getBuffer();            
 
+            int volC = vol.sizeAt(0);
+            int volD = vol.sizeAt(1);
+            int volH = vol.sizeAt(2);
+            int volW = vol.sizeAt(3);
+
+            int c, t, h, w;
+            memset(volBuff, 0, sizeof(T) * volC * volD * volH * volW);
+
+            int effkD = kD; // + (kD - 1) * (dD - 1);
+            int effkH = kH; // + (kH - 1) * (dH - 1);
+            int effkW = kW; // + (kW - 1) * (dW - 1);            
+
+            int inDim = volC * effkD * effkH * effkW;
+            for (c = 0; c < inDim; ++c) {
+                
+                int w_offset = c % effkW;
+                int h_offset = (c / effkW) % effkH;
+                int t_offset = (c / (effkW * effkH)) % effkD;
+                int c_vol = c / (effkD * effkH * effkW);
+
+                for (t = 0; t < colD; ++t) {
+                    for (h = 0; h < colH; ++h) {
+                        for (w = 0; w < colW; ++w) {
+                
+                            int t_pad = t * sD - pD + t_offset * dD;
+                            int h_pad = h * sH - pH + h_offset * dH;
+                            int w_pad = w * sW - pW + w_offset * dW;
+                
+                            if (t_pad >= 0 && t_pad < volD && h_pad >= 0 && h_pad < volH && w_pad >= 0 && w_pad < volW)
+                                volBuff[((c_vol * volD + t_pad) * volH + h_pad) * volW + w_pad] += colBuff[((c * colD + t) * colH + h) * colW + w];
+                        }
+                    }
+                }
+            }
+        }        
+
+//////////////////////////////////////////////////////////////////////////
+        template<typename T>
+        void ConvolutionUtils<T>::col2vol2(NDArray<T>& col, NDArray<T>& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+            
+            const T* colBuff = col.getBuffer();            
+            T* volBuff       = vol.getBuffer();            
+
+            int *colShapeOnly = shape::shapeOf(col.getShapeInfo());
+            int *colStrides   = shape::stride(col.getShapeInfo());
+            int *volShapeOnly = shape::shapeOf(vol.getShapeInfo());
+            char volOrder     = shape::order(vol.getShapeInfo());
+            int *volStrides   = shape::stride(vol.getShapeInfo());
+
+            int strideBS   = colStrides[0];
+            int strideColC = colStrides[1];
+            int strideKD   = colStrides[2];
+            int strideKH   = colStrides[3];
+            int strideKW   = colStrides[4];
+            int strideColD = colStrides[5];
+            int strideColH = colStrides[6];
+            int strideColW = colStrides[7];
+
+            int kD = colShapeOnly[2];
+            int kH = colShapeOnly[3];
+            int kW = colShapeOnly[4];            
+
+            int bS   = volShapeOnly[0];
+            int volC = volShapeOnly[1];
+            int volD = volShapeOnly[2];
+            int volH = volShapeOnly[3];
+            int volW = volShapeOnly[4];
+
+            int colD = colShapeOnly[5];
+            int colH = colShapeOnly[6];
+            int colW = colShapeOnly[7];            
+
+            //Effective kernel size, accounting for dilation
+            int effKD = kD + (kD - 1) * (dD - 1);
+            int effKH = kH + (kH - 1) * (dH - 1);
+            int effKW = kW + (kW - 1) * (dW - 1);
+
+            int n = bS * volC * volD * volH * volW;                        
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+            for (int i = 0; i < n; i++) {
+                
+                T val = 0;
+                int w_vol = i % volW + pW;
+                int h_vol = (i / volW) % volH + pH;
+                int d_vol = (i / (volW * volH)) % volD + pD;
+                int c_vol = i / (volW * volH * volD);
+
+                int num_vol   = c_vol / volC;
+                int depth_vol = c_vol % volC;
+
+                // compute the start and end of the output
+                int w_col_start = (w_vol < effKW) ? 0 : (w_vol - effKW) / sW + 1;
+                int w_col_end = nd4j::math::nd4j_min<int>(w_vol / sW + 1, colW);
+
+                int h_col_start = (h_vol < effKH) ? 0 : (h_vol - effKH) / sH + 1;
+                int h_col_end = nd4j::math::nd4j_min<int>(h_vol / sH + 1, colH);
+
+                int d_col_start = (d_vol < effKD) ? 0 : (d_vol - effKD) / sD + 1;
+                int d_col_end = nd4j::math::nd4j_min<int>(d_vol / sD + 1, colD);
+
+                //Iterate over col entries in the 6d array... these are added up
+                for (int d_col = d_col_start; d_col < d_col_end; ++d_col) {
+                    for (int h_col = h_col_start; h_col < h_col_end; ++h_col) {
+                        for (int w_col = w_col_start; w_col < w_col_end; ++w_col) {                  
+
+                            int d_k = (d_vol - d_col * sD);
+                            int h_k = (h_vol - h_col * sH);
+                            int w_k = (w_vol - w_col * sW);
+                            
+                            if(d_k % dD == 0 && h_k % dH == 0 && w_k % dW == 0) {
+                                   
+                                   d_k /= dD;
+                                   h_k /= dH;
+                                   w_k /= dW;
+                                   val += colBuff[num_vol * strideBS + depth_vol * strideColC + d_k * strideKD + h_k * strideKH + w_k * strideKW + d_col * strideColD + h_col * strideColH + w_col * strideColW];
+                             }
+                        }
+                    }
+                }
+                int i_f = 0;
+                int i_c = i;
+                for (int dim = 4; dim >= 0; --dim)
+                {
+                    i_f += (i_c % volShapeOnly[dim])  * volStrides[dim];
+                    i_c = i_c / volShapeOnly[dim];
+                }
+                volBuff[i_f] += val;
+            }
+
+        }
+
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_vol2col(const T *data_vol, const int channels, const int depth, const int height, const int width, const int kT, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T *data_col) {
             int c, t, h, w;
@@ -149,6 +302,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_col2vol(const T* data_col, const int channels, const int depth, const int height, const int width, const int out_depth, const int out_height, const int out_width, const int kT, const int kH, const int kW, const int pT, const int pH, const int pW, const int dT, const int dH, const int dW, const int dilationT, const int dilationH, const int dilationW, T* data_vol) {
             int c, t, h, w;
@@ -183,56 +337,57 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
-        void ConvolutionUtils<T>::_avgPool3D_bp(T *gradInput_p, T *gradOutput_p, Nd4jIndex nslices, Nd4jIndex itime, Nd4jIndex iwidth, Nd4jIndex iheight, Nd4jIndex otime, Nd4jIndex owidth, Nd4jIndex oheight, int kT, int kW, int kH, int dT, int dW, int dH, int padT, int padW, int padH, bool count_include_pad) {
-            for (int k = 0; k < nslices; k++)
+        void ConvolutionUtils<T>::_avgPool3D_bp(T *gradI_p, T *gradO_p, Nd4jIndex iC, Nd4jIndex iD, Nd4jIndex iH, Nd4jIndex iW, Nd4jIndex oD, Nd4jIndex oH, Nd4jIndex oW, int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, bool count_include_pad) {
+            for (int k = 0; k < iC; k++)
             {
                 Nd4jIndex i, j, ti;
 
                 /* local pointers */
-                T *ip = gradInput_p + k * itime * iwidth * iheight;
-                T *op = gradOutput_p + k * otime * owidth * oheight;
-                for (i = 0; i < itime*iwidth*iheight; i++)
+                T *ip = gradI_p + k * iD * iW * iH;
+                T *op = gradO_p + k * oD * oW * oH;
+                for (i = 0; i < iD*iW*iH; i++)
                     *(ip + i) = 0;
 
                 /* loop over output */
-                for (ti = 0; ti < otime; ti++)
+                for (ti = 0; ti < oD; ti++)
                 {
-                    for (i = 0; i < oheight; i++)
+                    for (i = 0; i < oH; i++)
                     {
-                        for (j = 0; j < owidth; j++)
+                        for (j = 0; j < oW; j++)
                         {
-                            Nd4jIndex tstart = ti * dT - padT;
-                            Nd4jIndex hstart = i  * dH - padH;
-                            Nd4jIndex wstart = j  * dW - padW;
-                            Nd4jIndex tend = nd4j::math::nd4j_min<Nd4jIndex>(tstart + kT, itime + padT);
-                            Nd4jIndex hend = nd4j::math::nd4j_min<Nd4jIndex>(hstart + kH, iheight + padH);
-                            Nd4jIndex wend = nd4j::math::nd4j_min<Nd4jIndex>(wstart + kW, iwidth + padW);
-                            Nd4jIndex pool_size = (tend -tstart) * (hend - hstart) * (wend - wstart);
-                            tstart = nd4j::math::nd4j_max<Nd4jIndex>(tstart, 0);
+                            Nd4jIndex cstart = ti * sD - pD;
+                            Nd4jIndex hstart = i  * sH - pH;
+                            Nd4jIndex wstart = j  * sW - pW;
+                            Nd4jIndex cend = nd4j::math::nd4j_min<Nd4jIndex>(cstart + kD, iD + pD);
+                            Nd4jIndex hend = nd4j::math::nd4j_min<Nd4jIndex>(hstart + kH, iH + pH);
+                            Nd4jIndex wend = nd4j::math::nd4j_min<Nd4jIndex>(wstart + kW, iW + pW);
+                            Nd4jIndex pool_size = (cend -cstart) * (hend - hstart) * (wend - wstart);
+                            cstart = nd4j::math::nd4j_max<Nd4jIndex>(cstart, 0);
                             hstart = nd4j::math::nd4j_max<Nd4jIndex>(hstart, 0);
                             wstart = nd4j::math::nd4j_max<Nd4jIndex>(wstart, 0);
-                            tend = nd4j::math::nd4j_min<Nd4jIndex>(tend, itime);
-                            hend = nd4j::math::nd4j_min<Nd4jIndex>(hend, iheight);
-                            wend = nd4j::math::nd4j_min<Nd4jIndex>(wend, iwidth);
+                            cend = nd4j::math::nd4j_min<Nd4jIndex>(cend, iD);
+                            hend = nd4j::math::nd4j_min<Nd4jIndex>(hend, iH);
+                            wend = nd4j::math::nd4j_min<Nd4jIndex>(wend, iW);
 
                             Nd4jIndex divide_factor;
                             if (count_include_pad)
                                 divide_factor = pool_size;
                             else
-                                divide_factor = (tend - tstart) * (hend - hstart) * (wend - wstart);
+                                divide_factor = (cend - cstart) * (hend - hstart) * (wend - wstart);
 
                             /* scatter gradients out to footprint: */
                             T val  = *op++;
 
                             long x,y,z;
-                            for (z = tstart; z < tend; z++)
+                            for (z = cstart; z < cend; z++)
                             {
                                 for (y = hstart; y < hend; y++)
                                 {
                                     for (x = wstart; x < wend; x++)
                                     {
-                                        *(ip + z * iheight * iwidth + y * iwidth + x) += val / divide_factor;
+                                        *(ip + z * iH * iW + y * iW + x) += val / divide_factor;
                                     }
                                 }
                             }
@@ -242,57 +397,58 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
-        void ConvolutionUtils<T>::_avgPool3D(T *input_p, T *output_p, Nd4jIndex nslices, Nd4jIndex itime, Nd4jIndex iwidth, Nd4jIndex iheight, Nd4jIndex otime, Nd4jIndex owidth, Nd4jIndex oheight, int kT, int kW, int kH, int dT, int dW, int dH, int padT, int padW, int padH, bool count_include_pad) {
-            for (Nd4jIndex k = 0; k < nslices; k++)
+        void ConvolutionUtils<T>::_avgPool3D(T *input_p, T *output_p, Nd4jIndex iC, Nd4jIndex iD, Nd4jIndex iH, Nd4jIndex iW, Nd4jIndex oD, Nd4jIndex oH, Nd4jIndex oW, int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, bool count_include_pad) {
+            for (Nd4jIndex k = 0; k < iC; k++)
             {
                 long i, j, ti;
 
                 /* local pointers. */
-                T *ip = input_p + k * itime * iwidth * iheight;
-                T *op = output_p + k * otime * owidth * oheight;
-                for (i = 0; i < otime * oheight * owidth; ++i)
+                T *ip = input_p + k * iD * iW * iH;
+                T *op = output_p + k * oD * oW * oH;
+                for (i = 0; i < oD * oH * oW; ++i)
                     *(op + i) = 0;
 
                 /* loop over output */
-                for (ti = 0; ti < otime; ti++)
+                for (ti = 0; ti < oD; ti++)
                 {
-                    for (i = 0; i < oheight; i++)
+                    for (i = 0; i < oH; i++)
                     {
-                        for (j = 0; j < owidth; j++)
+                        for (j = 0; j < oW; j++)
                         {
                             /* compute pool range. */
-                            Nd4jIndex tstart = ti * dT - padT;
-                            Nd4jIndex hstart = i  * dH - padH;
-                            Nd4jIndex wstart = j  * dW - padW;
-                            Nd4jIndex tend = nd4j::math::nd4j_min<Nd4jIndex>(tstart + kT, itime + padT);
-                            Nd4jIndex hend = nd4j::math::nd4j_min<Nd4jIndex>(hstart + kH, iheight + padH);
-                            Nd4jIndex wend = nd4j::math::nd4j_min<Nd4jIndex>(wstart + kW, iwidth + padW);
-                            Nd4jIndex pool_size = (tend - tstart) * (hend - hstart) * (wend - wstart);
-                            tstart = nd4j::math::nd4j_max<Nd4jIndex>(tstart, 0);
+                            Nd4jIndex cstart = ti * sD - pD;
+                            Nd4jIndex hstart = i  * sH - pH;
+                            Nd4jIndex wstart = j  * sW - pW;
+                            Nd4jIndex cend = nd4j::math::nd4j_min<Nd4jIndex>(cstart + kD, iD + pD);
+                            Nd4jIndex hend = nd4j::math::nd4j_min<Nd4jIndex>(hstart + kH, iH + pH);
+                            Nd4jIndex wend = nd4j::math::nd4j_min<Nd4jIndex>(wstart + kW, iW + pW);
+                            Nd4jIndex pool_size = (cend - cstart) * (hend - hstart) * (wend - wstart);
+                            cstart = nd4j::math::nd4j_max<Nd4jIndex>(cstart, 0);
                             hstart = nd4j::math::nd4j_max<Nd4jIndex>(hstart, 0);
                             wstart = nd4j::math::nd4j_max<Nd4jIndex>(wstart, 0);
-                            tend = nd4j::math::nd4j_min<Nd4jIndex>(tend, itime);
-                            hend = nd4j::math::nd4j_min<Nd4jIndex>(hend, iheight);
-                            wend = nd4j::math::nd4j_min<Nd4jIndex>(wend, iwidth);
+                            cend = nd4j::math::nd4j_min<Nd4jIndex>(cend, iD);
+                            hend = nd4j::math::nd4j_min<Nd4jIndex>(hend, iH);
+                            wend = nd4j::math::nd4j_min<Nd4jIndex>(wend, iW);
 
                             Nd4jIndex divide_factor;
                             if (count_include_pad)
                                 divide_factor = pool_size;
                             else
-                                divide_factor = (tend - tstart) * (hend - hstart) * (wend - wstart);
+                                divide_factor = (cend - cstart) * (hend - hstart) * (wend - wstart);
 
                             /* compute local sum: */
                             T sum = (T) 0.0f;
                             long x, y, z;
 
-                            for (z = tstart; z < tend; z++)
+                            for (z = cstart; z < cend; z++)
                             {
                                 for (y = hstart; y < hend; y++)
                                 {
                                     for (x = wstart; x < wend; x++)
                                     {
-                                        sum +=  *(ip + z * iwidth * iheight + y * iwidth + x);
+                                        sum +=  *(ip + z * iW * iH + y * iW + x);
                                     }
                                 }
                             }
@@ -305,7 +461,7 @@ namespace ops  {
             }
         }
 
-
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_dilatedMaxPool3D_bp(T *gradInput_p, T *gradOutput_p, T *indz_p, Nd4jIndex nslices, Nd4jIndex  itime, Nd4jIndex  iwidth, Nd4jIndex  iheight, Nd4jIndex otime, Nd4jIndex owidth, Nd4jIndex oheight, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH) {
             for (int k = 0; k < nslices; k++)
@@ -338,6 +494,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::_dilatedMaxPool3D(T *input_p, T *output_p, T *indz_p, Nd4jIndex nslices, Nd4jIndex itime, Nd4jIndex iwidth, Nd4jIndex iheight, Nd4jIndex otime, Nd4jIndex owidth, Nd4jIndex oheight, int kT, int kW, int kH, int dT, int dW, int dH, int pT, int pW, int pH, int dilationT, int dilationW, int dilationH) {
             Nd4jIndex k;
@@ -415,6 +572,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::validXCorr3Dptr(T*r_, T alpha, T *t_, Nd4jIndex it, Nd4jIndex ir, Nd4jIndex ic, T *k_, Nd4jIndex kt, Nd4jIndex kr, Nd4jIndex kc, Nd4jIndex st, Nd4jIndex sr, Nd4jIndex sc) {
             Nd4jIndex tot = (it - kt) / st + 1;
@@ -448,6 +606,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::validConv3Dptr(T*r_, T alpha, T *t_, Nd4jIndex it, Nd4jIndex ir, Nd4jIndex ic, T *k_, Nd4jIndex kt, Nd4jIndex kr, Nd4jIndex kc, Nd4jIndex st, Nd4jIndex sr, Nd4jIndex sc) {
             Nd4jIndex tot = (it - kt) / st + 1;
@@ -481,6 +640,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::fullConv3Dptr(T*r_, T alpha, T *t_, Nd4jIndex it, Nd4jIndex ir, Nd4jIndex ic, T *k_, Nd4jIndex kt, Nd4jIndex kr, Nd4jIndex kc, Nd4jIndex st, Nd4jIndex sr, Nd4jIndex sc) {
             Nd4jIndex tor = (ir - 1) * sr + kr;
@@ -517,6 +677,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         void ConvolutionUtils<T>::fullXCorr3Dptr(T*r_, T alpha, T *t_, Nd4jIndex it, Nd4jIndex ir, Nd4jIndex ic, T *k_, Nd4jIndex kt, Nd4jIndex kr, Nd4jIndex kc, Nd4jIndex st, Nd4jIndex sr, Nd4jIndex sc) {
             Nd4jIndex tor = (ir - 1) * sr + kr;
@@ -548,6 +709,7 @@ namespace ops  {
             }
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         Nd4jIndex ConvolutionUtils<T>::convsize(Nd4jIndex x, Nd4jIndex k, Nd4jIndex s, const char* vf) {
             if (*vf == 'V')
@@ -556,6 +718,7 @@ namespace ops  {
                 return (x-1)*s + k;
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         Nd4jStatus ConvolutionUtils<T>::conv3Dmv(NDArray<T>* r_, T beta, T alpha, NDArray<T>* t_, NDArray<T>* k_,
                                        Nd4jIndex sdepth, Nd4jIndex srow, Nd4jIndex scol, const char *vf, const char *xc) {
@@ -671,6 +834,7 @@ namespace ops  {
             return ND4J_STATUS_OK;
         }
 
+//////////////////////////////////////////////////////////////////////////
         template<typename T>
         Nd4jStatus ConvolutionUtils<T>::conv3D(T* output_data,
                                      T alpha,

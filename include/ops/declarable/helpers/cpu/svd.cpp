@@ -352,16 +352,17 @@ void SVD<T>::deflation(int col1, int col2, int ind, int row1W, int col1W, int sh
 template <typename T>
 T SVD<T>::secularEq(const T diff, const NDArray<T>& col0, const NDArray<T>& diag, const NDArray<T>& permut, const NDArray<T>& diagShifted, const T shift) {
 
-  int len = permut.lengthOf();
-  T res = 1.;
-  for(int i=0; i<len; ++i) {
+    int len = permut.lengthOf();
+    T res = 1.;
+    T item;
+    for(int i=0; i<len; ++i) {
 
-    int j = (int)permut(i);    
-    res += col0(j)*col0(j) / ((diagShifted(j) - diff) * (diag(j) + shift + diff));
-  }
+        int j = (int)permut(i);    
+        item = col0(j) / ((diagShifted(j) - diff) * (diag(j) + shift + diff));
+        res += item * col0(j);
+    }
   
-  return res;
-
+    return res;
 }
 
 
@@ -437,7 +438,7 @@ void SVD<T>::calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const 
             T a = (fCur - fPrev) / ((T)1./muCur - (T)1./muPrev);
             T jac = fCur - a / muCur;      
             T muZero = -a/jac;
-            T fZero = secularEq(muZero, col0, diag, permut, diagShifted, shift);
+            T fZero = secularEq(muZero, col0, diag, permut, diagShifted, shift);            
       
             muPrev = muCur;
             fPrev = fCur;
@@ -451,7 +452,8 @@ void SVD<T>::calcSingVals(const NDArray<T>& col0, const NDArray<T>& diag, const 
             if (math::nd4j_abs<T>(fCur) > math::nd4j_abs<T>(fPrev)) 
                 useBisection = true;
         }
-                    
+        
+
         if (useBisection) {
 
             T leftShifted, rightShifted;

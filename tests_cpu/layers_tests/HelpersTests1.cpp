@@ -626,16 +626,16 @@ TEST_F(HelpersTests1, SVD_test9) {
     NDArray<double> permut('c', {1,10}, {8 ,1 ,4 ,0, 5 ,2 ,9 ,3 ,7 ,6});
     NDArray<double> matrix3('c', {5,5}, {-18 ,1 ,19 ,-7 ,1 ,2 ,-18 ,-13 ,14 ,2 ,-2 ,-11 ,8 ,2 ,-6 ,-3 ,-8 ,8 ,-2 ,7 ,16 ,15 ,-3 ,7 ,0});
 
-    NDArray<double> expSingVals('c', {10,1}, {-2, 12.862, 11.2, -1, 1.73489, -12, -15.3043, -12.862, 5.6, 41.4039});
+    NDArray<double> expSingVals('c', {10,1}, {-2, 15.304323, 11.2, -1, 1.73489, -12, -15.3043, -12.862, 5.6, 41.4039});
     NDArray<double> expShifts  ('c', {10,1}, {1, 19, 19, 1, 2, -18, -18, -13, 2, 2});
-    NDArray<double> expMus     ('c', {10,1}, {-3, -6.13805, -7.8, -2, -0.265108, 6, 2.69568, 0.138048, 3.6, 39.4039});
+    NDArray<double> expMus     ('c', {10,1}, {-3, -3.695677, -7.8, -2, -0.265108, 6, 2.69568, 0.138048, 3.6, 39.4039});
 
     NDArray<double> singVals('c', {10,1});
     NDArray<double> shifts  ('c', {10,1});
     NDArray<double> mus     ('c', {10,1});
 
     ops::helpers::SVD<double> svd(matrix3, 4, true, true, true, 't');        
-    svd.calcSingVals(col0, diag, permut, singVals, shifts, mus);    
+    svd.calcSingVals(col0, diag, permut, singVals, shifts, mus);        
 
     ASSERT_TRUE(expSingVals.equalsTo(&singVals));        
     ASSERT_TRUE(expShifts.equalsTo(&shifts));

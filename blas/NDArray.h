@@ -113,7 +113,7 @@ namespace nd4j {
         /**
         *  this constructor creates new array using shape information contained in vector argument    
         */
-        NDArray(const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
+        NDArray(const char order, const std::vector<int> &shape, nd4j::memory::Workspace* workspace = nullptr);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape
@@ -227,7 +227,7 @@ namespace nd4j {
         bool permutei(const int* dimensions, const int rank);
 
         /**
-        *  permutes the dimensions in array according to "dimensions" array
+        *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
 		NDArray<T>* permute(const std::initializer_list<int>& dimensions) const;
         NDArray<T>* permute(const std::vector<int>& dimensions) const;
@@ -267,7 +267,7 @@ namespace nd4j {
         *  msg - message to print out 
         *  limit - number of array elements to print out
         */ 
-        void printIndexedBuffer(const char* msg = nullptr, int limit = -1);
+        void printIndexedBuffer(const char* msg = nullptr, int limit = -1) const;
 
         /**
         *  this method assigns values of given array to this one
@@ -404,7 +404,7 @@ namespace nd4j {
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
-        *  dimensions -  array with dimensions to broadcast along
+        *  dimensions -  dimensions array to broadcast along
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */               
@@ -592,19 +592,24 @@ namespace nd4j {
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
         *  shape - shape to set
+        *
+        *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
         */
 		bool reshapei(const char order, const std::initializer_list<int>& shape);		
-		bool reshapei(const char order, const std::vector<int>& shape);
+		bool reshapei(const char order, const std::vector<int>& shape);        
 
         bool reshapei(const std::initializer_list<int>& shape);		
-		bool reshapei(const std::vector<int>& shape);
+		bool reshapei(const std::vector<int>& shape);        
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
         *  shape - shape to set
+        *
+        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
         */
 		NDArray<T>* reshape(const char order, const std::vector<int>& shape);
+        NDArray<T>  reshape(const std::vector<int>& shape);
 		
         /**
         *  calculate strides and set given order

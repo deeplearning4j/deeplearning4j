@@ -106,5 +106,11 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(crelu, 1, 1, false, 0, 0);        
         DECLARE_CUSTOM_OP(crelu_bp, 2, 1, false, 0, 0);
+
+        /**
+         * This is RELU6 activation function implementation
+         */
+        DECLARE_CONFIGURABLE_OP(relu6, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(relu6_bp, 2, 1, true, 0, 0);
     }
 }

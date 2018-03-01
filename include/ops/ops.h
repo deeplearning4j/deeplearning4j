@@ -1583,10 +1583,21 @@ namespace simdOps {
 		no_op_exec_special_cuda
 
 		op_def static T op(T d1, T *params) {
-			return d1 < params[0] ? params[0] : d1;
+			return d1 < params[0] ? params[0] : d1;			
 		}
 	};
 
+	template<typename T>
+	class RELU6 {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			T relu = d1 < params[0] ? params[0] : d1;
+			return relu < (T)6. ? relu : (T)6.;			
+		}
+	};
 
 	template<typename T>
 	class LeakyRELU {

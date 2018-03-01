@@ -21,10 +21,9 @@ NDArray<T> Householder<T>::evalHHmatrix(const NDArray<T>& x) {
 	NDArray<T> wT(x.ordering(), {1, (int)x.lengthOf()}, x.getWorkspace());							// row-vector (transposed w)	
 
 	T coeff;
-	T normX = x.template reduceNumber<simdOps::Norm2<T>>();	
-	const T min = DataTypeUtils::min<T>();
+	T normX = x.template reduceNumber<simdOps::Norm2<T>>();		
 	
-	if(normX*normX - x(0)*x(0) <= min) {
+	if(normX*normX - x(0)*x(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
 		normX = x(0); 
 		coeff = (T)0.;		
@@ -62,10 +61,9 @@ void Householder<T>::evalHHmatrixData(const NDArray<T>& x, NDArray<T>& tail, T& 
 	if(!x.isScalar() && x.lengthOf() != tail.lengthOf() + 1)
 		throw "ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity compared to input x vector!";
 
-	normX = x.template reduceNumber<simdOps::Norm2<T>>();	
-	const T min = DataTypeUtils::min<T>();	
+	normX = x.template reduceNumber<simdOps::Norm2<T>>();		
 		
-	if(normX*normX - x(0)*x(0) <= min) {
+	if(normX*normX - x(0)*x(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
 		normX = x(0);
 		coeff = (T)0.;		

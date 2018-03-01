@@ -34,3 +34,4 @@ namespace nd4j {
         DECLARE_SYN(ReluGrad, relu_bp);
     }
 }
+

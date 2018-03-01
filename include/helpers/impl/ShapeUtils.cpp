@@ -1,5 +1,5 @@
 //
-// @author iuriish@yahoo.com
+// @author Yurii Shyrma
 //
 
 #include <algorithm>
