@@ -19,11 +19,12 @@
 package org.deeplearning4j.scalnet.models
 
 import com.typesafe.scalalogging.LazyLogging
+import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
+import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Layer, Node}
+import org.deeplearning4j.scalnet.layers.{ Layer, Node }
 import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -43,11 +44,12 @@ import scala.collection.JavaConverters._
   */
 class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) extends Model with LazyLogging {
 
-  def add(layer: Node): Unit =
-    layers = layers :+ layer
+  def add(layer: Node): Unit = layers = layers :+ layer
 
-  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
-    val builder = buildModelConfig(optimizer, rngSeed)
+  override def compile(lossFunction: LossFunction,
+                       optimizer: OptimizationAlgorithm = defaultOptimizer,
+                       updater: Updater = defaultUpdater): Unit = {
+    val builder = buildModelConfig(optimizer, updater, rngSeed)
     buildOutput(lossFunction)
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
@@ -79,6 +81,7 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
       model.fit(iter)
     }
   }
+
 }
 
 object NeuralNet {

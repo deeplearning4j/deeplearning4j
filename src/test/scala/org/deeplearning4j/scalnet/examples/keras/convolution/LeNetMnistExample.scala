@@ -85,8 +85,7 @@ object LeNetMnistExample extends App with LazyLogging {
   )
   model.add(Dense(nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
 
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
-                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
 
   logger.info("Train model....")
   model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))

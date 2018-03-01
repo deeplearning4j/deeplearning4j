@@ -80,7 +80,7 @@ object IrisCSVExample extends App with LazyLogging {
     Dense(numDenseOut, activation = Activation.RELU, regularizer = L2(learningRate * decay))
   )
   model.add(Dense(numOut, activation = Activation.SOFTMAX, regularizer = L2(learningRate * decay)))
-  model.compile(lossFunction = LossFunction.MCXENT, optimizer = SGD(learningRate))
+  model.compile(lossFunction = LossFunction.MCXENT)
 
   logger.info("Train model....")
   model.fit(iter = training_data, nbEpoch = numEpochs, listeners = List(new ScoreIterationListener(scoreFrequency)))

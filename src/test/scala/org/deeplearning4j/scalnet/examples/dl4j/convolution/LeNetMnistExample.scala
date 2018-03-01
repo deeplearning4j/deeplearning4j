@@ -85,8 +85,7 @@ object LeNetMnistExample extends App {
     Dense(nOut = 500, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay))
   )
   model.add(Dense(nOut = nbOutput, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
-                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
 
   log.info("Train model....")
   model.fit(mnistTrain, nbEpoch = nbEpochs, List(new ScoreIterationListener(1)))

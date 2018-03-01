@@ -19,7 +19,8 @@
 package org.deeplearning4j.scalnet.models
 
 import com.typesafe.scalalogging.LazyLogging
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
+import org.deeplearning4j.nn.api.OptimizationAlgorithm
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers._
@@ -80,8 +81,10 @@ class Sequential(rngSeed: Long) extends Model with LazyLogging {
     }
   }
 
-  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
-    val builder = buildModelConfig(optimizer, seed)
+  override def compile(lossFunction: LossFunction,
+                       optimizer: OptimizationAlgorithm = defaultOptimizer,
+                       updater: Updater = defaultUpdater): Unit = {
+    val builder = buildModelConfig(optimizer, updater, seed)
     buildOutput(lossFunction)
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()

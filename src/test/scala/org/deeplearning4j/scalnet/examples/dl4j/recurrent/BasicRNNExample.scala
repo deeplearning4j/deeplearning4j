@@ -24,8 +24,8 @@ object BasicRNNExample extends App with LazyLogging {
   val labels = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
 
   // RNN dimensions
-  val HIDDEN_LAYER_WIDTH = 128
-  val nEpochs = 1000
+  val HIDDEN_LAYER_WIDTH = 64
+  val nEpochs = 100
   val rngSeed = 1234
   val rand = new Random(rngSeed)
 

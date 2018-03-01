@@ -77,8 +77,7 @@ object MLPMnistTwoLayerExample extends App with LazyLogging {
           regularizer = L2(learningRate * decay))
   )
 
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
-                optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
 
   logger.info("Train model....")
   model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(scoreFrequency)))

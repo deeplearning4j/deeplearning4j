@@ -2,16 +2,14 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
-import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.{ EmbeddingLayer, GravesLSTM, RnnOutputLayer }
+import org.deeplearning4j.scalnet.layers.{EmbeddingLayer, GravesLSTM, RnnOutputLayer}
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import scala.collection.JavaConverters.asScalaIteratorConverter
 
 import scala.util.Random
 
@@ -50,17 +48,5 @@ object RNNEmbeddingExample extends App with LazyLogging {
   }
 
   model.fit(timeSeries, nEpochs, List(new ScoreIterationListener(1)))
-
-  def accuracy(dataset: DataSetIterator): Double = {
-    val evaluator = new Evaluation(4)
-    dataset.reset()
-    for (dataSet <- dataset.asScala) {
-      val output = model.predict(dataSet)
-      evaluator.eval(dataSet.getLabels, output)
-    }
-    evaluator.accuracy()
-  }
-
-  logger.info(s"Train accuracy = ${accuracy(timeSeries)}")
-  logger.info(s"Test accuracy = ${accuracy(timeSeries)}")
+  logger.info(s"Train accuracy = ${model.accuracy(timeSeries)}")
 }

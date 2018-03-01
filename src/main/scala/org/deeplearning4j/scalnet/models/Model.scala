@@ -18,17 +18,18 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration
+import org.deeplearning4j.eval.Evaluation
+import org.deeplearning4j.nn.api.OptimizationAlgorithm
+import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
-import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
-import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.learning.config.{Nesterovs, Sgd}
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
   * Abstract base class for neural net architectures.
@@ -41,7 +42,8 @@ trait Model {
   protected var model: MultiLayerNetwork = _
 
   protected val defaultEpochs = 10
-  protected val defaultOptimizer = SGD(lr = 0.01)
+  protected val defaultOptimizer = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT
+  protected val defaultUpdater = Updater.SGD
 
   def getLayers: List[Node] = layers
 
@@ -52,21 +54,26 @@ trait Model {
     * @param seed      seed to use
     * @return NeuralNetConfiguration.Builder
     */
-  def buildModelConfig(optimizer: Optimizer, seed: Long): NeuralNetConfiguration.Builder = {
+  def buildModelConfig(optimizer: OptimizationAlgorithm,
+                       updater: Updater,
+                       seed: Long): NeuralNetConfiguration.Builder = {
     var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
     if (seed != 0) {
       builder = builder.seed(seed)
     }
-    optimizer match {
-      case sgd: SGD if sgd.nesterov =>
-        builder.updater(new Nesterovs(sgd.lr, sgd.momentum))
-      case sgd: SGD =>
-        builder.updater(new Sgd(sgd.lr))
-      case _ =>
-        builder
-          .optimizationAlgo(optimizer.optimizationAlgorithm)
-          .updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
-    }
+    builder
+      .optimizationAlgo(defaultOptimizer)
+      .updater(defaultUpdater.getIUpdaterWithDefaultConfig)
+//    optimizer match {
+//      case sgd: SGD if sgd.nesterov =>
+//        builder.updater(new Nesterovs(sgd.lr, sgd.momentum))
+//      case sgd: SGD =>
+//        builder.updater(new Sgd(sgd.lr))
+//      case _ =>
+//        builder
+//          .optimizationAlgo(optimizer.optimizationAlgorithm)
+//          .updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
+//    }
   }
 
   /**
@@ -95,7 +102,7 @@ trait Model {
     * @param lossFunction loss function to use
     * @param optimizer    optimization algorithm to use
     */
-  def compile(lossFunction: LossFunction, optimizer: Optimizer): Unit
+  def compile(lossFunction: LossFunction, optimizer: OptimizationAlgorithm, updater: Updater): Unit
 
   /**
     * Fit neural net to data.
@@ -121,6 +128,16 @@ trait Model {
     * @param x input represented as DataSet
     */
   def predict(x: DataSet): INDArray = predict(x.getFeatures)
+
+  def accuracy(dataset: DataSetIterator, outputNum: Int = layers.last.outputShape.last): Double = {
+    val evaluator = new Evaluation(outputNum)
+    dataset.reset()
+    for (ds <- dataset.asScala) {
+      val output = predict(ds)
+      evaluator.eval(ds.getLabels, output)
+    }
+    evaluator.accuracy()
+  }
 
   override def toString: String = model.getLayerWiseConfigurations.toString
 
