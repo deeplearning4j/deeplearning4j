@@ -50,7 +50,7 @@ namespace nd4j {
                 COPY_SHAPE(in, newShape);
                 shapeList->push_back(newShape);
             }
-            shapeList->push_back(shape::createScalarShapeInfo());
+            shapeList->push_back(ShapeUtils<T>::createScalarShapeInfo(block.workspace()));
             return shapeList;
         }
     }

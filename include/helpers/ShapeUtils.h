@@ -81,6 +81,11 @@ namespace nd4j {
         // utility to calculate matrix product shape with give source shapes and additional params 
         // returns ShapeList pointer with result shape
         static int* matrixProductShape(int* theFirstShape, int* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::memory::Workspace* workspace);
+
+
+        ///////////////////////
+        static int* createScalarShapeInfo(nd4j::memory::Workspace* workspace = nullptr);
+        static int* createVectorShapeInfo(int length, nd4j::memory::Workspace* workspace = nullptr);
     };
 
 

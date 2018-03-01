@@ -727,6 +727,34 @@ ShapeUtils<T>::matrixProductShape(int* theFirstShape, int* theSecondShape,
     return newShape;
 }
 
+
+    template<typename T>
+    int* ShapeUtils<T>::createScalarShapeInfo(nd4j::memory::Workspace* workspace) {
+        int *newShape;
+        ALLOCATE(newShape, workspace, shape::shapeInfoLength(0), int);
+        newShape[0] = 0;
+        newShape[1] = 0;
+        newShape[2] = 1;
+        newShape[3] = 99;
+
+        return newShape;
+    }
+
+    template<typename T>
+    int* ShapeUtils<T>::createVectorShapeInfo(int length, nd4j::memory::Workspace* workspace) {
+        int *newShape;
+        ALLOCATE(newShape, workspace, shape::shapeInfoLength(1), int);
+
+        newShape[0] = length;
+        newShape[1] = 1;
+        newShape[2] = 1;
+        newShape[3] = 0;
+        newShape[4] = 1;
+        newShape[5] = 99;
+
+        return newShape;
+    }
+
 template class ND4J_EXPORT ShapeUtils<float>;
 template class ND4J_EXPORT ShapeUtils<float16>;
 template class ND4J_EXPORT ShapeUtils<double>;

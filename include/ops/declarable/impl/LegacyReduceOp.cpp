@@ -145,7 +145,7 @@ namespace nd4j {
                 auto array = new NDArray<T>(nullptr, inShape, block.getWorkspace());
                 array->triggerAllocationFlag(false, false);
 
-                newShape = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array);
+                newShape = ShapeUtils<T>::evalReduceShapeInfo(shape::order(inShape), *block.getIArguments(), *array, false, false, block.workspace());
 
                 delete array;
             }
