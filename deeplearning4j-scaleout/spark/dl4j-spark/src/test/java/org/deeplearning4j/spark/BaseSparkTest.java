@@ -105,7 +105,7 @@ public abstract class BaseSparkTest implements Serializable {
         }
         list.iterator();
 
-        data = new DataSet().merge(list);
+        data = DataSet.merge(list);
         return sc.parallelize(list);
     }
 
