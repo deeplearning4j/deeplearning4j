@@ -36,12 +36,12 @@ bash -lc "pacman -Syu --noconfirm"
 bash -lc "pacman -Su --noconfirm"
 bash -lc "pacman -S --needed --noconfirm base-devel make mingw-w64-x86_64-cmake mingw-w64-x86_64-gcc"
 
-bash -c "cd ../libnd4j/; MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT"
 if not "%CUDA%" == "" (
     bash -c "cd ../libnd4j/; MAKEJ=1 bash buildnativeoperations.sh -c cuda -v $CUDA -cc 30"
     bash -c "bash change-cuda-versions.sh $CUDA"
-    set "EXTRA_OPTIONS=-pl !nd4j-uberjar"
+    set "EXTRA_OPTIONS=-pl !nd4j-uberjar,!nd4j-backends/nd4j-backend-impls/nd4j-native,!nd4j-backends/nd4j-backend-impls/nd4j-native-platform,!nd4j-backends/nd4j-tests"
 ) else (
+    bash -c "cd ../libnd4j/; MAKEJ=2 bash buildnativeoperations.sh -c cpu -e $EXT"
     set "EXTRA_OPTIONS=-pl !nd4j-uberjar,!nd4j-backends/nd4j-backend-impls/nd4j-cuda,!nd4j-backends/nd4j-backend-impls/nd4j-cuda-platform,!nd4j-backends/nd4j-tests"
 )
 bash -c "bash change-scala-versions.sh $SCALA"
