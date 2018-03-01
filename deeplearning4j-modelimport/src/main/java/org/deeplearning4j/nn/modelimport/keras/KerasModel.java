@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
 
 /**
@@ -188,7 +187,7 @@ public class KerasModel {
 
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
-                    kerasLayerConf, customLayers);
+                    kerasLayerConf, customLayers, this.layers);
             this.layersOrdered.add(layer);
             this.layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLstm)

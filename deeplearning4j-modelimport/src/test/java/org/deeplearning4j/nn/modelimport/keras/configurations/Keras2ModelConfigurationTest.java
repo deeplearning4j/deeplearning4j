@@ -159,6 +159,11 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/keras2_tf_embedding_conv1d_config.json");
     }
 
+    @Test
+    public void embeddingLSTMMaskZeroTest() throws Exception {
+         runModelConfigTest("configs/keras2/embedding_lstm_calculator.json");
+    }
+
     void runSequentialConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
