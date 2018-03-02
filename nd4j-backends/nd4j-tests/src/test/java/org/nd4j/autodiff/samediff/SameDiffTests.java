@@ -16,10 +16,7 @@ import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -2602,6 +2599,48 @@ public class SameDiffTests {
         }
     }
 
+    @Test
+    public void testBooleanChecks(){
+        /*
+        isNonDecreasing,
+         */
+        Nd4j.getRandom().setSeed(12345);
+
+        for (int i = 0; i < 3; i++) {
+            SameDiff sd = SameDiff.create();
+
+            int nOut = 4;
+            int minibatch = 5;
+
+            INDArray ia = Nd4j.randn(minibatch, nOut);
+
+            SDVariable in1 = sd.var("in1", ia);
+            INDArray expOut = Nd4j.create(new float[] {1});
+            SDVariable t;
+
+            switch (i) {
+                case 0:
+                    t = sd.isNonDecreasing(in1);
+                    Nd4j.getExecutioner().exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    break;
+                case 1:
+                    t = sd.isStrictlyIncreasing(in1);
+                    Nd4j.getExecutioner().exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    break;
+                case 2:
+                    t = sd.isNumericTensor(in1);
+                    Nd4j.getExecutioner().exec(new IsNumericTensor(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            log.info("Executing: " + i);
+            INDArray out = sd.execAndEndResult();
+
+            assertEquals(expOut, out);
+        }
+    }
 
     @Test
     public void testExpandDims2d(){

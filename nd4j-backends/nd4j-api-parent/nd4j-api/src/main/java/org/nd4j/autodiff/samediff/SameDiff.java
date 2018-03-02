@@ -48,8 +48,6 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThan;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
@@ -2894,6 +2892,63 @@ public class SameDiff {
 
     }
 
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isNonDecreasing(SDVariable iX) {
+        return isNonDecreasing(null, iX);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isNonDecreasing(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isNonDecreasing(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isStrictlyIncreasing(SDVariable iX) {
+        return isStrictlyIncreasing(null, iX);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isStrictlyIncreasing(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isStrictlyIncreasing(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param
+     * @return
+     */
+    public SDVariable isNumericTensor(SDVariable iX) {
+        return isNumericTensor(null, iX);
+
+    }
+
+    /**
+     * @param
+     * @return
+     */
+    public SDVariable isNumericTensor(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isNumericTensor(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
 
     /**
      * @param iX
