@@ -169,6 +169,19 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(unique, 1, 2, false, 0, 0);
 
         /**
+         * This operation returns 3 1D arrays for given 1D array with unique element count and indexes
+         * input: 
+         *     0 - 1D array
+         *
+         * output:
+         *     0 - 1D array with unique values
+         *     1 - 1D array with ids for values in array above
+         *     2 - 1D array with counts for values in array above
+         */
+
+        DECLARE_CUSTOM_OP(unique_with_counts, 1, 3, false, 0, 0);
+
+        /**
          * This operation splits input NDArray into multiple TADs along given dimensions
          * Expected arguments:
          * input: N-dimensional array

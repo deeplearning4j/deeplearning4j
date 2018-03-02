@@ -2,7 +2,7 @@
 //  @author raver119@gmail.com
 //
 
-#include <ops/declarable/helpers/top_k.h>
+#include <ops/declarable/helpers/lrn.h>
 #include <NDArrayFactory.h>
 
 namespace nd4j {
