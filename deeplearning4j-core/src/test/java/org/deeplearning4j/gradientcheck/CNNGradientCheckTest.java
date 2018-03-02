@@ -213,10 +213,11 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int nOut = 4;
 
         int[] minibatchSizes = {2, 4};
-        int width = 4;
-        int height = 4;
+        int width = 5;
+        int height = 5;
         int inputDepth = 3;
-        int[] blocks = {2, 2};
+        int[] kernel = {2, 2};
+        int blocks = 2;
 
         for (int minibatchSize : minibatchSizes) {
             INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
@@ -230,8 +231,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                             .dist(new NormalDistribution(0, 1))
                             .list()
-//                            .layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
-//                            .nOut(3).build()) //output: (5-2+0)/1+1 = 4
+                            .layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
+                            .nOut(3).build()) //output: (5-2+0)/1+1 = 4
                             .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
                                     .build()) // (mb,3,4,4) -> (mb,12,2,2)
                             .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
