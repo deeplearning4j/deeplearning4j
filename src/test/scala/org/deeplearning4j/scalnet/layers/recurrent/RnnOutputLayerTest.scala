@@ -1,10 +1,10 @@
 package org.deeplearning4j.scalnet.layers.recurrent
 
-import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
-import org.deeplearning4j.scalnet.layers.{ Dense, RnnOutputLayer }
+import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
+import org.deeplearning4j.scalnet.layers.RnnOutputLayer
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 
 class RnnOutputLayerTest extends WordSpec with Matchers {
 
@@ -28,14 +28,12 @@ class RnnOutputLayerTest extends WordSpec with Matchers {
 
     "does not become an output layer when instanciated without proper loss" in {
       val rnnOutputLayer = RnnOutputLayer(10, 100, Activation.SOFTMAX)
-      val compiledLayer = rnnOutputLayer.compile
-      compiledLayer.isInstanceOf[JOutputLayer] shouldBe false
+      rnnOutputLayer.output.isOutput shouldBe false
     }
 
     "become an output layer when instanciated with proper loss" in {
       val rnnOutputLayer = RnnOutputLayer(10, 100, Activation.SOFTMAX, Option(LossFunction.MCXENT))
-      val compiledLayer = rnnOutputLayer.compile
-      compiledLayer.isInstanceOf[JOutputLayer] shouldBe true
+      rnnOutputLayer.output.isOutput shouldBe true
     }
 
   }

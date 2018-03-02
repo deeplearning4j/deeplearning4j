@@ -2,6 +2,7 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
+import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.{EmbeddingLayer, GravesLSTM, RnnOutputLayer}
 import org.deeplearning4j.scalnet.models.NeuralNet
@@ -17,7 +18,7 @@ object RNNEmbeddingExample extends App with LazyLogging {
 
   val nClassesIn = 10
   val batchSize = 3
-  val nEpochs = 10
+  val nEpochs = 100
   val timeSeriesLength = 8
   val inEmbedding = Nd4j.create(batchSize, 1, timeSeriesLength)
   val outLabels = Nd4j.create(batchSize, 4, timeSeriesLength)
@@ -38,9 +39,14 @@ object RNNEmbeddingExample extends App with LazyLogging {
     datasetIterator
   }
 
+
+  // TODO : implement preprocessors
+  //    listBuilder.inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+  //    listBuilder.inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
+
   val model: NeuralNet = {
     val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
-    model.add(EmbeddingLayer(nClassesIn, 5, Activation.RELU))
+    model.add(EmbeddingLayer(nClassesIn, 5))
     model.add(GravesLSTM(5, 7, Activation.SOFTSIGN))
     model.add(RnnOutputLayer(7, 4, Activation.SOFTMAX))
     model.compile(LossFunction.MCXENT)
@@ -48,5 +54,5 @@ object RNNEmbeddingExample extends App with LazyLogging {
   }
 
   model.fit(timeSeries, nEpochs, List(new ScoreIterationListener(1)))
-  logger.info(s"Train accuracy = ${model.accuracy(timeSeries)}")
+//  logger.info(s"Train accuracy = ${model.accuracy(timeSeries)}")
 }

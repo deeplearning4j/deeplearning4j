@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
 /**
@@ -56,24 +57,18 @@ trait Model {
     */
   def buildModelConfig(optimizer: OptimizationAlgorithm,
                        updater: Updater,
+                       miniBatch: Boolean,
+                       biasInit: Double,
                        seed: Long): NeuralNetConfiguration.Builder = {
     var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
     if (seed != 0) {
       builder = builder.seed(seed)
     }
     builder
-      .optimizationAlgo(defaultOptimizer)
-      .updater(defaultUpdater.getIUpdaterWithDefaultConfig)
-//    optimizer match {
-//      case sgd: SGD if sgd.nesterov =>
-//        builder.updater(new Nesterovs(sgd.lr, sgd.momentum))
-//      case sgd: SGD =>
-//        builder.updater(new Sgd(sgd.lr))
-//      case _ =>
-//        builder
-//          .optimizationAlgo(optimizer.optimizationAlgorithm)
-//          .updater(new Sgd(optimizer.asInstanceOf[SGD].lr))
-//    }
+      .optimizationAlgo(optimizer)
+      .updater(updater.getIUpdaterWithDefaultConfig)
+      .miniBatch(miniBatch)
+      .biasInit(biasInit)
   }
 
   /**

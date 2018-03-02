@@ -1,7 +1,7 @@
-package org.deeplearning4j.scalnet.layers.recurrent
+package org.deeplearning4j.scalnet.layers.LSTM
 
 import org.deeplearning4j.scalnet.layers.GravesLSTM
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.{Matchers, WordSpec}
 
 class GravesLSTMTest extends WordSpec with Matchers {
 

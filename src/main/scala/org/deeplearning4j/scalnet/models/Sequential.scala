@@ -84,7 +84,7 @@ class Sequential(rngSeed: Long) extends Model with LazyLogging {
   override def compile(lossFunction: LossFunction,
                        optimizer: OptimizationAlgorithm = defaultOptimizer,
                        updater: Updater = defaultUpdater): Unit = {
-    val builder = buildModelConfig(optimizer, updater, seed)
+    val builder = buildModelConfig(optimizer, updater, miniBatch = true, biasInit = 0.0, seed)
     buildOutput(lossFunction)
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()

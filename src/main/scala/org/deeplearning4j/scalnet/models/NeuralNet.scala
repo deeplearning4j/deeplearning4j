@@ -21,11 +21,11 @@ package org.deeplearning4j.scalnet.models
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration, Updater }
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{ Layer, Node }
-import org.deeplearning4j.scalnet.optimizers.Optimizer
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener
+import org.deeplearning4j.scalnet.layers.{Layer, Node}
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -42,18 +42,21 @@ import scala.collection.JavaConverters._
   *
   * @author David Kale
   */
-class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) extends Model with LazyLogging {
+class NeuralNet(val inputType: Option[InputType], val miniBatch: Boolean, val biasInit: Double, val rngSeed: Long)
+    extends Model
+    with LazyLogging {
 
   def add(layer: Node): Unit = layers = layers :+ layer
 
   override def compile(lossFunction: LossFunction,
-                       optimizer: OptimizationAlgorithm = defaultOptimizer,
-                       updater: Updater = defaultUpdater): Unit = {
-    val builder = buildModelConfig(optimizer, updater, rngSeed)
+                       optimizer: OptimizationAlgorithm = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT,
+                       updater: Updater = Updater.SGD): Unit = {
+    val builder = buildModelConfig(optimizer, updater, miniBatch, biasInit, rngSeed)
     buildOutput(lossFunction)
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
     inputType foreach (i => listBuilder.setInputType(i))
+
 
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       logger.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
@@ -85,6 +88,9 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
 }
 
 object NeuralNet {
-  def apply(inputType: InputType = null, rngSeed: Long = 0): NeuralNet =
-    new NeuralNet(Option(inputType), rngSeed)
+  def apply(inputType: InputType = null,
+            miniBatch: Boolean = true,
+            biasInit: Double = 0.0,
+            rngSeed: Long = 0): NeuralNet =
+    new NeuralNet(Option(inputType), miniBatch, biasInit, rngSeed)
 }

@@ -3,7 +3,6 @@ package org.deeplearning4j.scalnet.layers
 import org.deeplearning4j.nn.conf.layers
 import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
 import org.deeplearning4j.nn.weights.WeightInit
-import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -13,7 +12,6 @@ class RnnOutputLayer(nIn: Int,
                      activation: Activation,
                      loss: Option[LossFunction],
                      weightInit: WeightInit,
-                     regularizer: WeightRegularizer,
                      dropOut: Double,
                      override val name: String = "")
     extends BaseOutputLayer
@@ -27,19 +25,16 @@ class RnnOutputLayer(nIn: Int,
           .nOut(nOut)
           .activation(activation)
           .weightInit(weightInit)
-          .l1(regularizer.l1)
-          .l2(regularizer.l2)
           .dropOut(dropOut)
           .name(name)
           .build()
       case _ =>
-        new JOutputLayer.Builder(output.lossFunction)
+        new layers.RnnOutputLayer.Builder(output.lossFunction)
           .nIn(nIn)
           .nOut(nOut)
           .activation(activation)
           .weightInit(weightInit)
-          .l1(regularizer.l1)
-          .l2(regularizer.l2)
+          .lossFunction(output.lossFunction)
           .dropOut(dropOut)
           .name(name)
           .build()
@@ -58,7 +53,6 @@ class RnnOutputLayer(nIn: Int,
       activation,
       Some(lossFunction),
       weightInit,
-      regularizer,
       dropOut
     )
 }
@@ -68,8 +62,7 @@ object RnnOutputLayer {
             nOut: Int,
             activation: Activation,
             loss: Option[LossFunction] = None,
-            weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
-            regularizer: WeightRegularizer = NoRegularizer(),
+            weightInit: WeightInit = WeightInit.XAVIER,
             dropOut: Double = 0.0): RnnOutputLayer =
     new RnnOutputLayer(
       nIn,
@@ -77,7 +70,6 @@ object RnnOutputLayer {
       activation,
       loss,
       weightInit,
-      regularizer,
       dropOut
     )
 
