@@ -355,7 +355,7 @@ public class ConvolutionLayerSetupTest extends BaseDL4JTest {
     @Test
     public void testSpaceToDepth() {
 
-        int[] blocks = new int[] {2, 2};
+        int blocks = 2;
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
                 //(28-2+0)/2+1 = 14 -> 14x14x3 out
