@@ -69,8 +69,13 @@ namespace nd4j {
         template <typename T>
         bool BooleanOp<T>::prepareOutputs(Context<T>& ctx) {
 
+            auto variableSpace = ctx.getVariableSpace();
+
             for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
                 std::pair<int, int> pair(ctx.nodeId(), e);
+
+                if (!variableSpace->hasVariable(pair))
+                    variableSpace->putVariable(pair, new Variable<T>());
 
                 Variable<T>* var = ctx.variable(pair);
 

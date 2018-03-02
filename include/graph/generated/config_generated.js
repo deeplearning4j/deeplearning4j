@@ -42,6 +42,15 @@ nd4j.graph.OutputMode = {
 };
 
 /**
+ * @enum
+ */
+nd4j.graph.Direction = {
+  FORWARD_ONLY: 0,
+  FORWARD_AND_BACKWARD: 1,
+  BACKWARD_ONLY: 2
+};
+
+/**
  * @constructor
  */
 nd4j.graph.FlatConfiguration = function() {
@@ -133,10 +142,18 @@ nd4j.graph.FlatConfiguration.prototype.footprintBackward = function() {
 };
 
 /**
+ * @returns {nd4j.graph.Direction}
+ */
+nd4j.graph.FlatConfiguration.prototype.direction = function() {
+  var offset = this.bb.__offset(this.bb_pos, 18);
+  return offset ? /** @type {nd4j.graph.Direction} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.Direction.FORWARD_ONLY;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatConfiguration.startFlatConfiguration = function(builder) {
-  builder.startObject(7);
+  builder.startObject(8);
 };
 
 /**
@@ -193,6 +210,14 @@ nd4j.graph.FlatConfiguration.addFootprintForward = function(builder, footprintFo
  */
 nd4j.graph.FlatConfiguration.addFootprintBackward = function(builder, footprintBackward) {
   builder.addFieldInt64(6, footprintBackward, builder.createLong(0, 0));
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {nd4j.graph.Direction} direction
+ */
+nd4j.graph.FlatConfiguration.addDirection = function(builder, direction) {
+  builder.addFieldInt8(7, direction, nd4j.graph.Direction.FORWARD_ONLY);
 };
 
 /**

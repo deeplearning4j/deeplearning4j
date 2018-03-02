@@ -16,6 +16,20 @@
 
 namespace nd4j {
     namespace memory {
+        Workspace::Workspace(ExternalWorkspace *external) {
+            if (external->sizeHost() > 0) {
+                _ptrHost = (char *) external->pointerHost();
+                _ptrDevice = (char *) external->pointerDevice();
+
+                _initialSize = external->sizeHost();
+                _currentSize = external->sizeHost();
+                _offset = 0L;
+                this->_cycleAllocations = 0;
+                this->_spillsSize = 0;
+
+                _externalized = true;
+            }
+        };
 
         Workspace::Workspace(Nd4jIndex initialSize) {
             if (initialSize > 0) {
@@ -38,7 +52,7 @@ namespace nd4j {
 
         void Workspace::init(Nd4jIndex bytes) {
             if (this->_currentSize < bytes) {
-                if (this->_allocatedHost)
+                if (this->_allocatedHost && !_externalized)
                     free((void *)this->_ptrHost);
 
                 this->_ptrHost =(char *) malloc(bytes);
@@ -69,7 +83,7 @@ namespace nd4j {
         }
 
         Workspace::~Workspace() {
-            if (this->_allocatedHost)
+            if (this->_allocatedHost && !_externalized)
                 free((void *)this->_ptrHost);
 
             freeSpills();

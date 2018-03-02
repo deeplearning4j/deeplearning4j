@@ -24,6 +24,7 @@ public struct FlatConfiguration : IFlatbufferObject
   public bool Timestats { get { int o = __p.__offset(12); return o != 0 ? 0!=__p.bb.Get(o + __p.bb_pos) : (bool)false; } }
   public long FootprintForward { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
   public long FootprintBackward { get { int o = __p.__offset(16); return o != 0 ? __p.bb.GetLong(o + __p.bb_pos) : (long)0; } }
+  public Direction Direction { get { int o = __p.__offset(18); return o != 0 ? (Direction)__p.bb.GetSbyte(o + __p.bb_pos) : Direction.FORWARD_ONLY; } }
 
   public static Offset<FlatConfiguration> CreateFlatConfiguration(FlatBufferBuilder builder,
       long id = 0,
@@ -32,11 +33,13 @@ public struct FlatConfiguration : IFlatbufferObject
       OutputMode outputMode = OutputMode.IMPLICIT,
       bool timestats = false,
       long footprintForward = 0,
-      long footprintBackward = 0) {
-    builder.StartObject(7);
+      long footprintBackward = 0,
+      Direction direction = Direction.FORWARD_ONLY) {
+    builder.StartObject(8);
     FlatConfiguration.AddFootprintBackward(builder, footprintBackward);
     FlatConfiguration.AddFootprintForward(builder, footprintForward);
     FlatConfiguration.AddId(builder, id);
+    FlatConfiguration.AddDirection(builder, direction);
     FlatConfiguration.AddTimestats(builder, timestats);
     FlatConfiguration.AddOutputMode(builder, outputMode);
     FlatConfiguration.AddProfilingMode(builder, profilingMode);
@@ -44,7 +47,7 @@ public struct FlatConfiguration : IFlatbufferObject
     return FlatConfiguration.EndFlatConfiguration(builder);
   }
 
-  public static void StartFlatConfiguration(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartFlatConfiguration(FlatBufferBuilder builder) { builder.StartObject(8); }
   public static void AddId(FlatBufferBuilder builder, long id) { builder.AddLong(0, id, 0); }
   public static void AddExecutionMode(FlatBufferBuilder builder, ExecutionMode executionMode) { builder.AddSbyte(1, (sbyte)executionMode, 0); }
   public static void AddProfilingMode(FlatBufferBuilder builder, ProfilingMode profilingMode) { builder.AddSbyte(2, (sbyte)profilingMode, 0); }
@@ -52,6 +55,7 @@ public struct FlatConfiguration : IFlatbufferObject
   public static void AddTimestats(FlatBufferBuilder builder, bool timestats) { builder.AddBool(4, timestats, false); }
   public static void AddFootprintForward(FlatBufferBuilder builder, long footprintForward) { builder.AddLong(5, footprintForward, 0); }
   public static void AddFootprintBackward(FlatBufferBuilder builder, long footprintBackward) { builder.AddLong(6, footprintBackward, 0); }
+  public static void AddDirection(FlatBufferBuilder builder, Direction direction) { builder.AddSbyte(7, (sbyte)direction, 0); }
   public static Offset<FlatConfiguration> EndFlatConfiguration(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatConfiguration>(o);

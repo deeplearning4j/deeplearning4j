@@ -113,6 +113,38 @@ inline const char *EnumNameOutputMode(OutputMode e) {
   return EnumNamesOutputMode()[index];
 }
 
+enum Direction {
+  Direction_FORWARD_ONLY = 0,
+  Direction_FORWARD_AND_BACKWARD = 1,
+  Direction_BACKWARD_ONLY = 2,
+  Direction_MIN = Direction_FORWARD_ONLY,
+  Direction_MAX = Direction_BACKWARD_ONLY
+};
+
+inline Direction (&EnumValuesDirection())[3] {
+  static Direction values[] = {
+    Direction_FORWARD_ONLY,
+    Direction_FORWARD_AND_BACKWARD,
+    Direction_BACKWARD_ONLY
+  };
+  return values;
+}
+
+inline const char **EnumNamesDirection() {
+  static const char *names[] = {
+    "FORWARD_ONLY",
+    "FORWARD_AND_BACKWARD",
+    "BACKWARD_ONLY",
+    nullptr
+  };
+  return names;
+}
+
+inline const char *EnumNameDirection(Direction e) {
+  const size_t index = static_cast<int>(e);
+  return EnumNamesDirection()[index];
+}
+
 struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   enum {
     VT_ID = 4,
@@ -121,7 +153,8 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OUTPUTMODE = 10,
     VT_TIMESTATS = 12,
     VT_FOOTPRINTFORWARD = 14,
-    VT_FOOTPRINTBACKWARD = 16
+    VT_FOOTPRINTBACKWARD = 16,
+    VT_DIRECTION = 18
   };
   int64_t id() const {
     return GetField<int64_t>(VT_ID, 0);
@@ -144,6 +177,9 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   int64_t footprintBackward() const {
     return GetField<int64_t>(VT_FOOTPRINTBACKWARD, 0);
   }
+  Direction direction() const {
+    return static_cast<Direction>(GetField<int8_t>(VT_DIRECTION, 0));
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int64_t>(verifier, VT_ID) &&
@@ -153,6 +189,7 @@ struct FlatConfiguration FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyField<uint8_t>(verifier, VT_TIMESTATS) &&
            VerifyField<int64_t>(verifier, VT_FOOTPRINTFORWARD) &&
            VerifyField<int64_t>(verifier, VT_FOOTPRINTBACKWARD) &&
+           VerifyField<int8_t>(verifier, VT_DIRECTION) &&
            verifier.EndTable();
   }
 };
@@ -181,6 +218,9 @@ struct FlatConfigurationBuilder {
   void add_footprintBackward(int64_t footprintBackward) {
     fbb_.AddElement<int64_t>(FlatConfiguration::VT_FOOTPRINTBACKWARD, footprintBackward, 0);
   }
+  void add_direction(Direction direction) {
+    fbb_.AddElement<int8_t>(FlatConfiguration::VT_DIRECTION, static_cast<int8_t>(direction), 0);
+  }
   explicit FlatConfigurationBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -201,11 +241,13 @@ inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
     OutputMode outputMode = OutputMode_IMPLICIT,
     bool timestats = false,
     int64_t footprintForward = 0,
-    int64_t footprintBackward = 0) {
+    int64_t footprintBackward = 0,
+    Direction direction = Direction_FORWARD_ONLY) {
   FlatConfigurationBuilder builder_(_fbb);
   builder_.add_footprintBackward(footprintBackward);
   builder_.add_footprintForward(footprintForward);
   builder_.add_id(id);
+  builder_.add_direction(direction);
   builder_.add_timestats(timestats);
   builder_.add_outputMode(outputMode);
   builder_.add_profilingMode(profilingMode);

@@ -21,6 +21,7 @@ public final class FlatConfiguration extends Table {
   public boolean timestats() { int o = __offset(12); return o != 0 ? 0!=bb.get(o + bb_pos) : false; }
   public long footprintForward() { int o = __offset(14); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
   public long footprintBackward() { int o = __offset(16); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public byte direction() { int o = __offset(18); return o != 0 ? bb.get(o + bb_pos) : 0; }
 
   public static int createFlatConfiguration(FlatBufferBuilder builder,
       long id,
@@ -29,11 +30,13 @@ public final class FlatConfiguration extends Table {
       byte outputMode,
       boolean timestats,
       long footprintForward,
-      long footprintBackward) {
-    builder.startObject(7);
+      long footprintBackward,
+      byte direction) {
+    builder.startObject(8);
     FlatConfiguration.addFootprintBackward(builder, footprintBackward);
     FlatConfiguration.addFootprintForward(builder, footprintForward);
     FlatConfiguration.addId(builder, id);
+    FlatConfiguration.addDirection(builder, direction);
     FlatConfiguration.addTimestats(builder, timestats);
     FlatConfiguration.addOutputMode(builder, outputMode);
     FlatConfiguration.addProfilingMode(builder, profilingMode);
@@ -41,7 +44,7 @@ public final class FlatConfiguration extends Table {
     return FlatConfiguration.endFlatConfiguration(builder);
   }
 
-  public static void startFlatConfiguration(FlatBufferBuilder builder) { builder.startObject(7); }
+  public static void startFlatConfiguration(FlatBufferBuilder builder) { builder.startObject(8); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addExecutionMode(FlatBufferBuilder builder, byte executionMode) { builder.addByte(1, executionMode, 0); }
   public static void addProfilingMode(FlatBufferBuilder builder, byte profilingMode) { builder.addByte(2, profilingMode, 0); }
@@ -49,6 +52,7 @@ public final class FlatConfiguration extends Table {
   public static void addTimestats(FlatBufferBuilder builder, boolean timestats) { builder.addBoolean(4, timestats, false); }
   public static void addFootprintForward(FlatBufferBuilder builder, long footprintForward) { builder.addLong(5, footprintForward, 0L); }
   public static void addFootprintBackward(FlatBufferBuilder builder, long footprintBackward) { builder.addLong(6, footprintBackward, 0L); }
+  public static void addDirection(FlatBufferBuilder builder, byte direction) { builder.addByte(7, direction, 0); }
   public static int endFlatConfiguration(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

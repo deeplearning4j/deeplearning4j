@@ -14,6 +14,7 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <types/float16.h>
+#include <memory/ExternalWorkspace.h>
 
 namespace nd4j {
     namespace memory {
@@ -27,19 +28,21 @@ namespace nd4j {
 
         class ND4J_EXPORT Workspace {
         protected:
-            char* _ptrHost;
-            char* _ptrDevice;
+            char* _ptrHost = nullptr;
+            char* _ptrDevice = nullptr;
 
-            bool _allocatedHost;
-            bool _allocatedDevice;
+            bool _allocatedHost = false;
+            bool _allocatedDevice = false;
 
             std::atomic<Nd4jIndex> _offset;
 
-            Nd4jIndex _initialSize;
-            Nd4jIndex _currentSize;
+            Nd4jIndex _initialSize = 0L;
+            Nd4jIndex _currentSize = 0L;
 
             std::mutex _mutexAllocation;
             std::mutex _mutexSpills;
+
+            bool _externalized = false;
 
             std::vector<void*> _spills;
 
@@ -49,7 +52,8 @@ namespace nd4j {
             void init(Nd4jIndex bytes);
             void freeSpills();
         public:
-            Workspace(Nd4jIndex initialSize = 0);
+            explicit Workspace(ExternalWorkspace *external);
+            explicit Workspace(Nd4jIndex initialSize = 0);
             ~Workspace();
 
             Nd4jIndex getAllocatedSize();

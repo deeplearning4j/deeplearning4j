@@ -20,6 +20,12 @@ enum OutputMode:byte {
    VARIABLE_SPACE, // whole content of VariableSpace will be returned back
 }
 
+enum Direction:byte {
+    FORWARD_ONLY, // inference pass
+    FORWARD_AND_BACKWARD, // not implemented yet
+    BACKWARD_ONLY, // not implemented yet
+}
+
 table FlatConfiguration {
     id:long; // id of the graph this configuration applies to
     executionMode:ExecutionMode; // current execution dmode
@@ -28,6 +34,7 @@ table FlatConfiguration {
     timestats:bool; // are we gathering time info. false by default
     footprintForward:long; // optional: amount of memory needed for FF pass
     footprintBackward:long; // optional: amount of memory needed for BP pass
+    direction:Direction; // execution direction
 }
 
 root_type FlatConfiguration;

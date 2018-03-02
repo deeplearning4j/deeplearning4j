@@ -544,3 +544,25 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
     ASSERT_TRUE(exp.equalsTo(&o));
 }
+
+TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
+    nd4j::ops::is_non_decreasing<float> op;
+
+    NDArray<float> x('c', {5}, {1, 2, 3, 4, 5});
+    NDArray<float> o(2.0f);
+    NDArray<float> exp(1.0f);
+
+     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
+
+    NativeOps nativeOps;
+    auto hash = op.getOpHash();
+    auto status = nativeOps.execCustomOpFloat(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(exp.equalsTo(&o));
+}
