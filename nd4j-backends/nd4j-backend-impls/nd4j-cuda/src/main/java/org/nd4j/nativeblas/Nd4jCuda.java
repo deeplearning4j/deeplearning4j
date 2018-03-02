@@ -37,7 +37,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
         public native @Name("operator++") @ByRef Iterator increment();
         public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") FloatNDArray get();
+        public native @Name("operator*") @Const FloatNDArray get();
     }
 
     public FloatNDArray pop_back() {
@@ -92,7 +92,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
         public native @Name("operator++") @ByRef Iterator increment();
         public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") HalfNDArray get();
+        public native @Name("operator*") @Const HalfNDArray get();
     }
 
     public HalfNDArray pop_back() {
@@ -147,7 +147,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
 
         public native @Name("operator++") @ByRef Iterator increment();
         public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") DoubleNDArray get();
+        public native @Name("operator*") @Const DoubleNDArray get();
     }
 
     public DoubleNDArray pop_back() {
@@ -5329,6 +5329,45 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 
+// Parsed from memory/ExternalWorkspace.h
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_EXTERNALWORKSPACE_H
+// #define LIBND4J_EXTERNALWORKSPACE_H
+
+// #include <pointercast.h>
+// #include <dll.h>
+        @Namespace("nd4j::memory") @NoOffset public static class ExternalWorkspace extends Pointer {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ExternalWorkspace(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public ExternalWorkspace(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public ExternalWorkspace position(long position) {
+                return (ExternalWorkspace)super.position(position);
+            }
+        
+            public ExternalWorkspace() { super((Pointer)null); allocate(); }
+            private native void allocate();
+
+            public ExternalWorkspace(@Cast("Nd4jPointer") Pointer ptrH, @Cast("Nd4jIndex") long sizeH, @Cast("Nd4jPointer") Pointer ptrD, @Cast("Nd4jIndex") long sizeD) { super((Pointer)null); allocate(ptrH, sizeH, ptrD, sizeD); }
+            private native void allocate(@Cast("Nd4jPointer") Pointer ptrH, @Cast("Nd4jIndex") long sizeH, @Cast("Nd4jPointer") Pointer ptrD, @Cast("Nd4jIndex") long sizeD);
+            
+            public native Pointer pointerHost();
+            public native Pointer pointerDevice();
+
+            public native @Cast("Nd4jIndex") long sizeHost();
+            public native @Cast("Nd4jIndex") long sizeDevice();
+        }
+    
+
+
+// #endif
+
 // Parsed from memory/Workspace.h
 
 //
@@ -5347,6 +5386,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <dll.h>
 // #include <pointercast.h>
 // #include <types/float16.h>
+// #include <memory/ExternalWorkspace.h>
 
 //        void ping();
 
@@ -5360,14 +5400,21 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public Workspace(Pointer p) { super(p); }
         
+            public Workspace(ExternalWorkspace external) { super((Pointer)null); allocate(external); }
+            private native void allocate(ExternalWorkspace external);
             public Workspace(@Cast("Nd4jIndex") long initialSize/*=0*/) { super((Pointer)null); allocate(initialSize); }
             private native void allocate(@Cast("Nd4jIndex") long initialSize/*=0*/);
             public Workspace() { super((Pointer)null); allocate(); }
             private native void allocate();
 
+            public native @Cast("Nd4jIndex") long getAllocatedSize();
             public native @Cast("Nd4jIndex") long getCurrentSize();
             public native @Cast("Nd4jIndex") long getCurrentOffset();
             public native @Cast("Nd4jIndex") long getSpilledSize();
+            public native @Cast("Nd4jIndex") long getUsedSize();
+
+            public native void expandBy(@Cast("Nd4jIndex") long numBytes);
+            public native void expandTo(@Cast("Nd4jIndex") long numBytes);
 
 //            bool resizeSupported();
 
@@ -5877,7 +5924,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
 
         /**
-        *  permutes the dimensions in array according to "dimensions" array
+        *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
         public native FloatNDArray permute(@StdVector IntPointer dimensions);
         public native FloatNDArray permute(@StdVector IntBuffer dimensions);
@@ -6047,7 +6094,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
-        *  dimensions -  array with dimensions to broadcast along
+        *  dimensions -  dimensions array to broadcast along
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
@@ -6202,18 +6249,22 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
         *  shape - shape to set
+        *
+        *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
 		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);        
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
         *  shape - shape to set
+        *
+        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native FloatNDArray reshape(char order, @StdVector IntPointer shape);
 		public native FloatNDArray reshape(char order, @StdVector IntBuffer shape);
@@ -6713,6 +6764,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
+
+
+        public native @Cast("bool") boolean isAttached();
+
+        public native FloatNDArray detach();
     }
 
 
@@ -6945,7 +7001,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
 
         /**
-        *  permutes the dimensions in array according to "dimensions" array
+        *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
         public native HalfNDArray permute(@StdVector IntPointer dimensions);
         public native HalfNDArray permute(@StdVector IntBuffer dimensions);
@@ -7115,7 +7171,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
-        *  dimensions -  array with dimensions to broadcast along
+        *  dimensions -  dimensions array to broadcast along
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
@@ -7270,18 +7326,22 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
         *  shape - shape to set
+        *
+        *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
 		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);        
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
         *  shape - shape to set
+        *
+        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native HalfNDArray reshape(char order, @StdVector IntPointer shape);
 		public native HalfNDArray reshape(char order, @StdVector IntBuffer shape);
@@ -7781,6 +7841,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
+
+
+        public native @Cast("bool") boolean isAttached();
+
+        public native HalfNDArray detach();
     }
 
 
@@ -8013,7 +8078,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native @Cast("bool") boolean permutei(@Const int[] dimensions, int rank);
 
         /**
-        *  permutes the dimensions in array according to "dimensions" array
+        *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
         public native DoubleNDArray permute(@StdVector IntPointer dimensions);
         public native DoubleNDArray permute(@StdVector IntBuffer dimensions);
@@ -8183,7 +8248,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
-        *  dimensions -  array with dimensions to broadcast along
+        *  dimensions -  dimensions array to broadcast along
         *  target - where to store result
         *  extraParams - extra parameters for operation
         */
@@ -8338,18 +8403,22 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
         *  shape - shape to set
+        *
+        *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
         */		
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector IntBuffer shape);
 		public native @Cast("bool") boolean reshapei(char order, @StdVector int[] shape);		
 		public native @Cast("bool") boolean reshapei(@StdVector IntPointer shape);
 		public native @Cast("bool") boolean reshapei(@StdVector IntBuffer shape);
-		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);
+		public native @Cast("bool") boolean reshapei(@StdVector int[] shape);        
 	
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
         *  order - order to set
         *  shape - shape to set
+        *
+        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native DoubleNDArray reshape(char order, @StdVector IntPointer shape);
 		public native DoubleNDArray reshape(char order, @StdVector IntBuffer shape);
@@ -8849,6 +8918,11 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         /**
         *  inline accessing operator for 4D array, i - height, j - width, k - depth
         */
+
+
+        public native @Cast("bool") boolean isAttached();
+
+        public native DoubleNDArray detach();
     }
 
 
@@ -8857,6 +8931,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS ///// 
 //////////////////////////////////////////////////////////////////////////
+
 
 
 
@@ -10283,6 +10358,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer getPlaceholders();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+            public native void setWorkspace(Workspace workspace);
             
             public native Workspace workspace();
 
@@ -10324,6 +10400,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native FloatVariableSpace clone();
+
+            public native @Cast("nd4j::graph::Variable<float>**") @StdVector PointerPointer handles();
             public native void injectVariable(@ByRef IntIntPair pair, FloatVariable variable);
 
             public native FloatStash getStash();
@@ -10354,6 +10432,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer getPlaceholders();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+            public native void setWorkspace(Workspace workspace);
             
             public native Workspace workspace();
 
@@ -10395,6 +10474,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native HalfVariableSpace clone();
+
+            public native @Cast("nd4j::graph::Variable<float16>**") @StdVector PointerPointer handles();
             public native void injectVariable(@ByRef IntIntPair pair, HalfVariable variable);
 
             public native HalfStash getStash();
@@ -10425,6 +10506,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer getPlaceholders();
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+            public native void setWorkspace(Workspace workspace);
             
             public native Workspace workspace();
 
@@ -10466,6 +10548,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
             public native int totalEntries();
 
             public native DoubleVariableSpace clone();
+
+            public native @Cast("nd4j::graph::Variable<double>**") @StdVector PointerPointer handles();
             public native void injectVariable(@ByRef IntIntPair pair, DoubleVariable variable);
 
             public native DoubleStash getStash();
@@ -10928,14 +11012,19 @@ public static final long MAX_UINT = MAX_UINT();
             public native void setPreparationTime(@Cast("Nd4jIndex") long time);
             public native void setExecutionTime(@Cast("Nd4jIndex") long time);
             public native void setTotalTime(@Cast("Nd4jIndex") long time);
+            public native void setShapeFunctionTime(@Cast("Nd4jIndex") long time);
+            public native void setArrayTime(@Cast("Nd4jIndex") long time);
+            public native void setInputTime(@Cast("Nd4jIndex") long time);
 
             public native void setActivationsSize(@Cast("Nd4jIndex") long bytes);
             public native void setTemporarySize(@Cast("Nd4jIndex") long bytes);
             public native void setObjectsSize(@Cast("Nd4jIndex") long bytes);
+            public native void setTotalSize(@Cast("Nd4jIndex") long bytes);
 
             public native @Cast("Nd4jIndex") long getActivationsSize();
             public native @Cast("Nd4jIndex") long getTemporarySize();
             public native @Cast("Nd4jIndex") long getObjectsSize();
+            public native @Cast("Nd4jIndex") long getTotalSize();
 
             public native @StdString @ByRef @Cast({"char*", "std::string*"}) BytePointer name();
 
@@ -11005,8 +11094,18 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
             public native void forgetWorkspace();
+
+            // these methods return full-time workspace
             public native Workspace getWorkspace();
             public native Workspace workspace();
+            public native Workspace fWorkspace();
+
+            // this method returns workspace for temporary allocations
+            public native Workspace tWorkspace();
+
+            // this method returns workspace for object allocations
+            public native Workspace oWorkspace();
+
 
             public native void setVariableSpace(FloatVariableSpace variableSpace);
 
@@ -11101,8 +11200,18 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
             public native void forgetWorkspace();
+
+            // these methods return full-time workspace
             public native Workspace getWorkspace();
             public native Workspace workspace();
+            public native Workspace fWorkspace();
+
+            // this method returns workspace for temporary allocations
+            public native Workspace tWorkspace();
+
+            // this method returns workspace for object allocations
+            public native Workspace oWorkspace();
+
 
             public native void setVariableSpace(HalfVariableSpace variableSpace);
 
@@ -11197,8 +11306,18 @@ public static final long MAX_UINT = MAX_UINT();
             public native @Cast("bool") boolean hasWorkspaceProvided();
             public native void attachWorkspace(Workspace workspace);
             public native void forgetWorkspace();
+
+            // these methods return full-time workspace
             public native Workspace getWorkspace();
             public native Workspace workspace();
+            public native Workspace fWorkspace();
+
+            // this method returns workspace for temporary allocations
+            public native Workspace tWorkspace();
+
+            // this method returns workspace for object allocations
+            public native Workspace oWorkspace();
+
 
             public native void setVariableSpace(DoubleVariableSpace variableSpace);
 
@@ -11545,6 +11664,12 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,IntPointer shape1,int shape2Rank,IntPointer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,IntBuffer shape1,int shape2Rank,IntBuffer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank,int[] shape1,int shape2Rank,int[] shape2);
+
+// #ifdef __CUDACC__
+// #endif
+    @Namespace("shape") public static native IntPointer detachShape(IntPointer originalShape);
+    @Namespace("shape") public static native IntBuffer detachShape(IntBuffer originalShape);
+    @Namespace("shape") public static native int[] detachShape(int[] originalShape);
 
 // #ifdef __CUDACC__
 // #endif
@@ -13465,6 +13590,9 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifdef __CUDACC__
 // #endif
 
+// #ifdef __CUDACC__
+// #endif
+
 
 // #ifdef __CUDACC__
 // #endif
@@ -14122,6 +14250,11 @@ public static final int PREALLOC_SIZE = 33554432;
         public native void push_back(IntPointer shape);
         public native void push_back(IntBuffer shape);
         public native void push_back(int[] shape);
+
+        /**
+         * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory leak
+         */
+        public native void detach();
     }
 
 
@@ -14188,6 +14321,8 @@ public static native @MemberGetter int ELEMENT_THRESHOLD();
 public static final int ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
 public static native @MemberGetter int TAD_THRESHOLD();
 public static final int TAD_THRESHOLD = TAD_THRESHOLD();
+
+// #define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
 
 // #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 // #define NOTHING_EXTRACT 
@@ -15329,7 +15464,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 template class ND4J_EXPORT NAME<double>;
 //                                                 template <typename T>
 //                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
-//                                                     auto shapeList = new nd4j::ShapeList();
+//                                                     auto shapeList = SHAPELIST();
 //                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
 //                                                         int* newshape;
 //                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
@@ -15431,7 +15566,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             template class ND4J_EXPORT NAME<double>;
 //                                                             template <typename T>
 //                                                             nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
-//                                                                 auto shapeList = new nd4j::ShapeList();
+//                                                                 auto shapeList = SHAPELIST();
 //                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
 //                                                                     int* newshape;
 //                                                                     COPY_SHAPE(inputShape->at(0), newshape);
@@ -15483,7 +15618,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 template class ND4J_EXPORT NAME<double>;
 //                                                                                 template <typename T>
 //                                                                                 nd4j::ShapeList* nd4j::ops::NAME<T>::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context<T>& block) {
-//                                                                                     auto shapeList = new nd4j::ShapeList();
+//                                                                                     auto shapeList = SHAPELIST();
 //                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
 //                                                                                         int* newshape;
 //                                                                                         ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(e)), int);
@@ -15675,7 +15810,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define _CUDA_HD
 
 // #endif // CUDACC
-
 
 // #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 // #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16

@@ -22,19 +22,25 @@ public final class FlatResult extends Table {
   public FlatTiming timing(int j) { return timing(new FlatTiming(), j); }
   public FlatTiming timing(FlatTiming obj, int j) { int o = __offset(8); return o != 0 ? obj.__assign(__indirect(__vector(o) + j * 4), bb) : null; }
   public int timingLength() { int o = __offset(8); return o != 0 ? __vector_len(o) : 0; }
+  public long footprintForward() { int o = __offset(10); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
+  public long footprintBackward() { int o = __offset(12); return o != 0 ? bb.getLong(o + bb_pos) : 0L; }
 
   public static int createFlatResult(FlatBufferBuilder builder,
       long id,
       int variablesOffset,
-      int timingOffset) {
-    builder.startObject(3);
+      int timingOffset,
+      long footprintForward,
+      long footprintBackward) {
+    builder.startObject(5);
+    FlatResult.addFootprintBackward(builder, footprintBackward);
+    FlatResult.addFootprintForward(builder, footprintForward);
     FlatResult.addId(builder, id);
     FlatResult.addTiming(builder, timingOffset);
     FlatResult.addVariables(builder, variablesOffset);
     return FlatResult.endFlatResult(builder);
   }
 
-  public static void startFlatResult(FlatBufferBuilder builder) { builder.startObject(3); }
+  public static void startFlatResult(FlatBufferBuilder builder) { builder.startObject(5); }
   public static void addId(FlatBufferBuilder builder, long id) { builder.addLong(0, id, 0L); }
   public static void addVariables(FlatBufferBuilder builder, int variablesOffset) { builder.addOffset(1, variablesOffset, 0); }
   public static int createVariablesVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
@@ -42,6 +48,8 @@ public final class FlatResult extends Table {
   public static void addTiming(FlatBufferBuilder builder, int timingOffset) { builder.addOffset(2, timingOffset, 0); }
   public static int createTimingVector(FlatBufferBuilder builder, int[] data) { builder.startVector(4, data.length, 4); for (int i = data.length - 1; i >= 0; i--) builder.addOffset(data[i]); return builder.endVector(); }
   public static void startTimingVector(FlatBufferBuilder builder, int numElems) { builder.startVector(4, numElems, 4); }
+  public static void addFootprintForward(FlatBufferBuilder builder, long footprintForward) { builder.addLong(3, footprintForward, 0L); }
+  public static void addFootprintBackward(FlatBufferBuilder builder, long footprintBackward) { builder.addLong(4, footprintBackward, 0L); }
   public static int endFlatResult(FlatBufferBuilder builder) {
     int o = builder.endObject();
     return o;

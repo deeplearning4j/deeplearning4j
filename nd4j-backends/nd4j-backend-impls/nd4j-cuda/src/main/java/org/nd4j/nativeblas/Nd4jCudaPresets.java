@@ -27,6 +27,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
  */
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda",
                 value = {@Platform(include = {"NativeOps.h",
+                        "memory/ExternalWorkspace.h",
                         "memory/Workspace.h",
                         "indexing/NDIndex.h",
                         "indexing/IndicesList.h",
