@@ -10093,13 +10093,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <dll.h>
 // #include <vector>
 // #include <map>
-// #include <Scope.h>
+// #include <graph/Scope.h>
 // #include <Status.h>
-// #include <VariableSpace.h>
+// #include <graph/VariableSpace.h>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <types/pair.h>
-// #include <ArgumentsList.h>
-// #include <Graph.h>
+// #include <graph/ArgumentsList.h>
+// #include <graph/Graph.h>
     @Name("nd4j::graph::GraphState<float>") @NoOffset public static class FloatGraphState extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -15979,7 +15979,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <types/float16.h>
 // #include <pointercast.h>
 // #include <NDArray.h>
-// #include <Context.h>
+// #include <graph/Context.h>
 // #include "OpDescriptor.h"
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
@@ -16424,7 +16424,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef LIBND4J_BOOLEANOP_H
 // #define LIBND4J_BOOLEANOP_H
 
-// #include <Context.h>
+// #include <graph/Context.h>
 // #include "OpDescriptor.h"
 // #include "DeclarableOp.h"
         @Name("nd4j::ops::BooleanOp<float>") @NoOffset public static class FloatBooleanOp extends FloatDeclarableOp {

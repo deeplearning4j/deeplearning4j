@@ -174,7 +174,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 on.setValueFor(field,arr.data().asInt());
             }
             else if(type.equals(int.class) || type.equals(long.class) || type.equals(Long.class) || type.equals(Integer.class)) {
-                on.setValueFor(field,arr.getInt(0));
+                if(mapping.getShapePosition() != null) {
+                    on.setValueFor(field,arr.size(mapping.getShapePosition()));
+                }
+                else
+                    on.setValueFor(field,arr.getInt(0));
 
             }
             else if(type.equals(float.class) || type.equals(double.class) || type.equals(Float.class) || type.equals(Double.class)) {

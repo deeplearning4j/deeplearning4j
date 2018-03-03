@@ -70,7 +70,7 @@ public class Eye extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "Expm1";
+        return "Eye";
     }
 
 

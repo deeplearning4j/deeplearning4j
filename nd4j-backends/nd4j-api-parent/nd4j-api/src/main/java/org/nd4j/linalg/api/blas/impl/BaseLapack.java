@@ -96,7 +96,6 @@ public abstract class BaseLapack implements Lapack {
     *   A = LL*
     *
     * @param uplo which factor to return L or U 
-    * @param M  the number of rows & cols in the matrix A
     * @param A  the matrix to factorize - data must be in column order ( create with 'f' ordering )
     * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
@@ -180,7 +179,6 @@ public abstract class BaseLapack implements Lapack {
     * @param N  the number of rows & cols in the matrix A
     * @param A  the matrix to calculate eigenvectors
     * @param R  an output array for eigenvalues ( may be null )
-    * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
     */
     public abstract int ssyev(char jobz, char uplo, int N, INDArray A, INDArray R);
 

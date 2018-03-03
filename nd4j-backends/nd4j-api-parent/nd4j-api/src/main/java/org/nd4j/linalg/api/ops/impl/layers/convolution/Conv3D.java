@@ -135,7 +135,7 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "conv3dNew";
+        return "conv3dnew";
     }
 
 

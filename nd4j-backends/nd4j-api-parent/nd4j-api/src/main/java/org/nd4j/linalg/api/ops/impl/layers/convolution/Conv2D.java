@@ -127,8 +127,8 @@ public class Conv2D extends DynamicCustomOp {
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("ky", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kx", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("kh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
+        onnxMappings.put("kw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("dh", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
         onnxMappings.put("dw", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("sy", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
@@ -152,9 +152,17 @@ public class Conv2D extends DynamicCustomOp {
                 .build();
 
 
-        val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh", "kw"})
+        val kernelMappingH = PropertyMapping.builder()
+                .propertyNames(new String[]{"kh"})
                 .tfInputPosition(1)
+                .shapePosition(0)
+                .onnxAttrName("kernel_shape")
+                .build();
+
+        val kernelMappingW = PropertyMapping.builder()
+                .propertyNames(new String[]{"kw"})
+                .tfInputPosition(1)
+                .shapePosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
@@ -190,8 +198,8 @@ public class Conv2D extends DynamicCustomOp {
 
         map.put("sx", strideMapping);
         map.put("sy", strideMapping);
-        map.put("kh", kernelMapping);
-        map.put("kw", kernelMapping);
+        map.put("kh", kernelMappingH);
+        map.put("kw", kernelMappingW);
         map.put("dw", dilationMapping);
         map.put("dh", dilationMapping);
         map.put("isSameMode", sameMode);

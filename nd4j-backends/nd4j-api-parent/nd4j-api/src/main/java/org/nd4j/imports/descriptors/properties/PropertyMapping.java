@@ -13,5 +13,6 @@ public class PropertyMapping implements Serializable {
     private Integer tfInputPosition;
     private String onnxAttrName;
     private String tfAttrName;
+    private Integer shapePosition;
 
 }
