@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.{EmbeddingLayer, GravesLSTM, RnnOutputLayer}
+import org.deeplearning4j.scalnet.layers.{ EmbeddingLayer, GravesLSTM, RnnOutputLayer }
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.DataSet
@@ -32,20 +32,14 @@ object RNNEmbeddingExample extends App with LazyLogging {
       val labelIdx = rand.nextInt(batchSize + 1)
       outLabels.putScalar(Array[Int](i, labelIdx, j), 1.0)
     }
-
     val dataset = new DataSet(inEmbedding, outLabels)
     val ids = dataset.asList()
     val datasetIterator = new ListDataSetIterator(ids, batchSize)
     datasetIterator
   }
 
-
-  // TODO : implement preprocessors
-  //    listBuilder.inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-  //    listBuilder.inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
-
   val model: NeuralNet = {
-    val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
+    val model: NeuralNet = NeuralNet(inputType = InputType.recurrent(3, 8), rngSeed = rngSeed)
     model.add(EmbeddingLayer(nClassesIn, 5))
     model.add(GravesLSTM(5, 7, Activation.SOFTSIGN))
     model.add(RnnOutputLayer(7, 4, Activation.SOFTMAX))
@@ -53,6 +47,5 @@ object RNNEmbeddingExample extends App with LazyLogging {
     model
   }
 
-  model.fit(timeSeries, nEpochs, List(new ScoreIterationListener(1)))
-//  logger.info(s"Train accuracy = ${model.accuracy(timeSeries)}")
+  model.fit(timeSeries, nEpochs, List(new ScoreIterationListener(10)))
 }

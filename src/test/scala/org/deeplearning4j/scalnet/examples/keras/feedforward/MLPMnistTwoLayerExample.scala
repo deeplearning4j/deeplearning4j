@@ -77,6 +77,6 @@ object MLPMnistTwoLayerExample extends App with LazyLogging {
   model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(1000)))
 
   logger.info("Evaluate model....")
-  logger.info(s"Train accuracy = ${model.accuracy(mnistTrain)}")
-  logger.info(s"Test accuracy = ${model.accuracy(mnistTest)}")
+  logger.info(s"Train accuracy = ${model.evaluate(mnistTrain)}")
+  logger.info(s"Test accuracy = ${model.evaluate(mnistTest)}")
 }

@@ -41,22 +41,22 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   */
 object MLPMnistTwoLayerExample extends App with LazyLogging {
 
-  private val numRows: Int = 28
-  private val numColumns: Int = 28
-  private val outputNum: Int = 10
-  private val batchSize: Int = 64
-  private val rngSeed: Int = 123
-  private val numEpochs: Int = 15
-  private val learningRate: Double = 0.0015
-  private val decay: Double = 0.005
-  private val momentum: Double = 0.98
-  private val scoreFrequency = 5
+  val numRows: Int = 28
+  val numColumns: Int = 28
+  val outputNum: Int = 10
+  val batchSize: Int = 64
+  val rngSeed: Int = 123
+  val numEpochs: Int = 15
+  val learningRate: Double = 0.0015
+  val decay: Double = 0.005
+  val scoreFrequency = 100
 
-  private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
-  private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
+  val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
+  val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   logger.info("Build model....")
-  private val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
+  val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
+
   model.add(
     Dense(nOut = 500,
           nIn = numRows * numColumns,
@@ -83,12 +83,7 @@ object MLPMnistTwoLayerExample extends App with LazyLogging {
   model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(scoreFrequency)))
 
   logger.info("Evaluate model....")
-  val evaluator: Evaluation = new Evaluation(outputNum)
-  while (mnistTest.hasNext) {
-    val next: DataSet = mnistTest.next()
-    val output: INDArray = model.predict(next)
-    evaluator.eval(next.getLabels, output)
-  }
-  logger.info(evaluator.stats())
-  logger.info("****************Example finished********************")
+  val accuracy = model.evaluate(mnistTest)
+
+  logger.info(s"Model accuracy: $accuracy")
 }
