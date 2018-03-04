@@ -3125,6 +3125,76 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return Nd4j.create(shape, ordering);
     }
 
+    @Override
+    public double[][] toDoubleMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+        double[][] ret = new double[rows()][columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asDouble();
+        }
+
+        return ret;
+    }
+
+    @Override
+    public double[] toDoubleVector() {
+        if(!isVector()) {
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+        }
+
+
+        return dup().data().asDouble();
+    }
+
+    @Override
+    public float[] toFloatVector() {
+        if(!isVector()) {
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+        }
+
+        return dup().data().asFloat();
+    }
+
+    @Override
+    public float[][] toFloatMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+
+        float[][] ret = new float[rows()][columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asFloat();
+        }
+
+        return ret;
+    }
+
+    @Override
+    public int[] toIntVector() {
+        if(!isVector()) {
+            throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector!");
+        }
+        return dup().data().asInt();
+    }
+
+    @Override
+    public int[][] toIntMatrix() {
+        if(!isMatrix()) {
+            throw new ND4JIllegalStateException("Unable to create a 2d array from a non matrix!");
+        }
+
+        int[][] ret = new int[rows()][columns()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = getRow(i).dup().data().asInt();
+        }
+
+        return ret;
+    }
+
     /**
      * Perform an copy matrix multiplication
      *
