@@ -229,3 +229,61 @@ TEST_F(ShapeTests, Test_Edge_2) {
 
     x.printShapeInfo("reshape1");
 }
+
+
+TEST_F(ShapeTests, Test_Remove_Index_1) {
+    int array[] = {1, 2, 3};
+    int idx[] = {0};
+    int result[2];
+    shape::removeIndex(array, idx, 3, 1, result);
+
+    ASSERT_EQ(2, result[0]);
+    ASSERT_EQ(3, result[1]);
+}
+
+TEST_F(ShapeTests, Test_Remove_Index_2) {
+    int array[] = {1, 2, 3};
+    int idx[] = {1};
+    int result[2];
+    shape::removeIndex(array, idx, 3, 1, result);
+
+    ASSERT_EQ(1, result[0]);
+    ASSERT_EQ(3, result[1]);
+}
+
+TEST_F(ShapeTests, Test_Remove_Index_3) {
+    int array[] = {1, 2, 3};
+    int idx[] = {2};
+    int result[2];
+    shape::removeIndex(array, idx, 3, 1, result);
+
+    ASSERT_EQ(1, result[0]);
+    ASSERT_EQ(2, result[1]);
+}
+
+TEST_F(ShapeTests, Test_Remove_Index_4) {
+    int array[] = {1, 2, 3};
+    int idx[] = {0, 2};
+    int result[1];
+    shape::removeIndex(array, idx, 3, 2, result);
+
+    ASSERT_EQ(2, result[0]);
+}
+
+TEST_F(ShapeTests, Test_Remove_Index_5) {
+    int array[] = {1, 2, 3};
+    int idx[] = {1, 0};
+    int result[1];
+    shape::removeIndex(array, idx, 3, 2, result);
+
+    ASSERT_EQ(3, result[0]);
+}
+
+TEST_F(ShapeTests, Test_Remove_Index_6) {
+    int array[] = {1, 2, 3};
+    int idx[] = {1, 2};
+    int result[1];
+    shape::removeIndex(array, idx, 3, 2, result);
+
+    ASSERT_EQ(1, result[0]);
+}

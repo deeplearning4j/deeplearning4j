@@ -6,6 +6,7 @@
 #define LIBND4J_SPECIAL_ACCUMULATION_OPS_H
 
 #include <templatemath.h>
+#include <helpers/TAD.h>
 //#include <ops/ops.h>
 //#include <loops/reduce.h>
 

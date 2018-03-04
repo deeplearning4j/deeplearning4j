@@ -2,7 +2,7 @@
 #ifndef OPS_H_
 #define OPS_H_
 
-#include <DataTypeUtils.h>
+#include <array/DataTypeUtils.h>
 #include <helpers/shape.h>
 #include <vector>
 #include <Environment.h>
@@ -1511,7 +1511,7 @@ namespace simdOps {
             int mode = (int) extraParams[2];
 
 
-            // printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
+             nd4j_printf("value: %f; comp: %f; eps: %f; mode: %i;\n", d1, compare, eps, mode);
 
             if (mode == 0) // equals
                 return nd4j::math::nd4j_abs<T>(d1 - compare) <= eps ? 1.0 : 0.0;

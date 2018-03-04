@@ -11,13 +11,13 @@
 //#include <NDArray.h>
 #include <graph/Node.h>
 #include <graph/Stash.h>
-#include <Scope.h>
+#include <graph/Scope.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 #include <graph/generated/config_generated.h>
-#include <ExecutorConfiguration.h>
+#include <graph/ExecutorConfiguration.h>
 
 namespace nd4j {
     namespace graph {

@@ -811,25 +811,25 @@ template<typename OpType>
             }
 
             static void execAll( const int opNum,
-                              T *x,
-                              int *xShapeInfo,
-                              T *extraParamsVals,
-                              T *y,
-                              int *yShapeInfo,
-                              T *result,
-                              int *resultShapeInfoBuffer,
-                              int *dimension,
-                              int dimensionLength,
-                              int *xTadShapeInfo, Nd4jIndex *xOffsets,
-                              int *yTadShapeInfo, Nd4jIndex *yOffsets) {
+                                 T *x,
+                                 int *xShapeInfo,
+                                 T *extraParamsVals,
+                                 T *y,
+                                 int *yShapeInfo,
+                                 T *result,
+                                 int *resultShapeInfoBuffer,
+                                 int *dimension,
+                                 int dimensionLength,
+                                 int *xTadShapeInfo, Nd4jIndex *xOffsets,
+                                 int *yTadShapeInfo, Nd4jIndex *yOffsets) {
                 DISPATCH_BY_OPNUM(execAll, PARAMS(x,
-                                               xShapeInfo,
-                                               extraParamsVals,
-                                               y, yShapeInfo,
-                                               result,
-                                               resultShapeInfoBuffer,
-                                               dimension,
-                                               dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), REDUCE3_OPS);
+                                                  xShapeInfo,
+                                                  extraParamsVals,
+                                                  y, yShapeInfo,
+                                                  result,
+                                                  resultShapeInfoBuffer,
+                                                  dimension,
+                                                  dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), REDUCE3_OPS);
             }
 
 
@@ -1199,33 +1199,110 @@ template<typename OpType>
                      * we can use arr.stride(1) as a representation
                      * along long which to iterate.
                      */
-                    int tadElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
+                    int largerElementWiseStride;
+                    int smallerElementWiseStride;
+                    int xElementWiseStride = shape::elementWiseStride(xTad.tadOnlyShapeInfo);
                     int yElementWiseStride = shape::elementWiseStride(yTad.tadOnlyShapeInfo);
-                    int tadLength = shape::length(xTad.tadOnlyShapeInfo);
-                    if (tadElementWiseStride >= 1 && yElementWiseStride >= 1) {
-//#pragma omp parallel for proc_bind(AFFINITY) default(shared)
-                        for (Nd4jIndex i = 0; i < resultLength; i++) {
-                            T *localExtraParams = nullptr;
-                            if (OpType::extraParamsLen > 0)
-                                localExtraParams = new T[OpType::extraParamsLen];
-                            for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
-                                localExtraParams[extraParamsIdx] = startingVal;
+                    int tadLength;
+                    int xModLength;
+                    int yModLength;
+                    int *iterationTadInfo;
+                    bool xTadBigger;
+                    if(shape::length(xShapeInfo) > shape::length(yShapeInfo)) {
+                        tadLength = shape::length(xTad.tadOnlyShapeInfo);
+                        iterationTadInfo = xTad.tadOnlyShapeInfo;
+                        largerElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                        smallerElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                        xModLength = 1;
+                        yModLength = tadLength;
+                        xTadBigger = true;
+
+                    }
+                    else {
+                        tadLength = shape::length(yTad.tadOnlyShapeInfo);
+                        iterationTadInfo = yTad.tadOnlyShapeInfo;
+                        largerElementWiseStride = shape::elementWiseStride(yShapeInfo);
+                        smallerElementWiseStride = shape::elementWiseStride(xShapeInfo);
+                        xModLength = tadLength;
+                        yModLength = 1;
+                        xTadBigger = false;
+                    }
+
+
+
+
+                    if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1) {
+                        if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
+                            //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
+                            for (Nd4jIndex i = 0; i < resultLength; i++) {
+                                T *localExtraParams = nullptr;
+                                if (OpType::extraParamsLen > 0)
+                                    localExtraParams = new T[OpType::extraParamsLen];
+                                for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
+                                    localExtraParams[extraParamsIdx] = startingVal;
+                                }
+
+                                Nd4jIndex offset = xTad.tadOffsets[i];
+                                Nd4jIndex yOffset = yTad.tadOffsets[i];
+                                result[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
+                                for (int j = 1; j < tadLength; j++) {
+                                    int xIdx = (offset + xElementWiseStride * j);
+                                    int yIdx = (yOffset + yElementWiseStride * j);
+                                    result[i] = OpType::update(result[i], OpType::op(x[xIdx],
+                                                                                     y[yIdx],
+                                                                                     localExtraParams), localExtraParams);
+                                }
+
+                                result[i] = OpType::postProcess(result[i], tadLength, localExtraParams);
+
+                                if (localExtraParams != nullptr)
+                                    delete[] localExtraParams;
                             }
-
-                            Nd4jIndex offset = xTad.tadOffsets[i];
-                            Nd4jIndex yOffset = yTad.tadOffsets[i];
-                            result[i] = OpType::op(x[offset], y[yOffset], localExtraParams);
-                            for (int j = 1; j < tadLength; j++) {
-                                result[i] = OpType::update(result[i], OpType::op(x[offset + tadElementWiseStride * j],
-                                                                                 y[yOffset + yElementWiseStride * j],
-                                                                                 localExtraParams), localExtraParams);
-                            }
-
-                            result[i] = OpType::postProcess(result[i], tadLength, localExtraParams);
-
-                            if (localExtraParams != nullptr)
-                                delete[] localExtraParams;
                         }
+                        else {
+                            int tadsPerThread = resultLength / TAD_THRESHOLD;
+                            int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
+                            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+
+
+//#pragma omp  parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
+                            for (int i = 0; i < resultLength; i++) {
+                                Nd4jIndex xOffset = xTadBigger ? xTad.tadOffsets[i] : 0;
+                                Nd4jIndex yOffset = !xTadBigger ? yTad.tadOffsets[i] : 0;
+                                int *xShape = xTadBigger ? xTad.tadShape : shape::shapeOf(xShapeInfo);
+                                int *yShape = !xTadBigger ? yTad.tadShape : shape::shapeOf(yShapeInfo);
+                                int *xStride = xTadBigger ? xTad.tadStride : shape::stride(xShapeInfo);
+                                int *yStride = !xTadBigger ? yTad.tadStride : shape::stride(yShapeInfo);
+                                int xRank = xTadBigger ? shape::rank(xTad.tadOnlyShapeInfo) : shape::rank(xShapeInfo);
+                                int yRank = !xTadBigger ? shape::rank(yTad.tadOnlyShapeInfo) : shape::rank(yShapeInfo);
+                                int coord[MAX_RANK];
+                                int yCoord[MAX_RANK];
+                                T start = 0.0;
+
+                                for (int j = 0; j < tadLength; j++) {
+                                    if(xTadBigger) {
+                                        shape::ind2subC(shape::rank(xTad.tadOnlyShapeInfo),
+                                                        xTad.tadStride, j, coord);
+                                        shape::ind2subC(shape::rank(yShapeInfo),
+                                                        shape::shapeOf(yShapeInfo), j, yCoord);
+                                    }
+                                    else {
+                                        shape::ind2subC(shape::rank(xShapeInfo), shape::shapeOf(xShapeInfo), j, coord);
+                                        shape::ind2subC(shape::rank(yTad.tadOnlyShapeInfo),
+                                                        yTad.tadShape, j, yCoord);
+                                    }
+
+
+
+                                    int xOffset2 =  shape::getOffset(xOffset,xShape,xStride,coord,xRank);
+                                    int yOffset2 =  shape::getOffset(yOffset,yShape,yStride,yCoord,yRank);
+                                    start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParams);
+                                }
+
+                                result[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParams);
+                            }
+                        }
+
                     } else {
                         shape::TAD xTad(xShapeInfo, dimension, dimensionLength);
                         xTad.createTadOnlyShapeInfo();
@@ -1248,14 +1325,14 @@ template<typename OpType>
 
                             T start = OpType::startingValue(x + xOffset);
 
-                            for (int j = 0; j < shape::length(xTad.tadOnlyShapeInfo); j++) {
-                                shape::ind2subC(shape::rank(xTad.tadOnlyShapeInfo), shape::shapeOf(xTad.tadOnlyShapeInfo), j, coord);
+                            for (int j = 0; j < tadLength; j++) {
+                                shape::ind2subC(shape::rank(iterationTadInfo), shape::shapeOf(iterationTadInfo), j, coord);
                                 int xOffset2 = shape::getOffset(xOffset,shape::shapeOf(xTad.tadOnlyShapeInfo),shape::stride(xTad.tadOnlyShapeInfo),coord,shape::rank(xTad.tadOnlyShapeInfo));
                                 int yOffset2 = shape::getOffset(yOffset,shape::shapeOf(yTad.tadOnlyShapeInfo),shape::stride(yTad.tadOnlyShapeInfo),coord,shape::rank(yTad.tadOnlyShapeInfo));
                                 start = OpType::update(start, OpType::op(x[xOffset2], y[yOffset2],extraParams), extraParams);
                             }
 
-                            result[i] = OpType::postProcess(start, shape::length(xTad.tadOnlyShapeInfo), extraParams);
+                            result[i] = OpType::postProcess(start, shape::length(iterationTadInfo), extraParams);
                         }
                     }
 

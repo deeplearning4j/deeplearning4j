@@ -44,7 +44,7 @@ bool experimentalSupport = false;
 #include "../Environment.h"
 #include <TAD.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <Context.h>
+#include <graph/Context.h>
 
 
 void NativeOps::setElementThreshold(int num) {

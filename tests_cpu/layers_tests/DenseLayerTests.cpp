@@ -121,28 +121,28 @@ TEST_F(DenseLayerInputTest, JointConfiguration1) {
 }
 
 TEST_F(DenseLayerInputTest, JointOutputConfiuguration1) {
-    auto *input = new NDArray<double>(32, 784, 'c');
-    auto *output = new NDArray<double>(32, 1000, 'f');
+    auto *input = new NDArray<double>( 'c',{32, 784});
+    auto *output = new NDArray<double>('f',{32, 1000});
 
-    auto *weights = new NDArray<double>(784, 1000, 'c');
-    auto *bias = new NDArray<double>(1, 1000, 'f');
+    auto *weights = new NDArray<double>('c',{784, 1000});
+    auto *bias = new NDArray<double>('f',{1, 1000});
 
 
-    auto *epsilonGood = new NDArray<double>(32, 1000, 'f');
-    auto *epsilonBad1 = new NDArray<double>(32, 1001, 'f');
-    auto *epsilonBad2 = new NDArray<double>(31, 1000, 'f');
+    auto *epsilonGood = new NDArray<double>('f',{32, 1000});
+    auto *epsilonBad1 = new NDArray<double>('f',{32, 1001});
+    auto *epsilonBad2 = new NDArray<double>('f',{31, 1000});
 
-    auto *outputBPGood = new NDArray<double>(32, 784, 'f');
-    auto *outputBPBad1 = new NDArray<double>(32, 785, 'f');
-    auto *outputBPBad2 = new NDArray<double>(31, 784, 'f');
+    auto *outputBPGood = new NDArray<double>('f',{32, 784});
+    auto *outputBPBad1 = new NDArray<double>( 'f',{32, 785});
+    auto *outputBPBad2 = new NDArray<double>('f',{31, 784});
 
-    auto *gradWGood = new NDArray<double>(784, 1000, 'f');
-    auto *gradWBad1 = new NDArray<double>(784, 1001, 'f');
-    auto *gradWBad2 = new NDArray<double>(783, 1000, 'f');
+    auto *gradWGood = new NDArray<double>('f',{784, 1000});
+    auto *gradWBad1 = new NDArray<double>('f',{784, 1001});
+    auto *gradWBad2 = new NDArray<double>('f',{783, 1000});
 
-    auto *gradBGood = new NDArray<double>(1, 1000, 'f');
-    auto *gradBBad1 = new NDArray<double>(1, 1001, 'f');
-    auto *gradBBad2 = new NDArray<double>(2, 1000, 'f');
+    auto *gradBGood = new NDArray<double>( 'f',{1, 1000});
+    auto *gradBBad1 = new NDArray<double>('f',{1, 1001});
+    auto *gradBBad2 = new NDArray<double>('f',{2, 1000});
 
 
 
@@ -231,9 +231,9 @@ TEST_F(DenseLayerInputTest, ParamsTest3) {
 
 
 TEST_F(DenseLayerInputTest, SGemmTest1) {
-    auto *arrayA = new NDArray<float>(3, 5, 'c');
-    auto *arrayB = new NDArray<float>(5, 3, 'f');
-    auto *arrayC = new NDArray<float>(3, 3, 'f');
+    auto *arrayA = new NDArray<float>('c',{3, 5});
+    auto *arrayB = new NDArray<float>('f',{5, 3});
+    auto *arrayC = new NDArray<float>('f',{3, 3});
 
     float exp[9] = {0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f};
 
@@ -273,9 +273,9 @@ TEST_F(DenseLayerInputTest, SGemmTest1) {
 }
 
 TEST_F(DenseLayerInputTest, SGemmTest2) {
-    auto *arrayA = new NDArray<float>(3, 5, 'f');
-    auto *arrayB = new NDArray<float>(5, 3, 'f');
-    auto *arrayC = new NDArray<float>(3, 3, 'f');
+    auto *arrayA = new NDArray<float>('f',{3, 5});
+    auto *arrayB = new NDArray<float>('f',{5, 3});
+    auto *arrayC = new NDArray<float>('f',{3, 3});
 
     float exp[9] = {0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f, 0.0f, 60.0f, 120.f};
 
@@ -316,9 +316,9 @@ TEST_F(DenseLayerInputTest, SGemmTest2) {
 }
 
 TEST_F(DenseLayerInputTest, SGemmTest3) {
-    auto *arrayA = new NDArray<float>(3, 5, 'f');
-    auto *arrayB = new NDArray<float>(5, 3, 'f');
-    auto *arrayC = new NDArray<float>(3, 3, 'c');
+    auto *arrayA = new NDArray<float>('f',{3, 5});
+    auto *arrayB = new NDArray<float>('f',{5, 3});
+    auto *arrayC = new NDArray<float>('c',{3, 3});
 
     float exp[9] = {0.0f, 0.0f, 0.f, 60.0f, 60.0f, 60.f, 120.0f, 120.0f, 120.f};
 
@@ -369,7 +369,7 @@ TEST_F(DenseLayerInputTest, DropOutTest1) {
     layer->_rng = rng;
     layer->_pDropOut = 0.5f;
 
-    auto *input = new NDArray<float>(5, 5, 'c');
+    auto *input = new NDArray<float>('c',{5, 5});
     input->assign(13.0f);
 
     auto *exp = input->dup('c');
@@ -409,7 +409,7 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
     layer->_rng = rng;
     layer->_pDropConnect = 0.5f;
 
-    auto *input = new NDArray<float>(5, 5, 'c');
+    auto *input = new NDArray<float>('c',{5, 5});
     input->assign(13.0f);
 
     auto *exp = input->dup('c');
@@ -441,8 +441,8 @@ TEST_F(DenseLayerInputTest, DropConnectTest1) {
 // This test checks F order input, like middle layers have
 TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 
-    auto *weights = new NDArray<double>(784, 1000, 'f');
-    auto *bias = new NDArray<double>(1, 1000, 'f');
+    auto *weights = new NDArray<double>('f',{784, 1000});
+    auto *bias = new NDArray<double>('f',{1, 1000});
 
     weights->assign(0.15f);
     bias->assign(0.13f);
@@ -451,13 +451,13 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
     ASSERT_NEAR(0.13f, bias->meanNumber(), 1e-5);
     ASSERT_NEAR(0.15f, weights->meanNumber(), 1e-5);
 
-    auto *input = new NDArray<double>(16, 784, 'f');
-    auto *output = new NDArray<double>(16, 1000, 'f');
+    auto *input = new NDArray<double>('f',{16, 784});
+    auto *output = new NDArray<double>('f',{16, 1000});
 
     input->assign(0.19f);
 
 
-    auto *exp = new NDArray<double>(16, 1000, 'f');
+    auto *exp = new NDArray<double>('f',{16, 1000});
     exp->assign(22.474001);
 
     auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
@@ -498,8 +498,8 @@ TEST_F(DenseLayerInputTest, FeedForwardTest1) {
 // This test checks C input order, like this is the first layer in network
 TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 
-    auto *weights = new NDArray<double>(784, 1000, 'f');
-    auto *bias = new NDArray<double>(1, 1000, 'f');
+    auto *weights = new NDArray<double>('f',{784, 1000});
+    auto *bias = new NDArray<double>('f',{1, 1000});
 
     weights->assign(0.15f);
     bias->assign(0.13f);
@@ -508,13 +508,13 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
     ASSERT_NEAR(0.13f, bias->meanNumber(), 1e-5);
     ASSERT_NEAR(0.15f, weights->meanNumber(), 1e-5);
 
-    auto *input = new NDArray<double>(16, 784, 'c');
-    auto *output = new NDArray<double>(16, 1000, 'f');
+    auto *input = new NDArray<double>('c',{16, 784});
+    auto *output = new NDArray<double>( 'f',{16, 1000});
 
     input->assign(0.19f);
 
 
-    auto *exp = new NDArray<double>(16, 1000, 'f');
+    auto *exp = new NDArray<double>('f',{16, 1000});
     exp->assign(22.474001);
 
     auto *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
@@ -556,25 +556,25 @@ TEST_F(DenseLayerInputTest, FeedForwardTest2) {
 // back propagation test
 TEST_F(DenseLayerInputTest, BackPropagationTest1) {
 
-    auto *input = new NDArray<double>(32, 784, 'c');
+    auto *input = new NDArray<double>('c',{32, 784});
     input->assign(0.19);
 
-    auto *output = new NDArray<double>(32, 1000, 'f');
+    auto *output = new NDArray<double>('f',{32, 1000});
 
-    auto *weights = new NDArray<double>(784, 1000, 'c');
+    auto *weights = new NDArray<double>('c',{784, 1000});
     weights->assign(0.15);
 
-    auto *bias = new NDArray<double>(1, 1000, 'f');
+    auto *bias = new NDArray<double>('f',{1, 1000});
     bias->assign(0.13);
     
-    auto *epsilonGood = new NDArray<double>(32, 1000, 'f');
+    auto *epsilonGood = new NDArray<double>('f',{32, 1000});
     epsilonGood->assign(0.12);
 
-    auto *outputBPGood = new NDArray<double>(32, 784, 'f');
+    auto *outputBPGood = new NDArray<double>('f',{32, 784});
 
-    auto *gradWGood = new NDArray<double>(784, 1000, 'f');
+    auto *gradWGood = new NDArray<double>('f',{784, 1000});
 
-    auto *gradBGood = new NDArray<double>(1, 1000, 'f');
+    auto *gradBGood = new NDArray<double>('f',{1, 1000});
 
     nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>> *layer = new nd4j::layers::DenseLayer<double, nd4j::activations::Identity<double>>();
 

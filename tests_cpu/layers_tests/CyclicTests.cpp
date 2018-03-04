@@ -30,7 +30,7 @@ public:
 TEST_F(CyclicTests, TestNDArray1) {
 
     for (int i = 0; i < numLoops; i++) {
-        auto arr = new NDArray<float>(1000, 1000, 'c');
+        auto arr = new NDArray<float>('c',{1000, 1000});
         arr->assign(1.0);
         delete arr;
     }
@@ -44,11 +44,11 @@ TEST_F(CyclicTests, TestNDArrayWorkspace1) {
 
         for (int i = 0; i < intLoops; i++) {
             workspace.scopeIn();
-            
-            auto arr = new NDArray<float>(1000, 1000, 'c');
-            
+
+            auto arr = new NDArray<float>('c',{1000, 1000});
+
             delete arr;
-            
+
             workspace.scopeOut();
         }
 
@@ -118,7 +118,7 @@ TEST_F(CyclicTests, TestCustomOpExecution1) {
         variableSpace->putVariable(pair0, output);
 
 
-        Block<float>* block = new Block<float>(1, variableSpace, false);  // not-in-place
+        Context<float>* block = new Context<float>(1, variableSpace, false);  // not-in-place
         block->fillInputs({-1});
 
         // kernel params
@@ -252,8 +252,8 @@ TEST_F(CyclicTests, Test_ArrayList_10) {
 
 
     for (int e = 0; e < numLoops; e++) {
-
-        NDArray<float> exp('c', {5, 2}, {3., 6., 9., 12., 15., 18., 21., 24., 27., 30.});
+        float data[10] = {3., 6., 9., 12., 15., 18., 21., 24., 27., 30.};
+        NDArray<float> exp(data,'c', {5, 2});
         auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_array_loop.fb");
 
         ASSERT_TRUE(graph != nullptr);

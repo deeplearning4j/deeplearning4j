@@ -1,6 +1,7 @@
 //
 // Created by agibsonccc on 1/6/17.
 //
+#include <helpers/data_gen.h>
 #include "testinclude.h"
 
 class OnesTest : public testing::Test {
@@ -239,27 +240,6 @@ class TadRank : public testing::Test {
     int dimension[2] = {2,3};
 
 };
-
-
-class DimensionWarning : public testing::Test {
-public:
-    int dimensionLength = 2;
-    int dimensions[2] = {0,1};
-    int shape[3] = {1,5,1};
-    int *shapeBuffer = shape::shapeBuffer(3,shape);
-
-    ~DimensionWarning() {
-        delete[] shapeBuffer;
-    }
-};
-
-
-TEST_F(DimensionWarning,ShapeWarning) {
-    shape::TAD *tad = new shape::TAD(shapeBuffer,dimensions,dimensionLength);
-    tad->createTadOnlyShapeInfo();
-    tad->createOffsets();
-    delete tad;
-}
 
 class TestRemoveIndex : public testing::Test {};
 

@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(where, -1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
 
             if (block.width() == 3) {
@@ -15,18 +15,38 @@ namespace nd4j {
                 auto y = INPUT_VARIABLE(2);
 
                 auto z = OUTPUT_VARIABLE(0);
-
-                REQUIRE_TRUE(x->isSameShape(y), 0, "X and Y must have equal shapes");
-
+               int numMatches = 0;
                 // if cond matches x/y shape - we have per-element mask
                 if (condition->isSameShape(x)) {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
-                    for (int e = 0; e < condition->lengthOf(); e++) {
-                        T v = condition->getIndexedScalar(e);
-                        T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);
-                        z->putIndexedScalar(e, r);
+                    if(y->isScalar()) {
+                        for (int e = 0; e < condition->lengthOf(); e++) {
+                            T v = condition->getIndexedScalar(e);
+                            T r = v > (T) 0.0f ? y->getIndexedScalar(0) : x->getIndexedScalar(e);
+                            z->putIndexedScalar(e, r);
+                        }
                     }
-                } else {
+                    else {
+
+                        for (int e = 0; e < condition->lengthOf(); e++) {
+                            T v = condition->getIndexedScalar(e);
+                            if (v > 0.0f) {
+                                T r = y->getIndexedScalar(numMatches);
+                                z->putIndexedScalar(e, r);
+                                numMatches++;
+                            }
+                            else {
+                                T r = x->getIndexedScalar(e);
+                                z->putIndexedScalar(e, r);
+                            }
+                        }
+
+                        REQUIRE_TRUE(numMatches == y->lengthOf(), 44, "Num matches %d != length of put array %d", numMatches,y->lengthOf());
+
+                    }
+
+                }
+                else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
                     auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
@@ -36,7 +56,7 @@ namespace nd4j {
 
                     for (int e = 0; e < tadsX->size(); e++) {
                         T v = condition->getIndexedScalar(e);
-                        
+
                         if (v == (T) 0.0f)
                             tadsZ->at(e)->assign(tadsY->at(e));
                         else
@@ -52,7 +72,7 @@ namespace nd4j {
 
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 
-                int width = condition->rankOf(); 
+                int width = condition->rankOf();
 
                 std::vector<int> dims = ShapeUtils<T>::convertAxisToTadTarget(width, {0});
 
@@ -69,7 +89,7 @@ namespace nd4j {
                         auto array = new NDArray<T>('c', {1, condition->rankOf()});
                         for (int f = 0; f < condition->rankOf(); f++)
                             array->putIndexedScalar(f, (T) idx[f]);
-                            
+
                         list.write(cnt++, array);
                     }
                 }
@@ -80,9 +100,10 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-        DECLARE_SYN(where, Where);
 
-        DECLARE_SHAPE_FN(Where) {
+
+
+        DECLARE_SHAPE_FN(where) {
             if (block.width() == 3) {
                 auto inShape = inputShape->at(1);
                 int *newshape;
@@ -96,7 +117,7 @@ namespace nd4j {
 
                 int *newshape;
                 ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(2), int);
-            
+
                 newshape[0] = 2;
                 newshape[1] = 10;
                 newshape[2] = 10;

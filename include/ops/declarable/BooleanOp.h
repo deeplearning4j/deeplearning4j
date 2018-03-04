@@ -5,7 +5,7 @@
 #ifndef LIBND4J_BOOLEANOP_H
 #define LIBND4J_BOOLEANOP_H
 
-#include <Context.h>
+#include <graph/Context.h>
 #include "OpDescriptor.h"
 #include "DeclarableOp.h"
 

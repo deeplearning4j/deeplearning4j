@@ -183,3 +183,19 @@ The upload command for a deb package built for cuda is:
 ``` bash
 ./packages/push_to_bintray.sh myAPIUser myAPIKey deeplearning4j blasbuild/cuda/libnd4j-0.8.0.fc7.3.1611.x86_64.deb https://github.com/deeplearning4j
 ```
+
+##Running tests
+
+Tests are written with [gtest](https://github.com/google/googletest), 
+run using cmake.
+Tests are currently under tests_cpu/
+
+There are 2 directories for running tests: 
+
+    1. libnd4j_tests: These are older legacy ops tests.
+    2. layers_tests: This covers the newer graph operations and ops associated with samediff.
+
+
+For running the tests, we currently use cmake to run the tests.
+We typically use clion for our tests.
+

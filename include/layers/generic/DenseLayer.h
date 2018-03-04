@@ -49,7 +49,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     T *buffer = this->_output->getBuffer();
     int *shapeInfo = this->_output->getShapeInfo();
 
-    NDArray<T> *preOutput = new NDArray<T>(this->_input->shapeOf()[0], this->_params->shapeOf()[1], 'f');
+    NDArray<T> *preOutput = new NDArray<T>('f',{this->_input->shapeOf()[0], this->_params->shapeOf()[1]});
     this->_output->replacePointers(preOutput->getBuffer(), preOutput->getShapeInfo());
     this->feedForward();
 
@@ -72,7 +72,7 @@ template<typename T, typename AF> int DenseLayer<T,AF>::backPropagate() {
     // calculate next epsilon
 
     // creating temp output array
-    NDArray<T> *oT = new NDArray<T>(this->_params->shapeOf()[0], this->_input->shapeOf()[0], 'f');
+    NDArray<T> *oT = new NDArray<T>('f',{this->_params->shapeOf()[0], this->_input->shapeOf()[0]});
     delta->transposei();
     this->gemmHelper(this->_params, delta, oT, (T) 1.0f, (T) 0.0f);
     //printf("O length: %i\n", this->_output->lengthOf());

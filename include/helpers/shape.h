@@ -2565,6 +2565,16 @@ __host__ __device__
 #endif
 
     INLINEDEF void doPermuteSwap(int length, int **shape, int *rearrange) {
+        if(length == 1) {
+            return;
+        }
+        else {
+            int *shapeDeref = *shape;
+            if(shape::prod(shapeDeref,length) < 2) {
+                return;
+            }
+        }
+
         bool inOrder = true;
         for(int i = 0; i < length - 1; i++) {
             inOrder = inOrder && rearrange[i] + 1 == rearrange[i + 1];
@@ -2583,6 +2593,10 @@ __host__ __device__
             int shapeSecond = shapeDeref[1];
             shapeDeref[0] = shapeSecond;
             shapeDeref[1] = shapeFirst;
+            return;
+        }
+        else if(length == 1) {
+            //no permute
             return;
         }
 
@@ -2621,6 +2635,11 @@ __host__ __device__
 #endif
 
     INLINEDEF void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange) {
+        //no swapping needs to happen
+        if(shape::isScalar(shapeBuffer)) {
+            return;
+        }
+
         int *shapeRef = shapeBuffer;
         //rank of the rearrange array == rank of shape buffer
         int rearrageRank = shape::rank(shapeRef);
@@ -3458,6 +3477,7 @@ __host__ __device__
 
     INLINEDEF void removeIndex(int *data, int *indexes, int dataLength, int indexesLength,
                                int *ret) {
+
         int count = 0;
         int absLength = dataLength - indexesLength;
         for (int i = 0; i < dataLength && count < absLength; i++) {
@@ -3497,7 +3517,9 @@ __host__ __device__
         if(lengthOfArr < 0) {
             printf("Remove index call created a <= 0 length array. This was likely not intended.");
         }
+
         int *ret = new int[lengthOfArr];
+        memset(ret,0,sizeof(int)  * lengthOfArr);
         removeIndex(data,indexes,dataLength,indexesLength,ret);
         return ret;
     }
@@ -4309,14 +4331,12 @@ __host__ __device__
 
         traceNew(30);
 
-        int *shape = new int[2];
+        int *shape = new int[1];
         shape[0] = 1;
-        shape[1] = 1;
-        int *stride = new int[2];
+        int *stride = new int[1];
         stride[0] = 1;
-        stride[1] = 1;
         ShapeInformation *shapeInformation2 = new ShapeInformation();
-        shapeInformation2->rank = 2;
+        shapeInformation2->rank = 1;
         shapeInformation2->offset = 0;
         shapeInformation2->stride = stride;
         shapeInformation2->shape = shape;

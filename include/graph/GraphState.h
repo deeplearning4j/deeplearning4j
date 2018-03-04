@@ -10,13 +10,13 @@
 #include <dll.h>
 #include <vector>
 #include <map>
-#include <Scope.h>
+#include <graph/Scope.h>
 #include <Status.h>
-#include <VariableSpace.h>
+#include <graph/VariableSpace.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <types/pair.h>
-#include <ArgumentsList.h>
-#include <Graph.h>
+#include <graph/ArgumentsList.h>
+#include <graph/Graph.h>
 
 namespace nd4j {
 namespace graph {

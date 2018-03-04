@@ -9,7 +9,7 @@
 #include <types/float16.h>
 #include <pointercast.h>
 #include <NDArray.h>
-#include <Context.h>
+#include <graph/Context.h>
 #include "OpDescriptor.h"
 #include <helpers/helper_hash.h>
 #include <array/ShapeList.h>

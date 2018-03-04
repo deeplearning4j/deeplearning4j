@@ -7,7 +7,7 @@
 
 #include <string>
 #include <map>
-#include <Node.h>
+#include <graph/Node.h>
 
 namespace nd4j {
     namespace graph {

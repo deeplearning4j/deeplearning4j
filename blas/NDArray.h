@@ -1297,7 +1297,7 @@ template<typename T>
 FORCEINLINE T NDArray<T>::operator()(const Nd4jIndex i) const { 
 
     if (i >= shape::length(_shapeInfo))
-            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
+            throw std::invalid_argument("NDArray::operator(i): dinput index is out of array length !");
 
     int  ews   = shape::elementWiseStride(_shapeInfo);   
     char order = ordering();   

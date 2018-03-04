@@ -720,7 +720,7 @@ namespace shape {
 
 
     INLINEDEF int* TAD::shapeInfoOnlyShapeAndStride() {
-        if(wholeThing && (dimensionLength == 1 && dimension[0] == MAX_DIMENSION) )
+        if(wholeThing && (dimensionLength == 1 && dimension[0] == MAX_DIMENSION) || shape::isScalar(shapeInfo))
             return shape::createScalarShapeInfo();
 
         //ensure tad shapes get setup right for vectors
@@ -746,7 +746,8 @@ namespace shape {
                 int *permutedRet2 = shape::permuteShapeBuffer(shapeInfo,permuted);
                 return permutedRet2;
             } else if(dimension[0] == 1 && shape::isVector(shapeInfo) && theShape[0] == 1) {
-                return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
+                int *ret = shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
+                return ret;
             }
             else if(shape::shapeOf(shapeInfo)[dimension[0]] == 1) {
                 int *scalarInfo = shape::createScalarShapeInfo();
@@ -802,6 +803,10 @@ namespace shape {
         else {
             int length = tensorLength;
             int lengthPerSlice = this->lengthPerSlice(ret2);
+            if(lengthPerSlice < 1) {
+                return ret2;
+            }
+
             int offset = tadIndex * tensorLength /lengthPerSlice;
             if(sliceIndex == 0 && length == lengthPerSlice) {
                 int *newRet2 = shape::sliceOfShapeBuffer(offset,ret2);

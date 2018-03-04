@@ -16,8 +16,7 @@ Default installation directory is /usr/local. To specify a different directory, 
 Using:
 
 To use, #include"cnpy.h" in your source code. Compile the source code mycode.cpp as
-
-g++ -o mycode mycode.cpp -L/path/to/install/dir -lcnpy
+ /path/to/install/dir -lcnpy
 
 Description:
 
