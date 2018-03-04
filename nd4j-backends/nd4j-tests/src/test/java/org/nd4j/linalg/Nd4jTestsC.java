@@ -117,6 +117,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testTriu() {
+        INDArray input = Nd4j.linspace(1,12,12).reshape(4,3);
+        int k = -1;
+        INDArray test = Nd4j.triu(input,k);
+        INDArray create = Nd4j.create(new double[][]{
+                {1,2,3},
+                {4,5,6},
+                {0,8,9},
+                {0,0,12}
+        });
+
+        assertEquals(test,create);
+    }
+
+    @Test
     public void testDiag() {
       INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4).reshape(4,1));
       assertArrayEquals(new int[] {4,4},diag.shape());

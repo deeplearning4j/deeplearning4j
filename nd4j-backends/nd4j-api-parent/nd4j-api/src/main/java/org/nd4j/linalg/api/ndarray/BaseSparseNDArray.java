@@ -135,6 +135,35 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     }
 
+    @Override
+    public double[][] toDoubleMatrix() {
+        return new double[0][];
+    }
+
+    @Override
+    public double[] toDoubleVector() {
+        return new double[0];
+    }
+
+    @Override
+    public float[] toFloatVector() {
+        return new float[0];
+    }
+
+    @Override
+    public float[][] toFloatMatrix() {
+        return new float[0][];
+    }
+
+    @Override
+    public int[] toIntVector() {
+        return new int[0];
+    }
+
+    @Override
+    public int[][] toIntMatrix() {
+        return new int[0][];
+    }
 
     @Override
     public INDArray match(INDArray comp, Condition condition) {

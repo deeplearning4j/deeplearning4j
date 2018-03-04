@@ -399,6 +399,13 @@ public class TensorFlowImportTest {
 
 
     @Test
+    public void testWeirdConvImport() {
+        val tg = TFGraphMapper.getInstance().importGraph(new File("/home/agibsonccc/code/raver_tfimport_test1/profiling_conv.pb.txt"));
+        assertNotNull(tg);
+    }
+
+
+    @Test
     public void testIntermediateLoop3() throws Exception {
         Nd4j.create(1);
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/nested_while.pb.txt").getInputStream());

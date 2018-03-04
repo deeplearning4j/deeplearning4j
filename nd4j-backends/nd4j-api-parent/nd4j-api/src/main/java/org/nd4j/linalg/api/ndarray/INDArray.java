@@ -1453,6 +1453,68 @@ public interface INDArray extends Serializable {
     INDArray mmul(INDArray other);
 
 
+
+    /**
+     * Convert this ndarray to a 2d double matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d double array
+     */
+    double[][] toDoubleMatrix();
+
+    /**
+     * Convert this ndarray to a 1d double matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 1d double array
+     */
+    double[] toDoubleVector();
+
+    /**
+     * Convert this ndarray to a 1d float vector.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 1d float array
+     */
+    float[] toFloatVector();
+
+    /**
+     * Convert this ndarray to a 2d float matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d float array
+     */
+    float[][] toFloatMatrix();
+
+    /**
+     * Convert this ndarray to a 1d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 1d int array
+     */
+    int[] toIntVector();
+
+
+    /**
+     * Convert this ndarray to a 2d int matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 2d int array
+     */
+    int[][] toIntMatrix();
+
     /**
      * Perform an copy matrix multiplication
      *

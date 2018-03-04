@@ -56,6 +56,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
+import org.nd4j.linalg.api.ops.impl.shape.Select;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.impl.Choice;
@@ -79,6 +80,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -6659,6 +6661,83 @@ public class Nd4j {
     }
 
 
+    public static INDArray triu(INDArray m,int k) {
+        /**
+         *     """
+         Upper triangle of an array.
+
+         Return a copy of a matrix with the elements below the `k`-th diagonal
+         zeroed.
+
+         Please refer to the documentation for `tril` for further details.
+
+         See Also
+         --------
+         tril : lower triangle of an array
+
+         Examples
+         --------
+         >>> np.triu([[1,2,3],[4,5,6],[7,8,9],[10,11,12]], -1)
+         array([[ 1,  2,  3],
+         [ 4,  5,  6],
+         [ 0,  8,  9],
+         [ 0,  0, 12]])
+
+         """
+         m = asanyarray(m)
+         mask = tri(*m.shape[-2:], k=k-1, dtype=bool)
+
+         return where(mask, zeros(1, m.dtype), m)
+         */
+
+        INDArray mask = tri(m.size(-2),1);
+        /**
+         * Find a way to apply choose with an existing condition array.
+         * (This appears to be the select op in libnd4j)
+         */
+
+        Select select = new Select(new INDArray[]{mask,Nd4j.zeros(1),m},new INDArray[]{Nd4j.zerosLike(m)});
+        Nd4j.getExecutioner().exec(select);
+        return select.getOutputArgument(0);
+
+    }
+
+
+    /**
+     *
+     * @param n
+     * @return
+     */
+    public static INDArray tri(int n) {
+        return tri(n,n,0);
+    }
+
+    /**
+     *
+     * @param n
+     * @param k
+     * @return
+     */
+    public static INDArray tri(int n,int k) {
+        return tri(n,n,k);
+    }
+
+    /**
+     * Like the scipy function tri.
+     * From the scipy documentation:
+     *  An array with ones at and below the given diagonal and zeros elsewhere.
+     * @param n number of rows in the array
+     * @param m number of columns in the array ( can be just equal to n)
+     * @param k    The sub-diagonal at and below which the array is filled.
+    `k` = 0 is the main diagonal, while `k` < 0 is below it,
+    and `k` > 0 is above.  The default is 0.
+     * @return
+     */
+    public static INDArray tri(int n,int m,int k) {
+        INDArray mRet = Transforms.greaterThanOrEqual(arange(n),arange(-k,m - k));
+        return mRet;
+    }
+
     /**
      * Create from an in memory numpy pointer
      *
@@ -6697,6 +6776,9 @@ public class Nd4j {
         Pointer pointer = new Pointer(byteBuffer);
         return createFromNpyPointer(pointer);
     }
+
+
+
 
 
     /**
