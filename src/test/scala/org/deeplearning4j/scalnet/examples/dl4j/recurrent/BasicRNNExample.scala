@@ -3,7 +3,6 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.Updater
-import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.{GravesLSTM, RnnOutputLayer}
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
@@ -21,16 +20,8 @@ object BasicRNNExample extends App with LazyLogging {
   val LEARNSTRING = "*Der Cottbuser Postkutscher putzt den Cottbuser Postkutschkasten.".toVector
   val LEARNSTRING_CHARS = LEARNSTRING.distinct
 
-  // Training data
   val input = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
   val labels = Nd4j.zeros(1, LEARNSTRING_CHARS.length, LEARNSTRING.length)
-
-  // RNN dimensions
-  val HIDDEN_LAYER_WIDTH = 64
-  val nEpochs = 100
-  val rngSeed = 1234
-  val rand = new Random(rngSeed)
-  val listeners = List(new ScoreIterationListener(1))
 
   val trainingData: DataSet = {
     LEARNSTRING.zipWithIndex.foreach {
@@ -42,6 +33,11 @@ object BasicRNNExample extends App with LazyLogging {
     new DataSet(input, labels)
   }
 
+  val HIDDEN_LAYER_WIDTH = 64
+  val nEpochs = 200
+  val rngSeed = 1234
+  val rand = new Random(rngSeed)
+
   val model: NeuralNet = {
     val model: NeuralNet = NeuralNet(rngSeed = rngSeed, miniBatch = false)
     model.add(GravesLSTM(LEARNSTRING_CHARS.length, HIDDEN_LAYER_WIDTH, Activation.TANH))
@@ -52,22 +48,21 @@ object BasicRNNExample extends App with LazyLogging {
   }
 
   val rnn = model.getNetwork
-  println(rnn.getLayers.toVector)
 
-  (0 until 1000).foreach { _ =>
+  (0 until nEpochs).foreach { e =>
     rnn.fit(trainingData)
     rnn.rnnClearPreviousState()
     val init = Nd4j.zeros(LEARNSTRING_CHARS.length)
     init.putScalar(LEARNSTRING_CHARS.indexOf(LEARNSTRING(0)), 1)
     var output = rnn.rnnTimeStep(init)
 
-    LEARNSTRING.foreach { _ =>
+    val predicted: Vector[Char] = LEARNSTRING.map { _ =>
       val sampledCharacterIdx = Nd4j.getExecutioner.exec(new IMax(output), 1).getInt(0)
-      print(LEARNSTRING_CHARS(sampledCharacterIdx))
       val nextInput = Nd4j.zeros(LEARNSTRING_CHARS.length)
       nextInput.putScalar(sampledCharacterIdx, 1)
       output = rnn.rnnTimeStep(nextInput)
+      LEARNSTRING_CHARS(sampledCharacterIdx)
     }
-    println("")
+    logger.info(s"Epoch $e - ${predicted.mkString}")
   }
 }
