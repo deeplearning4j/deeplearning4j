@@ -188,7 +188,7 @@ public class PatriciaTrie<V> implements Map<String, V> {
      */
     @Override
     public Collection<V> values() {
-        List<V> values = new ArrayList<V>();
+        List<V> values = new ArrayList<>();
         valuesR(root.getLeft(), -1, values);
         return values;
     }
@@ -251,7 +251,7 @@ public class PatriciaTrie<V> implements Map<String, V> {
      */
     @Override
     public void clear() {
-        root = new PatriciaNode<V>(null, null, -1);
+        root = new PatriciaNode<>(null, null, -1);
         root.setLeft(root);
         entries = 0;
     }

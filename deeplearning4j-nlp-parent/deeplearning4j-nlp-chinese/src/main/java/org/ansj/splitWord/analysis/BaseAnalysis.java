@@ -28,7 +28,7 @@ public class BaseAnalysis extends Analysis {
             }
 
             private List<Term> getResult() {
-                List<Term> result = new ArrayList<Term>();
+                List<Term> result = new ArrayList<>();
                 int length = graph.terms.length - 1;
                 for (int i = 0; i < length; i++) {
                     if (graph.terms[i] != null) {

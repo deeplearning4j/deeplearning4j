@@ -12,7 +12,7 @@ public class KV<K, V> {
     }
 
     public static <K, V> KV<K, V> with(K k, V v) {
-        return new KV<K, V>(k, v);
+        return new KV<>(k, v);
     }
 
     public void setK(K k) {

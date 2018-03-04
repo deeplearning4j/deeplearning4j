@@ -9,7 +9,7 @@ import java.util.*;
 
 public class KeyWordComputer<T extends Analysis> {
 
-    private static final Map<String, Double> POS_SCORE = new HashMap<String, Double>();
+    private static final Map<String, Double> POS_SCORE = new HashMap<>();
     private T analysisType;
 
 
@@ -61,7 +61,7 @@ public class KeyWordComputer<T extends Analysis> {
      * @return
      */
     private List<Keyword> computeArticleTfidf(String content, int titleLength) {
-        Map<String, Keyword> tm = new HashMap<String, Keyword>();
+        Map<String, Keyword> tm = new HashMap<>();
 
         List<Term> parse = analysisType.parseStr(content).getTerms();
         //FIXME: 这个依赖于用户自定义词典的词性,所以得需要另一个方法..
@@ -83,9 +83,9 @@ public class KeyWordComputer<T extends Analysis> {
             }
         }
 
-        TreeSet<Keyword> treeSet = new TreeSet<Keyword>(tm.values());
+        TreeSet<Keyword> treeSet = new TreeSet<>(tm.values());
 
-        ArrayList<Keyword> arrayList = new ArrayList<Keyword>(treeSet);
+        ArrayList<Keyword> arrayList = new ArrayList<>(treeSet);
         if (treeSet.size() <= nKeyword) {
             return arrayList;
         } else {

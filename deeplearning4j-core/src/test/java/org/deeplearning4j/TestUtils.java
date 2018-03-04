@@ -4,6 +4,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.ByteArrayInputStream;
@@ -55,6 +56,22 @@ public class TestUtils {
         }
     }
 
+    public static INDArray randomOneHot(int examples, int nOut){
+        return randomOneHot(examples, nOut, new Random(12345));
+    }
+
+    public static INDArray randomOneHot(int examples, int nOut, long rngSeed){
+        return randomOneHot(examples, nOut, new Random(rngSeed));
+    }
+
+    public static INDArray randomOneHot(int examples, int nOut, Random rng){
+        INDArray arr = Nd4j.create(examples, nOut);
+        for( int i=0; i<examples; i++ ){
+            arr.putScalar(i, rng.nextInt(nOut), 1.0);
+        }
+        return arr;
+    }
+
     public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength){
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random());
     }
@@ -71,5 +88,15 @@ public class TestUtils {
             }
         }
         return out;
+    }
+
+    public static INDArray randomBernoulli(int... shape) {
+        return randomBernoulli(0.5, shape);
+    }
+
+    public static INDArray randomBernoulli(double p, int... shape){
+        INDArray ret = Nd4j.createUninitialized(shape);
+        Nd4j.getExecutioner().exec(new BernoulliDistribution(ret, p));
+        return ret;
     }
 }

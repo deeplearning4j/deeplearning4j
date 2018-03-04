@@ -88,7 +88,7 @@ public class KerasUpsampling1D extends KerasLayer {
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Upsampling 1D layer accepts only one input (received " + inputType.length + ")");
         return this.getUpsampling1DLayer().getOutputType(-1, inputType[0]);
     }
 

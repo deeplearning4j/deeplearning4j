@@ -102,7 +102,7 @@ public class NatureRecognition implements Recognition {
      * @return
      */
     public List<Term> recognition(List<String> words, int offe) {
-        List<Term> terms = new ArrayList<Term>(words.size());
+        List<Term> terms = new ArrayList<>(words.size());
         int tempOffe = 0;
         for (String word : words) {
             TermNatures tn = getTermNatures(word);

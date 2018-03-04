@@ -81,7 +81,7 @@ class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
             }
 
             DataSet next;
-            if (list.size() == 0)
+            if (list.isEmpty())
                 next = list.get(0);
             else
                 next = DataSet.merge(list);

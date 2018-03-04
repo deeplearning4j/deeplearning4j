@@ -257,7 +257,7 @@ public class Hdf5Archive {
      * @return
      */
     private List<String> getObjects(hdf5.Group fileGroup, int objType) {
-        List<String> groups = new ArrayList<String>();
+        List<String> groups = new ArrayList<>();
         for (int i = 0; i < fileGroup.getNumObjs(); i++) {
             BytePointer objPtr = fileGroup.getObjnameByIdx(i);
             if (fileGroup.childObjType(objPtr) == objType)

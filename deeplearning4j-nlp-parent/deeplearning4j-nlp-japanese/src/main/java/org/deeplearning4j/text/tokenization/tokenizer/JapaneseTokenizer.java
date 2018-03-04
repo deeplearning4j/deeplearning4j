@@ -84,7 +84,7 @@ public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.t
 
     @Override
     public List<String> getTokens() {
-        List<String> ret = new ArrayList<String>(tokenCount);
+        List<String> ret = new ArrayList<>(tokenCount);
 
         for (int i = 0; i < tokenCount; i++) {
             ret.add(getToken(i));

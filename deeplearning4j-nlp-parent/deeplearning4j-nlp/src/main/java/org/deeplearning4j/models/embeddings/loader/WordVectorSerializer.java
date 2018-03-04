@@ -22,6 +22,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.IOUtils;
@@ -87,75 +88,12 @@ import java.util.zip.ZipOutputStream;
  * @author Adam Gibson
  * @author raver119
  */
+@Slf4j
 public class WordVectorSerializer {
-    private static final boolean DEFAULT_LINEBREAKS = false;
-    private static final boolean HAS_HEADER = true;
     private static final int MAX_SIZE = 50;
-    private static final String whitespaceReplacement = "_Az92_";
-    private static final Logger log = LoggerFactory.getLogger(WordVectorSerializer.class);
+    private static final String WHITESPACE_REPLACEMENT = "_Az92_";
 
     private WordVectorSerializer() {}
-
-    /**
-     * Loads the google model
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     *            the path to the google model
-     * @param binary
-     *            read from binary file format (if set to true) or from text file format.
-     * @return the loaded model
-     * @throws IOException
-     */
-    @Deprecated
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary) throws IOException {
-        return loadGoogleModel(modelFile, binary, DEFAULT_LINEBREAKS);
-    }
-
-    /**
-     * Loads the Google model.
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     *            the input file
-     * @param binary
-     *            read from binary or text file format
-     * @param lineBreaks
-     *            if true, the input file is expected to terminate each line with a line break. This
-     *            is typically the case for files created with recent versions of Word2Vec, but not
-     *            for the downloadable model files.
-     * @return a {@link Word2Vec} object
-     * @throws IOException
-     * @author Carsten Schnober
-     */
-    @Deprecated
-    public static Word2Vec loadGoogleModel(File modelFile, boolean binary, boolean lineBreaks) throws IOException {
-        return binary ? readBinaryModel(modelFile, lineBreaks, true)
-                        : WordVectorSerializer.fromPair(loadTxt(modelFile));
-    }
-
-    /**
-     *
-     * Loads the Google model without normalization being applied.
-     *
-     * PLEASE NOTE: Use this method only if you understand why you need not-normalized model. In all other cases please use loadGoogleModel() instead.
-     *
-     * Deprecation note: Please, consider using readWord2VecModel() or loadStaticModel() method instead
-     *
-     * @param modelFile
-     * @param binary
-     * @param lineBreaks
-     * @return
-     * @throws IOException
-     */
-    @Deprecated
-    public static WordVectors loadGoogleModelNonNormalized(File modelFile, boolean binary, boolean lineBreaks)
-                    throws IOException {
-        return binary ? readBinaryModel(modelFile, lineBreaks, false)
-                        : WordVectorSerializer.fromPair(loadTxt(modelFile));
-    }
 
     /**
      * @param modelFile
@@ -185,7 +123,7 @@ public class WordVectorSerializer {
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
                 assert split.length == layerSize + 1;
-                String word = split[0].replaceAll(whitespaceReplacement, " ");
+                String word = split[0].replaceAll(WHITESPACE_REPLACEMENT, " ");
 
                 float[] vector = new float[split.length - 1];
                 for (int i = 1; i < split.length; i++) {
@@ -956,7 +894,7 @@ public class WordVectorSerializer {
                     }
 
                     // it's possible to have full model without syn1Neg
-                    if (rows.size() > 0) {
+                    if (!rows.isEmpty()) {
                         INDArray syn1Neg = Nd4j.vstack(rows);
                         ((InMemoryLookupTable) w2v.getLookupTable()).setSyn1Neg(syn1Neg);
                     }
@@ -1026,7 +964,7 @@ public class WordVectorSerializer {
         reader.close();
 
         // it's possible to have full model without syn1
-        if (rows.size() > 0) {
+        if (!rows.isEmpty()) {
             INDArray syn1 = Nd4j.vstack(rows);
             lookupTable.setSyn1(syn1);
         }
@@ -1122,7 +1060,7 @@ public class WordVectorSerializer {
             String line = "";
             while ((line = reader.readLine()) != null) {
                 String[] split = line.split(" ");
-                split[1] = split[1].replaceAll(whitespaceReplacement, " ");
+                split[1] = split[1].replaceAll(WHITESPACE_REPLACEMENT, " ");
                 VocabWord word = new VocabWord(1.0, split[1]);
                 if (split[0].equals("L")) {
                     // we have label element here
@@ -1251,7 +1189,7 @@ public class WordVectorSerializer {
                 StringBuilder builder = new StringBuilder();
 
                 builder.append(word.isLabel() ? "L" : "E").append(" ");
-                builder.append(word.getLabel().replaceAll(" ", whitespaceReplacement)).append(" ");
+                builder.append(word.getLabel().replaceAll(" ", WHITESPACE_REPLACEMENT)).append(" ");
 
                 INDArray vector = vectors.getWordVectorMatrix(word.getLabel());
                 for (int j = 0; j < vector.length(); j++) {
@@ -1292,7 +1230,7 @@ public class WordVectorSerializer {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", whitespaceReplacement));
+            sb.append(word.replaceAll(" ", WHITESPACE_REPLACEMENT));
             sb.append(" ");
             INDArray wordVector = lookupTable.vector(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -1641,7 +1579,7 @@ public class WordVectorSerializer {
                 continue;
             }
             StringBuilder sb = new StringBuilder();
-            sb.append(word.replaceAll(" ", whitespaceReplacement));
+            sb.append(word.replaceAll(" ", WHITESPACE_REPLACEMENT));
             sb.append(" ");
             INDArray wordVector = vec.getWordVectorMatrix(word);
             for (int j = 0; j < wordVector.length(); j++) {
@@ -1849,7 +1787,7 @@ public class WordVectorSerializer {
 
         while ((line = reader.readLine()) != null) {
             String[] split = line.split(" ");
-            String word = split[0].replaceAll(whitespaceReplacement, " ");
+            String word = split[0].replaceAll(WHITESPACE_REPLACEMENT, " ");
             VocabWord word1 = new VocabWord(1.0, word);
 
             word1.setIndex(cache.numWords());
@@ -1911,7 +1849,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word.replaceAll(" ", whitespaceReplacement));
+            sb.append(word.replaceAll(" ", WHITESPACE_REPLACEMENT));
             sb.append(" ");
 
             sb.append("\n");
@@ -1953,7 +1891,7 @@ public class WordVectorSerializer {
                 }
             }
             sb.append(",");
-            sb.append(word.replaceAll(" ", whitespaceReplacement));
+            sb.append(word.replaceAll(" ", WHITESPACE_REPLACEMENT));
             sb.append(" ");
 
             sb.append("\n");
@@ -2464,7 +2402,7 @@ public class WordVectorSerializer {
 
                     Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                    vec = loadGoogleModel(file, true, true);
+                    vec = readBinaryModel(file, true, true);
                     return vec;
                 } catch (Exception ey) {
                     // try to load without linebreaks
@@ -2474,7 +2412,7 @@ public class WordVectorSerializer {
 
                         Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
 
-                        vec = loadGoogleModel(file, true, false);
+                        vec = readBinaryModel(file, false, true);
                         return vec;
                     } catch (Exception ez) {
                         throw new RuntimeException(

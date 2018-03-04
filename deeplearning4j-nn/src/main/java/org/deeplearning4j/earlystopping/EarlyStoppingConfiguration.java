@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.earlystopping;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -26,6 +27,7 @@ import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.linalg.function.Supplier;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -53,6 +55,7 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
     private boolean saveLastModel;
     private int evaluateEveryNEpochs;
     private ScoreCalculator<T> scoreCalculator;
+    private Supplier<ScoreCalculator> scoreCalculatorSupplier;
 
     private EarlyStoppingConfiguration(Builder<T> builder) {
         this.modelSaver = builder.modelSaver;
@@ -61,6 +64,14 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
         this.saveLastModel = builder.saveLastModel;
         this.evaluateEveryNEpochs = builder.evaluateEveryNEpochs;
         this.scoreCalculator = builder.scoreCalculator;
+        this.scoreCalculatorSupplier = builder.scoreCalculatorSupplier;
+    }
+
+    public ScoreCalculator<T> getScoreCalculator(){
+        if(scoreCalculatorSupplier != null){
+            return scoreCalculatorSupplier.get();
+        }
+        return scoreCalculator;
     }
 
 
@@ -96,6 +107,8 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
         private boolean saveLastModel = false;
         private int evaluateEveryNEpochs = 1;
         private ScoreCalculator<T> scoreCalculator;
+        private Supplier<ScoreCalculator> scoreCalculatorSupplier;
+
 
         /** How should models be saved? (Default: in memory)*/
         public Builder<T> modelSaver(EarlyStoppingModelSaver<T> modelSaver) {
@@ -147,11 +160,18 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
             return this;
         }
 
+        /** Score calculator. Used to calculate a score (such as loss function on a test set), every N epochs,
+         * where N is set by {@link #evaluateEveryNEpochs}
+         */
+        public Builder<T> scoreCalculator(Supplier<ScoreCalculator> scoreCalculatorSupplier){
+            this.scoreCalculatorSupplier = scoreCalculatorSupplier;
+            return this;
+        }
+
         /** Create the early stopping configuration */
         public EarlyStoppingConfiguration<T> build() {
             return new EarlyStoppingConfiguration<>(this);
         }
 
     }
-
 }

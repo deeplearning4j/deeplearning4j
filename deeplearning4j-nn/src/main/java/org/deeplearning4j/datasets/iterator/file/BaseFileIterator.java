@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.util.MathUtils;
+import org.nd4j.linalg.util.MathUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,21 +34,23 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
     protected P preProcessor;
 
 
-    protected BaseFileIterator(File rootDir, int batchSize, String... validExtensions) {
-        this(rootDir, true, new Random(), batchSize, validExtensions);
+    protected BaseFileIterator(@NonNull File rootDir, int batchSize, String... validExtensions) {
+        this(new File[]{rootDir}, true, new Random(), batchSize, validExtensions);
     }
 
-    protected BaseFileIterator(@NonNull File rootDir, boolean recursive, Random rng, int batchSize, String... validExtensions) {
+    protected BaseFileIterator(@NonNull File[] rootDirs, boolean recursive, Random rng, int batchSize, String... validExtensions) {
         this.batchSize = batchSize;
         this.rng = rng;
 
         list = new CompactHeapStringList();
-        Collection<File> c = FileUtils.listFiles(rootDir, validExtensions, recursive);
-        if (c.isEmpty()) {
-            throw new IllegalStateException("Root directory is empty (no files found) " + (validExtensions != null ? " (or all files rejected by extension filter)" : ""));
-        }
-        for (File f : c) {
-            list.add(f.getPath());
+        for(File rootDir : rootDirs) {
+            Collection<File> c = FileUtils.listFiles(rootDir, validExtensions, recursive);
+            if (c.isEmpty()) {
+                throw new IllegalStateException("Root directory is empty (no files found) " + (validExtensions != null ? " (or all files rejected by extension filter)" : ""));
+            }
+            for (File f : c) {
+                list.add(f.getPath());
+            }
         }
 
         if (rng != null) {

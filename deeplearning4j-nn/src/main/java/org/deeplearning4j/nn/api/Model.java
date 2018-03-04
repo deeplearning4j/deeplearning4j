@@ -159,8 +159,10 @@ public interface Model {
 
 
     /**
-     * Calculate a gradient
-     * @return the gradient for this model
+     * Get the gradient. Note that this method will not calculate the gradient, it will rather return the gradient
+     * that has been computed before.
+     * For calculating the gradient, see {@link Model#computeGradientAndScore()} .
+     * @return the gradient for this model, as calculated before
      */
     Gradient gradient();
 

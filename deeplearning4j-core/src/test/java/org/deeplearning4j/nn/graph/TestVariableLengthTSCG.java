@@ -207,6 +207,7 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                     in2.putScalar(new int[] {j, k, 4}, r.nextDouble());
                 }
                 net.setInput(0, in2);
+                net.setLayerMaskArrays(new INDArray[]{inputMask}, null);
                 net.computeGradientAndScore();
                 double score2a = net.score();
                 Gradient g2a = net.gradient();

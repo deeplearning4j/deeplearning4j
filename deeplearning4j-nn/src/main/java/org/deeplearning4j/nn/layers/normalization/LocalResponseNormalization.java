@@ -182,10 +182,10 @@ public class LocalResponseNormalization
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
-        unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
+        unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
         // y = x * unitScale**-beta
-        scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
-        activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
+        scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+        activations = input.mul(scale).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
         return activations;
     }
 

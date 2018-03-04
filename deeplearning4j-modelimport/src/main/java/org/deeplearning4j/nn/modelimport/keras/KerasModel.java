@@ -45,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
 
 /**
@@ -138,7 +137,7 @@ public class KerasModel {
         if (!layerLists.containsKey(config.getModelFieldInputLayers()))
             throw new InvalidKerasConfigurationException("Could not find list of input layers (no "
                     + config.getModelFieldInputLayers() + " field found)");
-        this.inputLayerNames = new ArrayList<String>();
+        this.inputLayerNames = new ArrayList<>();
         for (Object inputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldInputLayers()))
             this.inputLayerNames.add((String) ((List<Object>) inputLayerNameObj).get(0));
 
@@ -147,7 +146,7 @@ public class KerasModel {
             throw new InvalidKerasConfigurationException("Could not find list of output layers (no "
                     + config.getModelFieldOutputLayers() + " field found)");
 
-        this.outputLayerNames = new ArrayList<String>();
+        this.outputLayerNames = new ArrayList<>();
         for (Object outputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldOutputLayers()))
             this.outputLayerNames.add((String) ((List<Object>) outputLayerNameObj).get(0));
 
@@ -188,7 +187,7 @@ public class KerasModel {
 
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
-                    kerasLayerConf, customLayers);
+                    kerasLayerConf, customLayers, this.layers);
             this.layersOrdered.add(layer);
             this.layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLstm)
@@ -248,7 +247,7 @@ public class KerasModel {
      */
     protected void inferOutputTypes()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this.outputTypes = new HashMap<String, InputType>();
+        this.outputTypes = new HashMap<>();
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
@@ -286,7 +285,7 @@ public class KerasModel {
         graphBuilder.addInputs(inputLayerNameArray);
 
         /* Build InputType array of input layer types, add to ComputationGraph. */
-        List<InputType> inputTypeList = new ArrayList<InputType>();
+        List<InputType> inputTypeList = new ArrayList<>();
         for (String inputLayerName : this.inputLayerNames)
             inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
         InputType[] inputTypes = new InputType[inputTypeList.size()];
@@ -298,7 +297,7 @@ public class KerasModel {
         this.outputLayerNames.toArray(outputLayerNameArray);
         graphBuilder.setOutputs(outputLayerNameArray);
 
-        Map<String, InputPreProcessor> preprocessors = new HashMap<String, InputPreProcessor>();
+        Map<String, InputPreProcessor> preprocessors = new HashMap<>();
 
         /* Add layersOrdered one at a time. */
         for (KerasLayer layer : this.layersOrdered) {
@@ -308,7 +307,7 @@ public class KerasModel {
             inboundLayerNames.toArray(inboundLayerNamesArray);
 
             /* Get inbound InputTypes and InputPreProcessor, if necessary. */
-            List<InputType> inboundTypeList = new ArrayList<InputType>();
+            List<InputType> inboundTypeList = new ArrayList<>();
             for (String layerName : inboundLayerNames)
                 inboundTypeList.add(this.outputTypes.get(layerName));
             InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];

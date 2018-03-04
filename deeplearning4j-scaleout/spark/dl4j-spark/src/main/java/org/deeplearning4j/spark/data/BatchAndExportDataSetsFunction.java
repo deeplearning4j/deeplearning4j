@@ -75,7 +75,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
             //DataSet must be either smaller or larger than minibatch size...
             tempList.add(next);
             Pair<Integer, List<String>> countAndPaths = processList(tempList, partitionIdx, count, false);
-            if (countAndPaths.getSecond() != null && countAndPaths.getSecond().size() > 0) {
+            if (countAndPaths.getSecond() != null && !countAndPaths.getSecond().isEmpty()) {
                 outputPaths.addAll(countAndPaths.getSecond());
             }
             count = countAndPaths.getFirst();
@@ -83,7 +83,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
 
         //We might have some left-over examples...
         Pair<Integer, List<String>> countAndPaths = processList(tempList, partitionIdx, count, true);
-        if (countAndPaths.getSecond() != null && countAndPaths.getSecond().size() > 0) {
+        if (countAndPaths.getSecond() != null && !countAndPaths.getSecond().isEmpty()) {
             outputPaths.addAll(countAndPaths.getSecond());
         }
 
@@ -98,7 +98,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
             numExamples += ds.numExamples();
         }
 
-        if (tempList.size() == 0 || (numExamples < minibatchSize && !finalExport)) {
+        if (tempList.isEmpty() || (numExamples < minibatchSize && !finalExport)) {
             //No op
             return new Pair<>(countBefore, Collections.<String>emptyList());
         }
@@ -110,7 +110,7 @@ public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterat
         //Batch the required number together
         int countSoFar = 0;
         List<DataSet> tempToMerge = new ArrayList<>();
-        while (tempList.size() > 0 && countSoFar != minibatchSize) {
+        while (!tempList.isEmpty() && countSoFar != minibatchSize) {
             DataSet next = tempList.removeFirst();
             if (countSoFar + next.numExamples() <= minibatchSize) {
                 //Add the entire DataSet object

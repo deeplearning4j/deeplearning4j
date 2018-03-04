@@ -166,7 +166,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
         checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
                         dilation[1], CUDNN_CROSS_CORRELATION, dataType));
-        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
+        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH,
                         kW));
         if (mode == AlgoMode.USER_SPECIFIED && bwdFilterAlgo != null && bwdDataAlgo != null) {
             switch (bwdFilterAlgo) {
@@ -237,9 +237,9 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         }
 
         INDArray epsNext;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                 epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
             }
         } else
@@ -273,7 +273,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             workSpace = new DataCache(Math.max(sizeInBytes1, sizeInBytes2));
         }
 
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1));
         checkCudnn(cudnnConvolutionBackwardBias(cudnnContext, alpha, cudnnContext.deltaTensorDesc, deltaData, beta,
                         cudnnContext.biasTensorDesc, biasGradData));
         checkCudnn(cudnnConvolutionBackwardFilter(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
@@ -329,9 +329,9 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         INDArray z;
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                 z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
             }
         } else
@@ -339,7 +339,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
-        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
+        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH,
                         kW));
         checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
                         dilation[1], CUDNN_CROSS_CORRELATION, dataType));
@@ -412,7 +412,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         cudnnContext.filterDesc, filterData, cudnnContext.convDesc, algo[0], workSpace,
                         workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData));
 
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
+        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1));
         checkCudnn(cudnnAddTensor(cudnnContext, alpha, cudnnContext.biasTensorDesc, biasData, alpha,
                         cudnnContext.dstTensorDesc, dstData));
 

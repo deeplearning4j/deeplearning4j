@@ -110,7 +110,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     public RegressionEvaluation(List<String> columnNames, int precision) {
         this.precision = precision;
 
-        if (columnNames == null || columnNames.size() == 0) {
+        if (columnNames == null || columnNames.isEmpty()) {
             initialized = false;
         } else {
             this.columnNames = columnNames;

@@ -22,7 +22,7 @@ public class LabelsSource implements Serializable {
     private boolean useFormatter = false;
     private List<String> labels;
     private long maxCount = 0;
-    private Set<String> uniq = new ConcurrentHashSet<String>();
+    private Set<String> uniq = new ConcurrentHashSet<>();
 
     public LabelsSource() {
 

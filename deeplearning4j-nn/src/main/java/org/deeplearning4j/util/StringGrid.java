@@ -36,6 +36,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Deprecated
 public class StringGrid extends ArrayList<List<String>> {
 
 
@@ -109,11 +110,11 @@ public class StringGrid extends ArrayList<List<String>> {
                     counter.incrementCount(line.charAt(j), 1.0f);
                 }
                 if (counter.getCount('"') > 1) {
-                    String[] split = StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\');
+                    String[] split = org.nd4j.util.StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\');
                     add(new ArrayList<>(Arrays.asList(split)));
                 } else {
                     List<String> row = new ArrayList<>(
-                                    Arrays.asList(StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
+                                    Arrays.asList(org.nd4j.util.StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
                     if (numColumns < 0)
                         numColumns = row.size();
                     else if (row.size() != numColumns)
@@ -123,7 +124,7 @@ public class StringGrid extends ArrayList<List<String>> {
 
             } else {
                 List<String> row =
-                                new ArrayList<>(Arrays.asList(StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
+                                new ArrayList<>(Arrays.asList(org.nd4j.util.StringUtils.splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\')));
                 if (numColumns < 0)
                     numColumns = row.size();
                 else if (row.size() != numColumns) {
@@ -471,7 +472,7 @@ public class StringGrid extends ArrayList<List<String>> {
             checkInvalidColumn(column);
         StringGrid grid = new StringGrid(sep, numColumns);
         for (List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            double sim = org.nd4j.linalg.util.MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
             if (sim >= threshold)
                 grid.addRow(list);
         }
@@ -509,7 +510,7 @@ public class StringGrid extends ArrayList<List<String>> {
         Set<String> remove = new HashSet<>();
         for (int i = 0; i < col.size(); i++) {
             String s = col.get(i);
-            String[] split2 = StringUtils.splitOnCharWithQuoting(s, sepBy.charAt(0), '"', '\\');
+            String[] split2 = org.nd4j.util.StringUtils.splitOnCharWithQuoting(s, sepBy.charAt(0), '"', '\\');
             if (validate < 0)
                 validate = split2.length;
             else if (validate != split2.length) {
@@ -527,7 +528,7 @@ public class StringGrid extends ArrayList<List<String>> {
             List<String> list = get(i);
             List<String> newList = new ArrayList<>();
             String split = list.get(column);
-            String[] split2 = StringUtils.splitOnCharWithQuoting(split, sepBy.charAt(0), '"', '\\');
+            String[] split2 = org.nd4j.util.StringUtils.splitOnCharWithQuoting(split, sepBy.charAt(0), '"', '\\');
             //add right next to where column was split
             for (int j = 0; j < list.size(); j++) {
                 if (j == column)
@@ -553,7 +554,7 @@ public class StringGrid extends ArrayList<List<String>> {
             checkInvalidColumn(column);
         List<List<String>> remove = new ArrayList<>();
         for (List<String> list : this) {
-            double sim = MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
+            double sim = org.nd4j.linalg.util.MathUtils.stringSimilarity(list.get(firstColumn), list.get(secondColumn));
             if (sim < threshold)
                 remove.add(list);
         }

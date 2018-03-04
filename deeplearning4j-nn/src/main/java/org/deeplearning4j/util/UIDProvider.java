@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,12 +18,11 @@ import java.util.Enumeration;
  *
  * @author Alex Black
  */
+@Slf4j
 public class UIDProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(UIDProvider.class);
-
-    private static final String jvmUid;
-    private static final String hardwareUid;
+    private static final String JVM_UID;
+    private static final String HARDWARE_UID;
 
     static {
 
@@ -32,7 +32,7 @@ public class UIDProvider {
         //The first two components here will be identical for all UID instances in a JVM, where as the 'hexStringOfUIDInstance'
         // will vary (increment) between UID object instances. So we'll only be using the first two components here
         int lastIdx = asString.lastIndexOf(":");
-        jvmUid = asString.substring(0, lastIdx).replaceAll(":", "");
+        JVM_UID = asString.substring(0, lastIdx).replaceAll(":", "");
 
 
         //Assumptions here:
@@ -70,13 +70,13 @@ public class UIDProvider {
         if (address == null) {
             log.warn("Could not generate hardware UID{}. Using fallback: JVM UID as hardware UID.",
                             (noInterfaces ? " (no interfaces)" : ""));
-            hardwareUid = jvmUid;
+            HARDWARE_UID = JVM_UID;
         } else {
             StringBuilder sb = new StringBuilder();
             for (byte b : address) {
                 sb.append(String.format("%02x", b));
             }
-            hardwareUid = sb.toString();
+            HARDWARE_UID = sb.toString();
         }
     }
 
@@ -84,11 +84,11 @@ public class UIDProvider {
 
 
     public static String getJVMUID() {
-        return jvmUid;
+        return JVM_UID;
     }
 
     public static String getHardwareUID() {
-        return hardwareUid;
+        return HARDWARE_UID;
     }
 
 

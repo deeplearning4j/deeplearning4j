@@ -499,7 +499,7 @@ public class MagicQueue<T> implements BlockingQueue<T> {
         public QueueHandler(BlockingQueue<T> queue, int capacity, int device, Type type) {
             this.targetQueue = queue;
             this.type = type;
-            this.bufferQueue = new LinkedBlockingQueue<T>(capacity);
+            this.bufferQueue = new LinkedBlockingQueue<>(capacity);
             this.capacity = capacity;
             this.device = device;
 

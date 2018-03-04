@@ -49,7 +49,7 @@ public class HashingBalancedPartitioner extends Partitioner {
         }
         this.partitionWeightsByClass = partitionWeightsByClass; // p_(j, i)
 
-        List<List<Double>> jumpsByClass = new ArrayList<List<Double>>();;
+        List<List<Double>> jumpsByClass = new ArrayList<>();;
         for (int j = 0; j < numClasses; j++) {
             Double totalImbalance = 0D; // i_j = sum(max(1 - p_(j, i), 0) , i = 1..numPartitions)
             for (int i = 0; i < numPartitions; i++) {
@@ -57,7 +57,7 @@ public class HashingBalancedPartitioner extends Partitioner {
                                 ? Math.max(1 - partitionWeightsByClass.get(j).get(i), 0) : 0;
             }
             Double sumProb = 0D;
-            List<Double> cumulProbsThisClass = new ArrayList<Double>();
+            List<Double> cumulProbsThisClass = new ArrayList<>();
             for (int i = 0; i < numPartitions; i++) {
                 if (partitionWeightsByClass.get(j).get(i) >= 0 && (totalImbalance > 0 || sumProb >= 1)) {
                     Double thisPartitionRelProb =

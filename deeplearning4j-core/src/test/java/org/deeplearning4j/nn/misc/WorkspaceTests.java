@@ -4,12 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.misc.iter.WSTestDataSetIterator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +21,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -28,19 +32,19 @@ import static org.junit.Assert.assertFalse;
 public class WorkspaceTests extends BaseDL4JTest {
 
     @Before
-    public void before(){
+    public void before() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }
 
     @After
-    public void after(){
+    public void after() {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
     @Test
     public void checkScopesTestCGAS() throws Exception {
         ComputationGraph c = createNet();
-        for(WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.SEPARATE, WorkspaceMode.SINGLE}) {
+        for (WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.SEPARATE, WorkspaceMode.SINGLE}) {
             log.info("Starting test: {}", wm);
             c.getConfiguration().setTrainingWorkspaceMode(wm);
             c.getConfiguration().setInferenceWorkspaceMode(wm);
@@ -68,7 +72,7 @@ public class WorkspaceTests extends BaseDL4JTest {
                         .stride(1, 1).activation(Activation.TANH).build())
                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nOut(nOut).build())
-                .setInputType(InputType.convolutional(5,5,2))
+                .setInputType(InputType.convolutional(5, 5, 2))
                 .pretrain(false).backprop(true).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf.clone());
@@ -81,7 +85,7 @@ public class WorkspaceTests extends BaseDL4JTest {
         net2.getLayerWiseConfigurations().setInferenceWorkspaceMode(WorkspaceMode.NONE);
         net2.getLayerWiseConfigurations().setTrainingWorkspaceMode(WorkspaceMode.NONE);
 
-        INDArray in = Nd4j.rand(new int[]{1,2,5,5});
+        INDArray in = Nd4j.rand(new int[]{1, 2, 5, 5});
 
         net.output(in);
         net2.output(in);    //Op [add_scalar] X argument uses leaked workspace pointer from workspace [LOOP_EXTERNAL]
@@ -93,14 +97,14 @@ public class WorkspaceTests extends BaseDL4JTest {
                 .graphBuilder()
                 .addInputs("in")
                 .addLayer("0", new ConvolutionLayer.Builder().nOut(3)
-                        .kernelSize(2,2).stride(2,2).build(), "in")
+                        .kernelSize(2, 2).stride(2, 2).build(), "in")
                 .addLayer("1", new ConvolutionLayer.Builder().nOut(3)
-                        .kernelSize(2,2).stride(2,2).build(), "0")
+                        .kernelSize(2, 2).stride(2, 2).build(), "0")
                 .addLayer("out", new OutputLayer.Builder().nOut(10)
                         .activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE)
                         .build(), "1")
                 .setOutputs("out")
-                .setInputTypes(InputType.convolutional(28,28,1))
+                .setInputTypes(InputType.convolutional(28, 28, 1))
                 .build();
 
         ComputationGraph model = new ComputationGraph(conf);
@@ -111,12 +115,12 @@ public class WorkspaceTests extends BaseDL4JTest {
 
 
     @Test
-    public void testWithPreprocessorsCG(){
+    public void testWithPreprocessorsCG() {
         //https://github.com/deeplearning4j/deeplearning4j/issues/4347
         //Cause for the above issue was layerVertex.setInput() applying the preprocessor, with the result
         // not being detached properly from the workspace...
 
-        for(WorkspaceMode wm : WorkspaceMode.values()) {
+        for (WorkspaceMode wm : WorkspaceMode.values()) {
             System.out.println(wm);
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wm)
@@ -138,7 +142,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             INDArray[] input = new INDArray[]{Nd4j.zeros(1, 10, 5)};
 
-            for( boolean train : new boolean[]{false, true}){
+            for (boolean train : new boolean[]{false, true}) {
                 cg.clear();
                 cg.feedForward(input, train);
             }
@@ -150,8 +154,8 @@ public class WorkspaceTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testWithPreprocessorsMLN(){
-        for(WorkspaceMode wm : WorkspaceMode.values()) {
+    public void testWithPreprocessorsMLN() {
+        for (WorkspaceMode wm : WorkspaceMode.values()) {
             System.out.println(wm);
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .trainingWorkspaceMode(wm)
@@ -170,7 +174,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             INDArray input = Nd4j.zeros(1, 10, 5);
 
-            for( boolean train : new boolean[]{false, true}){
+            for (boolean train : new boolean[]{false, true}) {
                 net.clear();
                 net.feedForward(input, train);
             }
@@ -209,10 +213,9 @@ public class WorkspaceTests extends BaseDL4JTest {
     }
 
 
-
     @Test
-    public void testRnnTimeStep(){
-        for(WorkspaceMode ws : WorkspaceMode.values()) {
+    public void testRnnTimeStep() {
+        for (WorkspaceMode ws : WorkspaceMode.values()) {
             for (int i = 0; i < 3; i++) {
 
                 System.out.println("Starting test: " + ws + " - " + i);
@@ -272,11 +275,11 @@ public class WorkspaceTests extends BaseDL4JTest {
                 ComputationGraph net2 = new ComputationGraph(conf2);
                 net2.init();
 
-                for( int j=0; j<3; j++ ){
+                for (int j = 0; j < 3; j++) {
                     net.rnnTimeStep(Nd4j.rand(new int[]{3, 10, 5}));
                 }
 
-                for( int j=0; j<3; j++ ){
+                for (int j = 0; j < 3; j++) {
                     net2.rnnTimeStep(Nd4j.rand(new int[]{3, 10, 5}));
                 }
             }
@@ -284,8 +287,8 @@ public class WorkspaceTests extends BaseDL4JTest {
     }
 
     @Test
-    public void testTbpttFit(){
-        for(WorkspaceMode ws : WorkspaceMode.values()) {
+    public void testTbpttFit() {
+        for (WorkspaceMode ws : WorkspaceMode.values()) {
             for (int i = 0; i < 3; i++) {
 
                 System.out.println("Starting test: " + ws + " - " + i);
@@ -353,11 +356,11 @@ public class WorkspaceTests extends BaseDL4JTest {
                 ComputationGraph net2 = new ComputationGraph(conf2);
                 net2.init();
 
-                for( int j=0; j<3; j++ ){
+                for (int j = 0; j < 3; j++) {
                     net.fit(Nd4j.rand(new int[]{3, 10, 20}), Nd4j.rand(new int[]{3, 10, 20}));
                 }
 
-                for( int j=0; j<3; j++ ){
+                for (int j = 0; j < 3; j++) {
                     net2.fit(new DataSet(Nd4j.rand(new int[]{3, 10, 20}), Nd4j.rand(new int[]{3, 10, 20})));
                 }
             }
@@ -366,7 +369,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     @Test
     public void testScalarOutputCase() {
-        for(WorkspaceMode ws : WorkspaceMode.values()) {
+        for (WorkspaceMode ws : WorkspaceMode.values()) {
             log.info("WorkspaceMode = " + ws);
 
             Nd4j.getRandom().setSeed(12345);
@@ -398,7 +401,7 @@ public class WorkspaceTests extends BaseDL4JTest {
     @Test
     public void testWorkspaceSetting() {
 
-        for(WorkspaceMode wsm : WorkspaceMode.values()) {
+        for (WorkspaceMode wsm : WorkspaceMode.values()) {
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .weightInit(WeightInit.XAVIER)
                     .seed(12345)
@@ -411,7 +414,6 @@ public class WorkspaceTests extends BaseDL4JTest {
             assertEquals(wsm, conf.getInferenceWorkspaceMode());
 
 
-
             MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
                     .weightInit(WeightInit.XAVIER)
                     .seed(12345)
@@ -422,6 +424,35 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             assertEquals(wsm, conf2.getTrainingWorkspaceMode());
             assertEquals(wsm, conf2.getInferenceWorkspaceMode());
+        }
+    }
+
+
+    @Test
+    public void testClearing() {
+        for(WorkspaceMode wsm : WorkspaceMode.values()) {
+            ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam())
+                    .inferenceWorkspaceMode(wsm)
+                    .trainingWorkspaceMode(wsm)
+                    .graphBuilder()
+                    .addInputs("in")
+                    .setInputTypes(InputType.recurrent(200))
+                    .addLayer("embeddings", new EmbeddingLayer.Builder().nIn(200).nOut(50).build(), "in")
+                    .addLayer("a", new GravesLSTM.Builder().nOut(300).activation(Activation.HARDTANH).build(), "embeddings")
+                    .addVertex("b", new LastTimeStepVertex("in"), "a")
+                    .addLayer("c", new DenseLayer.Builder().nOut(300).activation(Activation.HARDTANH).build(), "b")
+                    .addLayer("output", new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY).build(), "c")
+                    .setOutputs("output")
+                    .build();
+
+
+            final ComputationGraph computationGraph = new ComputationGraph(config);
+            computationGraph.init();
+            computationGraph.setListeners(new ScoreIterationListener(1));
+
+            WSTestDataSetIterator iterator = new WSTestDataSetIterator();
+            computationGraph.fit(iterator);
         }
     }
 }

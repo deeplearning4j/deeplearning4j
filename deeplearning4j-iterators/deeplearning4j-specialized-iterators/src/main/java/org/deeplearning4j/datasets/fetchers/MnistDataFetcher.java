@@ -21,10 +21,10 @@ package org.deeplearning4j.datasets.fetchers;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.datasets.mnist.MnistManager;
-import org.deeplearning4j.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,13 +80,13 @@ public class MnistDataFetcher extends BaseDataFetcher {
         String labels;
         long[] checksums;
         if (train) {
-            images = MNIST_ROOT + MnistFetcher.trainingFilesFilename_unzipped;
-            labels = MNIST_ROOT + MnistFetcher.trainingFileLabelsFilename_unzipped;
+            images = MNIST_ROOT + MnistFetcher.TRAINING_FILES_FILENAME_UNZIPPED;
+            labels = MNIST_ROOT + MnistFetcher.TRAINING_FILE_LABELS_FILENAME_UNZIPPED;
             totalExamples = NUM_EXAMPLES;
             checksums = CHECKSUMS_TRAIN;
         } else {
-            images = MNIST_ROOT + MnistFetcher.testFilesFilename_unzipped;
-            labels = MNIST_ROOT + MnistFetcher.testFileLabelsFilename_unzipped;
+            images = MNIST_ROOT + MnistFetcher.TEST_FILES_FILENAME_UNZIPPED;
+            labels = MNIST_ROOT + MnistFetcher.TEST_FILE_LABELS_FILENAME_UNZIPPED;
             totalExamples = NUM_EXAMPLES_TEST;
             checksums = CHECKSUMS_TEST;
         }
@@ -124,16 +124,16 @@ public class MnistDataFetcher extends BaseDataFetcher {
 
     private boolean mnistExists() {
         //Check 4 files:
-        File f = new File(MNIST_ROOT, MnistFetcher.trainingFilesFilename_unzipped);
+        File f = new File(MNIST_ROOT, MnistFetcher.TRAINING_FILES_FILENAME_UNZIPPED);
         if (!f.exists())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.trainingFileLabelsFilename_unzipped);
+        f = new File(MNIST_ROOT, MnistFetcher.TRAINING_FILE_LABELS_FILENAME_UNZIPPED);
         if (!f.exists())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.testFilesFilename_unzipped);
+        f = new File(MNIST_ROOT, MnistFetcher.TEST_FILES_FILENAME_UNZIPPED);
         if (!f.exists())
             return false;
-        f = new File(MNIST_ROOT, MnistFetcher.testFileLabelsFilename_unzipped);
+        f = new File(MNIST_ROOT, MnistFetcher.TEST_FILE_LABELS_FILENAME_UNZIPPED);
         if (!f.exists())
             return false;
         return true;

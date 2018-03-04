@@ -56,7 +56,7 @@ public class PersonAttrLibrary {
     // person.dic
     private void init1() {
         try (BufferedReader br = MyStaticValue.getPersonReader()) {
-            pnMap = new HashMap<String, PersonNatureAttr>();
+            pnMap = new HashMap<>();
             String temp = null;
             String[] strs = null;
             PersonNatureAttr pna = null;

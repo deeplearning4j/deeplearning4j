@@ -39,6 +39,20 @@ public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, Mul
     }
 
     /**
+     * Create a FileMultiDataSetIterator with the following default settings:<br>
+     * - Recursive: files in subdirectories are included<br>
+     * - Randomization: order of examples is randomized with a random RNG seed<br>
+     * - Batch size: default (as in the stored DataSets - no splitting/combining)<br>
+     * - File extensions: no filtering - all files in directory are assumed to be a DataSet<br>
+     *
+     * @param rootDirs Root directories containing the MultiDataSet objects. MultiDataSets from all of these
+     *                 directories will be included in the iterator output
+     */
+    public FileMultiDataSetIterator(File... rootDirs) {
+        this(rootDirs, true, new Random(), -1, (String[]) null);
+    }
+
+    /**
      * Create a FileMultiDataSetIterator with the specified batch size, and the following default settings:<br>
      * - Recursive: files in subdirectories are included<br>
      * - Randomization: order of examples is randomized with a random RNG seed<br>
@@ -91,7 +105,22 @@ public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, Mul
      * @param validExtensions May be null. If non-null, only files with one of the specified extensions will be used
      */
     public FileMultiDataSetIterator(File rootDir, boolean recursive, Random rng, int batchSize, String... validExtensions) {
-        super(rootDir, recursive, rng, batchSize, validExtensions);
+        this(new File[]{rootDir}, recursive, rng, batchSize, validExtensions);
+    }
+
+    /**
+     * Create a FileMultiDataSetIterator with all settings specified
+     *
+     * @param rootDirs        Root directories containing the MultiDataSet objects. MultiDataSets from all of these
+     *                        directories will be included in the iterator output
+     * @param recursive       If true: include files in subdirectories
+     * @param rng             May be null. If non-null, use this to randomize order
+     * @param batchSize       Batch size. If > 0, DataSets will be split/recombined as required. If <= 0, DataSets will
+     *                        simply be loaded and returned unmodified
+     * @param validExtensions May be null. If non-null, only files with one of the specified extensions will be used
+     */
+    public FileMultiDataSetIterator(File[] rootDirs, boolean recursive, Random rng, int batchSize, String... validExtensions) {
+        super(rootDirs, recursive, rng, batchSize, validExtensions);
     }
 
     @Override

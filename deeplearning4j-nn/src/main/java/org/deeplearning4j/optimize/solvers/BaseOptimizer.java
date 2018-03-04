@@ -172,7 +172,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         oldScore = score;
         model.computeGradientAndScore();
 
-        if (iterationListeners != null && iterationListeners.size() > 0) {
+        if (iterationListeners != null && !iterationListeners.isEmpty()) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener l : iterationListeners) {
                     if (l instanceof TrainingListener) {

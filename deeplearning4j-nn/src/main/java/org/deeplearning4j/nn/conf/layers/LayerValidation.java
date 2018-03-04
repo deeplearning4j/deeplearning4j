@@ -73,7 +73,7 @@ public class LayerValidation {
 
             if(layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
-                if (allParamConstraints != null && layer.initializer().paramKeys(layer).size() > 0) {
+                if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
                     for (LayerConstraint c : allConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
@@ -81,7 +81,7 @@ public class LayerValidation {
                     }
                 }
 
-                if (weightConstraints != null && layer.initializer().weightKeys(layer).size() > 0) {
+                if (weightConstraints != null && !layer.initializer().weightKeys(layer).isEmpty()) {
                     for (LayerConstraint c : weightConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().weightKeys(layer)));
@@ -89,7 +89,7 @@ public class LayerValidation {
                     }
                 }
 
-                if (biasConstraints != null && layer.initializer().biasKeys(layer).size() > 0) {
+                if (biasConstraints != null && !layer.initializer().biasKeys(layer).isEmpty()) {
                     for (LayerConstraint c : biasConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().biasKeys(layer)));
@@ -97,7 +97,7 @@ public class LayerValidation {
                     }
                 }
 
-                if(allConstraints.size() > 0){
+                if(!allConstraints.isEmpty()){
                     layer.setConstraints(allConstraints);
                 } else {
                     layer.setConstraints(null);

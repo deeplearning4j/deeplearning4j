@@ -182,7 +182,7 @@ public class J7FileStatsStorage implements StatsStorage {
     }
 
     protected List<StatsStorageEvent> checkStorageEvents(Persistable p) {
-        if (listeners.size() == 0)
+        if (listeners.isEmpty())
             return null;
 
         StatsStorageEvent newSID = null;
@@ -258,7 +258,7 @@ public class J7FileStatsStorage implements StatsStorage {
                         sses.addAll(ssesTemp);
                 }
 
-                if (listeners.size() > 0) {
+                if (!listeners.isEmpty()) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
                                     storageMetaData.getSessionID(), storageMetaData.getTypeID(),
                                     storageMetaData.getWorkerID(), storageMetaData.getTimeStamp());
@@ -304,7 +304,7 @@ public class J7FileStatsStorage implements StatsStorage {
                         sses.addAll(ssesTemp);
                 }
 
-                if (listeners.size() > 0) {
+                if (!listeners.isEmpty()) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo,
                                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
                     if (sses == null)
@@ -350,7 +350,7 @@ public class J7FileStatsStorage implements StatsStorage {
                         sses.addAll(ssesTemp);
                 }
 
-                if (listeners.size() > 0) {
+                if (!listeners.isEmpty()) {
                     StatsStorageEvent sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate,
                                     p.getSessionID(), p.getTypeID(), p.getWorkerID(), p.getTimeStamp());
                     if (sses == null)
@@ -650,7 +650,7 @@ public class J7FileStatsStorage implements StatsStorage {
     }
 
     protected void notifyListeners(List<StatsStorageEvent> sses) {
-        if (sses == null || sses.size() == 0 || listeners.size() == 0)
+        if (sses == null || sses.isEmpty() || listeners.isEmpty())
             return;
         for (StatsStorageListener l : listeners) {
             for (StatsStorageEvent e : sses) {

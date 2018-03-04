@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.deeplearning4j.util.ArchiveUtils;
+import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,25 +40,25 @@ public class MnistFetcher {
     protected File FILE_DIR = new File(BASE_DIR, LOCAL_DIR_NAME);
 
     private File fileDir;
-    private static final String trainingFilesURL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-images-idx3-ubyte.gz";
-    private static final String trainingFilesMD5 = "f68b3c2dcbeaaa9fbdd348bbdeb94873";
-    private static final String trainingFilesFilename = "train-images-idx3-ubyte.gz";
-    public static final String trainingFilesFilename_unzipped = "train-images-idx3-ubyte";
-    private static final String trainingFileLabelsURL =
+    private static final String TRAINING_FILES_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-images-idx3-ubyte.gz";
+    private static final String TRAINING_FILES_MD_5 = "f68b3c2dcbeaaa9fbdd348bbdeb94873";
+    private static final String TRAINING_FILES_FILENAME = "train-images-idx3-ubyte.gz";
+    public static final String TRAINING_FILES_FILENAME_UNZIPPED = "train-images-idx3-ubyte";
+    private static final String TRAINING_FILE_LABELS_URL =
                     "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/train-labels-idx1-ubyte.gz";
-    private static final String trainingFileLabelsMD5 = "d53e105ee54ea40749a09fcbcd1e9432";
-    private static final String trainingFileLabelsFilename = "train-labels-idx1-ubyte.gz";
-    public static final String trainingFileLabelsFilename_unzipped = "train-labels-idx1-ubyte";
+    private static final String TRAINING_FILE_LABELS_MD_5 = "d53e105ee54ea40749a09fcbcd1e9432";
+    private static final String TRAINING_FILE_LABELS_FILENAME = "train-labels-idx1-ubyte.gz";
+    public static final String TRAINING_FILE_LABELS_FILENAME_UNZIPPED = "train-labels-idx1-ubyte";
 
     //Test data:
-    private static final String testFilesURL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-images-idx3-ubyte.gz";
-    private static final String testFilesMD5 = "9fb629c4189551a2d022fa330f9573f3";
-    private static final String testFilesFilename = "t10k-images-idx3-ubyte.gz";
-    public static final String testFilesFilename_unzipped = "t10k-images-idx3-ubyte";
-    private static final String testFileLabelsURL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-labels-idx1-ubyte.gz";
-    private static final String testFileLabelsMD5 = "ec29112dd5afa0611ce80d1b7f02629c";
-    private static final String testFileLabelsFilename = "t10k-labels-idx1-ubyte.gz";
-    public static final String testFileLabelsFilename_unzipped = "t10k-labels-idx1-ubyte";
+    private static final String TEST_FILES_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-images-idx3-ubyte.gz";
+    private static final String TEST_FILES_MD_5 = "9fb629c4189551a2d022fa330f9573f3";
+    private static final String TEST_FILES_FILENAME = "t10k-images-idx3-ubyte.gz";
+    public static final String TEST_FILES_FILENAME_UNZIPPED = "t10k-images-idx3-ubyte";
+    private static final String TEST_FILE_LABELS_URL = "http://deeplearning4j-resources.westus2.cloudapp.azure.com/mnist/t10k-labels-idx1-ubyte.gz";
+    private static final String TEST_FILE_LABELS_MD_5 = "ec29112dd5afa0611ce80d1b7f02629c";
+    private static final String TEST_FILE_LABELS_FILENAME = "t10k-labels-idx1-ubyte.gz";
+    public static final String TEST_FILE_LABELS_FILENAME_UNZIPPED = "t10k-labels-idx1-ubyte";
 
 
     public String getName() {
@@ -71,70 +71,70 @@ public class MnistFetcher {
 
     // --- Train files ---
     public String getTrainingFilesURL() {
-        return trainingFilesURL;
+        return TRAINING_FILES_URL;
     }
 
     public String getTrainingFilesMD5() {
-        return trainingFilesMD5;
+        return TRAINING_FILES_MD_5;
     }
 
     public String getTrainingFilesFilename() {
-        return trainingFilesFilename;
+        return TRAINING_FILES_FILENAME;
     }
 
     public String getTrainingFilesFilename_unzipped() {
-        return trainingFilesFilename_unzipped;
+        return TRAINING_FILES_FILENAME_UNZIPPED;
     }
 
     public String getTrainingFileLabelsURL() {
-        return trainingFileLabelsURL;
+        return TRAINING_FILE_LABELS_URL;
     }
 
     public String getTrainingFileLabelsMD5() {
-        return trainingFileLabelsMD5;
+        return TRAINING_FILE_LABELS_MD_5;
     }
 
     public String getTrainingFileLabelsFilename() {
-        return trainingFileLabelsFilename;
+        return TRAINING_FILE_LABELS_FILENAME;
     }
 
     public String getTrainingFileLabelsFilename_unzipped() {
-        return trainingFileLabelsFilename_unzipped;
+        return TRAINING_FILE_LABELS_FILENAME_UNZIPPED;
     }
 
 
     // --- Test files ---
 
     public String getTestFilesURL() {
-        return testFilesURL;
+        return TEST_FILES_URL;
     }
 
     public String getTestFilesMD5() {
-        return testFilesMD5;
+        return TEST_FILES_MD_5;
     }
 
     public String getTestFilesFilename() {
-        return testFilesFilename;
+        return TEST_FILES_FILENAME;
     }
 
     public String getTestFilesFilename_unzipped() {
-        return testFilesFilename_unzipped;
+        return TEST_FILES_FILENAME_UNZIPPED;
     }
 
     public String getTestFileLabelsURL() {
-        return testFileLabelsURL;
+        return TEST_FILE_LABELS_URL;
     }
 
     public String getTestFileLabelsMD5() {
-        return testFileLabelsMD5;
+        return TEST_FILE_LABELS_MD_5;
     }
 
     public String getTestFileLabelsFilename() {
-        return testFileLabelsFilename;
+        return TEST_FILE_LABELS_FILENAME;
     }
 
     public String getTestFileLabelsFilename_unzipped() {
-        return testFileLabelsFilename_unzipped;
+        return TEST_FILE_LABELS_FILENAME_UNZIPPED;
     }
 
 

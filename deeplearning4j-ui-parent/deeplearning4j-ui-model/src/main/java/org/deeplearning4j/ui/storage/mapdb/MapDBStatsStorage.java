@@ -139,7 +139,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         this.staticInfo.put(id, staticInfo);
         db.commit(); //For write ahead log: need to ensure that we persist all data to disk...
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostStaticInfo, staticInfo.getSessionID(),
                             staticInfo.getTypeID(), staticInfo.getWorkerID(), staticInfo.getTimeStamp());
         for (StatsStorageListener l : listeners) {
@@ -158,7 +158,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         db.commit(); //For write ahead log: need to ensure that we persist all data to disk...
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostUpdate, update.getSessionID(),
                             update.getTypeID(), update.getWorkerID(), update.getTimeStamp());
         for (StatsStorageListener l : listeners) {
@@ -176,7 +176,7 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         db.commit(); //For write ahead log: need to ensure that we persist all data to disk...
 
         StatsStorageEvent sse = null;
-        if (listeners.size() > 0)
+        if (!listeners.isEmpty())
             sse = new StatsStorageEvent(this, StatsStorageListener.EventType.PostMetaData,
                             storageMetaData.getSessionID(), storageMetaData.getTypeID(), storageMetaData.getWorkerID(),
                             storageMetaData.getTimeStamp());

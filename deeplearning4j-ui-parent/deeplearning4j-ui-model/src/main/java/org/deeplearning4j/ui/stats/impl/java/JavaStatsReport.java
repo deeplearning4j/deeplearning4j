@@ -227,7 +227,7 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public List<Serializable> getDataSetMetaData() {
-        if (dataSetMetaData == null || dataSetMetaData.size() == 0)
+        if (dataSetMetaData == null || dataSetMetaData.isEmpty())
             return null;
 
         List<Serializable> l = new ArrayList<>();
@@ -273,7 +273,7 @@ public class JavaStatsReport implements StatsReport {
 
     @Override
     public boolean hasGarbageCollection() {
-        return gcStats != null && gcStats.size() > 0;
+        return gcStats != null && !gcStats.isEmpty();
     }
 
     @Override

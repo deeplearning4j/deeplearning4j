@@ -10,13 +10,13 @@ import java.util.Map;
 public class MathUtil {
 
     // 平滑参数
-    private static final double dSmoothingPara = 0.1;
+    private static final double D_SMOOTHING_PARA = 0.1;
     // 分隔符我最喜欢的
     private static final String TAB = "\t";
     // 一个参数
     private static final int MAX_FREQUENCE = 2079997;// 7528283+329805;
     // ﻿Two linked Words frequency
-    private static final double dTemp = (double) 1 / MAX_FREQUENCE;
+    private static final double D_TEMP = (double) 1 / MAX_FREQUENCE;
 
     /**
      * 从一个词的词性到另一个词的词的分数
@@ -45,8 +45,8 @@ public class MathUtil {
             }
         }
 
-        double value = -Math.log(dSmoothingPara * frequency / (MAX_FREQUENCE + 80000)
-                        + (1 - dSmoothingPara) * ((1 - dTemp) * nTwoWordsFreq / frequency + dTemp));
+        double value = -Math.log(D_SMOOTHING_PARA * frequency / (MAX_FREQUENCE + 80000)
+                        + (1 - D_SMOOTHING_PARA) * ((1 - D_TEMP) * nTwoWordsFreq / frequency + D_TEMP));
 
         if (value < 0) {
             value += frequency;
@@ -82,7 +82,7 @@ public class MathUtil {
     }
 
     public static void main(String[] args) {
-        System.out.println(Math.log(dTemp * 2));
+        System.out.println(Math.log(D_TEMP * 2));
     }
 
 }

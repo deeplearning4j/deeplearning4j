@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.samediff.BaseSameDiffLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
@@ -49,6 +50,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
@@ -1076,6 +1078,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 layerName = "Layer not named";
             else
                 layerName = layer.getLayerName();
+
+            if(layer instanceof BaseSameDiffLayer){
+                BaseSameDiffLayer sdl = (BaseSameDiffLayer)layer;
+                sdl.applyGlobalConfig(this);
+            }
 
             if (layer != null) {
                 copyConfigToLayer(layerName, layer);

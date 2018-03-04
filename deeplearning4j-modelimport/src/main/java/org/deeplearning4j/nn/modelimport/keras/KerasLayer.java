@@ -28,8 +28,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
-import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.util.StringUtils;
 
 import java.util.*;
 

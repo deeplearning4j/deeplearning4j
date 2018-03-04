@@ -276,7 +276,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
-        std = Transforms.sqrt(var, true).leverageTo(ComputationGraph.workspaceExternal);
+        std = Transforms.sqrt(var, true).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
 
         INDArray gamma = null;
         INDArray beta = null;
@@ -306,8 +306,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
-            xMu = x.subRowVector(mean).leverageTo(ComputationGraph.workspaceExternal);
-            xHat = xMu.divRowVector(std).leverageTo(ComputationGraph.workspaceExternal);
+            xMu = x.subRowVector(mean).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+            xHat = xMu.divRowVector(std).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -330,11 +330,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             xMu = Nd4j.getExecutioner()
                             .execAndReturn(new BroadcastSubOp(x, mean,
                                             Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.workspaceExternal);
+                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
             xHat = Nd4j.getExecutioner()
                             .execAndReturn(new BroadcastDivOp(xMu, std,
                                             Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.workspaceExternal);
+                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs

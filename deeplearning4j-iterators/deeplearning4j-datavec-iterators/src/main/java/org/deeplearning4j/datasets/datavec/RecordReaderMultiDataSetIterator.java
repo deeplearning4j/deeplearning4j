@@ -366,6 +366,18 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     }
 
     private INDArray convertWritables(List<List<Writable>> list, int minValues, SubsetDetails details) {
+        try{
+            return convertWritablesHelper(list, minValues, details);
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("Error parsing data (writables) from record readers - value is non-numeric", e);
+        } catch(DL4JException e){
+            throw e;
+        } catch (Throwable t){
+            throw new RuntimeException("Error parsing data (writables) from record readers", t);
+        }
+    }
+
+    private INDArray convertWritablesHelper(List<List<Writable>> list, int minValues, SubsetDetails details) {
         INDArray arr;
         if (details.entireReader) {
             if (list.get(0).size() == 1 && list.get(0).get(0) instanceof NDArrayWritable) {
@@ -471,7 +483,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             maxTSLength = list.get(0).size();
         INDArray arr;
 
-        if (list.get(0).size() == 0) {
+        if (list.get(0).isEmpty()) {
             throw new ZeroLengthSequenceException("Zero length sequence encountered");
         }
 

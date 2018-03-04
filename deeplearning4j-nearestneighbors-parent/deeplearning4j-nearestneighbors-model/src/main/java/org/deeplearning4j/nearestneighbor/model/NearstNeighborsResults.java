@@ -9,13 +9,13 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 4/27/17.
+ * @deprecated Feb 2018 due to typo - use {@link NearestNeighborsResults}
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Deprecated
 public class NearstNeighborsResults implements Serializable {
     private List<NearestNeighborsResult> results;
-
 }

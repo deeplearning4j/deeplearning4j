@@ -70,7 +70,7 @@ public class Config {
 
         char[] chars = WordAlert.alertStr(word);
 
-        List<Element> list = new ArrayList<Element>();
+        List<Element> list = new ArrayList<>();
 
         StringBuilder tempSb = new StringBuilder();
 
@@ -138,7 +138,7 @@ public class Config {
      */
     public static List<Element> makeToElementList(String temp, String splitStr) {
         String[] split = temp.split(splitStr);
-        List<Element> list = new ArrayList<Element>(temp.length());
+        List<Element> list = new ArrayList<>(temp.length());
 
         for (String word : split) {
 

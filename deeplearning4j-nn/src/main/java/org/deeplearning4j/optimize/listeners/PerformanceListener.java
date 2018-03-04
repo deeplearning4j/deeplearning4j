@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners;
 
+import com.google.common.base.Preconditions;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -39,6 +40,7 @@ public class PerformanceListener implements IterationListener {
     }
 
     public PerformanceListener(int frequency, boolean reportScore) {
+        Preconditions.checkArgument(frequency > 0, "Invalid frequency, must be > 0: Got " + frequency);
         this.frequency = frequency;
         this.reportScore = reportScore;
 

@@ -35,7 +35,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     //condition with whatever is receiving the events: i.e., might get the event before the contents are actually
     //available in the DB
     protected List<StatsStorageEvent> checkStorageEvents(Persistable p) {
-        if (listeners.size() == 0)
+        if (listeners.isEmpty())
             return null;
 
         int count = 0;
@@ -109,7 +109,7 @@ public abstract class BaseCollectionStatsStorage implements StatsStorage {
     }
 
     protected void notifyListeners(List<StatsStorageEvent> sses) {
-        if (sses == null || sses.size() == 0 || listeners.size() == 0)
+        if (sses == null || sses.isEmpty() || listeners.isEmpty())
             return;
         for (StatsStorageListener l : listeners) {
             for (StatsStorageEvent e : sses) {

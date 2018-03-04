@@ -17,7 +17,7 @@ import java.util.Map;
  */
 public class EmailRecognition implements Recognition {
 
-    private static Map<String, String> FEATURE = new HashMap<String, String>();
+    private static Map<String, String> FEATURE = new HashMap<>();
 
     private static final String NOT_HEAD = "NOT";
     private static final String NATURE_HEAD = "nature:";

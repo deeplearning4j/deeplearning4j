@@ -173,7 +173,7 @@ public class TrainModule implements UIModule {
         String sessionID = null;
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
             List<Persistable> staticInfos = entry.getValue().getAllStaticInfos(entry.getKey(), StatsListener.TYPE_ID);
-            if (staticInfos == null || staticInfos.size() == 0)
+            if (staticInfos == null || staticInfos.isEmpty())
                 continue;
             Persistable p = staticInfos.get(0);
             long thisTime = p.getTimeStamp();
@@ -265,7 +265,7 @@ public class TrainModule implements UIModule {
             }
 
             //Model info: type, # layers, # params...
-            if (staticInfo != null && staticInfo.size() > 0) {
+            if (staticInfo != null && !staticInfo.isEmpty()) {
                 StatsInitializationReport sr = (StatsInitializationReport) staticInfo.get(0);
                 String modelClassName = sr.getModelClassName();
                 if (modelClassName.endsWith("MultiLayerNetwork")) {
@@ -322,7 +322,7 @@ public class TrainModule implements UIModule {
     }
 
     private static void cleanLegacyIterationCounts(List<Integer> iterationCounts) {
-        if (iterationCounts.size() > 0) {
+        if (!iterationCounts.isEmpty()) {
             boolean allEqual = true;
             int maxStepSize = 1;
             int first = iterationCounts.get(0);
@@ -392,7 +392,7 @@ public class TrainModule implements UIModule {
             //Don't subsample
             updates = ss.getAllUpdatesAfter(currentSessionID, StatsListener.TYPE_ID, wid, 0);
         }
-        if (updates == null || updates.size() == 0) {
+        if (updates == null || updates.isEmpty()) {
             noData = true;
         }
 
@@ -604,7 +604,7 @@ public class TrainModule implements UIModule {
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
                         : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
 
-        if (allStatic.size() == 0) {
+        if (allStatic.isEmpty()) {
             return ok();
         }
 
@@ -636,7 +636,7 @@ public class TrainModule implements UIModule {
         StatsStorage ss = (noData ? null : knownSessionIDs.get(currentSessionID));
         List<Persistable> allStatic = (noData ? Collections.EMPTY_LIST
                         : ss.getAllStaticInfos(currentSessionID, StatsListener.TYPE_ID));
-        if (allStatic.size() == 0)
+        if (allStatic.isEmpty())
             return null;
 
         StatsInitializationReport p = (StatsInitializationReport) allStatic.get(0);
@@ -776,7 +776,7 @@ public class TrainModule implements UIModule {
         result.put("learningRates", lrs);
 
         //Parameters histogram data
-        Persistable lastUpdate = (updates != null && updates.size() > 0 ? updates.get(updates.size() - 1) : null);
+        Persistable lastUpdate = (updates != null && !updates.isEmpty() ? updates.get(updates.size() - 1) : null);
         Map<String, Object> paramHistograms = getHistograms(layerIdx, gi, StatsType.Parameters, lastUpdate);
         result.put("paramHist", paramHistograms);
 
@@ -807,7 +807,7 @@ public class TrainModule implements UIModule {
 
 
         long lastUpdateTime = -1;
-        if (latestUpdates == null || latestUpdates.size() == 0) {
+        if (latestUpdates == null || latestUpdates.isEmpty()) {
             noData = true;
         } else {
             for (Persistable p : latestUpdates) {

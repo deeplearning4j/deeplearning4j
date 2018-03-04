@@ -43,7 +43,7 @@ public class AsianPersonRecognition implements TermArrRecognition {
     private List<Term> recogntion_() {
         Term term = null;
         Term tempTerm = null;
-        List<Term> termList = new ArrayList<Term>();
+        List<Term> termList = new ArrayList<>();
         int beginFreq = 10;
         for (int i = 0; i < terms.length; i++) {
             term = terms[i];
@@ -162,7 +162,7 @@ public class AsianPersonRecognition implements TermArrRecognition {
 
     public List<NewWord> getNewWords(Term[] terms) {
         this.terms = terms;
-        List<NewWord> all = new ArrayList<NewWord>();
+        List<NewWord> all = new ArrayList<>();
         List<Term> termList = recogntion_();
         for (Term term2 : termList) {
             all.add(new NewWord(term2.getName(), Nature.NR));
