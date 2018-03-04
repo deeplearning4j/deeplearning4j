@@ -56,6 +56,32 @@ public class Shape {
 
 
     /**
+     * Return the shape of the largest length array
+     * based on the input
+     * @param inputs the inputs to get the max shape for
+     * @return the largest shape based on the inputs
+     */
+    public static int[] getMaxShape(INDArray...inputs) {
+        if(inputs == null)
+            return null;
+        else if(inputs.length < 2)
+            return inputs[0].shape();
+        else {
+            int[] currMax = inputs[0].shape();
+            for(int i = 1; i <  inputs.length; i++) {
+                if(inputs[i] == null) {
+                    continue;
+                }
+                if(ArrayUtil.prod(currMax) < inputs[i].length()) {
+                    currMax = inputs[i].shape();
+                }
+            }
+
+            return currMax;
+        }
+    }
+
+    /**
      * Returns true if this shape is scalar
      * @param shape the shape that is scalar
      * @return
@@ -620,9 +646,6 @@ public class Shape {
         long offset = 0;
         for (int i = 0; i < rank; i++) {
             int size_dimi = size(shapeInformation, i);
-            if (indices[i] >= size_dimi)
-                throw new IllegalArgumentException(
-                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -1166,6 +1189,12 @@ public class Shape {
         return (shape.length == 2 && shape[1] == 1);
     }
 
+    /**
+     * Returns true if the given shape length is 2
+     * and the size at element 1 is 1
+     * @param shape
+     * @return
+     */
     public static boolean isColumnVectorShape(long[] shape) {
         return (shape.length == 2 && shape[1] == 1);
     }

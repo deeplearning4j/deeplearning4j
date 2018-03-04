@@ -1,18 +1,16 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
-import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.api.buffer.LongBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.cache.TadDescriptor;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 
@@ -55,7 +53,7 @@ public class CpuTADManager implements TADManager {
         if (dimension != null && dimension.length > 1)
             Arrays.sort(dimension);
 
-        if (dimension == null || dimension[0] == Integer.MAX_VALUE) {
+        if (dimension == null || dimension.length >= 1 && dimension[0] == Integer.MAX_VALUE) {
             return new Pair<>(array.shapeInfoDataBuffer(), null);
         } else {
             TadDescriptor descriptor = new TadDescriptor(array, dimension);

@@ -1,28 +1,35 @@
 package org.nd4j.linalg.api.ndarray;
 
+import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
+import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ops.impl.accum.Entropy;
 import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
 import org.nd4j.linalg.api.ops.impl.accum.ShannonEntropy;
+import org.nd4j.linalg.api.ops.impl.transforms.Assign;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.Nd4jNoSuchWorkspaceException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.nio.IntBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
 
@@ -73,6 +80,178 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                 throw new UnsupportedOperationException();
         }
         return newBuffer;
+    }
+
+
+
+    @Override
+    public INDArray get(INDArray indices) {
+        if(indices.rank() > 2) {
+            throw new ND4JIllegalArgumentException("Indices must be a vector or matrix.");
+        }
+
+        if(indices.rows() == rank()) {
+            INDArray ret = Nd4j.create(indices.columns());
+
+            for(int i = 0; i < indices.columns(); i++) {
+                int[] specifiedIndex = indices.getColumn(i).dup().data().asInt();
+                ret.putScalar(i,getDouble(specifiedIndex));
+            }
+
+            return ret;
+        }
+        else {
+            List<INDArray> arrList = new ArrayList<>();
+
+            if(indices.isMatrix() || indices.isColumnVector()) {
+                for(int i = 0; i < indices.rows(); i++) {
+                    if(i == 0)  {
+                        INDArray row = indices.getRow(i);
+                        for(int j = 0; j < row.length(); j++) {
+                            arrList.add(slice(row.getInt(j)));
+                        }
+                    }
+                    else {
+                        INDArray row = indices.slice(i);
+                        for(int j = 0; j < row.length(); j++) {
+                            INDArray put = arrList.get(j).slice(row.getInt(j));
+                            put = put.reshape(Ints.concat(new int[]{1},put.shape()));
+                            arrList.set(j,put);
+                        }
+                    }
+
+                }
+            }
+            else if(indices.isRowVector()) {
+                for(int i = 0; i < indices.length(); i++) {
+                    arrList.add(slice(indices.getInt(i)));
+                }
+            }
+
+            return Nd4j.concat(0,arrList.toArray(new INDArray[arrList.size()]));
+
+        }
+
+
+    }
+
+
+    @Override
+    public INDArray match(INDArray comp, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray match(Number comp, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray putWhereWithMask(INDArray mask, INDArray put) {
+        return null;
+    }
+
+    @Override
+    public INDArray putWhereWithMask(INDArray mask, Number put) {
+        return null;
+    }
+
+    @Override
+    public INDArray toDense() {
+        return null;
+    }
+
+    @Override
+    public INDArray getWhere(INDArray comp, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray getWhere(Number comp, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray putWhere(INDArray comp, INDArray put, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray putWhere(Number comp, INDArray put, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray putWhere(Number comp, Number put, Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray get(List<List<Integer>> indices) {
+        return null;
+    }
+
+    @Override
+    public INDArray put(List<List<Integer>> indices, INDArray element) {
+        if(indices.size() == rank()) {
+            NdIndexIterator ndIndexIterator = new NdIndexIterator(element.shape());
+            INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
+            for(int i = 0; i < indArrayIndices.length; i++) {
+                indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
+            }
+            boolean hasNext = true;
+            Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
+            while(hasNext) {
+                try {
+                    List<List<Long>> next = iterate.next();
+                    for(int i = 0; i < next.size(); i++) {
+                        int[] curr = Ints.toArray(next.get(i));
+                        putScalar(curr,element.getDouble(ndIndexIterator.next()));
+                    }
+                }
+                catch(NoSuchElementException e) {
+                    hasNext = false;
+                }
+            }
+
+        }
+        else {
+            List<INDArray> arrList = new ArrayList<>();
+
+            if(indices.size() >= 2) {
+                for(int i = 0; i < indices.size(); i++) {
+                    List<Integer> row = indices.get(i);
+                    for(int j = 0; j < row.size(); j++) {
+                        INDArray slice = slice(row.get(j));
+                        Nd4j.getExecutioner().exec(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
+                        arrList.add(slice(row.get(j)));
+                    }
+
+
+                }
+            }
+            else if(indices.size() == 1) {
+                for(int i = 0; i < indices.size(); i++) {
+                    arrList.add(slice(indices.get(0).get(i)));
+                }
+            }
+
+        }
+
+
+        return this;
+    }
+
+    @Override
+    public INDArray put(INDArray indices, INDArray element) {
+        INDArrayIndex[] realIndices = new INDArrayIndex[indices.rank()];
+        for(int i = 0; i < realIndices.length; i++) {
+            realIndices[i] = new SpecifiedIndex(indices.slice(i).dup().data().asInt());
+        }
+
+
+        return put(realIndices,element);
+
     }
 
     @Override

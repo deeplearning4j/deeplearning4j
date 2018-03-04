@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Choose;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.shape.Shape;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.BaseCondition;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -205,7 +207,7 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition,
-                    final Function<Number, Number> function) {
+                                  final Function<Number, Number> function) {
         // keep original java implementation for dynamic
 
         Shape.iterate(to, new CoordinateFunction() {
@@ -253,11 +255,17 @@ public class BooleanIndexing {
     }
 
     /**
-     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     * This method does element-wise comparison
+     * for 2 equal-sized matrices, for each element that matches Condition.
+     * To is the array to apply the indexing to
+     * from is a condition mask array (0 or 1).
+     * This would come from the output of a bit masking method like:
+     * {@link INDArray#gt(Number)},{@link INDArray#gte(Number)},
+     * {@link INDArray#lt(Number)},..
      *
-     * @param to
-     * @param from
-     * @param condition
+     * @param to the array to apply the condition to
+     * @param from the mask array
+     * @param condition the condition to apply
      */
     public static void assignIf(@NonNull INDArray to, @NonNull INDArray from, @NonNull Condition condition) {
         if (!(condition instanceof BaseCondition))
@@ -271,7 +279,7 @@ public class BooleanIndexing {
 
 
     /**
-     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     * This method does element-wise comparison for 2 equal-sized matrices, for each element that matches Condition
      *
      * @param to
      * @param from
@@ -287,9 +295,80 @@ public class BooleanIndexing {
         Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
     }
 
+    /**
+     * Choose from the inputs based on the given condition.
+     * This returns a row vector of all elements fulfilling the
+     * condition listed within the array for input
+     * @param input the input to filter
+     * @param condition the condition to filter based on
+     * @return a row vector of the input elements that are true
+     * ffor the given conditions
+     */
+    public static INDArray chooseFrom(@NonNull  INDArray[] input,@NonNull  Condition condition) {
+        Choose choose = new Choose(input,condition);
+        Nd4j.getExecutioner().exec(choose);
+        int secondOutput = choose.getOutputArgument(1).getInt(0);
+        if(secondOutput < 1) {
+            return null;
+        }
+
+        return choose.getOutputArgument(0);
+    }
 
     /**
-     * This method does element-wise assing for 2 equal-sized matrices, for each element that matches Condition
+     * A minor shortcut for applying a bitmask to
+     * a matrix
+     * @param arr The array to apply the mask to
+     * @param mask the mask to apply
+     * @return the array with the mask applied
+     */
+    public static INDArray applyMask(INDArray arr,INDArray mask)  {
+        return arr.mul(mask);
+    }
+
+    /**
+     * A minor shortcut for applying a bitmask to
+     * a matrix
+     * @param arr The array to apply the mask to
+     * @param mask the mask to apply
+     * @return the array with the mask applied
+     */
+    public static INDArray applyMaskInPlace(INDArray arr,INDArray mask)  {
+        return arr.muli(mask);
+    }
+
+
+
+    /**
+     * Choose from the inputs based on the given condition.
+     * This returns a row vector of all elements fulfilling the
+     * condition listed within the array for input.
+     * The double and integer arguments are only relevant
+     * for scalar operations (like when you have a scalar
+     * you are trying to compare each element in your input against)
+     *
+     * @param input the input to filter
+     * @param tArgs the double args
+     * @param iArgs the integer args
+     * @param condition the condition to filter based on
+     * @return a row vector of the input elements that are true
+     * ffor the given conditions
+     */
+    public static INDArray chooseFrom(@NonNull  INDArray[] input, @NonNull  List<Double> tArgs, @NonNull List<Integer> iArgs, @NonNull Condition condition) {
+        Choose choose = new Choose(input,iArgs,tArgs,condition);
+        Nd4j.getExecutioner().exec(choose);
+        int secondOutput = choose.getOutputArgument(1).getInt(0);
+        if(secondOutput < 1) {
+            return null;
+        }
+
+        INDArray ret =  choose.getOutputArgument(0).get(NDArrayIndex.interval(0,secondOutput));
+        ret = ret.reshape(ret.length());
+        return ret;
+    }
+
+    /**
+     * This method does element-wise assessing for 2 equal-sized matrices, for each element that matches Condition
      *
      * @param to
      * @param set
@@ -311,7 +390,7 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(final INDArray to, final Condition condition, final Function<Number, Number> function,
-                    final Function<Number, Number> alternativeFunction) {
+                                  final Function<Number, Number> alternativeFunction) {
         Shape.iterate(to, new CoordinateFunction() {
             @Override
             public void process(int[]... coord) {
@@ -334,7 +413,7 @@ public class BooleanIndexing {
      * @param function  the function to apply the op to
      */
     public static void applyWhere(IComplexNDArray to, Condition condition,
-                    Function<IComplexNumber, IComplexNumber> function) {
+                                  Function<IComplexNumber, IComplexNumber> function) {
         IComplexNDArray linear = to.linearView();
         for (int i = 0; i < linear.linearView().length(); i++) {
             if (condition.apply(linear.getDouble(i))) {

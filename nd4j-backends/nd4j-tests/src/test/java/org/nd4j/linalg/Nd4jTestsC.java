@@ -117,6 +117,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
 
     @Test
+    public void testDiag() {
+      INDArray diag = Nd4j.diag(Nd4j.linspace(1,4,4).reshape(4,1));
+      assertArrayEquals(new int[] {4,4},diag.shape());
+
+    }
+
+    @Test
     public void testSoftmaxDerivativeGradient() {
         INDArray input = Nd4j.linspace(1,4,4).reshape(2,2);
         INDArray inputDup = input.dup();

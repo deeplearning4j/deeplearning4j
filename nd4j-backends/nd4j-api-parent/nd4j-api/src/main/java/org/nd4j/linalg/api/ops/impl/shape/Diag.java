@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -23,6 +24,10 @@ import java.util.Map;
 public class Diag extends DynamicCustomOp {
 
     public Diag() {
+    }
+
+    public Diag( INDArray[] inputs, INDArray[] outputs) {
+        super(null, inputs, outputs);
     }
 
     public Diag(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {

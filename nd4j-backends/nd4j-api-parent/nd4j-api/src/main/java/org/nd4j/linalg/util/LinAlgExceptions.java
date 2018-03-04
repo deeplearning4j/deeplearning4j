@@ -20,6 +20,7 @@
 package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.Arrays;
@@ -42,7 +43,7 @@ public class LinAlgExceptions {
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {
-        if (!Arrays.equals(n.shape(), n2.shape()))
+        if (!Shape.shapeEquals(n.shape(), n2.shape()))
             throw new IllegalStateException("Mis matched shapes: " + Arrays.toString(n.shape()) + ", "
                     + Arrays.toString(n2.shape()));
     }

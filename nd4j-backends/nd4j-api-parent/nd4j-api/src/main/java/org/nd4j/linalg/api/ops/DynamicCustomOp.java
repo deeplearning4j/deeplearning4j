@@ -5,6 +5,7 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -43,7 +44,8 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Builder.Default
     private List<Integer> iArguments = new ArrayList<>();
     @Getter
-    private boolean inplaceCall;
+    @Setter
+    protected boolean inplaceCall;
     @Getter
     private long hash;
     protected SDVariable[] outputVariables;

@@ -80,12 +80,64 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
 
     @Override
     public Object[] toArray() {
-        throw new UnsupportedOperationException();
+        Number number = get(0);
+        if(number instanceof Integer) {
+            Integer[] ret = new Integer[size()];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Integer) get(i);
+            }
+
+            return ret;
+        }
+        else if(number instanceof Double) {
+            Double[] ret = new Double[size()];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Double) get(i);
+            }
+
+            return ret;
+        }
+        else if(number instanceof Float) {
+            Float[] ret = new Float[size()];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Float) get(i);
+            }
+
+            return ret;
+        }
+
+        throw new UnsupportedOperationException("Unable to convert to array");
     }
 
     @Override
     public <T> T[] toArray(T[] ts) {
-        throw new UnsupportedOperationException();
+        Number number = get(0);
+        if(number instanceof Integer) {
+            Integer[] ret = (Integer[]) ts;
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Integer) get(i);
+            }
+
+            return (T[]) ret;
+        }
+        else if(number instanceof Double) {
+            Double[] ret = new Double[size()];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Double) get(i);
+            }
+
+            return (T[]) ret;
+        }
+        else if(number instanceof Float) {
+            Float[] ret = new Float[size()];
+            for(int i = 0; i < ret.length; i++) {
+                ret[i] = (Float) get(i);
+            }
+
+            return (T[]) ret;
+        }
+
+        throw new UnsupportedOperationException("Unable to convert to array");
     }
 
     @Override

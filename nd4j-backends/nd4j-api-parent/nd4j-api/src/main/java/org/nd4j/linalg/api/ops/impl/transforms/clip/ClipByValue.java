@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.clip;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -17,9 +18,26 @@ public class ClipByValue extends DynamicCustomOp {
     private double clipValueMin;
     private double clipValueMax;
 
+    public ClipByValue( INDArray[] inputs, INDArray[] outputs, double clipValueMin, double clipValueMax,boolean inPlace) {
+        super(null, inputs, outputs);
+        this.clipValueMin = clipValueMin;
+        this.clipValueMax = clipValueMax;
+        this.inplaceCall = inPlace;
+        addTArgument(clipValueMin,clipValueMax);
+    }
+
     public ClipByValue(){
 
     }
+
+    public ClipByValue(SameDiff sameDiff, SDVariable x, double clipValueMin, double clipValueMax,boolean inPlace){
+        super(null, sameDiff, new SDVariable[]{x});
+        this.clipValueMin = clipValueMin;
+        this.clipValueMax = clipValueMax;
+        this.inplaceCall = inPlace;
+        addTArgument(clipValueMin, clipValueMax);
+    }
+
 
     public ClipByValue(SameDiff sameDiff, SDVariable x, double clipValueMin, double clipValueMax){
         super(null, sameDiff, new SDVariable[]{x});

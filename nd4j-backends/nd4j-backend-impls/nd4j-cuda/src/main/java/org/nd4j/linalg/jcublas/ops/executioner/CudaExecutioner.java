@@ -549,10 +549,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
+
         Arrays.sort(dimension);
 
+
+        validateDataType(Nd4j.dataType(), op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        int[] maxShape = Shape.getMaxShape(op.x(),op.y());
         for (int i = 0; i < dimension.length; i++)
-            if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
+            if (dimension[i] >= maxShape.length && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
@@ -565,8 +573,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             dimension = new int[] {Integer.MAX_VALUE};
 
 
-        int[] retShape = Shape.wholeArrayDimension(dimension) ? new int[] {1, 1}
-                : ArrayUtil.removeIndex(op.x().shape(), dimension);
+        int[] retShape;
+        if (Shape.wholeArrayDimension(dimension))
+            retShape = new int[] {1, 1};
+        else
+            retShape = ArrayUtil.removeIndex(maxShape, dimension);
         //ensure vector is proper shape
         if (retShape.length == 1) {
             if (dimension[0] == 0)
@@ -576,7 +587,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (retShape.length == 0) {
             retShape = new int[] {1, 1};
         }
-
 
         if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1 && op.y() == null)
             return op.noOp();

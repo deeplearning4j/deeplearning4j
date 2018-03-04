@@ -55,8 +55,9 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.transforms.OldReverse;
+import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
 import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
@@ -81,6 +82,7 @@ import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.tools.PropertyParser;
 import org.nd4j.versioncheck.VersionCheck;
 
 import java.io.*;
@@ -94,7 +96,6 @@ import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
-import org.nd4j.tools.PropertyParser;
 
 /**
  * Creation of ndarrays via classpath discovery.
@@ -2822,30 +2823,9 @@ public class Nd4j {
      * @return new matrix
      */
     public static INDArray diag(INDArray x, int k) {
-        if (x.isScalar())
-            return x.dup();
-
-        if (x.isVector()) {
-            INDArray m = Nd4j.create(x.length(), x.length());
-            INDArray xLinear = x.linearView();
-
-            for (int i = 0; i < x.length(); i++)
-                m.put(i, i, xLinear.getDouble(i));
-
-            return m;
-
-        } else if (x.isMatrix()) {
-            int vectorLength = x.rows() - k;
-            INDArray ret = Nd4j.create(new int[] {vectorLength, 1});
-            for (int i = 0; i < vectorLength; i++) {
-                ret.putScalar(i, x.getDouble(i, i));
-            }
-
-            return ret;
-        }
-
-
-        throw new IllegalArgumentException("Illegal input for diagonal of shape " + x.shape().length);
+        INDArray ret = Nd4j.create(new int[] {x.length(),x.length()});
+        Nd4j.getExecutioner().exec(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        return ret;
     }
 
     /**
@@ -5396,7 +5376,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE,
-                    int[] shape) {
+                                           int[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
@@ -5446,7 +5426,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation,
-                    int[] shape) {
+                                           int[] shape) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseInformation, shape);
         return matrix;
     }
@@ -5462,9 +5442,9 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                    int[] shape, int[] hiddenDimensions, int underlyingRank) {
+                                           int[] shape, int[] hiddenDimensions, int underlyingRank) {
         INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, flags, hiddenDimensions,
-                        underlyingRank, shape);
+                underlyingRank, shape);
         return matrix;
     }
 
@@ -5931,6 +5911,10 @@ public class Nd4j {
      * which is then the sum of the sizes along that dimension
      */
     public static INDArray concat(int dimension, INDArray... toConcat) {
+        if(dimension < 0) {
+            dimension += toConcat[0].rank();
+        }
+
         INDArray ret = INSTANCE.concat(dimension, toConcat);
         logCreationIfNecessary(ret);
         return ret;
@@ -6356,27 +6340,27 @@ public class Nd4j {
             ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
 
             affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
-                            .forName(pp.toString(AFFINITY_MANAGER));
+                    .forName(pp.toString(AFFINITY_MANAGER));
             affinityManager = affinityManagerClazz.newInstance();
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                            pp.toString(NDARRAY_FACTORY_CLASS));
+                    pp.toString(NDARRAY_FACTORY_CLASS));
             sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                            pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
+                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
-                            .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
+                    .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
             dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class
-                            .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
+                    .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
-                            .forName(pp.toString(SHAPEINFO_PROVIDER));
+                    .forName(pp.toString(SHAPEINFO_PROVIDER));
             sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                            pp.toString(SPARSEINFO_PROVIDER));
+                    pp.toString(SPARSEINFO_PROVIDER));
 
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
-                            .forName(pp.toString(CONSTANT_PROVIDER));
+                    .forName(pp.toString(CONSTANT_PROVIDER));
 
             memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class
-                            .forName(pp.toString(MEMORY_MANAGER));
+                    .forName(pp.toString(MEMORY_MANAGER));
 
             allowsOrder = backend.allowsOrder();
             String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
@@ -6384,19 +6368,19 @@ public class Nd4j {
             randomFactory = new RandomFactory(randomClazz);
 
             workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
-                            .forName(pp.toString(WORKSPACE_MANAGER));
+                    .forName(pp.toString(WORKSPACE_MANAGER));
 
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class
-                            .forName(pp.toString(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
+                    .forName(pp.toString(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
 
             opFactoryClazz = (Class<? extends OpFactory>) Class
-                            .forName(pp.toString(OP_FACTORY, DefaultOpFactory.class.getName()));
+                    .forName(pp.toString(OP_FACTORY, DefaultOpFactory.class.getName()));
 
             blasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                            .forName(pp.toString(BLAS_OPS));
+                    .forName(pp.toString(BLAS_OPS));
             sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                            .forName(pp.toString(SPARSE_BLAS_OPS));
+                    .forName(pp.toString(SPARSE_BLAS_OPS));
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
@@ -6408,7 +6392,7 @@ public class Nd4j {
             workspaceManager = workspaceManagerClazz.newInstance();
 
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class
-                            .forName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+                    .forName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
 
             instrumentation = instrumentationClazz.newInstance();
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
@@ -6425,7 +6409,7 @@ public class Nd4j {
             UNIT = Nd4j.createFloat(1, 0);
             ZERO = Nd4j.createFloat(0, 0);
             NEG_UNIT = Nd4j.createFloat(-1, 0);
-            ENFORCE_NUMERICAL_STABILITY = pp.toBoolean(NUMERICAL_STABILITY);                            
+            ENFORCE_NUMERICAL_STABILITY = pp.toBoolean(NUMERICAL_STABILITY);
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
             getExecutioner().setExecutionMode(executionMode);
 
@@ -6685,7 +6669,7 @@ public class Nd4j {
      */
 
     public static INDArray createFromNpyPointer(Pointer pointer) {
-       return INSTANCE.createFromNpyPointer(pointer);
+        return INSTANCE.createFromNpyPointer(pointer);
     }
 
     /**
@@ -6698,7 +6682,29 @@ public class Nd4j {
         return INSTANCE.createFromNpyFile(file);
     }
 
+    /**
+     * Create a numpy array based on the passed in
+     * input stream
+     * @param is the input stream to read
+     * @return the loaded ndarray
+     * @throws IOException
+     */
+    public static INDArray createNpyFromInputStream(InputStream is) throws IOException {
+        byte[] content = IOUtils.toByteArray(is);
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect(content.length);
+        byteBuffer.put(content);
+        byteBuffer.rewind();
+        Pointer pointer = new Pointer(byteBuffer);
+        return createFromNpyPointer(pointer);
+    }
 
+
+    /**
+     * Create an {@link INDArray}
+     * from a flatbuffers {@link FlatArray}
+     * @param array the array to create the {@link INDArray} from
+     * @return the created {@link INDArray}
+     */
     public static INDArray createFromFlatArray(FlatArray array) {
         val dtype = array.dtype();
         val order = array.byteOrder();

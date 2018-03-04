@@ -1,6 +1,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.LongUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,8 +21,6 @@ import java.util.NoSuchElementException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import com.google.common.primitives.Ints;
-import org.nd4j.linalg.util.LongUtils;
 
 /**
  * @author Audrey Loeffel
@@ -138,6 +138,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public int toFlatArray(FlatBufferBuilder builder) {
         throw new UnsupportedOperationException();
     }
+
+
+
+
+
 
     /**
      * Count the number of value that are included in the ndarray (view) according to the sparse offsets and the shape

@@ -58,12 +58,12 @@ public abstract  class MatrixBaseNDArrayList<X extends BaseNDArrayList> extends 
 
     @Override
     public Object[] toArray() {
-        throw new UnsupportedOperationException();
+        return list.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] ts) {
-        throw new UnsupportedOperationException();
+      return list.toArray(ts);
     }
 
     @Override

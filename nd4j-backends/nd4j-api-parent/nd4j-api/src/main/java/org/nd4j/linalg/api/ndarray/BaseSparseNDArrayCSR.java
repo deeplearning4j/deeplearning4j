@@ -107,6 +107,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         return this;
     }
 
+
     /**
      * Returns a subset of this array based on the specified
      * indexes

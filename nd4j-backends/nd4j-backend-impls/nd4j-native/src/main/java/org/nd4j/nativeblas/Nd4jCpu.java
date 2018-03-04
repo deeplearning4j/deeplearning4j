@@ -95,8 +95,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_greater_equal.class,
         float_less.class,
         float_greater.class,
-        float_Where.class,
+        float_where.class,
         float_select.class,
+        float_choose.class,
         float_is_non_decreasing.class,
         float_is_strictly_increasing.class,
         float_is_numeric_tensor.class,
@@ -390,8 +391,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_greater_equal.class,
         half_less.class,
         half_greater.class,
-        half_Where.class,
+        half_where.class,
         half_select.class,
+        half_choose.class,
         half_is_non_decreasing.class,
         half_is_strictly_increasing.class,
         half_is_numeric_tensor.class,
@@ -685,8 +687,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_greater_equal.class,
         double_less.class,
         double_greater.class,
-        double_Where.class,
+        double_where.class,
         double_select.class,
+        double_choose.class,
         double_is_non_decreasing.class,
         double_is_strictly_increasing.class,
         double_is_numeric_tensor.class,
@@ -10979,13 +10982,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <dll.h>
 // #include <vector>
 // #include <map>
-// #include <Scope.h>
+// #include <graph/Scope.h>
 // #include <Status.h>
-// #include <VariableSpace.h>
+// #include <graph/VariableSpace.h>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <types/pair.h>
-// #include <ArgumentsList.h>
-// #include <Graph.h>
+// #include <graph/ArgumentsList.h>
+// #include <graph/Graph.h>
     @Name("nd4j::graph::GraphState<float>") @NoOffset public static class FloatGraphState extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -16865,7 +16868,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <types/float16.h>
 // #include <pointercast.h>
 // #include <NDArray.h>
-// #include <Context.h>
+// #include <graph/Context.h>
 // #include "OpDescriptor.h"
 // #include <helpers/helper_hash.h>
 // #include <array/ShapeList.h>
@@ -17310,7 +17313,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef LIBND4J_BOOLEANOP_H
 // #define LIBND4J_BOOLEANOP_H
 
-// #include <Context.h>
+// #include <graph/Context.h>
 // #include "OpDescriptor.h"
 // #include "DeclarableOp.h"
         @Name("nd4j::ops::BooleanOp<float>") @NoOffset public static class FloatBooleanOp extends FloatDeclarableOp {
@@ -20165,48 +20168,48 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This op takes 2 n-dimensional arrays as input, and return 
          * array of the same shape, with elements, either from x or y, depending on the condition.
          */
-        @Name("nd4j::ops::Where<float>") public static class float_Where extends FloatDeclarableCustomOp {
+        @Name("nd4j::ops::where<float>") public static class float_where extends FloatDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public float_Where(Pointer p) { super(p); }
+            public float_where(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public float_Where(long size) { super((Pointer)null); allocateArray(size); }
+            public float_where(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public float_Where position(long position) {
-                return (float_Where)super.position(position);
+            @Override public float_where position(long position) {
+                return (float_where)super.position(position);
             }
         
-                                                                                    public float_Where() { super((Pointer)null); allocate(); }
+                                                                                    public float_where() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
                                                                                 }
-        @Name("nd4j::ops::Where<float16>") public static class half_Where extends HalfDeclarableCustomOp {
+        @Name("nd4j::ops::where<float16>") public static class half_where extends HalfDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public half_Where(Pointer p) { super(p); }
+            public half_where(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public half_Where(long size) { super((Pointer)null); allocateArray(size); }
+            public half_where(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public half_Where position(long position) {
-                return (half_Where)super.position(position);
+            @Override public half_where position(long position) {
+                return (half_where)super.position(position);
             }
         
-                                                                                    public half_Where() { super((Pointer)null); allocate(); }
+                                                                                    public half_where() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
                                                                                 }
-        @Name("nd4j::ops::Where<double>") public static class double_Where extends DoubleDeclarableCustomOp {
+        @Name("nd4j::ops::where<double>") public static class double_where extends DoubleDeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public double_Where(Pointer p) { super(p); }
+            public double_where(Pointer p) { super(p); }
             /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public double_Where(long size) { super((Pointer)null); allocateArray(size); }
+            public double_where(long size) { super((Pointer)null); allocateArray(size); }
             private native void allocateArray(long size);
-            @Override public double_Where position(long position) {
-                return (double_Where)super.position(position);
+            @Override public double_where position(long position) {
+                return (double_where)super.position(position);
             }
         
-                                                                                    public double_Where() { super((Pointer)null); allocate(); }
+                                                                                    public double_where() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
@@ -20262,7 +20265,66 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 
         /**
-         * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] <= x[i+1].
+         * This op takes either 1 argument and 1 scalar
+         * or 1 argument and another comparison array
+         * and runs a pre defined conditional op.
+         *
+         *  The output of the op is dynamic in size and returns a flat vector of elements
+         *  that return true on the given condition.
+         *  In numpy parlance, most people might understand:
+         *  a[a > 2]
+         *  where a is a numpy array and the condition is true when an element is
+         *  > 2. Libnd4j already implements a number of pre defined conditions.
+         * \tparam T
+         */
+        @Name("nd4j::ops::choose<float>") public static class float_choose extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_choose(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_choose(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_choose position(long position) {
+                return (float_choose)super.position(position);
+            }
+        
+                                                                                    public float_choose() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::choose<float16>") public static class half_choose extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_choose(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_choose(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_choose position(long position) {
+                return (half_choose)super.position(position);
+            }
+        
+                                                                                    public half_choose() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::choose<double>") public static class double_choose extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_choose(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_choose(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_choose position(long position) {
+                return (double_choose)super.position(position);
+            }
+        
+                                                                                    public double_choose() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        /**
+        * This op takes 1 n-dimensional array as input, and returns true if for every adjacent pair we have x[i] <= x[i+1].
          */
         @Name("nd4j::ops::is_non_decreasing<float>") public static class float_is_non_decreasing extends FloatBooleanOp {
             static { Loader.load(); }

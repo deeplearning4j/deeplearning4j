@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
@@ -20,6 +21,15 @@ public class Assign extends DynamicCustomOp {
 
     public Assign(){
 
+    }
+
+    public Assign(INDArray[] inputs, INDArray[] outputs) {
+        super(null,inputs, outputs);
+    }
+
+    @Override
+    public void addIArgument(int... arg) {
+        super.addIArgument(arg);
     }
 
     public Assign(SameDiff sameDiff, SDVariable x, SDVariable y){

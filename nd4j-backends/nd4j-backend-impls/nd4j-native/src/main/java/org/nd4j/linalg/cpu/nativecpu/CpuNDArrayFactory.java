@@ -1262,8 +1262,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray createFromNpyFile(File file) {
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8" ));
-        String otherBytes = new String(pathBytes);
-        System.out.println(otherBytes);
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
         directBuffer.rewind();

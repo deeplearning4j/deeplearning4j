@@ -10,6 +10,10 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -23,6 +27,102 @@ public class IndexingTests extends BaseNd4jTest {
     public IndexingTests(Nd4jBackend backend) {
         super(backend);
     }
+
+
+    @Test
+    public void testINDArrayIndexingEqualToRank() {
+        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray indexes = Nd4j.create(new double[][]{
+                {0,1,2},
+                {0,1,0}
+        });
+
+        INDArray assertion = Nd4j.create(new double[]{1,4,5});
+        INDArray getTest = x.get(indexes);
+        assertEquals(assertion,getTest);
+
+    }
+
+
+    @Test
+    public void testINDArrayIndexingLessThanRankSimple() {
+        INDArray x = Nd4j.linspace(1,6,6).reshape('c',3,2);
+        INDArray indexes = Nd4j.create(new double[][]{
+                {0},
+        });
+
+        INDArray assertion = Nd4j.create(new double[]{1,2});
+        INDArray getTest = x.get(indexes);
+        assertEquals(assertion,getTest);
+
+    }
+
+
+
+    @Test
+    public void testINDArrayIndexingLessThanRankFourDimension() {
+        INDArray x = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        INDArray indexes = Nd4j.create(new double[][]{
+                {0},{1}
+        });
+
+        INDArray assertion = Nd4j.create(new double[]{5,6,7,8}).reshape('c',1,2,2);
+        INDArray getTest = x.get(indexes);
+        assertEquals(assertion,getTest);
+
+    }
+
+    @Test
+    public void testPutSimple() {
+        INDArray x = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        INDArray indexes = Nd4j.create(new double[][]{
+                {0},{1}
+        });
+
+        x.put(indexes,Nd4j.create(new double[] {5,5}));
+        INDArray vals = Nd4j.valueArrayOf(new int[] {2,2,2,2},5);
+        assertEquals(vals,x);
+    }
+
+    @Test
+    public void testPutUnMatchDims() {
+        List<List<Integer>> indices = new ArrayList<>();
+        indices.add(Arrays.asList(0));
+        indices.add(Arrays.asList(0,1));
+        INDArray linspace = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        linspace.put(indices,Nd4j.scalar(99));
+        INDArray assertion = Nd4j.valueArrayOf(new int[] {2,2},99.0);
+        for(int i = 0; i < 2; i++)
+            assertEquals(assertion,linspace.slice(0).slice(i));
+
+    }
+
+
+    @Test
+    public void testScalarPut() {
+        List<List<Integer>> indices = new ArrayList<>();
+        indices.add(Arrays.asList(0));
+        indices.add(Arrays.asList(1));
+        indices.add(Arrays.asList(0));
+        indices.add(Arrays.asList(0));
+
+        INDArray linspace = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        linspace.put(indices,Nd4j.scalar(99.0));
+        assertEquals(99.0,linspace.getDouble(0,1,0,0),1e-1);
+    }
+
+
+    @Test
+    public void testIndexGetDuplicate() {
+        List<List<Integer>> indices = new ArrayList<>();
+        indices.add(Arrays.asList(0,0));
+        INDArray linspace = Nd4j.linspace(1,16,16).reshape('c',2,2,2,2);
+        INDArray get = linspace.get(indices);
+        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}).reshape('c',2,2,2,2);
+        assertEquals(assertion,get);
+    }
+
+
 
     @Test
     public void testGetScalar() {
@@ -62,7 +162,7 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals(firstAndSecondColumnsAssertion, firstAndSecondColumns);
 
         INDArray firstAndSecondRows = Nd4j.create(new double[][] {{1.00, 5.00, 9.00, 13.00, 17.00, 21.00},
-                        {1.00, 5.00, 9.00, 13.00, 17.00, 21.00}, {2.00, 6.00, 10.00, 14.00, 18.00, 22.00}});
+                {1.00, 5.00, 9.00, 13.00, 17.00, 21.00}, {2.00, 6.00, 10.00, 14.00, 18.00, 22.00}});
 
         INDArray rows = arr.getRows(new int[] {0, 0, 1});
         assertEquals(firstAndSecondRows, rows);

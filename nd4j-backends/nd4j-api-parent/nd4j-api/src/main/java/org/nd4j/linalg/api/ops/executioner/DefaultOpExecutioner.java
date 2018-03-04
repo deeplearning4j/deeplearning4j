@@ -560,10 +560,6 @@ public class DefaultOpExecutioner implements OpExecutioner {
             throw new ND4JIllegalStateException("op.Y dataType is [" + op.y().data().dataType()
                             + "] instead of expected [" + expectedType + "]");
 
-        DataBuffer extraz = op.extraArgsDataBuff();
-        if (extraz != null && extraz.dataType() != expectedType)
-            throw new ND4JIllegalStateException("op.Extras dataType is [" + extraz.dataType()
-                            + "] instead of expected [" + expectedType + "]");
 
     }
 
