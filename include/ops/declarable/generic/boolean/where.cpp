@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(where, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
 
             if (block.width() == 3) {
@@ -81,7 +81,7 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_SHAPE_FN(where) {
+        DECLARE_SHAPE_FN(Where) {
             if (block.width() == 3) {
                 auto inShape = inputShape->at(1);
                 int *newshape;

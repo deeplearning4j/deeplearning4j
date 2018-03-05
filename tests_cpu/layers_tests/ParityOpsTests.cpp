@@ -406,7 +406,7 @@ TEST_F(ParityOpsTests, Test_Where_1) {
     NDArray<float> y('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
     NDArray<float> exp('c', {3, 3}, {1, 2, 3, 6, 5, 4, 7, 8, 9});
 
-    nd4j::ops::where<float> op;
+    nd4j::ops::Where<float> op;
     auto result = op.execute({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -426,7 +426,7 @@ TEST_F(ParityOpsTests, Test_Where_2) {
     NDArray<float> y('c', {3, 3}, {9, 8, 7, 6, 5, 4, 3, 2, 1});
     NDArray<float> exp('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
 
-    nd4j::ops::where<float> op;
+    nd4j::ops::Where<float> op;
     auto result = op.execute({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -443,7 +443,7 @@ TEST_F(ParityOpsTests, Test_Where_3) {
     NDArray<float> mask('c', {2, 2, 3}, {0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0});
     NDArray<float> exp('c', {5, 3}, {0, 0, 1, 0, 0, 2, 0, 1, 1, 1, 0, 0, 1, 1, 2});
 
-    nd4j::ops::where<float> op;
+    nd4j::ops::Where<float> op;
     auto result = op.execute({&mask}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
