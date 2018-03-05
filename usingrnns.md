@@ -72,16 +72,15 @@ The downside of truncated BPTT is that the length of the dependencies learned in
 Using truncated BPTT in DL4J is quite simple: just add the following code to your network configuration (at the end, before the final .build() in your network configuration)
 
     .backpropType(BackpropType.TruncatedBPTT)
-    .tBPTTForwardLength(100)
-    .tBPTTBackwardLength(100)
+    .tBPTTLength(100)
 
-The above code snippet will cause any network training (i.e., calls to MultiLayerNetwork.fit() methods) to use truncated BPTT with equal length forward and backward passes, of length 100.
+The above code snippet will cause any network training (i.e., calls to MultiLayerNetwork.fit() methods) to use truncated BPTT with segments of length 100 steps.
 
 Some things of note:
 
 * By default (if a backprop type is not manually specified), DL4J will use BackpropType.Standard (i.e., full BPTT).
-* The tBPTTForwardLength and tBPTTBackwardLength options set the length of the truncated BPTT passes. Typically, this is somewhere on the order of 50 to 200 time steps, though depends on the application. Typically both forward pass and backward pass will be the same length (though tBPTTBackwardLength may be shorter, but not longer)
-* The truncated  BPTT lengths must be shorter than or equal to the total time series length
+* The tBPTTLength configuration parameter set the length of the truncated BPTT passes. Typically, this is somewhere on the order of 50 to 200 time steps, though depends on the application and data.
+* The truncated BPTT lengths is typically a fraction of the total time series length (i.e., 200 vs. sequence length 1000), but variable length time series in the same minibatch is OK when using TBPTT (for example, a minibatch with two sequences - one of length 100 and another of length 1000 - with a TBPTT length of 200 - will work correctly)
 
 ### <a name="masking">Masking: One-to-Many, Many-to-One, and Sequence Classification</a>
 
