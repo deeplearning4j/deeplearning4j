@@ -418,16 +418,37 @@ class ndarray(object):
         return ndarray(self.array.ravel().dup())
 
     def moveaxis(self, source, destination):
+        assert type(source) == type(destination), 'source and destination should be of same type.'
         shape = self.array.shape()
-        permute = list(range(len(shape)))
-        if destination < 0:
-            destination += len(shape)
-        inc = destination < source
-        d = permute[source]
-        permute.insert(destination, d)
-        if inc:
-            source += 1
-        permute.pop(source)
+        ndim = len(shape)
+        x = list(range(ndim))
+        if type(source) is int:
+            if source < 0:
+                source += ndim
+            if destination < 0:
+                destination += ndim
+            z = x.pop(source)
+            x.insert(destination, z)
+            return ndarray(self.array.permute(*x))
+        if type(source) in (list, tuple):
+            source = list(source)
+            destination = list(destination)
+            assert len(source) == len(destination)
+            for src, dst in zip(source, destination):
+                if src < 0:
+                    src += ndim
+                if dst < 0:
+                    dst += ndim
+                z = x.pop(src)
+                x.insert(dst, z)
+            return ndarray(self.array.permute(*x))
+
+    def permute(self, *axis):
+        if len(axis) == 1:
+            axis = axis[0]
+        assert set(axis) in [set(list(range(len(axis)))),
+                set(list(range(len(self.array.shape()))))]
+        return ndarray(self.array.permute(*axis))
 
 
 def array(*args, **kwargs):
