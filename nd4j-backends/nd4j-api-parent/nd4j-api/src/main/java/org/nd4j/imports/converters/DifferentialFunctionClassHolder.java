@@ -223,7 +223,7 @@ public class DifferentialFunctionClassHolder {
         }
 
 
-        val map = Nd4j.getExecutioner().getCustomOperations();
+        val map = new HashMap<>(Nd4j.getExecutioner().getCustomOperations());
         val set = map.keySet();
         set.removeAll(nodeConverters.keySet());
         missingOps.addAll(set);

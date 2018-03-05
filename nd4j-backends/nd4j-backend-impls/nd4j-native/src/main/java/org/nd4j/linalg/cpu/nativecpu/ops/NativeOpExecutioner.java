@@ -1517,13 +1517,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (customOps == null) {
             String list = loop.getAllCustomOps();
 
-            customOps = new HashMap<>();
-
-
             if (list == null || list.isEmpty()) {
                 log.warn("No customs ops available!");
+                customOps = Collections.emptyMap();
                 return customOps;
             }
+
+            val map = new HashMap<String, CustomOpDescriptor>();
 
             String[] split = list.split(";");
             for (String op : split) {
@@ -1541,8 +1541,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         .numIArgs(Integer.valueOf(another[6]))
                         .build();
 
-                customOps.put(another[0], descriptor);
+                map.put(another[0], descriptor);
             }
+
+            customOps = Collections.unmodifiableMap(map);
         }
 
         return customOps;
