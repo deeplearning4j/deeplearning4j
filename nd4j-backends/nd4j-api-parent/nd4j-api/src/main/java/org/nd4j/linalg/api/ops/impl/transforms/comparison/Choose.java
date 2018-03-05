@@ -52,7 +52,6 @@ public class Choose extends DynamicCustomOp {
         addInputArgument(inputs);
         addIArgument(condition.condtionNum());
         addOutputArgument(Nd4j.create(inputs[0].length()),Nd4j.scalar(1.0));
-
     }
 
     /**
@@ -94,6 +93,10 @@ public class Choose extends DynamicCustomOp {
 
     public Choose(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(opName, sameDiff, args, inPlace);
+    }
+
+    public Choose(){
+        //No-arg constructor for use in DifferentialFunctionClassHolder
     }
 
     @Override
