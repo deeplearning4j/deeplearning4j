@@ -281,7 +281,7 @@ class ndarray(object):
 
     def __getitem__(self, key):
         if type(key) is int:
-            return = ndarray(self.array.get(NDArrayIndex.point(key)))
+            ndarray(self.array.get(NDArrayIndex.point(key)))
         if type(key) is slice:
             start = key.start
             stop = key.stop
