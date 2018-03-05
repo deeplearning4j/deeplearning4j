@@ -345,22 +345,22 @@ class ndarray(object):
     def __add__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-       return ndarray(x.add(y))
+        return ndarray(x.add(y))
 
     def __sub__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-       return ndarray(x.add(y))
+        return ndarray(x.add(y))
 
     def __mul__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-       return ndarray(x.add(y))
+        return ndarray(x.add(y))
 
     def __div__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-       return ndarray(x.add(y))
+        return ndarray(x.add(y))
 
     def __iadd__(self, other):
         other = _indarray(other)
