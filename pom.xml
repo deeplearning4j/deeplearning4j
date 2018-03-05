@@ -520,7 +520,6 @@
         <module>nd4j-instrumentation</module>
         <module>nd4j-perf</module>
         <module>nd4j-serde</module>
-        <module>nd4j-bytebuddy</module>
         <module>nd4j-common</module>
         <module>nd4j-buffer</module>
         <module>nd4j-context</module>
@@ -735,7 +734,6 @@
                   <directory>nd4j-instrumentation</directory>
                   <directory>nd4j-perf</directory>
                   <directory>nd4j-serde</directory>
-                  <directory>nd4j-bytebuddy</directory>
                   <directory>nd4j-common</directory>
                   <directory>nd4j-buffer</directory>
                   <directory>nd4j-context</directory>
