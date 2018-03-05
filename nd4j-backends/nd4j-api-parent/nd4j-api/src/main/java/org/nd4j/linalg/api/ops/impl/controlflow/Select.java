@@ -22,16 +22,16 @@ public class Select extends DynamicCustomOp {
         super(null, sameDiff, args);
     }
 
-    public Select(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
-        super(opName, inputs, outputs, tArguments, iArguments);
+    public Select( INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+        super(null, inputs, outputs, tArguments, iArguments);
     }
 
-    public Select(String opName, INDArray[] inputs, INDArray[] outputs) {
-        super(opName, inputs, outputs);
+    public Select( INDArray[] inputs, INDArray[] outputs) {
+        super(null, inputs, outputs);
     }
 
-    public Select(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(opName, sameDiff, args, inPlace);
+    public Select(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+        super(null, sameDiff, args, inPlace);
     }
 
     @Override
