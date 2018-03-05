@@ -13,11 +13,11 @@ resolvers in ThisBuild ++= Seq(
 
 cleanFiles += baseDirectory.value / "lib"
 val mvnInstall = Seq("mvn", "install")
-val operatingSystem = sys.props("os.name").toLowerCase
+val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {
-    case "windows" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
-    case _         => { mvnInstall !; update.value }
+    case "win" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
+    case _     => { mvnInstall !; update.value }
   }
 }
 
@@ -49,6 +49,8 @@ scalacOptions in ThisBuild ++= Seq("-language:postfixOps",
 
 lazy val standardSettings = Seq(
   organization := "org.deeplearning4j",
+  organizationName := "Skymind",
+  startYear := Some(2016),
   licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html")),
   homepage := Some(url("https://github.com/deeplearning4j/ScalNet")),
   scmInfo := Some(
@@ -82,7 +84,10 @@ assemblyMergeStrategy in assembly := {
 }
 
 lazy val root = (project in file("."))
+  .enablePlugins(AutomateHeaderPlugin)
   .settings(standardSettings)
   .settings(
     name := "ScalNet"
   )
+
+headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.twirlStyleBlockComment)

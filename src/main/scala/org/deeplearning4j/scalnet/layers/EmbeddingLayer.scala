@@ -1,30 +1,33 @@
+/*
+ * Copyright 2016 Skymind
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.deeplearning4j.scalnet.layers
-import org.deeplearning4j.nn.conf.distribution.Distribution
-import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise
-import org.deeplearning4j.nn.conf.{ GradientNormalization, layers }
+import org.deeplearning4j.nn.conf.layers
 import org.deeplearning4j.nn.weights.WeightInit
+import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
 import org.nd4j.linalg.activations.Activation
-import org.nd4j.linalg.learning.config.IUpdater
 
 class EmbeddingLayer(nIn: Int,
                      nOut: Int,
-                     activation: Activation = Activation.IDENTITY,
-                     weightInit: WeightInit = WeightInit.XAVIER,
-                     biasInit: Double = Double.NaN,
-                     dist: Distribution = null,
-                     l1: Double = Double.NaN,
-                     l2: Double = Double.NaN,
-                     l1Bias: Double = Double.NaN,
-                     l2Bias: Double = Double.NaN,
+                     activation: Activation,
+                     weightInit: WeightInit,
+                     regularizer: WeightRegularizer,
                      dropOut: Double = 0.0,
-                     updater: IUpdater = null,
-                     biasUpdater: IUpdater = null,
-                     weightNoise: IWeightNoise = null,
-                     gradientNormalization: GradientNormalization = GradientNormalization.None,
-                     gradientNormalizationThreshold: Double = 1.0,
-                     hasBias: Boolean = false,
                      override val name: String = "")
-    extends FeedForwardLayer {
+    extends Layer {
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new layers.EmbeddingLayer.Builder()
@@ -32,18 +35,8 @@ class EmbeddingLayer(nIn: Int,
       .nOut(nOut)
       .activation(activation)
       .weightInit(weightInit)
-      .biasInit(biasInit)
-      .dist(dist)
-      .l1(l1)
-      .l2(l2)
-      .l1Bias(l1Bias)
-      .l2Bias(l2Bias)
-      .updater(updater)
-      .biasUpdater(biasUpdater)
-      .weightNoise(weightNoise)
-      .gradientNormalization(gradientNormalization)
-      .gradientNormalizationThreshold(gradientNormalizationThreshold)
-      .hasBias(hasBias)
+      .l1(regularizer.l1)
+      .l2(regularizer.l2)
       .dropOut(dropOut)
       .name(name)
       .build()
@@ -58,36 +51,14 @@ object EmbeddingLayer {
             nOut: Int,
             activation: Activation = Activation.IDENTITY,
             weightInit: WeightInit = WeightInit.XAVIER,
-            biasInit: Double = Double.NaN,
-            dist: Distribution = null,
-            l1: Double = Double.NaN,
-            l2: Double = Double.NaN,
-            l1Bias: Double = Double.NaN,
-            l2Bias: Double = Double.NaN,
-            dropOut: Double = 0.0,
-            updater: IUpdater = null,
-            biasUpdater: IUpdater = null,
-            weightNoise: IWeightNoise = null,
-            gradientNormalization: GradientNormalization = GradientNormalization.None,
-            gradientNormalizationThreshold: Double = 1.0,
-            hasBias: Boolean = false): EmbeddingLayer =
+            regularizer: WeightRegularizer = NoRegularizer(),
+            dropOut: Double = 0.0): EmbeddingLayer =
     new EmbeddingLayer(
       nIn,
       nOut,
       activation,
       weightInit,
-      biasInit,
-      dist,
-      l1,
-      l2,
-      l1Bias,
-      l2Bias,
-      dropOut,
-      updater,
-      biasUpdater,
-      weightNoise,
-      gradientNormalization,
-      gradientNormalizationThreshold,
-      hasBias
+      regularizer,
+      dropOut
     )
 }
