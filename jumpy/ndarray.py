@@ -350,17 +350,17 @@ class ndarray(object):
     def __sub__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-        return ndarray(x.add(y))
+        return ndarray(x.sub(y))
 
     def __mul__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-        return ndarray(x.add(y))
+        return ndarray(x.mul(y))
 
     def __div__(self, other):
         other = _indarray(other)
         x, y = broadcast(self.array, other)
-        return ndarray(x.add(y))
+        return ndarray(x.div(y))
 
     def __iadd__(self, other):
         other = _indarray(other)
