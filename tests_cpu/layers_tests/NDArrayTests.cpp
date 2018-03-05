@@ -251,11 +251,15 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
     int pShape[] = {6, 2, 2, 6, 6, 5, 5, 900, 1800, 6, 1, 180, 36, 0, -1, 99};
     int rShape[] = {3, 2, 72, 25, 1800, 25, 1, 0, 1, 99};
 
+
+    array.printShapeInfo("before");
+
     array.permutei({1, 0, 4, 5, 2, 3});
+
+    array.printShapeInfo("after ");
 
     for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
         ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
-
 
     array.reshapei('c', {2, 72, 25});
 

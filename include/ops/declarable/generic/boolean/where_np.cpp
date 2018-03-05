@@ -1,5 +1,5 @@
 //
-//  @author raver119@gmail.com
+//  @author Adam Gibson
 //
 
 #include <helpers/ShapeUtils.h>
@@ -7,7 +7,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(where, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
 
             if (block.width() == 3) {
@@ -15,18 +15,38 @@ namespace nd4j {
                 auto y = INPUT_VARIABLE(2);
 
                 auto z = OUTPUT_VARIABLE(0);
-
-                REQUIRE_TRUE(x->isSameShape(y), 0, "X and Y must have equal shapes");
-
+               int numMatches = 0;
                 // if cond matches x/y shape - we have per-element mask
                 if (condition->isSameShape(x)) {
                     // FIXME: for perf it might be better to issue memcpy here, and fill only mismatched values from either X or Y
-                    for (int e = 0; e < condition->lengthOf(); e++) {
-                        T v = condition->getIndexedScalar(e);
-                        T r = v == (T) 0.0f ? y->getIndexedScalar(e) : x->getIndexedScalar(e);
-                        z->putIndexedScalar(e, r);
+                    if(y->isScalar()) {
+                        for (int e = 0; e < condition->lengthOf(); e++) {
+                            T v = condition->getIndexedScalar(e);
+                            T r = v > (T) 0.0f ? y->getIndexedScalar(0) : x->getIndexedScalar(e);
+                            z->putIndexedScalar(e, r);
+                        }
                     }
-                } else {
+                    else {
+
+                        for (int e = 0; e < condition->lengthOf(); e++) {
+                            T v = condition->getIndexedScalar(e);
+                            if (v > 0.0f) {
+                                T r = y->getIndexedScalar(numMatches);
+                                z->putIndexedScalar(e, r);
+                                numMatches++;
+                            }
+                            else {
+                                T r = x->getIndexedScalar(e);
+                                z->putIndexedScalar(e, r);
+                            }
+                        }
+
+                        REQUIRE_TRUE(numMatches == y->lengthOf(), 44, "Num matches %d != length of put array %d", numMatches,y->lengthOf());
+
+                    }
+
+                }
+                else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());
 
                     auto dims = ShapeUtils<T>::convertAxisToTadTarget(x->rankOf(), {0});
@@ -81,12 +101,13 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        DECLARE_SHAPE_FN(where) {
+
+
+        DECLARE_SHAPE_FN(where_np) {
             if (block.width() == 3) {
                 auto inShape = inputShape->at(1);
                 int *newshape;
-                ALLOCATE(newshape, block.getWorkspace(), shape::shapeInfoLength(inShape), int);
-                memcpy(newshape, inShape, shape::shapeInfoByteLength(inShape));
+                COPY_SHAPE(inShape, newshape);
 
                 return SHAPELIST(newshape);
             } else {

@@ -1,6 +1,7 @@
 //
 // Created by agibsonccc on 1/15/17.
 //
+#include <helpers/ShapeUtils.h>
 #include "testinclude.h"
 
 class ReduceTest : public testing::Test {
@@ -36,11 +37,14 @@ public:
     int dimension[3] = {1,2,3};
     float extraVals[2] = {0,0};
     int opNum = 1;
+
+    std::vector<int> dim = {1, 2, 3};
 };
 
 
 TEST_F(EuclideanDistanceTest,Test1) {
-    int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
+    //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
+    int *tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     functions::reduce3::Reduce3<float>::exec(opNum,
                                              x,
                                              shapeBuffer,

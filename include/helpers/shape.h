@@ -2570,7 +2570,7 @@ __host__ __device__
         }
         else {
             int *shapeDeref = *shape;
-            if(shape::prod(shapeDeref,length) < 2) {
+            if(shape::prodLong(shapeDeref,length) < 2) {
                 return;
             }
         }

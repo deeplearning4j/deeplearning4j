@@ -4,6 +4,8 @@
 
 #include "testinclude.h"
 #include <reduce3.h>
+#include <ShapeUtils.h>
+#include <vector>
 
 class EuclideanTest : public testing::Test {
 public:
@@ -17,13 +19,16 @@ public:
     float extraVals[1] = {0};
     float result[4] = {0.0,0.0,0.0,0.0};
 
+    std::vector<int> dim = {1};
 };
 
 TEST_F(EuclideanTest,Test1) {
     int *shapeBuffer = shape::shapeBuffer(2,yShape);
     int *xShapeBuffer = shape::shapeBuffer(2,xShape);
-    int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    functions::reduce3::Reduce3<float>::exec(opNum,
+
+    //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
+    int *tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+            functions::reduce3::Reduce3<float>::exec(opNum,
                                              x,
                                              xShapeBuffer,
                                              extraVals,
@@ -42,6 +47,7 @@ TEST_F(EuclideanTest,Test1) {
     //ASSERT_EQ(result[1],result[0]);
     delete[] shapeBuffer;
     delete[] tadShapeBuffer;
+    delete[] xShapeBuffer;
 }
 
 
