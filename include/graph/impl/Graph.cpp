@@ -458,7 +458,7 @@ namespace nd4j {
             }
 
             std::pair<int, Node<T> *> pair(node->id(), node);
-            nd4j_printf("Adding node_%i\n", node->id());
+            nd4j_debug("Adding node_%i\n", node->id());
             // if model has only external variables as input - it goes to first layer, no matter what.
             if (node->hasExternalInputs() && !node->hasInternalInputs()) {
                 node->setLayer(0);
@@ -513,7 +513,7 @@ namespace nd4j {
                 // otherwise we're putting it to unmapped space for further sorting
                 _unmapped.insert(pair);
                 _unmappedMap.emplace_back(pair.first);
-                nd4j_printf("adding: %i\n", pair.first);
+                nd4j_debug("adding: %i\n", pair.first);
             }
         }
 

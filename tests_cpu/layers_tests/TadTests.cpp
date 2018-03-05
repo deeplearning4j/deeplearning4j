@@ -117,6 +117,17 @@ TEST_F(TadTests, TadEdgeCase_1) {
     delete tad;
 }
 
+TEST_F(TadTests, TadEdgeCase_2) {
+    NDArray<float> array('c', {2, 3, 4});
+
+    auto tad = array.tensorAlongDimension(0, {1});
+
+    tad->printShapeInfo("TAD shape");
+    ASSERT_EQ(3, tad->lengthOf());
+
+    delete tad;
+}
+
 /*
  // FIXME: we want this test passing eventually
 TEST_F(TadTests, Tad_1D_1) {

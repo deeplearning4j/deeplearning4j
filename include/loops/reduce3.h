@@ -1231,7 +1231,7 @@ template<typename OpType>
 
 
 
-                    if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1) {
+                    if (largerElementWiseStride >= 1 && smallerElementWiseStride >= 1 && xElementWiseStride >= 1 && yElementWiseStride >= 1) {
                         if(shape::length(xShapeInfo) == shape::length(yShapeInfo)) {
                             //#pragma omp parallel for proc_bind(AFFINITY) default(shared)
                             for (Nd4jIndex i = 0; i < resultLength; i++) {

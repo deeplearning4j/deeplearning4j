@@ -40,4 +40,5 @@ TEST_F(BroadcastMultiDimTest,MultimDimTest) {
         ASSERT_EQ(dataAssertion[i],result[i]);
     }
 
+    delete tad;
 }

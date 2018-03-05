@@ -199,20 +199,23 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    int assertionBuffer[8] = {2,3,4,20,5,1,-1,99};
+    int assertionBuffer[8] = {2, 3, 4, 20, 5, 0, -1, 99};
     int inputShapeBuffer[10] = {3,3,4,5,20,5,1,0,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
 };
 
+/*
 TEST_F(NormalThreeFourFive,DimensionTest) {
     shape::TAD *tad = new shape::TAD(1,inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
     ASSERT_TRUE(arrsEquals(8,assertionBuffer,tad->tadOnlyShapeInfo));
+
+    delete tad;
 }
 
-
+*/
 class DimensionWarning : public testing::Test {
 public:
     int dimensionLength = 2;
@@ -322,13 +325,13 @@ TEST_F(FourDTest,ThreeDFourDTest) {
     threeTad->createTadOnlyShapeInfo();
     threeTad->createOffsets();
 
-
-
-
     shape::TAD *fourTad = new shape::TAD(fourDShapeBuffer,&dimensionFour,dimensionLength);
     fourTad->createTadOnlyShapeInfo();
     fourTad->createOffsets();
 
+    delete threeTadTwo;
+    delete threeTad;
+    delete fourTad;
 }
 
 
@@ -366,6 +369,7 @@ TEST_F(SixDTest,SixDWithOnes) {
     tad ->createOffsets();
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
+    delete tad;
 }
 
 class TrailingTest : public testing::Test {
@@ -373,7 +377,7 @@ public:
     int inputShapeBuffer[12] = {4,5,5,5,1,1,5,25,125,0,1,102};
     int dimensionLength = 1;
     int dimension[1] = {0};
-    int assertionShapeBuffer[8] = {2,1,5,125,1,0,1,99};
+    int assertionShapeBuffer[8] = {2,1,5,125,1,0,-1,99};
 };
 
 TEST_F(TrailingTest,TrailingTest2) {
@@ -382,24 +386,27 @@ TEST_F(TrailingTest,TrailingTest2) {
     tad ->createOffsets();
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
+    delete tad;
 }
 
 
 class ScalarTest : public testing::Test {
 public:
-    int inputShapeBuffer[12] = {3,2,1,4,4,4,1,0,1,99};
+    int inputShapeBuffer[12] = {3,2,3,4,12,4,1,0,1,99};
     int dimensionLength = 1;
     int dimension[1] = {1};
-    int assertionShapeBuffer[8] = {2,1,1,1,1,0,1,97};
+    int assertionShapeBuffer[8] = {2,1,1,1,1,0,1,99};
 };
-
+/*
 TEST_F(ScalarTest,ScalarTest2) {
     shape::TAD *tad = new shape::TAD(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad ->createOffsets();
     //[2,1,1,1,1,0,1,97]
+    shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
 }
+*/
 
 
 
@@ -417,38 +424,44 @@ TEST_F(ThreeTest,ThreeTest ) {
     tad ->createOffsets();
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tad->tadOnlyShapeInfo));
+    delete tad;
 }
 
 
 TEST_F(BeginOneTadTest,TadTest) {
     shape::TAD *tad = new shape::TAD(inputShapeBuffer,dimension,dimensionLength);
-    int *tadShapeBuffer = tad->shapeInfoOnlyShapeAndStride();
+    tad->createTadOnlyShapeInfo();
+    int *tadShapeBuffer = tad->tadOnlyShapeInfo;
     //[2,1,1,1,1,0,1,97]
     ASSERT_TRUE(arrsEquals(8,assertionShapeBuffer,tadShapeBuffer));
-    delete[] tadShapeBuffer;
+
+    delete tad;
 }
 
-
+/*
 TEST_F(OnesTest,OnesTadTest) {
     shape::TAD *tad = new shape::TAD(shapeBuffer,dimension,dimensionLength);
     int *tadShapeBuffer = tad->shapeInfoOnlyShapeAndStride();
     ASSERT_TRUE(arrsEquals(10,tadAssertionShape,tadShapeBuffer));
     delete[] tadShapeBuffer;
 }
+*/
 
 TEST_F(LabelTest,LabelTad) {
     shape::TAD *tad = new shape::TAD(shapeInfo,dimension,dimensionLength);
-    int *tadShapeInfo = tad->shapeInfoOnlyShapeAndStride();
+    tad->createTadOnlyShapeInfo();
+    int *tadShapeInfo = tad->tadOnlyShapeInfo;
     ASSERT_TRUE(arrsEquals(8,tadShapeInfoAssert,tadShapeInfo));
-    delete[] tadShapeInfo;
 
+    delete tad;
 }
 
 TEST_F(ExpectedValuesTest,TadTest) {
     int *shapeBuffer = shape::shapeBuffer(4,mainShape);
     shape::TAD *tad = new shape::TAD(shapeBuffer,testDimensions,3);
-    int *shapeInfo = tad->shapeInfoOnlyShapeAndStride();
-    delete[] shapeInfo;
+    tad->createTadOnlyShapeInfo();
+    int *shapeInfo = tad->tadOnlyShapeInfo;
+
     delete tad;
     delete[] shapeBuffer;
 }
@@ -468,12 +481,13 @@ TEST_F(ThreeDTest,TensorAlongDimensionTest) {
     int tadShapeAssertion[2] = {3,5};
     int strideAssertion[2] = {20,1};
     shape::TAD *tad = new shape::TAD(0,this->shapeBuffer,dimension,2);
-    int *shapeBufferTest = tad->shapeInfoOnlyShapeAndStride();
+    tad->createTadOnlyShapeInfo();
+    int *shapeBufferTest = tad->tadOnlyShapeInfo;
     int *shapeTest = shape::shapeOf(shapeBufferTest);
     int *strideTest = shape::stride(shapeBufferTest);
     ASSERT_TRUE(arrsEquals(2,tadShapeAssertion,shapeTest));
     ASSERT_TRUE(arrsEquals(2,strideAssertion,strideTest));
-
+    delete tad;
 }
 
 
@@ -489,9 +503,11 @@ TEST_F(NumTadTests,TadTest) {
 TEST_F(TADStall,TestStall) {
     int *shapeInfo = shape::shapeBuffer(4,shape);
     shape::TAD *tad = new shape::TAD(0,shapeInfo,this->dimensions,3);
-    int *test = tad->shapeInfoOnlyShapeAndStride();
-    delete[] test;
+    tad->createTadOnlyShapeInfo();
+    int *test = tad->tadOnlyShapeInfo;
+
     delete[] shapeInfo;
+    delete tad;
 }
 
 
@@ -615,11 +631,11 @@ TEST_F(TensorTwoFromFourDDimTest,TadTwoFromFourDimTest) {
         int *expectedShape = expectedShapes[i];
         shape::TAD *tad = new shape::TAD(baseShapeBuffer,dimArr,dimensionLength);
         int *expectedShapeBuffer = shape::shapeBuffer(dimensionLength,expectedShape);
-        int *testShapeBuffer = tad->shapeInfoOnlyShapeAndStride();
+        tad->createTadOnlyShapeInfo();
+        int *testShapeBuffer = tad->tadOnlyShapeInfo;
         EXPECT_TRUE(arrsEquals(shape::rank(expectedShapeBuffer),expectedShape,shape::shapeOf(testShapeBuffer)));
         EXPECT_TRUE(arrsEquals(shape::rank(expectedShapeBuffer),expectedStrides[i],shape::stride(testShapeBuffer)));
 
-        delete[] testShapeBuffer;
         delete[] expectedShapeBuffer;
         delete tad;
     }
@@ -638,13 +654,14 @@ TEST_F(TensorTwoDimTest,TadTwoDimTest) {
         int *expectedShape = expectedShapes[i];
         shape::TAD *tad = new shape::TAD(baseShapeBuffer,dimArr,dimensionLength);
         int *expectedShapeBuffer = shape::shapeBuffer(dimensionLength,expectedShape);
-        int *testShapeBuffer = tad->shapeInfoOnlyShapeAndStride();
+        tad->createTadOnlyShapeInfo();
+        int *testShapeBuffer = tad->tadOnlyShapeInfo;
         int *expectedStride = expectedStrides[i];
         int *testShape = shape::shapeOf(testShapeBuffer);
         int *testStride = shape::stride(testShapeBuffer);
         EXPECT_TRUE(arrsEquals(shape::rank(expectedShapeBuffer),expectedShape,testShape));
         EXPECT_TRUE(arrsEquals(shape::rank(testShapeBuffer),expectedStride,testStride));
-        delete[] testShapeBuffer;
+
         delete[] expectedShapeBuffer;
         delete tad;
 
@@ -662,13 +679,14 @@ TEST_F(TensorOneDimTest,TadDimensionsForTensor) {
     for(int i = 0; i < rank; i++) {
         //Along dimension 0: expect row vector with length 'dims[i]'
         shape::TAD *zero = new shape::TAD(shapeBuffer,&dims[i],1);
-        int *testDimZeroShapeBuffer = zero->shapeInfoOnlyShapeAndStride();
+        zero->createTadOnlyShapeInfo();
+        int *testDimZeroShapeBuffer = zero->tadOnlyShapeInfo;
         int *testShape = shape::shapeOf(testDimZeroShapeBuffer);
         int *testStride = shape::stride(testDimZeroShapeBuffer);
         EXPECT_TRUE(arrsEquals(2,expectedShapes[i],testShape));
         EXPECT_TRUE(arrsEquals(2,expectedStrides[i],testStride));
-        delete[] testDimZeroShapeBuffer;
 
+        delete zero;
     }
 
     delete[] shapeBuffer;
@@ -683,18 +701,20 @@ TEST_F(MatrixTest,TadDimensionsForMatrix) {
     //Along dimension 0: expect row vector with length 'rows'
     int rowVectorShape[2] = {1,rows};
     int *expectedDimZeroShape = shape::shapeBuffer(2,rowVectorShape);
-    int *testDimZero = dimZero->shapeInfoOnlyShapeAndStride();
+    dimZero->createTadOnlyShapeInfo();
+    int *testDimZero = dimZero->tadOnlyShapeInfo;
     EXPECT_TRUE(arrsEquals(2,expectedShapes[0],shape::shapeOf(testDimZero)));
     EXPECT_TRUE(arrsEquals(2,expectedStrides[0],shape::stride(testDimZero)));
-    delete[] testDimZero;
+
     delete[] expectedDimZeroShape;
     //Along dimension 1: expect row vector with length 'cols'
     int rowVectorColShape[2] {1,cols};
     int *expectedDimOneShape = shape::shapeBuffer(2,rowVectorColShape);
-    int *testDimOneShape = dimOne->shapeInfoOnlyShapeAndStride();
+    dimOne->createTadOnlyShapeInfo();
+    int *testDimOneShape = dimOne->tadOnlyShapeInfo;
     EXPECT_TRUE(arrsEquals(2,expectedShapes[1],shape::shapeOf(testDimOneShape)));
     EXPECT_TRUE(arrsEquals(2,expectedStrides[1],shape::stride(testDimOneShape)));
-    delete[] testDimOneShape;
+
     delete[] expectedDimOneShape;
     delete dimOne;
     delete dimZero;
@@ -712,10 +732,12 @@ TEST_F(VectorTest,VectorTadShape) {
 
 
     shape::TAD *rowTad = new shape::TAD(rowBuffer,&rowDimension,1);
-    int *rowTadShapeBuffer = rowTad->shapeInfoOnlyShapeAndStride();
+    rowTad->createTadOnlyShapeInfo();
+    int *rowTadShapeBuffer = rowTad->tadOnlyShapeInfo;
     int *rowTadShape = shape::shapeOf(rowTadShapeBuffer);
     shape::TAD *colTad = new shape::TAD(colShapeBuffer,&colDimension,1);
-    int *colTadShapeBuffer = colTad->shapeInfoOnlyShapeAndStride();
+    colTad->createTadOnlyShapeInfo();
+    int *colTadShapeBuffer = colTad->tadOnlyShapeInfo;
     int *colTadShape = shape::shapeOf(colTadShapeBuffer);
     int assertionShape[2] = {1,2};
     int assertionStride[2] = {1,1};
