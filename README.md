@@ -23,9 +23,11 @@ Currently ScalNet depends on deeplearning4j and nd4j SNAPSHOTS.
 - [deeplearning4j/deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
 - [deeplearning4j/nd4j](https://github.com/deeplearning4j/nd4j)
 
-ScalNet use sbt, but due to [resolving issues](https://nd4j.org/dependencies), you must have maven available in order to copy some nd4j-native dependencies in classpath needed to run examples.
+ScalNet use sbt, but due to [resolving issues](https://nd4j.org/dependencies), you must have maven available to copy some nd4j-native dependencies in classpath, in orderto run the examples.
 
-However, this is automatically done in `build.sbt` and you don't need to do anything besides having maven installed.
+This is automatically done in `build.sbt` and you don't need to do anything besides having maven installed.
+
+If you use sbt in your own project, you will probably have to proceed the same way. When ScalNet will be using releases instead of snapshots, this won't be necessary.
 
 
 # How to use
@@ -54,3 +56,5 @@ ScalNet use a Keras like API, wrapping deeplearning4j to make it more easier to 
 Also, since you can use Java code from Scala, you can still use everything from deeplearning4j. 
 
 To see what ScalNet has to offer, run one of the [examples](https://github.com/deeplearning4j/ScalNet/tree/master/src/test/scala/org/deeplearning4j/scalnet/examples) it ships with.
+
+Please note that those examples are not state-of-the-art in any way, they're just enough to get you started.
