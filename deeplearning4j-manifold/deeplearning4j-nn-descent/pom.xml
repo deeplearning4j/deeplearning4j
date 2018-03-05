@@ -27,6 +27,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.bytedeco.javacpp-presets</groupId>
+            <artifactId>cminpack-platform</artifactId>
+            <version>1.3.6-1.4.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-specialized-iterators</artifactId>
             <version>${project.version}</version>
