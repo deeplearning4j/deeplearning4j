@@ -4343,7 +4343,7 @@ public class SameDiff {
                 @Override
                 public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                     //propagate graph to this samediff instance
-                    //which wil also contain the backward
+                    //which will also contain the backward
                     if (SameDiff.this.debugMode) {
                         sameDiff.enableDebugMode();
                     }

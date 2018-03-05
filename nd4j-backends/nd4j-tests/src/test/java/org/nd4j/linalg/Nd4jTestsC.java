@@ -116,6 +116,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+
+    @Test
+    public void testArangeNegative() {
+      INDArray arr = Nd4j.arange(-2,2);
+      INDArray assertion = Nd4j.create(new double[]{-2, -1,  0,  1});
+      assertEquals(assertion,arr);
+    }
+
+    @Test
+    public void testTri() {
+       INDArray assertion = Nd4j.create(new double[][]{
+               {1,1,1,0,0},
+               {1,1,1,1,0},
+               {1,1,1,1,1}
+       });
+
+       INDArray tri = Nd4j.tri(3,5,2);
+       assertEquals(assertion,tri);
+    }
+
+
     @Test
     public void testTriu() {
         INDArray input = Nd4j.linspace(1,12,12).reshape(4,3);
