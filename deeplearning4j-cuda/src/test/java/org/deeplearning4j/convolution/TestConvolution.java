@@ -75,6 +75,7 @@ public class TestConvolution {
                         new ConvolutionMode[] {ConvolutionMode.Strict, ConvolutionMode.Truncate, ConvolutionMode.Same};
 
         for (ConvolutionMode c : cm) {
+        for (ConvolutionLayer.AlgoMode a : new ConvolutionLayer.AlgoMode[] {ConvolutionLayer.AlgoMode.NO_WORKSPACE, ConvolutionLayer.AlgoMode.PREFER_FASTEST}) {
             for (boolean conv : new boolean[] {true, false}) {
 
                 org.deeplearning4j.nn.conf.layers.Layer l;
@@ -85,12 +86,15 @@ public class TestConvolution {
                 }
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                                .l2(0.0005).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).convolutionMode(c).list()
+                                .l2(0.0005).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).convolutionMode(c).cudnnAlgoMode(a).list()
                                 .layer(0, l)
                                 .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                 .nOut(10).activation(Activation.SOFTMAX).build())
                                 .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
                                 .backprop(true).pretrain(false).build();
+                if (conv) {
+                    assertEquals(a, ((ConvolutionLayer)l).getCudnnAlgoMode());
+                }
 
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerNetwork net1 = new MultiLayerNetwork(conf);
@@ -143,6 +147,7 @@ public class TestConvolution {
                     assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4));
                 }
             }
+        }
         }
     }
 }

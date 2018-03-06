@@ -58,6 +58,7 @@ public class FineTuneConfiguration {
     protected Optional<GradientNormalization> gradientNormalization;
     protected Double gradientNormalizationThreshold;
     protected ConvolutionMode convolutionMode;
+    protected ConvolutionLayer.AlgoMode cudnnAlgoMode;
     protected Optional<List<LayerConstraint>> constraints;
 
     protected Boolean pretrain;
@@ -106,6 +107,7 @@ public class FineTuneConfiguration {
         private Optional<GradientNormalization> gradientNormalization;
         private Double gradientNormalizationThreshold;
         private ConvolutionMode convolutionMode;
+        private ConvolutionLayer.AlgoMode cudnnAlgoMode;
         private Optional<List<LayerConstraint>> constraints;
         private Boolean pretrain;
         private Boolean backprop;
@@ -245,6 +247,11 @@ public class FineTuneConfiguration {
             return this;
         }
 
+        public Builder cudnnAlgoMode(ConvolutionLayer.AlgoMode cudnnAlgoMode) {
+            this.cudnnAlgoMode = cudnnAlgoMode;
+            return this;
+        }
+
         public Builder constraints(List<LayerConstraint> constraints) {
             this.constraints = Optional.ofNullable(constraints);
             return this;
@@ -286,11 +293,11 @@ public class FineTuneConfiguration {
         }
 
         public FineTuneConfiguration build() {
-            return new FineTuneConfiguration(activation, weightInit, biasInit, dist, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
+            return new FineTuneConfiguration(activation, weightInit, biasInit, dist, l1, l2, l1Bias, l2Bias, dropout, weightNoise, updater, biasUpdater, miniBatch, maxNumLineSearchIterations, seed, optimizationAlgo, stepFunction, minimize, gradientNormalization, gradientNormalizationThreshold, convolutionMode, cudnnAlgoMode, constraints, pretrain, backprop, backpropType, tbpttFwdLength, tbpttBackLength, trainingWorkspaceMode, inferenceWorkspaceMode);
         }
 
         public String toString() {
-            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInit + ", biasInit=" + this.biasInit + ", dist=" + this.dist + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
+            return "FineTuneConfiguration.Builder(activation=" + this.activation + ", weightInit=" + this.weightInit + ", biasInit=" + this.biasInit + ", dist=" + this.dist + ", l1=" + this.l1 + ", l2=" + this.l2 + ", l1Bias=" + this.l1Bias + ", l2Bias=" + this.l2Bias + ", dropout=" + this.dropout + ", weightNoise=" + this.weightNoise + ", updater=" + this.updater + ", biasUpdater=" + this.biasUpdater + ", miniBatch=" + this.miniBatch + ", maxNumLineSearchIterations=" + this.maxNumLineSearchIterations + ", seed=" + this.seed + ", optimizationAlgo=" + this.optimizationAlgo + ", stepFunction=" + this.stepFunction + ", minimize=" + this.minimize + ", gradientNormalization=" + this.gradientNormalization + ", gradientNormalizationThreshold=" + this.gradientNormalizationThreshold + ", convolutionMode=" + this.convolutionMode + ", cudnnAlgoMode=" + this.cudnnAlgoMode + ", constraints=" + this.constraints + ", pretrain=" + this.pretrain + ", backprop=" + this.backprop + ", backpropType=" + this.backpropType + ", tbpttFwdLength=" + this.tbpttFwdLength + ", tbpttBackLength=" + this.tbpttBackLength + ", trainingWorkspaceMode=" + this.trainingWorkspaceMode + ", inferenceWorkspaceMode=" + this.inferenceWorkspaceMode + ")";
         }
     }
 
@@ -362,6 +369,9 @@ public class FineTuneConfiguration {
 
         if (convolutionMode != null && l instanceof ConvolutionLayer) {
             ((ConvolutionLayer) l).setConvolutionMode(convolutionMode);
+        }
+        if (cudnnAlgoMode != null && l instanceof ConvolutionLayer) {
+            ((ConvolutionLayer) l).setCudnnAlgoMode(cudnnAlgoMode);
         }
         if (convolutionMode != null && l instanceof SubsamplingLayer) {
             ((SubsamplingLayer) l).setConvolutionMode(convolutionMode);

@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
@@ -19,7 +20,6 @@ import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -27,20 +27,20 @@ import org.nd4j.linalg.learning.config.Adam;
 import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
 
 /**
- * Tiny YOLO
+ * YOLOv2
  *  Reference: https://arxiv.org/pdf/1612.08242.pdf
  *
- * <p>ImageNet+VOC weights for this model are available and have been converted from https://pjreddie.com/darknet/yolo/
+ * <p>ImageNet+COCO weights for this model are available and have been converted from https://pjreddie.com/darknet/yolo/
  * using https://github.com/allanzelener/YAD2K and the following code.</p>
  *
  * <pre>{@code
- *     String filename = "tiny-yolo-voc.h5";
+ *     String filename = "yolo.h5";
+ *     KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
  *     ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(filename, false);
  *     INDArray priors = Nd4j.create(priorBoxes);
  *
  *     FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
  *             .seed(seed)
- *             .iterations(iterations)
  *             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
  *             .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
  *             .gradientNormalizationThreshold(1.0)
@@ -57,36 +57,36 @@ import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
  *                     new Yolo2OutputLayer.Builder()
  *                             .boundingBoxPriors(priors)
  *                             .build(),
- *                     "conv2d_9")
+ *                     "conv2d_23")
  *             .setOutputs("outputs")
  *             .build();
  *
- *     System.out.println(model.summary(InputType.convolutional(416, 416, 3)));
+ *     System.out.println(model.summary(InputType.convolutional(608, 608, 3)));
  *
- *     ModelSerializer.writeModel(model, "tiny-yolo-voc_dl4j_inference.v1.zip", false);
+ *     ModelSerializer.writeModel(model, "yolo2_dl4j_inference.v1.zip", false);
  *}</pre>
  *
- * The channels of the 416x416 input images need to be in RGB order (not BGR), with values normalized within [0, 1].
+ * The channels of the 608x608 input images need to be in RGB order (not BGR), with values normalized within [0, 1].
  *
  * @author saudet
  */
 @NoArgsConstructor
-public class TinyYOLO extends ZooModel {
+public class YOLO2 extends ZooModel {
 
     public static int nBoxes = 5;
-    public static double[][] priorBoxes = {{1.08, 1.19}, {3.42, 4.41}, {6.63, 11.38}, {9.42, 5.11}, {16.62, 10.52}};
+    public static double[][] priorBoxes = {{0.57273, 0.677385}, {1.87446, 2.06253}, {3.33843, 5.47434}, {7.88282, 3.52778}, {9.77052, 9.16828}};
 
-    private int[] inputShape = {3, 416, 416};
+    private int[] inputShape = {3, 608, 608};
     private int numLabels;
     private long seed;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public TinyYOLO(int numLabels, long seed) {
+    public YOLO2(int numLabels, long seed) {
         this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public TinyYOLO(int numLabels, long seed, WorkspaceMode workspaceMode) {
+    public YOLO2(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
         this.workspaceMode = workspaceMode;
@@ -97,7 +97,7 @@ public class TinyYOLO extends ZooModel {
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return "http://blob.deeplearning4j.org/models/tiny-yolo-voc_dl4j_inference.v1.zip";
+            return "http://blob.deeplearning4j.org/models/yolo2_dl4j_inference.v1.zip";
         else
             return null;
     }
@@ -105,14 +105,14 @@ public class TinyYOLO extends ZooModel {
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if (pretrainedType == PretrainedType.IMAGENET)
-            return 2004171617L;
+            return 1357637732L;
         else
             return 0L;
     }
 
     @Override
     public ZooType zooType() {
-        return ZooType.TINYYOLO;
+        return ZooType.YOLO2;
     }
 
     @Override
@@ -138,24 +138,51 @@ public class TinyYOLO extends ZooModel {
                 .addInputs("input")
                 .setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
 
-        addLayers(graphBuilder, 1, 3, inputShape[0], 16, 2, 2);
+        addLayers(graphBuilder, 1, 3, inputShape[0],  32, 2);
 
-        addLayers(graphBuilder, 2, 3, 16, 32, 2, 2);
+        addLayers(graphBuilder, 2, 3, 32, 64, 2);
 
-        addLayers(graphBuilder, 3, 3, 32, 64, 2, 2);
+        addLayers(graphBuilder, 3, 3, 64, 128, 0);
+        addLayers(graphBuilder, 4, 1, 128, 64, 0);
+        addLayers(graphBuilder, 5, 3, 64, 128, 2);
 
-        addLayers(graphBuilder, 4, 3, 64, 128, 2, 2);
+        addLayers(graphBuilder, 6, 3, 128, 256, 0);
+        addLayers(graphBuilder, 7, 1, 256, 128, 0);
+        addLayers(graphBuilder, 8, 3, 128, 256, 2);
 
-        addLayers(graphBuilder, 5, 3, 128, 256, 2, 2);
+        addLayers(graphBuilder, 9, 3, 256, 512, 0);
+        addLayers(graphBuilder, 10, 1, 512, 256, 0);
+        addLayers(graphBuilder, 11, 3, 256, 512, 0);
+        addLayers(graphBuilder, 12, 1, 512, 256, 0);
+        addLayers(graphBuilder, 13, 3, 256, 512, 2);
 
-        addLayers(graphBuilder, 6, 3, 256, 512, 2, 1);
+        addLayers(graphBuilder, 14, 3, 512, 1024, 0);
+        addLayers(graphBuilder, 15, 1, 1024, 512, 0);
+        addLayers(graphBuilder, 16, 3, 512, 1024, 0);
+        addLayers(graphBuilder, 17, 1, 1024, 512, 0);
+        addLayers(graphBuilder, 18, 3, 512, 1024, 0);
 
-        addLayers(graphBuilder, 7, 3, 512, 1024, 0, 0);
-        addLayers(graphBuilder, 8, 3, 1024, 1024, 0, 0);
+        // #######
 
-        int layerNumber = 9;
+        addLayers(graphBuilder, 19, 3, 1024, 1024, 0);
+        addLayers(graphBuilder, 20, 3, 1024, 1024, 0);
+
+        // route
+        addLayers(graphBuilder, 21, "activation_13", 1, 512, 64, 0, 0);
+
+        // reorg
         graphBuilder
-                .addLayer("convolution2d_" + layerNumber,
+                .addLayer("rearrange_21",
+                        new SpaceToDepthLayer.Builder(new int[] {2, 2}).build(),
+                        "activation_21")
+        // route
+                .addVertex("concatenate_21", new MergeVertex(),
+                        "rearrange_21", "activation_20");
+
+        addLayers(graphBuilder, 22, "concatenate_21", 3, 1024 + 256, 1024, 0, 0);
+
+        graphBuilder
+                .addLayer("convolution2d_23",
                         new ConvolutionLayer.Builder(1,1)
                                 .nIn(1024)
                                 .nOut(nBoxes * (5 + numLabels))
@@ -165,12 +192,12 @@ public class TinyYOLO extends ZooModel {
                                 .weightInit(WeightInit.RELU)
                                 .activation(Activation.IDENTITY)
                                 .build(),
-                        "activation_" + (layerNumber - 1))
+                        "activation_22")
                 .addLayer("outputs",
                         new Yolo2OutputLayer.Builder()
                                 .boundingBoxPriors(priors)
                                 .build(),
-                        "convolution2d_" + layerNumber)
+                        "convolution2d_23")
                 .setOutputs("outputs").backprop(true).pretrain(false);
 
         return graphBuilder.build();

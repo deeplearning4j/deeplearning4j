@@ -609,6 +609,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
+        protected ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
         public Builder() {
             //
@@ -1011,6 +1012,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
+         * Sets the cuDNN algo mode for convolutional layers, which impacts performance and memory usage of cuDNN.
+         * See {@link ConvolutionLayer.AlgoMode} for details.  Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
+         * @param cudnnAlgoMode cuDNN algo mode to use
+         */
+        public Builder cudnnAlgoMode(ConvolutionLayer.AlgoMode cudnnAlgoMode) {
+            this.cudnnAlgoMode = cudnnAlgoMode;
+            return this;
+        }
+
+        /**
          * Set constraints to be applied to all layers. Default: no constraints.<br>
          * Constraints can be used to enforce certain conditions (non-negativity of parameters, max-norm regularization,
          * etc). These constraints are applied at each iteration, after the parameters have been updated.
@@ -1107,6 +1118,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 ConvolutionLayer cl = (ConvolutionLayer) layer;
                 if (cl.getConvolutionMode() == null) {
                     cl.setConvolutionMode(convolutionMode);
+                }
+                if (cl.getCudnnAlgoMode() == null) {
+                    cl.setCudnnAlgoMode(cudnnAlgoMode);
                 }
             }
             if (layer instanceof SubsamplingLayer) {

@@ -21,6 +21,8 @@ import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
+
 /**
  * Darknet19
  *  Reference: https://arxiv.org/pdf/1612.08242.pdf
@@ -88,54 +90,6 @@ public class Darknet19 extends ZooModel {
         return ComputationGraph.class;
     }
 
-    private GraphBuilder addLayers(GraphBuilder graphBuilder, int layerNumber, int filterSize, int nIn, int nOut, int poolSize) {
-        String input = "maxpooling2d_" + (layerNumber - 1);
-        if (!graphBuilder.getVertices().containsKey(input)) {
-            input = "activation_" + (layerNumber - 1);
-        }
-        if (!graphBuilder.getVertices().containsKey(input)) {
-            input = "input";
-        }
-
-        graphBuilder
-                .addLayer("convolution2d_" + layerNumber,
-                        new ConvolutionLayer.Builder(filterSize,filterSize)
-                                .nIn(nIn)
-                                .nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .convolutionMode(ConvolutionMode.Same)
-                                .hasBias(false)
-                                .stride(1,1)
-                                .activation(Activation.IDENTITY)
-                                .cudnnAlgoMode(cudnnAlgoMode)
-                                .build(),
-                        input)
-                .addLayer("batchnormalization_" + layerNumber,
-                        new BatchNormalization.Builder()
-                                .nIn(nOut).nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .activation(Activation.IDENTITY)
-                                .build(),
-                        "convolution2d_" + layerNumber)
-                .addLayer("activation_" + layerNumber,
-                        new ActivationLayer.Builder()
-                                .activation(new ActivationLReLU(0.1))
-                                .build(),
-                        "batchnormalization_" + layerNumber);
-        if (poolSize > 0) {
-            graphBuilder
-                    .addLayer("maxpooling2d_" + layerNumber,
-                            new SubsamplingLayer.Builder()
-                                    .kernelSize(poolSize, poolSize)
-                                    .stride(poolSize, poolSize)
-                                    .convolutionMode(ConvolutionMode.Same)
-                                    .build(),
-                            "activation_" + layerNumber);
-        }
-
-        return graphBuilder;
-    }
-
     public ComputationGraphConfiguration conf() {
         GraphBuilder graphBuilder = new NeuralNetConfiguration.Builder()
                 .seed(seed)
@@ -144,6 +98,7 @@ public class Darknet19 extends ZooModel {
                 .activation(Activation.IDENTITY)
                 .trainingWorkspaceMode(workspaceMode)
                 .inferenceWorkspaceMode(workspaceMode)
+                .cudnnAlgoMode(cudnnAlgoMode)
                 .graphBuilder()
                 .addInputs("input")
                 .setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
