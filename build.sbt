@@ -89,5 +89,3 @@ lazy val root = (project in file("."))
   .settings(
     name := "ScalNet"
   )
-
-headerMappings := headerMappings.value + (HeaderFileType.scala -> HeaderCommentStyle.twirlStyleBlockComment)

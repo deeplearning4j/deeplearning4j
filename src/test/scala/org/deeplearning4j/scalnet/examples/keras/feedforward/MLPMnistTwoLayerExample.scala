@@ -2,7 +2,6 @@ package org.deeplearning4j.scalnet.examples.keras.feedforward
 
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
-import org.deeplearning4j.nn.conf.Updater
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
