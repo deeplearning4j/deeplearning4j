@@ -17,7 +17,7 @@
 package org.deeplearning4j.scalnet.layers
 import org.deeplearning4j.nn.conf.layers
 import org.deeplearning4j.nn.weights.WeightInit
-import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 
 class EmbeddingLayer(nIn: Int,

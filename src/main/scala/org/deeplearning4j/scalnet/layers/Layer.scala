@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.deeplearning4j.nn.conf.layers.{Layer => JLayer}
+import org.deeplearning4j.nn.conf.layers.{ Layer => JLayer }
 
 /**
   * Trait for proper "layer" in DL4J neural networks and computational

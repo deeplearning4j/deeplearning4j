@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers
 
-import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
 import org.nd4j.linalg.lossfunctions.LossFunctions
 
 /**

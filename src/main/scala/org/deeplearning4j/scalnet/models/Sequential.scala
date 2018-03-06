@@ -22,7 +22,6 @@ import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers._
-import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction

@@ -19,10 +19,10 @@ package org.deeplearning4j.scalnet.models
 import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Layer, Node}
+import org.deeplearning4j.scalnet.layers.{ Layer, Node }
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -53,7 +53,6 @@ class NeuralNet(inputType: Option[InputType], miniBatch: Boolean, biasInit: Doub
 
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.list()
     inputType foreach (i => listBuilder.setInputType(i))
-
 
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       logger.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
