@@ -79,7 +79,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                 TransformProcess transformProcess = TransformProcess.fromJson(getJsonText());
                 setCSVTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok();
+                return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
             } catch (Exception e) {
                 log.error("Error in POST /transformprocess",e);
                 return internalServerError(e.getMessage());
