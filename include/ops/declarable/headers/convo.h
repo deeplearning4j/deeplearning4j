@@ -224,6 +224,9 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(avgpool3dnew, 1, 1, false, 0, 10);
         DECLARE_CUSTOM_OP(avgpool3dnew_bp, 2, 1, false, 0, 10);
 
+        DECLARE_CUSTOM_OP(maxpool3dnew, 1, 1, false, 0, 10);
+        DECLARE_CUSTOM_OP(maxpool3dnew_bp, 2, 1, false, 0, 10);
+
         /**
          * This op same as maxpool2d with a variant to return a matrix of indexes for max values
          *

@@ -1,5 +1,5 @@
 //
-// created by Yurii Shyrma on 01.03.2018
+// created by Yurii Shyrma on 19.02.2018
 //
 
 
@@ -11,7 +11,7 @@ namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
+CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 10) {
     
     NDArray<T> *input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
@@ -28,7 +28,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     int paddingMode = INT_ARG(9);                                               // 0-SAME,  1-VALID
     int dataFormat  = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;     // 0-NDHWC, 1-NCDHW    
 
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3D OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D OP: rank of input array must be equal to 5 !");    
 
     int idxID, idxIC;
     if(dataFormat) { idxID = 2; idxIC = 1;}
@@ -42,17 +42,17 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     int oD = output->sizeAt(idxID);             // output depth
     int oH = output->sizeAt(idxID+1);           // output height
     int oW = output->sizeAt(idxID+2);           // output width                
-    
-    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM AVGPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
-    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM AVGPOOL3D OP: pad must not be greater than half of kernel size!");    
 
+    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
+    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D OP: pad must not be greater than half of kernel size!");    
+    
     if(!dataFormat) {
         input = input ->permute({0, 4, 1, 2, 3});                                                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         output = new NDArray<T>(output->ordering(), {bS, iC, oD, oH, oW}, block.getWorkspace());                                // [bS, iC, oD, oH, oW]
 
-        input ->streamline('c');        
-    }
-
+        input->streamline('c');        
+    }    
+    
     if(!paddingMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
 
@@ -60,7 +60,8 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     int oStride = iC * oD * oH * oW;
     
     for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D(input->getBuffer() + i*iStride, output->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, paddingMode);
+        // input [bS, iC, iD, iH, iW], output [bS, iC, oD, oH, oW]
+        ConvolutionUtils<T>::maxPool3dFrame(*input, *output, i*iStride, i*oStride, kD, kH, kW, sD, sH, sW, pD, pH, pW, 1, 1, 1);
    
     if(!dataFormat) {              
 
@@ -75,7 +76,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
 }
 
 
-DECLARE_SHAPE_FN(avgpool3dnew) {
+DECLARE_SHAPE_FN(maxpool3dnew) {
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -129,16 +130,15 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
 }
 
 
-
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
+CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 10) {
     
     NDArray<T> *input = INPUT_VARIABLE(0);                                                  // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     NDArray<T> *gradO = INPUT_VARIABLE(1);                                                  // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
     
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
     
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3DNEW_BP OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D_BP OP: rank of input array must be equal to 5 !");    
                                      
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -165,24 +165,32 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
     int oH = gradO->sizeAt(idxID+1);            // output height
     int oW = gradO->sizeAt(idxID+2);            // output width             
 
-    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM AVGPOOL3D_BP OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
-    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM AVGPOOL3D_BP OP: pad must not be greater than half of kernel size!");    
-      
+    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D_BP OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
+    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D_BP OP: pad must not be greater than half of kernel size!");    
+
     if(!dataFormat) {
+        input = input ->permute({0, 4, 1, 2, 3});                                                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         gradO = gradO ->permute({0, 4, 1, 2, 3});                                                       // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
         gradI = new NDArray<T>(gradI->ordering(), {bS, iC, iD, iH, iW}, block.getWorkspace());                                  // [bS, iC, iD, iH, iW]
 
+        input->streamline('c');       
         gradO->streamline('c');       
     }
    
     if(!paddingMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
 
+    int* indices = nullptr;
+    ALLOCATE(indices, block.getWorkspace(), bS*iC*oD*oH*oW, int);
+
     int iStride = iC * iD * iH * iW;
     int oStride = iC * oD * oH * oW;
     
-    for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D_bp(gradI->getBuffer() + i*iStride, gradO->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, paddingMode);
+    for(int i = 0; i < bS; ++i) {
+        // input [bS, iC, iD, iH, iW], indices [bS, iC, oD, oH, oW]
+        ConvolutionUtils<T>::maxPool3dIndicesFrame(*input, indices, i*iStride, i*oStride, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, 1, 1, 1);
+        ConvolutionUtils<T>::maxPool3dFrameBp(*gradO, indices, *gradI, i*oStride, i*iStride, kD, kH, kW, sD, sH, sW, pD, pH, pW, 1, 1, 1);
+    }
 
     if(!dataFormat) {              
 
@@ -191,13 +199,16 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
         
         delete gradO;
         delete gradI;
+        delete input;
     }        
+
+    RELEASE(indices, block.getWorkspace());
 
     return Status::OK();
 }
 
 
-DECLARE_SHAPE_FN(avgpool3dnew_bp) {
+DECLARE_SHAPE_FN(maxpool3dnew_bp) {
 
     int* gradIshapeInfo(nullptr);
     COPY_SHAPE(inputShape->at(0), gradIshapeInfo);
