@@ -33,45 +33,13 @@ import static org.bytedeco.javacpp.cublas.* ;
  * JCublas lapack
  *
  * @author Adam Gibson
+ * @author Richard Corbishley
  */
 @Slf4j
 public class JcublasLapack extends BaseLapack {
 
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private Allocator allocator = AtomicAllocator.getInstance();
-
-    private Method cusolverDnSorgqr, cusolverDnSorgqr_bufferSize, cusolverDnDorgqr, cusolverDnDorgqr_bufferSize;
-    private Method cusolverDnSsyevd_bufferSize, cusolverDnSsyevd,cusolverDnDsyevd_bufferSize, cusolverDnDsyevd  ;
-    private int CUSOLVER_EIG_MODE_VECTOR, CUSOLVER_EIG_MODE_NOVECTOR ;
-
-    public JcublasLapack() { 
-        Class c = org.bytedeco.javacpp.cusolver.class;
-        try {
-            cusolverDnSorgqr_bufferSize = c.getMethod("cusolverDnSorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
-            cusolverDnSorgqr = c.getMethod("cusolverDnSorgqr", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
-            cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, IntPointer.class);
-            cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, DoublePointer.class, int.class, IntPointer.class);
-        } catch (NoSuchMethodException | SecurityException ex) {
-            log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex); 
-        }
-
-        try {
-            cusolverDnSsyevd_bufferSize = c.getMethod("cusolverDnSsyevd_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
-            cusolverDnSsyevd = c.getMethod("cusolverDnSsyevd", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, FloatPointer.class, int.class, IntPointer.class);
-            cusolverDnDsyevd_bufferSize = c.getMethod("cusolverDnDsyevd_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, IntPointer.class);
-            cusolverDnDsyevd = c.getMethod("cusolverDnDsyevd", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, DoublePointer.class, int.class, IntPointer.class);
-		// a lot of possible errors here - we'll catch any failures 
-	   CUSOLVER_EIG_MODE_VECTOR = (Integer)c.getDeclaredField( "CUSOLVER_EIG_MODE_VECTOR" ).get( null ) ;
-	   CUSOLVER_EIG_MODE_NOVECTOR = (Integer)c.getDeclaredField( "CUSOLVER_EIG_MODE_NOVECTOR" ).get( null ) ;
-        } catch (Exception ex) {
-            log.warn("cusolverDnSsyevd() and cusolverDnDsyevd() are not available", ex);
-	    cusolverDnSsyevd_bufferSize = null ;
-	    cusolverDnSsyevd = null ;
-	    cusolverDnDsyevd_bufferSize = null ;
-	    cusolverDnDsyevd  = null ;
-        }
-
-    }
 
     @Override
     public void sgetrf(int M, int N, INDArray A, INDArray IPIV, INDArray INFO) {
@@ -290,25 +258,21 @@ public class JcublasLapack extends BaseLapack {
                 }
             }
 
-            try {
-                stat = (Integer) cusolverDnSorgqr_bufferSize.invoke(null, solverDn, M, N, N,
+            stat = cusolverDnSorgqr_bufferSize(solverDn, M, N, N,
                         (FloatPointer) xAPointer.getDevicePointer(), M,
                         (FloatPointer) xTauPointer.getDevicePointer(),
                         (IntPointer) worksizeBuffer.addressPointer()
                 );
-                worksize = worksizeBuffer.getInt(0);
-                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+            worksize = worksizeBuffer.getInt(0);
+            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
-                stat = (Integer) cusolverDnSorgqr.invoke(null, solverDn, M, N, N,
+            stat = cusolverDnSorgqr(solverDn, M, N, N,
                         (FloatPointer) xAPointer.getDevicePointer(), M,
                         (FloatPointer) xTauPointer.getDevicePointer(),
                         new CudaPointer(workspace).asFloatPointer(),
                         worksize,
                         new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
-                );
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
-                throw new RuntimeException("cusolverDnSorgqr() is not available", e);
-            }
+            );
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnSorgqr failed", stat);
             }            
@@ -407,25 +371,21 @@ public class JcublasLapack extends BaseLapack {
                     r.put(ix, 0) ;
                 }
             }
-            try {
-                stat = (Integer) cusolverDnDorgqr_bufferSize.invoke(null, solverDn, M, N, N,
+            stat = cusolverDnDorgqr_bufferSize(solverDn, M, N, N,
                             (DoublePointer) xAPointer.getDevicePointer(), M,
                             (DoublePointer) xTauPointer.getDevicePointer(),
                             (IntPointer) worksizeBuffer.addressPointer()
                 );
-                worksize = worksizeBuffer.getInt(0);
-                workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+            worksize = worksizeBuffer.getInt(0);
+            workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
 
-                stat = (Integer) cusolverDnDorgqr.invoke(null, solverDn, M, N, N,
+            stat = cusolverDnDorgqr(solverDn, M, N, N,
                                 (DoublePointer) xAPointer.getDevicePointer(), M,
                                 (DoublePointer) xTauPointer.getDevicePointer(),
                                 new CudaPointer(workspace).asDoublePointer(),
                                 worksize,
                                 new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer()
                                 );
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException | NullPointerException e) {
-                throw new RuntimeException("cusolverDnDorgqr() is not available", e);
-            }
             if (stat != CUSOLVER_STATUS_SUCCESS) {
                 throw new BlasException("cusolverDnDorgqr failed", stat);
             }            
@@ -631,23 +591,40 @@ public class JcublasLapack extends BaseLapack {
     public void sgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO) {
 
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            log.warn("FLOAT gesvd called in DOUBLE environment");
+
         INDArray a = A;
         INDArray u = U;
         INDArray vt = VT;
 
-        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
-            log.warn("FLOAT gesvd called in DOUBLE environment");
+ 	// we should transpose & adjust outputs if M<N
+	// cuda has a limitation, but it's OK we know
+	// 	A = U S V'
+	// transpose multiply rules give us ...
+	// 	A' = V S' U'
+	boolean hadToTransposeA = false ;
+	if( M<N ) {
+		hadToTransposeA = true ;
 
-        // cuda requires column ordering - we'll register a warning in case
-        if (A.ordering() == 'c')
-            a = A.dup('f');
+		int tmp1 = N ;
+		N = M ;
+		M = tmp1 ;
 
-        if (U != null && U.ordering() == 'c')
-            u = U.dup('f');
+		a = A.transpose().dup('f') ;
+		u = VT.dup('f') ;
+		vt = U.dup('f') ;
+	} else {
+	        // cuda requires column ordering - we'll register a warning in case
+       	 	if (A.ordering() == 'c')
+       		     a = A.dup('f');
 
-        if (VT != null && VT.ordering() == 'c')
-            vt = VT.dup('f');
+		if (U != null && U.ordering() == 'c')
+			u = U.dup('f');
 
+		if (VT != null && VT.ordering() == 'c')
+			vt = VT.dup('f');
+	}
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -695,21 +672,22 @@ public class JcublasLapack extends BaseLapack {
         }
         allocator.registerAction(ctx, INFO);
         allocator.registerAction(ctx, S);
-        allocator.registerAction(ctx, a);
 
-        if (U != null)
-            allocator.registerAction(ctx, u);
-        if (VT != null)
-            allocator.registerAction(ctx, vt);
+	if (U != null)
+            	allocator.registerAction(ctx, u);
+	if (VT != null)
+		allocator.registerAction(ctx, vt);
 
-        if (a != A)
-            A.assign(a);
-
-        if (u != U)
-            U.assign(u);
-
-        if (vt != VT)
-            VT.assign(vt);
+	// if we transposed A then swap & transpose U & V'
+	if( hadToTransposeA ) {
+		U.assign(vt.transpose());
+		VT.assign(u.transpose());
+	} else {
+		if (u != U)
+			U.assign(u);
+		if (vt != VT)
+			VT.assign(vt);
+	}
     }
 
 
@@ -721,19 +699,36 @@ public class JcublasLapack extends BaseLapack {
         INDArray u = U;
         INDArray vt = VT;
 
+ 	// we should transpose & adjust outputs if M<N
+	// cuda has a limitation, but it's OK we know
+	// 	A = U S V'
+	// transpose multiply rules give us ...
+	// 	A' = V S' U'
+	boolean hadToTransposeA = false ;
+	if( M<N ) {
+		hadToTransposeA = true ;
+
+		int tmp1 = N ;
+		N = M ;
+		M = tmp1 ;
+
+		a = A.transpose().dup('f') ;
+		u = VT.dup('f') ;
+		vt = U.dup('f') ;
+	} else {
+	        // cuda requires column ordering - we'll register a warning in case
+       	 	if (A.ordering() == 'c')
+       		     a = A.dup('f');
+
+		if (U != null && U.ordering() == 'c')
+			u = U.dup('f');
+
+		if (VT != null && VT.ordering() == 'c')
+			vt = VT.dup('f');
+	}
+
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             log.warn("DOUBLE gesvd called in FLOAT environment");
-
-        // cuda requires column ordering - we'll register a warning in case
-        if (A.ordering() == 'c')
-            a = A.dup('f');
-
-        if (U != null && U.ordering() == 'c')
-            u = U.dup('f');
-
-        if (VT != null && VT.ordering() == 'c')
-            vt = VT.dup('f');
-
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -792,26 +787,23 @@ public class JcublasLapack extends BaseLapack {
         if (VT != null)
             allocator.registerAction(ctx, vt);
 
-
-        if (a != A)
-            A.assign(a);
-
-        if (u != U)
-            U.assign(u);
-
-        if (vt != VT)
-            VT.assign(vt);
+	// if we transposed A then swap & transpose U & V'
+	if( hadToTransposeA ) {
+		U.assign(vt.transpose());
+		VT.assign(u.transpose());
+	} else {
+		if (u != U)
+			U.assign(u);
+		if (vt != VT)
+			VT.assign(vt);
+	}
     }
 
     public int ssyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
 
-	if( cusolverDnSsyevd_bufferSize == null || cusolverDnSsyevd == null ) {
-		throw new BlasException( "Method not supported in cuda version < 8.0" ) ;
-	}
-
 	int status = -1 ;
 
-	int jobz = _jobz == 'V' ? this.CUSOLVER_EIG_MODE_VECTOR : this.CUSOLVER_EIG_MODE_NOVECTOR ;
+	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
 	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
 
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
@@ -844,35 +836,31 @@ public class JcublasLapack extends BaseLapack {
 
 		    // this output - indicates how much memory we'll need for the real operation
 		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
-		    try {
-			    status = (Integer)this.cusolverDnSsyevd_bufferSize.invoke (
-					null, solverDn, jobz, uplo, M, 
+		    status = cusolverDnSsyevd_bufferSize (
+				solverDn, jobz, uplo, M, 
+				(FloatPointer) xAPointer.getDevicePointer(), M,
+				(FloatPointer) xRPointer.getDevicePointer(),
+				(IntPointer)worksizeBuffer.addressPointer() ) ;
+
+		    if (status == CUSOLVER_STATUS_SUCCESS) {
+			    int worksize = worksizeBuffer.getInt(0);
+
+			    // allocate memory for the workspace, the non-converging row buffer and a return code
+			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+		  	    Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+
+			    // Do the actual decomp
+			    status = cusolverDnSsyevd(solverDn, jobz, uplo, M, 
 					(FloatPointer) xAPointer.getDevicePointer(), M,
-					(FloatPointer) xRPointer.getDevicePointer(),
-					(IntPointer)worksizeBuffer.addressPointer() ) ;
+					(FloatPointer) xRPointer.getDevicePointer(), 
+					new CudaPointer(workspace).asFloatPointer(), worksize,
+					new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
-			    if (status == CUSOLVER_STATUS_SUCCESS) {
-				    int worksize = worksizeBuffer.getInt(0);
-
-				    // Now allocate memory for the workspace, the non-converging row buffer and a return code
-				    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
-
-				    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-						Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
-
-
-				    // Do the actual decomp
-				    status = (Integer)this.cusolverDnSsyevd.invoke(null, solverDn, jobz, uplo, M, 
-							(FloatPointer) xAPointer.getDevicePointer(), M,
-							(FloatPointer) xRPointer.getDevicePointer(), 
-							new CudaPointer(workspace).asFloatPointer(), worksize,
-							new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
-
-				    allocator.registerAction(ctx, INFO);
-				    if( status == 0 ) status = INFO.getInt(0) ;
-			    }
-		    } catch( IllegalAccessException | java.lang.reflect.InvocationTargetException iae ) {
-			throw new BlasException( "Check the cuda libs - unexpected exception:" + iae.getMessage() ) ;
+			    allocator.registerAction(ctx, INFO);
+			    if( status == 0 ) status = INFO.getInt(0) ;
 		    }
 		}
         }
@@ -889,13 +877,9 @@ public class JcublasLapack extends BaseLapack {
 
     public int dsyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
 
-	if( cusolverDnDsyevd_bufferSize == null || cusolverDnDsyevd == null ) {
-		throw new BlasException( "Method not supported in cuda version < 8.0" ) ;
-	}
-
 	int status = -1 ;
 
-	int jobz = _jobz == 'V' ? this.CUSOLVER_EIG_MODE_VECTOR : this.CUSOLVER_EIG_MODE_NOVECTOR ;
+	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
 	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
 
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
@@ -928,35 +912,31 @@ public class JcublasLapack extends BaseLapack {
 
 		    // this output - indicates how much memory we'll need for the real operation
 		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
-		    try {
-			    status = (Integer)this.cusolverDnDsyevd_bufferSize.invoke(
-					null, solverDn, jobz, uplo, M, 
+		    status = cusolverDnDsyevd_bufferSize(
+				solverDn, jobz, uplo, M, 
+				(DoublePointer) xAPointer.getDevicePointer(), M,
+				(DoublePointer) xRPointer.getDevicePointer(),
+				(IntPointer)worksizeBuffer.addressPointer() ) ;
+
+		    if (status == CUSOLVER_STATUS_SUCCESS) {
+			    int worksize = worksizeBuffer.getInt(0);
+
+			    // allocate memory for the workspace, the non-converging row buffer and a return code
+			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+			    Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+
+			    // Do the actual decomp
+			    status = cusolverDnDsyevd(solverDn, jobz, uplo, M, 
 					(DoublePointer) xAPointer.getDevicePointer(), M,
-					(DoublePointer) xRPointer.getDevicePointer(),
-					(IntPointer)worksizeBuffer.addressPointer() ) ;
+					(DoublePointer) xRPointer.getDevicePointer(), 
+					new CudaPointer(workspace).asDoublePointer(), worksize,
+					new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
 
-			    if (status == CUSOLVER_STATUS_SUCCESS) {
-				    int worksize = worksizeBuffer.getInt(0);
-
-				    // Now allocate memory for the workspace, the non-converging row buffer and a return code
-				    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
-
-				    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
-						Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
-
-
-				    // Do the actual decomp
-				    status = (Integer)this.cusolverDnDsyevd.invoke( null, solverDn, jobz, uplo, M, 
-							(DoublePointer) xAPointer.getDevicePointer(), M,
-							(DoublePointer) xRPointer.getDevicePointer(), 
-							new CudaPointer(workspace).asDoublePointer(), worksize,
-							new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
-
-				    allocator.registerAction(ctx, INFO);
-				    if( status == 0 ) status = INFO.getInt(0) ;
-			    }
-		    } catch( IllegalAccessException | java.lang.reflect.InvocationTargetException iae ) {
-			throw new BlasException( "Check the cuda libs - unexpected exception:" + iae.getMessage() ) ;
+			    allocator.registerAction(ctx, INFO);
+			    if( status == 0 ) status = INFO.getInt(0) ;
 		    }
 		}
         }
