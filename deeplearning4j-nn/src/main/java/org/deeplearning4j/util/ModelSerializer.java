@@ -131,8 +131,6 @@ public class ModelSerializer {
                 Nd4j.write(model.params(), dos);
             } finally {
                 dos.flush();
-               /* if (!saveUpdater)
-                    dos.close();*/
             }
         } else {
             ZipEntry noParamsMarker = new ZipEntry("noParams.marker");
@@ -155,7 +153,6 @@ public class ModelSerializer {
                     Nd4j.write(updaterState, dos);
                 } finally {
                     dos.flush();
-                    //dos.close();
                 }
             }
         }
