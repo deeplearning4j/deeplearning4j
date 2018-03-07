@@ -74,6 +74,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -6048,6 +6049,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val exp = Nd4j.create(400, 1).assign(4.47214);
 
         assertEquals(exp, z);
+    }
+
+    @Test
+    public void testConcat_1() throws Exception{
+        for(char order : new char[]{'c', 'f'}) {
+
+            INDArray arr1 = Nd4j.create(new double[]{1, 2}, order);
+            INDArray arr2 = Nd4j.create(new double[]{3, 4}, order);
+
+            INDArray out = Nd4j.concat(0, arr1, arr2);
+            Nd4j.getExecutioner().commit();
+            INDArray exp = Nd4j.create(new double[][]{{1, 2}, {3, 4}});
+            assertEquals(String.valueOf(order), exp, out);
+        }
     }
 
 

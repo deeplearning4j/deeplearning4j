@@ -40,6 +40,17 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         public native @Name("operator*") @Const FloatNDArray get();
     }
 
+    public FloatNDArray[] get() {
+        FloatNDArray[] array = new FloatNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = get(i);
+        }
+        return array;
+    }
+    @Override public String toString() {
+        return java.util.Arrays.toString(get());
+    }
+
     public FloatNDArray pop_back() {
         long size = size();
         FloatNDArray value = get(size - 1);
@@ -95,6 +106,17 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         public native @Name("operator*") @Const HalfNDArray get();
     }
 
+    public HalfNDArray[] get() {
+        HalfNDArray[] array = new HalfNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = get(i);
+        }
+        return array;
+    }
+    @Override public String toString() {
+        return java.util.Arrays.toString(get());
+    }
+
     public HalfNDArray pop_back() {
         long size = size();
         HalfNDArray value = get(size - 1);
@@ -148,6 +170,17 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
         public native @Name("operator++") @ByRef Iterator increment();
         public native @Name("operator==") boolean equals(@ByRef Iterator it);
         public native @Name("operator*") @Const DoubleNDArray get();
+    }
+
+    public DoubleNDArray[] get() {
+        DoubleNDArray[] array = new DoubleNDArray[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = get(i);
+        }
+        return array;
+    }
+    @Override public String toString() {
+        return java.util.Arrays.toString(get());
     }
 
     public DoubleNDArray pop_back() {
@@ -9058,6 +9091,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // still the definition of inline function must be in header file
 
 
+
+
+
 //////////////////////////////////////////////////////////////////////////
 
 
@@ -11673,6 +11709,12 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifdef __CUDACC__
 // #endif
+    @Namespace("shape") public static native IntPointer copyShape(IntPointer originalShape);
+    @Namespace("shape") public static native IntBuffer copyShape(IntBuffer originalShape);
+    @Namespace("shape") public static native int[] copyShape(int[] originalShape);
+
+// #ifdef __CUDACC__
+// #endif
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(IntPointer shapeInfo1,IntPointer shapeInfo2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(IntBuffer shapeInfo1,IntBuffer shapeInfo2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int[] shapeInfo1,int[] shapeInfo2);
@@ -13589,6 +13631,10 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifdef __CUDACC__
 // #endif
+
+// #ifdef __CUDACC__
+// #endif
+
 
 // #ifdef __CUDACC__
 // #endif
@@ -16634,6 +16680,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/loss.h>
 // #include <ops/declarable/headers/datatypes.h>
 // #include <ops/declarable/headers/third_party.h>
+// #include <ops/declarable/headers/tests.h>
 // #include <dll.h>
 // #include <Status.h>
     @Namespace("nd4j") public static class _loader extends Pointer {
