@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -48,7 +49,8 @@ public class KerasYolo9000Test {
     private static final String TEMP_MODEL_FILENAME = "tempModel";
     private static final String H5_EXTENSION = ".h5";
 
-     @Test
+    @Ignore
+    @Test
     // TODO: yolo and yolo-voc output are too large for github, find smaller equivalents
     public void testCustomLayerYoloImport() throws Exception {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
