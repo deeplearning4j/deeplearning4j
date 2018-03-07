@@ -7,4 +7,5 @@ class OutputMode(object):
     EXPLICIT = 1
     EXPLICIT_AND_IMPLICIT = 2
     VARIABLE_SPACE = 3
+    OPTIMIZED = 4
 

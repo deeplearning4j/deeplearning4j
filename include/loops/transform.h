@@ -797,7 +797,8 @@ __device__ void concatKernelGeneric(int dimension,
 
         if (shape::isVector(resultShapeInfo)) {
 			//if (threadIdx.x == 0)
-				//printf("Vector here\n");
+			//	printf("Vector here\n");
+				
 			if (zEWS >= 1) {
 				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
@@ -829,6 +830,9 @@ __device__ void concatKernelGeneric(int dimension,
 		}
 
 
+		bool _vec = shape::isVector(resultShapeInfo);
+
+
 		// TODO: to be pulled into separate kernel. matrix concatenation
 		for (int r = 0; r < numArrays; r ++) {
 
@@ -852,7 +856,10 @@ __device__ void concatKernelGeneric(int dimension,
 			}
 			__syncthreads();
 
-            if (yLength == 1) {
+            if (yLength == 1 && _vec) {
+				//if (threadIdx.x == 0)
+				//	printf("Branch 0\n");
+
                 // edge case, each thread will handle it's own tad then
                 for (int j = tid; j < numTads; j += blockDim.x * gridDim.x) {
                     Nd4jIndex inputOffset = currentOffsets[j];
@@ -883,6 +890,9 @@ __device__ void concatKernelGeneric(int dimension,
 					resultTAD[resultOffset] =  dataTAD[yOffset];
                 }
             } else {
+				//if (threadIdx.x == 0)
+				//	printf("Branch 1\n");
+
 			    for (int j = blockIdx.x; j < numTads; j += gridDim.x) {
 				    Nd4jIndex inputOffset = currentOffsets[j];
 				    Nd4jIndex resultOffset = zOffsets[j];
@@ -907,7 +917,7 @@ __device__ void concatKernelGeneric(int dimension,
 				    } else {
 					    if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
 					        //if (threadIdx.x == 0)
-				              //  printf("Branch B\n");
+				            //    printf("Branch B\n");
 
 						    if (threadIdx.x == 0) {
 							    baseIdx = 0;

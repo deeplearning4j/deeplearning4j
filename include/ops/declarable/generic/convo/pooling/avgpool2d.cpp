@@ -43,10 +43,8 @@ namespace nd4j {
                 x = x->permute({0, 3, 1, 2});
 
                 // FIXME: eventually we want NWHC impl
-                auto tz = z->permute({0, 3, 1, 2});
-                z = tz->dup('c');
-
-                delete tz;
+                z->permutei({0, 3, 1, 2});
+                z->streamline('c');
             }
 
             const bool isSameMode = INT_ARG(8) > 0;
@@ -69,6 +67,7 @@ namespace nd4j {
             if (!isNCHW) {
                 delete x;
                 z->permutei({0, 2, 3, 1});
+                z->streamline('c');
 
                 //z->printShapeInfo("avg pool shape");
                 //z->printIndexedBuffer("avg pool final");

@@ -83,16 +83,18 @@ enum OutputMode {
   OutputMode_EXPLICIT = 1,
   OutputMode_EXPLICIT_AND_IMPLICIT = 2,
   OutputMode_VARIABLE_SPACE = 3,
+  OutputMode_OPTIMIZED = 4,
   OutputMode_MIN = OutputMode_IMPLICIT,
-  OutputMode_MAX = OutputMode_VARIABLE_SPACE
+  OutputMode_MAX = OutputMode_OPTIMIZED
 };
 
-inline OutputMode (&EnumValuesOutputMode())[4] {
+inline OutputMode (&EnumValuesOutputMode())[5] {
   static OutputMode values[] = {
     OutputMode_IMPLICIT,
     OutputMode_EXPLICIT,
     OutputMode_EXPLICIT_AND_IMPLICIT,
-    OutputMode_VARIABLE_SPACE
+    OutputMode_VARIABLE_SPACE,
+    OutputMode_OPTIMIZED
   };
   return values;
 }
@@ -103,6 +105,7 @@ inline const char **EnumNamesOutputMode() {
     "EXPLICIT",
     "EXPLICIT_AND_IMPLICIT",
     "VARIABLE_SPACE",
+    "OPTIMIZED",
     nullptr
   };
   return names;

@@ -1364,3 +1364,93 @@ TEST_F(GraphTests, Test_Hash_Function_1) {
     delete graph0D;
     delete graph1D;
 }
+
+TEST_F(GraphTests, Test_Inplace_Execution_1) {
+    NDArray<float> exp('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
+
+    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
+    graph->printOut();
+    graph->tagInplaceNodes();
+
+    ASSERT_FALSE(graph->nodeById(8)->isInplace());
+    ASSERT_TRUE(graph->nodeById(9)->isInplace());
+    ASSERT_TRUE(graph->nodeById(10)->isInplace());
+    ASSERT_FALSE(graph->nodeById(11)->isInplace());
+    ASSERT_TRUE(graph->nodeById(12)->isInplace());
+    ASSERT_TRUE(graph->nodeById(17)->isInplace());
+    ASSERT_TRUE(graph->nodeById(18)->isInplace());
+
+    auto status = GraphExecutioner<float>::execute(graph, graph->getVariableSpace());
+    ASSERT_EQ(Status::OK(), status);
+
+    auto z = graph->getVariableSpace()->getVariable(18)->getNDArray();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    auto z_17 = graph->getVariableSpace()->getVariable(17)->getNDArray();
+    ASSERT_TRUE(z_17 == z);
+
+    delete graph;
+}
+
+TEST_F(GraphTests, Test_Inplace_Execution_2) {
+    Graph<float> graphA;
+    
+    auto x = new NDArray<float>('c', {5, 5});
+    x->assign(-5.0);
+
+    graphA.getVariableSpace()->putVariable(-1, x);
+
+    // abs, result is 5
+    auto nodeA0 = new Node<float>(OpType_TRANSFORM, 0, 1, {-1}, {});
+    // 1-, result -4
+    auto nodeA1 = new Node<float>(OpType_TRANSFORM, 35, 2, {1}, {});
+
+    // graph should return 4: abs(-4)
+    auto nodeA2 = new Node<float>(OpType_TRANSFORM, 0, 3, {2}, {});
+
+    // graph should return 1 - 4 = -3
+    auto nodeA21 = new Node<float>(OpType_TRANSFORM, 35, 5, {3}, {});
+
+    // 1 - -4 = 3
+    auto nodeA3 = new Node<float>(OpType_TRANSFORM, 35, 4, {2}, {});
+
+    // same abs = 3
+    auto nodeA31 = new Node<float>(OpType_TRANSFORM, 35, 6, {4}, {});
+
+    graphA.addNode(nodeA0);
+    graphA.addNode(nodeA1);
+    graphA.addNode(nodeA2);
+    graphA.addNode(nodeA3);
+    graphA.addNode(nodeA21);
+    graphA.addNode(nodeA31);
+
+    graphA.buildGraph();
+    graphA.tagInplaceNodes();
+
+    // nodes have 1 output
+    ASSERT_TRUE(graphA.nodeById(1)->isInplace());
+    ASSERT_TRUE(graphA.nodeById(2)->isInplace());
+
+    // this 2 nodes share same input: node 2, so they can't be inplace
+    ASSERT_FALSE(graphA.nodeById(3)->isInplace());
+    ASSERT_FALSE(graphA.nodeById(4)->isInplace());
+
+    // these 2 ops are standalone, so they can be run inplace 
+    ASSERT_TRUE(graphA.nodeById(5)->isInplace());
+    ASSERT_TRUE(graphA.nodeById(6)->isInplace());
+}
+
+TEST_F(GraphTests, Test_Inplace_Outputs_1) {
+    NDArray<float> x('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> exp('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> z('c', {2, 3});
+
+    nd4j::ops::test_output_reshape<float> op;
+    auto result = op.execute({&x}, {&z}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}

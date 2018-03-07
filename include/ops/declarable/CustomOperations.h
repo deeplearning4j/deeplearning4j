@@ -21,6 +21,7 @@
 #include <ops/declarable/headers/loss.h>
 #include <ops/declarable/headers/datatypes.h>
 #include <ops/declarable/headers/third_party.h>
+#include <ops/declarable/headers/tests.h>
 #include <dll.h>
 #include <Status.h>
 

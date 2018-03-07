@@ -417,7 +417,7 @@ namespace nd4j {
                 var->setId(node->id());
                 var->setName(node->getName());
                 _variableSpace->putOutputVariable(var);
-                node->pickExternalOutput(var->id());
+                //node->pickExternalOutput(var->id());
 
                 // we're pushing this variable to output
                 /*
@@ -427,7 +427,7 @@ namespace nd4j {
                     pushToOutputOnce(var->id());
 */
                 this->_autos.push_back(var->id());
-                assert(node->hasExternalOutputs());
+//                assert(node->hasExternalOutputs());
 //        }
             } else if (node->hasExternalOutputs()) {
                 // TODO: we might want this behavior configurable!
@@ -714,6 +714,48 @@ namespace nd4j {
         }
 
         template <typename T>
+        void Graph<T>::tagInplaceNodes() {
+            // just calling, in case it wasn't built before
+            if (!_built.load())
+                this->buildGraph();
+
+
+            for (auto v: *_nodes) {
+                // skipping unmapped nodes
+                if (_mapped->count(v) == 0)
+                    continue;
+
+                Node<T>* node = _mapped->at(v);
+                
+                /**
+                 * Node can be inplace if 2 requirements met:
+                 * 1) current node allows in-place modification
+                 * 2) source node has only 1 output
+                 */                
+
+                // checking for first requirement first
+                if (node->getCustomOp() != nullptr)
+                    if (node->getCustomOp()->getOpDescriptor()->allowsInplace()){
+                        bool singleInput = true;
+                        auto inputs = node->input();
+                        for (auto &t: *inputs) {
+                            if (_mapped->count(t.first) == 0)
+                                continue;
+
+                            auto inode = _mapped->at(t.first);
+                            // checking for second requirement: inputNode must not be used as input anywhere
+                            if (inode->isMultiOutput()) {
+                                singleInput = false;
+                                break;
+                            }
+                        }
+
+                        node->markInplace(singleInput);
+                    }
+            }
+        }
+
+        template <typename T>
         void Graph<T>::prepareOutputs() {
             // if we're dumping everything out there - we'll add external variables as well
             if (_configuration->_outputMode == OutputMode_VARIABLE_SPACE) {
@@ -884,6 +926,13 @@ namespace nd4j {
                 _built = true;
             }
 
+            /**
+             *  we allow in-place execution optimizations ONLY if 2 requirements met:
+             *  1) this is FeedForward pass ONLY
+             *  2) OPTIMIZED mode is set, so no intermediate results are going to be used
+             */
+            if (_configuration->_direction == Direction_FORWARD_ONLY && _configuration->_outputMode == OutputMode_OPTIMIZED)
+                this->tagInplaceNodes();
         }
 
 

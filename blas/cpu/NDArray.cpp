@@ -1292,6 +1292,11 @@ template <typename T>
         */
 }
 
+    template<typename T>
+    bool NDArray<T>::equalsTo(NDArray<T> &other, T eps) const {
+        return equalsTo(&other, eps);
+    }
+
 // This method returns true if two arrays are equal, with custom or default Eps value of 1e-5, false otherwise
     template<typename T>
     bool NDArray<T>::equalsTo(const NDArray<T> *other, T eps) const {
@@ -3038,17 +3043,37 @@ void NDArray<T>::streamline(char o) {
     else
         shape::shapeBufferFortran(this->rankOf(), shape.data(), newShape);
 
-    NativeOpExcutioner<T>::execPairwiseTransform(1, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+    if (!isView()) {
 
-    if (_isBuffAlloc)
-        RELEASE(this->_buffer, this->_workspace);
-    if (_isShapeAlloc)
-        RELEASE(this->_shapeInfo, this->_workspace);
+        NativeOpExcutioner<T>::execPairwiseTransform(1, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+        memcpy(_buffer, newBuffer, this->lengthOf() * sizeOfT());
 
-    this->_buffer = newBuffer;
-    this->_shapeInfo = newShape;
-    this->_isBuffAlloc = true;
-    this->_isShapeAlloc = true;
+        //if (_isBuffAlloc)
+        //    RELEASE(this->_buffer, this->_workspace);
+        if (_isShapeAlloc)
+            RELEASE(this->_shapeInfo, this->_workspace);
+
+        //this->_buffer = newBuffer;
+        //this->_isBuffAlloc = true;
+
+        RELEASE(newBuffer, this->_workspace);
+
+        this->_shapeInfo = newShape;
+        this->_isShapeAlloc = true;
+    } else {
+        NativeOpExcutioner<T>::execPairwiseTransform(1, newBuffer, newShape, _buffer, _shapeInfo, newBuffer, newShape, nullptr);
+
+        if (_isBuffAlloc)
+            RELEASE(this->_buffer, this->_workspace);
+        if (_isShapeAlloc)
+            RELEASE(this->_shapeInfo, this->_workspace);
+
+        this->_buffer = newBuffer;
+        this->_isBuffAlloc = true;
+
+        this->_shapeInfo = newShape;
+        this->_isShapeAlloc = true;
+    }
 }
 
 

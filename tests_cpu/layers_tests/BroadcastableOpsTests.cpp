@@ -276,3 +276,25 @@ TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
 
     delete result;
 }
+
+
+TEST_F(BroadcastableOpsTests, Test_Inplace_Output_1) {
+    NDArray<float> x('c', {2, 1, 3});
+    NDArray<float> y('c', {4, 3});
+    NDArray<float> o('c', {2, 4, 3});
+    NDArray<float> e('c', {2, 4, 3});
+    float *buffO1 = o.buffer();
+    y.assign(1.0f);
+    e.assign(1.0f);
+
+    nd4j::ops::add<float> op;
+    auto result = op.execute({&x, &y}, {&o}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+    float *buffO2 = o.buffer();
+
+    ASSERT_TRUE(e.isSameShape(o));
+    ASSERT_TRUE(e.equalsTo(o));
+
+    ASSERT_TRUE(buffO1 == buffO2);
+}

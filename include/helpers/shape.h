@@ -84,6 +84,11 @@ namespace shape {
     ND4J_EXPORT int* detachShape(int *originalShape);
 
 #ifdef __CUDACC__
+    __host__
+#endif
+    ND4J_EXPORT int* copyShape(int *originalShape);
+
+#ifdef __CUDACC__
     __host__ __device__
 #endif
     ND4J_EXPORT bool shapeEquals(int *shapeInfo1,int *shapeInfo2);
@@ -2909,6 +2914,17 @@ __host__ __device__
     __host__
 #endif
     INLINEDEF int* detachShape(int *originalShape) {
+        int *newShape = new int[shape::shapeInfoLength(originalShape)];
+        memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
+
+        return newShape;
+    }
+
+
+#ifdef __CUDACC__
+    __host__
+#endif
+    INLINEDEF int* copyShape(int *originalShape) {
         int *newShape = new int[shape::shapeInfoLength(originalShape)];
         memcpy(newShape, originalShape, shape::shapeInfoByteLength(originalShape));
 

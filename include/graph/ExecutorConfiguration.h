@@ -18,36 +18,12 @@ namespace nd4j {
             bool _timestats;
             Nd4jIndex _footprintForward = 0L;
             Nd4jIndex _footprintBackward = 0L;
+            Direction _direction = Direction_FORWARD_ONLY;
 
-            ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr) {
-                if (conf != nullptr) {
-                    _profilingMode = conf->profilingMode();
-                    _executionMode = conf->executionMode();
-                    _outputMode = conf->outputMode();
-                    _timestats = conf->timestats();
-                    _footprintForward = conf->footprintForward();
-                    _footprintBackward = conf->footprintBackward();
-                } else {
-                    _profilingMode = ProfilingMode_NONE;
-                    _executionMode = ExecutionMode_SEQUENTIAL;
-                    _outputMode = OutputMode_IMPLICIT;
-                    _timestats = false;
-                }
-            }
-
-            ExecutorConfiguration* clone() {
-                auto clone = new ExecutorConfiguration();
-                clone->_profilingMode = _profilingMode;
-                clone->_executionMode = _executionMode;
-                clone->_outputMode = _outputMode;
-                clone->_timestats = _timestats;
-
-                return clone;
-            }
-
-            ~ExecutorConfiguration() {
-                // no pointers here, just enums. so no-op.
-            }
+            ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf = nullptr);
+            ~ExecutorConfiguration() = default;
+            
+            ExecutorConfiguration* clone();
         };
     }
 }

@@ -522,6 +522,7 @@ namespace nd4j {
         *  eps - epsilon, this value defines the precision of elements comparison
         */
         bool equalsTo(const NDArray<T> *other, T eps = (T) 1e-5f) const;
+        bool equalsTo(NDArray<T> &other, T eps = (T) 1e-5f) const;
         
         /**
         *  add given row vector to all rows of this array
@@ -978,6 +979,7 @@ namespace nd4j {
 
         // returns true if arrays have same shape
         FORCEINLINE bool isSameShape(const NDArray<T> *other) const;
+        FORCEINLINE bool isSameShape(NDArray<T> &other) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<int>& shape) const;
         FORCEINLINE bool isSameShape(const std::initializer_list<Nd4jIndex>& shape) const;
         FORCEINLINE bool isSameShape(const std::vector<int>& shape) const;
@@ -1478,6 +1480,12 @@ FORCEINLINE bool NDArray<T>::isSameShape(const NDArray<T> *other) const {
         if (this->shapeOf()[e] != other->shapeOf()[e])
             return false;
     return true;
+}
+
+
+template<typename T>
+FORCEINLINE bool NDArray<T>::isSameShape(NDArray<T> &other) const {
+    return isSameShape(&other);
 }
 
 //////////////////////////////////////////////////////////////////////////

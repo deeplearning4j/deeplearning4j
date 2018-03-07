@@ -187,6 +187,11 @@ namespace nd4j {
              */
             Nd4jIndex hashCode();
 
+            /**
+             * PLEASE NOTE: This method will be moved to private section
+             */
+            void tagInplaceNodes();
+
             void replaceState(VariableSpace<T> *state, ExecutorConfiguration *configuration);
 
             FORCEINLINE std::vector<int>* nodes() {

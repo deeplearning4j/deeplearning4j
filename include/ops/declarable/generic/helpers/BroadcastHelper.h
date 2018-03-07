@@ -25,8 +25,8 @@ namespace nd4j {
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
 				    z->putScalar(0, OpName::op(x->getScalar(0), y->getScalar(0)));
 			    } else if (ShapeUtils<T>::areShapesBroadcastable(*x, *y)) {
-                    auto tZ = x->template applyTrueBroadcast<OpName>(y, extraArgs);
-                    return tZ;
+                    x->template applyTrueBroadcast<OpName>(y, z, true, extraArgs);
+                    return z;
                 } else {
                     auto sx = ShapeUtils<T>::shapeAsString(*x);
                     auto sy = ShapeUtils<T>::shapeAsString(*y);

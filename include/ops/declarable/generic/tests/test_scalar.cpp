@@ -2,7 +2,7 @@
 // Created by raver119 on 24.02.18.
 //
 
-#include <ops/declarable/headers/third_party.h>
+#include <ops/declarable/headers/tests.h>
 
 namespace nd4j {
     namespace ops {

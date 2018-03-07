@@ -552,7 +552,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
     NDArray<float> o(2.0f);
     NDArray<float> exp(1.0f);
 
-     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
 
 
@@ -565,4 +565,80 @@ TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.equalsTo(&o));
+}
+
+
+TEST_F(JavaInteropTests, Test_Inplace_Outputs_1) {
+    NDArray<float> x('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> exp('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> z('c', {2, 3});
+
+    nd4j::ops::test_output_reshape<float> op;
+    
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    NativeOps nativeOps;
+    auto hash = op.getOpHash();
+    auto status = nativeOps.execCustomOpFloat(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+
+TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
+    NDArray<float> x('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
+    NDArray<float> y(2.0f);
+    NDArray<float> z('f', {2, 3});
+    NDArray<float> e('c', {2, 3}, {3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
+
+
+    nd4j::ops::add<float> op;
+
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+
+    NativeOps nativeOps;
+    auto hash = op.getOpHash();
+    auto status = nativeOps.execCustomOpFloat(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+    ASSERT_FALSE(e.ordering() == z.ordering());
+}
+
+TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
+    NDArray<float> input('c', {2, 3, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray<float> indices('c', {1, 6},   {0,1, 2,2, 1,2});
+    NDArray<float> output('f', {2, 6, 4});
+    NDArray<float> e('c', {2, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
+
+    nd4j::ops::gather<float> op;
+
+     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) indices.getBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) indices.getShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+
+    int iArgs[] = {1};
+
+    NativeOps nativeOps;
+    auto hash = op.getOpHash();
+    auto status = nativeOps.execCustomOpFloat(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 1, false);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_TRUE(e.isSameShape(output));
+    ASSERT_TRUE(e.equalsTo(output));
+    ASSERT_FALSE(e.ordering() == output.ordering());
 }

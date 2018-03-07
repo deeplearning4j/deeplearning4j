@@ -65,15 +65,18 @@ namespace nd4j {
 
                 if (block.isInplace()) {
                     if (x->reshapei(order, shapeNew)) {
+                        nd4j_printf("OVERWRITE A!!\n","");
                         OVERWRITE_RESULT(x);
                         return ND4J_STATUS_OK;
                     }
                 } else {
-                    auto ret = new NDArray<T>(*x);
-                    if (ret->reshapei(order, shapeNew)) {
-                        OVERWRITE_RESULT(ret);
-                        return ND4J_STATUS_OK;
-                    }
+                    auto ret = OUTPUT_VARIABLE(0);
+                    auto xr = x->reshape(order, shapeNew);
+                    ret->assign(xr);
+
+                    delete xr;
+
+                    return Status::OK();
                 }
             }
 

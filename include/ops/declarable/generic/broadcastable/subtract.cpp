@@ -10,7 +10,7 @@ namespace nd4j {
         CUSTOM_OP_IMPL(subtract, 2, 1, true, 0, 0) {
             NDArray<T> *x = INPUT_VARIABLE(0);
             NDArray<T> *y = INPUT_VARIABLE(1);
-            NDArray<T> *z = this->getZ(block);
+            NDArray<T> *z = OUTPUT_VARIABLE(0);
 
             auto tZ = BroadcastHelper<T>::template broadcast_apply<simdOps::Subtract<T>>(x, y, z);
             if (tZ == nullptr)

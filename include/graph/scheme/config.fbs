@@ -18,6 +18,7 @@ enum OutputMode:byte {
    EXPLICIT, // only declared output fields
    EXPLICIT_AND_IMPLICIT, // both options enabled
    VARIABLE_SPACE, // whole content of VariableSpace will be returned back
+   OPTIMIZED, // same as IMPLICIT + using in-place ops execution where possible
 }
 
 enum Direction:byte {

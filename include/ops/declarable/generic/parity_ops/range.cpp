@@ -82,11 +82,16 @@ namespace nd4j {
                     }
                 }
 
-                auto array = new nd4j::NDArray<T>({(int) data.size()}, block.getWorkspace());
-                memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
+                if (output->lengthOf() == data.size()) {
+                    memcpy(output->buffer(), data.data(), data.size() * sizeof(T));
+                } else {
+                    auto array = new nd4j::NDArray<T>({(int) data.size()}, block.getWorkspace());
+                    memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
 
-                //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
-                OVERWRITE_RESULT(array);
+                    //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
+                    nd4j_debug("Range overwrite!\n","");
+                    OVERWRITE_RESULT(array);
+                }
             } else {
                 REQUIRE_TRUE(false, 0, "Runtime range should have inputs defined in any possible way: T_args, INT_args, or INPUT variables")
             }
