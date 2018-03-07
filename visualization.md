@@ -135,7 +135,7 @@ First, in the JVM running the UI:
 ```
 This will require the ```deeplearning4j-ui_2.10``` or ```deeplearning4j-ui_2.11``` dependency.
 
-Second, for your neural net (Note this example is for spark, but computation graph and multi layer network both have the equivalemtn setListeners method with the same usage):
+Second, for your neural net (Note this example is for spark, but computation graph and multi layer network both have the equivalemtn setListeners method with the same usage, [example found here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/RemoteUIExample.java)):
 
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
