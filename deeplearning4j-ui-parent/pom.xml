@@ -20,7 +20,7 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
-                <version>3.3.1</version>
+                <version>${maven-scala-plugin.version}</version>
                 <configuration>
                     <scalaVersion>2.11.8</scalaVersion>
                     <args>
