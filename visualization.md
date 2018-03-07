@@ -127,14 +127,15 @@ Then, later you can load and display the saved information using:
 
 **Using the Remote UI Functionality**
 
-First, in the JVM running the UI:
+First, in the JVM running the UI (note this is the server):
 
 ```
     UIServer uiServer = UIServer.getInstance();
     uiServer.enableRemoteListener();        //Necessary: remote support is not enabled by default
 ```
-This will require the ```deeplearning4j-ui_2.10``` or ```deeplearning4j-ui_2.11``` dependency.
+This will require the ```deeplearning4j-ui_2.10``` or ```deeplearning4j-ui_2.11``` dependency. (NOTE THIS IS NOT THE CLIENT THIS IS YOUR SERVER - SEE BELOW FOR THE CLIENT WHICH USES: deeplearning4j-ui-model)
 
+Client (both spark and standalone neural networks using simple deeplearning4j-nn)
 Second, for your neural net (Note this example is for spark, but computation graph and multi layer network both have the equivalemtn setListeners method with the same usage, [example found here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/RemoteUIExample.java)):
 
 ```
@@ -144,6 +145,13 @@ Second, for your neural net (Note this example is for spark, but computation gra
     sparkNet.setListeners(remoteUIRouter, Collections.singletonList(new StatsListener(null)));
 ```
 To avoid dependency conflicts with Spark, you should use the ```deeplearning4j-ui-model``` dependency to get the StatsListener, *not* the full ```deeplearning4j-ui_2.10``` UI dependency.
+
+**Note to scala users**:
+
+You need to use the above method if you are on a newer scala version. See the linked example above for the client.
+
+
+
 
 Note: you should replace ```UI_MACHINE_IP``` with the IP address of the machine running the user interface instance.
 
