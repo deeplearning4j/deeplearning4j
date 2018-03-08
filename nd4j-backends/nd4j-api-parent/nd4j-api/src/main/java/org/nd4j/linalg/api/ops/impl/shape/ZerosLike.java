@@ -28,7 +28,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -41,13 +41,14 @@ import java.util.Map;
 public class ZerosLike extends DynamicCustomOp {
 
 
-    public ZerosLike() {}
+    public ZerosLike() {
+    }
 
-    public ZerosLike(String name, SameDiff sameDiff, SDVariable input){
+    public ZerosLike(String name, SameDiff sameDiff, SDVariable input) {
         this(name, sameDiff, input, false);
     }
 
-    public ZerosLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace){
+    public ZerosLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super(name, sameDiff, new SDVariable[]{input}, inPlace);
     }
 
@@ -123,12 +124,10 @@ public class ZerosLike extends DynamicCustomOp {
     }
 
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = sameDiff.zerosLike(outputVariables()[0]);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

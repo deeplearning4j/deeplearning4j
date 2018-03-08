@@ -49,7 +49,7 @@ public class ExpandDims extends DynamicCustomOp {
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
-        if(axis == Integer.MAX_VALUE){
+        if (axis == Integer.MAX_VALUE) {
             throw new ND4JIllegalArgumentException("Cannot perform ExpandDims with axis == Integer.MAX_VALUE");
         }
         this.axis = axis;
@@ -70,15 +70,14 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-         val targetNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(1));
-        val dimArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",targetNode,graph);
+        val targetNode = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
+        val dimArr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", targetNode, graph);
 
-        if(dimArr != null) {
-             int axis = dimArr.data().asInt()[0];
-             this.axis = axis;
-             addIArgument(this.axis);
-         }
-         else {
+        if (dimArr != null) {
+            int axis = dimArr.data().asInt()[0];
+            this.axis = axis;
+            addIArgument(this.axis);
+        } else {
             this.axis = Integer.MAX_VALUE;
             addIArgument(this.axis);
         }
@@ -86,39 +85,39 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("axis",axis);
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("axis", axis);
         return ret;
     }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-            Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-            val axisMapping = PropertyMapping.builder()
-                    .tfInputPosition(1)
-                    .propertyNames(new String[]{"axis"})
-                    .build();
-            Map<String,PropertyMapping> map = new HashMap<>();
-            map.put("axis",axisMapping);
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        val axisMapping = PropertyMapping.builder()
+                .tfInputPosition(1)
+                .propertyNames(new String[]{"axis"})
+                .build();
+        Map<String, PropertyMapping> map = new HashMap<>();
+        map.put("axis", axisMapping);
 
-            ret.put(tensorflowName(),map);
-            return ret;
+        ret.put(tensorflowName(), map);
+        return ret;
     }
 
     @Override
     public void assertValidForExecution() {
         val descriptor = getDescriptor();
-        if(descriptor.getNumInputs() > 0 && numInputArguments() >  2 || numInputArguments() < 1)
+        if (descriptor.getNumInputs() > 0 && numInputArguments() > 2 || numInputArguments() < 1)
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numInputArguments() + " but should be " + descriptor.getNumInputs());
 
-        if(descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
+        if (descriptor.getNumOutputs() > 0 && numOutputArguments() != descriptor.getNumOutputs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of outputs is invalid for execution. Specified " + numOutputArguments() + " but should be " + descriptor.getNumInputs());
 
         //< 0 means dynamic size
-        if(descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
+        if (descriptor.getNumIArgs() >= 0 && numIArguments() != descriptor.getNumIArgs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of integer arguments is invalid for execution. Specified " + numIArguments() + " but should be " + descriptor.getNumIArgs());
 
-        if(descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
+        if (descriptor.getNumTArgs() >= 0 && numTArguments() != descriptor.getNumTArgs())
             throw new ND4JIllegalStateException("Op failure for " + opName() + " Number of inputs is invalid for execution. Specified " + numTArguments() + " but should be " + descriptor.getNumTArgs());
 
     }
@@ -130,7 +129,7 @@ public class ExpandDims extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
 
     }
 
@@ -140,13 +139,11 @@ public class ExpandDims extends DynamicCustomOp {
     }
 
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Simply need a reshape to remove the dimension...
         SDVariable ret = sameDiff.squeeze(i_v.get(0), axis);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

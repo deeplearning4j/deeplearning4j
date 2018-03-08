@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,15 +61,16 @@ public class OldSoftMax extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public OldSoftMax() {}
+    public OldSoftMax() {
+    }
 
     public OldSoftMax(INDArray x, INDArray z) {
-        this(x,null,z);
+        this(x, null, z);
 
     }
 
     public OldSoftMax(INDArray x, INDArray z, long n) {
-       this(x,null,z,n);
+        this(x, null, z, n);
     }
 
     public OldSoftMax(INDArray x, INDArray y, INDArray z, long n) {
@@ -77,7 +78,7 @@ public class OldSoftMax extends BaseTransformOp {
     }
 
     public OldSoftMax(INDArray x, INDArray y, INDArray z) {
-        this(x,y,z,x.lengthLong());
+        this(x, y, z, x.lengthLong());
     }
 
     public OldSoftMax(INDArray x) {
@@ -99,7 +100,6 @@ public class OldSoftMax extends BaseTransformOp {
     public String opName() {
         return "old_softmax";
     }
-
 
 
     @Override
@@ -165,7 +165,6 @@ public class OldSoftMax extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

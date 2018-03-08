@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,7 +34,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ScalarNotEquals extends BaseScalarOp {
-    public ScalarNotEquals() {}
+    public ScalarNotEquals() {
+    }
 
     public ScalarNotEquals(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -43,8 +44,6 @@ public class ScalarNotEquals extends BaseScalarOp {
     public ScalarNotEquals(INDArray x, Number num) {
         super(x, num);
     }
-
-
 
 
     public ScalarNotEquals(SameDiff sameDiff, SDVariable i_v, Number scalar) {
@@ -84,10 +83,10 @@ public class ScalarNotEquals extends BaseScalarOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 }

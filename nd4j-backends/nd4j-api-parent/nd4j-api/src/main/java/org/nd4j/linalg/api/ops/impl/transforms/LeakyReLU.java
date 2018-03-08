@@ -24,18 +24,20 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**Leaky Rectified linear unit. Default alpha=0.01, cutoff=0<br>
+/**
+ * Leaky Rectified linear unit. Default alpha=0.01, cutoff=0<br>
  * Out(x) = alpha*x if x<0<br>
  * Out(x) = x if x >= 0<br>
  * Leaky ReLU may avoid zero gradient "dying ReLU" problem by having non-zero
  * gradient below 0.<br>
  * See for example http://arxiv.org/abs/1505.00853 for a comparison of
  * ReLU variants.
+ *
  * @author Alex Black
  */
 public class LeakyReLU extends BaseTransformOp {
@@ -45,21 +47,21 @@ public class LeakyReLU extends BaseTransformOp {
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double alpha) {
         super(sameDiff, i_v, inPlace);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
 
     }
 
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
 
     }
 
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, extraArgs);
         this.alpha = alpha;
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
     }
 
     public LeakyReLU() {
@@ -104,13 +106,13 @@ public class LeakyReLU extends BaseTransformOp {
 
     public LeakyReLU(INDArray x) {
         super(x);
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("alpha",alpha);
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("alpha", alpha);
         return ret;
     }
 
@@ -129,7 +131,7 @@ public class LeakyReLU extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {alpha};
+        this.extraArgs = new Object[]{alpha};
     }
 
     @Override
@@ -143,11 +145,9 @@ public class LeakyReLU extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().leakyReluDerivative(arg(), alpha).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

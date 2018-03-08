@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -41,7 +41,8 @@ public class Mean extends Sum {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Mean() {}
+    public Mean() {
+    }
 
     public Mean(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -85,7 +86,7 @@ public class Mean extends Sum {
         SDVariable ret = sameDiff.onesLike(arg()).div(n);      //1/N with shape equal to input
 
         ret = ret.mul(broadcastableGrad);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
     @Override

@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -62,7 +62,8 @@ public class Sinh extends BaseTransformOp {
         super(x);
     }
 
-    public Sinh() {}
+    public Sinh() {
+    }
 
     @Override
     public int opNum() {
@@ -88,8 +89,7 @@ public class Sinh extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().cosh(arg()).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 

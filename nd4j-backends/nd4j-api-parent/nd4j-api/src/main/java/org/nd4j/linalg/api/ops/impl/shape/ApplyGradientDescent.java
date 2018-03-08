@@ -27,7 +27,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +40,8 @@ import java.util.Map;
 public class ApplyGradientDescent extends DynamicCustomOp {
 
 
-    public ApplyGradientDescent() {}
+    public ApplyGradientDescent() {
+    }
 
 
     @Override
@@ -56,7 +57,7 @@ public class ApplyGradientDescent extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-       return "ApplyGradientDescent";
+        return "ApplyGradientDescent";
     }
 
 
@@ -114,12 +115,10 @@ public class ApplyGradientDescent extends DynamicCustomOp {
     }
 
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = this.outputVariables()[0];
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

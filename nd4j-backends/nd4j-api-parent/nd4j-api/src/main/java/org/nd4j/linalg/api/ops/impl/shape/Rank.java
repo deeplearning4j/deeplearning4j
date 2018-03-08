@@ -33,7 +33,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -46,9 +46,8 @@ import java.util.Map;
 public class Rank extends DynamicCustomOp {
 
 
-
-
-    public Rank() {}
+    public Rank() {
+    }
 
 
     @Override
@@ -56,12 +55,12 @@ public class Rank extends DynamicCustomOp {
         val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
         val input = initWith.getVariable(name);
         val outputVertex = input.getVarName();
-        if(!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {
+        if (!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {
             val inputShape = initWith.getShapeForVarName(input.getVarName());
             val resultLength = Nd4j.scalar(inputShape.length);
             val thisResultId = outputVertex;
-            initWith.putArrayForVarName(thisResultId,resultLength);
-            initWith.putShapeForVarName(thisResultId,new int[]{1,1});
+            initWith.putArrayForVarName(thisResultId, resultLength);
+            initWith.putShapeForVarName(thisResultId, new int[]{1, 1});
         }
     }
 
@@ -96,7 +95,7 @@ public class Rank extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = outputVariables()[0];
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

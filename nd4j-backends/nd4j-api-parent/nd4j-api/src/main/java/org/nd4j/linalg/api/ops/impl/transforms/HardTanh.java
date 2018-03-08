@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,7 +45,8 @@ public class HardTanh extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public HardTanh() {}
+    public HardTanh() {
+    }
 
     public HardTanh(INDArray x, INDArray z) {
         super(x, z);
@@ -87,6 +88,6 @@ public class HardTanh extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().hardTanhDerivative(arg()).mul(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

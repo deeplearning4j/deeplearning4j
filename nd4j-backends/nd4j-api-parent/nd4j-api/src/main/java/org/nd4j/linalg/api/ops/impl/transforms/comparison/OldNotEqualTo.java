@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +43,8 @@ public class OldNotEqualTo extends BaseTransformOp {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public OldNotEqualTo() {}
+    public OldNotEqualTo() {
+    }
 
     public OldNotEqualTo(INDArray x) {
         super(x);
@@ -73,18 +74,19 @@ public class OldNotEqualTo extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-       throw new NoOpNameFoundException("No op name found");
+        throw new NoOpNameFoundException("No op name found");
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().neg(i_v.get(0)));
+
+        return Arrays.asList(f().neg(i_v.get(0)));
     }
 
 

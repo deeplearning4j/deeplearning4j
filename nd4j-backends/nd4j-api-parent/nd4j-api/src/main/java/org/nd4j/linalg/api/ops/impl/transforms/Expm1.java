@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,7 +33,7 @@ import java.util.List;
  * transformation exp(x) - 1.
  *
  * @author raver119@gmail.com
-  */
+ */
 public class Expm1 extends BaseTransformOp {
     public Expm1(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
@@ -47,7 +47,8 @@ public class Expm1 extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Expm1() {}
+    public Expm1() {
+    }
 
     public Expm1(INDArray x, INDArray z) {
         super(x, z);
@@ -77,7 +78,7 @@ public class Expm1 extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -89,7 +90,7 @@ public class Expm1 extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -46,7 +46,8 @@ public class Sign extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Sign() {}
+    public Sign() {
+    }
 
     public Sign(INDArray x, INDArray z) {
         super(x, z);
@@ -85,11 +86,10 @@ public class Sign extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = sameDiff.zerosLike(arg());
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

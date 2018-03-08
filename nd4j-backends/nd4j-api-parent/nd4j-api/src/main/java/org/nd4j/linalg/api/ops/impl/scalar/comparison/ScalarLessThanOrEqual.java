@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -43,7 +42,8 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
-    public ScalarLessThanOrEqual() {}
+    public ScalarLessThanOrEqual() {
+    }
 
     public ScalarLessThanOrEqual(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -52,7 +52,6 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
     public ScalarLessThanOrEqual(INDArray x, Number num) {
         super(x, num);
     }
-
 
 
     @Override
@@ -79,7 +78,8 @@ public class ScalarLessThanOrEqual extends BaseScalarOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 
 }

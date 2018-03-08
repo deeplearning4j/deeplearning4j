@@ -19,14 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -36,7 +35,8 @@ import java.util.List;
  */
 public class ACosh extends BaseTransformOp {
 
-    public ACosh() {}
+    public ACosh() {
+    }
 
     public ACosh(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -79,7 +79,7 @@ public class ACosh extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -90,10 +90,10 @@ public class ACosh extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-//        //dacosh(x)/dx = 1/(sqrt(x^2-1)) -- note that domain is x >= 1
+        //dacosh(x)/dx = 1/(sqrt(x^2-1)) -- note that domain is x >= 1
         SDVariable xSqPlus1 = sameDiff.square(arg()).sub(1.0);
         SDVariable sqrt = sameDiff.sqrt(xSqPlus1);
-        return Collections.singletonList(i_v.get(0).div(sqrt));
+        return Arrays.asList(i_v.get(0).div(sqrt));
     }
 
 }

@@ -25,10 +25,11 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
-/**SoftSign derivative.
+/**
+ * SoftSign derivative.
  */
 public class SoftSignDerivative extends BaseTransformOp {
     public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
@@ -43,7 +44,8 @@ public class SoftSignDerivative extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SoftSignDerivative() {}
+    public SoftSignDerivative() {
+    }
 
     public SoftSignDerivative(INDArray x, INDArray z) {
         super(x, z);
@@ -73,19 +75,18 @@ public class SoftSignDerivative extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().zero(outputVariables()[0].getShape());
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

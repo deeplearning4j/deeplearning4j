@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -52,7 +52,8 @@ public class Variance extends BaseAccumulation {
         this.biasCorrected = biasCorrected;
     }
 
-    public Variance() {}
+    public Variance() {
+    }
 
     public Variance(boolean biasCorrected) {
         this.biasCorrected = biasCorrected;
@@ -115,10 +116,6 @@ public class Variance extends BaseAccumulation {
     }
 
 
-
-
-
-
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
@@ -134,8 +131,6 @@ public class Variance extends BaseAccumulation {
     public boolean isPassThrough() {
         return true;
     }
-
-
 
 
     public boolean isBiasCorrected() {
@@ -156,11 +151,10 @@ public class Variance extends BaseAccumulation {
         int origRank = Shape.rankFromShape(arg().getShape());
         SDVariable broadcastableMean = f().reductionBroadcastableWithOrigShape(origRank, dimensions, f().mean(arg(), dimensions));
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        SDVariable dOutdIn = arg().sub(broadcastableMean).mul(2.0 / (biasCorrected ? (n-1) : n));
+        SDVariable dOutdIn = arg().sub(broadcastableMean).mul(2.0 / (biasCorrected ? (n - 1) : n));
 
         SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
-
-        return Collections.singletonList(dLdIn);
+        return Arrays.asList(dLdIn);
     }
 
     @Override

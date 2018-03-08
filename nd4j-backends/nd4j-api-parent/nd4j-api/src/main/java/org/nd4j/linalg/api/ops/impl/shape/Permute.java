@@ -23,10 +23,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Permute function
@@ -38,15 +36,16 @@ public class Permute extends Transpose {
     private int[] reverseDims;
 
     public Permute(SameDiff sameDiff, SDVariable i_v, int[] permuteDims) {
-        super(sameDiff,i_v);
+        super(sameDiff, i_v);
         this.permuteDims = permuteDims;
         this.reverseDims = new int[permuteDims.length];
-        for( int i=0; i<reverseDims.length; i++ ){
+        for (int i = 0; i < reverseDims.length; i++) {
             reverseDims[i] = ArrayUtils.indexOf(permuteDims, i);
         }
     }
 
-    public Permute() {}
+    public Permute() {
+    }
 
     @Override
     public String opName() {
@@ -56,6 +55,6 @@ public class Permute extends Transpose {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().permute(i_v.get(0), reverseDims);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

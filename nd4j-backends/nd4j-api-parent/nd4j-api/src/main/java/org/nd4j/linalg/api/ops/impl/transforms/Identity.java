@@ -21,7 +21,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,12 +50,13 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"Identity","NoOp"};
+        return new String[]{"Identity", "NoOp"};
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+
+        return Arrays.asList(sameDiff.one("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
     }
 
 }

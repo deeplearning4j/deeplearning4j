@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,7 +42,8 @@ public class Prod extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Prod() {}
+    public Prod() {
+    }
 
     public Prod(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -89,12 +90,12 @@ public class Prod extends BaseAccumulation {
 
     @Override
     public String onnxName() {
-       return "ReduceProd";
+        return "ReduceProd";
     }
 
     @Override
     public String tensorflowName() {
-       return "Prod";
+        return "Prod";
     }
 
 
@@ -106,8 +107,7 @@ public class Prod extends BaseAccumulation {
         SDVariable broadcastableProd = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, prod);
         SDVariable mul = broadcastableGrad.div(arg());
         SDVariable ret = broadcastableProd.mul(mul);
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
     @Override

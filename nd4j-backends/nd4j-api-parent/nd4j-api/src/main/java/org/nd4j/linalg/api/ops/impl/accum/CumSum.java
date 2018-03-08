@@ -26,17 +26,18 @@ public class CumSum extends DynamicCustomOp {
     protected boolean exclusive = false;
     protected boolean reverse = false;
 
-    public CumSum(){}
+    public CumSum() {
+    }
 
 
-    public CumSum(SameDiff sameDiff, SDVariable x, int... dimension){
+    public CumSum(SameDiff sameDiff, SDVariable x, int... dimension) {
         super(null, sameDiff, new SDVariable[]{x});
         this.sameDiff = sameDiff;
         this.dimensions = dimension;
         addArgs();
     }
 
-    public CumSum(SameDiff sameDiff, SDVariable x, boolean exclusive, boolean reverse, int... dimension){
+    public CumSum(SameDiff sameDiff, SDVariable x, boolean exclusive, boolean reverse, int... dimension) {
         super(null, sameDiff, new SDVariable[]{x});
         this.sameDiff = sameDiff;
         this.dimensions = dimension;
@@ -44,7 +45,6 @@ public class CumSum extends DynamicCustomOp {
         this.reverse = reverse;
         addArgs();
     }
-
 
 
     @Override
@@ -60,7 +60,7 @@ public class CumSum extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String,AttributeAdapter> tfMappings = new LinkedHashMap<>();
+        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
 
         tfMappings.put("exclusive", new BooleanAdapter());
         tfMappings.put("reverse", new BooleanAdapter());
@@ -73,8 +73,8 @@ public class CumSum extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
 
         val exclusiveMapper = PropertyMapping.builder()
                 .tfAttrName("exclusive")
@@ -90,14 +90,14 @@ public class CumSum extends DynamicCustomOp {
         map.put("exclusive", exclusiveMapper);
         map.put("reverse", reverseMapper);
 
-        ret.put(tensorflowName(),map);
+        ret.put(tensorflowName(), map);
 
         return ret;
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         addArgs();
     }
 
@@ -113,14 +113,14 @@ public class CumSum extends DynamicCustomOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         // Output gradient is the reversed cumulative sum of the reversed input gradient
         SDVariable gradient = sameDiff.setupFunction(grad.get(0));
 
-        SDVariable reverseGrad = sameDiff.reverse(gradient, 1- dimensions[0]);
+        SDVariable reverseGrad = sameDiff.reverse(gradient, 1 - dimensions[0]);
         SDVariable ret = sameDiff.cumsum(reverseGrad, exclusive, reverse, dimensions);
-        SDVariable reversedRet = sameDiff.reverse(ret, 1- dimensions[0]);
-        return Collections.singletonList(reversedRet);
+        SDVariable reversedRet = sameDiff.reverse(ret, 1 - dimensions[0]);
+        return Arrays.asList(reversedRet);
     }
 
 }

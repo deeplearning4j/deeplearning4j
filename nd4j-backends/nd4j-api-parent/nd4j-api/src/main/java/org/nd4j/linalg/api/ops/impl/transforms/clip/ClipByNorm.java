@@ -9,7 +9,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -17,11 +17,11 @@ public class ClipByNorm extends DynamicCustomOp {
 
     private double clipValue;
 
-    public ClipByNorm(){
+    public ClipByNorm() {
 
     }
 
-    public ClipByNorm(SameDiff sameDiff, SDVariable x, double clipValue, int... dimensions){
+    public ClipByNorm(SameDiff sameDiff, SDVariable x, double clipValue, int... dimensions) {
         super(null, sameDiff, new SDVariable[]{x});
         this.clipValue = clipValue;
         this.dimensions = dimensions;
@@ -46,7 +46,7 @@ public class ClipByNorm extends DynamicCustomOp {
 
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //dOut/dIn is ??? if clipped, 1 otherwise
         int origRank = Shape.rankFromShape(arg().getShape());
         SDVariable l2norm = f().norm2(arg(), dimensions);
@@ -66,6 +66,6 @@ public class ClipByNorm extends DynamicCustomOp {
 
 
         SDVariable ret = notClippedBC.add(dOutdInClipped).mul(grad.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

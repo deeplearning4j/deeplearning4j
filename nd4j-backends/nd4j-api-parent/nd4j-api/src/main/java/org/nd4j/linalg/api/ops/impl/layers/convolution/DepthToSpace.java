@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Inverse operation to SpaceToDepth. This operation takes 4D array in, in either NCHW or NHWC format,
  * and moves data from  channels (C) to spatial dimensions (HW) for given blockSize.
- *
+ * <p>
  * Example:
  * blockSize = 4
  * dataFormat = "NCHW"
@@ -29,14 +29,15 @@ public class DepthToSpace extends DynamicCustomOp {
     private String dataFormat = "NHWC";
     private int blockSize;
 
-    public DepthToSpace() {}
+    public DepthToSpace() {
+    }
 
     public DepthToSpace(SameDiff sameDiff, SDVariable[] args, int blockSize, String dataFormat) {
         super(null, sameDiff, args, false);
         this.blockSize = blockSize;
         this.dataFormat = dataFormat;
         boolean isNHWC = dataFormat.equals("NHWC");
-        addIArgument(blockSize,isNHWC ? 1 : 0);
+        addIArgument(blockSize, isNHWC ? 1 : 0);
 
     }
 
@@ -46,40 +47,37 @@ public class DepthToSpace extends DynamicCustomOp {
         // Gradient to DepthToSpace is just SpaceToDepth of same block size and data format.
         SDVariable gradient = i_v.get(0);
         SDVariable ret = sameDiff.spaceToDepth(gradient, blockSize, dataFormat);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         boolean isNHWC = dataFormat.equals("NHWC");
-        addIArgument(blockSize,isNHWC ? 1 : 0);
+        addIArgument(blockSize, isNHWC ? 1 : 0);
     }
-
 
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> attrs = new LinkedHashMap<>();
+        Map<String, PropertyMapping> attrs = new LinkedHashMap<>();
 
         val blockSize = PropertyMapping.builder()
                 .tfAttrName("block_size")
                 .propertyNames(new String[]{"blockSize"})
                 .build();
-        attrs.put("blockSize",blockSize);
+        attrs.put("blockSize", blockSize);
 
         val dataFormatMapping = PropertyMapping.builder()
                 .tfAttrName("data_format")
                 .propertyNames(new String[]{"dataFormat"})
                 .build();
-        attrs.put("dataFormat",dataFormatMapping);
+        attrs.put("dataFormat", dataFormatMapping);
 
-        ret.put(tensorflowName(),attrs);
+        ret.put(tensorflowName(), attrs);
         return ret;
     }
-
-
 
 
     @Override
@@ -89,7 +87,7 @@ public class DepthToSpace extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"DepthToSpace"};
+        return new String[]{"DepthToSpace"};
     }
 
     @Override

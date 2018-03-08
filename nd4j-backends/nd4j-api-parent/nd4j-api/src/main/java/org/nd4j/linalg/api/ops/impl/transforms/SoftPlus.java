@@ -5,7 +5,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,7 +28,8 @@ public class SoftPlus extends BaseTransformOp {
         super(x, z);
     }
 
-    public SoftPlus() {}
+    public SoftPlus() {
+    }
 
     public SoftPlus(INDArray x, INDArray z, long n) {
         super(x, z, n);
@@ -66,8 +67,7 @@ public class SoftPlus extends BaseTransformOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //dL/dIn = dL/Out * dOut/dIn
         SDVariable ret = f().sigmoid(arg()).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

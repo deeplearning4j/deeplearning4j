@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,8 +45,8 @@ public class Sum extends BaseAccumulation {
     }
 
 
-
-    public Sum() {}
+    public Sum() {
+    }
 
     public Sum(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -88,13 +88,13 @@ public class Sum extends BaseAccumulation {
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
         SDVariable broadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
         SDVariable ret = sameDiff.onesLike(arg()).mul(broadcastable);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 
     @Override
     public String onnxName() {
-       return "Sum";
+        return "Sum";
     }
 
     @Override

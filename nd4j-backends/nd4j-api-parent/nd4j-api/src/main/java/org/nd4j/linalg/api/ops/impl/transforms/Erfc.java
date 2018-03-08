@@ -25,14 +25,14 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Complementary Gaussian error function (erfc), defined as
- *
+ * <p>
  * erfc(x) = 1 - erf(x)
- *
+ * <p>
  * where erf denotes regular Gaussian error.
  *
  * @author raver119@gmail.com
@@ -97,7 +97,7 @@ public class Erfc extends BaseTransformOp {
         SDVariable gradient = i_v.get(0);
         SDVariable constant = sameDiff.onesLike(gradient).mul(-2).div(Math.sqrt(Math.PI));
         SDVariable ret = constant.mul(sameDiff.exp(gradient.mul(gradient).mul(-1)));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

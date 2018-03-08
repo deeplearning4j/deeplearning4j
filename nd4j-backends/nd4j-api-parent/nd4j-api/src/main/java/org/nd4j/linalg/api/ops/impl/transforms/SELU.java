@@ -24,12 +24,12 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * SELU activation function
- *
+ * <p>
  * https://arxiv.org/pdf/1706.02515.pdf
  *
  * @author raver119@gmail.com
@@ -51,7 +51,8 @@ public class SELU extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SELU() {}
+    public SELU() {
+    }
 
     public SELU(INDArray x, INDArray z) {
         super(x, z);
@@ -89,7 +90,7 @@ public class SELU extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().seluDerivative(arg()).mul(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +43,8 @@ public class Norm1 extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Norm1() {}
+    public Norm1() {
+    }
 
     public Norm1(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -96,7 +97,7 @@ public class Norm1 extends BaseAccumulation {
         //Note that we need to expand the dimensions of the gradient - auto-broadcast won't work for all cases.
         int origRank = Shape.rankFromShape(arg().getShape());   //TODO shape may not always be defined?
         SDVariable bcGrad = sameDiff.f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
-        return Collections.singletonList(signum.mul(bcGrad));
+        return Arrays.asList(signum.mul(bcGrad));
     }
 
     @Override

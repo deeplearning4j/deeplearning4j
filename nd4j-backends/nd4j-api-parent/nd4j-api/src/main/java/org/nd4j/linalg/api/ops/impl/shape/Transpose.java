@@ -45,11 +45,12 @@ public class Transpose extends DynamicCustomOp {
     protected int[] permuteDims;
 
     public Transpose(SameDiff sameDiff, SDVariable i_v) {
-        super(null,sameDiff,new SDVariable[]{i_v});
+        super(null, sameDiff, new SDVariable[]{i_v});
 
     }
 
-    public Transpose() {}
+    public Transpose() {
+    }
 
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
@@ -59,7 +60,7 @@ public class Transpose extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new LinkedHashMap<>();
-        Map<String,PropertyMapping> map = new LinkedHashMap<>();
+        Map<String, PropertyMapping> map = new LinkedHashMap<>();
 
         val mapping = PropertyMapping.builder()
                 .onnxAttrName("perm")
@@ -68,16 +69,16 @@ public class Transpose extends DynamicCustomOp {
                 .build();
 
 
-        map.put("permuteDims",mapping);
-        ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
+        map.put("permuteDims", mapping);
+        ret.put(tensorflowName(), map);
+        ret.put(onnxName(), map);
         return ret;
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("permuteDims",permuteDims);
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("permuteDims", permuteDims);
         return ret;
     }
 
@@ -102,44 +103,44 @@ public class Transpose extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
         //permute dimensions re not specified as second input
-        if(nodeDef.getInputCount() < 2)
+        if (nodeDef.getInputCount() < 2)
             return;
         NodeDef permuteDimsNode = null;
-        for(int i = 0; i < graph.getNodeCount(); i++) {
-            if(graph.getNode(i).getName().equals(nodeDef.getInput(1))) {
+        for (int i = 0; i < graph.getNodeCount(); i++) {
+            if (graph.getNode(i).getName().equals(nodeDef.getInput(1))) {
                 permuteDimsNode = graph.getNode(i);
             }
 
         }
 
-        val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value",permuteDimsNode,graph);
-        if(permuteArrayOp != null) {
+        val permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value", permuteDimsNode, graph);
+        if (permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
-            for(int i = 0; i < permuteDims.length; i++) {
+            for (int i = 0; i < permuteDims.length; i++) {
                 addIArgument(permuteDims[i]);
             }
         }
 
         //handle once properly mapped
-        if(arg().getShape() == null) {
+        if (arg().getShape() == null) {
             return;
         }
 
 
         INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
-        if(arr == null) {
-            val  arrVar = sameDiff.getVariable(arg().getVarName());
+        if (arr == null) {
+            val arrVar = sameDiff.getVariable(arg().getVarName());
             arr = arrVar.getWeightInitScheme().create(arrVar.getShape());
-            sameDiff.putArrayForVarName(arg().getVarName(),arr);
+            sameDiff.putArrayForVarName(arg().getVarName(), arr);
         }
 
         addInputArgument(arr);
 
-        if(arr != null && permuteDims == null) {
-            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arr.rank()));
+        if (arr != null && permuteDims == null) {
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));
         }
 
-        if(permuteDims != null && permuteDims.length < arg().getShape().length)
+        if (permuteDims != null && permuteDims.length < arg().getShape().length)
             throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
 
 
@@ -147,22 +148,20 @@ public class Transpose extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        if(!attributesForNode.containsKey("perm")) {
+        if (!attributesForNode.containsKey("perm")) {
 
-        }
-        else
+        } else
             this.permuteDims = Ints.toArray(attributesForNode.get("perm").getIntsList());
     }
 
     @Override
     public List<int[]> calculateOutputShape() {
-        if(permuteDims == null && arg() != null && arg().getShape() != null) {
-            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0,arg().getShape().length));
-            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
+        if (permuteDims == null && arg() != null && arg().getShape() != null) {
+            this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
+            val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(permutedShape);
-        }
-        else if(permuteDims != null) {
-            val permutedShape = ArrayUtil.permute(arg().getShape(),permuteDims);
+        } else if (permuteDims != null) {
+            val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(permutedShape);
         }
 
@@ -170,12 +169,10 @@ public class Transpose extends DynamicCustomOp {
     }
 
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = sameDiff.transpose(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

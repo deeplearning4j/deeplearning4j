@@ -9,7 +9,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -26,7 +26,7 @@ public class Diag extends DynamicCustomOp {
     public Diag() {
     }
 
-    public Diag( INDArray[] inputs, INDArray[] outputs) {
+    public Diag(INDArray[] inputs, INDArray[] outputs) {
         super(null, inputs, outputs);
     }
 
@@ -39,7 +39,7 @@ public class Diag extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable grad = i_v.get(0);
         SDVariable ret = sameDiff.diagPart(grad);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 

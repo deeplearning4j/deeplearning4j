@@ -25,16 +25,16 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Gaussian error function (erf) function, which is defined as
- *
+ * <p>
  * erf(x) = 1 / sqrt(pi) * integral_(-x, x) exp(-t^2) dt
  *
  * @author raver119@gmail.com
-  */
+ */
 public class Erf extends BaseTransformOp {
     public Erf(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
@@ -48,7 +48,8 @@ public class Erf extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Erf() {}
+    public Erf() {
+    }
 
     public Erf(INDArray x, INDArray z) {
         super(x, z);
@@ -78,7 +79,7 @@ public class Erf extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -92,7 +93,7 @@ public class Erf extends BaseTransformOp {
         SDVariable gradient = i_v.get(0);
         SDVariable constant = sameDiff.onesLike(gradient).mul(2).div(Math.sqrt(Math.PI));
         SDVariable ret = constant.mul(sameDiff.exp(gradient.mul(gradient).mul(-1)));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

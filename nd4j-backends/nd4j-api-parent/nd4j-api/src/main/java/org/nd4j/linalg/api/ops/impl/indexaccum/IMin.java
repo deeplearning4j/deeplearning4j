@@ -26,11 +26,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseIndexAccumulation;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Calculate the index of min value over a vector
+ *
  * @author Alex Black
  */
 public class IMin extends BaseIndexAccumulation {
@@ -42,7 +43,8 @@ public class IMin extends BaseIndexAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public IMin() {}
+    public IMin() {
+    }
 
     public IMin(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -103,6 +105,7 @@ public class IMin extends BaseIndexAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
-        return Collections.singletonList(f().zerosLike(arg()));
+
+        return Arrays.asList(f().zerosLike(arg()));
     }
 }

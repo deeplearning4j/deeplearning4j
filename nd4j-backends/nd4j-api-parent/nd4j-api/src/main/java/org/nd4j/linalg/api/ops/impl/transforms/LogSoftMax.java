@@ -19,7 +19,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,11 +26,12 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * Log(softmax(X))
+ *
  * @author Alex Black
  */
 
@@ -48,21 +48,22 @@ public class LogSoftMax extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public LogSoftMax() {}
+    public LogSoftMax() {
+    }
 
     public LogSoftMax(INDArray x, INDArray z) {
-        this(x,null,z);
+        this(x, null, z);
     }
 
     public LogSoftMax(INDArray x, INDArray z, long n) {
-        this(x,null,z,n);
+        this(x, null, z, n);
     }
 
     public LogSoftMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         //ensure the result is the same
         //do a reference check here because it's cheaper
-        if(x != z)
+        if (x != z)
             z.assign(x);
     }
 
@@ -111,16 +112,14 @@ public class LogSoftMax extends BaseTransformOp {
         if (dimensions[0] != 1)
             throw new IllegalArgumentException("Only supports row wise calculations");
 
-        Nd4j.getExecutioner().exec(new OldSoftMax(x,z));
+        Nd4j.getExecutioner().exec(new OldSoftMax(x, z));
         Transforms.log(z, false);
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().logSoftmaxDerivative(arg(),i_v.get(0));
-
-        return Collections.singletonList(ret);
+        SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0));
+        return Arrays.asList(ret);
     }
 }

@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -52,7 +52,8 @@ public class ScalarSetValue extends BaseScalarOp {
         super(sameDiff, i_v, scalar, extraArgs);
     }
 
-    public ScalarSetValue() {}
+    public ScalarSetValue() {
+    }
 
     public ScalarSetValue(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -75,19 +76,18 @@ public class ScalarSetValue extends BaseScalarOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
     }
-
-
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 }

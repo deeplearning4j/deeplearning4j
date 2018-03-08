@@ -23,27 +23,24 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * N-dimensional batch to space operation. Transforms data from a tensor from batch dimension into M spatial dimensions
  * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally cropped,
  * as specified in "crops", a tensor of dim (M, 2), denoting the crop range.
- *
+ * <p>
  * Example:
- *      input:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- *      input shape:  [4, 1, 1, 1]
- *      blocks:       [2, 2]
- *      crops:        [[0, 0], [0, 0]]
- *
- *      output:       [[[[1], [2]], [[3], [4]]]]
- *      output shape: [1, 2, 2, 1]
+ * input:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
+ * input shape:  [4, 1, 1, 1]
+ * blocks:       [2, 2]
+ * crops:        [[0, 0], [0, 0]]
+ * <p>
+ * output:       [[[[1], [2]], [[3], [4]]]]
+ * output shape: [1, 2, 2, 1]
  *
  * @author Max Pumperla
  */
@@ -52,15 +49,16 @@ public class BatchToSpace extends DynamicCustomOp {
     private int[] blocks;
     private int[][] crops;
 
-    public BatchToSpace() {}
+    public BatchToSpace() {
+    }
 
     public BatchToSpace(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] crops, boolean inPlace) {
-        super(null,sameDiff, args, inPlace);
+        super(null, sameDiff, args, inPlace);
 
         this.blocks = blocks;
         this.crops = crops;
 
-        for (val b: blocks)
+        for (val b : blocks)
             addIArgument(b);
 
         for (int e = 0; e < crops.length; e++)
@@ -74,7 +72,9 @@ public class BatchToSpace extends DynamicCustomOp {
     }
 
     @Override
-    public String onnxName() { return "batch_to_space"; }
+    public String onnxName() {
+        return "batch_to_space";
+    }
 
     @Override
     public String tensorflowName() {
@@ -85,8 +85,7 @@ public class BatchToSpace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of batch to space is space to batch with same blocks and padding as crops
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Collections.singletonList(sameDiff.spaceToBatch(gradient, blocks, crops));
-
+        return Arrays.asList(sameDiff.spaceToBatch(gradient, blocks, crops));
     }
 
 }

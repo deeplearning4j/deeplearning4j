@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,7 +44,8 @@ public class ATanh extends BaseTransformOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ATanh() {}
+    public ATanh() {
+    }
 
     public ATanh(INDArray x, INDArray z) {
         super(x, z);
@@ -78,7 +79,7 @@ public class ATanh extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -93,8 +94,7 @@ public class ATanh extends BaseTransformOp {
 
         SDVariable oneMinusX2 = sameDiff.square(arg()).rsub(1.0);
         SDVariable ret = oneMinusX2.rdiv(1.0).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

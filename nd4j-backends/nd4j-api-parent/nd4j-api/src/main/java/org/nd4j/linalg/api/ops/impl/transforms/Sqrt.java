@@ -19,13 +19,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -46,7 +45,8 @@ public class Sqrt extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Sqrt() {}
+    public Sqrt() {
+    }
 
     public Sqrt(INDArray x, INDArray z) {
         super(x, z);
@@ -85,12 +85,11 @@ public class Sqrt extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable out = arg();
         SDVariable g = sameDiff.pow(out, -0.5).mul(0.5).mul(i_v.get(0));
-        return Collections.singletonList(g);
+        return Arrays.asList(g);
     }
 
 }

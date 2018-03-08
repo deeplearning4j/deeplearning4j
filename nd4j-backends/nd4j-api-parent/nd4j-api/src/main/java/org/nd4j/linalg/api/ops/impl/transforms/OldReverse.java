@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -89,6 +89,6 @@ public class OldReverse extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable ret = f().reverse(f1.get(0), dimensions);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

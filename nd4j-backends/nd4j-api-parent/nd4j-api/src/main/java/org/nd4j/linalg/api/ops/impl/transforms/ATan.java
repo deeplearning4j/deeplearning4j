@@ -19,14 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,7 +46,8 @@ public class ATan extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ATan() {}
+    public ATan() {
+    }
 
     public ATan(INDArray x, INDArray z) {
         super(x, z);
@@ -78,7 +78,7 @@ public class ATan extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -92,7 +92,6 @@ public class ATan extends BaseTransformOp {
         //d(atan(x))/dx = 1/(x^2+1)
         SDVariable xSqPlus1 = f().square(arg()).add(1.0);
         SDVariable ret = xSqPlus1.rdiv(1.0).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

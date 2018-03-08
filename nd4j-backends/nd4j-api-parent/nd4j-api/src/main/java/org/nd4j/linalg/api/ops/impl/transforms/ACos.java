@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -46,7 +46,8 @@ public class ACos extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ACos() {}
+    public ACos() {
+    }
 
     public ACos(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -76,7 +77,7 @@ public class ACos extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -85,14 +86,12 @@ public class ACos extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //dacos(x)/dx = -1 / sqrt(1-x^2)
         SDVariable oneSubSq = f().square(arg()).rsub(1.0);
         SDVariable sqrt = f().sqrt(oneSubSq);
         SDVariable ret = sqrt.rdiv(-1.0).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

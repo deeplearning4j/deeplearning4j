@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -44,7 +44,8 @@ public class Norm2 extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Norm2() {}
+    public Norm2() {
+    }
 
     public Norm2(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -88,14 +89,13 @@ public class Norm2 extends BaseAccumulation {
         SDVariable broadcastableNorm2 = f().reductionBroadcastableWithOrigShape(origRank, dimensions, norm2);
         SDVariable broadcastableGradOut = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
         SDVariable ret = arg().div(broadcastableNorm2).mul(broadcastableGradOut);
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 
     @Override
     public String onnxName() {
-      return "Norm";
+        return "Norm";
     }
 
     @Override

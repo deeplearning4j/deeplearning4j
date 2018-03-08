@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -45,7 +45,8 @@ public class LogSigmoid extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public LogSigmoid() {}
+    public LogSigmoid() {
+    }
 
     public LogSigmoid(INDArray x, INDArray z) {
         super(x, z);
@@ -91,8 +92,7 @@ public class LogSigmoid extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 

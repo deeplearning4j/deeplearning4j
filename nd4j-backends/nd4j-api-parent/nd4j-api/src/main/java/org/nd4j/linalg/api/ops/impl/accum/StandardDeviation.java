@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -49,7 +49,8 @@ public class StandardDeviation extends Variance {
         super(x, y, z, n, biasCorrected);
     }
 
-    public StandardDeviation() {}
+    public StandardDeviation() {
+    }
 
     public StandardDeviation(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -87,8 +88,8 @@ public class StandardDeviation extends Variance {
         SDVariable diff = arg().sub(broadcastableMean);
 
         SDVariable dOutdIn = diff.div(broadcastableStdevOut);
-        if(this.biasCorrected){
-            dOutdIn = dOutdIn.div(n-1);
+        if (this.biasCorrected) {
+            dOutdIn = dOutdIn.div(n - 1);
         } else {
             dOutdIn = dOutdIn.div(n);
         }
@@ -97,7 +98,7 @@ public class StandardDeviation extends Variance {
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
 
         SDVariable dLdIn = dOutdIn.mul(broadcastableGrad);
-        return Collections.singletonList(dLdIn);
+        return Arrays.asList(dLdIn);
     }
 
 }

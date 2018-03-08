@@ -19,14 +19,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,7 +46,8 @@ public class ASin extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ASin() {}
+    public ASin() {
+    }
 
     public ASin(INDArray x, INDArray z) {
         super(x, z);
@@ -77,7 +77,7 @@ public class ASin extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -91,8 +91,7 @@ public class ASin extends BaseTransformOp {
         //d(asin(x))/dx = 1/sqrt(1-x^2)
         SDVariable oneSubSq = sameDiff.square(arg()).rsub(1.0);
         SDVariable ret = sameDiff.sqrt(oneSubSq).rdiv(1.0).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 

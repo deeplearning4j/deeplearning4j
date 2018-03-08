@@ -68,14 +68,12 @@ public class Repeat extends DynamicCustomOp {
     }
 
 
-
     @Override
     public Map<String, Object> propertiesForFunction() {
-        Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("axis",axis);
+        Map<String, Object> ret = new LinkedHashMap<>();
+        ret.put("axis", axis);
         return ret;
     }
-
 
 
     @Override
@@ -86,8 +84,8 @@ public class Repeat extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
 
         val axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
@@ -95,10 +93,10 @@ public class Repeat extends DynamicCustomOp {
                 .propertyNames(new String[]{"axis"})
                 .build();
 
-        map.put("axis",axisMapping);
+        map.put("axis", axisMapping);
 
-        ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
+        ret.put(tensorflowName(), map);
+        ret.put(onnxName(), map);
 
         return ret;
     }
@@ -106,7 +104,7 @@ public class Repeat extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         addIArgument(axis);
     }
 
@@ -117,8 +115,8 @@ public class Repeat extends DynamicCustomOp {
 
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if(numOutputArguments() < getDescriptor().getNumOutputs()) {
-            for(val output : outputVariables()) {
+        if (numOutputArguments() < getDescriptor().getNumOutputs()) {
+            for (val output : outputVariables()) {
                 addOutputArgument(output.getArr());
             }
         }
@@ -135,11 +133,10 @@ public class Repeat extends DynamicCustomOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = outputVariables()[0];
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

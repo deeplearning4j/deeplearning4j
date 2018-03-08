@@ -24,7 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,7 +33,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ScalarGreaterThan extends BaseScalarOp {
-    public ScalarGreaterThan() {}
+    public ScalarGreaterThan() {
+    }
 
     public ScalarGreaterThan(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);
@@ -60,7 +61,6 @@ public class ScalarGreaterThan extends BaseScalarOp {
     }
 
 
-
     @Override
     public int opNum() {
         return 8;
@@ -72,11 +72,11 @@ public class ScalarGreaterThan extends BaseScalarOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places
-        return Collections.singletonList(sameDiff.zerosLike(arg()));
+
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 
 

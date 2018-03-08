@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -47,7 +47,8 @@ public class Cosh extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public Cosh() {}
+    public Cosh() {
+    }
 
     public Cosh(INDArray x, INDArray z) {
         super(x, z);
@@ -77,7 +78,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -89,8 +90,7 @@ public class Cosh extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().sinh(arg()).mul(i_v.get(0));
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

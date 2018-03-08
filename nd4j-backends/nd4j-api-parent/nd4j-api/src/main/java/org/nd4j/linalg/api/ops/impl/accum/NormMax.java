@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +43,8 @@ public class NormMax extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public NormMax() {}
+    public NormMax() {
+    }
 
     public NormMax(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
@@ -93,8 +94,7 @@ public class NormMax extends BaseAccumulation {
         SDVariable dNormmaxDx = eq.mul(dAbsXdX);
         SDVariable broadcastableGrad = f().reductionBroadcastableWithOrigShape(origRank, dimensions, i_v1.get(0));
         SDVariable ret = dNormmaxDx.mul(broadcastableGrad);
-
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
     @Override
@@ -104,7 +104,7 @@ public class NormMax extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-       return "norm";
+        return "norm";
     }
 
     @Override

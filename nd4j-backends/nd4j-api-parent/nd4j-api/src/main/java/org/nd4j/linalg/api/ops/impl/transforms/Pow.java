@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,24 +35,25 @@ import java.util.List;
 public class Pow extends BaseTransformOp {
     private double pow;
 
-    public Pow() {}
+    public Pow() {
+    }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double pow) {
         super(sameDiff, i_v, inPlace);
         this.pow = pow;
-        this.extraArgs = new Object[] {pow};
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, shape, inPlace, extraArgs);
         this.pow = pow;
-        this.extraArgs = new Object[] {pow};
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, extraArgs);
         this.pow = pow;
-        this.extraArgs = new Object[] {pow};
+        this.extraArgs = new Object[]{pow};
     }
 
     public Pow(INDArray x, INDArray z, double pow) {
@@ -96,7 +96,7 @@ public class Pow extends BaseTransformOp {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {pow};
+        this.extraArgs = new Object[]{pow};
     }
 
 
@@ -113,8 +113,7 @@ public class Pow extends BaseTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable g = f().powDerivative(arg(), this.pow).mul(i_v1.get(0));
-
-        return Collections.singletonList(g);
+        return Arrays.asList(g);
     }
 
 }

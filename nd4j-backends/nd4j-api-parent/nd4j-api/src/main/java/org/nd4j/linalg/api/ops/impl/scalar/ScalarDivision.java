@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,7 +33,8 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class ScalarDivision extends BaseScalarOp {
-    public ScalarDivision() {}
+    public ScalarDivision() {
+    }
 
     public ScalarDivision(INDArray x, INDArray y, INDArray z, long n, Number num) {
         super(x, y, z, n, num);
@@ -43,7 +43,6 @@ public class ScalarDivision extends BaseScalarOp {
     public ScalarDivision(INDArray x, Number num) {
         super(x, num);
     }
-
 
 
     public ScalarDivision(SameDiff sameDiff, SDVariable i_v, Number scalar) {
@@ -85,6 +84,6 @@ public class ScalarDivision extends BaseScalarOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable ret = i_v1.get(0).div(scalarValue.doubleValue());
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }

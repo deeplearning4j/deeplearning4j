@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,7 +50,8 @@ public class ELU extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public ELU() {}
+    public ELU() {
+    }
 
     public ELU(INDArray x, INDArray z) {
         super(x, z);
@@ -84,7 +85,7 @@ public class ELU extends BaseTransformOp {
 
     @Override
     public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
     }
 
     @Override
@@ -97,7 +98,7 @@ public class ELU extends BaseTransformOp {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
         SDVariable ret = f().eluDerivative(arg()).mul(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

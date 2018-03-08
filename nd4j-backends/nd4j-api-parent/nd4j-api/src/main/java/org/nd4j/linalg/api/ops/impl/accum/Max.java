@@ -25,8 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.shape.Shape;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -43,7 +42,8 @@ public class Max extends BaseAccumulation {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-    public Max() {}
+    public Max() {
+    }
 
     public Max(INDArray x, INDArray y, long n) {
         super(x, y, n);
@@ -111,7 +111,7 @@ public class Max extends BaseAccumulation {
 
         SDVariable eq = sameDiff.eq(arg(), expandedOut);
         SDVariable ret = eq.mul(expandedGrad);
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
     @Override

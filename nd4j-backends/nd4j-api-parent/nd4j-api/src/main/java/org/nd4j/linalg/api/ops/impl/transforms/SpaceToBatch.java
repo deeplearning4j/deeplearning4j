@@ -23,11 +23,9 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -61,7 +59,7 @@ public class SpaceToBatch extends DynamicCustomOp {
         this.blocks = blocks;
         this.padding = padding;
 
-        for (val b: blocks)
+        for (val b : blocks)
             addIArgument(b);
 
         for (int e = 0; e < padding.length; e++)
@@ -87,7 +85,7 @@ public class SpaceToBatch extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of space to batch is batch to space with same blocks and crops as padding
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Collections.singletonList(sameDiff.batchToSpace(gradient, blocks, padding));
+        return Arrays.asList(sameDiff.batchToSpace(gradient, blocks, padding));
     }
 
 }

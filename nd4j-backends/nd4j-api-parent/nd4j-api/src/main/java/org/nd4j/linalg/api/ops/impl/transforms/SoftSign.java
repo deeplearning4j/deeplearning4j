@@ -24,15 +24,15 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- *
  * Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
  * Similar in shape to tanh but may outperform it due to
  * 'gentler' nonlinearity (smoother asymptotes).<br>
  * See for example: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
+ *
  * @author Alex Black
  */
 public class SoftSign extends BaseTransformOp {
@@ -48,7 +48,8 @@ public class SoftSign extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public SoftSign() {}
+    public SoftSign() {
+    }
 
     public SoftSign(INDArray x, INDArray z) {
         super(x, z);
@@ -87,12 +88,10 @@ public class SoftSign extends BaseTransformOp {
     }
 
 
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().softsignDerivative(arg()).mul(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 
 }

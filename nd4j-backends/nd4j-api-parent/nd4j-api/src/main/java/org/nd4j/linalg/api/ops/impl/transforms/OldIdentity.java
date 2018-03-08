@@ -25,7 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,7 +47,8 @@ public class OldIdentity extends BaseTransformOp {
         super(sameDiff, i_v, extraArgs);
     }
 
-    public OldIdentity() {}
+    public OldIdentity() {
+    }
 
     public OldIdentity(INDArray x, INDArray z) {
         super(x, z);
@@ -88,7 +89,8 @@ public class OldIdentity extends BaseTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(sameDiff.one("grad-" + UUID.randomUUID().toString(),i_v.get(0).getShape()));
+
+        return Arrays.asList(sameDiff.one("grad-" + UUID.randomUUID().toString(), i_v.get(0).getShape()));
     }
 
 }

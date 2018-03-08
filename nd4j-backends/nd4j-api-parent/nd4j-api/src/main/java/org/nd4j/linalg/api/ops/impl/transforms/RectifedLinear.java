@@ -24,11 +24,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- *
  * Rectified linear units
  *
  * @author Adam Gibson
@@ -39,24 +38,24 @@ public class RectifedLinear extends BaseTransformOp {
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace, double cutoff) {
         super(sameDiff, i_v1, i_v2, inPlace);
         this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
+        this.extraArgs = new Object[]{cutoff};
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, Object[] extraArgs, double cutoff) {
         super(sameDiff, i_v1, i_v2, extraArgs);
         this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
+        this.extraArgs = new Object[]{cutoff};
     }
 
     public RectifedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, inPlace);
         this.cutoff = cutoff;
-        this.extraArgs = new Object[] {cutoff};
+        this.extraArgs = new Object[]{cutoff};
 
     }
 
     public RectifedLinear() {
-        this.extraArgs = new Object[] {cutoff};
+        this.extraArgs = new Object[]{cutoff};
     }
 
     public RectifedLinear(INDArray x, INDArray z, double cutoff) {
@@ -122,17 +121,18 @@ public class RectifedLinear extends BaseTransformOp {
     public String tensorflowName() {
         return "Relu";
     }
+
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {cutoff};
+        this.extraArgs = new Object[]{cutoff};
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable step = new Step(sameDiff,arg(),false,cutoff).outputVariables()[0];
+        SDVariable step = new Step(sameDiff, arg(), false, cutoff).outputVariables()[0];
         SDVariable ret = step.mul(i_v.get(0));
-        return Collections.singletonList(ret);
+        return Arrays.asList(ret);
     }
 }
