@@ -38,9 +38,10 @@ namespace nd4j {
          * 5: padding width
          * 6: dilation height
          * 7: dilation width
-         * 8: same mode: 0 false, 1 true
+         * 8: valid mode:  0 false, 1 true
+         * 9: data format: 0 NHWC,  1 NCHW    
          */
-        DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 3);
+        DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(conv2d_bp, 3, 2, false, 0, 9);
 
         /**

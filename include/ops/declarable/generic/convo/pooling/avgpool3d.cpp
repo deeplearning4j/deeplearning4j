@@ -25,14 +25,14 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     int pD = INT_ARG(6);                                                        // paddings depth
     int pH = INT_ARG(7);                                                        // paddings height
     int pW = INT_ARG(8);                                                        // paddings width
-    int paddingMode = INT_ARG(9);                                               // 0-SAME,  1-VALID
-    int dataFormat  = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;     // 0-NDHWC, 1-NCDHW    
+    int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 1-NDHWC, 0-NCDHW    
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3D OP: rank of input array must be equal to 5 !");    
 
     int idxID, idxIC;
-    if(dataFormat) { idxID = 2; idxIC = 1;}
-    else           { idxID = 1; idxIC = 4;}
+    if(isNCHW) { idxID = 2; idxIC = 1;}
+    else       { idxID = 1; idxIC = 4;}
 
     int bS = input->sizeAt(0);                  // batch size
     int iC = input->sizeAt(idxIC);              // input channels        
@@ -46,23 +46,23 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM AVGPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
     REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM AVGPOOL3D OP: pad must not be greater than half of kernel size!");    
 
-    if(!dataFormat) {
+    if(!isNCHW) {
         input = input ->permute({0, 4, 1, 2, 3});                                                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         output = new NDArray<T>(output->ordering(), {bS, iC, oD, oH, oW}, block.getWorkspace());                                // [bS, iC, oD, oH, oW]
 
         input ->streamline('c');        
     }
 
-    if(!paddingMode)                       // SAME
+    if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
 
     int iStride = iC * iD * iH * iW;
     int oStride = iC * oD * oH * oW;
     
     for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D(input->getBuffer() + i*iStride, output->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, paddingMode);
+        ConvolutionUtils<T>::_avgPool3D(input->getBuffer() + i*iStride, output->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
    
-    if(!dataFormat) {              
+    if(!isNCHW) {              
 
         output->permutei({0, 2, 3, 4, 1});                                 // [bS, iC, oD, oH, oW] -> [bS, oD, oH, oW, iC]
         OUTPUT_VARIABLE(0)->assign(output);
@@ -86,14 +86,14 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     int pD = INT_ARG(6);                                                        // paddings depth
     int pH = INT_ARG(7);                                                        // paddings height
     int pW = INT_ARG(8);                                                        // paddings width
-    int paddingMode = INT_ARG(9);                                               // 0-SAME,  1-VALID;
-    int dataFormat  = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;     // 0-NDHWC, 1-NCDHW
+    int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID;
+    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;        // 1-NDHWC, 0-NCDHW
     
     int* inputShapeInfo = inputShape->at(0);
 
     int idxID, idxIC;    
-    if(dataFormat) { idxID = 2; idxIC = 1;}
-    else           { idxID = 1; idxIC = 4;}
+    if(isNCHW) { idxID = 2; idxIC = 1;}
+    else       { idxID = 1; idxIC = 4;}
 
     int bS = inputShapeInfo[1];                          // batch size
     int iC = inputShapeInfo[idxIC+1];                    // input channels            
@@ -102,12 +102,12 @@ DECLARE_SHAPE_FN(avgpool3dnew) {
     int iW = inputShapeInfo[idxID+3];                    // input width
 
     int oD, oH, oW;                         // output depth, height, width
-    ConvolutionUtils<T>::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, 1, 1, 1, iD, iH, iW, paddingMode);
+    ConvolutionUtils<T>::calcOutSizePool3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, 1, 1, 1, iD, iH, iW, isSameMode);
     
     int* outputShapeInfo = nullptr;
     ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
 
-    if (dataFormat) {
+    if (isNCHW) {
         outputShapeInfo[0] = 5;
         outputShapeInfo[1] = bS;
         outputShapeInfo[2] = iC;
@@ -149,12 +149,12 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
     int pD = INT_ARG(6);                                                        // paddings depth
     int pH = INT_ARG(7);                                                        // paddings height
     int pW = INT_ARG(8);                                                        // paddings width
-    int paddingMode = INT_ARG(9);                                               // 0-SAME,  1-VALID
-    int dataFormat  = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;     // 0-NDHWC, 1-NCDHW    
+    int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID
+    int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 1-NDHWC, 0-NCDHW    
 
     int idxID, idxIC;
-    if(dataFormat) { idxID = 2; idxIC = 1;}
-    else           { idxID = 1; idxIC = 4;}
+    if(isNCHW) { idxID = 2; idxIC = 1;}
+    else       { idxID = 1; idxIC = 4;}
 
     int bS = input->sizeAt(0);                  // batch size
     int iC = input->sizeAt(idxIC);              // input channels        
@@ -168,23 +168,23 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
     REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM AVGPOOL3D_BP OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
     REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM AVGPOOL3D_BP OP: pad must not be greater than half of kernel size!");    
       
-    if(!dataFormat) {
+    if(!isNCHW) {
         gradO = gradO ->permute({0, 4, 1, 2, 3});                                                       // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
         gradI = new NDArray<T>(gradI->ordering(), {bS, iC, iD, iH, iW}, block.getWorkspace());                                  // [bS, iC, iD, iH, iW]
 
         gradO->streamline('c');       
     }
    
-    if(!paddingMode)                       // SAME
+    if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, 1, 1, 1);    
 
     int iStride = iC * iD * iH * iW;
     int oStride = iC * oD * oH * oW;
     
     for(int i = 0; i < bS; ++i)   
-        ConvolutionUtils<T>::_avgPool3D_bp(gradI->getBuffer() + i*iStride, gradO->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, paddingMode);
+        ConvolutionUtils<T>::_avgPool3D_bp(gradI->getBuffer() + i*iStride, gradO->getBuffer() + i*oStride, iC, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, !isSameMode);
 
-    if(!dataFormat) {              
+    if(!isNCHW) {              
 
         gradI->permutei({0, 2, 3, 4, 1});                                 // [bS, iC, iD, iH, iW] -> [bS, iD, iH, iW, iC]
         OUTPUT_VARIABLE(0)->assign(gradI);

@@ -1277,8 +1277,8 @@ TEST_F(DeclarableOpsTests4, meshgrid_test9) {
 TEST_F(DeclarableOpsTests4, conv3d_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 0;             // 0-SAME,  1-VALID;
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
@@ -1309,8 +1309,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test1) {
 TEST_F(DeclarableOpsTests4, conv3d_test2) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 0;             // 0-SAME,  1-VALID;
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
@@ -1340,8 +1340,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test2) {
 TEST_F(DeclarableOpsTests4, conv3d_test3) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
@@ -1368,8 +1368,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test3) {
 TEST_F(DeclarableOpsTests4, conv3d_test4) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat = 1;              // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat =  0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
@@ -1393,8 +1393,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test4) {
 TEST_F(DeclarableOpsTests4, conv3d_test5) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat = 1;              // 0-NDHWC, 1-NCDHW    
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
@@ -1423,8 +1423,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test5) {
 TEST_F(DeclarableOpsTests4, conv3d_test6) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat = 1;              // 0-NDHWC, 1-NCDHW    
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
@@ -1452,8 +1452,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test6) {
 TEST_F(DeclarableOpsTests4, conv3d_test7) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat = 1;              // 0-NDHWC, 1-NCDHW    
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
@@ -1482,8 +1482,8 @@ TEST_F(DeclarableOpsTests4, conv3d_test7) {
 TEST_F(DeclarableOpsTests4, conv3d_test8) {
     
     int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
-    int paddingMode = 1;             // 0-SAME,  1-VALID;
-    int dataFormat = 1;              // 0-NDHWC, 1-NCDHW    
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
 
     NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<float> weights ('c', {oC, iC, kD, kH, kW});    
@@ -1876,8 +1876,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> expected('c', {bS, iC, oD, oH, oW}, {10.5, 11.5, 13.5, 14.5, 22.5, 23.5, 25.5, 26.5, 46.5, 47.5, 49.5, 50.5, 58.5, 59.5, 61.5, 62.5,
@@ -1901,8 +1901,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 0;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, {  25. , 26. , 27. , 28. , 29. , 30. , 29.5, 30.5, 31.5, 29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 34. , 35. , 36. , 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 43. , 44. , 45. , 43. , 44. , 45. , 46. , 47. , 48. , 47.5, 48.5, 49.5,
@@ -1929,8 +1929,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, {  29.5, 30.5, 31.5, 32.5, 33.5, 34.5, 38.5, 39.5, 40.5, 41.5, 42.5, 43.5, 65.5, 66.5, 67.5, 68.5, 69.5, 70.5,
@@ -1954,8 +1954,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
     int oD=4,oH=4,oW=4;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> expected('c', {bS, iC, oD, oH, oW},{0.416667, 1.00, 1.333333, 0.75, 1.00, 2.25, 2.75, 1.50, 1.75, 3.75, 4.25, 2.25, 1.416667, 3.00, 3.333333, 1.75, 2.833333, 6.00, 6.666667, 3.50, 5.00, 10.50, 11.50, 6.00, 6.50, 
@@ -1994,8 +1994,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> gradO   ('c', {bS, iC, oD, oH, oW});
@@ -2028,8 +2028,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
     int oD=4,oH=4,oW=4;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> gradO   ('c', {bS, iC, oD, oH, oW});
@@ -2062,8 +2062,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 0;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> gradO   ('c', {bS, oD, oH, oW, iC});
@@ -2094,8 +2094,8 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> gradO   ('c', {bS, oD, oH, oW, iC});
@@ -2121,67 +2121,14 @@ TEST_F(DeclarableOpsTests4, avgpool3d_bp_test4) {
     delete results;
 }
 
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests4, conv3d_bp_test2) {
-
-    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;    
-    int       oD=3,oH=4,oW=3;
-    int paddingMode = 0;             // 0-SAME,  1-VALID;
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW    
-
-    NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
-    NDArray<double> weights ('c', {kD, kH, kW, iC, oC});
-    NDArray<double> bias    ('c', {oC}, {1,2,3});
-    NDArray<double> gradO   ('c', {bS, oD, oH, oW, oC});
-    
-    NDArray<double> expGradI('c', {bS, iD, iH, iW, iC},{0.226,   0.343,   0.46 ,   0.577,  1.172,   1.46 ,   1.748,   2.036,  1.892,   2.288,   2.684,   3.08 ,  1.284,   1.581,   1.878,   2.175,  4.458,   5.133,   5.808,   6.483,  6.186,   7.023,   7.86 ,   8.697,  3.39 ,   3.93 ,   4.47 ,   5.01 ,  9.642,  10.803,  11.964,  13.125, 11.37 ,  12.693,  14.016,  15.339,
-                                                        5.266,   5.707,   6.148,   6.589, 12.98 ,  13.916,  14.852,  15.788, 14.564,  15.608,  16.652,  17.696,  6.284,   7.166,   8.048,   8.93 , 17.896,  19.768,  21.64 ,  23.512, 21.928,  24.016,  26.104,  28.192, 18.12 ,  19.686,  21.252,  22.818, 45.852,  49.146,  52.44 ,  55.734, 53.196,  56.814,  60.432,  64.05 ,
-                                                       28.164,  30.216,  32.268,  34.32 , 67.884,  72.15 ,  76.416,  80.682, 75.228,  79.818,  84.408,  88.998, 29.324,  30.854,  32.384,  33.914, 67.432,  70.6  ,  73.768,  76.936, 73.192,  76.576,  79.96 ,  83.344, 27.884,  30.062,  32.24 ,  34.418, 66.28 ,  70.744,  75.208,  79.672, 70.312,  74.992,  79.672,  84.352,
-                                                       58.296,  61.806,  65.316,  68.826,133.98 , 141.162, 148.344, 155.526,141.324, 148.83 , 156.336, 163.842, 68.34 ,  72.336,  76.332,  80.328,156.012, 164.166, 172.32 , 180.474,163.356, 171.834, 180.312, 188.79 , 61.292,  64.118,  66.944,  69.77 ,136.552, 142.312, 148.072, 153.832,142.312, 148.288, 154.264, 160.24 ,
-                                                        9.298,  11.359,  13.42 ,  15.481, 27.092,  31.268,  35.444,  39.62 , 27.812,  32.096,  36.38 ,  40.664, 26.556,  29.769,  32.982,  36.195, 66.666,  73.173,  79.68 ,  86.187, 68.394,  75.063,  81.732,  88.401, 28.662,  32.118,  35.574,  39.03 , 71.85 ,  78.843,  85.836,  92.829, 73.578,  80.733,  87.888,  95.043,
-                                                       29.89 ,  32.275,  34.66 ,  37.045, 70.004,  74.828,  79.652,  84.476, 71.588,  76.52 ,  81.452,  86.384, 71.084,  75.854,  80.624,  85.394,163.048, 172.696, 182.344, 191.992,167.08 , 176.944, 186.808, 196.672,138.648, 146.046, 153.444, 160.842,310.236, 325.194, 340.152, 355.11 ,317.58 , 332.862, 348.144, 363.426,
-                                                      148.692, 156.576, 164.46 , 172.344,332.268, 348.198, 364.128, 380.058,339.612, 355.866, 372.12 , 388.374,125.228, 130.646, 136.064, 141.482,274.792, 285.736, 296.68 , 307.624,280.552, 291.712, 302.872, 314.032, 92.684,  98.75 , 104.816, 110.882,211.432, 223.672, 235.912, 248.152,215.464, 227.92 , 240.376, 252.832,
-                                                      178.824, 188.166, 197.508, 206.85 ,398.364, 417.21 , 436.056, 454.902,405.708, 424.878, 444.048, 463.218,188.868, 198.696, 208.524, 218.352,420.396, 440.214, 460.032, 479.85 ,427.74 , 447.882, 468.024, 488.166,157.196, 163.91 , 170.624, 177.338,343.912, 357.448, 370.984, 384.52 ,349.672, 363.424, 377.176, 390.928});
-    
-    NDArray<double> expGradW('c', {kD, kH, kW, iC, oC},{120.96, 122.04, 123.12,120.96, 122.04, 123.12,120.96, 122.04, 123.12,120.96, 122.04, 123.12, 79.56,  80.28,  81.  , 79.56,  80.28,  81.  , 79.56,  80.28,  81.  , 79.56,  80.28,  81.  ,
-                                                        154.8 , 156.24, 157.68,154.8 , 156.24, 157.68,154.8 , 156.24, 157.68,154.8 , 156.24, 157.68,101.76, 102.72, 103.68,101.76, 102.72, 103.68,101.76, 102.72, 103.68,101.76, 102.72, 103.68,
-                                                        111.24, 112.32, 113.4 ,111.24, 112.32, 113.4 ,111.24, 112.32, 113.4 ,111.24, 112.32, 113.4 , 73.08,  73.8 ,  74.52, 73.08,  73.8 ,  74.52, 73.08,  73.8 ,  74.52, 73.08,  73.8 ,  74.52,
-                                                         67.68,  68.4 ,  69.12, 67.68,  68.4 ,  69.12, 67.68,  68.4 ,  69.12, 67.68,  68.4 ,  69.12, 44.4 ,  44.88,  45.36, 44.4 ,  44.88,  45.36, 44.4 ,  44.88,  45.36, 44.4 ,  44.88,  45.36,
-                                                         85.92,  86.88,  87.84, 85.92,  86.88,  87.84, 85.92,  86.88,  87.84, 85.92,  86.88,  87.84, 56.32,  56.96,  57.6 , 56.32,  56.96,  57.6 , 56.32,  56.96,  57.6 , 56.32,  56.96,  57.6 ,
-                                                         61.2 ,  61.92,  62.64, 61.2 ,  61.92,  62.64, 61.2 ,  61.92,  62.64, 61.2 ,  61.92,  62.64, 40.08,  40.56,  41.04, 40.08,  40.56,  41.04, 40.08,  40.56,  41.04, 40.08,  40.56,  41.04});
-    // NDArray<double> expGradB('c', {oC},{});
-
-    input = 2.;
-    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
-    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
-
-    nd4j::ops::conv3dnew_bp<double> op;
-    ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    NDArray<double>* gradI = results->at(0);
-    NDArray<double>* gradW = results->at(1);
-    
-     // for(int i = 0; i<gradI->lengthOf(); ++i)
-     //    std::cout<<std::setw(10)<<(*gradI)(i)<<"   "<<std::setw(10)<<expGradI(i)<<std::endl;
-
-    ASSERT_EQ(Status::OK(), results->status());
-    // ASSERT_TRUE(expGradI.isSameShape(gradI));
-    // ASSERT_TRUE(expGradI.equalsTo(gradI));    
-
-    ASSERT_TRUE(expGradW.isSameShape(gradW));
-    ASSERT_TRUE(expGradW.equalsTo(gradW));    
-    
-    delete results;
-}
-
-
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests4, maxpool3d_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> expected('c', {bS, iC, oD, oH, oW}, {20., 21., 23., 24., 32., 33., 35., 36., 56., 57., 59., 60., 68., 69., 71., 72., 92., 93., 95., 96.,104.,105.,107.,108.,
@@ -2204,8 +2151,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 0;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, { 49.,  50.,  51., 52.,  53.,  54., 52.,  53.,  54., 58.,  59.,  60., 61.,  62.,  63., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72., 67.,  68.,  69., 70.,  71.,  72., 70.,  71.,  72.,
@@ -2232,8 +2179,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> expected('c', {bS, oD, oH, oW, iC}, {58.,  59.,  60., 61.,  62.,  63., 67.,  68.,  69., 70.,  71.,  72., 94.,  95.,  96., 97.,  98.,  99.,103., 104., 105.,106., 107., 108.,
@@ -2256,8 +2203,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
     int oD=4,oH=4,oW=4;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // -SAME,  0-VALID
+    int dataFormat  = 0;             // -NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> expected('c', {bS, iC, oD, oH, oW},{  4.,   5.,   6.,   6.,  7.,   8.,   9.,   9., 10.,  11.,  12.,  12., 10.,  11.,  12.,  12., 16.,  17.,  18.,  18., 19.,  20.,  21.,  21., 22.,  23.,  24.,  24., 22.,  23.,  24.,  24., 28.,  29.,  30.,  30., 31.,  32.,  33.,  33., 34.,  35.,  36.,  36., 34.,  35.,  36.,  36.,
@@ -2287,8 +2234,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test1) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=2,oH=2,oW=2;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> gradO   ('c', {bS, iC, oD, oH, oW});
@@ -2317,8 +2264,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test2) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=1,pH=1,pW=1;
     int oD=4,oH=4,oW=4;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 1;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iC, iD, iH, iW});
     NDArray<double> gradO   ('c', {bS, iC, oD, oH, oW});
@@ -2350,8 +2297,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test3) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 0;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> gradO   ('c', {bS, oD, oH, oW, iC});
@@ -2383,8 +2330,8 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
 
     int bS=2, iD=3,iH=4,iW=3,  iC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0;
     int oD=3,oH=4,oW=3;
-    int paddingMode = 1;             // 0-SAME,  1-VALID
-    int dataFormat  = 0;             // 0-NDHWC, 1-NCDHW
+    int paddingMode = 0;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
     NDArray<double> input   ('c', {bS, iD, iH, iW, iC});
     NDArray<double> gradO   ('c', {bS, oD, oH, oW, iC});
@@ -2409,5 +2356,10 @@ TEST_F(DeclarableOpsTests4, maxpool3d_bp_test4) {
     delete results;
 }
  
+
+
+
+
+
 
 

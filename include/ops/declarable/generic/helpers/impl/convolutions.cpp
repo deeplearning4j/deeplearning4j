@@ -192,16 +192,15 @@ namespace ops  {
             int strideColH = colStrides[6];
             int strideColW = colStrides[7];
 
-            int kD = colShapeOnly[2];
-            int kH = colShapeOnly[3];
-            int kW = colShapeOnly[4];            
-
             int bS   = volShapeOnly[0];
             int volC = volShapeOnly[1];
             int volD = volShapeOnly[2];
             int volH = volShapeOnly[3];
             int volW = volShapeOnly[4];
 
+            int kD   = colShapeOnly[2];
+            int kH   = colShapeOnly[3];
+            int kW   = colShapeOnly[4];            
             int colD = colShapeOnly[5];
             int colH = colShapeOnly[6];
             int colW = colShapeOnly[7];            
@@ -219,8 +218,8 @@ namespace ops  {
                 T val = 0;
                 int w_vol = i % volW + pW;
                 int h_vol = (i / volW) % volH + pH;
-                int d_vol = (i / (volW * volH)) % volD + pD;
-                int c_vol = i / (volW * volH * volD);
+                int d_vol = (i / volW / volH) % volD + pD;
+                int c_vol = i / volW / volH / volD;
 
                 int num_vol   = c_vol / volC;
                 int depth_vol = c_vol % volC;
@@ -899,9 +898,9 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 // calculation of output depth, height and width in conv3d procedure        
         template<typename T>
-        void ConvolutionUtils<T>::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int paddingMode) {
+        void ConvolutionUtils<T>::calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
 
-            if(paddingMode) {                                           // valid
+            if(!isSameMode) {                                           // valid
                 
                 oD = (iD - (kD + (kD - 1) * (dD - 1)) + 2 * pD) / sD + 1;
                 oH = (iH - (kH + (kH - 1) * (dH - 1)) + 2 * pH) / sH + 1;
@@ -1108,9 +1107,102 @@ void ConvolutionUtils<T>::maxPool3dFrameBp(NDArray<T>& input, const int* indices
 }
 
 
-    template class ND4J_EXPORT ConvolutionUtils<float>;
-    template class ND4J_EXPORT ConvolutionUtils<float16>;
-    template class ND4J_EXPORT ConvolutionUtils<double>;
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+void ConvolutionUtils<T>::vol2col2(NDArray<T>& vol, NDArray<T>& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+
+    T* colBuff = col.getBuffer();    
+
+    int *colShape  = shape::shapeOf(col.getShapeInfo());
+    char colOrder  = shape::order(col.getShapeInfo());
+    int *colStride = shape::stride(col.getShapeInfo());
+
+    int *volShape  = shape::shapeOf(vol.getShapeInfo());
+    int *volStride = shape::stride(vol.getShapeInfo());
+
+    int bS   = volShape[0];
+    int volC = volShape[1];
+    int volD = volShape[2];
+    int volH = volShape[3];
+    int volW = volShape[4];
+
+    int strideBS   = volStride[0];
+    int strideVolC = volStride[1];
+    int strideVolD = volStride[2];
+    int strideVolH = volStride[3];
+    int strideVolW = volStride[4];
+
+    int kD   = colShape[2];
+    int kH   = colShape[3];
+    int kW   = colShape[4];            
+    int colD = colShape[5];
+    int colH = colShape[6];
+    int colW = colShape[7];
+
+    int kSize = kD * kW * kH;
+
+    int n = bS * volC * colD * colH * colW;
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+    for (int index = 0; index < n; index++) {
+                
+        int w_col = index % colW;
+        int h_col = (index / colW) % colH;
+        int d_col = (index / colW / colH) % colD;
+    
+        int c_vol = index / colW / colH / colD;
+        int c_col = c_vol * kSize;
+    
+        int depth_vol = c_vol % volC;
+        int num_vol   = c_vol / volC;
+        int d_offset = d_col * sD - pD;
+        int h_offset = h_col * sH - pH;
+        int w_offset = w_col * sW - pW;
+
+        T* data_col_ptr = col.getBuffer();
+        T* data_vol_ptr = vol.getBuffer();
+
+        int i_c = ((c_col * colD + d_col) * colH + h_col) * colW + w_col;
+        data_col_ptr += ((c_col * colD + d_col) * colH + h_col) * colW + w_col;
+        data_vol_ptr += num_vol * strideBS + depth_vol * strideVolC + d_offset * strideVolD + h_offset * strideVolH + w_offset * strideVolW;
+
+        for (int z = 0; z < kD; ++z) {
+            for (int i = 0; i < kH; ++i) {
+                for (int j = 0; j < kW; ++j) {
+                            
+                    int d_vol = d_offset + z * dD;
+                    int h_vol = h_offset + i * dH;
+                    int w_vol = w_offset + j * dW;
+                            
+                    int i_f = 0;
+                    int i_c_temp = i_c;
+                            
+                    for (int dim = 7; dim >= 0; dim--) {
+                        i_f += (i_c_temp % colShape[dim])  * colStride[dim];
+                        i_c_temp = i_c_temp / colShape[dim];
+                    }
+                                
+                    if (d_vol >= 0 && h_vol >= 0 && w_vol >= 0 && d_vol < volD && h_vol < volH && w_vol < volW)
+                        colBuff[i_f] = data_vol_ptr[z * dD * strideVolD + i * dH * strideVolH + j * dW * strideVolW];
+                    else 
+                        colBuff[i_f] = 0;
+
+                     data_col_ptr += colD * colH * colW;
+                     i_c          += colD * colH * colW;
+                }
+            }
+        }
+    }
+}
+        
+
+
+
+
+template class ND4J_EXPORT ConvolutionUtils<float>;
+template class ND4J_EXPORT ConvolutionUtils<float16>;
+template class ND4J_EXPORT ConvolutionUtils<double>;
     
 }
 }

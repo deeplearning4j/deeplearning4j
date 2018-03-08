@@ -75,7 +75,7 @@ TEST_F(DeclarableOpsTests6, Test_Conv3D_NDHWC_11) {
     NDArray<float> exp('c', {4, 1, 7, 10, 4});
 
     nd4j::ops::conv3dnew<float> op;
-    auto result = op.execute({&x, &w}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 0,0});
+    auto result = op.execute({&x, &w}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     ShapeList shapeList({x.shapeInfo(), w.shapeInfo()});

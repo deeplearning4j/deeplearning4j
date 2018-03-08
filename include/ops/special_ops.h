@@ -348,7 +348,8 @@ namespace simdOps {
 	};
 
 	template<typename T>
-	class Im2col {
+	class 
+	Im2col {
 	public:
 		static const bool requiresSpecial = true;
 #ifdef __CUDACC__
