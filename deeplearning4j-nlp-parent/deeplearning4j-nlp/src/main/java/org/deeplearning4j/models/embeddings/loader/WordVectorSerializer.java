@@ -2648,8 +2648,6 @@ public class WordVectorSerializer {
                     vector[i] = readFloat(stream);
                 }
 
-                stream.readByte();
-
                 return Pair.makePair(element, vector);
             } catch (Exception e) {
                 throw new RuntimeException(e);
