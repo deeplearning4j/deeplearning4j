@@ -5,7 +5,7 @@ layout: default
 
 # Deep Learning Tutorials
 
-Welcome to our Tutorials page. If you are just getting started with Deep Learning, and DeepLearning4J these tutorials will help clarify some of the concepts. Image recognition, Text processing and Classification examples are provided here. Some of the examples provide a written introduction along with code, while others over a screencast with voice of the code being written. Enjoy !
+Welcome to our deep-learning tutorials page. If you are just getting started with deep learning and Deeplearning4j, these tutorials will help clarify some of the concepts you will need to build neural networks. Image recognition, text processing and classification examples are provided here. Some of the examples include a written introduction along with code, while others include a screencast with voice over of the code being written. Enjoy!
 
 ## Basic Neural Networks
 
@@ -109,12 +109,23 @@ An overview of loading VGG-16, testing and deploying as a web application
 
 [View YouTube Video](https://www.youtube.com/watch?v=mjD63BWdJTs)
 
-### <a name="beginner">Other Deeplearning4j Tutorials</a>
+## <a name="intro">More Machine Learning Tutorials</a>
 
-* [Introduction to Neural Networks](./neuralnet-overview)
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine)
-* [Eigenvectors, Covariance, PCA and Entropy](./eigenvector)
-* [LSTMs and Recurrent Networks](./lstm)
-* [Neural Networks and Regression](./linear-regression)
-* [Convolutional Networks](./convolutionalnets)
-* [Neural Word Embeddings, Word2vec and Doc2vec](./word2vec)
+For people just getting started with deep learning, the following tutorials and videos provide an easy entrance to the fundamental ideas of deep neural networks:
+
+* [Deep Reinforcement Learning](./deepreinforcementlearning.html)
+* [Deep Convolutional Networks](./convolutionalnets.html)
+* [Recurrent Networks and LSTMs](./lstm.html)
+* [Multilayer Perceptron (MLPs) for Classification](./multilayerperceptron.html)
+* [Generative Adversarial Networks (GANs)](./generative-adversarial-network.html)
+* [Symbolic Reasoning & Deep Learning](./symbolicreasoning.html)
+* [Using Graph Data with Deep Learning](./graphanalytics.html)
+* [AI vs. Machine Learning vs. Deep Learning](./ai-machinelearning-deeplearning.html)
+* [Markov Chain Monte Carlo & Machine Learning](/markovchainmontecarlo.html)
+* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
+* [Eigenvectors, PCA, Covariance and Entropy](./eigenvector.html)
+* [Glossary of Deep-Learning and Neural-Net Terms](./glossary.html)
+* [Word2vec and Natural-Language Processing](./word2vec.html)
+* [Deeplearning4j Examples via Quickstart](./quickstart.html)
+* [Neural Networks Demystified](https://www.youtube.com/watch?v=bxe2T-V8XRs) (A seven-video series)
+* [Inference: Machine Learning Model Server](./modelserver.html)
