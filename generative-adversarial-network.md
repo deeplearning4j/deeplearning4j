@@ -254,7 +254,8 @@ if __name__ == '__main__':
 **Note:** [SKIL enables developers to build GANs](https://docs.skymind.ai/docs/quickstart). While Deeplearning4j's latest release on Maven does not include GANs, it will soon be possible to build and use them via auto-differentiation and model import from Keras and Tensorflow, all of which are currently available in the master repository on Github. 
 
 ![Alt text](./img/GANdancers.png)
-Credit: The New Yorker
+
+*Credit: The New Yorker*
 
 ## Resources for Generative Networks
 
