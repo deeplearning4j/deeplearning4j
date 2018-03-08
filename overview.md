@@ -1,13 +1,13 @@
 # What Is DeepLearning4j?
 
-DeepLearning4J is a java based toolkit for building, training and deploying Neural Networks. 
+Deeplearning4j is a Java-based toolkit for building, training and deploying deep neural networks, the regressions and KNN.
 
-### DeepLearning4j Components
+### Deeplearning4j Components
  
-DeepLearning4J has the following sub-projects. 
+Deeplearning4j has the following sub-projects. 
 
 * **[DataVec](#datavec)** performs data ingestion, normalization and transformation into feature vectors
-* **[DeepLearning4j](#dl4j)** provides tools to configure neural networks and build computation graphs
+* **[Deeplearning4j](#dl4j)** provides tools to configure neural networks and build computation graphs
 * **[DL4J-Examples](#dl4jexamples)** contains working examples for classification and clustering of images, time series and text.
 * **[Keras Model Import](#keras)** helps import trained models from Python and Keras to DeepLearning4J and Java. 
 * **[ND4J](#nd4j)** allows Java to access Native Libraries to quickly process Matrix Data on CPUs or GPUs. 
@@ -19,11 +19,11 @@ DeepLearning4J has the following sub-projects.
 
 ## <a name="datavec">DataVec</a>
 
-Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets. 
+Ingesting, cleaning, joining, scaling, normalizing and transforming data are jobs that must be done in any sort of data analysis. This work may not be exciting, but it's a precondition of deep learning. DataVec is our toolkit for that process. We give data scientists and developers tools to turn raw data such as images, video, audio, text and time series into feature vectors for neural nets. 
 
 ### Github Repo
 
-The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). Here is how the repo breaks down.
+The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). Here is how the repo is organized.
 
 * [datavec-dataframe](https://github.com/deeplearning4j/DataVec/tree/master/datavec-dataframe) : DataVec's built-in equivalent of Pandas Dataframe
 * [datavec-api](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api) : rules for preprocessing data and defining data pipelines.
@@ -34,17 +34,17 @@ The DataVec Github repo is [here](https://github.com/deeplearning4j/datavec). He
 
 ### DataVec Examples
 
-There are DataVec examples in our examples repo on Github [here](https://github.com/deeplearning4j/dl4j-examples).
+There are DataVec examples in our [examples repo on Github](https://github.com/deeplearning4j/dl4j-examples).
 
-A descriptive summary of many of the examples is [here](examples-tour).
+A descriptive summary of many of the examples is [here](./examples-tour).
 
 ### JavaDoc
 
-DataVec JavaDoc is [here](./datavecdoc/). 
+Here is the [DataVec JavaDoc](./datavecdoc/). 
 
 ### DataVec overview
 
-Neural Networks process multi-dimensional arrays of numerical data. Getting your data from a CSV file, or a directory of images serialized into numeric arrays is the job of DataVec. 
+Neural Networks process multi-dimensional arrays of numerical data. Getting your data from a CSV file, or a directory of images, to be serialized into numeric arrays is the job of DataVec. DataVec is an ETL tool specifically built for machine learning pipelines.
 
 ### DataVec: Commonly used classes
 
@@ -64,7 +64,7 @@ Base class for reading and serializing data. RecordReaders ingest your data inpu
 
 * **RecordReader**
 
-Implementations of particular RecordReaders
+Implementations of particular RecordReaders:
 
 * **CSVRecordReader** for CSV data
 * **CSVNLinesSequenceRecordReader** for Sequence Data
@@ -75,11 +75,11 @@ Implementations of particular RecordReaders
 * **LibSvmRecordReader** for Support Vector Machine
 * **VideoRecordReader** for reading Video
 
-For re-organizing, joining, Normalizing and transforming data. 
+For re-organizing, joining, normalizing and transforming data. 
 
 * **Transform**
 
-Specific Transform implementations
+Specific transform implementations
 
 * **CategoricalToIntegerTransform** to convert category names to integers
 * **CategoricalToOneHotTransform** convert catagory name to onehot representation
@@ -94,17 +94,17 @@ The labels for data input may be based on the directory where the image is store
 
 DataNormalization
 
-* **Normalizer**  Although part of  ND4J seems like it should be mentioned here
+* **Normalizer**  
 
 -------------------------
 
 ## <a name="dl4j">DeepLearning4J</a>
 
-DeepLearning4J is where you design your Neural Networks
+Deeplearning4j is where you design your neural networks. It is a domain specific language (DSL) for configuring neural networks.
 
 ### Github Repo
 
-The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeplearning4j). Here's how the repo breaks down.
+The Deeplearning4j Github repo is [here](http://github.com/deeplearning4j/deeplearning4j). Here's how the repo is organized.
 
 * [deeplearning4j-core](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-core) : datasetiterators and everything you need to run dl4j on the desktop. 
 * [deeplearning4j-cuda](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-cuda) : cudnn and anything cuda specific.
@@ -118,15 +118,15 @@ The DeepLearning4J Github repo is [here](http://github.com/deeplearning4j/deeple
 
 ### JavaDoc 
 
-The DeepLearning4J JavaDoc is available [here](http://deeplearning4j.org/doc/).
+Here is the [Deeplearning4j JavaDoc here](http://deeplearning4j.org/doc/).
 
 ### <a name="dl4jexamples">DeepLearning4J Examples</a>
 
-There are DeepLearning4J examples in the Github repository [here](https://github.com/deeplearning4j/dl4j-examples). 
+There are Deeplearning4j examples in the Github repository [here](https://github.com/deeplearning4j/dl4j-examples). 
 
 A descriptive summary of many of the examples is [here](examples-tour).
 
-### DeepLearning4J frequently used classes
+### Deeplearning4j: Frequently used classes
 
 * **MultiLayerConfiguration** Configure a network
 * **MultiLayerConfiguration.Builder** Builder interface to configure a network
@@ -136,13 +136,13 @@ A descriptive summary of many of the examples is [here](examples-tour).
 * **ComputationGraphConfiguration.GraphBuilder** Builder interface for Computation Graph configuration
 * **UiServer** Adds a web based Gui to view training parameter progress and configuration of Network
 
-## <a name="keras">Model Import</a>
+## <a name="keras">Keras Model Import</a>
 
-If you have worked with Keras the Python Library for Deeplearning and would like to import a trained model, or a model configuration into DeepLearning4J see our Model Import feature. 
+If you have worked with the Python Library Keras and would like to import a trained model, or a model configuration, into Deeplearning4j, please see our model import feature. 
 
 ### Github Repo
 
-The Model Import is actually part of DeepLearning4J, but it is worth it's own section. Github folder is [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport).
+The Model Import is actually part of DeepLearning4J, but it is worth its own section. Github folder is [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-modelimport).
 
 ### Model Import Examples
 
@@ -162,26 +162,26 @@ Here's a video showing how to import of a Keras model to DL4J:
 
 ## <a name="nd4j">ND4J</a>
 
-ND4J is the numerical processing library for DeepLearning4J, a tensor library, the JVM's answer to Numpy.  
+ND4J is the numerical computing library that underpins Deeplearning4j. It is a tensor library, the JVM's answer to Numpy.  
 
 ### Github Repo
 
-The ND4J Github repo is [here](http://github.com/deeplearning4j/nd4j). ND4J is a DSL for handling n-dimensional arrays (NDArrays).
+Here is the [ND4J Github repo](http://github.com/deeplearning4j/nd4j). ND4J is a DSL for handling n-dimensional arrays (NDArrays), also known as tensors.
 
 * [nd4j-parameter-server-parent](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-parameter-server-parent) : a robust parameter server for distributed neural net training using Aeron.
 * [nd4j-backends](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends) : hardware specific backends the optimize on GPUs and CPUs.
 
 ### JavaDoc 
 
-The ND4J JavaDoc is available [here](http://nd4j.org/doc/).
+Here is the [ND4J JavaDoc](http://nd4j.org/doc/).
 
 ### ND4J Examples
 
-There are ND4J examples [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples).
+Here are [ND4J examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples).
 
-### ND4J Frequently Used Classes
+### ND4J: Frequently Used Classes
 
-You may not use some of these classes directly, but when you configure a Neural Network. Behind the scenes the configurations you set for OptimizationAlgorithm, Updater, and LossFunction are all done in ND4J.
+You may not use some of these classes directly, but when you configure a neural network. Behind the scenes, the configurations you set for `OptimizationAlgorithm`, `Updater`, and `LossFunction` are all done in ND4J.
 
 * **DataSetPreProcessor** tools for Normalizing an image or numerical data
 * **BaseTransformOp** Activation functions, tanh, sigmoid, relu, Softmax ...
@@ -199,7 +199,7 @@ ScalNet is Keras for Scala. It's a Scala wrapper for Deeplearning4j that can run
 
 ## <a name="rl4j">RL4J</a>
 
-RL4J is a library and environment for for Deep Q learning, A3C and other algorithms implemented in Java and integrated with DL4J and ND4J. 
+RL4J is a library and environment for reinforcement learning on the JVM. It includes Deep Q learning, A3C and other algorithms implemented in Java and integrated with DL4J and ND4J. 
 
 ### Github Repo
 
@@ -209,11 +209,11 @@ RL4J is a library and environment for for Deep Q learning, A3C and other algorit
 
 ## <a name="arbiter">Arbiter</a>
 
-Arbiter helps you search the hyperparameter space to find the best tuning and architecture for a neural net. This is important because finding the right architecture and hyperparamters is a very large combinatorial problem. The winning ImageNet teams at corporate labs like Microsoft are searching through hyperparameters to surface 150-layer networks like ResNet.
+Arbiter helps you search the hyperparameter space to find the best tuning and architecture for a neural net. This is important because finding the right architecture and hyperparamters is a very large combinatorial problem. The winning ImageNet teams at corporate labs like Microsoft are searching through hyperparameters to surface 150-layer networks like ResNet. Arbiter includes grid search, random search, some Bayesian methods, as well as model evaluation tools. 
 
 ### Github Repo
 
-The Github repository is [here](https://github.com/deeplearning4j/Arbiter).
+Here is the [Arbiter Github repository](https://github.com/deeplearning4j/Arbiter).
 
-* [arbiter-core](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-core) : Aribter-core searches the hyperparameter space with algorithms like grid search. Provides a GUI.
+* [arbiter-core](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-core) : Arbiter-core searches the hyperparameter space with algorithms like grid search. Provides a GUI.
 * [arbiter-deeplearning4j](https://github.com/deeplearning4j/Arbiter/tree/master/arbiter-deeplearning4j) : Arbiter can talk to DL4J models. When you do model search, you need to be able to run the model. This pilots the model and finds the best model.
