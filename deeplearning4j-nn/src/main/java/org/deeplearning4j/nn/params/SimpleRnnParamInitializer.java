@@ -86,13 +86,14 @@ public class SimpleRnnParamInitializer implements ParamInitializer {
             m.put(WEIGHT_KEY, w);
 
             WeightInit rwInit;
-            Distribution rwDist;
+            Distribution rwDist = dist;
             if (c.getWeightInitRecurrent() != null) {
                 rwInit = c.getWeightInitRecurrent();
-                rwDist = Distributions.createDistribution(c.getDistRecurrent());
+                if(c.getDistRecurrent() != null) {
+                    rwDist = Distributions.createDistribution(c.getDistRecurrent());
+                }
             } else {
                 rwInit = c.getWeightInit();
-                rwDist = dist;
             }
 
             INDArray rw = WeightInitUtil.initWeights(nOut, nOut, new int[]{nOut, nOut}, rwInit, rwDist, 'f', m.get(RECURRENT_WEIGHT_KEY));
