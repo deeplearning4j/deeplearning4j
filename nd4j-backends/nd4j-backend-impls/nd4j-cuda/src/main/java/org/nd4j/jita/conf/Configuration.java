@@ -607,7 +607,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        this.executionModel = ExecutionModel.SEQUENTIAL;
+        this.executionModel = executionModel;
 
         return this;
     }
