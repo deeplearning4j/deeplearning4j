@@ -1,6 +1,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,8 +35,8 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testSoftmaxStability() {
-        INDArray input = Nd4j.create(new double[] {-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04})
-                        .transpose();
+        INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04})
+                .transpose();
         System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(10, 1);
         System.out.println("Element wise stride of output " + output.elementWiseStride());
@@ -56,7 +57,7 @@ public class LoneTest extends BaseNd4jTest {
         int length3d = rows * cols * dim2;
 
         INDArray first = Nd4j.linspace(1, length, length).reshape('c', rows, cols);
-        INDArray second = Nd4j.create(new int[] {rows, cols}, 'f').assign(first);
+        INDArray second = Nd4j.create(new int[]{rows, cols}, 'f').assign(first);
         INDArray third = Nd4j.linspace(1, length3d, length3d).reshape('c', rows, cols, dim2);
         first.addi(0.1);
         second.addi(0.2);
@@ -73,10 +74,10 @@ public class LoneTest extends BaseNd4jTest {
         second = second.get(NDArrayIndex.interval(3, 7), NDArrayIndex.all());
         third = third.permute(0, 2, 1);
 
-        INDArray cAssertion = Nd4j.create(new double[] {33.10, 35.10, 37.10, 39.10, 41.10, 43.10, 45.10, 47.10, 49.10,
-                        51.10, 53.10, 55.10, 57.10, 59.10, 61.10, 63.10});
-        INDArray fAssertion = Nd4j.create(new double[] {33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10,
-                        45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10});
+        INDArray cAssertion = Nd4j.create(new double[]{33.10, 35.10, 37.10, 39.10, 41.10, 43.10, 45.10, 47.10, 49.10,
+                51.10, 53.10, 55.10, 57.10, 59.10, 61.10, 63.10});
+        INDArray fAssertion = Nd4j.create(new double[]{33.10, 41.10, 49.10, 57.10, 35.10, 43.10, 51.10, 59.10, 37.10,
+                45.10, 53.10, 61.10, 39.10, 47.10, 55.10, 63.10});
         assertEquals(cAssertion, Nd4j.toFlattened('c', first));
         assertEquals(fAssertion, Nd4j.toFlattened('f', first));
     }
@@ -115,8 +116,8 @@ public class LoneTest extends BaseNd4jTest {
         INDArray a = Nd4j.linspace(1, 2, 12).reshape(2, 3, 2);
         INDArray b = Nd4j.linspace(3, 4, 4).reshape(2, 2);
         int[][] axes = new int[2][];
-        axes[0] = new int[] {0, 1};
-        axes[1] = new int[] {0, 2};
+        axes[0] = new int[]{0, 1};
+        axes[1] = new int[]{0, 2};
 
         //this was throwing an exception
         INDArray c = Nd4j.tensorMmul(b, a, axes);
@@ -186,7 +187,7 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_C() throws Exception {
-        int[] shape = new int[] {1, 1000, 150};
+        int[] shape = new int[]{1, 1000, 150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
 
@@ -247,5 +248,29 @@ public class LoneTest extends BaseNd4jTest {
 
         //multiplication of arrays of different rank should throw exception
         INDArray C = A.mul(B);
+    }
+
+    @Test
+    public void checkSlice() {
+        /*
+            Slice works fine for C order arrays and for almost all F order arrays
+
+            However not in the case below for F order arrays
+            Issue is for f order arrays if (rank-1) dim shape == 1 and rank > 2
+            and accessing a slice of the last two dims
+            Gets an index out of bound exception
+         */
+        INDArray someArr = Nd4j.rand('f', new int[]{2, 3, 1});
+        INDArray sameArrC = someArr.dup('c');
+        log.info("\nDirect print of data buffer, F order:" + ArrayUtils.toString(someArr.data().asDouble()));
+        INDArray view = someArr.slice(0);
+        INDArray viewC = sameArrC.slice(0);
+        for (int i = 0; i < view.slices(); i++) {
+            log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(0)); //C order is fine
+            log.info("\nF order slice " + i + ", element 0 :" + view.slice(i).getDouble(0)); //throws index out of bound err on F order
+            assertEquals(view.slice(i),viewC.slice(i));
+        }
+        log.info("\nF order completed succesfully");
+        log.info("\n----------------------------------");
     }
 }
