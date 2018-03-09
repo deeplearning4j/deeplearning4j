@@ -1415,9 +1415,67 @@ TEST_F(ConvolutionTests, conv3d_bp_test3) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, depthwise_conv2d_test1) {
 
- 
+    int bS=2, iH=4,iW=3,  iC=2,mC=2,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oC=iC*mC;
+    int       oH=4,oW=3;    
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
 
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> weights ('c', {kH, kW, iC, mC});
+
+    
+    NDArray<double> expOutput('c', {bS, oH, oW, oC},{12. , 12.8, 13.6, 14.4,12. , 12.8, 13.6, 14.4, 5.2,  5.6,  6. ,  6.4,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2,
+                                                     13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2, 5.6,  6.4,  7.2,  8. , 5.6,  6.4,  7.2,  8. , 2. ,  2.4,  2.8,  3.2,
+                                                     12. , 12.8, 13.6, 14.4,12. , 12.8, 13.6, 14.4, 5.2,  5.6,  6. ,  6.4,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2,
+                                                     13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8, 5.4,  6. ,  6.6,  7.2, 5.6,  6.4,  7.2,  8. , 5.6,  6.4,  7.2,  8. , 2. ,  2.4,  2.8,  3.2});
+    input = 2.;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+
+    nd4j::ops::depthwise_conv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, depthwise_conv2d_test2) {
+
+    int bS=2, iH=4,iW=3,  iC=2,mC=2,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oC=iC*mC;
+    int       oH=2,oW=2;    
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> weights ('c', {kH, kW, iC, mC});
+
+    
+    NDArray<double> expOutput('c', {bS, oH, oW, oC},{13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,
+                                                     13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8,13.2, 14.4, 15.6, 16.8});
+    input = 2.;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+
+    nd4j::ops::depthwise_conv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+    
+    delete results;
+}
 
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H

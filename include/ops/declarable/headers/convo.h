@@ -38,8 +38,8 @@ namespace nd4j {
          * 5: padding width
          * 6: dilation height
          * 7: dilation width
-         * 8: valid mode:  0 false, 1 true
-         * 9: data format: 0 NHWC,  1 NCHW    
+         * 8: same mode:   1 true, 0 false
+         * 9: data format: 1 NHWC, 0 NCHW
          */
         DECLARE_CUSTOM_OP(conv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(conv2d_bp, 3, 2, false, 0, 9);
@@ -240,5 +240,7 @@ namespace nd4j {
          *   9 int with 2x4 vectors and 1 bool value
          */
         DECLARE_CUSTOM_OP(max_pool_with_argmax, 1, 2, false, 0, 9);
+
+        DECLARE_CUSTOM_OP(depthwise_conv2d, 2, 1, false, 0, 9);
     }
 }

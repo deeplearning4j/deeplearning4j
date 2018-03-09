@@ -7,7 +7,6 @@
 
 #include <op_boilerplate.h>
 #include <memory>
-#include <iomanip>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <declarable/generic/helpers/convolutions.h>
@@ -56,7 +55,7 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
     int oH = output->sizeAt(1);          // output height
     int oW = output->sizeAt(2);          // output width    
     
-    REQUIRE_TRUE(weights->sizeAt(0) == iC, weights->sizeAt(1) == kH && weights->sizeAt(2) == kW, 0, "CUSTOM CONV2D OP: wrong shape of weights array !");    
+    REQUIRE_TRUE(weights->sizeAt(0) == iC && weights->sizeAt(1) == kH && weights->sizeAt(2) == kW, 0, "CUSTOM CONV2D OP: wrong shape of weights array !");    
     if (bias) {
         REQUIRE_TRUE(bias->rankOf() <= 2 ,   0, "CUSTOM CONV2D OP: rank of biases array must be equal to 1 or 2!");
         REQUIRE_TRUE(oC == bias->lengthOf(), 0, "CUSTOM CONV2D OP: length of bias array must be equal to outChannels, but got %i instead", bias->lengthOf());        
