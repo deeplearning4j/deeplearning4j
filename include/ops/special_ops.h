@@ -78,6 +78,8 @@ namespace simdOps {
             __shared__ int strideX;
 
             __shared__ int length;
+            __shared__ int kHEff;
+            __shared__ int kWEff;
 
 			if (threadIdx.x == 0) {
 				kH = (int)extraParams[0];
@@ -104,10 +106,16 @@ namespace simdOps {
             	strideX = shape::stride(xShapeBuffer)[3];
 
             	length = shape::length(resultShapeBuffer);
-				
+
 				//Replace kernel H/W with *effective* kernel H/W accounting for dilatyon
-				kH = kH + (kH-1)*(dH-1);
-				kW = kW + (kW-1)*(dW-1);
+				kHEff = kH + (kH-1)*(dH-1);
+				kWEff = kW + (kW-1)*(dW-1);
+/*
+				if (blockIdx.x == 0) {
+					printf("kH: %i; kW: %i; sH: %i; sW: %i; pH: %i; pW: %i; dH: %i; dW: %i; poolingMode: %i; extraParam0: %f;\n", kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, (float) extraParam0);
+					printf("batchSize: %i; inChannels: %i; outH: %i; outW: %i; inH: %i; inW: %i; strideB: %i; strideC: %i; strideY: %i; strideX: %i;\n", batchSize, inChannels, outH, outW, inH, inW, strideB, strideC, strideY, strideX);
+				}
+*/
             }
             __syncthreads();
 
@@ -120,26 +128,29 @@ namespace simdOps {
     			const int n = index / outW / outH / inChannels;
     			int hstart = sH * ph - pH;
     			int wstart = sW * pw - pW;
-    			int hend = hstart + kH;
-    			int wend = wstart + kW;
+    			int hend = hstart + kHEff;
+    			int wend = wstart + kWEff;
+
+//    			const int hSO = hstart;
+//    			const int hEO = hend;
+
     			if(hstart < 0){
-                    int n = (int)nd4j::math::nd4j_ceil<float>(-hstart / ((double)dH));
-                    hstart += n * dH;
+                    int f = (int)nd4j::math::nd4j_ceil<T>((T) -hstart / (T)dH);
+                    hstart += f * dH;
                 }
                 if(wstart < 0){
-                    int n = (int)nd4j::math::nd4j_ceil<float>(-wstart / ((double)dW));
-                    wstart += n * dW;
+                    int f = (int)nd4j::math::nd4j_ceil<T>((T) -wstart / (T) dW);
+                    wstart += f * dW;
                 }
                 if(hend > inH){
-                    int n = (int)nd4j::math::nd4j_ceil<float>((hend-inH)/((double)dH));
-                    hend -= n * dH;
+                    int f = (int)nd4j::math::nd4j_ceil<T>((T) (hend-inH) / (T) dH);
+                    hend -= f * dH;
                 }
                 if(wend > inW){
-                    int n = (int)nd4j::math::nd4j_ceil<float>((wend-inW)/((double)dW));
-                    wend -= n * dW;
+                    int f = (int)nd4j::math::nd4j_ceil<T>((T) (wend-inW) / (T) dW);
+                    wend -= f * dW;
                 }
-    			int pool_size = (int)(nd4j::math::nd4j_ceil<float>((hend-hstart)/((double)dH))
-                                                  * (int)nd4j::math::nd4j_ceil<float>((wend-wstart)/((double)dW)));	//Accounts for dilation
+    			int pool_size = (int)(nd4j::math::nd4j_ceil<T>((T) (hend-hstart) / (T) dH) * (int) nd4j::math::nd4j_ceil<T>((T) (wend-wstart) / (T) dW));	//Accounts for dilation
 
     			T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
 
@@ -177,6 +188,11 @@ namespace simdOps {
     			} else if (poolingMode == 2) {
                     result[index] = nd4j::math::nd4j_pow<T>(sum, (T) 1.0f / extraParam0);
     			}
+/*
+                if (index >= 0 && index < 400000) {
+    			    printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", index, hstart, hend, wstart, wend, ph, pw, hSO, hEO);
+    			}
+*/
             }
 		}
 #endif
@@ -214,7 +230,8 @@ namespace simdOps {
             int *strideIn = shape::stride(xShapeBuffer);
             int *strideOut = shape::stride(resultShapeBuffer);
 
-#pragma omp parallel for collapse(2)
+            int idx = 0;
+//#pragma omp parallel for collapse(2)
 			for(int k = 0; k < inChannels; k++)
 			{
 				for(int p = 0; p < batchSize; p++)
@@ -233,24 +250,26 @@ namespace simdOps {
 							int wstart = xx * sW - pW;
                             int hend = hstart + kHEff;
                             int wend = wstart + kWEff;
+                            const int hSO = hstart;
+                            const int hEO = hend;
 							if(hstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<float>(-hstart / ((double)dH));
+								int n = (int)nd4j::math::nd4j_ceil<T>((T) -hstart / ((T)dH));
 								hstart += n * dH;
 							}
 							if(wstart < 0){
-								int n = (int)nd4j::math::nd4j_ceil<float>(-wstart / ((double)dW));
+								int n = (int)nd4j::math::nd4j_ceil<T>((T) -wstart / ((T)dW));
 								wstart += n * dW;
 							}
                             if(hend > inH){
-                                int n = (int)nd4j::math::nd4j_ceil<float>((hend-inH)/((double)dH));
+                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(hend-inH)/((T)dH));
                                 hend -= n * dH;
                             }
                             if(wend > inW){
-                                int n = (int)nd4j::math::nd4j_ceil<float>((wend-inW)/((double)dW));
+                                int n = (int)nd4j::math::nd4j_ceil<T>((T)(wend-inW)/((T)dW));
                                 wend -= n * dW;
                             }
-                            int pool_size = (int)(nd4j::math::nd4j_ceil<float>((hend-hstart)/((double)dH))
-                                                  * (int)nd4j::math::nd4j_ceil<float>((wend-wstart)/((double)dW)));	//Accounts for dilation
+                            int pool_size = (int)(nd4j::math::nd4j_ceil<T>((T) (hend-hstart)/((T)dH))
+                                                  * (int)nd4j::math::nd4j_ceil<T>((T)(wend-wstart)/((T)dW)));	//Accounts for dilation
 
 							T sum = poolingMode == 0 ? (T) -MAX_FLOAT : (T) 0;
 
@@ -266,10 +285,10 @@ namespace simdOps {
 							long kx, ky;
 
 							if (poolingMode == 0) {
-#pragma omp simd reduction(maxT:sum)
+#pragma omp simd reduction(maxT:sum) collapse(2)
 								for (ky = hstart; ky < hend; ky += dH) {
 									for (kx = wstart; kx < wend; kx += dW)
-										if (ptr_input[ky * strideIn[2] + kx * strideIn[3]] >= sum)
+										if (ptr_input[ky * strideIn[2] + kx * strideIn[3]] > sum)
 											sum = ptr_input[ky * strideIn[2] + kx * strideIn[3]];
 								}
 							} else if (poolingMode == 1) {
@@ -294,10 +313,18 @@ namespace simdOps {
 								res = nd4j::math::nd4j_pow<T>(res, (T) 1.0f / extraParam0);
 
 							*ptr_output++ = res;
+
+/*
+                            nd4j_printf("index: %i; hstart: %i; hend: %i; wstart: %i; wend: %i; ph: %i; pw: %i; hstart_orig: %i; hend_orig: %i;\n", idx, hstart, hend, wstart, wend, yy, xx, hSO, hEO);
+
+                            idx++;
+                            */
 						}
 					}
 				}
 			}
+
+            nd4j_printf("------------------------------------------------------\n","");
 		}
 
 		op_def static T op(T d1, T *params) {

@@ -1630,6 +1630,11 @@ void   NativeOps::execTransformDouble(
             cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(double));
         }
 
+
+        if (opNum == 71) {
+            launchDims.z += 512 * sizeof(double);
+        }
+
 		// this macro builds bunch of IF/ELSE selectors for kernel launch
         DISPATCH_SIMPLE(transformShaped, double, PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo, shape::rank(hostZShapeInfo), maskedAllocPointer, reductionPointer, devTadShapeInfo, devTadOffsets), OPS_A(TRANSFORM_OPS))
 
@@ -3569,7 +3574,7 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     } else {
 		// we're enforcing larger grids for Col2Im & Im2Col
 		// TODO: for high-end gpus we might use higher values here
-        if (opNum == 37 || opNum == 36) {
+        if (opNum == 37 || opNum == 36 || opNum == 71) {
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 512 * sizeof(float);
@@ -3584,6 +3589,10 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             int length = shape::length(hostZShapeInfo);
             cudaMalloc((void **) &maskedAllocPointer, length * launchDims.x * sizeof(float));
         }
+
+		if (opNum == 71) {
+			launchDims.z += 512 * sizeof(float);
+		}
 
 		DISPATCH_SIMPLE(transformShaped, float,
                         PARAMS(dx, xShapeInfo, shape::rank(hostXShapeInfo), extraParams, result, resultShapeInfo,
@@ -3822,7 +3831,7 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 		}
 	} else {
 		// Im2Col & Col2Im enforced grids
-        if (opNum == 37 || opNum == 36) {
+        if (opNum == 37 || opNum == 36 || opNum == 71) {
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 512 * sizeof(float16);
@@ -3836,6 +3845,10 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
         if (opNum == 48) {
             int length = shape::length(hostZShapeInfo);
             cudaMalloc((void **)&maskedAllocPointer, length * launchDims.x * sizeof(float16));
+        }
+
+        if (opNum == 71) {
+            launchDims.z += 512 * sizeof(float);
         }
 
 		// this macro builds bunch of IF/ELSE selectors for kernel launch
