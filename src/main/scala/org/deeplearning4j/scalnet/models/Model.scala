@@ -40,10 +40,6 @@ trait Model {
   protected var layers: List[Node] = List()
   protected var model: MultiLayerNetwork = _
 
-  protected val defaultEpochs = 10
-  protected val defaultOptimizer = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT
-  protected val defaultUpdater = Updater.SGD
-
   def getLayers: List[Node] = layers
 
   /**
@@ -138,6 +134,14 @@ trait Model {
     evaluator.eval(dataset.getLabels, output)
     evaluator
   }
+
+  def evaluate(dataset: DataSet, numClasses: Int): Evaluation = {
+    val evaluator = new Evaluation(numClasses)
+    val output = predict(dataset)
+    evaluator.eval(dataset.getLabels, output)
+    evaluator
+  }
+
 
   override def toString: String = model.getLayerWiseConfigurations.toString
 

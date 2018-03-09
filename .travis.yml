@@ -5,10 +5,6 @@ scala:
 jdk:
   - oraclejdk8
 
-branches:
-  only:
-  - rework-sbt
-
 script:
   - sbt ++$TRAVIS_SCALA_VERSION test
   - find $HOME/.sbt -name "*.lock" | xargs rm
