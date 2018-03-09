@@ -76,8 +76,6 @@ import org.nd4j.linalg.convolution.ConvolutionInstance;
 import org.nd4j.linalg.convolution.DefaultConvolutionInstance;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -401,11 +399,11 @@ public class Nd4j {
     public static INDArray expandDims(INDArray input, int dimension) {
         if (dimension < 0)
             dimension += input.rank();
-        INDArrayIndex[] indexes = new INDArrayIndex[input.rank()];
+        int[] shape = input.shape();
+        int[] indexes = new int[input.rank() + 1];
         for (int i = 0; i < indexes.length; i++)
-            indexes[i] = NDArrayIndex.all();
-        indexes[dimension] = NDArrayIndex.newAxis();
-        return input.get(indexes);
+            indexes[i] = i < dimension ? shape[i] : i == dimension ? 1 : shape[i - 1];
+        return input.reshape(input.ordering(), indexes);
     }
 
     /**
