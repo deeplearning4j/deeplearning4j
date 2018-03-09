@@ -1,4 +1,3 @@
-import com.typesafe.sbt.SbtGit.{ GitKeys => git }
 import scala.sys.process._
 
 name := "ScalNet"
@@ -7,12 +6,12 @@ description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + D
 
 scalaVersion := "2.11.12"
 
-resolvers in ThisBuild ++= Seq(
+resolvers ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
 cleanFiles += baseDirectory.value / "lib"
-val mvnInstall = Seq("mvn", "install")
+val mvnInstall = Seq("mvn", "install", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {
@@ -53,16 +52,7 @@ lazy val standardSettings = Seq(
   startYear := Some(2016),
   licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html")),
   homepage := Some(url("https://github.com/deeplearning4j/ScalNet")),
-  scmInfo := Some(
-    ScmInfo(url("https://github.com/deeplearning4j/ScalNet"), "scm:git:git@github.com:deeplearning4j/ScalNet.git")
-  ),
-  crossScalaVersions := Seq("2.11.12"),
-  publishMavenStyle := true,
-  publishTo := {
-    if (version.value.trim.endsWith("SNAPSHOT")) Some(Opts.resolver.sonatypeSnapshots)
-    else Some(Opts.resolver.sonatypeStaging)
-  },
-  git.gitRemoteRepo := "git@github.com:deeplearning4j/ScalNet.git",
+  crossScalaVersions := Seq("2.11.12", "2.10.6"),
   scalacOptions ++= Seq(
     "-encoding",
     "UTF-8",
