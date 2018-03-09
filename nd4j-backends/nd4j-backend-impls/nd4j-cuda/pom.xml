@@ -91,6 +91,10 @@
                             <name>platform.compiler</name>
                             <value>${javacpp.platform.compiler}</value>
                         </property>
+                        <property>
+                            <name>platform.sysroot</name>
+                            <value>${javacpp.platform.sysroot}</value>
+                        </property>
                     </propertyKeysAndValues>
                     <classPaths>
                         <classPath>${project.build.outputDirectory}</classPath>

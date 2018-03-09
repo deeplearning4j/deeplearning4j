@@ -552,10 +552,11 @@
         <logback.version>1.1.2</logback.version>
         <javacpp.version>1.4.1-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.4</javacpp-presets.version>
-        <process-classes.skip> false</process-classes.skip>  <!-- To skip native compilation phase: -Dprocess-classes.skip=true    -->
+        <javacpp.compiler.skip>false</javacpp.compiler.skip>  <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true    -->
         <javacpp.platform>${os.name}-${os.arch}</javacpp.platform> <!-- For Android: -Dplatform=android-arm                                        -->
         <javacpp.platform.root />            <!--              -Dplatform.root=/path/to/android-ndk/                         -->
         <javacpp.platform.compiler />    <!--              -Dplatform.compiler=/path/to/arm-linux-androideabi-g++        -->
+        <javacpp.platform.sysroot />         <!--              -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension />
         <spark.version>1.6.3</spark.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
