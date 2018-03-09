@@ -120,7 +120,7 @@ public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+        this.preProcessor = preProcessor;
     }
 
     @Override
