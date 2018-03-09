@@ -120,7 +120,7 @@ public class SamplingDataSetIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+        this.preProcessor = preProcessor;
     }
 
     @Override
