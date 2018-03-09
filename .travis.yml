@@ -4,8 +4,8 @@ jdk: oraclejdk8
 
 script:
   - sbt test
-  - mvn clean package -P "2.11"
-  - mvn clean package -P "2.10"
+  - mvn -q clean package -P "2.11"
+  - mvn -q clean package -P "2.10"
 
 cache:
   directories:
