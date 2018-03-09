@@ -16,13 +16,13 @@
 
 package org.deeplearning4j.scalnet.models
 
-import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.{ Layer, Node }
+import org.deeplearning4j.scalnet.logging.Logging
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -41,7 +41,7 @@ import scala.collection.JavaConverters._
   */
 class NeuralNet(inputType: Option[InputType], miniBatch: Boolean, biasInit: Double, rngSeed: Long)
     extends Model
-    with LazyLogging {
+    with Logging {
 
   def add(layer: Node): Unit = layers = layers :+ layer
 

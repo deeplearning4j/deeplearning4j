@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.scalnet.examples.keras.convolution
 
-import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
@@ -24,6 +23,7 @@ import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
+import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.activations.Activation
@@ -36,7 +36,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   *
   * @author David Kale
   */
-object LeNetMnistExample extends App with LazyLogging {
+object LeNetMnistExample extends App with Logging {
 
   val height: Int = 28
   val width: Int = 28

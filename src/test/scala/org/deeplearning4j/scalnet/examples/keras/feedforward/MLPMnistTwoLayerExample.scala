@@ -16,11 +16,11 @@
 
 package org.deeplearning4j.scalnet.examples.keras.feedforward
 
-import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
+import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.activations.Activation
@@ -33,7 +33,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   *
   * @author David Kale
   */
-object MLPMnistTwoLayerExample extends App with LazyLogging {
+object MLPMnistTwoLayerExample extends App with Logging {
 
   val height: Int = 28
   val width: Int = 28

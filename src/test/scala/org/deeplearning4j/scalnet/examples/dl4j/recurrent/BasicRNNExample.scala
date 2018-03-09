@@ -16,10 +16,10 @@
 
 package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
-import com.typesafe.scalalogging.LazyLogging
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.Updater
 import org.deeplearning4j.scalnet.layers.{ GravesLSTM, RnnOutputLayer }
+import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax
@@ -29,7 +29,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 import scala.util.Random
 
-object BasicRNNExample extends App with LazyLogging {
+object BasicRNNExample extends App with Logging {
 
   // define a sentence to learn.
   // Add a special character at the beginning so the RNN learns the complete string and ends with the marker.

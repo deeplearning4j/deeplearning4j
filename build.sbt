@@ -6,7 +6,7 @@ description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + D
 
 scalaVersion := "2.11.12"
 
-resolvers ++= Seq(
+resolvers in ThisBuild ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
@@ -15,25 +15,24 @@ val mvnInstall = Seq("mvn", "install", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {
-    case "win" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
-    case _     => { mvnInstall !; update.value }
+    case "win" => Seq("cmd", "/C") ++ mvnInstall !; update.value
+    case _     => mvnInstall !; update.value
   }
 }
 
 libraryDependencies ++= {
 
   val dl4j = "0.9.2-SNAPSHOT"
-  val scalaLogging = "3.8.0"
   val logbackClassic = "1.2.3"
   val scalaCheck = "1.13.5"
   val scalaTest = "3.0.5"
-  val typesafe = "1.3.2"
+  val slf4j = "1.7.25"
 
   Seq(
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
-    "com.typesafe.scala-logging" %% "scala-logging" % scalaLogging,
+    "org.slf4j" % "slf4j-api" % "1.7.25",
     "ch.qos.logback" % "logback-classic" % logbackClassic,
-    "com.typesafe" % "config" % typesafe,
+    "org.slf4j" % "slf4j-api" % slf4j,
     "org.nd4j" % "nd4j-native" % dl4j % "test",
     "org.scalacheck" %% "scalacheck" % scalaCheck % "test",
     "org.scalatest" %% "scalatest" % scalaTest % "test"

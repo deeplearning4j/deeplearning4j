@@ -18,13 +18,13 @@ package org.deeplearning4j.scalnet.examples.dl4j.feedforward
 
 import java.util
 
-import com.typesafe.scalalogging.LazyLogging
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
+import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -32,7 +32,7 @@ import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
-object IrisCSVExample extends App with LazyLogging {
+object IrisCSVExample extends App with Logging {
 
   val numLinesToSkip = 0
   val delimiter = ','

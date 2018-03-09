@@ -53,13 +53,13 @@ Althought Maven is mainly used for release management, you can use the provided 
 Target for scala-2.11.12
 
 ```scala
-$ mvn package -Pscala-2.11.12
+$ mvn package -P "scala-2.11.12"
 ```
 
 Target for scala-2.10.6
 
 ```scala
-$ mvn package -Pscala-2.10.6
+$ mvn package -P "scala-2.10.6"
 ```
 
 # How to use

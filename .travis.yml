@@ -1,19 +1,22 @@
 language: scala
 scala: dummy # using crossScalaVersions over TRAVIS_SCALA_VERSION
-
-jdk:
-  - oraclejdk8
+jdk: oraclejdk8
 
 script:
   - sbt test
-  - find $HOME/.sbt -name "*.lock" | xargs rm
-  - find $HOME/.ivy2 -name "ivydata-*.properties" | xargs rm
+  - mvn clean package -P "2.11"
+  - mvn clean package -P "2.10"
 
 cache:
   directories:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
     - $HOME/.m2
+
+before_cache:
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
+  - find $HOME/.m2         -name "*.lastUpdated"        -print -delete
 
 after_success:
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
