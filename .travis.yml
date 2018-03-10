@@ -3,7 +3,7 @@ scala: 2.11.12
 jdk: oraclejdk8
 
 script:
-  - sbt +package
+  - sbt +test
   - ./change-scala-versions.sh "2.11"
   - mvn -q clean package
   - ./change-scala-versions.sh "2.10"
@@ -14,6 +14,9 @@ cache:
     - $HOME/.ivy2/cache
     - $HOME/.sbt
     - $HOME/.m2
+
+before_install:
+  - chmod +x change-scala-versions.sh
 
 before_cache:
   - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
