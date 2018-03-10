@@ -50,16 +50,18 @@ See the [official sbt documentation](http://www.scala-sbt.org/documentation.html
 
 Althought Maven is mainly used for release management, you can use the provided pom.xml to import ScalNet as a Maven project.
 
-Target for scala-2.11.12
+Target for scala 2.11
 
 ```scala
-$ mvn package -P "scala-2.11.12"
+$ change-scala-versions.sh "2.11"
+$ mvn package
 ```
 
-Target for scala-2.10.6
+Target for scala 2.10
 
 ```scala
-$ mvn package -P "scala-2.10.6"
+$ change-scala-versions.sh "2.10"
+$ mvn package
 ```
 
 # How to use

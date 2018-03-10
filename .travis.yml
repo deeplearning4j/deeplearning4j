@@ -1,11 +1,13 @@
 language: scala
-scala: dummy # using crossScalaVersions over TRAVIS_SCALA_VERSION
+scala: 2.11.12
 jdk: oraclejdk8
 
 script:
-  - sbt test
-  - mvn -q clean package -P "2.11"
-  - mvn -q clean package -P "2.10"
+  - sbt +package
+  - change-scala-versions.sh "2.11"
+  - mvn -q clean package
+  - change-scala-versions.sh "2.10"
+  - mvn -q clean package
 
 cache:
   directories:

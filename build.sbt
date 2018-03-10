@@ -51,7 +51,7 @@ lazy val standardSettings = Seq(
   startYear := Some(2016),
   licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html")),
   homepage := Some(url("https://github.com/deeplearning4j/ScalNet")),
-  crossScalaVersions := Seq("2.11.12", "2.10.6"),
+  crossScalaVersions := Seq("2.11.12", "2.10.7"),
   scalacOptions ++= Seq(
     "-encoding",
     "UTF-8",
