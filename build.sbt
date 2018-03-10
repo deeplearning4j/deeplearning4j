@@ -11,7 +11,7 @@ resolvers in ThisBuild ++= Seq(
 )
 
 cleanFiles += baseDirectory.value / "lib"
-val mvnInstall = Seq("mvn", "install", "-f", "sbt-pom.xml")
+val mvnInstall = Seq("mvn", "install", "-q", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {

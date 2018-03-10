@@ -4,9 +4,9 @@ jdk: oraclejdk8
 
 script:
   - sbt +package
-  - change-scala-versions.sh "2.11"
+  - ./change-scala-versions.sh "2.11"
   - mvn -q clean package
-  - change-scala-versions.sh "2.10"
+  - ./change-scala-versions.sh "2.10"
   - mvn -q clean package
 
 cache:
