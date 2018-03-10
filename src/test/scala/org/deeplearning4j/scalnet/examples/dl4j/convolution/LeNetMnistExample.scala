@@ -42,6 +42,7 @@ object LeNetMnistExample extends App with Logging {
   val width: Int = 28
   val channels: Int = 1
   val nClasses: Int = 10
+
   val batchSize: Int = 64
   val epochs: Int = 10
   val weightDecay: Double = 0.0005
@@ -52,38 +53,17 @@ object LeNetMnistExample extends App with Logging {
   val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, seed)
 
   logger.info("Build model...")
-  val model: NeuralNet = NeuralNet(
-    inputType = InputType.convolutionalFlat(height, width, channels),
-    rngSeed = seed
-  )
-  model.add(
-    Convolution2D(
-      nFilter = 20,
-      nChannels = channels,
-      kernelSize = List(5, 5),
-      stride = List(1, 1),
-      weightInit = WeightInit.XAVIER,
-      regularizer = L2(weightDecay),
-      activation = Activation.RELU
-    )
-  )
-  model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(
-    Convolution2D(
-      nFilter = 50,
-      kernelSize = List(5, 5),
-      stride = List(1, 1),
-      weightInit = WeightInit.XAVIER,
-      regularizer = L2(weightDecay),
-      activation = Activation.RELU
-    )
-  )
-  model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-  model.add(
-    Dense(nOut = 512, weightInit = WeightInit.XAVIER, activation = Activation.RELU, regularizer = L2(weightDecay))
-  )
-  model.add(Dense(nOut = nClasses, weightInit = WeightInit.XAVIER, activation = Activation.SOFTMAX))
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
+  val model = NeuralNet(inputType = InputType.convolutionalFlat(height, width, channels), rngSeed = seed)
+
+  model.add(Convolution2D(20, List(5, 5), channels, regularizer = L2(weightDecay), activation = Activation.RELU))
+  model.add(MaxPooling2D(List(2, 2), List(2, 2)))
+
+  model.add(Convolution2D(50, List(5, 5), regularizer = L2(weightDecay), activation = Activation.RELU))
+  model.add(MaxPooling2D(List(2, 2),  List(2, 2)))
+
+  model.add(Dense(512, regularizer = L2(weightDecay), activation = Activation.RELU))
+  model.add(Dense(nClasses, activation = Activation.SOFTMAX))
+  model.compile(LossFunction.NEGATIVELOGLIKELIHOOD)
 
   logger.info("Train model...")
   model.fit(mnistTrain, epochs, List(new ScoreIterationListener(scoreFrequency)))
