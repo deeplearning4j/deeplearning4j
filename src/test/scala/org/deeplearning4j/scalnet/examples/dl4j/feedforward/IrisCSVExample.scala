@@ -23,12 +23,12 @@ import org.datavec.api.split.FileSplit
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.Dense
+import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
+import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -65,10 +65,10 @@ object IrisCSVExample extends App with Logging {
   model.add(Dense(nOut = hiddenSize, activation = Activation.RELU))
   model.add(Dense(nOut = hiddenSize, activation = Activation.RELU))
   model.add(Dense(outputSize, activation = Activation.SOFTMAX))
-  model.compile(lossFunction = LossFunction.MCXENT)
+  model.compile(LossFunction.MCXENT)
 
   logger.info("Train model...")
-  model.fit(iter = training_data, nbEpoch = epochs, listeners = List(new ScoreIterationListener(scoreFrequency)))
+  model.fit(training_data, epochs, listeners = List(new ScoreIterationListener(scoreFrequency)))
 
   logger.info("Evaluate model...")
   logger.info(s"Train accuracy = ${model.evaluate(training_data).accuracy}")

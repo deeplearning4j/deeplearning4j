@@ -18,10 +18,9 @@ package org.deeplearning4j.scalnet.examples.dl4j.convolution
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
+import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet

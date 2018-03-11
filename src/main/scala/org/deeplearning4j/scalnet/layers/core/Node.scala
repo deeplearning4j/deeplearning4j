@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers
-
-import org.deeplearning4j.nn.conf.InputPreProcessor
+package org.deeplearning4j.scalnet.layers.core
 
 /**
-  * Trait for preprocessing layers in DL4J neural networks and computational
-  * graphs. Compiles out to DL4J InputPreProcessor.
+  * Trait for node in DL4J neural networks and computational graphs.
+  * Nodes are assumed to have inputs and outputs with "shapes."
   *
   * @author David Kale
   */
-trait Preprocessor extends Node {
-  def compile: InputPreProcessor
+trait Node {
+
+  def name: String
+
+  def inputShape: List[Int]
+
+  def outputShape: List[Int]
+
+  def reshapeInput(nIn: List[Int]): Node = this
+
+  def describe(): String = "in=" + inputShape + " out=" + outputShape
+
 }

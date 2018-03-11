@@ -17,9 +17,8 @@
 package org.deeplearning4j.scalnet.examples.dl4j.feedforward
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
-import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.Dense
+import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.regularizers.L2
@@ -52,27 +51,10 @@ object MLPMnistTwoLayerExample extends App with Logging {
   logger.info("Build model...")
   val model: NeuralNet = NeuralNet(rngSeed = seed)
 
-  model.add(
-    Dense(nIn = height * width,
-          nOut = hiddenSize,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.RELU,
-          regularizer = L2(learningRate * decay))
-  )
-  model.add(
-    Dense(nOut = hiddenSize,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.RELU,
-          regularizer = L2(learningRate * decay))
-  )
-  model.add(
-    Dense(nClasses,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.SOFTMAX,
-          regularizer = L2(learningRate * decay))
-  )
-
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
+  model.add(Dense(hiddenSize, height * width, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(hiddenSize, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(nClasses, activation = Activation.SOFTMAX, regularizer = L2(learningRate * decay)))
+  model.compile(LossFunction.NEGATIVELOGLIKELIHOOD)
 
   logger.info("Train model...")
   model.fit(mnistTrain, epochs, List(new ScoreIterationListener(scoreFrequency)))

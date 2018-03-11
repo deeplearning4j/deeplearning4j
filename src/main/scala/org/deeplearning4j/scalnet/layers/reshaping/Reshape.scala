@@ -19,7 +19,7 @@ package org.deeplearning4j.scalnet.layers.reshaping
 import org.deeplearning4j.nn.conf.InputPreProcessor
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor
-import org.deeplearning4j.scalnet.layers.Preprocessor
+import org.deeplearning4j.scalnet.layers.core.Preprocessor
 import org.nd4j.linalg.api.ndarray.INDArray
 
 /**

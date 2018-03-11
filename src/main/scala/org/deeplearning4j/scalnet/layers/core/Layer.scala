@@ -14,24 +14,16 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers
+package org.deeplearning4j.scalnet.layers.core
+
+import org.deeplearning4j.nn.conf.layers.{Layer => JLayer}
 
 /**
-  * Trait for node in DL4J neural networks and computational graphs.
-  * Nodes are assumed to have inputs and outputs with "shapes."
+  * Trait for proper "layer" in DL4J neural networks and computational
+  * graphs. Compiles out to DL4J layer.
   *
   * @author David Kale
   */
-trait Node {
-
-  def name: String
-
-  def inputShape: List[Int]
-
-  def outputShape: List[Int]
-
-  def reshapeInput(nIn: List[Int]): Node = this
-
-  def describe(): String = "in=" + inputShape + " out=" + outputShape
-
+trait Layer extends Node {
+  def compile: JLayer
 }

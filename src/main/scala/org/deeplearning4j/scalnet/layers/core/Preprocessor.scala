@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers
+package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
-import org.nd4j.linalg.lossfunctions.LossFunctions
+import org.deeplearning4j.nn.conf.InputPreProcessor
 
 /**
-  * Extension of base layer, used to construct a DL4J OutputLayer after compilation.
-  * OutputLayer has an output object and the ability to return an OutputLayer version
-  * of itself, by providing a loss function.
+  * Trait for preprocessing layers in DL4J neural networks and computational
+  * graphs. Compiles out to DL4J InputPreProcessor.
   *
-  * @author Max Pumperla
+  * @author David Kale
   */
-trait OutputLayer extends Layer {
-  def output: Output
-  def toOutputLayer(lossFunction: LossFunctions.LossFunction): OutputLayer
+trait Preprocessor extends Node {
+  def compile: InputPreProcessor
 }

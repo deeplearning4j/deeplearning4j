@@ -18,7 +18,7 @@ package org.deeplearning4j.scalnet.layers.reshaping
 
 import org.deeplearning4j.nn.conf.InputPreProcessor
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor
-import org.deeplearning4j.scalnet.layers.{ Dense, Node, Preprocessor }
+import org.deeplearning4j.scalnet.layers.core.Preprocessor
 
 /**
   * Unflattens vector into structured image-like output. Input must be a

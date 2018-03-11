@@ -16,14 +16,14 @@
 
 package org.deeplearning4j.scalnet.models
 
-import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
-import org.scalatest._
-import org.deeplearning4j.scalnet.layers.{ Dense, OutputLayer }
+import org.deeplearning4j.scalnet.layers.core.{Dense, OutputLayer}
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
+import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
 import org.deeplearning4j.scalnet.regularizers.L2
+import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import org.scalatest._
 
 /**
   * Created by maxpumperla on 29/06/17.
@@ -33,13 +33,13 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
   var model: Sequential = Sequential()
   val shape = 100
   val wrongInputShape = 10
-  val nbRows: Int = 28
-  val nbColumns: Int = 28
-  val nbChannels: Int = 1
-  val nbOutput: Int = 10
-  val weightDecay: Double = 0.0005
-  val momentum: Double = 0.9
-  val learningRate: Double = 0.01
+
+  val height: Int = 28
+  val width: Int = 28
+  val channels: Int = 1
+  val nClasses: Int = 10
+
+  val weightDecay: Double = 0.005
 
   before {
     model = Sequential()
@@ -71,32 +71,19 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
     }
 
     it("should propagate the correct shape of all layers and preprocessors") {
-      model.add(Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
-      model.add(
-        Convolution2D(nFilter = 20,
-                      kernelSize = List(5, 5),
-                      stride = List(1, 1),
-                      weightInit = WeightInit.XAVIER,
-                      regularizer = L2(weightDecay))
-      )
-      model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
-      model.add(
-        Convolution2D(nFilter = 50,
-                      kernelSize = List(5, 5),
-                      stride = List(1, 1),
-                      weightInit = WeightInit.XAVIER,
-                      regularizer = L2(weightDecay))
-      )
-      model.add(MaxPooling2D(kernelSize = List(2, 2), stride = List(2, 2)))
+      model.add(Unflatten3D(List(height, width, channels), nIn = height * width))
+      model.add(Convolution2D(20, List(5, 5), channels, regularizer = L2(weightDecay), activation = Activation.RELU))
+      model.add(MaxPooling2D(List(2, 2), List(2, 2)))
+
+      model.add(Convolution2D(50, List(5, 5), regularizer = L2(weightDecay), activation = Activation.RELU))
+      model.add(MaxPooling2D(List(2, 2), List(2, 2)))
       model.add(Flatten3D())
 
       val preprocessorOutShapes = model.getPreprocessors.values.map(_.outputShape)
-      assert(preprocessorOutShapes == List(List(nbRows, nbColumns, nbChannels), List(4 * 4 * 50)))
+      assert(preprocessorOutShapes == List(List(height, width, channels), List(4 * 4 * 50)))
 
       val layerOutShapes = model.getLayers.map(_.outputShape)
-      assert(
-        layerOutShapes == List(List(24, 24, 20), List(12, 12, 20), List(8, 8, 50), List(4, 4, 50))
-      )
+      assert(layerOutShapes == List(List(24, 24, 20), List(12, 12, 20), List(8, 8, 50), List(4, 4, 50)))
 
     }
   }

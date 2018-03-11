@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package org.deeplearning4j.scalnet.layers
+package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.layers.{ Layer => JLayer }
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
-  * Trait for proper "layer" in DL4J neural networks and computational
-  * graphs. Compiles out to DL4J layer.
+  * Trait for output layers in DL4J neural networks and computational graphs.
   *
   * @author David Kale
   */
-trait Layer extends Node {
-  def compile: JLayer
-}
+case class Output(isOutput: Boolean, lossFunction: LossFunction)

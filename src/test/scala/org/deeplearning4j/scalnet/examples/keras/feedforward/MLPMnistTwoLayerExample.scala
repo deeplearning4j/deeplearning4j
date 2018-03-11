@@ -17,9 +17,8 @@
 package org.deeplearning4j.scalnet.examples.keras.feedforward
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
-import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.Dense
+import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.regularizers.L2
@@ -51,30 +50,14 @@ object MLPMnistTwoLayerExample extends App with Logging {
 
   logger.info("Build model...")
   val model: Sequential = Sequential(rngSeed = seed)
-  model.add(
-    Dense(nIn = height * width,
-          nOut = hiddenSize,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.RELU,
-          regularizer = L2(learningRate * decay))
-  )
-  model.add(
-    Dense(nOut = hiddenSize,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.RELU,
-          regularizer = L2(learningRate * decay))
-  )
-  model.add(
-    Dense(nOut = nClasses,
-          weightInit = WeightInit.XAVIER,
-          activation = Activation.SOFTMAX,
-          regularizer = L2(learningRate * decay))
-  )
 
-  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD)
+  model.add(Dense(hiddenSize, height * width, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(hiddenSize, activation = Activation.RELU, regularizer = L2(learningRate * decay)))
+  model.add(Dense(nClasses, activation = Activation.SOFTMAX, regularizer = L2(learningRate * decay)))
+  model.compile(LossFunction.NEGATIVELOGLIKELIHOOD)
 
   logger.info("Train model...")
-  model.fit(mnistTrain, nbEpoch = epochs, List(new ScoreIterationListener(scoreFrequency)))
+  model.fit(mnistTrain, epochs, List(new ScoreIterationListener(scoreFrequency)))
 
   logger.info("Evaluate model...")
   logger.info(s"Train accuracy = ${model.evaluate(mnistTrain).accuracy}")

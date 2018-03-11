@@ -17,7 +17,7 @@
 package org.deeplearning4j.scalnet.layers.convolutional
 
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException
-import org.deeplearning4j.scalnet.layers.Node
+import org.deeplearning4j.scalnet.layers.core.Node
 
 /**
   * Base class for convolutional layers.
