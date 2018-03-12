@@ -2116,6 +2116,14 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable relu6(SDVariable iX) {
+        return relu6(null, iX);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
     public SDVariable softmax(SDVariable iX) {
         return softmax(null, iX);
     }
@@ -3267,6 +3275,16 @@ public class SameDiff {
      */
     public SDVariable relu(String name, SDVariable iX, double cutoff) {
         SDVariable result = functionFactory.relu(iX, cutoff);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable relu6(String name, SDVariable iX) {
+        SDVariable result = functionFactory.relu6(iX);
         return updateVariableNameAndReference(result, name);
 
     }

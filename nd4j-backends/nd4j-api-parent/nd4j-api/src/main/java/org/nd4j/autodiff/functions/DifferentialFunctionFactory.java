@@ -469,6 +469,10 @@ public class DifferentialFunctionFactory   {
         return new RectifedLinear(sameDiff(),iX,false,cutoff).outputVariables()[0];
     }
 
+    public SDVariable relu6(SDVariable iX) {
+        return new Relu6(sameDiff(), iX,false).outputVariables()[0];
+    }
+
 
     public SDVariable softmax(SDVariable iX) {
         return new SoftMax(sameDiff(),new SDVariable[]{iX}).outputVariables()[0];

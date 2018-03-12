@@ -24,6 +24,7 @@ import org.nd4j.linalg.indexing.conditions.IsInfinite;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -378,7 +379,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 59; i < 60; i++) {
+        for (int i = 60; i < 61; i++) {
 
             boolean skipBackward = false;
 
@@ -716,7 +717,11 @@ public class GradCheckTransforms {
                     Nd4j.getExecutioner().exec(new RSqrt(ia, expOut));
                     skipBackward = true;
                     break;
-
+                case 60:
+                    t = sd.relu6(in);
+                    ia = Nd4j.rand(minibatch, nOut);
+                    expOut = Nd4j.getExecutioner().execAndReturn(new Relu6(ia.dup()));
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -736,7 +741,6 @@ public class GradCheckTransforms {
             sd.exec();
             INDArray out = t.getArr();
 
-            out.shape();
             if (!expOut.equals(out)) {
                 allFailed.add(msg + " - FAILED ON FORWARD");
                 continue;

@@ -379,6 +379,14 @@ public class Transforms {
         return Nd4j.getExecutioner().execAndReturn(new RectifedLinear(((copy ? in.dup() : in))));
     }
 
+    public static INDArray relu6(INDArray arr) {
+        return relu6(arr, true);
+    }
+
+
+    public static INDArray relu6(INDArray in, boolean copy) {
+        return Nd4j.getExecutioner().execAndReturn(new Relu6(((copy ? in.dup() : in))));
+    }
 
 
     public static INDArray leakyRelu(INDArray arr) {
