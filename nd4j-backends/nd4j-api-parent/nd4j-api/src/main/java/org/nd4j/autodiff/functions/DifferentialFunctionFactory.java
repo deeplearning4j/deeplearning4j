@@ -925,6 +925,13 @@ public class DifferentialFunctionFactory   {
         return new SubOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
     }
 
+    public SDVariable squaredDifference(SDVariable differentialFunction, SDVariable i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new SquaredDifferenceOp(sameDiff(),new SDVariable[]{differentialFunction, i_v},false)
+                .outputVariables()[0];
+    }
+
+
     public List<SDVariable> subBp(SDVariable x, SDVariable y, SDVariable grad){
         return Arrays.asList(new SubBpOp(sameDiff(), x,y,grad).outputVariables());
     }

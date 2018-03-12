@@ -299,6 +299,16 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @param sameDiffVariable
      * @return
      */
+    public SDVariable squaredDifference(SDVariable sameDiffVariable) {
+        return squaredDifference(sameDiff.generateNewVarName(new SquaredDifferenceOp().opName(),0),sameDiffVariable);
+
+    }
+
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable div(double sameDiffVariable) {
         return div(sameDiff.generateNewVarName(new DivOp().opName(),0),sameDiffVariable);
 
@@ -716,8 +726,22 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     /**
      *
      * @param sameDiffVariable
-     * @return
+     * @return squared difference between variables
      */
+    public SDVariable squaredDifference(String varName, SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        SDVariable left = this;
+        SDVariable right = sameDiffVariable;
+        val result = sameDiff.f().squaredDifference(left, right);
+        return sameDiff.updateVariableNameAndReference(result, varName);
+    }
+
+        /**
+         *
+         * @param sameDiffVariable
+         * @return
+         */
     public SDVariable div(String varName, SDVariable sameDiffVariable) {
         assertShapeEquals(sameDiffVariable);
         val result = sameDiff.f().div(this,sameDiffVariable);

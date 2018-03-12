@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SquaredDifferenceOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.TruncateDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.LessThanOrEqual;
@@ -811,7 +812,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 22; i++) {
+        for (int i = 0; i < 23; i++) {
 
             boolean skipBackward = false;
 
@@ -934,6 +935,16 @@ public class GradCheckTransforms {
                     t = in1.truncatedDiv(in2);
                     expOut = Nd4j.create(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new TruncateDivOp(ia, ib, expOut));
+                    skipBackward = true;
+                    break;
+                case 22:
+                    t = in1.squaredDifference(in2);
+                    expOut = Nd4j.create(ia.shape(), ia.ordering());
+                    DynamicCustomOp squareDiff = DynamicCustomOp.builder("squaredsubtract")
+                            .addInputs(ia, ib)
+                            .addOutputs(expOut)
+                            .build();
+                    Nd4j.getExecutioner().exec(squareDiff);
                     skipBackward = true;
                     break;
                 default:
