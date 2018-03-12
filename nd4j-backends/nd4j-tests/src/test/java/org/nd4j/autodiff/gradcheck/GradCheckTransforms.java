@@ -341,11 +341,12 @@ public class GradCheckTransforms {
 
         // TODO: to speed up integration of new ops for TF import, we sometimes skip "doDiff" implementations.
         // get back to those after release
-        boolean skipBackward = false;
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 58; i++) {
+        for (int i = 57; i < 58; i++) {
+
+            boolean skipBackward = false;
 
             SameDiff sd = SameDiff.create();
 
@@ -419,6 +420,7 @@ public class GradCheckTransforms {
                     t = sd.log(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log(ia, true);
+                    skipBackward = true;
                     break;
                 case 14:
                     t = sd.neg(in);
@@ -433,6 +435,7 @@ public class GradCheckTransforms {
                     t = sd.acosh(in);
                     ia = Nd4j.rand(minibatch, nOut).addi(1.01); //Only defined for x >= 1
                     expOut = Nd4j.getExecutioner().execAndReturn(new ACosh(ia.dup()));
+                    skipBackward = true;
                     break;
                 case 17:
                     t = sd.asin(in);
@@ -491,6 +494,7 @@ public class GradCheckTransforms {
                 case 29:
                     t = sd.asinh(in);
                     expOut = Nd4j.getExecutioner().execAndReturn(new ASinh(ia.dup()));
+                    skipBackward = true;
                     break;
                 case 30:
                     t = sd.exp(in);
@@ -537,6 +541,7 @@ public class GradCheckTransforms {
                     t = sd.logSoftmax(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log(Transforms.softmax(ia, true));
+                    skipBackward = true;
                     break;
                 case 40:
                     t = sd.selu(in);
@@ -614,10 +619,12 @@ public class GradCheckTransforms {
                     dim = 0;
                     boolean exclusive = false;
                     boolean reverseBool = false;
+
+
                     t = sd.cumsum(in, exclusive, reverseBool, dim);
                     expOut = Nd4j.create(ia.shape());
                     DynamicCustomOp cumsum = DynamicCustomOp.builder("cumsum")
-                            .addIntegerArguments(dim)
+                            .addIntegerArguments((exclusive) ? 1 : 0, (reverseBool) ? 1 : 0,dim)
                             .addInputs(ia).addOutputs(expOut).build();
                     Nd4j.getExecutioner().exec(cumsum);
                     break;
@@ -628,9 +635,10 @@ public class GradCheckTransforms {
                     t = sd.cumsum(in, ex, revBool, dim);
                     expOut = Nd4j.create(ia.shape());
                     DynamicCustomOp cumprod = DynamicCustomOp.builder("cumprod")
-                            .addIntegerArguments(dim)
+                            .addIntegerArguments((ex) ? 1 : 0, (revBool) ? 1 : 0,dim)
                             .addInputs(ia).addOutputs(expOut).build();
                     Nd4j.getExecutioner().exec(cumprod);
+                    break;
                 case 53:
                     ia = Nd4j.create(new float[] {4,2});
                     in = sd.var("in", new int[]{1, 2});
@@ -643,11 +651,13 @@ public class GradCheckTransforms {
                     expOut = Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erf(ia, expOut));
                     t = sd.erf(in);
+                    skipBackward = true;
                     break;
                 case 55:
                     expOut =  Nd4j.createUninitialized(ia.shape(), ia.ordering());
                     Nd4j.getExecutioner().exec(new Erfc(ia, expOut));
                     t = sd.erfc(in);
+                    skipBackward = true;
                     break;
                 case 56:
                     t = sd.expm1(in);
@@ -677,6 +687,7 @@ public class GradCheckTransforms {
             sd.exec();
             INDArray out = t.getArr();
 
+            out.shape();
             if (!expOut.equals(out)) {
                 allFailed.add(msg + " - FAILED ON FORWARD");
                 continue;
