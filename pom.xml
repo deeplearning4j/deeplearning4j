@@ -45,18 +45,21 @@
   <properties>
     <!-- base versions -->
     <!-- Scala 2.10.x -->
-    <scala210.version>2.10.6</scala210.version>
+    <scala210.version>2.10.7</scala210.version>
     <scala210.binary.version>2.10</scala210.binary.version>
     <!-- Scala 2.11.x -->
-    <scala211.version>2.11.8</scala211.version>
+    <scala211.version>2.11.12</scala211.version>
     <scala211.binary.version>2.11</scala211.binary.version>
 
     <scala.binary.version>2.11</scala.binary.version>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.11.12</scala.version>
+
     <nd4j.version>0.9.2-SNAPSHOT</nd4j.version>
     <dl4j.version>0.9.2-SNAPSHOT</dl4j.version>
-    <slf4j.version>1.7.24</slf4j.version>
-    <logback.version>1.2.1</logback.version>
+    <logback.version>1.2.3</logback.version>
+    <scalatest.version>3.0.5</scalatest.version>
+    <scalafmt.version>1.3.0</scalafmt.version>
+    <scalacheck.version>1.13.5</scalacheck.version>
   </properties>
 
   <repositories>
@@ -105,24 +108,20 @@
       <version>${dl4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>${logback.version}</version>
     </dependency>
     <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest_${scala.binary.version}</artifactId>
-      <version>3.0.1</version>
+      <version>${scalatest.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
+      <version>${scalacheck.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -221,50 +220,19 @@
           </classpathContainers>
         </configuration>
       </plugin>
+
       <plugin>
-        <groupId>org.scalastyle</groupId>
-        <artifactId>scalastyle-maven-plugin</artifactId>
-        <version>0.8.0</version>
+        <groupId>org.antipathy</groupId>
+        <artifactId>mvn-scalafmt</artifactId>
+        <version>0.7_${scalafmt.version}</version>
         <configuration>
-          <verbose>false</verbose>
-          <failOnViolation>true</failOnViolation>
-          <includeTestSourceDirectory>true</includeTestSourceDirectory>
-          <failOnWarning>false</failOnWarning>
-          <sourceDirectory>${basedir}/src/main/scala</sourceDirectory>
-          <testSourceDirectory>${basedir}/src/test/scala</testSourceDirectory>
-          <configLocation>${basedir}/scalastyle_config.xml</configLocation>
-          <outputFile>${project.basedir}/scalastyle-output.xml</outputFile>
-          <outputEncoding>UTF-8</outputEncoding>
+          <configLocation>${project.basedir}/.scalafmt.conf</configLocation>
         </configuration>
         <executions>
           <execution>
-            <goals>
-              <goal>check</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.lewisd</groupId>
-        <artifactId>lint-maven-plugin</artifactId>
-        <version>0.0.8</version>
-        <configuration>
-          <failOnViolation>true</failOnViolation>
-          <onlyRunRules>
-            <rule>DuplicateDep</rule>
-            <rule>RedundantDepVersion</rule>
-            <rule>RedundantPluginVersion</rule>
-            <rule>VersionProp</rule>
-            <rule>DotVersionProperty</rule>
-          </onlyRunRules>
-          <xmlOutputFile>${project.build.directory}/maven-lint-result.xml</xmlOutputFile>
-        </configuration>
-        <executions>
-          <execution>
-            <id>pom-lint</id>
             <phase>validate</phase>
             <goals>
-              <goal>check</goal>
+              <goal>format</goal>
             </goals>
           </execution>
         </executions>
@@ -320,36 +288,6 @@
       </plugin>
 
     </plugins>
-
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>org.eclipse.m2e</groupId>
-          <artifactId>lifecycle-mapping</artifactId>
-          <version>1.0.0</version>
-          <configuration>
-            <lifecycleMappingMetadata>
-              <pluginExecutions>
-                <pluginExecution>
-                  <pluginExecutionFilter>
-                    <groupId>com.lewisd</groupId>
-                    <artifactId>lint-maven-plugin</artifactId>
-                    <versionRange>[0.0.11,)</versionRange>
-                    <goals>
-                      <goal>check</goal>
-                    </goals>
-                  </pluginExecutionFilter>
-                  <action>
-                    <ignore/>
-                  </action>
-                </pluginExecution>
-              </pluginExecutions>
-            </lifecycleMappingMetadata>
-          </configuration>
-        </plugin>
-
-      </plugins>
-    </pluginManagement>
 
   </build>
   <reporting>
