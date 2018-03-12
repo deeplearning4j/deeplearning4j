@@ -339,8 +339,12 @@ public class GradCheckTransforms {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
 
+        // TODO: to speed up integration of new ops for TF import, we sometimes skip "doDiff" implementations.
+        // get back to those after release
+        boolean skipBackward = false;
+
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 57; i++) {
+        for (int i = 0; i < 58; i++) {
 
             SameDiff sd = SameDiff.create();
 
@@ -647,6 +651,11 @@ public class GradCheckTransforms {
                 case 56:
                     t = sd.expm1(in);
                     expOut = Transforms.expm1(ia, true);
+                    break;
+                case 57:
+                    t = sd.log1p(in);
+                    ia = Nd4j.rand(minibatch, nOut);
+                    expOut = Transforms.log1p(ia, true);
                     break;
                 default:
                     throw new RuntimeException();
