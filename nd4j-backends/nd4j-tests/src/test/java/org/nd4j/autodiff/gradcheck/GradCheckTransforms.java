@@ -342,6 +342,7 @@ public class GradCheckTransforms {
         // TODO: to speed up integration of new ops for TF import, we sometimes skip "doDiff" implementations.
         // get back to those after release
         boolean skipBackward = false;
+        List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
         for (int i = 0; i < 58; i++) {
@@ -682,19 +683,30 @@ public class GradCheckTransforms {
             }
 
             boolean ok;
-            try {
-                ok = GradCheckUtil.checkGradients(sd);
-            } catch (Exception e) {
-                e.printStackTrace();
-                msg += " - EXCEPTION";
-                ok = false;
+            if (skipBackward) {
+                ok  = true;
+                msg += " - SKIPPED";
+                allSkipped.add(msg);
+            }
+            else {
+                try {
+                    ok = GradCheckUtil.checkGradients(sd);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    msg += " - EXCEPTION";
+                    ok = false;
+                }
             }
 
             assertTrue(msg, ok);
             if(!ok){
-
                 allFailed.add(msg);
             }
+        }
+
+        if (allSkipped.size() > 0) {
+            log.info("All backward skipped transforms: " + allSkipped);
+            log.info(allSkipped.size() + " backward passes were skipped.");
         }
 
         if (allFailed.size() > 0) {
