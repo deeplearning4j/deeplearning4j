@@ -63,8 +63,9 @@ lazy val standardSettings = Seq(
   )
 )
 
+parallelExecution in ThisBuild := false
 scalafmtOnCompile in ThisBuild := true
-scalafmtTestOnCompile in ThisBuild := false
+scalafmtTestOnCompile in ThisBuild := true
 test in assembly := {}
 assemblyMergeStrategy in assembly := {
   case PathList("META-INF", xs @ _*) => MergeStrategy.discard
