@@ -353,6 +353,7 @@ public class DifferentialFunctionFactory   {
         return new Expm1(sameDiff(),iX,null).outputVariables()[0];
     }
 
+    public SDVariable rsqrt(SDVariable iX) { return new RSqrt(sameDiff(), iX, null).outputVariables()[0];}
 
     public SDVariable log(SDVariable iX) {
         return new Log(sameDiff(),iX,null).outputVariables()[0];

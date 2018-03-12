@@ -1976,6 +1976,14 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable rsqrt(SDVariable iX) {
+        return rsqrt(null, iX);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
     public SDVariable expm1(SDVariable iX) {
         return expm1(null, iX);
     }
@@ -3133,6 +3141,15 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable rsqrt(String name, SDVariable iX) {
+        SDVariable result = functionFactory.rsqrt(iX);
+        return updateVariableNameAndReference(result, name);
+    }
 
     /**
      * @param iX

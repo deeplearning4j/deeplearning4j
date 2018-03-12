@@ -917,7 +917,7 @@ public class Transforms {
      * @return
      */
     public static INDArray expm1(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Exp(ndArray, ndArray.dup()) : new Expm1(ndArray));
+        return exec(dup ? new Expm1(ndArray, ndArray.dup()) : new Expm1(ndArray));
     }
 
 

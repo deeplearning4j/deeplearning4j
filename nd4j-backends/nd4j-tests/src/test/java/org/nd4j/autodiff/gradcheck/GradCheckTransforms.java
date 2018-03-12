@@ -377,7 +377,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 59; i++) {
+        for (int i = 59; i < 60; i++) {
 
             boolean skipBackward = false;
 
@@ -707,6 +707,15 @@ public class GradCheckTransforms {
                     expOut = Transforms.round(ia, true);
                     skipBackward = true;
                     break;
+                case 59:
+                    ia = Nd4j.create(new float[]{4, 2});
+                    in = sd.var("in", new int[]{1, 2});
+                    t = sd.rsqrt(in);
+                    expOut = Nd4j.create(ia.shape(), ia.ordering());
+                    Nd4j.getExecutioner().exec(new RSqrt(ia, expOut));
+                    skipBackward = true;
+                    break;
+
                 default:
                     throw new RuntimeException();
             }
