@@ -667,6 +667,7 @@ public class GradCheckTransforms {
                     t = sd.log1p(in);
                     ia = Nd4j.rand(minibatch, nOut);
                     expOut = Transforms.log1p(ia, true);
+                    skipBackward = true;
                     break;
                 default:
                     throw new RuntimeException();

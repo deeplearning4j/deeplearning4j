@@ -1000,7 +1000,7 @@ public class Transforms {
      * @return
      */
     public static INDArray log1p(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Log(ndArray, ndArray.dup()) : new Log1p(ndArray));
+        return exec(dup ? new Log1p(ndArray, ndArray.dup()) : new Log1p(ndArray));
     }
 
     /**
