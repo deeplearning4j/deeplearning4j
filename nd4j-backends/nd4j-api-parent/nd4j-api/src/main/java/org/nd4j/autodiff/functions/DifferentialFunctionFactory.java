@@ -358,9 +358,15 @@ public class DifferentialFunctionFactory   {
         return new Log(sameDiff(),iX,null).outputVariables()[0];
     }
 
-    public SDVariable log1p(SDVariable iX) {
-        return new Log1p(sameDiff(),iX,null).outputVariables()[0];
-    }
+    public SDVariable log1p(SDVariable iX) { return new Log1p(sameDiff(),iX,null).outputVariables()[0]; }
+
+
+    public SDVariable isFinite(SDVariable ix) { return  new IsFinite(sameDiff(), ix, null).outputVariables()[0];}
+
+
+    public SDVariable isInfinite(SDVariable ix) { return  new IsInf(sameDiff(), ix, null).outputVariables()[0];}
+
+    public SDVariable isNaN(SDVariable ix) { return  new IsNaN(sameDiff(), ix, null).outputVariables()[0];}
 
 
     public SDVariable or(SDVariable iX, SDVariable i_y) {

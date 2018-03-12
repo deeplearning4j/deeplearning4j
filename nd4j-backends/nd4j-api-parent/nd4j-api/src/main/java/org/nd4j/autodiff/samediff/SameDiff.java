@@ -1993,6 +1993,28 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable isInfinite(SDVariable iX) {
+        return isInfinite(null, iX);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isNaN(SDVariable iX) { return isNaN(null, iX); }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isFinite(SDVariable iX) {
+        return isFinite(null, iX);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
     public SDVariable log(SDVariable iX) {
         return log(null, iX);
     }
@@ -3120,6 +3142,34 @@ public class SameDiff {
      */
     public SDVariable log1p(String name, SDVariable iX) {
         SDVariable result = functionFactory.log1p(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isFinite(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isFinite(iX);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isInfinite(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isInfinite(iX);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable isNaN(String name, SDVariable iX) {
+        SDVariable result = functionFactory.isNaN(iX);
         return updateVariableNameAndReference(result, name);
 
     }
