@@ -3129,7 +3129,7 @@ public class SameDiff {
      * @return
      */
     public SDVariable expm1(String name, SDVariable iX) {
-        SDVariable result = functionFactory.exp(iX);
+        SDVariable result = functionFactory.expm1(iX);
         return updateVariableNameAndReference(result, name);
     }
 
