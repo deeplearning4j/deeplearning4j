@@ -224,7 +224,7 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
     }
 
     //----- calculation of gradI -----//            
-    NDArrayFactory<T>::mmulHelper(weightsReshaped, gradOreshapedT, columnsReshaped, 1.0, 0.0);             // [iC*kH*kW, oC] x [oC, bS*oH*oW] = [iC*kW*kH, bS*oH*oW]
+    NDArrayFactory<T>::mmulHelper(weightsReshaped, gradOreshapedT, columnsReshaped, 1.0, 0.0);              // [iC*kH*kW, oC] x [oC, bS*oH*oW] = [iC*kW*kH, bS*oH*oW]
     std::vector<T> extrasCol2Im({(T) sH, (T) sW, (T) pH, (T) pW, (T) iH, (T) iW, (T) dH, (T) dW});
     columnsPermuted->template applyTransform<simdOps::Col2Im<T>>(gradI, extrasCol2Im.data());               // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 

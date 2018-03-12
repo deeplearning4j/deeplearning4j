@@ -1195,9 +1195,32 @@ void ConvolutionUtils<T>::vol2col2(NDArray<T>& vol, NDArray<T>& col, const int s
         }
     }
 }
-        
+ 
+//////////////////////////////////////////////////////////////////////////
+        template<typename T>
+        void ConvolutionUtils<T>::calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
+            
+            if (isSameMode) {
+                oH = sH * iH;
+                oW = sW * iW;
+            } 
+            else {
+                int ekH, ekW;
+                if (dH == 1 && dW == 1) {
+                    ekH = kH;
+                    ekW = kW;
+                } else {
+                    ekH = kH + (kH - 1) * (dH - 1);
+                    ekW = kW + (kW - 1) * (dW - 1);
+                }
 
+                oH = sH * (iH - 1) + ekH - 2 * pH;
+                oW = sW * (iW - 1) + ekW - 2 * pW;
+            }
+        }
+       
 
+ 
 
 
 template class ND4J_EXPORT ConvolutionUtils<float>;
