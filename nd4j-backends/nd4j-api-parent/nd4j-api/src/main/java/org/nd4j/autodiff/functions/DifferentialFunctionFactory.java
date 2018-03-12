@@ -953,6 +953,11 @@ public class DifferentialFunctionFactory   {
         return new DivOp(sameDiff(),new SDVariable[]{differentialFunction,i_v},false).outputVariables()[0];
     }
 
+    public SDVariable truncatedDiv(SDVariable differentialFunction, SDVariable i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new TruncateDivOp(sameDiff(), differentialFunction,i_v, false).outputVariables()[0];
+    }
+
     public List<SDVariable> divBp(SDVariable x, SDVariable y, SDVariable grad){
         return Arrays.asList(new DivBpOp(sameDiff(),x,y,grad).outputVariables());
     }

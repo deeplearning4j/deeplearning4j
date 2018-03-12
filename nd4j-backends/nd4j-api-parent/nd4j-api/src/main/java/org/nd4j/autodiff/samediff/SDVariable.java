@@ -405,6 +405,16 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @param sameDiffVariable
      * @return
      */
+    public SDVariable truncatedDiv(SDVariable sameDiffVariable) {
+        return truncatedDiv(sameDiff.generateNewVarName(new TruncateDivOp().opName(),0),sameDiffVariable);
+
+    }
+
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
     public SDVariable add(SDVariable sameDiffVariable) {
         return add(sameDiff.generateNewVarName(new AddOp().opName(),0),sameDiffVariable);
 
@@ -519,6 +529,17 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      */
     public SDVariable rdiv(String varName, double sameDiffVariable) {
         val function = sameDiff.f().rdiv(this,sameDiffVariable);
+        return sameDiff.updateVariableNameAndReference(function,varName);
+
+    }
+
+    /**
+     *
+     * @param sameDiffVariable
+     * @return
+     */
+    public SDVariable truncatedDiv(String varName, SDVariable sameDiffVariable) {
+        val function = sameDiff.f().truncatedDiv(this, sameDiffVariable);
         return sameDiff.updateVariableNameAndReference(function,varName);
 
     }
