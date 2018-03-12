@@ -2181,7 +2181,8 @@ public class SameDiff {
     }
 
     public  SDVariable erf(String name, SDVariable iX) {
-        return erf(name, iX);
+        SDVariable ret = f().erf(iX);
+        return updateVariableNameAndReference(ret, name);
     }
 
 
@@ -2190,7 +2191,8 @@ public class SameDiff {
     }
 
     public  SDVariable erfc(String name, SDVariable iX) {
-        return erfc(name, iX);
+        SDVariable ret = f().erfc(iX);
+        return updateVariableNameAndReference(ret, name);
     }
 
     public SDVariable diag(SDVariable iX) {
