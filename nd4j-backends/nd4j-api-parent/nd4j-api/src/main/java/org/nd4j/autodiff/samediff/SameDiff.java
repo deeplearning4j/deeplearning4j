@@ -2007,6 +2007,14 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable round(SDVariable iX) {
+        return round(null, iX);
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
     public SDVariable isFinite(SDVariable iX) {
         return isFinite(null, iX);
     }
@@ -3170,6 +3178,16 @@ public class SameDiff {
      */
     public SDVariable isNaN(String name, SDVariable iX) {
         SDVariable result = functionFactory.isNaN(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable round(String name, SDVariable iX) {
+        SDVariable result = functionFactory.round(iX);
         return updateVariableNameAndReference(result, name);
 
     }

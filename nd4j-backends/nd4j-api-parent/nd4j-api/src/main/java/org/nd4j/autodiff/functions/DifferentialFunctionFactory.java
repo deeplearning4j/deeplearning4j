@@ -368,6 +368,7 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable isNaN(SDVariable ix) { return  new IsNaN(sameDiff(), ix, null).outputVariables()[0];}
 
+    public SDVariable round(SDVariable ix) { return new Round(sameDiff(), ix, null).outputVariables()[0];}
 
     public SDVariable or(SDVariable iX, SDVariable i_y) {
         return new Or(sameDiff(),iX,i_y).outputVariables()[0];
