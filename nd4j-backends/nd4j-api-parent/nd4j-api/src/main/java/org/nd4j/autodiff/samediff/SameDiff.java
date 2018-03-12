@@ -2116,8 +2116,8 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable relu6(SDVariable iX) {
-        return relu6(null, iX);
+    public SDVariable relu6(SDVariable iX, double cutoff) {
+        return relu6(null, iX, cutoff);
     }
 
     /**
@@ -3283,8 +3283,8 @@ public class SameDiff {
      * @param iX
      * @return
      */
-    public SDVariable relu6(String name, SDVariable iX) {
-        SDVariable result = functionFactory.relu6(iX);
+    public SDVariable relu6(String name, SDVariable iX, double cutoff) {
+        SDVariable result = functionFactory.relu6(iX, cutoff);
         return updateVariableNameAndReference(result, name);
 
     }
