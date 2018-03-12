@@ -1,5 +1,6 @@
 //
 // Created by raver119 on 07.10.2017.
+// Modified by GS <sgazeos@gmail.com> on 3/9/2018
 //
 
 #include <gemm.h>
@@ -44,13 +45,8 @@ namespace nd4j {
                        T beta,
                        T *C, int ldc) {
 
-            // optionally handle transpose
-            // we want C always here
-            T *aT = TransA != CblasTrans ? transpose(CblasColMajor, CblasRowMajor, M, K, A) : A;
-
-            // we want F always here
-            T *bT = TransB == CblasTrans ? transpose(CblasRowMajor, CblasColMajor, K, N, B) : B;
-
+            bool transAFlag = TransA != CblasTrans;
+            bool transBFlag = TransB == CblasTrans;
 
             if (beta == (T) 0.0f) {
                 int length = M*N;
@@ -68,21 +64,20 @@ namespace nd4j {
 
 #pragma omp parallel for proc_bind(spread)
             for (int r = 0; r < M; r++) {
-
-                int aIdx = linearIndexC(M, K, r, 0);
-                T *aX = aT + aIdx;
-
+                int aIdx;
                 for (int c = 0; c < N; c++) {
                     int zIdx = linearIndexF(M, N, r, c);
 
                     T dot = (T) 0.0f;
 
                     if (alpha != (T) 0.0f) {
-                        int bIdx = linearIndexF(K, N, 0, c);
+                        int bIdx; // = linearIndexF(K, N, 0, c);
 
-                        T *bX = bT + bIdx;
-
-                        dot = nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                        for (int k = 0; k < K; k++) {
+                            aIdx = (transAFlag?linearIndexF(M, K, r, k):linearIndexC(M, K, r, k));
+                            bIdx = (transBFlag?linearIndexC(K, N, k, c):linearIndexF(K,N, k, c));
+                            dot += alpha * A[aIdx] * B[bIdx];//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                        }
                     }
 
                     if (beta != (T) 0.0f) {
@@ -92,14 +87,6 @@ namespace nd4j {
                     }
                 }
             }
-
-
-            // if transpose was applied - dismiss transposed arrays
-            if (TransA != CblasTrans)
-                delete[] aT;
-
-            if (TransB == CblasTrans)
-                delete[] bT;
         }
 
 
