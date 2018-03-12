@@ -254,9 +254,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
 
     /**
      * SplitV the DataSet into two DataSets randomly
-     * @param percentTrain    Percentage of examples to be returned in the training DataSet object
+     * @param fractionTrain    Fraction (in range 0 to 1) of examples to be returned in the training DataSet object
      */
-    SplitTestAndTrain splitTestAndTrain(double percentTrain);
+    SplitTestAndTrain splitTestAndTrain(double fractionTrain);
 
     @Override
     Iterator<org.nd4j.linalg.dataset.DataSet> iterator();
