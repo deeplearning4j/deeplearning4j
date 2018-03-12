@@ -573,6 +573,7 @@
         <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
         <maven-git-commit-id-plugin.version>2.2.2</maven-git-commit-id-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+        <fbs.version>1.2.0-3f79e055</fbs.version>
     </properties>
 
     <developers>

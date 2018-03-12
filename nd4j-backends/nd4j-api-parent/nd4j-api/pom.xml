@@ -33,49 +33,51 @@
     <url>http://nd4j.org</url>
 
     <build>
-      <plugins>
+        <plugins>
             <plugin>
-              <groupId>com.github.os72</groupId>
-              <artifactId>protoc-jar-maven-plugin</artifactId>
-              <version>3.5.0</version>
-              <executions>
-                <execution>
-                  <id>tensorflow</id>
-                  <phase>generate-sources</phase>
-                  <goals>
-                    <goal>run</goal>
-                  </goals>
-                  <configuration>
-                    <protocVersion>3.5.0</protocVersion>
-                    <includeDirectories>
-                      <include>src/main/protobuf/tf</include>
-                    </includeDirectories>
-                    <inputDirectories>
-                      <include>src/main/protobuf/tf/tensorflow</include>
-                    </inputDirectories>
-                    <addSources>main</addSources>
-                    <cleanOutputFolder>false</cleanOutputFolder>
-                    <outputDirectory>src/main/java/</outputDirectory>
-                  </configuration>
-                </execution>
-                <execution>
-                  <id>onnx</id>
-                  <phase>generate-sources</phase>
-                  <goals>
-                    <goal>run</goal>
-                  </goals>
-                  <configuration>
-                    <extension>.proto3</extension>
-                    <protocVersion>3.5.0</protocVersion>
-                    <inputDirectories>
-                      <include>src/main/protobuf/onnx</include>
-                    </inputDirectories>
-                    <addSources>main</addSources>
-                    <cleanOutputFolder>false</cleanOutputFolder>
-                    <outputDirectory>src/main/java/</outputDirectory>
-                  </configuration>
-                </execution>
-              </executions>
+                <groupId>com.github.os72</groupId>
+                <artifactId>protoc-jar-maven-plugin</artifactId>
+                <version>3.5.1.1</version>
+                <executions>
+                    <execution>
+                        <id>tensorflow</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <type>java-shaded</type>
+                            <protocVersion>3.5.1</protocVersion>
+                            <includeDirectories>
+                                <include>src/main/protobuf/tf</include>
+                            </includeDirectories>
+                            <inputDirectories>
+                                <include>src/main/protobuf/tf/tensorflow</include>
+                            </inputDirectories>
+                            <addSources>main</addSources>
+                            <cleanOutputFolder>false</cleanOutputFolder>
+                            <outputDirectory>src/main/java/</outputDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>onnx</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <type>java-shaded</type>
+                            <extension>.proto3</extension>
+                            <protocVersion>3.5.1</protocVersion>
+                            <inputDirectories>
+                                <include>src/main/protobuf/onnx</include>
+                            </inputDirectories>
+                            <addSources>main</addSources>
+                            <cleanOutputFolder>false</cleanOutputFolder>
+                            <outputDirectory>src/main/java/</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -136,16 +138,27 @@
             <version>${commons-math3.version}</version>
         </dependency>
         <!-- Tensorflow import -->
+
+        <!-- Note that this is a super minimal version of flatbuffers used by apache arrow.
+        We use this one as so as not to clash with their version.-->
         <dependency>
-            <groupId>com.github.davidmoten</groupId>
-            <artifactId>flatbuffers-java</artifactId>
-            <version>1.7.0.1</version>
+            <groupId>com.vlkan</groupId>
+            <artifactId>flatbuffers</artifactId>
+            <version>${fbs.version}</version>
         </dependency>
 
+        <!-- Note that this is shaded flatbuffers, see the protoc declaration above
+        mentioning java-shaded as the type for why we use this instead of google's (mainly due ot other systems packaging
+        their own older protobuf versions-->
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>3.4.0</version>
+            <groupId>com.github.os72</groupId>
+            <artifactId>protobuf-java-shaded-351</artifactId>
+            <version>0.9</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.os72</groupId>
+            <artifactId>protobuf-java-util-shaded-351</artifactId>
+            <version>0.9</version>
         </dependency>
 
         <dependency>
@@ -204,10 +217,10 @@
             <artifactId>neoitertools</artifactId>
             <version>1.0.0</version>
             <exclusions>
-              <exclusion>
-                <groupId>junit</groupId>
-                <artifactId>junit</artifactId>
-              </exclusion>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

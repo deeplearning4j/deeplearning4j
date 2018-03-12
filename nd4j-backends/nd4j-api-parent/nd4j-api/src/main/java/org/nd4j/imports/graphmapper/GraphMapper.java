@@ -1,6 +1,6 @@
 package org.nd4j.imports.graphmapper;
 
-import com.google.protobuf.Message;
+import com.github.os72.protobuf351.Message;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;

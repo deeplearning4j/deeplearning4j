@@ -126,6 +126,16 @@
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
+        <artifactId>flatbuffers</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>protbuf</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
         <artifactId>jackson</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -1,9 +1,9 @@
 package org.nd4j.imports.graphmapper.onnx;
 
+import com.github.os72.protobuf351.ByteString;
+import com.github.os72.protobuf351.Message;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
-import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
