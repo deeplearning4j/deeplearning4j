@@ -16,12 +16,12 @@
 
 package org.deeplearning4j.scalnet.layers.recurrent
 
-import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
 import org.deeplearning4j.nn.layers.BaseOutputLayer
 import org.deeplearning4j.scalnet.layers.core.OutputLayer
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class RnnOutputLayerTest extends WordSpec with Matchers {
 

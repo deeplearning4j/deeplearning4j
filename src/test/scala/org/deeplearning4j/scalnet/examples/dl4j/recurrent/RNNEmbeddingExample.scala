@@ -19,7 +19,7 @@ package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.embeddings.EmbeddingLayer
-import org.deeplearning4j.scalnet.layers.recurrent.{GravesLSTM, RnnOutputLayer}
+import org.deeplearning4j.scalnet.layers.recurrent.{ GravesLSTM, RnnOutputLayer }
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.DataSet

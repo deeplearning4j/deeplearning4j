@@ -16,12 +16,11 @@
 
 package org.deeplearning4j.scalnet.logging
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import org.slf4j.{ Logger, LoggerFactory }
 
 /**
   * A trait to use to extends any class where you want to provide a logger
   */
 trait Logging {
-  lazy val logger: Logger = { LoggerFactory.getLogger(getClass.getName) }
+  protected lazy val logger: Logger = { LoggerFactory.getLogger(getClass.getName) }
 }

@@ -21,7 +21,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
+import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.Sequential
 import org.deeplearning4j.scalnet.regularizers.L2
@@ -59,7 +59,7 @@ object LeNetMnistExample extends App with Logging {
   model.add(MaxPooling2D(List(2, 2), List(2, 2)))
 
   model.add(Convolution2D(50, List(5, 5), regularizer = L2(weightDecay), activation = Activation.RELU))
-  model.add(MaxPooling2D(List(2, 2),  List(2, 2)))
+  model.add(MaxPooling2D(List(2, 2), List(2, 2)))
   model.add(Flatten3D())
 
   model.add(Dense(512, regularizer = L2(weightDecay), activation = Activation.RELU))

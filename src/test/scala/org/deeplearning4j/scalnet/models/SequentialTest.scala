@@ -17,9 +17,9 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
-import org.deeplearning4j.scalnet.layers.core.{Dense, OutputLayer}
+import org.deeplearning4j.scalnet.layers.core.{ Dense, OutputLayer }
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
-import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
+import org.deeplearning4j.scalnet.layers.reshaping.{ Flatten3D, Unflatten3D }
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction

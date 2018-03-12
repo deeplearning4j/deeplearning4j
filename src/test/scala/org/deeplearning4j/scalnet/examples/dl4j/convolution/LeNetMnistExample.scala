@@ -58,7 +58,7 @@ object LeNetMnistExample extends App with Logging {
   model.add(MaxPooling2D(List(2, 2), List(2, 2)))
 
   model.add(Convolution2D(50, List(5, 5), regularizer = L2(weightDecay), activation = Activation.RELU))
-  model.add(MaxPooling2D(List(2, 2),  List(2, 2)))
+  model.add(MaxPooling2D(List(2, 2), List(2, 2)))
 
   model.add(Dense(512, regularizer = L2(weightDecay), activation = Activation.RELU))
   model.add(Dense(nClasses, activation = Activation.SOFTMAX))

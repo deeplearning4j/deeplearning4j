@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.scalnet.layers.embeddings
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class EmbeddingLayerTest extends WordSpec with Matchers {
 

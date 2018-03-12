@@ -18,11 +18,11 @@ package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
-import org.deeplearning4j.nn.conf.layers.{OutputLayer => JOutputLayer}
-import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.core.{Node, OutputLayer}
+import org.deeplearning4j.scalnet.layers.core.{ Node, OutputLayer }
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -39,10 +39,6 @@ trait Model {
 
   protected var layers: List[Node] = List()
   protected var model: MultiLayerNetwork = _
-
-  protected val defaultEpochs = 10
-  protected val defaultOptimizer = OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT
-  protected val defaultUpdater = Updater.SGD
 
   def getLayers: List[Node] = layers
 

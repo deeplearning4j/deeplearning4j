@@ -16,9 +16,9 @@
 
 package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ DenseLayer, OutputLayer => JOutputLayer }
 import org.deeplearning4j.nn.weights.WeightInit
-import org.deeplearning4j.scalnet.regularizers.{NoRegularizer, WeightRegularizer}
+import org.deeplearning4j.scalnet.regularizers.{ NoRegularizer, WeightRegularizer }
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.lossfunctions.LossFunctions
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction

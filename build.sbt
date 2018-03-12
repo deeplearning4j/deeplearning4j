@@ -23,7 +23,7 @@ update := {
 libraryDependencies ++= {
 
   val dl4j = "0.9.2-SNAPSHOT"
-  val logbackClassic = "1.2.3"
+  val logback = "1.2.3"
   val scalaCheck = "1.13.5"
   val scalaTest = "3.0.5"
   val slf4j = "1.7.25"
@@ -31,8 +31,7 @@ libraryDependencies ++= {
   Seq(
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
     "org.slf4j" % "slf4j-api" % "1.7.25",
-    "ch.qos.logback" % "logback-classic" % logbackClassic,
-    "org.slf4j" % "slf4j-api" % slf4j,
+    "ch.qos.logback" % "logback-classic" % logback,
     "org.nd4j" % "nd4j-native" % dl4j % "test",
     "org.scalacheck" %% "scalacheck" % scalaCheck % "test",
     "org.scalatest" %% "scalatest" % scalaTest % "test"

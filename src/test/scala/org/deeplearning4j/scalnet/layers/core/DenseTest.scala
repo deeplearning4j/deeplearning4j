@@ -16,9 +16,9 @@
 
 package org.deeplearning4j.scalnet.layers.core
 
-import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
+import org.deeplearning4j.nn.conf.layers.{ DenseLayer, OutputLayer => JOutputLayer }
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class DenseTest extends WordSpec with Matchers {
 

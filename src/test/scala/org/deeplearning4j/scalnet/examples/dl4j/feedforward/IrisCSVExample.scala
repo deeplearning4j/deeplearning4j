@@ -28,7 +28,7 @@ import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
+import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
@@ -68,7 +68,7 @@ object IrisCSVExample extends App with Logging {
   model.compile(LossFunction.MCXENT)
 
   logger.info("Train model...")
-  model.fit(training_data, epochs, listeners = List(new ScoreIterationListener(scoreFrequency)))
+  model.fit(training_data, epochs, List(new ScoreIterationListener(scoreFrequency)))
 
   logger.info("Evaluate model...")
   logger.info(s"Train accuracy = ${model.evaluate(training_data).accuracy}")
