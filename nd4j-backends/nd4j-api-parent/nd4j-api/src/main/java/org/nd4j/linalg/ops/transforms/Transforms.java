@@ -993,6 +993,17 @@ public class Transforms {
 
 
     /**
+     * Log of x + 1 function
+     *
+     * @param ndArray
+     * @param dup
+     * @return
+     */
+    public static INDArray log1p(INDArray ndArray, boolean dup) {
+        return exec(dup ? new Log(ndArray, ndArray.dup()) : new Log1p(ndArray));
+    }
+
+    /**
      * Negative
      *
      * @param ndArray

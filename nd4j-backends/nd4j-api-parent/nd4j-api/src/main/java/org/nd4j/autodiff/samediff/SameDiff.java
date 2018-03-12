@@ -1984,10 +1984,18 @@ public class SameDiff {
      * @param iX
      * @return
      */
+    public SDVariable log1p(SDVariable iX) {
+        return log1p(null, iX);
+    }
+
+
+    /**
+     * @param iX
+     * @return
+     */
     public SDVariable log(SDVariable iX) {
         return log(null, iX);
     }
-
 
     /**
      * @param iX
@@ -3100,6 +3108,16 @@ public class SameDiff {
      */
     public SDVariable log(String name, SDVariable iX) {
         SDVariable result = functionFactory.log(iX);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param iX
+     * @return
+     */
+    public SDVariable log1p(String name, SDVariable iX) {
+        SDVariable result = functionFactory.log1p(iX);
         return updateVariableNameAndReference(result, name);
 
     }

@@ -358,6 +358,11 @@ public class DifferentialFunctionFactory   {
         return new Log(sameDiff(),iX,null).outputVariables()[0];
     }
 
+    public SDVariable log1p(SDVariable iX) {
+        return new Log1p(sameDiff(),iX,null).outputVariables()[0];
+    }
+
+
     public SDVariable or(SDVariable iX, SDVariable i_y) {
         return new Or(sameDiff(),iX,i_y).outputVariables()[0];
     }

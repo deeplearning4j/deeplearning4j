@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -84,10 +85,11 @@ public class Log1p extends BaseTransformOp {
     }
 
 
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        throw new UnsupportedOperationException();
+        f().validateDifferentialFunctionsameDiff(arg());
+        SDVariable toInverse = sameDiff.setupFunction(f().div(i_v.get(0), arg()));
+        return Arrays.asList(toInverse);
     }
 
 }
