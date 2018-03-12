@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.TruncateDivOp;
@@ -379,7 +380,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 62; i++) {
+        for (int i = 61; i < 62; i++) {
 
             boolean skipBackward = false;
 
@@ -726,8 +727,14 @@ public class GradCheckTransforms {
                 case 61:
                     ia = Nd4j.create(new float[] {2, 2});
                     in = sd.var("in", new int[]{1, 2});
+                    sd.associateArrayWithVariable(ia, in);
                     double value = 42;
-                    expOut = Nd4j.create(new int[]{2, 2}, new float[] {42,42,42,42});
+                    expOut = Nd4j.create(new int[] {2, 2});
+                    DynamicCustomOp fillOp = DynamicCustomOp.builder("fill")
+                            .addInputs(ia)
+                            .addFloatingPointArguments(value)
+                            .addOutputs(expOut).build();
+                    Nd4j.getExecutioner().exec(fillOp);
                     skipBackward = true;
                     t = sd.fill(in, value);
                     break;
@@ -749,6 +756,8 @@ public class GradCheckTransforms {
             sd.associateArrayWithVariable(ia, in);
             sd.exec();
             INDArray out = t.getArr();
+
+            out.shape();
 
             if (!expOut.equals(out)) {
                 allFailed.add(msg + " - FAILED ON FORWARD");

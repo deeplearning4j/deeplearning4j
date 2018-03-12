@@ -36,6 +36,7 @@ public class Fill extends DynamicCustomOp {
     public Fill(SameDiff sameDiff, SDVariable shape, double value) {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
+        val shp = shape.getArr();
         addArgs();
     }
 
@@ -87,7 +88,9 @@ public class Fill extends DynamicCustomOp {
 
     @Override
     public List<int[]> calculateOutputShape() {
-        if(args().length < 2)
+
+        int numArgs = args().length;
+        if(numArgs < 1)
             return Collections.emptyList();
 
         val shape = args()[0].getArr();
