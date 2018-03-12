@@ -2558,6 +2558,9 @@ public class SameDiff {
         return rollAxis(null, x, axis);
     }
 
+    public SDVariable fill(SDVariable shape, double value) {
+        return fill(null, shape, value);
+    }
 
     /**
      * @param x
@@ -3575,6 +3578,17 @@ public class SameDiff {
      */
     public SDVariable rollAxis(String name, SDVariable x, int axis) {
         SDVariable result = functionFactory.rollAxis(x, axis);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param shape
+     * @param value
+     * @return
+     */
+    public SDVariable fill(String name, SDVariable shape, double value) {
+        SDVariable result = functionFactory.fill(shape, value);
         return updateVariableNameAndReference(result, name);
 
     }

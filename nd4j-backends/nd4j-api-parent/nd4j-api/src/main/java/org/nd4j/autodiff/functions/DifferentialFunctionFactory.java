@@ -6,7 +6,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
@@ -629,6 +628,9 @@ public class DifferentialFunctionFactory   {
         return new Concat(sameDiff(), dimension, inputs).outputVariables()[0];
     }
 
+    public  SDVariable fill(SDVariable shape, double value) {
+        return new Fill(sameDiff(), shape, value).outputVariables()[0];
+    }
 
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int... dimensions) {
         return new CosineSimilarity(sameDiff(),iX,i_y,dimensions).outputVariables()[0];

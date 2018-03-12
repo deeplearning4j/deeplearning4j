@@ -2,8 +2,10 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.val;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -16,8 +18,31 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+
+/**
+ * Fill an array of given "shape" with the provided "value", e.g.
+ * shape [2, 2] and value 42 returns [[42, 42], [42, 42]].
+ *
+ * @author Max Pumperla
+ */
 public class Fill extends DynamicCustomOp {
 
+    private double value;
+
+    public Fill() {
+    }
+
+
+    public Fill(SameDiff sameDiff, SDVariable shape, double value) {
+        super(null,sameDiff, new SDVariable[] {shape}, false);
+        this.value = value;
+        addArgs();
+    }
+
+
+    protected void addArgs() {
+        addTArgument(value);
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
