@@ -2223,6 +2223,14 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable shape(SDVariable df) {
+        return shape(null, df);
+    }
+
+    public SDVariable shape(String name, SDVariable df) {
+        SDVariable ret = f().shape(df);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     public SDVariable cross(SDVariable a, SDVariable b) {
         return cross(null, a, b);
