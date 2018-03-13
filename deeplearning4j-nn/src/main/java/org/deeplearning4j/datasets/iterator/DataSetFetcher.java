@@ -47,7 +47,7 @@ public interface DataSetFetcher extends Serializable {
 
     /**
      * Fetches the next dataset. You need to call this
-     * to getFromOrigin a new dataset, otherwise {@link #next()}
+     * to get a new dataset, otherwise {@link #next()}
      * just returns the last data applyTransformToDestination fetch
      * @param numExamples the number of examples to fetch
      */
