@@ -14,10 +14,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -62,7 +60,9 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         new LossPoisson(), new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0),
                         new LossFMeasure(), new LossFMeasure(2.0),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                        new LossMultiLabel(),
+        };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
                         Activation.SIGMOID, //xent
@@ -94,6 +94,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
+                        Activation.TANH, // MultiLabel, doesn't require any special activation, but tanh was used in paper
         };
 
         int[] nOut = new int[] {1, //xent
@@ -126,6 +127,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         2, //f-measure (binary, 2-label softmax output)
                         10, // Mixture Density
                         10, // Mixture Density + tanh
+                        10, // MultiLabel
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -205,7 +207,9 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(), new LossPoisson(),
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(),
                         new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                        new LossMultiLabel()
+        };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
                         Activation.SIGMOID, //xent
@@ -236,6 +240,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
+                        Activation.TANH, // MultiLabel
         };
 
         int[] nOut = new int[] {1, //xent
@@ -267,6 +272,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         2, //f-measure (binary, 2-label softmax output)
                         10, // Mixture Density
                         10, // Mixture Density + tanh
+                        10, // MultiLabel
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -461,6 +467,20 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 LossMixtureDensity lmd = (LossMixtureDensity) l;
                 int labelWidth = lmd.getLabelWidth();
                 ret[1] = Nd4j.rand(new int[] {labelsShape[0], labelWidth});
+                break;
+            case "LossMultiLabel":
+                ret[1] = Nd4j.rand(labelsShape).lti(0.3);
+                // ensure that there is no example that is all ones or all zeros
+                final INDArray sum = ret[1].sum(0);
+                for (int i = 0; i < labelsShape[0]; i++) {
+                    final int rowSum = sum.getInt(i);
+                    if (rowSum == 0) {
+                        ret[1].putScalar(i, 0, 1);
+                    } else if (rowSum == labelsShape[1]) {
+                        ret[1].putScalar(i, 0, 0);
+                    }
+                }
+
                 break;
             default:
                 throw new IllegalArgumentException("Unknown class: " + l.getClass().getSimpleName());
