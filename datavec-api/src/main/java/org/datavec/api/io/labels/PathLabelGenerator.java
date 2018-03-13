@@ -35,7 +35,7 @@ public interface PathLabelGenerator extends Serializable {
 
     /**
      * If true: infer the set of possible label classes, and convert these to integer indexes. If when true, the
-     * returned Writabels should be text writables.<br>
+     * returned Writables should be text writables.<br>
      * <br>
      * For regression use cases (or PathLabelGenerator classification instances that do their own label -> integer
      * assignment), this should return false.

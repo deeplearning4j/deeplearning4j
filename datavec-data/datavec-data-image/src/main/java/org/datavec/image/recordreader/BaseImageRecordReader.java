@@ -18,6 +18,7 @@ package org.datavec.image.recordreader;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
+import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
@@ -52,6 +53,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected Configuration conf;
     protected File currentFile;
     protected PathLabelGenerator labelGenerator = null;
+    protected PathMultiLabelGenerator labelMultiGenerator = null;
     protected List<String> labels = new ArrayList<>();
     protected boolean appendLabel = false;
     protected boolean writeLabel = false;
@@ -78,14 +80,24 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         this(height, width, channels, labelGenerator, null);
     }
 
+    public BaseImageRecordReader(int height, int width, int channels, PathMultiLabelGenerator labelGenerator) {
+        this(height, width, channels, null, labelGenerator,null);
+    }
+
     public BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
                     ImageTransform imageTransform) {
+        this(height, width, channels, labelGenerator, null, imageTransform);
+    }
+
+    protected BaseImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator,
+                                 PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
         this.channels = channels;
         this.labelGenerator = labelGenerator;
+        this.labelMultiGenerator = labelMultiGenerator;
         this.imageTransform = imageTransform;
-        this.appendLabel = labelGenerator != null ? true : false;
+        this.appendLabel = (labelGenerator != null || labelMultiGenerator != null);
     }
 
     protected boolean containsFormat(String format) {
@@ -197,12 +209,16 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
                 ret = RecordConverter.toRecord(row);
                 if (appendLabel || writeLabel){
-                    if( labelGenerator.inferLabelClasses()){
-                        //Standard classification use case (i.e., handle String -> integer conversion
-                        ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
+                    if(labelMultiGenerator != null){
+                        ret.addAll(labelMultiGenerator.getLabels(image.getPath()));
                     } else {
-                        //Regression use cases, and PathLabelGenerator instances that already map to integers
-                        ret.add(labelGenerator.getLabelForPath(image.getPath()));
+                        if (labelGenerator.inferLabelClasses()) {
+                            //Standard classification use case (i.e., handle String -> integer conversion
+                            ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
+                        } else {
+                            //Regression use cases, and PathLabelGenerator instances that already map to integers
+                            ret.add(labelGenerator.getLabelForPath(image.getPath()));
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -245,18 +261,27 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         int numCategories = (appendLabel || writeLabel) ? labels.size() : 0;
         List<Integer> currLabels = null;
         List<Writable> currLabelsWritable = null;
+        List<List<Writable>> multiGenLabels = null;
         while (cnt < num && iter.hasNext()) {
             currentFile = iter.next();
             currBatch.add(currentFile);
             if (appendLabel || writeLabel) {
-                if(labelGenerator.inferLabelClasses()){
-                    if(currLabels == null)
-                        currLabels = new ArrayList<>();
-                    currLabels.add(labels.indexOf(getLabel(currentFile.getPath())));
+                //Collect the label Writables from the label generators
+                if(labelMultiGenerator != null){
+                    if(multiGenLabels == null)
+                        multiGenLabels = new ArrayList<>();
+
+                    multiGenLabels.add(labelMultiGenerator.getLabels(currentFile.getPath()));
                 } else {
-                    if(currLabelsWritable == null)
-                        currLabelsWritable = new ArrayList<>();
-                    currLabelsWritable.add(labelGenerator.getLabelForPath(currentFile.getPath()));
+                    if (labelGenerator.inferLabelClasses()) {
+                        if (currLabels == null)
+                            currLabels = new ArrayList<>();
+                        currLabels.add(labels.indexOf(getLabel(currentFile.getPath())));
+                    } else {
+                        if (currLabelsWritable == null)
+                            currLabelsWritable = new ArrayList<>();
+                        currLabelsWritable.add(labelGenerator.getLabelForPath(currentFile.getPath()));
+                    }
                 }
             }
             cnt++;
@@ -278,31 +303,53 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
         List<Writable> ret = (RecordConverter.toRecord(features));
         if (appendLabel || writeLabel) {
-            INDArray labels;
-            if( labelGenerator.inferLabelClasses()){
-                //Standard classification use case (i.e., handle String -> integer conversion)
-                labels = Nd4j.create(cnt, numCategories, 'c');
-                Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
-                for (int i = 0; i < currLabels.size(); i++) {
-                    labels.putScalar(i, currLabels.get(i), 1.0f);
+            //And convert the previously collected label Writables from the label generators
+            if(labelMultiGenerator != null){
+                List<Writable> concattedLabels = new ArrayList<>();
+                List<Writable> temp = new ArrayList<>();
+                List<Writable> first = multiGenLabels.get(0);
+                for(int col=0; col<first.size(); col++ ){
+                    temp.clear();
+                    for( int ex=0; ex<multiGenLabels.size(); ex++ ){
+                        temp.add(multiGenLabels.get(ex).get(col));
+                    }
+
+                    //Now, convert to NDArrayWritable:
+                    if(temp.get(0) instanceof NDArrayWritable){
+                        //Concat(0) the writables (should work with 2d, 3d, or 4d - assuming they have leading dimension 1
+                        INDArray 
+                    } else {
+                        //Assume DoubleWritable etc -> convert to column vector
+
+                    }
                 }
             } else {
-                //Regression use cases, and PathLabelGenerator instances that already map to integers
-                if(currLabelsWritable.get(0) instanceof NDArrayWritable){
-                    List<INDArray> arr = new ArrayList<>();
-                    for(Writable w : currLabelsWritable){
-                        arr.add(((NDArrayWritable)w).get());
+                INDArray labels;
+                if (labelGenerator.inferLabelClasses()) {
+                    //Standard classification use case (i.e., handle String -> integer conversion)
+                    labels = Nd4j.create(cnt, numCategories, 'c');
+                    Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
+                    for (int i = 0; i < currLabels.size(); i++) {
+                        labels.putScalar(i, currLabels.get(i), 1.0f);
                     }
-                    labels = Nd4j.concat(0, arr.toArray(new INDArray[arr.size()]));
                 } else {
-                    labels = Nd4j.create(cnt, 1);
-                    for (int i = 0; i < cnt; i++) {
-                        labels.putScalar(i, 0, currLabelsWritable.get(i).toDouble());
+                    //Regression use cases, and PathLabelGenerator instances that already map to integers
+                    if (currLabelsWritable.get(0) instanceof NDArrayWritable) {
+                        List<INDArray> arr = new ArrayList<>();
+                        for (Writable w : currLabelsWritable) {
+                            arr.add(((NDArrayWritable) w).get());
+                        }
+                        labels = Nd4j.concat(0, arr.toArray(new INDArray[arr.size()]));
+                    } else {
+                        labels = Nd4j.create(cnt, 1);
+                        for (int i = 0; i < cnt; i++) {
+                            labels.putScalar(i, 0, currLabelsWritable.get(i).toDouble());
+                        }
                     }
                 }
-            }
 
-            ret.add(new NDArrayWritable(labels));
+                ret.add(new NDArrayWritable(labels));
+            }
         }
 
         return ret;
