@@ -894,6 +894,14 @@ public class DifferentialFunctionFactory   {
                 .outputVariables()[0];
     }
 
+    public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
+                                 int[] rates, boolean isSameMode) {
+        validateDifferentialFunctionsameDiff(df);
+        return new Dilation2D(sameDiff(), new SDVariable[] {df, weights}, strides, rates, isSameMode, false)
+                .outputVariables()[0];
+
+    }
+
     public SDVariable cross(SDVariable a, SDVariable b) {
         validateDifferentialFunctionsameDiff(a);
         return new Cross(sameDiff(), new SDVariable[]{a,b}).outputVariables()[0];

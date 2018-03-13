@@ -2212,6 +2212,17 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides,
+                                 int[] rates, boolean isSameMode) {
+        return dilation2D(null, df, weights, strides, rates, isSameMode);
+    }
+
+    public SDVariable dilation2D(String name, SDVariable df, SDVariable weights, int[] strides,
+                                 int[] rates, boolean isSameMode) {
+        SDVariable ret = f().dilation2D(df, weights,strides, rates, isSameMode);
+        return updateVariableNameAndReference(ret, name);
+    }
+
 
     public SDVariable cross(SDVariable a, SDVariable b) {
         return cross(null, a, b);

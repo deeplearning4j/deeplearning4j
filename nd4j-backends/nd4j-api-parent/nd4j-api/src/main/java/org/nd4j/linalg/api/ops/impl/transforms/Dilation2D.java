@@ -36,11 +36,34 @@ public class Dilation2D extends DynamicCustomOp {
 
 
     public Dilation2D() {
-        //
     }
 
-    public Dilation2D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs) {
+    public Dilation2D(SameDiff sameDiff, SDVariable[] inputAndWeights, int[] strides,
+                      int[] rates, boolean isSameMode, boolean inPlace ) {
+        super(null, sameDiff, inputAndWeights, inPlace);
+
+        if (rates.length < 4)
+            throw new IllegalArgumentException("Dilation rate length must be 4.");
+        if (strides.length < 4)
+            throw new IllegalArgumentException("Strides length must be 4.");
+
+        r0 = rates[0];
+        r1 = rates[1];
+        r2 = rates[2];
+        r3 = rates[3];
+        s0 = strides[0];
+        s1 = strides[1];
+        s2 = strides[2];
+        s3 = strides[3];
+        this.isSameMode = isSameMode;
+
+        addArgs();
+
+    }
+
+    public Dilation2D(INDArray[] inputArrays, INDArray[] outputs) {
         super(null, inputArrays, outputs);
+
     }
 
     protected void addArgs() {
