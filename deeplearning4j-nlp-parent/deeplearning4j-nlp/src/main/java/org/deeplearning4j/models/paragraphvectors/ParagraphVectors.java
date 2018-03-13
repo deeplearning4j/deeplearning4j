@@ -28,6 +28,7 @@ import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -298,10 +299,7 @@ public class ParagraphVectors extends Word2Vec {
 
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
-            try {
-                Thread.sleep(50);
-            } catch (Exception e) {
-            }
+            ThreadUtils.uncheckedSleep(50);
         }
 
         InferenceCallable callable = new InferenceCallable(vocab, tokenizerFactory, document);
@@ -328,10 +326,7 @@ public class ParagraphVectors extends Word2Vec {
 
         // we block execution until queued amount of documents gets below acceptable level, to avoid memory exhaust
         while (countSubmitted.get() - countFinished.get() > 1024) {
-            try {
-                Thread.sleep(50);
-            } catch (Exception e) {
-            }
+            ThreadUtils.uncheckedSleep(50);
         }
 
         BlindInferenceCallable callable = new BlindInferenceCallable(vocab, tokenizerFactory, document);
@@ -367,15 +362,12 @@ public class ParagraphVectors extends Word2Vec {
 
         for (int i = 0; i < documents.size(); i++) {
             Future<INDArray> future = futuresList.get(i);
-            while (!future.isDone()) {
-                try {
-                    Thread.sleep(1);
-                } catch (Exception e) {
-                }
-            }
             try {
                 results.add(future.get());
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -81,11 +81,8 @@ public class DiskBasedQueue<E> implements Queue<E>, Serializable {
                 while (running.get()) {
                     while (!save.isEmpty())
                         addAndSave(save.poll());
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+
+                    ThreadUtils.uncheckedSleep(1000);
                 }
             }
         });

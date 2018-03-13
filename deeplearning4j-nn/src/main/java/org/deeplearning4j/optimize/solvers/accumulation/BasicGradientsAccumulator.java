@@ -9,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedTransferQueue;
@@ -102,7 +103,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
 
             updatesLock.readLock().unlock();
             barrier.await();
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (BrokenBarrierException e) {
             throw new RuntimeException(e);
         }
     }
@@ -136,9 +140,12 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
 
             updatesLock.readLock().unlock();
             barrier.await();
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
-        }
+        } catch (BrokenBarrierException e) {
+            throw new RuntimeException(e);
+	}
     }
 
     /**
@@ -197,8 +204,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
             }
 
             barrier.await();
-
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (BrokenBarrierException e) {
             throw new RuntimeException(e);
         }
     }

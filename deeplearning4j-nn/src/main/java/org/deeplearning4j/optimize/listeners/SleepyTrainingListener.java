@@ -4,6 +4,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
@@ -101,17 +102,20 @@ public class SleepyTrainingListener implements TrainingListener {
 
         switch (sleepMode) {
             case PARK:
-                LockSupport.parkNanos(sleepTimeMs * 1000000);
+                ThreadUtils.uncheckedSleep(sleepTimeMs);
                 break;
             case BUSY: {
                 long target = System.currentTimeMillis() + sleepTimeMs;
-                while (System.currentTimeMillis() < target);;
+                while (System.currentTimeMillis() < target) {
+                    Thread.yield();
+                }
             }
                 break;
             case SLEEP:
                 try {
                     Thread.sleep(sleepTimeMs);
-                } catch (Exception e) {
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                 }
                 break;

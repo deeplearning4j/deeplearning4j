@@ -62,10 +62,10 @@ public class MultiThreadUtils {
                 }
             });
         }
-
         try {
             latch.await();
-        } catch (Exception e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }
