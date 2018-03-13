@@ -32,7 +32,7 @@ public class LossFunctionJson extends BaseNd4jTest {
                         new LossL2(), new LossL2(w), new LossMAE(), new LossMAE(w), new LossMAPE(), new LossMAPE(w),
                         new LossMCXENT(), new LossMCXENT(w), new LossMSE(), new LossMSE(w), new LossMSLE(),
                         new LossMSLE(w), new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(w),
-                        new LossPoisson(), new LossSquaredHinge()};
+                        new LossPoisson(), new LossSquaredHinge(), new LossMultiLabel()};
 
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
