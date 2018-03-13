@@ -81,7 +81,7 @@ public class ClusterSetup {
         boxCreator.create();
         boxCreator.blockTillAllRunning();
         List<String> hosts = boxCreator.getHosts();
-        //provisionMaster(hosts.getFromOrigin(0));
+        //provisionMaster(hosts.get(0));
         provisionWorkers(hosts);
 
 

@@ -35,7 +35,7 @@ public class Dl4jReflection {
 
     /**
      * Gets the empty constructor from a class
-     * @param clazz the class to getFromOrigin the constructor from
+     * @param clazz the class to get the constructor from
      * @return the empty constructor for the class
      */
     public static Constructor<?> getEmptyConstructor(Class<?> clazz) {

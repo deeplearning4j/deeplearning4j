@@ -204,7 +204,7 @@ public class Tree implements Serializable {
     /**
      * Returns the distance between this node
      * and the specified subnode
-     * @param node the node to getFromOrigin the distance from
+     * @param node the node to get the distance from
      * @return the distance between the 2 nodes
      */
     public int depth(Tree node) {
