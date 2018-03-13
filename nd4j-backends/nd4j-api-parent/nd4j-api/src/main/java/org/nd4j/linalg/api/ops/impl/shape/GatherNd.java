@@ -40,27 +40,27 @@ public class GatherNd extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
 
     }
 
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode,node, graph);
+        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode, node, graph);
     }
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
 
-        Map<String,PropertyMapping> mapNd = new HashMap<>();
+        Map<String, PropertyMapping> mapNd = new HashMap<>();
         val broadcastNd = PropertyMapping.builder()
                 .tfInputPosition(1)
                 .propertyNames(new String[]{"broadcast"}).build();
 
-        mapNd.put("broadcast",broadcastNd);
+        mapNd.put("broadcast", broadcastNd);
 
-        ret.put("GatherNd",mapNd);
+        ret.put("GatherNd", mapNd);
 
         return ret;
     }
