@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.NoArgsConstructor;
 import lombok.val;
 import onnx.OnnxProto3;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
@@ -23,9 +24,15 @@ import java.util.Map;
 @NoArgsConstructor
 public class GatherNd extends DynamicCustomOp {
 
-    private int[] broadcast;
-    private int axis = 0;
 
+    public GatherNd(SameDiff sameDiff, SDVariable input, SDVariable indices, boolean inPlace) {
+        super(null, sameDiff, new SDVariable[] {input, indices}, inPlace);
+    }
+
+    @Override
+    public String opName() {
+        return "gather_nd";
+    }
 
     @Override
     public String onnxName() {
@@ -47,26 +54,5 @@ public class GatherNd extends DynamicCustomOp {
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode, node, graph);
-    }
-
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-
-        Map<String, PropertyMapping> mapNd = new HashMap<>();
-        val broadcastNd = PropertyMapping.builder()
-                .tfInputPosition(1)
-                .propertyNames(new String[]{"broadcast"}).build();
-
-        mapNd.put("broadcast", broadcastNd);
-
-        ret.put("GatherNd", mapNd);
-
-        return ret;
-    }
-
-    @Override
-    public String opName() {
-        return "gather_nd";
     }
 }

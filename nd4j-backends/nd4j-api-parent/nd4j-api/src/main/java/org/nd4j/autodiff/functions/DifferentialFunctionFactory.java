@@ -911,6 +911,11 @@ public class DifferentialFunctionFactory   {
         return new Gather(sameDiff(), df, axis, broadcast, false).outputVariables()[0];
     }
 
+    public SDVariable gatherNd(SDVariable df, SDVariable indices) {
+        validateDifferentialFunctionsameDiff(df);
+        return new GatherNd(sameDiff(), df, indices, false).outputVariables()[0];
+    }
+
     public SDVariable cross(SDVariable a, SDVariable b) {
         validateDifferentialFunctionsameDiff(a);
         return new Cross(sameDiff(), new SDVariable[]{a,b}).outputVariables()[0];

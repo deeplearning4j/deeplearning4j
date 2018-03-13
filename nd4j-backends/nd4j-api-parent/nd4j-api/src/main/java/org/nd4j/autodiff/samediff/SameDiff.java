@@ -2250,6 +2250,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable gatherNd(SDVariable df, SDVariable indices) {
+        return gatherNd(null, df, indices);
+    }
+
+    public SDVariable gatherNd(String name, SDVariable df, SDVariable indices) {
+        SDVariable ret = f().gatherNd(df, indices);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public  SDVariable erf(SDVariable iX) {
         return erf(null, iX);
     }
