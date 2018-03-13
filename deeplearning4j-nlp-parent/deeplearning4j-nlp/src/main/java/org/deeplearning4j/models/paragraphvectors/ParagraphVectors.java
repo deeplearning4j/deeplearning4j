@@ -35,6 +35,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
+import org.threadly.concurrent.PriorityScheduler;
+import org.threadly.concurrent.TaskPriority;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -58,7 +60,7 @@ public class ParagraphVectors extends Word2Vec {
     protected boolean normalizedLabels = false;
 
     protected transient final Object inferenceLocker = new Object();
-    protected transient ExecutorService inferenceExecutor;
+    protected transient PriorityScheduler inferenceExecutor;
     protected transient AtomicLong countSubmitted;
     protected transient AtomicLong countFinished;
 
@@ -68,8 +70,10 @@ public class ParagraphVectors extends Word2Vec {
 
     protected synchronized void initInference() {
         if (countSubmitted == null || countFinished == null || inferenceExecutor == null) {
-            inferenceExecutor = Executors.newFixedThreadPool(
-                            Math.max(Runtime.getRuntime().availableProcessors() - 2, 2), new ThreadFactory() {
+            inferenceExecutor = new PriorityScheduler( 
+                            Math.max(Runtime.getRuntime().availableProcessors() - 2, 2), 
+                            TaskPriority.High, 1000, 
+                            new ThreadFactory() {
                                 public Thread newThread(Runnable r) {
                                     Thread t = Executors.defaultThreadFactory().newThread(r);
                                     t.setName("ParagraphVectors inference thread");

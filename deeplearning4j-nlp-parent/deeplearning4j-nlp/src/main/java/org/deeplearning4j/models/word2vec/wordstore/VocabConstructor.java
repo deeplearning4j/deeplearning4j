@@ -13,6 +13,7 @@ import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threadly.concurrent.PriorityScheduler;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -184,8 +185,7 @@ public class VocabConstructor<T extends SequenceElement> {
         int cnt = 0;
         int numProc = Runtime.getRuntime().availableProcessors();
         int numThreads = Math.max(numProc / 2, 2);
-        ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS,
-                        new LinkedTransferQueue<Runnable>());
+        PriorityScheduler executorService = new PriorityScheduler(numThreads);
         final AtomicLong execCounter = new AtomicLong(0);
         final AtomicLong finCounter = new AtomicLong(0);
 

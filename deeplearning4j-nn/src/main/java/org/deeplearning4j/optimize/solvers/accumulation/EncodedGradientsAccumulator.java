@@ -213,7 +213,6 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 if (throwable.isTriggered())
                     throw new RuntimeException(throwable.get());
             }
-
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
