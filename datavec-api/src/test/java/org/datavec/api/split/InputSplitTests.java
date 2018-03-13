@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -49,6 +50,11 @@ public class InputSplitTests {
                 for (String s : paths) {
                     uriStrings.add("file:///" + s);
                 }
+            }
+
+            @Override
+            public InputStream openInputStreamFor(String location) throws Exception {
+                return null;
             }
 
             @Override

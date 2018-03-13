@@ -10,13 +10,21 @@ import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Writable;
+import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.junit.Test;
+import org.nd4j.linalg.primitives.Pair;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import static java.nio.channels.Channels.newChannel;
 import static org.junit.Assert.assertArrayEquals;
@@ -128,6 +136,38 @@ public class ArrowConverterTest {
         assertEquals(1,vectorBool.get(0),1e-2);
         assertEquals(1,vectorBool.get(1),1e-2);
         assertEquals(0,vectorBool.get(2),1e-2);
+    }
+
+    @Test
+    public void testRecordReaderAndWriteFile() throws Exception {
+        List<List<Writable>> records = new ArrayList<>();
+        records.add(Arrays.<Writable>asList(new DoubleWritable(0.0),new DoubleWritable(0.0)));
+        records.add(Arrays.<Writable>asList(new DoubleWritable(0.0),new DoubleWritable(0.0)));
+        Schema.Builder schemaBuilder = new Schema.Builder();
+        for(int i = 0; i < 2; i++) {
+            schemaBuilder.addColumnFloat("col-" + i);
+        }
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ArrowConverter.writeRecordBatchTo(records,schemaBuilder.build(),byteArrayOutputStream);
+        byte[] arr = byteArrayOutputStream.toByteArray();
+        val read = ArrowConverter.readFromBytes(arr);
+        Pair<Schema,List<List<Writable>>> pair = Pair.of(schemaBuilder.build(),records);
+        assertEquals(pair,read);
+
+        //send file
+        File tmp = new File(System.getenv("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
+        tmp.mkdirs();
+        File tmpFile = new File(tmp,"data.arrow");
+        tmpFile.deleteOnExit();
+        RecordReader recordReader = new ArrowRecordReader();
+        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
+        ArrowConverter.writeRecordBatchTo(records,schemaBuilder.build(),bufferedOutputStream);
+        recordReader.initialize(new FileSplit(tmp));
+
+        List<Writable> record = recordReader.next();
+        assertEquals(2,record.size());
+
     }
 
 

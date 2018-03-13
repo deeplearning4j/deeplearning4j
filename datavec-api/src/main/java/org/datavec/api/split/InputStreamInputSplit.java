@@ -73,6 +73,11 @@ public class InputStreamInputSplit implements InputSplit {
     }
 
     @Override
+    public InputStream openInputStreamFor(String location) throws Exception {
+        return is;
+    }
+
+    @Override
     public long length() {
         throw new UnsupportedOperationException();
     }

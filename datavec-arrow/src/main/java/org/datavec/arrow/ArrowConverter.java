@@ -39,20 +39,7 @@ import static java.nio.channels.Channels.newChannel;
 public class ArrowConverter {
 
 
-    /**
-     * Get the field vectors for a given schema
-     * @param schema the input schema
-     * @return a list of field vectors for each column
-     * in the schema
-     */
-    public static List<FieldVector> getFieldVectorsForSchema(Schema schema) {
-        BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
-        List<FieldVector> ret = new ArrayList<>(schema.numColumns());
-        for(int i = 0; i < ret.size(); i++) {
-            ret.add(getFieldVectorForColumn(allocator,schema.getName(i),schema.getType(i)));
-        }
-        return ret;
-    }
+
 
 
     /**
@@ -62,8 +49,11 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
+      BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
         val convertedSchema = toArrowSchema(inputSchema);
-        try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),getFieldVectorsForSchema(inputSchema),recordBatch.size());
+        val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+
+        try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
             ArrowFileWriter writer = new ArrowFileWriter(root, null, newChannel(outputStream))) {
             writer.writeBatch();
         } catch (IOException e) {
@@ -122,9 +112,10 @@ public class ArrowConverter {
     }
 
     /**
-     *
-     * @param schema
-     * @return
+     * Convert an {@link org.apache.arrow.vector.types.pojo.Schema}
+     * to a datavec {@link Schema}
+     * @param schema the input arrow schema
+     * @return the equivalent datavec schema
      */
     public static Schema toDatavecSchema(org.apache.arrow.vector.types.pojo.Schema schema) {
         Schema.Builder schemaBuilder = new Schema.Builder();
@@ -593,24 +584,16 @@ public class ArrowConverter {
     }
 
 
-    private static FieldVector getFieldVectorForColumn(BufferAllocator bufferAllocator ,String name,ColumnType columnType) {
-        switch (columnType) {
-            case Long: return new BigIntVector(name,bufferAllocator);
-            case Integer: return new IntVector(name,bufferAllocator);
-            case Double: return new Float8Vector(name,bufferAllocator);
-            case Float: return new Float4Vector(name,bufferAllocator);
-            case Boolean: return new BitVector(name,bufferAllocator);
-            case Categorical: return new VarCharVector(name,bufferAllocator);
-            case Time: return new DateMilliVector(name,bufferAllocator);
-            case Bytes: return new BitVector(name,bufferAllocator);
-            case NDArray: return new BitVector(name,bufferAllocator);
-            default: throw new IllegalArgumentException("Column type invalid " + columnType);
-        }
-    }
-
-
-
-    private static Writable fromEntry(int item,FieldVector from,ColumnType columnType) {
+    /**
+     * Based on an input {@link ColumnType}
+     * get an entry from a {@link FieldVector}
+     *
+     * @param item the row of the item to get from the column vector
+     * @param from the column vector from
+     * @param columnType the column type
+     * @return the resulting writable
+     */
+    public static Writable fromEntry(int item,FieldVector from,ColumnType columnType) {
         switch(columnType) {
             case Integer:
                 UInt4Vector intVector = (UInt4Vector) from;
