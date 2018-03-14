@@ -71,7 +71,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
      * @param labelProvider ImageObjectLabelProvider - used to look up which objects are in each image
      */
     public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider) {
-        super(height, width, channels, null);
+        super(height, width, channels, null, null);
         this.gridW = gridW;
         this.gridH = gridH;
         this.labelProvider = labelProvider;
@@ -91,7 +91,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
      */
     public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW,
             ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
-        super(height, width, channels, null);
+        super(height, width, channels, null, null);
         this.gridW = gridW;
         this.gridH = gridH;
         this.labelProvider = labelProvider;

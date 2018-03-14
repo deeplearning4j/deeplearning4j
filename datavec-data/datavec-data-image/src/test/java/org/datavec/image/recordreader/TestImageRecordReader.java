@@ -16,8 +16,10 @@
 
 package org.datavec.image.recordreader;
 
+import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PathLabelGenerator;
+import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.split.CollectionInputSplit;
@@ -257,4 +259,119 @@ public class TestImageRecordReader {
                 throw new RuntimeException(filename);
         }
     }
+
+
+    @Test
+    public void testImageRecordReaderPathMultiLabelGenerator() throws Exception {
+        //Assumption: 2 multi-class (one hot) classification labels: 2 and 3 classes respectively
+        // PLUS single value (Writable) regression label
+
+        PathMultiLabelGenerator multiLabelGen = new TestPathMultiLabelGenerator();
+
+        ImageRecordReader rr = new ImageRecordReader(28, 28, 3, multiLabelGen);
+
+        File rootDir = new ClassPathResource("/testimages/").getFile();
+        FileSplit fs = new FileSplit(rootDir);
+        rr.initialize(fs);
+        URI[] arr = fs.locations();
+
+        assertTrue(rr.getLabels() == null || rr.getLabels().isEmpty());
+
+        List<List<Writable>> expLabels = new ArrayList<>();
+        for(URI u : arr){
+            String path = u.getPath();
+            expLabels.add(testMultiLabel(path.substring(path.length()-5, path.length())));
+        }
+
+        int count = 0;
+        while(rr.hasNext()){
+            List<Writable> l = rr.next();
+            assertEquals(4, l.size());
+            for( int i=0; i<3; i++ ){
+                assertEquals(expLabels.get(count).get(i), l.get(i+1));
+            }
+            count++;
+        }
+        assertEquals(6, count);
+
+        //Test batch ops:
+        rr.reset();
+        List<Writable> b1 = rr.next(3);
+        List<Writable> b2 = rr.next(3);
+        assertFalse(rr.hasNext());
+        assertEquals(4, b1.size());
+        assertEquals(4, b2.size());
+
+        NDArrayWritable l1a = new NDArrayWritable(Nd4j.vstack(
+                ((NDArrayWritable)expLabels.get(0).get(0)).get(),
+                ((NDArrayWritable)expLabels.get(1).get(0)).get(),
+                ((NDArrayWritable)expLabels.get(2).get(0)).get()));
+        NDArrayWritable l1b = new NDArrayWritable(Nd4j.vstack(
+                ((NDArrayWritable)expLabels.get(0).get(1)).get(),
+                ((NDArrayWritable)expLabels.get(1).get(1)).get(),
+                ((NDArrayWritable)expLabels.get(2).get(1)).get()));
+        NDArrayWritable l1c = new NDArrayWritable(Nd4j.create(new double[]{
+                expLabels.get(0).get(2).toDouble(),
+                expLabels.get(1).get(2).toDouble(),
+                expLabels.get(2).get(2).toDouble()}));
+
+
+        NDArrayWritable l2a = new NDArrayWritable(Nd4j.vstack(
+                ((NDArrayWritable)expLabels.get(3).get(0)).get(),
+                ((NDArrayWritable)expLabels.get(4).get(0)).get(),
+                ((NDArrayWritable)expLabels.get(5).get(0)).get()));
+        NDArrayWritable l2b = new NDArrayWritable(Nd4j.vstack(
+                ((NDArrayWritable)expLabels.get(3).get(1)).get(),
+                ((NDArrayWritable)expLabels.get(4).get(1)).get(),
+                ((NDArrayWritable)expLabels.get(5).get(1)).get()));
+        NDArrayWritable l2c = new NDArrayWritable(Nd4j.create(new double[]{
+                expLabels.get(3).get(2).toDouble(),
+                expLabels.get(4).get(2).toDouble(),
+                expLabels.get(5).get(2).toDouble()}));
+
+
+
+        assertEquals(l1a, b1.get(1));
+        assertEquals(l1b, b1.get(2));
+        assertEquals(l1c, b1.get(3));
+
+        assertEquals(l2a, b2.get(1));
+        assertEquals(l2b, b2.get(2));
+        assertEquals(l2c, b2.get(3));
+    }
+
+    private static class TestPathMultiLabelGenerator implements PathMultiLabelGenerator {
+
+        @Override
+        public List<Writable> getLabels(String uriPath) {
+            String filename = uriPath.substring(uriPath.length()-5);
+            return testMultiLabel(filename);
+        }
+    }
+
+    private static List<Writable> testMultiLabel(String filename){
+        switch(filename){
+            case "0.jpg":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
+                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0})), new DoubleWritable(0.0));
+            case "1.png":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0})), new DoubleWritable(1.0));
+            case "2.jpg":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{1,0})),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1})), new DoubleWritable(2.0));
+            case "A.jpg":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
+                        new NDArrayWritable(Nd4j.create(new double[]{1,0,0})), new DoubleWritable(3.0));
+            case "B.png":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,1,0})), new DoubleWritable(4.0));
+            case "C.jpg":
+                return Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[]{0,1})),
+                        new NDArrayWritable(Nd4j.create(new double[]{0,0,1})), new DoubleWritable(5.0));
+            default:
+                throw new RuntimeException(filename);
+        }
+    }
 }
+
