@@ -72,16 +72,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  */
 public class EvalTest extends BaseDL4JTest {
 
-    @Before
-    public void before(){
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
-    }
-
-    @After
-    public void after(){
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
-    }
-
 
     @Test
     public void testEval() {
@@ -1093,4 +1083,99 @@ public class EvalTest extends BaseDL4JTest {
         net.evaluate(testData);
     }
 
+
+    @Test
+    public void testEvalBinaryMetrics(){
+
+        Evaluation ePosClass1_nOut2 = new Evaluation(2, 1);
+        Evaluation ePosClass0_nOut2 = new Evaluation(2, 0);
+        Evaluation ePosClass1_nOut1 = new Evaluation(2, 1);
+        Evaluation ePosClass0_nOut1 = new Evaluation(2, 0);
+
+        Evaluation[] evals = new Evaluation[]{ePosClass1_nOut2, ePosClass0_nOut2, ePosClass1_nOut1, ePosClass0_nOut1};
+        int[] posClass = {1,0,1,0};
+
+
+        //Correct, actual positive class -> TP
+        INDArray p1_1 = Nd4j.create(new double[]{0.3, 0.7});
+        INDArray l1_1 = Nd4j.create(new double[]{0,1});
+        INDArray p1_0 = Nd4j.create(new double[]{0.7, 0.3});
+        INDArray l1_0 = Nd4j.create(new double[]{1,0});
+
+        //Incorrect, actual positive class -> FN
+        INDArray p2_1 = Nd4j.create(new double[]{0.6, 0.4});
+        INDArray l2_1 = Nd4j.create(new double[]{0,1});
+        INDArray p2_0 = Nd4j.create(new double[]{0.4, 0.6});
+        INDArray l2_0 = Nd4j.create(new double[]{1,0});
+
+        //Correct, actual negative class -> TN
+        INDArray p3_1 = Nd4j.create(new double[]{0.8, 0.2});
+        INDArray l3_1 = Nd4j.create(new double[]{1,0});
+        INDArray p3_0 = Nd4j.create(new double[]{0.2, 0.8});
+        INDArray l3_0 = Nd4j.create(new double[]{0,1});
+
+        //Incorrect, actual negative class -> FP
+        INDArray p4_1 = Nd4j.create(new double[]{0.45, 0.55});
+        INDArray l4_1 = Nd4j.create(new double[]{1,0});
+        INDArray p4_0 = Nd4j.create(new double[]{0.55, 0.45});
+        INDArray l4_0 = Nd4j.create(new double[]{0,1});
+
+        int tp = 7;
+        int fn = 5;
+        int tn = 3;
+        int fp = 1;
+        for( int i=0; i<tp; i++ ) {
+            ePosClass1_nOut2.eval(l1_1, p1_1);
+            ePosClass1_nOut1.eval(l1_1.getColumn(1), p1_1.getColumn(1));
+            ePosClass0_nOut2.eval(l1_0, p1_0);
+            ePosClass0_nOut1.eval(l1_0.getColumn(1), p1_0.getColumn(1));    //label 0 = instance of positive class
+        }
+        for( int i=0; i<fn; i++ ){
+            ePosClass1_nOut2.eval(l2_1, p2_1);
+            ePosClass1_nOut1.eval(l2_1.getColumn(1), p2_1.getColumn(1));
+            ePosClass0_nOut2.eval(l2_0, p2_0);
+            ePosClass0_nOut1.eval(l2_0.getColumn(1), p2_0.getColumn(1));
+        }
+        for( int i=0; i<tn; i++ ) {
+            ePosClass1_nOut2.eval(l3_1, p3_1);
+            ePosClass1_nOut1.eval(l3_1.getColumn(1), p3_1.getColumn(1));
+            ePosClass0_nOut2.eval(l3_0, p3_0);
+            ePosClass0_nOut1.eval(l3_0.getColumn(1), p3_0.getColumn(1));
+        }
+        for( int i=0; i<fp; i++ ){
+            ePosClass1_nOut2.eval(l4_1, p4_1);
+            ePosClass1_nOut1.eval(l4_1.getColumn(1), p4_1.getColumn(1));
+            ePosClass0_nOut2.eval(l4_0, p4_0);
+            ePosClass0_nOut1.eval(l4_0.getColumn(1), p4_0.getColumn(1));
+        }
+
+        for( int i=0; i<evals.length; i++ ){
+            int positiveClass = posClass[i];
+            String m = String.valueOf(i);
+            int tpAct = evals[i].truePositives().get(positiveClass);
+            int tnAct = evals[i].trueNegatives().get(positiveClass);
+            int fpAct = evals[i].falsePositives().get(positiveClass);
+            int fnAct = evals[i].falseNegatives().get(positiveClass);
+
+            //System.out.println(evals[i].stats());
+
+            assertEquals(m, tp, tpAct);
+            assertEquals(m, tn, tnAct);
+            assertEquals(m, fp, fpAct);
+            assertEquals(m, fn, fnAct);
+        }
+
+        double acc = (tp+tn) / (double)(tp+fn+tn+fp);
+        double rec = tp / (double)(tp+fn);
+        double prec = tp / (double)(tp+fp);
+        double f1 = 2 * (prec * rec) / (prec + rec);
+
+        for( int i=0; i<evals.length; i++ ){
+            String m = String.valueOf(i);
+            assertEquals(m, acc, evals[i].accuracy(), 1e-5);
+            assertEquals(m, prec, evals[i].precision(), 1e-5);
+            assertEquals(m, rec, evals[i].recall(), 1e-5);
+            assertEquals(m, f1, evals[i].f1(), 1e-5);
+        }
+    }
 }
