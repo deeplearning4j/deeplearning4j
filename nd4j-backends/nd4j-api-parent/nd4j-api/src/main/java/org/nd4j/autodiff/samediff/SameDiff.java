@@ -2278,6 +2278,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable[] unstack(SDVariable value, int axis) {
+        return unstack(null, value, axis);
+    }
+
+    public SDVariable[] unstack(String[] names, SDVariable value, int axis) {
+        SDVariable[] ret = f().unstack(value, axis);
+        return updateVariableNamesAndReferences(ret, names);
+    }
+
     public  SDVariable erf(SDVariable iX) {
         return erf(null, iX);
     }
