@@ -2228,7 +2228,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
-     * This is equivalent to {@link #score(DataSet, boolean)} with training==true.
+     * This is equivalent to {@link #score(DataSet, boolean)} with training==false.
      * @param data the data to score
      * @return the score for the given input,label pairs
      * @see #score(DataSet, boolean)
