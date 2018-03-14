@@ -16,10 +16,12 @@
 
 package org.datavec.image.recordreader;
 
+import com.google.common.base.Preconditions;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.api.records.Record;
+import org.datavec.api.records.converter.RecordReaderConverter;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
@@ -250,6 +252,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next(int num) {
+        Preconditions.checkArgument(num > 0, "Number of examples must be > 0: got " + num);
+
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
@@ -305,23 +309,15 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         if (appendLabel || writeLabel) {
             //And convert the previously collected label Writables from the label generators
             if(labelMultiGenerator != null){
-                List<Writable> concattedLabels = new ArrayList<>();
                 List<Writable> temp = new ArrayList<>();
                 List<Writable> first = multiGenLabels.get(0);
                 for(int col=0; col<first.size(); col++ ){
                     temp.clear();
-                    for( int ex=0; ex<multiGenLabels.size(); ex++ ){
-                        temp.add(multiGenLabels.get(ex).get(col));
+                    for (List<Writable> multiGenLabel : multiGenLabels) {
+                        temp.add(multiGenLabel.get(col));
                     }
-
-                    //Now, convert to NDArrayWritable:
-                    if(temp.get(0) instanceof NDArrayWritable){
-                        //Concat(0) the writables (should work with 2d, 3d, or 4d - assuming they have leading dimension 1
-                        INDArray 
-                    } else {
-                        //Assume DoubleWritable etc -> convert to column vector
-
-                    }
+                    INDArray currCol = RecordConverter.toMinibatchArray(temp);
+                    ret.add(new NDArrayWritable(currCol));
                 }
             } else {
                 INDArray labels;
@@ -341,10 +337,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                         }
                         labels = Nd4j.concat(0, arr.toArray(new INDArray[arr.size()]));
                     } else {
-                        labels = Nd4j.create(cnt, 1);
-                        for (int i = 0; i < cnt; i++) {
-                            labels.putScalar(i, 0, currLabelsWritable.get(i).toDouble());
-                        }
+                        labels = RecordConverter.toMinibatchArray(currLabelsWritable);
                     }
                 }
 
@@ -357,7 +350,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public void close() throws IOException {
-
+        //No op
     }
 
     @Override
