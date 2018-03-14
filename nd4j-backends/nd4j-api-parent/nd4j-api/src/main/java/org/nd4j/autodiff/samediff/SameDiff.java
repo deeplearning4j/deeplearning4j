@@ -1881,6 +1881,14 @@ public class SameDiff {
         return tan(null, iX);
     }
 
+    public SDVariable permute(SDVariable input, int... dimensions) {
+        return permute(null, input, dimensions);
+    }
+
+    public SDVariable permute(String name, SDVariable input, int... dimensions) {
+        SDVariable ret = f().permute(input, dimensions);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     public SDVariable invertPermutation(SDVariable input) {
         return invertPermutation(null, input);
