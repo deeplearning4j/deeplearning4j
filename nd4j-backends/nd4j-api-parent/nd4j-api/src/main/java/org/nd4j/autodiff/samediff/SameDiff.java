@@ -2269,6 +2269,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable stack(SDVariable[] values, int axis) {
+        return stack(null, values, axis);
+    }
+
+    public SDVariable stack(String name, SDVariable[] values, int axis) {
+        SDVariable ret = f().stack(values, axis);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public  SDVariable erf(SDVariable iX) {
         return erf(null, iX);
     }

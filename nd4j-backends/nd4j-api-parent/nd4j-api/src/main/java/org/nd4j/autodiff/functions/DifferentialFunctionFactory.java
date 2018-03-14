@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
@@ -563,6 +564,10 @@ public class DifferentialFunctionFactory   {
     public SDVariable repeat(SDVariable iX, int axis) {
         return new Repeat(sameDiff(), new SDVariable[]{iX},axis).outputVariables()[0];
 
+    }
+
+    public SDVariable stack(SDVariable[] values, int axis) {
+        return new Stack(sameDiff(), values, axis).outputVariables()[0];
     }
 
     public SDVariable assign(SDVariable x, SDVariable y){

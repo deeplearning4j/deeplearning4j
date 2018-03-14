@@ -17,12 +17,25 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Stack op conversion
+ * Stack operation. Stacks n input tensors along provided axis.
  *
  * @author raver119@gmail.com
  */
-public class Stack  extends DynamicCustomOp {
-    private int axis;
+public class Stack extends DynamicCustomOp {
+    protected int axis;
+
+    public Stack() {
+    }
+
+    public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {
+        super(null, sameDiff, values, false);
+        this.axis = axis;
+        addArgs();
+    }
+
+    public void addArgs() {
+        addIArgument(axis);
+    }
 
     @Override
     public String onnxName() {
@@ -34,10 +47,6 @@ public class Stack  extends DynamicCustomOp {
         return "stack";
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Differentiation not supported yet.");
-    }
 
     @Override
     public String toString() {
@@ -46,7 +55,7 @@ public class Stack  extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"Pack","Stack"};
+        return new String[]{"Pack", "Stack"};
     }
 
     @Override
@@ -56,8 +65,8 @@ public class Stack  extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode,nodeDef, graph);
-        addIArgument(axis);
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        addArgs();
     }
 
     @Override
@@ -68,8 +77,8 @@ public class Stack  extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
 
         val axisMapping = PropertyMapping.builder()
                 .onnxAttrName("axis")
@@ -77,14 +86,17 @@ public class Stack  extends DynamicCustomOp {
                 .propertyNames(new String[]{"axis"})
                 .build();
 
-        map.put("axis",axisMapping);
+        map.put("axis", axisMapping);
 
-        for(val name : tensorflowNames())
-            ret.put(name,map);
+        for (val name : tensorflowNames())
+            ret.put(name, map);
 
         return ret;
     }
 
-
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        throw new UnsupportedOperationException("Differentiation not supported yet.");
+    }
 
 }
