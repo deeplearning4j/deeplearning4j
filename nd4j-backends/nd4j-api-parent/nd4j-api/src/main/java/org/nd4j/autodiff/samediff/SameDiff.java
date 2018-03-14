@@ -2259,6 +2259,16 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable repeat(SDVariable df, int axis) {
+        return repeat(null, df, axis);
+    }
+
+
+    public SDVariable repeat(String name, SDVariable df, int axis) {
+        SDVariable ret = f().repeat(df, axis);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public  SDVariable erf(SDVariable iX) {
         return erf(null, iX);
     }
