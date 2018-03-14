@@ -43,7 +43,7 @@ public class InvertPermutation extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "invertPermutation";
+        return "invert_permutation";
     }
 
     @Override

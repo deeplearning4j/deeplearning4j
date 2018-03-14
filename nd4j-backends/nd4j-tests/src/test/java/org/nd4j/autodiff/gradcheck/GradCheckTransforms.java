@@ -370,6 +370,23 @@ public class GradCheckTransforms {
     }
 
     @Test
+    public void invertPermutation() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new float[] {3, 4, 0, 2, 1});
+        INDArray expOut = Nd4j.create(new float[] {2, 4, 3, 0, 1});
+
+        SDVariable input = sd.var("in", new int[] {1, 5});
+        sd.associateArrayWithVariable(ia, input);
+
+        SDVariable out = sd.invertPermutation(input);
+
+        sd.exec();
+
+        assert expOut.equals(out.getArr());
+    }
+
+    @Test
     public void testTransforms() {
         //Test transforms (non-pairwise)
         Nd4j.getRandom().setSeed(12345);
@@ -379,7 +396,7 @@ public class GradCheckTransforms {
         List<String> allSkipped = new ArrayList<>();
 
         List<String> allFailed = new ArrayList<>();
-        for (int i = 61; i < 62; i++) {
+        for (int i = 0; i < 62; i++) {
 
             boolean skipBackward = false;
 
