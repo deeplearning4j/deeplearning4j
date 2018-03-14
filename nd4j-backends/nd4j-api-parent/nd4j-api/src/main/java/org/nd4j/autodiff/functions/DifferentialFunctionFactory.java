@@ -289,6 +289,9 @@ public class DifferentialFunctionFactory   {
     }
 
 
+    public SDVariable invertPermutation(SDVariable input, boolean inPlace) {
+        return new InvertPermutation(sameDiff(), input, inPlace).outputVariables()[0];
+    }
 
     public SDVariable transpose(SDVariable iX) {
         return new Transpose(sameDiff(),iX).outputVariables()[0];

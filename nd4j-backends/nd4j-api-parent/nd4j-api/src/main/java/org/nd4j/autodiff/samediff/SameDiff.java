@@ -1881,6 +1881,16 @@ public class SameDiff {
         return tan(null, iX);
     }
 
+
+    public SDVariable invertPermutation(SDVariable input) {
+        return invertPermutation(null, input);
+    }
+
+    public SDVariable invertPermutation(String name, SDVariable input) {
+        SDVariable ret = f().invertPermutation(input, false);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @return
