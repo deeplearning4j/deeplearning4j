@@ -1091,9 +1091,11 @@ public class EvalTest extends BaseDL4JTest {
         Evaluation ePosClass0_nOut2 = new Evaluation(2, 0);
         Evaluation ePosClass1_nOut1 = new Evaluation(2, 1);
         Evaluation ePosClass0_nOut1 = new Evaluation(2, 0);
+        Evaluation ePosClassNull_nOut2 = new Evaluation(2, null);
+        Evaluation ePosClassNull_nOut1 = new Evaluation(2, null);
 
         Evaluation[] evals = new Evaluation[]{ePosClass1_nOut2, ePosClass0_nOut2, ePosClass1_nOut1, ePosClass0_nOut1};
-        int[] posClass = {1,0,1,0};
+        int[] posClass = {1,0,1,0,-1,-1};
 
 
         //Correct, actual positive class -> TP
@@ -1129,27 +1131,39 @@ public class EvalTest extends BaseDL4JTest {
             ePosClass1_nOut1.eval(l1_1.getColumn(1), p1_1.getColumn(1));
             ePosClass0_nOut2.eval(l1_0, p1_0);
             ePosClass0_nOut1.eval(l1_0.getColumn(1), p1_0.getColumn(1));    //label 0 = instance of positive class
+
+            ePosClassNull_nOut2.eval(l1_1, p1_1);
+            ePosClassNull_nOut1.eval(l1_0.getColumn(0), p1_0.getColumn(0));
         }
         for( int i=0; i<fn; i++ ){
             ePosClass1_nOut2.eval(l2_1, p2_1);
             ePosClass1_nOut1.eval(l2_1.getColumn(1), p2_1.getColumn(1));
             ePosClass0_nOut2.eval(l2_0, p2_0);
             ePosClass0_nOut1.eval(l2_0.getColumn(1), p2_0.getColumn(1));
+
+            ePosClassNull_nOut2.eval(l2_1, p2_1);
+            ePosClassNull_nOut1.eval(l2_0.getColumn(0), p2_0.getColumn(0));
         }
         for( int i=0; i<tn; i++ ) {
             ePosClass1_nOut2.eval(l3_1, p3_1);
             ePosClass1_nOut1.eval(l3_1.getColumn(1), p3_1.getColumn(1));
             ePosClass0_nOut2.eval(l3_0, p3_0);
             ePosClass0_nOut1.eval(l3_0.getColumn(1), p3_0.getColumn(1));
+
+            ePosClassNull_nOut2.eval(l3_1, p3_1);
+            ePosClassNull_nOut1.eval(l3_0.getColumn(0), p3_0.getColumn(0));
         }
         for( int i=0; i<fp; i++ ){
             ePosClass1_nOut2.eval(l4_1, p4_1);
             ePosClass1_nOut1.eval(l4_1.getColumn(1), p4_1.getColumn(1));
             ePosClass0_nOut2.eval(l4_0, p4_0);
             ePosClass0_nOut1.eval(l4_0.getColumn(1), p4_0.getColumn(1));
+
+            ePosClassNull_nOut2.eval(l4_1, p4_1);
+            ePosClassNull_nOut1.eval(l4_0.getColumn(0), p4_0.getColumn(0));
         }
 
-        for( int i=0; i<evals.length; i++ ){
+        for( int i=0; i<4; i++ ){
             int positiveClass = posClass[i];
             String m = String.valueOf(i);
             int tpAct = evals[i].truePositives().get(positiveClass);
@@ -1177,5 +1191,16 @@ public class EvalTest extends BaseDL4JTest {
             assertEquals(m, rec, evals[i].recall(), 1e-5);
             assertEquals(m, f1, evals[i].f1(), 1e-5);
         }
+
+        //Also check macro-averaged versions (null positive class):
+        assertEquals(acc, ePosClassNull_nOut2.accuracy(), 1e-6);
+        assertEquals(ePosClass1_nOut2.recall(EvaluationAveraging.Macro), ePosClassNull_nOut2.recall(), 1e-6);
+        assertEquals(ePosClass1_nOut2.precision(EvaluationAveraging.Macro), ePosClassNull_nOut2.precision(), 1e-6);
+        assertEquals(ePosClass1_nOut2.f1(EvaluationAveraging.Macro), ePosClassNull_nOut2.f1(), 1e-6);
+
+        assertEquals(acc, ePosClassNull_nOut1.accuracy(), 1e-6);
+        assertEquals(ePosClass1_nOut2.recall(EvaluationAveraging.Macro), ePosClassNull_nOut1.recall(), 1e-6);
+        assertEquals(ePosClass1_nOut2.precision(EvaluationAveraging.Macro), ePosClassNull_nOut1.precision(), 1e-6);
+        assertEquals(ePosClass1_nOut2.f1(EvaluationAveraging.Macro), ePosClassNull_nOut1.f1(), 1e-6);
     }
 }
