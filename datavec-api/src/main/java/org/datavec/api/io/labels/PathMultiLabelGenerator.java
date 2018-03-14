@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2017 Skymind, Inc.
+ *  * Copyright 2018 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -26,17 +26,20 @@ import java.util.List;
  * PathMultiLabelGenerator: interface to infer the label(s) of a file directly from the URI/path<br>
  * Similar to {@link PathLabelGenerator}, with 2 main differences:<br>
  * (a) Can be used for multi-label, multi-class classification (i.e., return *multiple* NDArray writables, for use in
- *     networks with multiple output layers)<br>
+ * networks with multiple output layers)<br>
  * (b) Does <it>not</it> support inferring label classes<br>
  * <br>
- * Regarding (b) above, this means that the implementations of PathMultiLabelGenerator need to do label to integer index
- * assignment for class labels. Comparatively, PathLabelGenerator can return a Text writable with the label (i.e.,
- * "class_3" or "cat") whereas PathMultiLabelGenerator must return Writables of one of the following types:
+ * Regarding (b) above, this means that the implementations of PathMultiLabelGenerator need to (for classification use
+ * cases) do label to integer index assignment to one-hot arrays. In practice, this means if you have 3 classes {A,B,C}
+ * you should return [1,0,0], [0,1,0] or [0,0,1] NDArrayWritables for the classes A, B and C respectively.<br>
+ * Comparatively, PathLabelGenerator can return a Text writable with the label (i.e., "class_3" or "cat") whereas
+ * PathMultiLabelGenerator must return Writables of one of the following types:
  * {@link org.datavec.api.writable.DoubleWritable}, {@link org.datavec.api.writable.FloatWritable},
  * {@link org.datavec.api.writable.IntWritable}, {@link org.datavec.api.writable.LongWritable} or
  * {@link org.datavec.api.writable.NDArrayWritable}
  *
  * @author Alex Black
+ * @see PathLabelGenerator
  */
 public interface PathMultiLabelGenerator extends Serializable {
 

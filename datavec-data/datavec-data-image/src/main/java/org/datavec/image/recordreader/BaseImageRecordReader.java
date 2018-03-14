@@ -21,7 +21,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.converter.RecordReaderConverter;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
