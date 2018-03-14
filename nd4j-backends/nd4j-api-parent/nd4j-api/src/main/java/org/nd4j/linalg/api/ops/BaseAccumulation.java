@@ -105,6 +105,11 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
 
+    public BaseAccumulation(SameDiff sameDiff,
+                            SDVariable i_v) {
+        this(sameDiff, i_v, null, false);
+    }
+
 
     public BaseAccumulation(SameDiff sameDiff,
                             SDVariable i_v,

@@ -32,13 +32,33 @@ public class GradCheckReductions {
     }
 
     @Test
+    public void testZeroCount() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new int[]{2, 2}, new float[] {0, 1, 0, 1});
+        SDVariable input = sd.var("in", new int[]{2, 2});
+        sd.associateArrayWithVariable(ia, input);
+
+        SDVariable nonZero = sd.countNonZero(input);
+        SDVariable zero = sd.countZero(input);
+
+        sd.exec();
+
+        assert nonZero.getArr().getDouble(0) == 2;
+        assert zero.getArr().getDouble(0) == 2;
+
+    }
+
+    @Test
     public void testReductionGradientsSimple() {
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 12; i++) {
 
             SameDiff sd = SameDiff.create();
+
+            boolean skipBackward = false;
 
             int nOut = 4;
             int minibatch = 10;
@@ -87,6 +107,16 @@ public class GradCheckReductions {
                     loss = sd.normmax("loss", input);
                     name = "normmax";
                     break;
+                case 10:
+                    loss = sd.countNonZero("loss", input);
+                    name = "countNonZero";
+                    skipBackward = true;
+                    break;
+                case 11:
+                    loss = sd.countZero("loss", input);
+                    name = "countZero";
+                    skipBackward = true;
+                    break;
                 default:
                     throw new RuntimeException();
             }
@@ -98,9 +128,10 @@ public class GradCheckReductions {
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             sd.associateArrayWithVariable(inputArr, input);
 
-            boolean ok = GradCheckUtil.checkGradients(sd);
-
-            assertTrue(msg, ok);
+            if (!skipBackward) {
+                boolean ok = GradCheckUtil.checkGradients(sd);
+                assertTrue(msg, ok);
+            }
         }
     }
 

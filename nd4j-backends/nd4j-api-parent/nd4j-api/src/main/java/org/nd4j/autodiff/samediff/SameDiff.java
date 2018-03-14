@@ -2522,6 +2522,25 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    public SDVariable countZero(SDVariable input) {
+        return countZero(null, input);
+    }
+
+    public SDVariable countZero(String name, SDVariable input) {
+        SDVariable res = f().countZero(input);
+        return updateVariableNameAndReference(res, name);
+    }
+
+
+    public SDVariable countNonZero(SDVariable input) {
+        return countNonZero(null, input);
+    }
+
+    public SDVariable countNonZero(String name, SDVariable input) {
+        SDVariable res = f().countNonZero(input);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param iX
      * @param dimensions

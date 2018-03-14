@@ -439,6 +439,7 @@ public abstract class DifferentialFunction {
      */
     public void resolvePropertiesFromSameDiffBeforeExecution() {
         val properties = sameDiff.propertiesToResolveForFunction(this);
+//        val diff = DifferentialFunctionClassHolder.getInstance();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         val currentFields = this.propertiesForFunction();
 

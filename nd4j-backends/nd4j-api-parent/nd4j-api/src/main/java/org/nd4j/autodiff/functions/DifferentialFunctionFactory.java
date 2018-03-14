@@ -162,6 +162,13 @@ public class DifferentialFunctionFactory   {
         return new  Variance(sameDiff(),i_x,dimensions,biasCorrected).outputVariables()[0];
     }
 
+    public SDVariable countNonZero(SDVariable input) {
+        return new CountNonZero(sameDiff(), input).outputVariables()[0];
+    }
+
+    public SDVariable countZero(SDVariable input) {
+        return new CountZero(sameDiff(), input).outputVariables()[0];
+    }
 
     public SDVariable max(SDVariable i_x, int... dimensions) {
         return new Max(sameDiff(),i_x,dimensions).outputVariables()[0];
