@@ -24,8 +24,13 @@ import java.net.URI;
 /**
  * PathLabelGenerator: interface to infer the label of a file directly from the path of a file<br>
  * Example: /negative/file17.csv -> class "0"; /positive/file116.csv -> class "1" etc.<br>
- * Though note that the output is a writable, hence it need not be numerical.
+ * Though note that the output is a writable, hence it need not be numerical.<br>
+ * <p>
+ * For use cases where multiple Writables are required (for example, networks with mixed classification/regression,
+ * or multiple output layers) use {@link PathMultiLabelGenerator} instead.
+ *
  * @author Alex Black
+ * @see PathMultiLabelGenerator
  */
 public interface PathLabelGenerator extends Serializable {
 
@@ -35,10 +40,11 @@ public interface PathLabelGenerator extends Serializable {
 
     /**
      * If true: infer the set of possible label classes, and convert these to integer indexes. If when true, the
-     * returned Writabels should be text writables.<br>
+     * returned Writables should be text writables.<br>
      * <br>
      * For regression use cases (or PathLabelGenerator classification instances that do their own label -> integer
      * assignment), this should return false.
+     *
      * @return whether label classes should be inferred
      */
     boolean inferLabelClasses();

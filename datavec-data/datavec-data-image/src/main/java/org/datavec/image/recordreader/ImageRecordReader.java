@@ -18,6 +18,7 @@ package org.datavec.image.recordreader;
 
 
 import org.datavec.api.io.labels.PathLabelGenerator;
+import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.image.transform.ImageTransform;
 
 /**
@@ -40,6 +41,11 @@ public class ImageRecordReader extends BaseImageRecordReader {
 
     /** Loads images with given height, width, and channels, appending labels returned by the generator. */
     public ImageRecordReader(int height, int width, int channels, PathLabelGenerator labelGenerator) {
+        super(height, width, channels, labelGenerator);
+    }
+
+    /** Loads images with given height, width, and channels, appending labels returned by the generator. */
+    public ImageRecordReader(int height, int width, int channels, PathMultiLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
     }
 

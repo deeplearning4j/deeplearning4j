@@ -150,10 +150,16 @@
         </dependency>
 
         <dependency>
-         <groupId>com.tdunning</groupId>
-         <artifactId>t-digest</artifactId>
-         <version>${tdigest.version}</version>
-     </dependency>
+            <groupId>com.tdunning</groupId>
+            <artifactId>t-digest</artifactId>
+            <version>${tdigest.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>${eclipse.collections.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
