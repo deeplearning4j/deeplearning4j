@@ -28,7 +28,7 @@ import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
-import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
+import org.nd4j.linalg.dataset.{DataSet, SplitTestAndTrain}
 import org.nd4j.linalg.io.ClassPathResource
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 

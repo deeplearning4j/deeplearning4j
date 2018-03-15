@@ -135,6 +135,13 @@ trait Model {
     evaluator
   }
 
+  def evaluate(dataset: DataSet, numClasses: Int): Evaluation = {
+    val evaluator = new Evaluation(numClasses)
+    val output = predict(dataset)
+    evaluator.eval(dataset.getLabels, output)
+    evaluator
+  }
+
   override def toString: String = model.getLayerWiseConfigurations.toString
 
   def toJson: String = model.getLayerWiseConfigurations.toJson
