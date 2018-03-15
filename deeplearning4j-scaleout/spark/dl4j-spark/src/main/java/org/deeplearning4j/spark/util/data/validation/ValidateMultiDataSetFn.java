@@ -1,4 +1,4 @@
-package org.deeplearning4j.spark.util.data.validation.dataset;
+package org.deeplearning4j.spark.util.data.validation;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -7,21 +7,27 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.spark.util.data.ValidationResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 
-import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 
-public class ValidateDataSetFn implements Function<String, ValidationResult> {
+import static org.deeplearning4j.spark.util.data.validation.ValidateDataSetFn.validateArrayShape;
+
+public class ValidateMultiDataSetFn implements Function<String, ValidationResult> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 
     private final boolean deleteInvalid;
-    private final int[] featuresShape;
-    private final int[] labelsShape;
+    private final int numFeatures;
+    private final int numLabels;
+    private final List<int[]> featuresShape;
+    private final List<int[]> labelsShape;
     private transient FileSystem fileSystem;
 
-    public ValidateDataSetFn(boolean deleteInvalid, int[] featuresShape, int[] labelsShape) {
+    public ValidateMultiDataSetFn(boolean deleteInvalid, int numFeatures, int numLabels, List<int[]> featuresShape, List<int[]> labelsShape) {
         this.deleteInvalid = deleteInvalid;
+        this.numFeatures = numFeatures;
+        this.numLabels = numLabels;
         this.featuresShape = featuresShape;
         this.labelsShape = labelsShape;
     }
@@ -41,7 +47,7 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
 
         boolean shouldDelete = false;
         boolean loadSuccessful = false;
-        DataSet ds = new DataSet();
+        MultiDataSet ds = new MultiDataSet();
         Path p = new Path(path);
 
         if (!fileSystem.exists(p)) {
@@ -61,11 +67,11 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
         boolean isValid = loadSuccessful;
         if (loadSuccessful) {
             //Validate
-            if (ds.getFeatures() == null) {
+            if (invalidArray(ds.getFeatures())) {
                 ret.setCountMissingFeatures(1);
                 isValid = false;
             } else {
-                if(featuresShape != null && !validateArrayShape(featuresShape, ds.getFeatures())){
+                if(featuresShape != null && !validateArrayShapes(numFeatures, featuresShape, ds.getFeatures())){
                     ret.setCountInvalidFeatures(1);
                     isValid = false;
                 }
@@ -75,7 +81,7 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
                 ret.setCountMissingLabels(1);
                 isValid = false;
             } else {
-                if(labelsShape != null && !validateArrayShape(labelsShape, ds.getLabelsMaskArray())){
+                if(labelsShape != null && !validateArrayShapes(numLabels, labelsShape, ds.getLabels())){
                     ret.setCountInvalidLabels(1);
                     isValid = false;
                 }
@@ -100,17 +106,29 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
         return ret;
     }
 
-    private static boolean validateArrayShape(int[] featuresShape, INDArray array){
-        if(featuresShape.length != array.rank()){
-            return false;
-        } else {
-            for( int i=0; i<featuresShape.length; i++ ){
-                if(featuresShape[i] <= 0)
-                    continue;
-                if(featuresShape[i] != array.size(i)){
-                    return false;
-                }
+    private static boolean invalidArray(INDArray[] array){
+        if(array == null || array.length == 0)
+            return true;
+        for( int i=0; i<array.length; i++ ){
+            if(array[i] == null){
+                return true;
             }
+        }
+        return false;
+    }
+
+    private boolean validateArrayShapes(int numFeatures, List<int[]> shapes, INDArray[] arr){
+        if(arr.length != numFeatures){
+            return false;
+        }
+
+        if(shapes == null)
+            return true;
+        if(shapes.size() != arr.length)
+            return false;
+
+        for( int i=0; i<shapes.size(); i++ ){
+            validateArrayShape(shapes.get(i), arr[i]);
         }
         return true;
     }
