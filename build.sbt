@@ -6,6 +6,8 @@ description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + D
 
 scalaVersion := "2.11.12"
 
+classpathTypes += "maven-plugin"
+
 resolvers in ThisBuild ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
@@ -26,7 +28,6 @@ libraryDependencies ++= {
   val logback = "1.2.3"
   val scalaCheck = "1.13.5"
   val scalaTest = "3.0.5"
-  val slf4j = "1.7.25"
 
   Seq(
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
@@ -63,7 +64,7 @@ lazy val standardSettings = Seq(
   )
 )
 
-parallelExecution in ThisBuild := false
+parallelExecution in Test := false
 scalafmtOnCompile in ThisBuild := true
 scalafmtTestOnCompile in ThisBuild := true
 test in assembly := {}
@@ -76,5 +77,6 @@ lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(standardSettings)
   .settings(
-    name := "ScalNet"
+    name := "ScalNet",
+    fork := true
   )
