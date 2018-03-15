@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
@@ -1671,33 +1672,123 @@ public class SameDiff {
      * @return
      */
     public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        Conv2D conv2D = Conv2D.builder()
-                .inputFunctions(inputs)
-                .sameDiff(this)
-                .config(conv2DConfig)
-                .build();
-
-        val outputVertexId = conv2D.outputVariables()[0];
-        return outputVertexId;
+        return conv2d(null, inputs, conv2DConfig);
     }
-
 
     /**
      * Conv2d operation.
      *
+     * @param name         name of the operation in SameDiff
      * @param inputs       the inputs to conv2d
+     * @param conv2DConfig the configuration
+     * @return
+     */
+    public SDVariable conv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        SDVariable ret = f().conv2d(inputs, conv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Depth-wise Conv2d operation.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param depthConv2DConfig the configuration
+     * @return
+     */
+    public SDVariable depthWiseConv2d(SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
+        return depthWiseConv2d(null, inputs, depthConv2DConfig);
+    }
+
+
+    /**
+     * Depth-wise Conv2d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to sconv2d
+     * @param depthConv2DConfig the configuration
+     * @return
+     */
+    public SDVariable depthWiseConv2d(String name, SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
+        SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Separable Conv2d operation.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param conv2DConfig the configuration
+     * @return
+     */
+    public SDVariable sconv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        return sconv2d(null, inputs, conv2DConfig);
+    }
+
+
+    /**
+     * Separable Conv2d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to sconv2d
+     * @param conv2DConfig the configuration
+     * @return
+     */
+    public SDVariable sconv2d(String name, SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        SDVariable ret = f().sconv2d(inputs, conv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
+     * Deconv2d operation.
+     *
+     * @param inputs       the inputs to sconv2d
+     * @param deconv2DConfig the configuration
+     * @return
+     */
+    public SDVariable deconv2d(SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
+        return deconv2d(null, inputs, deconv2DConfig);
+    }
+
+
+    /**
+     * Deconv2d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to sconv2d
+     * @param deconv2DConfig the configuration
+     * @return
+     */
+    public SDVariable deconv2d(String name, SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
+        SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+
+
+    /**
+     * Conv3d operation.
+     *
+     * @param inputs       the inputs to conv3d
      * @param conv3DConfig the configuration
      * @return
      */
     public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        Conv3D conv3D = Conv3D.builder()
-                .inputFunctions(inputs)
-                .conv3DConfig(conv3DConfig)
-                .sameDiff(this)
-                .build();
+        return conv3d(null, inputs, conv3DConfig);
+    }
 
-        val outputVars = conv3D.outputVariables();
-        return outputVars[0];
+    /**
+     * Conv3d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to conv3d
+     * @param conv3DConfig the configuration
+     * @return
+     */
+    public SDVariable conv3d(String name, SDVariable[] inputs, Conv3DConfig conv3DConfig) {
+        SDVariable ret = f().conv3d(inputs, conv3DConfig);
+        return updateVariableNameAndReference(ret, name);
     }
 
 

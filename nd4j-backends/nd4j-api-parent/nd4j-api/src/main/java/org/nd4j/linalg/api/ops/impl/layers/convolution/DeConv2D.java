@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -11,6 +12,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -26,30 +28,49 @@ import java.util.*;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class DeConv2D extends DynamicCustomOp {
-
 
     protected DeConv2DConfig config;
 
-    public DeConv2D() {}
-
-
     @Builder(builderMethodName = "builder")
-    public DeConv2D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace, DeConv2DConfig config) {
-        super(null,sameDiff, inputs, inPlace);
+    public DeConv2D(SameDiff sameDiff,
+                    SDVariable[] inputs,
+                    INDArray[] inputArrays, INDArray[] outputs,
+                    DeConv2DConfig config) {
+        super(null, inputArrays, outputs);
+        this.sameDiff = sameDiff;
         this.config = config;
-        if(inputArrays != null) {
+
+        if (inputArrays != null) {
             addInputArgument(inputArrays);
         }
-
-        if(outputs != null) {
+        if (outputs != null) {
             addOutputArgument(outputs);
         }
 
-
         addArgs();
+        sameDiff.putFunctionForId(this.getOwnName(), this);
+        sameDiff.addArgsFor(inputs, this);
     }
 
+    @Override
+    public Map<String, Object> propertiesForFunction() {
+        return config.toProperties();
+    }
+
+    private void addArgs() {
+        addIArgument(config.getKY());
+        addIArgument(config.getKX());
+        addIArgument(config.getSY());
+        addIArgument(config.getSX());
+        addIArgument(config.getPY());
+        addIArgument(config.getPX());
+        addIArgument(config.getDY());
+        addIArgument(config.getDX());
+        addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
+
+    }
 
     @Override
     public boolean isConfigProperties() {
@@ -61,55 +82,42 @@ public class DeConv2D extends DynamicCustomOp {
         return "config";
     }
 
+
+    @Override
+    public Object getValue(Field property) {
+        if (config == null) {
+            config = DeConv2DConfig.builder().build();
+        }
+
+        return config.getValue(property);
+    }
+
     @Override
     public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
-    }
-
-
-    @Override
-    public Map<String, Object> propertiesForFunction() {
-        return config.toProperties();
-    }
-
-    private void addArgs() {
-       addIArgument(config.getKY());
-       addIArgument(config.getKX());
-       addIArgument(config.getSY());
-       addIArgument(config.getSX());
-       addIArgument(config.getPY());
-       addIArgument(config.getPX());
-       addIArgument(config.getDY());
-       addIArgument(config.getDX());
-       addIArgument(ArrayUtil.fromBoolean(config.isSameMode()));
-
+        config.setValueFor(target, value);
     }
 
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
                 .build();
 
-
-
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh","kw"})
+                .propertyNames(new String[]{"kh", "kw"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw","dh"})
+                .propertyNames(new String[]{"dw", "dh"})
                 .tfAttrName("rates")
                 .build();
-
-
 
         val sameMode = PropertyMapping.builder()
                 .onnxAttrName("auto_pad")
@@ -119,9 +127,8 @@ public class DeConv2D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"ph","pw"})
+                .propertyNames(new String[]{"ph", "pw"})
                 .build();
-
 
         map.put("sx", strideMapping);
         map.put("sy", strideMapping);
@@ -129,12 +136,12 @@ public class DeConv2D extends DynamicCustomOp {
         map.put("kw", kernelMapping);
         map.put("dw", dilationMapping);
         map.put("dh", dilationMapping);
-        map.put("isSameMode",sameMode);
+        map.put("isSameMode", sameMode);
         map.put("ph", paddingWidthHeight);
         map.put("pw", paddingWidthHeight);
 
-        ret.put(onnxName(),map);
-        ret.put(tensorflowName(),map);
+        ret.put(onnxName(), map);
+        ret.put(tensorflowName(), map);
         return ret;
     }
 
@@ -153,12 +160,12 @@ public class DeConv2D extends DynamicCustomOp {
 
         val args = args();
         INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
-        if(arr == null) {
+        if (arr == null) {
             arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
             // TODO: arguable. it might be easier to permute weights once
             //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-            val  varForOp = initWith.getVariable(args[1].getVarName());
-            if(arr != null)
+            val varForOp = initWith.getVariable(args[1].getVarName());
+            if (arr != null)
                 initWith.associateArrayWithVariable(arr, varForOp);
 
 
@@ -221,7 +228,7 @@ public class DeConv2D extends DynamicCustomOp {
         arr = (arr.permute(3, 2, 0, 1).dup('c'));
         initWith.associateArrayWithVariable(arr, vertexId);
 
-       String dataFormat = "nhwc";
+        String dataFormat = "nhwc";
 
         val strides = attributesForNode.get("strides");
         val sY = strides.getIntsList().get(0);
@@ -245,8 +252,6 @@ public class DeConv2D extends DynamicCustomOp {
 
         addOutputArgument(arr);
     }
-
-
 
 
     @Override

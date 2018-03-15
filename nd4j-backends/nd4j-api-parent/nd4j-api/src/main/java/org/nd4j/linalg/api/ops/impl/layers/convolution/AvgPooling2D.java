@@ -20,7 +20,7 @@ import java.util.*;
 
 
 /**
- * Pooling2D operation
+ * Average Pooling2D operation
  */
 @Slf4j
 @Getter

@@ -2,7 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import com.google.common.base.Preconditions;
 import lombok.Data;
-import org.apache.commons.lang3.ArrayUtils;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -13,8 +13,10 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -122,6 +124,94 @@ public class DifferentialFunctionFactory   {
     }
 
 
+    /**
+     * Conv2d operation.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param conv2DConfig the configuration
+     * @return
+     */
+    public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        Conv2D conv2D = Conv2D.builder()
+                .inputFunctions(inputs)
+                .sameDiff(sameDiff())
+                .config(conv2DConfig)
+                .build();
+
+        return conv2D.outputVariables()[0];
+    }
+
+    /**
+     * Separable Conv2d operation.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param conv2DConfig the configuration
+     * @return
+     */
+    public SDVariable sconv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
+        SConv2D sconv2D = SConv2D.sBuilder()
+                .inputFunctions(inputs)
+                .sameDiff(sameDiff())
+                .conv2DConfig(conv2DConfig)
+                .build();
+
+        return sconv2D.outputVariables()[0];
+    }
+
+
+    /**
+     * Depthwise Conv2d operation. This is just separable convolution with
+     * only the depth-wise weights specified.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param depthConv2DConfig the configuration
+     * @return
+     */
+    public SDVariable depthWiseConv2d(SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
+        SConv2D depthWiseConv2D = SConv2D.sBuilder()
+                .inputFunctions(inputs)
+                .sameDiff(sameDiff())
+                .conv2DConfig(depthConv2DConfig)
+                .build();
+
+        return depthWiseConv2D.outputVariables()[0];
+    }
+
+
+    /**
+     * Deconv2d operation.
+     *
+     * @param inputs       the inputs to conv2d
+     * @param deconv2DConfig the configuration
+     * @return
+     */
+    public SDVariable deconv2d(SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
+        DeConv2D deconv2D = DeConv2D.builder()
+                .inputs(inputs)
+                .sameDiff(sameDiff())
+                .config(deconv2DConfig)
+                .build();
+
+        return deconv2D.outputVariables()[0];
+    }
+
+    /**
+     * Conv3d operation.
+     *
+     * @param inputs       the inputs to conv3d
+     * @param conv3DConfig the configuration
+     * @return
+     */
+    public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
+        Conv3D conv3D = Conv3D.builder()
+                .inputFunctions(inputs)
+                .conv3DConfig(conv3DConfig)
+                .sameDiff(sameDiff())
+                .build();
+
+        val outputVars = conv3D.outputVariables();
+        return outputVars[0];
+    }
 
 
     public SDVariable tile(SDVariable iX, int[] repeat) {

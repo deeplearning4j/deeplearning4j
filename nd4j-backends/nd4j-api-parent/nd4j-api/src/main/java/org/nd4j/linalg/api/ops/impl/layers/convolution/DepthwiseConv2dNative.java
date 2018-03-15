@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -9,11 +11,14 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.IntArrayIntIndexAdpater;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,10 +26,17 @@ import java.util.Map;
 
 /**
  *
+ * Depthwise convolution operation.
+ *
  */
-public class DepthwiseCon2dNative extends DynamicCustomOp {
-    private int sy, sx, ph, pw;
+@NoArgsConstructor
+public class DepthwiseConv2dNative extends Conv2D {
 
+    @Builder(builderMethodName = "depthWiseBuilder")
+    public DepthwiseConv2dNative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs,
+                                 Conv2DConfig conv2DConfig) {
+        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
+    }
 
 
     @Override
@@ -33,10 +45,6 @@ public class DepthwiseCon2dNative extends DynamicCustomOp {
     }
 
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return super.doDiff(f1);
-    }
 
     @Override
     public String tensorflowName() {
@@ -90,6 +98,22 @@ public class DepthwiseCon2dNative extends DynamicCustomOp {
 
         return ret;
 
+    }
+
+
+    @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "config";
+    }
+
+    @Override
+    public void setValueFor(Field target, Object value) {
+        config.setValueFor(target,value);
     }
 
     @Override

@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -35,6 +36,7 @@ import java.util.*;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class Conv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
@@ -47,16 +49,14 @@ public class Conv2D extends DynamicCustomOp {
         super(null, inputArrays, outputs);
         this.sameDiff = sameDiff;
         this.config = config;
+
         addArgs();
         sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
         sameDiff.addArgsFor(inputFunctions, this);
     }
 
-    public Conv2D() {
-    }
-
     protected void addArgs() {
-        addIArgument(new int[]{config.getKh(),
+        addIArgument(config.getKh(),
                 config.getKw(),
                 config.getSy(),
                 config.getSx(),
@@ -65,8 +65,7 @@ public class Conv2D extends DynamicCustomOp {
                 config.getDh(),
                 config.getDw(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                ArrayUtil.fromBoolean(config.isNHWC())});
-
+                ArrayUtil.fromBoolean(config.isNHWC()));
     }
 
     @Override
@@ -258,6 +257,6 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[] {"Conv2D"};
+        return new String[]{"Conv2D"};
     }
 }

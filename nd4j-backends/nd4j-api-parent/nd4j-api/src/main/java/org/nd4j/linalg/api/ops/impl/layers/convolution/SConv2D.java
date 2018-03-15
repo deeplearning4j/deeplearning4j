@@ -15,7 +15,7 @@ import java.util.List;
 
 
 /**
- * Pooling2DDerivative operation
+ * Separable convolution 2D operation
  */
 @Slf4j
 public class SConv2D extends Conv2D {

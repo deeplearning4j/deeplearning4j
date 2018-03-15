@@ -35,26 +35,32 @@ public class Conv3D extends DynamicCustomOp {
 
     protected Conv3DConfig config;
 
-    public Conv3D() {}
+    public Conv3D() {
+    }
 
     @Builder(builderMethodName = "builder")
-    public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions,INDArray[] inputs, INDArray[] outputs,Conv3DConfig conv3DConfig) {
-        super(null,sameDiff, inputFunctions, false);
+    public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs,
+                  Conv3DConfig conv3DConfig) {
+        super(null, sameDiff, inputFunctions, false);
         setSameDiff(sameDiff);
 
-        if(inputs != null)
+        if (inputs != null)
             addInputArgument(inputs);
-        if(outputs != null)
+        if (outputs != null)
             addOutputArgument(outputs);
         this.config = conv3DConfig;
         addArgs();
 
+
+        for (int arg: iArgs())
+            System.out.println(getIArgument(arg));
     }
 
 
     private void addArgs() {
-        addIArgument(new int[]{
-                //ArrayUtil.fromBoolean(getConfig().isBiasUsed()),
+        addIArgument(
+                // TODO: support bias terms
+//                ArrayUtil.fromBoolean(getConfig().isBiasUsed()),
                 getConfig().getKT(),
                 getConfig().getKH(),
                 getConfig().getKW(),
@@ -72,15 +78,15 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDilationW(),
 
                 getConfig().isValidMode() ? 1 : 0,
-                getConfig().isNCDHW() ? 1 : 0,
-        });
+                getConfig().isNCDHW() ? 1 : 0
+        );
 
     }
 
 
     @Override
     public Object getValue(Field property) {
-        if(config == null) {
+        if (config == null) {
             config = Conv3DConfig.builder().build();
         }
 
@@ -89,45 +95,45 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public void setValueFor(Field target, Object value) {
-        if(config == null) {
+        if (config == null) {
             config = Conv3DConfig.builder().build();
         }
 
-        if(target != null)
-            config.setValueFor(target,value);
+        if (target != null)
+            config.setValueFor(target, value);
     }
 
 
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String,Map<String,AttributeAdapter>> ret = new LinkedHashMap<>();
-        Map<String,AttributeAdapter> tfAdapters = new LinkedHashMap<>();
+        Map<String, Map<String, AttributeAdapter>> ret = new LinkedHashMap<>();
+        Map<String, AttributeAdapter> tfAdapters = new LinkedHashMap<>();
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
-        tfAdapters.put("kT", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC",0,2,fields.get("dataFormat")));
-        tfAdapters.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC",1,3,fields.get("dataFormat")));
-        tfAdapters.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC",2,4,fields.get("dataFormat")));
+        tfAdapters.put("kT", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 0, 2, fields.get("dataFormat")));
+        tfAdapters.put("kH", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 1, 3, fields.get("dataFormat")));
+        tfAdapters.put("kW", new ConditionalFieldValueNDArrayShapeAdapter("NDHWC", 2, 4, fields.get("dataFormat")));
 
         tfAdapters.put("dT", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("dH",new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("dW",  new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("dH", new IntArrayIntIndexAdpater(2));
+        tfAdapters.put("dW", new IntArrayIntIndexAdpater(3));
 
         tfAdapters.put("pT", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("pH",new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("pW",  new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("pH", new IntArrayIntIndexAdpater(2));
+        tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
 
 
-        tfAdapters.put("isValidMode",new StringEqualsAdapter("VALID"));
-        tfAdapters.put("isNCDHW",new StringEqualsAdapter("NCDHW"));
+        tfAdapters.put("isValidMode", new StringEqualsAdapter("VALID"));
+        tfAdapters.put("isNCDHW", new StringEqualsAdapter("NCDHW"));
 
-        ret.put(tensorflowName(),tfAdapters);
+        ret.put(tensorflowName(), tfAdapters);
 
         return ret;
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null) {
+        if (config == null) {
             return Collections.emptyMap();
         }
         return config.toProperties();
@@ -139,15 +145,14 @@ public class Conv3D extends DynamicCustomOp {
     }
 
 
-
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
 
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kT", "kW","kH"})
+                .propertyNames(new String[]{"kT", "kW", "kH"})
                 .tfInputPosition(1)
                 .onnxAttrName("kernel_shape")
                 .build();
@@ -155,12 +160,12 @@ public class Conv3D extends DynamicCustomOp {
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"dT","dW","dH"})
+                .propertyNames(new String[]{"dT", "dW", "dH"})
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dilationT","dilationH","dilationW"})
+                .propertyNames(new String[]{"dilationT", "dilationH", "dilationW"})
                 .tfAttrName("rates")
                 .build();
 
@@ -172,7 +177,7 @@ public class Conv3D extends DynamicCustomOp {
 
         val paddingWidthHeight = PropertyMapping.builder()
                 .onnxAttrName("padding")
-                .propertyNames(new String[]{"pT","pW","pH"})
+                .propertyNames(new String[]{"pT", "pW", "pH"})
                 .build();
 
         val dataFormat = PropertyMapping.builder()
@@ -183,7 +188,7 @@ public class Conv3D extends DynamicCustomOp {
 
 
         val outputPadding = PropertyMapping.builder()
-                .propertyNames(new String[]{"aT","aH","aW"})
+                .propertyNames(new String[]{"aT", "aH", "aW"})
                 .build();
 
 
@@ -192,20 +197,20 @@ public class Conv3D extends DynamicCustomOp {
                 .build();
 
 
-        for(val propertyMapping : new PropertyMapping[] {
+        for (val propertyMapping : new PropertyMapping[]{
                 kernelMapping,
                 strideMapping,
                 dilationMapping,
                 sameMode,
                 paddingWidthHeight,
                 dataFormat,
-                outputPadding,biasUsed}) {
-            for(val keys : propertyMapping.getPropertyNames())
-                map.put(keys,propertyMapping);
+                outputPadding, biasUsed}) {
+            for (val keys : propertyMapping.getPropertyNames())
+                map.put(keys, propertyMapping);
         }
 
-        ret.put(onnxName(),map);
-        ret.put(tensorflowName(),map);
+        ret.put(onnxName(), map);
+        ret.put(tensorflowName(), map);
         return ret;
     }
 
@@ -236,11 +241,11 @@ public class Conv3D extends DynamicCustomOp {
 
     @Override
     public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if(numIArguments() < 1) {
+        if (numIArguments() < 1) {
             addArgs();
         }
 
-        if(numInputArguments() < getDescriptor().getNumIArgs()) {
+        if (numInputArguments() < getDescriptor().getNumIArgs()) {
             populateInputsAndOutputsFromSameDiff();
         }
 

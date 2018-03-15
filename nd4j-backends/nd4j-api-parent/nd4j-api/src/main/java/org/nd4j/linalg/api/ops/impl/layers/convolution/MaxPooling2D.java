@@ -21,7 +21,7 @@ import java.util.*;
 
 
 /**
- * Pooling2D operation
+ * Max Pooling2D operation
  */
 @Slf4j
 @Getter

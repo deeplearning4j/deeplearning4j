@@ -38,7 +38,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
     @Builder.Default private int aW = 0;
     @Builder.Default private int aH = 0;
 
-    private boolean biasUsed;
+    private boolean biasUsed = false;
     private boolean isValidMode;
     private boolean isNCDHW;
 
