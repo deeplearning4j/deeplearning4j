@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
@@ -204,6 +205,10 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable cumprod(SDVariable in, boolean exclusive, boolean reverse, int... dimensions){
         return new CumProd(sameDiff(), in, exclusive, reverse, dimensions).outputVariables()[0];
+    }
+
+    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
+        return new BiasAdd(sameDiff(), input, bias).outputVariables()[0];
     }
 
     public SDVariable norm1(SDVariable i_x, int... dimensions) {

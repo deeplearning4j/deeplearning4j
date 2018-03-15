@@ -2613,6 +2613,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
+        return biasAdd(null, input, bias);
+    }
+
+    public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
+        SDVariable ret = f().biasAdd(input, bias);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     /**
      * @param iX
      * @param shape

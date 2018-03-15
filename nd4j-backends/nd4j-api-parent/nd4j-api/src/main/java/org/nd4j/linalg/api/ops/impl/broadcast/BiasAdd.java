@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import lombok.NoArgsConstructor;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -14,10 +15,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@NoArgsConstructor
 public class BiasAdd extends DynamicCustomOp {
 
 
-    public BiasAdd() {}
+    public BiasAdd(SameDiff sameDiff, SDVariable input, SDVariable bias) {
+        super(null, sameDiff, new SDVariable[] {input, bias}, false);
+    }
 
     @Override
     public String opName() {
@@ -45,10 +49,6 @@ public class BiasAdd extends DynamicCustomOp {
             return Arrays.asList(args[1].getShape());
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return null;
-    }
 
     @Override
     public String onnxName() {
