@@ -227,6 +227,19 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{1,1}, result.getShape());
     }
 
+    @Test
+    public void testBiasAdd() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray ia = Nd4j.create(new int[] {2, 2});
+        INDArray b  = Nd4j.create(new int[] {1, 2});
+
+        SDVariable input = sameDiff.var("input", ia);
+        SDVariable bias  = sameDiff.var("bias", b);
+
+        SDVariable res = sameDiff.biasAdd(input, bias);
+        assertArrayEquals(new int[]{2, 2}, res.getShape());
+
+    }
 
     @Test
     public void testMseForward() {
