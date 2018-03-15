@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -222,6 +223,9 @@ public class DifferentialFunctionFactory   {
     }
 
 
+    public SDVariable dropout(SDVariable input, double p) {
+        return new DropOut(sameDiff(), input, p).outputVariables()[0];
+    }
 
 
     public SDVariable sum(SDVariable i_x,

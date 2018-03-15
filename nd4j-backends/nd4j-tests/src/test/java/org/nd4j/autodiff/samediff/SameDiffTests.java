@@ -242,6 +242,18 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testDropout() {
+        SameDiff sd = SameDiff.create();
+        double p = 0.5;
+        INDArray ia = Nd4j.create(new int[]{2, 2});
+
+        SDVariable input = sd.var("input", ia);
+
+        SDVariable res = sd.dropout(input, p);
+        assertArrayEquals(new int[]{2, 2}, res.getShape());
+    }
+
+    @Test
     public void testMseForward() {
 
         SameDiff sd = SameDiff.create();

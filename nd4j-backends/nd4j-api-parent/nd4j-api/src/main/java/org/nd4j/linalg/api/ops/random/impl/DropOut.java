@@ -19,8 +19,10 @@
 
 package org.nd4j.linalg.api.ops.random.impl;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
@@ -33,12 +35,14 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class DropOut extends BaseRandomOp {
 
     private double p;
 
-    public DropOut() {
-
+    public DropOut(SameDiff sameDiff, SDVariable input, double p) {
+        super(sameDiff, input);
+        this.p = p;
     }
 
     public DropOut(@NonNull INDArray x, double p) {

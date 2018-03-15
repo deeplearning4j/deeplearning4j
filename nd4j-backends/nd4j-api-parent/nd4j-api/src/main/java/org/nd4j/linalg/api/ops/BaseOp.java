@@ -62,7 +62,6 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public BaseOp() {
     }
 
-
     public BaseOp(SameDiff sameDiff, boolean inPlace, Object[] extraArgs) {
         super(sameDiff, inPlace, extraArgs);
     }

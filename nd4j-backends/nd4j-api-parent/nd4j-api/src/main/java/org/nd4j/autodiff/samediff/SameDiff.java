@@ -2790,6 +2790,14 @@ public class SameDiff {
         return fill(null, shape, value);
     }
 
+    public SDVariable dropout(SDVariable input, double p) {
+        return dropout(null, input, p);
+    }
+
+    public SDVariable dropout(String name, SDVariable input, double p) {
+        SDVariable res = f().dropout(input, p);
+        return updateVariableNameAndReference(res, name);
+    }
 
     /**
      * @param x
