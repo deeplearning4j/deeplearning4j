@@ -1881,15 +1881,6 @@ public class SameDiff {
         return tan(null, iX);
     }
 
-    public SDVariable permute(SDVariable input, int... dimensions) {
-        return permute(null, input, dimensions);
-    }
-
-    public SDVariable permute(String name, SDVariable input, int... dimensions) {
-        SDVariable ret = f().permute(input, dimensions);
-        return updateVariableNameAndReference(ret, name);
-    }
-
     public SDVariable invertPermutation(SDVariable input) {
         return invertPermutation(null, input);
     }
@@ -2633,14 +2624,25 @@ public class SameDiff {
     }
 
 
+    /**
+     * @param x
+     * @param dimensions
+     * @return
+     */
     public SDVariable reverse(SDVariable x, int... dimensions){
         return reverse(null, x, dimensions);
     }
 
+    /**
+     * @param x
+     * @param dimensions
+     * @return
+     */
     public SDVariable reverse(String name, SDVariable x, int... dimensions){
         SDVariable ret = f().reverse(x, dimensions);
         return updateVariableNameAndReference(ret, name);
     }
+
 
     public SDVariable assign(SDVariable x, SDVariable y){
         return assign(null, x, y);
@@ -2659,6 +2661,14 @@ public class SameDiff {
         return transpose(null, iX);
     }
 
+    /**
+     * @param iX
+     * @param dimensions
+     * @return
+     */
+    public SDVariable permute(SDVariable iX, int... dimensions) {
+        return permute(null, iX, dimensions);
+    }
 
     /**
      * @param x
@@ -2669,9 +2679,26 @@ public class SameDiff {
         return rollAxis(null, x, axis);
     }
 
+    /**
+     * @param dimension
+     * @param inputs
+     * @return
+     */
+    public SDVariable concat(int dimension, SDVariable... inputs) {
+        return concat(null, dimension, inputs);
+    }
+
+    /**
+     * @param iX
+     * @param repeat
+     * @return
+     */
+    public SDVariable tile(SDVariable iX, int[] repeat) { return tile(null, iX, repeat);}
+
     public SDVariable fill(SDVariable shape, double value) {
         return fill(null, shape, value);
     }
+
 
     /**
      * @param x
@@ -3681,6 +3708,17 @@ public class SameDiff {
 
     }
 
+    /**
+     * @param iX
+     * @param dimensions
+     * @return
+     */
+    public SDVariable permute(String name, SDVariable iX, int... dimensions) {
+        SDVariable result = functionFactory.permute(iX, dimensions);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
 
     /**
      * @param x
@@ -3700,6 +3738,29 @@ public class SameDiff {
      */
     public SDVariable fill(String name, SDVariable shape, double value) {
         SDVariable result = functionFactory.fill(shape, value);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+
+    /**
+     * @param dimension
+     * @param inputs
+     * @return
+     */
+    public SDVariable concat(String name, int dimension, SDVariable... inputs) {
+        SDVariable result = functionFactory.concat(dimension, inputs);
+        return updateVariableNameAndReference(result, name);
+
+    }
+
+    /**
+     * @param iX
+     * @param repeat
+     * @return
+     */
+    public SDVariable tile(String name, SDVariable iX, int[] repeat) {
+        SDVariable result = functionFactory.tile(iX, repeat);
         return updateVariableNameAndReference(result, name);
 
     }

@@ -289,10 +289,40 @@ public class SameDiffTests {
 
     }
 
+    @Test
+    public void testPermute() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.permute(x, 1, 0);
+        assertArrayEquals(new int[]{3, 2}, result.getShape());
 
+    }
 
+    @Test
+    public void testConcat() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(4, 8, 4));
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.concat(0, x1, x2);
+        assertArrayEquals(new int[]{2, 4}, result.getShape());
 
+    }
 
+    @Test
+    public void testTile() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result = sameDiff.tile(x, new int[]{2, 2});
+        assertArrayEquals(new int[]{2, 8}, result.getShape());
+        INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
+        INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
+        assertEquals(expected, result.eval());
+ 
+    }
 
     @Test
     public void testDistance() {
