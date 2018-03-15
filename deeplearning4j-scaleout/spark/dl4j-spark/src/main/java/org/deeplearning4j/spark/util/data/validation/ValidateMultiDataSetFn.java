@@ -50,6 +50,11 @@ public class ValidateMultiDataSetFn implements Function<String, ValidationResult
         MultiDataSet ds = new MultiDataSet();
         Path p = new Path(path);
 
+        if(fileSystem.isDirectory(p)){
+            ret.setCountTotal(0);
+            return ret;
+        }
+
         if (!fileSystem.exists(p)) {
             ret.setCountMissingFile(1);
             return ret;

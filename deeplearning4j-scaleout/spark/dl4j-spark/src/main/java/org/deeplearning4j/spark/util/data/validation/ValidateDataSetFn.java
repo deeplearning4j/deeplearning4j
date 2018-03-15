@@ -44,6 +44,11 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
         DataSet ds = new DataSet();
         Path p = new Path(path);
 
+        if(fileSystem.isDirectory(p)){
+            ret.setCountTotal(0);
+            return ret;
+        }
+
         if (!fileSystem.exists(p)) {
             ret.setCountMissingFile(1);
             return ret;

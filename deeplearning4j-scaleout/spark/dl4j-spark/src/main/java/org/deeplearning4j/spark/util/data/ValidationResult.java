@@ -4,6 +4,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Result for validation of DataSet and MultiDataSets. See {@link SparkDataValidation} for more details
+ *
+ * @author Alex Black
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
