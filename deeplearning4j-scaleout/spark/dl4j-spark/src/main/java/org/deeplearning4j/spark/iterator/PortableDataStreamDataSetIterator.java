@@ -56,7 +56,8 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
         try (InputStream is = pds.open()) {
             ds.load(is);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error loading DataSet at path " + pds.getPath() + " - DataSet may be corrupt or invalid." +
+                    " Spark DataSets can be validated using org.deeplearning4j.spark.util.data.SparkDataValidation", e);
         }
         cursor++;
         return ds;
