@@ -191,6 +191,43 @@ public class DifferentialFunctionFactory   {
     }
 
     /**
+     * Avg pooling 3d operation.
+     *
+     * @param inputs       the inputs to pooling
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        Pooling3D maxPooling3D = Pooling3D.builder()
+                .inputs(inputs)
+                .sameDiff(sameDiff())
+                .pooling3DConfig(pooling3DConfig)
+                .type(Pooling3D.Pooling3DType.AVG)
+                .build();
+
+        return maxPooling3D.outputVariables()[0];
+    }
+
+
+    /**
+     * Max pooling 3d operation.
+     *
+     * @param inputs       the inputs to pooling
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        Pooling3D maxPooling3D = Pooling3D.builder()
+                .inputs(inputs)
+                .sameDiff(sameDiff())
+                .pooling3DConfig(pooling3DConfig)
+                .type(Pooling3D.Pooling3DType.MAX)
+                .build();
+
+        return maxPooling3D.outputVariables()[0];
+    }
+
+    /**
      * Separable Conv2d operation.
      *
      * @param inputs       the inputs to conv2d

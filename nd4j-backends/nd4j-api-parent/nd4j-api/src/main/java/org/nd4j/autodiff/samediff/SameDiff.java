@@ -1664,7 +1664,7 @@ public class SameDiff {
     /**
      * Average pooling 2d operation.
      *
-     * @param inputs       the inputs to max pooling 2d
+     * @param inputs       the inputs to average pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -1676,7 +1676,7 @@ public class SameDiff {
      * Average pooling 2d operation.
      *
      * @param name         name of the operation in SameDiff
-     * @param inputs       the inputs to max pooling 2d
+     * @param inputs       the inputs to average pooling 2d
      * @param pooling2DConfig the configuration
      * @return
      */
@@ -1706,6 +1706,54 @@ public class SameDiff {
      */
     public SDVariable maxPooling2d(String name, SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
         SDVariable ret = f().maxPooling2d(inputs, pooling2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Average pooling 3d operation.
+     *
+     * @param inputs       the inputs to average pooling 3d
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        return avgPooling3d(null, inputs, pooling3DConfig);
+    }
+
+    /**
+     * Average pooling 3d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to average pooling 3d
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().avgPooling3d(inputs, pooling3DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Max pooling 3d operation.
+     *
+     * @param inputs       the inputs to max pooling 3d
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling3d(SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        return maxPooling3d(null, inputs, pooling3DConfig);
+    }
+
+    /**
+     * Max pooling 3d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to max pooling 3d
+     * @param pooling3DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling3d(String name, SDVariable[] inputs, Pooling3DConfig pooling3DConfig) {
+        SDVariable ret = f().maxPooling3d(inputs, pooling3DConfig);
         return updateVariableNameAndReference(ret, name);
     }
 

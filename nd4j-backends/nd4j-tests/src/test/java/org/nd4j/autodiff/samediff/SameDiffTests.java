@@ -2322,6 +2322,42 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{mb, nIn, 27, 27}, outShape);
     }
 
+    @Test
+    public void testAvgPooling3dBasic() {
+        int nIn = 3;
+        int kH = 2;
+        int kW = 2;
+        int kD = 2;
+
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+        int imgD = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray inArr = Nd4j.create(mb, nIn, imgD, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+
+
+        SDVariable[] vars = new SDVariable[]{in};
+
+        Pooling3DConfig pooling3DConfig = Pooling3DConfig.builder()
+                .kH(kH).kW(kW).kT(kD)
+                .pH(0).pH(0).pT(0)
+                .dH(1).dW(1).dT(1) // for some reason strides are called "d" in pool3d in nd4j AND libnd4j, so I leave as is for consistency.
+                .dilationH(0).dilationW(0).dilationT(0)
+                .ceilingMode(false)
+                .build();
+
+        SDVariable out = sd.avgPooling3d(vars, pooling3DConfig);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        int[] outShape = outArr.shape();
+        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
+        assertArrayEquals(new int[]{mb, nIn, 27, 27, 27}, outShape);
+    }
 
     @Test
     public void testConv1dBasic() {
