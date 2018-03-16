@@ -2273,7 +2273,7 @@ public class SameDiffTests {
         SDVariable[] vars = new SDVariable[]{in, w};
 
         Conv1DConfig conv1DConfig = Conv1DConfig.builder()
-                .k(k).p(0).s(1).d(1)
+                .k(k).p(0).s(1)
                 .isSameMode(false)
                 .build();
 

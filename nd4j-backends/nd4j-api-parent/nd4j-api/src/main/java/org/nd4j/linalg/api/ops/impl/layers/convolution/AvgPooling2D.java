@@ -35,7 +35,6 @@ public class AvgPooling2D extends DynamicCustomOp {
     public AvgPooling2D() {}
 
     @Builder(builderMethodName = "builder")
-    @SuppressWarnings("Used in lombok")
     public AvgPooling2D(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
         super(null,sameDiff, inputs, false);
         if(arrayInputs != null) {
@@ -46,9 +45,8 @@ public class AvgPooling2D extends DynamicCustomOp {
             addOutputArgument(arrayOutputs);
         }
 
+        this.sameDiff = sameDiff;
         this.config = config;
-
-
         addArgs();
     }
 
