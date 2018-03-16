@@ -16,11 +16,14 @@
 
 package org.datavec.api.util.ndarray;
 
+import com.google.common.base.Preconditions;
+import lombok.NonNull;
 import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -136,7 +139,62 @@ public class RecordConverter {
         return arr;
     }
 
+    /**
+     * Convert a record to an INDArray, for use in minibatch training. That is, for an input record of length N, the output
+     * array has dimension 0 of size N (i.e., suitable for minibatch training in DL4J, for example).<br>
+     * The input list of writables must all be the same type (i.e., all NDArrayWritables or all non-array writables such
+     * as DoubleWritable etc).<br>
+     * Note that for NDArrayWritables, they must have leading dimension 1, and all other dimensions must match. <br>
+     * For example, row vectors are valid NDArrayWritables, as are 3d (usually time series) with shape [1, x, y], or
+     * 4d (usually images) with shape [1, x, y, z] where (x,y,z) are the same for all inputs
+     * @param l the records to convert
+     * @return the array
+     * @see #toArray(Collection) for the "single example concatenation" version of this method
+     */
+    public static INDArray toMinibatchArray(@NonNull List<? extends Writable> l) {
+        Preconditions.checkArgument(l.size() > 0, "Cannot convert empty list");
 
+        //Edge case: single NDArrayWritable
+        if(l.size() == 1 && l.get(0) instanceof NDArrayWritable){
+            return ((NDArrayWritable) l.get(0)).get();
+        }
+
+        //Check: all NDArrayWritable or all non-writable
+        List<INDArray> toConcat = null;
+        DoubleArrayList list = null;
+        for (Writable w : l) {
+            if (w instanceof NDArrayWritable) {
+                INDArray a = ((NDArrayWritable) w).get();
+                if (a.size(0) != 1) {
+                    throw new UnsupportedOperationException("NDArrayWritable must have leading dimension 1 for this" +
+                            "method. Received array with shape: " + Arrays.toString(a.shape()));
+                }
+                if(toConcat == null){
+                    toConcat = new ArrayList<>();
+                }
+                toConcat.add(a);
+            } else {
+                //Assume all others are single value
+                if(list == null){
+                    list = new DoubleArrayList();
+                }
+                list.add(w.toDouble());
+            }
+        }
+
+
+        if(toConcat != null && list != null){
+            throw new IllegalStateException("Error converting writables: found both NDArrayWritable and single value" +
+                    " (DoubleWritable etc) in the one list. All writables must be NDArrayWritables or " +
+                    "single value writables only for this method");
+        }
+
+        if(toConcat != null){
+            return Nd4j.concat(0, toConcat.toArray(new INDArray[toConcat.size()]));
+        } else {
+            return Nd4j.create(list.toArray(), new int[]{list.size(), 1});
+        }
+    }
 
     /**
      * Convert an ndarray to a record
