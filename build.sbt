@@ -6,19 +6,18 @@ description := "A Scala wrapper for Deeplearning4j, inspired by Keras. Scala + D
 
 scalaVersion := "2.11.12"
 
-classpathTypes += "maven-plugin"
-
 resolvers in ThisBuild ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
+classpathTypes += "maven-plugin"
 cleanFiles += baseDirectory.value / "lib"
 val mvnInstall = Seq("mvn", "install", "-q", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {
-    case "win" => Seq("cmd", "/C") ++ mvnInstall !; update.value
-    case _     => mvnInstall !; update.value
+    case "win" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
+    case _     => { mvnInstall !; update.value }
   }
 }
 
