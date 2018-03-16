@@ -38,10 +38,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
@@ -1662,6 +1659,54 @@ public class SameDiff {
         SameDiff grad = getFunction("grad");
         SDVariable var = grad.getVariable(varName);
         return getFunction("grad").getGradForVariable(var.getVarName());
+    }
+
+    /**
+     * Average pooling 2d operation.
+     *
+     * @param inputs       the inputs to max pooling 2d
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        return avgPooling2d(null, inputs, pooling2DConfig);
+    }
+
+    /**
+     * Average pooling 2d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to max pooling 2d
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling2d(String name, SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        SDVariable ret = f().avgPooling2d(inputs, pooling2DConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Max pooling 2d operation.
+     *
+     * @param inputs       the inputs to max pooling 2d
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        return maxPooling2d(null, inputs, pooling2DConfig);
+    }
+
+    /**
+     * Max pooling 2d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to max pooling 2d
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling2d(String name, SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        SDVariable ret = f().maxPooling2d(inputs, pooling2DConfig);
+        return updateVariableNameAndReference(ret, name);
     }
 
     /**

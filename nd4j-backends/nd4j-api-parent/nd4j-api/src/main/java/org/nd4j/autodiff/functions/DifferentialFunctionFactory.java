@@ -14,10 +14,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.shape.*;
@@ -157,6 +154,40 @@ public class DifferentialFunctionFactory   {
                 .build();
 
         return conv2D.outputVariables()[0];
+    }
+
+    /**
+     * Average pooling 2d operation.
+     *
+     * @param inputs       the inputs to pooling
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable avgPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        AvgPooling2D avgPooling2D = AvgPooling2D.builder()
+                .inputs(inputs)
+                .sameDiff(sameDiff())
+                .config(pooling2DConfig)
+                .build();
+
+        return avgPooling2D.outputVariables()[0];
+    }
+
+    /**
+     * Max pooling 2d operation.
+     *
+     * @param inputs       the inputs to pooling
+     * @param pooling2DConfig the configuration
+     * @return
+     */
+    public SDVariable maxPooling2d(SDVariable[] inputs, Pooling2DConfig pooling2DConfig) {
+        MaxPooling2D maxPooling2D = MaxPooling2D.builder()
+                .inputs(inputs)
+                .sameDiff(sameDiff())
+                .config(pooling2DConfig)
+                .build();
+
+        return maxPooling2D.outputVariables()[0];
     }
 
     /**
