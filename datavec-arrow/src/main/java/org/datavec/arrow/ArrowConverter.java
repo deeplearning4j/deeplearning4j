@@ -22,7 +22,6 @@ import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowListWritable;
-import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;

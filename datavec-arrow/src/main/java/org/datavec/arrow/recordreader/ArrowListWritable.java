@@ -6,7 +6,6 @@ import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
-import org.datavec.api.records.IOUtils;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
@@ -15,6 +14,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ *
+ */
 @Data
 @AllArgsConstructor
 public class ArrowListWritable implements List<List<Writable>>,Closeable {
@@ -25,6 +27,13 @@ public class ArrowListWritable implements List<List<Writable>>,Closeable {
     private ArrowRecordBatch arrowRecordBatch;
     private VectorSchemaRoot vectorLoader;
     private VectorUnloader unloader;
+
+    /**
+     * An index in to an individual
+     * {@link ArrowRecordBatch}
+     * @param list the list of field vectors to use
+     * @param schema the schema to use
+     */
     public ArrowListWritable(List<FieldVector> list, Schema schema) {
         this.list = list;
         this.schema = schema;

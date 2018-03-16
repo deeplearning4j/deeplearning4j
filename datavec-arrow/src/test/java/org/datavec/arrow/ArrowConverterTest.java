@@ -4,6 +4,7 @@ import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.TimeStampMilliVector;
 import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
@@ -24,10 +25,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
 import static org.junit.Assert.assertArrayEquals;
@@ -177,6 +175,14 @@ public class ArrowConverterTest {
 
     }
 
+    @Test
+    public void testDates() {
+        Date now = new Date();
+        BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
+        TimeStampMilliVector timeStampMilliVector = ArrowConverter.vectorFor(bufferAllocator, "col1", new Date[]{now});
+        assertEquals(now.getTime(),timeStampMilliVector.get(0));
+    }
+
 
     @Test
     public void testRecordReaderMetaData() throws Exception {
@@ -190,6 +196,9 @@ public class ArrowConverterTest {
         Record record = recordReader.nextRecord();
         assertEquals(2,record.getRecord().size());
     }
+
+
+
 
 
     private File tmpDataFile(Pair<Schema,List<List<Writable>>> recordsToWrite) throws IOException {
