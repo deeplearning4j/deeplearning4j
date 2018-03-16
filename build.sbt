@@ -75,5 +75,6 @@ lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(standardSettings)
   .settings(
-    name := "ScalNet"
+    name := "ScalNet",
+    fork := true
   )
