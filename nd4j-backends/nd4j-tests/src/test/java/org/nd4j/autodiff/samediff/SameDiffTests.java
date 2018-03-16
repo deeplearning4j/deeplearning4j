@@ -265,6 +265,29 @@ public class SameDiffTests {
 
     @Test
     @Ignore
+    public void testSoftmaxXentWithLogits() {
+        // TODO: Fix me
+
+        SameDiff sameDiff = SameDiff.create();
+        INDArray logits = Nd4j.create(new int[]{1, 5});
+        INDArray weights = Nd4j.create(new int[]{1, 5});
+        INDArray labels = Nd4j.create(new int[]{1, 5});
+
+        SDVariable sdLogits = sameDiff.var("logits", logits);
+        SDVariable sdWeights = sameDiff.var("weights", weights);
+        SDVariable sdLabels = sameDiff.var("labels", labels);
+
+        int mode = 0;
+        double labelSmoothing = 0.0;
+
+        SDVariable res = sameDiff.softmaxCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
+        INDArray resultArray = res.getArr();
+        assertArrayEquals(new int[]{1, 5}, res.getShape());
+
+    }
+
+    @Test
+    @Ignore
     public void testSigmoidXentWithLogits() {
         // TODO: Fix me
 

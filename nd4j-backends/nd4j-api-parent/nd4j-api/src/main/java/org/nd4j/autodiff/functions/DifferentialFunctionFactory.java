@@ -786,6 +786,12 @@ public class DifferentialFunctionFactory   {
                 reductionMode, labelSmoothing).outputVariables()[0];
     }
 
+    public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
+                                                    int reductionMode, double labelSmoothing) {
+        return new SoftmaxCrossEntropyLoss(sameDiff(), logits, weights, labels,
+                reductionMode, labelSmoothing).outputVariables()[0];
+    }
+
     public SDVariable lossBinaryXENT(SDVariable iX,
                                      SDVariable i_y,
                                      int... dimensions) {

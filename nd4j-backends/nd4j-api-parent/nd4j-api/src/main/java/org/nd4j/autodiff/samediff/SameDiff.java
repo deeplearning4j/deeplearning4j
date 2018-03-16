@@ -3966,6 +3966,17 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+    public SDVariable softmaxCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
+                                                    int reductionMode, double labelSmoothing) {
+        return softmaxCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    }
+
+    public SDVariable softmaxCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
+                                                    int reductionMode, double labelSmoothing) {
+        SDVariable res = f().softmaxCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param iX
      * @param i_y
