@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.activations.Activation;
@@ -259,6 +260,29 @@ public class SameDiffTests {
 
         SDVariable res = sameDiff.biasAdd(input, bias);
         assertArrayEquals(new int[]{2, 2}, res.getShape());
+
+    }
+
+    @Test
+    @Ignore
+    public void testSigmoidXentWithLogits() {
+        // TODO: Fix me
+
+        SameDiff sameDiff = SameDiff.create();
+        INDArray logits = Nd4j.create(new int[]{1, 5});
+        INDArray weights = Nd4j.create(new int[]{1, 5});
+        INDArray labels = Nd4j.create(new int[]{1, 5});
+
+        SDVariable sdLogits = sameDiff.var("logits", logits);
+        SDVariable sdWeights = sameDiff.var("weights", weights);
+        SDVariable sdLabels = sameDiff.var("labels", labels);
+
+        int mode = 0;
+        double labelSmoothing = 0.0;
+
+        SDVariable res = sameDiff.sigmoidCrossEntropyWithLogits(sdLogits, sdWeights, sdLabels, mode, labelSmoothing);
+        INDArray resultArray = res.getArr();
+        assertArrayEquals(new int[]{1, 5}, res.getShape());
 
     }
 
