@@ -25,7 +25,8 @@ public class BatchNorm extends DynamicCustomOp {
     private boolean isMiniBatch;
 
     @Builder(builderMethodName = "builder")
-    public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
+    public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[]
+            outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
         super(null,sameDiff, inputFunctions, inPlace);
         this.training = training;
         this.isLockGammaBeta = isLockGammaBeta;

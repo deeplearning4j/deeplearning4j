@@ -2085,6 +2085,10 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{mb, nOut, 27, 27, 27}, outShape);
     }
 
+    @Test void testBatchNormTest() {
+        SameDiff sd = SameDiff.create();
+    }
+
     @Test
     public void testDepthWiseConv2dBasic() {
         int nIn = 3;

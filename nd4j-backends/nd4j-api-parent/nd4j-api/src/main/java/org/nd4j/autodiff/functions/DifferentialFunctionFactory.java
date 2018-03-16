@@ -300,6 +300,28 @@ public class DifferentialFunctionFactory   {
     }
 
 
+    /**
+     * Batch norm operation.
+     *
+     */
+    public SDVariable batchNorm(SDVariable input, SDVariable mean,
+                                SDVariable variance, SDVariable gamma,
+                                SDVariable beta, boolean training,
+                                boolean isLockGammaBeta, boolean isMiniBatch) {
+        BatchNorm batchNorm = BatchNorm.builder()
+                .inputFunctions(new SDVariable[] {input, mean, variance, gamma, beta})
+                .training(training)
+                .isLockGammaBeta(isLockGammaBeta)
+                .isMiniBatch(isMiniBatch)
+                .sameDiff(sameDiff())
+                .build();
+
+        val outputVars = batchNorm.outputVariables();
+        return outputVars[0];
+    }
+
+
+
     public SDVariable tile(SDVariable iX, int[] repeat) {
         if(repeat == null) {
             throw new ND4JIllegalStateException("Repeat must not be null!");
