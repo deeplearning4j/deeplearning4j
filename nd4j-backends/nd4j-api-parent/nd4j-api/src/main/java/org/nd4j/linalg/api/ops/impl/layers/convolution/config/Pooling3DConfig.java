@@ -11,7 +11,7 @@ import java.util.Map;
 @Builder
 public class Pooling3DConfig extends BaseConvolutionConfig {
     private int kT,kW,kH,dT,dW,dH,pT,pW,pH,dilationT,dilationW,dilationH;
-    private Pooling3D.Pooling2DType type;
+    private Pooling3D.Pooling3DType type;
     private boolean ceilingMode;
 
     public Map<String,Object> toProperties() {

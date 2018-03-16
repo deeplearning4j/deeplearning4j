@@ -23,7 +23,7 @@ import java.util.Map;
 public class Pooling3D extends DynamicCustomOp {
     protected Pooling3DConfig config;
 
-    public enum Pooling2DType {
+    public enum Pooling3DType {
         MAX, AVG, PNORM,
     }
 
@@ -31,14 +31,18 @@ public class Pooling3D extends DynamicCustomOp {
     public Pooling3D() {}
 
     @Builder(builderMethodName = "builder")
-    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,Pooling3DConfig pooling3DConfig) {
+    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
+                     Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(null,sameDiff, inputs, inPlace);
+
+        pooling3DConfig.setType(type);
+
         this.config = pooling3DConfig;
+        this.sameDiff = sameDiff;
 
         if(inputArrays != null) {
             addInputArgument(inputArrays);
         }
-
         if(outputs != null) {
             addOutputArgument(outputs);
         }

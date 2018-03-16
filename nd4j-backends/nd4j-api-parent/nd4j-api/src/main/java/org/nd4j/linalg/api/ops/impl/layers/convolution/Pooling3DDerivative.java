@@ -17,8 +17,8 @@ import java.util.List;
 public class Pooling3DDerivative extends Pooling3D {
 
     @Builder(builderMethodName = "derivativeBuilder")
-    public Pooling3DDerivative(SameDiff sameDiff, SDVariable[] inputs, INDArray[] inputArrays, INDArray[] outputs, boolean inPlace, Pooling3DConfig pooling3DConfig) {
-        super(sameDiff, inputs, inputArrays, outputs, inPlace, pooling3DConfig);
+    public Pooling3DDerivative(SameDiff sameDiff, SDVariable[] inputs, INDArray[] inputArrays, INDArray[] outputs, boolean inPlace, Pooling3DConfig pooling3DConfig, Pooling3DType type) {
+        super(sameDiff, inputs, inputArrays, outputs, inPlace, pooling3DConfig, type);
     }
 
     public Pooling3DDerivative() {}
