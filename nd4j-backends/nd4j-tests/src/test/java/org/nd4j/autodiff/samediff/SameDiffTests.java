@@ -14,10 +14,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -2254,6 +2251,75 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
         // sd.execBackwards(); // TODO: test failing here
     }
+
+    @Test
+    public void testMaxPooling2dBasic() {
+        int nIn = 3;
+        int kH = 2;
+        int kW = 2;
+
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+
+
+        SDVariable[] vars = new SDVariable[]{in};
+
+        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
+                .kh(kH).kw(kW)
+                .ph(0).pw(0)
+                .sy(1).sx(1)
+                .dh(1).dw(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.maxPooling2d(vars, pooling2DConfig);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        int[] outShape = outArr.shape();
+        assertArrayEquals(new int[]{mb, nIn, 28/2, 28/2}, outShape);
+    }
+
+    @Test
+    public void testAvgPooling2dBasic() {
+        int nIn = 3;
+        int kH = 2;
+        int kW = 2;
+
+        int mb = 3;
+        int imgH = 28;
+        int imgW = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray inArr = Nd4j.create(mb, nIn, imgH, imgW);
+
+        SDVariable in = sd.var("in", inArr);
+
+
+        SDVariable[] vars = new SDVariable[]{in};
+
+        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
+                .kh(kH).kw(kW)
+                .ph(0).pw(0)
+                .sy(1).sx(1)
+                .dh(1).dw(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.avgPooling2d(vars, pooling2DConfig);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        int[] outShape = outArr.shape();
+        assertArrayEquals(new int[]{mb, nIn, 28/2, 28/2}, outShape);
+    }
+
 
     @Test
     public void testConv1dBasic() {

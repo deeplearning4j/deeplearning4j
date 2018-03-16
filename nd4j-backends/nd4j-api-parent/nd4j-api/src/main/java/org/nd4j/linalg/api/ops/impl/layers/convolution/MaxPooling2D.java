@@ -29,22 +29,24 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     protected Pooling2DConfig config;
 
-    public MaxPooling2D() {}
+    public MaxPooling2D() {
+    }
 
     @Builder(builderMethodName = "builder")
     @SuppressWarnings("Used in lombok")
     public MaxPooling2D(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
-        super(null,sameDiff, inputs, false);
-        if(arrayInputs != null) {
-           addInputArgument(arrayInputs);
+        super(null, sameDiff, inputs, false);
+        if (arrayInputs != null) {
+            addInputArgument(arrayInputs);
         }
 
-        if(arrayOutputs != null) {
+        if (arrayOutputs != null) {
             addOutputArgument(arrayOutputs);
         }
+        config.setType(Pooling2D.Pooling2DType.MAX);
 
         this.config = config;
-
+        this.sameDiff = sameDiff;
 
         addArgs();
     }
@@ -61,7 +63,7 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Override
     public void setValueFor(Field target, Object value) {
-        config.setValueFor(target,value);
+        config.setValueFor(target, value);
     }
 
 
@@ -71,19 +73,24 @@ public class MaxPooling2D extends DynamicCustomOp {
     }
 
     private void addArgs() {
-        addIArgument(
-                new int[]{config.getKh(),
-                        config.getKw(),
-                        config.getSy(),
-                        config.getSx(),
-                        config.getPh(),
-                        config.getPw(),
-                        config.getDh(),
-                        config.getDw(),
-                        ArrayUtil.fromBoolean(config.isSameMode()),
-                        (int) config.getExtra(),
-                        ArrayUtil.fromBoolean(config.isNHWC())});
+        addIArgument(config.getKh(),
+                config.getKw(),
+                config.getSy(),
+                config.getSx(),
+                config.getPh(),
+                config.getPw(),
+                config.getDh(),
+                config.getDw(),
+                ArrayUtil.fromBoolean(config.isSameMode()),
+                (int) config.getExtra(),
+                ArrayUtil.fromBoolean(config.isNHWC())
+        );
 
+    }
+
+
+    public String getPoolingPrefix() {
+        return "max";
     }
 
     @Override
@@ -127,7 +134,7 @@ public class MaxPooling2D extends DynamicCustomOp {
         val aPadding = nodeDef.getAttrOrThrow("padding");
         val padding = aPadding.getList().getIList();
 
-        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"","");
+        val paddingMode = aPadding.getS().toStringUtf8().replaceAll("\"", "");
 
         boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
 
@@ -206,29 +213,29 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String,Map<String,PropertyMapping>> ret = new HashMap<>();
-        Map<String,PropertyMapping> map = new HashMap<>();
+        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
+        Map<String, PropertyMapping> map = new HashMap<>();
         val strideMapping = PropertyMapping.builder()
                 .tfAttrName("strides")
                 .onnxAttrName("strides")
-                .propertyNames(new String[]{"sx","sy"})
+                .propertyNames(new String[]{"sx", "sy"})
                 .build();
 
         val paddingMapping = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .tfAttrName("padding")
-                .propertyNames(new String[]{"px","py"})
+                .propertyNames(new String[]{"px", "py"})
                 .build();
 
         val kernelMapping = PropertyMapping.builder()
-                .propertyNames(new String[]{"kh","kw"})
+                .propertyNames(new String[]{"kh", "kw"})
                 .tfInputPosition(1)
                 .onnxAttrName("ksize")
                 .build();
 
         val dilationMapping = PropertyMapping.builder()
                 .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dw","dh"})
+                .propertyNames(new String[]{"dw", "dh"})
                 .tfAttrName("rates")
                 .build();
 
@@ -245,12 +252,12 @@ public class MaxPooling2D extends DynamicCustomOp {
         map.put("kw", kernelMapping);
         map.put("dw", dilationMapping);
         map.put("dh", dilationMapping);
-        map.put("ph",paddingMapping);
-        map.put("pw",paddingMapping);
-        map.put("isNHWC",dataFormatMapping);
+        map.put("ph", paddingMapping);
+        map.put("pw", paddingMapping);
+        map.put("isNHWC", dataFormatMapping);
 
-        ret.put(onnxName(),map);
-        ret.put(tensorflowName(),map);
+        ret.put(onnxName(), map);
+        ret.put(tensorflowName(), map);
 
 
         return ret;
@@ -266,12 +273,5 @@ public class MaxPooling2D extends DynamicCustomOp {
     public String tensorflowName() {
         return "MaxPool";
     }
-
-
-
-    public String getPoolingPrefix() {
-        return "max";
-    }
-
 
 }

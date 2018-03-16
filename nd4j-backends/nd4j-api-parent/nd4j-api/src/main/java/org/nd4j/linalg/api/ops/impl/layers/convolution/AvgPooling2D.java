@@ -44,6 +44,8 @@ public class AvgPooling2D extends DynamicCustomOp {
         if(arrayOutputs != null) {
             addOutputArgument(arrayOutputs);
         }
+        config.setType(Pooling2D.Pooling2DType.AVG);
+
 
         this.sameDiff = sameDiff;
         this.config = config;
