@@ -95,7 +95,7 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return iter.hasNext();
+        return preloadedDataSet != null || iter.hasNext();
     }
 
     @Override
