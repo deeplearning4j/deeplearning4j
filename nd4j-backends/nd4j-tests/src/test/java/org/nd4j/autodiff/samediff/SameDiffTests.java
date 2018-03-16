@@ -2283,7 +2283,8 @@ public class SameDiffTests {
 
         INDArray outArr = sd.execAndEndResult();
         int[] outShape = outArr.shape();
-        assertArrayEquals(new int[]{mb, nIn, 28/2, 28/2}, outShape);
+        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
+        assertArrayEquals(new int[]{mb, nIn, 27, 27}, outShape);
     }
 
     @Test
@@ -2317,7 +2318,8 @@ public class SameDiffTests {
 
         INDArray outArr = sd.execAndEndResult();
         int[] outShape = outArr.shape();
-        assertArrayEquals(new int[]{mb, nIn, 28/2, 28/2}, outShape);
+        // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
+        assertArrayEquals(new int[]{mb, nIn, 27, 27}, outShape);
     }
 
 
