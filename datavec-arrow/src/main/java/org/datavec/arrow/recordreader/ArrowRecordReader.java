@@ -1,5 +1,6 @@
 package org.datavec.arrow.recordreader;
 
+import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.FieldVector;
@@ -8,6 +9,7 @@ import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.SeekableReadChannel;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
+import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.IOUtils;
 import org.datavec.api.records.Record;
@@ -28,6 +30,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.datavec.arrow.ArrowConverter.readFromBytes;
 import static org.datavec.arrow.ArrowConverter.toDatavecSchema;
 
 /**
@@ -45,7 +48,7 @@ public class ArrowRecordReader implements RecordReader {
     private List<FieldVector> fieldVectors;
     private Schema schema;
     private List<Writable> recordAllocation = new ArrayList<>();
-
+    private List<List<Writable>> currentBatch;
     @Override
     public void initialize(InputSplit split) {
         this.split = split;
@@ -71,63 +74,31 @@ public class ArrowRecordReader implements RecordReader {
 
     @Override
     public List<Writable> next() {
-        if(arrowRecordBatch == null || currIdx >= arrowRecordBatch.getLength()) {
-            if(arrowRecordBatch != null) {
-                arrowRecordBatch.close();
-            }
-
+        if (currentBatch == null || currIdx >= currentBatch.size()) {
             String url = pathsIter.next();
-            try {
+            try (InputStream inputStream = split.openInputStreamFor(url)) {
                 currIdx = 0;
-                InputStream inputStream = split.openInputStreamFor(url);
-                try (SeekableReadChannel channel = new SeekableReadChannel(new InputStreamSeekableReadableByteChannel(inputStream,Integer.MAX_VALUE));
-                     ArrowFileReader reader = new ArrowFileReader(channel, allocator)) {
-                    reader.loadNextBatch();
-                    if(this.schema == null) {
-                        this.schema = toDatavecSchema(reader.getVectorSchemaRoot().getSchema());
-                        fieldVectors = new ArrayList<>(this.schema.numColumns());
-                        for(int i = 0; i < schema.numColumns(); i++) {
-                            fieldVectors.add(reader.getVectorSchemaRoot().getVector(schema.getName(i)));
-                        }
-                    }
-
-                    //load the batch
-                    VectorUnloader unloader = new VectorUnloader(reader.getVectorSchemaRoot());
-                    VectorLoader vectorLoader = new VectorLoader(reader.getVectorSchemaRoot());
-                    ArrowRecordBatch recordBatch = unloader.getRecordBatch();
-
-                    vectorLoader.load(recordBatch);
-                    this.arrowRecordBatch = recordBatch;
-
-
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                byte[] arr = org.apache.commons.io.IOUtils.toByteArray(inputStream);
+                val read = readFromBytes(arr);
+                if(this.schema == null) {
+                    this.schema = read.getFirst();
                 }
 
-            } catch (Exception e) {
+                this.currentBatch = read.getRight();
+                this.recordAllocation = currentBatch.get(0);
+                currIdx++;
+            }catch(Exception e) {
                 e.printStackTrace();
             }
 
+
         }
-
-        if(currIdx < arrowRecordBatch.getLength()) {
-            if(recordAllocation == null || recordAllocation.isEmpty()) {
-                recordAllocation = new ArrayList<>(schema.numColumns());
-                for(int i  = 0; i < schema.numColumns(); i++) {
-                    recordAllocation.add(ArrowConverter.fromEntry(currIdx,fieldVectors.get(i),schema.getType(i)));
-                }
-            }
-            else {
-                for(int i  = 0; i < schema.numColumns(); i++) {
-                    recordAllocation.add(ArrowConverter.fromEntry(currIdx,fieldVectors.get(i),schema.getType(i)));
-
-                }
-            }
-
-            currIdx++;
+        else {
+            recordAllocation = currentBatch.get(currIdx++);
         }
 
         return recordAllocation;
+
     }
 
     @Override

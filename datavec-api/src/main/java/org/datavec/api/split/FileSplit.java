@@ -25,6 +25,7 @@ import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.util.MathUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,7 +118,8 @@ public class FileSplit extends BaseInputSplit {
 
     @Override
     public InputStream openInputStreamFor(String location) throws Exception {
-        FileInputStream fileInputStream = new FileInputStream(location);
+        FileInputStream fileInputStream = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
+                new FileInputStream(new File(location));
         return fileInputStream;
     }
 

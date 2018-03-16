@@ -4,6 +4,8 @@ import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.*;
+import org.apache.arrow.vector.dictionary.Dictionary;
+import org.apache.arrow.vector.dictionary.DictionaryProvider;
 import org.apache.arrow.vector.ipc.ArrowFileReader;
 import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.ipc.SeekableReadChannel;
@@ -11,6 +13,7 @@ import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.apache.arrow.vector.types.DateUnit;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
+import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
@@ -42,6 +45,7 @@ public class ArrowConverter {
 
 
 
+
     /**
      * Write the records to the given output stream
      * @param recordBatch the record batch to write
@@ -49,13 +53,26 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
-      BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
+        BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
+        writeRecordBatchTo(bufferAllocator,recordBatch,inputSchema,outputStream);
+    }
+
+    /**
+     * Write the records to the given output stream
+     * @param recordBatch the record batch to write
+     * @param inputSchema the input schema
+     * @param outputStream the output stream to write to
+     */
+    public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
         val convertedSchema = toArrowSchema(inputSchema);
         val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-
         try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
-            ArrowFileWriter writer = new ArrowFileWriter(root, null, newChannel(outputStream))) {
+            ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
+            writer.start();
             writer.writeBatch();
+            writer.end();
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -224,6 +241,27 @@ public class ArrowConverter {
 
 
     /**
+     * Provide a value look up dictionary based on the
+     * given set of input {@link FieldVector} s for
+     * reading and writing to arrow streams
+     * @param vectors the vectors to use as a lookup
+     * @return the associated {@link DictionaryProvider} for the given
+     * input {@link FieldVector} list
+     */
+    public static DictionaryProvider providerForVectors(List<FieldVector> vectors,List<Field> fields) {
+        Dictionary[] dictionaries = new Dictionary[vectors.size()];
+        for(int i = 0; i < vectors.size(); i++) {
+            DictionaryEncoding dictionary = fields.get(i).getDictionary();
+            if(dictionary == null) {
+                dictionary = new DictionaryEncoding(i,true,null);
+            }
+            dictionaries[i] = new Dictionary(vectors.get(i), dictionary);
+        }
+        return  new DictionaryProvider.MapDictionaryProvider(dictionaries);
+    }
+
+
+    /**
      * Given a buffer allocator and datavec schema,
      * convert the passed in batch of records
      * to a set of arrow columns
@@ -281,7 +319,7 @@ public class ArrowConverter {
                         break;
                     case Time:
                         TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
-                        timeMilliVector.set(i,dataVecRecord.get(i).get(j).toInt());
+                        timeMilliVector.set(j,dataVecRecord.get(i).get(j).toInt());
                         break;
 
                 }
@@ -304,7 +342,7 @@ public class ArrowConverter {
      */
     public static TimeStampMilliVector vectorFor(BufferAllocator allocator,String name,Date[] data) {
         TimeStampMilliVector float4Vector = new TimeStampMilliVector(name,allocator);
-        float4Vector.allocateNew();
+        float4Vector.allocateNew(data.length);
         for(int i = 0; i < data.length; i++) {
             float4Vector.setSafe(i,data[i].getTime());
         }
@@ -324,7 +362,7 @@ public class ArrowConverter {
      */
     public static TimeStampMilliVector timeVectorOf(BufferAllocator allocator,String name,int length) {
         TimeStampMilliVector float4Vector = new TimeStampMilliVector(name,allocator);
-        float4Vector.allocateNew();
+        float4Vector.allocateNew(length);
         float4Vector.setValueCount(length);
         return float4Vector;
     }
@@ -378,7 +416,7 @@ public class ArrowConverter {
      */
     public static Float4Vector vectorFor(BufferAllocator allocator,String name,float[] data) {
         Float4Vector float4Vector = new Float4Vector(name,allocator);
-        float4Vector.allocateNew();
+        float4Vector.allocateNew(data.length);
         for(int i = 0; i < data.length; i++) {
             float4Vector.setSafe(i,data[i]);
         }
@@ -398,7 +436,7 @@ public class ArrowConverter {
      */
     public static Float4Vector floatVectorOf(BufferAllocator allocator,String name,int length) {
         Float4Vector float4Vector = new Float4Vector(name,allocator);
-        float4Vector.allocateNew();
+        float4Vector.allocateNew(length);
         float4Vector.setValueCount(length);
         return float4Vector;
     }
@@ -594,6 +632,10 @@ public class ArrowConverter {
      * @return the resulting writable
      */
     public static Writable fromEntry(int item,FieldVector from,ColumnType columnType) {
+        if(from.getValueCount() < item) {
+            throw new IllegalArgumentException("Index specified greater than the number of items in the vector with length " + from.getValueCount());
+        }
+
         switch(columnType) {
             case Integer:
                 UInt4Vector intVector = (UInt4Vector) from;

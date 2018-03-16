@@ -156,13 +156,16 @@ public class ArrowConverterTest {
         assertEquals(pair,read);
 
         //send file
-        File tmp = new File(System.getenv("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
+        File tmp = new File(System.getProperty("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
         tmp.mkdirs();
         File tmpFile = new File(tmp,"data.arrow");
         tmpFile.deleteOnExit();
         RecordReader recordReader = new ArrowRecordReader();
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
+        FileOutputStream bufferedOutputStream = new FileOutputStream(tmpFile);
         ArrowConverter.writeRecordBatchTo(records,schemaBuilder.build(),bufferedOutputStream);
+
+        bufferedOutputStream.flush();
+        bufferedOutputStream.close();
         recordReader.initialize(new FileSplit(tmp));
 
         List<Writable> record = recordReader.next();
