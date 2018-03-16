@@ -780,6 +780,10 @@ public class DifferentialFunctionFactory   {
         return new JaccardDistance(sameDiff(), ix, iy, dimensions).outputVariables()[0];
     }
 
+    public SDVariable weightedCrossEntropyWithLogits(SDVariable targets, SDVariable inputs, SDVariable weights) {
+        return new WeightedCrossEntropyLoss(sameDiff(), targets, inputs, weights).outputVariables()[0];
+    }
+
     public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
                                                     int reductionMode, double labelSmoothing) {
         return new SigmoidCrossEntropyLoss(sameDiff(), logits, weights, labels,

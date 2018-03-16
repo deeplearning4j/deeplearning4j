@@ -3977,6 +3977,17 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+    public SDVariable weightedCrossEntropyWithLogits(SDVariable targets, SDVariable inputs,
+                                                     SDVariable weights) {
+        return weightedCrossEntropyWithLogits(null, targets, inputs, weights);
+    }
+
+    public SDVariable weightedCrossEntropyWithLogits(String name, SDVariable targets, SDVariable inputs,
+                                                     SDVariable weights) {
+        SDVariable res = f().weightedCrossEntropyWithLogits(targets, inputs, weights);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param iX
      * @param i_y
