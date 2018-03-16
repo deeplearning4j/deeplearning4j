@@ -38,6 +38,7 @@ import java.util.List;
 public class ZeroFraction extends DynamicCustomOp {
 
     public ZeroFraction(SameDiff sameDiff, SDVariable input) {
+
         super(null, sameDiff, new SDVariable[] {input}, false);
     }
 

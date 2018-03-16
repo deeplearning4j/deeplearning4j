@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -75,7 +76,7 @@ public class DynamicStitch extends DynamicCustomOp {
 
     @Override
     public String onnxName() {
-        return "Dynamic partitioning currently not supported by ONNX";
+        throw new NoOpNameFoundException("No onnx name found for shape " + opName());
     }
 
 }

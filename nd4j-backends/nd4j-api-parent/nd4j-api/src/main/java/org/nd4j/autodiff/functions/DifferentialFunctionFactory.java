@@ -863,6 +863,9 @@ public class DifferentialFunctionFactory   {
 
     }
 
+    public SDVariable xwPlusB(SDVariable input, SDVariable weights, SDVariable bias) {
+        return new XwPlusB(sameDiff(), input, weights, bias).outputVariables()[0];
+    }
 
 
     public SDVariable mmul(SDVariable x,

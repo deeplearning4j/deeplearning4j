@@ -2807,6 +2807,16 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+
+    public SDVariable xwPlusB(SDVariable input, SDVariable weights, SDVariable bias) {
+        return xwPlusB(null, input, weights, bias);
+    }
+
+    public SDVariable xwPlusB(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        SDVariable res = f().xwPlusB(input, weights, bias);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param x
      * @param y
