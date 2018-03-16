@@ -2085,8 +2085,29 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{mb, nOut, 27, 27, 27}, outShape);
     }
 
-    @Test void testBatchNormTest() {
+    @Test
+    public void testBatchNormTest() {
         SameDiff sd = SameDiff.create();
+
+        INDArray input = Nd4j.rand(1, 10);
+        INDArray mean = Nd4j.rand(1, 10);
+        INDArray var = Nd4j.rand(1, 10);
+        INDArray gamma = Nd4j.rand(1, 10);
+        INDArray beta = Nd4j.rand(1, 10);
+
+        SDVariable sdInput = sd.var("input", input);
+        SDVariable sdMean = sd.var("mean", mean);
+        SDVariable sdVar = sd.var("var", var);
+        SDVariable sdGamma = sd.var("gamma", gamma);
+        SDVariable sdBeta = sd.var("beta", beta);
+
+        SDVariable out = sd.batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
+                true, true, 0.0);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        assertArrayEquals(new int[]{1, 10}, outArr.shape());
+
     }
 
     @Test
