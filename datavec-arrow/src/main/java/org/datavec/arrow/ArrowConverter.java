@@ -21,6 +21,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
+import org.datavec.arrow.recordreader.ArrowListWritable;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -88,26 +89,22 @@ public class ArrowConverter {
      * @param input the input to read
      * @return the associated datavec schema and record
      */
-    public static Pair<Schema,List<List<Writable>>> readFromBytes(byte[] input) {
+    public static Pair<Schema,ArrowListWritable> readFromBytes(byte[] input) throws IOException {
         BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
         Schema retSchema = null;
-        List<List<Writable>> ret = null;
-        try (SeekableReadChannel channel = new SeekableReadChannel(new ByteArrayReadableSeekableByteChannel(input));
-             ArrowFileReader reader = new ArrowFileReader(channel, allocator)) {
-            reader.loadNextBatch();
-            retSchema = toDatavecSchema(reader.getVectorSchemaRoot().getSchema());
-            //load the batch
-            VectorUnloader unloader = new VectorUnloader(reader.getVectorSchemaRoot());
-            VectorLoader vectorLoader = new VectorLoader(reader.getVectorSchemaRoot());
-            ArrowRecordBatch recordBatch = unloader.getRecordBatch();
+        ArrowListWritable ret = null;
+        SeekableReadChannel channel = new SeekableReadChannel(new ByteArrayReadableSeekableByteChannel(input));
+        ArrowFileReader reader = new ArrowFileReader(channel, allocator);
+        reader.loadNextBatch();
+        retSchema = toDatavecSchema(reader.getVectorSchemaRoot().getSchema());
+        //load the batch
+        VectorUnloader unloader = new VectorUnloader(reader.getVectorSchemaRoot());
+        VectorLoader vectorLoader = new VectorLoader(reader.getVectorSchemaRoot());
+        ArrowRecordBatch recordBatch = unloader.getRecordBatch();
 
-            vectorLoader.load(recordBatch);
-            ret = asDataVecBatch(recordBatch,retSchema,reader.getVectorSchemaRoot());
-
-
-        } catch (IOException e1) {
-            e1.printStackTrace();
-        }
+        vectorLoader.load(recordBatch);
+        ret = asDataVecBatch(recordBatch,retSchema,reader.getVectorSchemaRoot());
+        ret.setUnloader(unloader);
 
         return Pair.of(retSchema,ret);
 
@@ -669,20 +666,17 @@ public class ArrowConverter {
 
 
 
-    private static List<List<Writable>> asDataVecBatch(ArrowRecordBatch arrowRecordBatch,Schema schema,VectorSchemaRoot vectorLoader) {
-        List<List<Writable>> ret = new ArrayList<>();
-        //iterate through each row in the record
-        for(int i = 0; i < arrowRecordBatch.getLength(); i++) {
-            List<Writable> add = new ArrayList<>();
-            //iterate column wise over the feature vectors, returning entries
-            for(int j = 0; j < schema.numColumns(); j++) {
-                String name = schema.getName(j);
-                FieldVector fieldVector = vectorLoader.getVector(name);
-                add.add(fromEntry(j,fieldVector,schema.getType(j)));
-            }
-
-            ret.add(add);
+    private static ArrowListWritable asDataVecBatch(ArrowRecordBatch arrowRecordBatch,Schema schema,VectorSchemaRoot vectorLoader) {
+        //iterate column wise over the feature vectors, returning entries
+        List<FieldVector> fieldVectors = new ArrayList<>();
+        for(int j = 0; j < schema.numColumns(); j++) {
+            String name = schema.getName(j);
+            FieldVector fieldVector = vectorLoader.getVector(name);
+            fieldVectors.add(fieldVector);
         }
+
+        ArrowListWritable ret = new ArrowListWritable(fieldVectors, schema);
+        ret.setArrowRecordBatch(arrowRecordBatch);
 
         return ret;
     }

@@ -10,6 +10,9 @@ import org.apache.arrow.vector.ipc.ArrowFileWriter;
 import org.apache.arrow.vector.types.FloatingPointPrecision;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
+import org.datavec.api.records.Record;
+import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.schema.Schema;
@@ -52,7 +55,7 @@ public class ArrowConverterTest {
     }
 
     @Test
-    public void testReadSchemaAndRecordsFromByteArray() {
+    public void testReadSchemaAndRecordsFromByteArray() throws Exception {
         BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
 
         int valueCount = 3;
@@ -140,6 +143,69 @@ public class ArrowConverterTest {
 
     @Test
     public void testRecordReaderAndWriteFile() throws Exception {
+        val recordsToWrite = recordToWrite();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),byteArrayOutputStream);
+        byte[] arr = byteArrayOutputStream.toByteArray();
+        val read = ArrowConverter.readFromBytes(arr);
+        assertEquals(recordsToWrite,read);
+
+        //send file
+        File tmp =  tmpDataFile(recordsToWrite);
+        RecordReader recordReader = new ArrowRecordReader();
+
+        recordReader.initialize(new FileSplit(tmp));
+
+        List<Writable> record = recordReader.next();
+        assertEquals(2,record.size());
+
+    }
+
+    @Test
+    public void testRecordReaderMetaDataList() throws Exception {
+        val recordsToWrite = recordToWrite();
+        //send file
+        File tmp =  tmpDataFile(recordsToWrite);
+        RecordReader recordReader = new ArrowRecordReader();
+        RecordMetaDataIndex recordMetaDataIndex = new RecordMetaDataIndex(0,tmp.toURI(),ArrowRecordReader.class);
+        recordReader.loadFromMetaData(Arrays.<RecordMetaData>asList(recordMetaDataIndex));
+
+        Record record = recordReader.nextRecord();
+        assertEquals(2,record.getRecord().size());
+
+
+
+    }
+
+
+    @Test
+    public void testRecordReaderMetaData() throws Exception {
+        val recordsToWrite = recordToWrite();
+        //send file
+        File tmp =  tmpDataFile(recordsToWrite);
+        RecordReader recordReader = new ArrowRecordReader();
+        RecordMetaDataIndex recordMetaDataIndex = new RecordMetaDataIndex(0,tmp.toURI(),ArrowRecordReader.class);
+        recordReader.loadFromMetaData(recordMetaDataIndex);
+
+        Record record = recordReader.nextRecord();
+        assertEquals(2,record.getRecord().size());
+    }
+
+
+    private File tmpDataFile(Pair<Schema,List<List<Writable>>> recordsToWrite) throws IOException {
+        //send file
+        File tmp = new File(System.getProperty("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
+        tmp.mkdirs();
+        File tmpFile = new File(tmp,"data.arrow");
+        tmpFile.deleteOnExit();
+        FileOutputStream bufferedOutputStream = new FileOutputStream(tmpFile);
+        ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),bufferedOutputStream);
+        bufferedOutputStream.flush();
+        bufferedOutputStream.close();
+        return tmp;
+    }
+
+    private Pair<Schema,List<List<Writable>>> recordToWrite() {
         List<List<Writable>> records = new ArrayList<>();
         records.add(Arrays.<Writable>asList(new DoubleWritable(0.0),new DoubleWritable(0.0)));
         records.add(Arrays.<Writable>asList(new DoubleWritable(0.0),new DoubleWritable(0.0)));
@@ -148,30 +214,10 @@ public class ArrowConverterTest {
             schemaBuilder.addColumnFloat("col-" + i);
         }
 
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        ArrowConverter.writeRecordBatchTo(records,schemaBuilder.build(),byteArrayOutputStream);
-        byte[] arr = byteArrayOutputStream.toByteArray();
-        val read = ArrowConverter.readFromBytes(arr);
-        Pair<Schema,List<List<Writable>>> pair = Pair.of(schemaBuilder.build(),records);
-        assertEquals(pair,read);
-
-        //send file
-        File tmp = new File(System.getProperty("java.io.tmpdir"),"tmp-file-" + UUID.randomUUID().toString());
-        tmp.mkdirs();
-        File tmpFile = new File(tmp,"data.arrow");
-        tmpFile.deleteOnExit();
-        RecordReader recordReader = new ArrowRecordReader();
-        FileOutputStream bufferedOutputStream = new FileOutputStream(tmpFile);
-        ArrowConverter.writeRecordBatchTo(records,schemaBuilder.build(),bufferedOutputStream);
-
-        bufferedOutputStream.flush();
-        bufferedOutputStream.close();
-        recordReader.initialize(new FileSplit(tmp));
-
-        List<Writable> record = recordReader.next();
-        assertEquals(2,record.size());
-
+        return Pair.of(schemaBuilder.build(),records);
     }
+
+
 
 
 }

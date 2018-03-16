@@ -1,54 +1,44 @@
 package org.datavec.arrow.recordreader;
 
 import lombok.val;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
-import org.apache.arrow.vector.FieldVector;
-import org.apache.arrow.vector.VectorLoader;
-import org.apache.arrow.vector.VectorUnloader;
-import org.apache.arrow.vector.ipc.ArrowFileReader;
-import org.apache.arrow.vector.ipc.SeekableReadChannel;
-import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
-import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.records.IOUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.datavec.arrow.ArrowConverter;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import static org.datavec.arrow.ArrowConverter.readFromBytes;
-import static org.datavec.arrow.ArrowConverter.toDatavecSchema;
 
 /**
  * Implements a record reader using arrow.
+ *
+ * @author Adam Gibson
  *
  */
 public class ArrowRecordReader implements RecordReader {
 
     private InputSplit split;
     private Configuration configuration;
-    private BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
     private Iterator<String> pathsIter;
-    private ArrowRecordBatch arrowRecordBatch;
     private int currIdx;
-    private List<FieldVector> fieldVectors;
+    private String currentPath;
     private Schema schema;
     private List<Writable> recordAllocation = new ArrayList<>();
-    private List<List<Writable>> currentBatch;
+    private ArrowListWritable currentBatch;
+    private List<RecordListener> recordListeners;
+
     @Override
     public void initialize(InputSplit split) {
         this.split = split;
@@ -87,6 +77,7 @@ public class ArrowRecordReader implements RecordReader {
                 this.currentBatch = read.getRight();
                 this.recordAllocation = currentBatch.get(0);
                 currIdx++;
+                this.currentPath = url;
             }catch(Exception e) {
                 e.printStackTrace();
             }
@@ -103,12 +94,12 @@ public class ArrowRecordReader implements RecordReader {
 
     @Override
     public boolean hasNext() {
-        return pathsIter.hasNext() || currIdx < arrowRecordBatch.getLength();
+        return pathsIter.hasNext() || currIdx < this.currentBatch.size();
     }
 
     @Override
     public List<String> getLabels() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -125,42 +116,89 @@ public class ArrowRecordReader implements RecordReader {
 
     @Override
     public List<Writable> record(URI uri, DataInputStream dataInputStream) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Record nextRecord() {
-        return null;
+        next();
+        ArrowRecord ret =  new ArrowRecord(currentBatch,currIdx - 1,URI.create(currentPath));
+        return ret;
     }
 
     @Override
     public Record loadFromMetaData(RecordMetaData recordMetaData) {
-        return null;
+        if(!(recordMetaData instanceof RecordMetaDataIndex)) {
+            throw new IllegalArgumentException("Unable to load from meta data. No index specified for record");
+        }
+
+        RecordMetaDataIndex index = (RecordMetaDataIndex) recordMetaData;
+        InputSplit fileSplit = new FileSplit(new File(index.getURI()));
+        initialize(fileSplit);
+        this.currIdx = (int) index.getIndex();
+        return nextRecord();
     }
 
     @Override
     public List<Record> loadFromMetaData(List<RecordMetaData> recordMetaDatas) {
-        return null;
+        Map<String,List<RecordMetaData>> metaDataByUri = new HashMap<>();
+        //gather all unique locations for the metadata
+        //this will prevent initialization multiple times of the record
+        for(RecordMetaData recordMetaData : recordMetaDatas) {
+            if(!(recordMetaData instanceof RecordMetaDataIndex)) {
+                throw new IllegalArgumentException("Unable to load from meta data. No index specified for record");
+            }
+
+            List<RecordMetaData> recordMetaData1 = metaDataByUri.get(recordMetaData.getURI().toString());
+            if(recordMetaData1 == null) {
+                recordMetaData1 = new ArrayList<>();
+                metaDataByUri.put(recordMetaData.getURI().toString(),recordMetaData1);
+            }
+
+            recordMetaData1.add(recordMetaData);
+
+        }
+
+        List<Record> ret = new ArrayList<>();
+        for(String uri : metaDataByUri.keySet()) {
+            List<RecordMetaData> metaData = metaDataByUri.get(uri);
+            InputSplit fileSplit = new FileSplit(new File(URI.create(uri)));
+            initialize(fileSplit);
+            for(RecordMetaData index : metaData) {
+                RecordMetaDataIndex index2 = (RecordMetaDataIndex) index;
+                this.currIdx = (int) index2.getIndex();
+                ret.add(nextRecord());
+            }
+
+        }
+
+        return ret;
     }
 
     @Override
     public List<RecordListener> getListeners() {
-        return null;
+        return recordListeners;
     }
 
     @Override
     public void setListeners(RecordListener... listeners) {
-
+        this.recordListeners = new ArrayList<>(Arrays.asList(listeners));
     }
 
     @Override
     public void setListeners(Collection<RecordListener> listeners) {
-
+        this.recordListeners = new ArrayList<>(listeners);
     }
 
     @Override
     public void close() {
-
+        if(currentBatch != null) {
+            try {
+                currentBatch.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @Override
