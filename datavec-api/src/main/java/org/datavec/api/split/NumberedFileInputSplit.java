@@ -20,9 +20,7 @@ package org.datavec.api.split;
 import org.datavec.api.util.files.UriFromPathIterator;
 import org.datavec.api.writable.WritableType;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Iterator;
@@ -59,6 +57,12 @@ public class NumberedFileInputSplit implements InputSplit {
         this.baseString = baseString;
         this.minIdx = minIdxInclusive;
         this.maxIdx = maxIdxInclusive;
+    }
+
+    @Override
+    public InputStream openInputStreamFor(String location) throws Exception {
+        FileInputStream fileInputStream = new FileInputStream(location);
+        return fileInputStream;
     }
 
     @Override

@@ -6,6 +6,7 @@ import org.nd4j.linalg.collection.CompactHeapStringList;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -72,6 +73,11 @@ public class TransformSplit extends BaseInputSplit {
     @Override
     public void readFields(DataInput in) throws IOException {
 
+    }
+
+    @Override
+    public InputStream openInputStreamFor(String location) throws Exception {
+        return sourceSplit.openInputStreamFor(location);
     }
 
     @Override

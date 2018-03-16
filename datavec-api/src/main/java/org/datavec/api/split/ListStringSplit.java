@@ -21,6 +21,7 @@ import org.datavec.api.writable.WritableType;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -36,6 +37,11 @@ public class ListStringSplit implements InputSplit {
 
     public ListStringSplit(List<List<String>> data) {
         this.data = data;
+    }
+
+    @Override
+    public InputStream openInputStreamFor(String location) throws Exception {
+        return null;
     }
 
     /**

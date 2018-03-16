@@ -30,6 +30,7 @@ import org.junit.Test;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -136,6 +137,11 @@ public class CSVSequenceRecordReaderTest {
     }
 
     private static class TestInputSplit implements InputSplit {
+
+        @Override
+        public InputStream openInputStreamFor(String location) throws Exception {
+            return null;
+        }
 
         @Override
         public long length() {

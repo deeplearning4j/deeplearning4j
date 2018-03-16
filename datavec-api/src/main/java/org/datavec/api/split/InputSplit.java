@@ -19,17 +19,30 @@ package org.datavec.api.split;
 
 import org.datavec.api.writable.Writable;
 
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Iterator;
 
 /**
- * An input split
+ * An input split.
+ * Basically, a list of loadable locations
+ * exposed as an iterator.
  *
  *
  * @author Adam Gibson
  */
 public interface InputSplit extends Writable {
 
+
+    /**
+     * Open an {@link InputStream}
+     * for the given location.
+     * Note that the user is responsible for closing
+     * the associated input stream.
+     * @param location the location to open the input stream for
+     * @return the opened input stream
+     */
+    InputStream openInputStreamFor(String location) throws Exception;
 
     /**
      *  Length of the split
@@ -43,8 +56,16 @@ public interface InputSplit extends Writable {
      */
     URI[] locations();
 
+    /**
+     *
+     * @return
+     */
     Iterator<URI> locationsIterator();
 
+    /**
+     *
+     * @return
+     */
     Iterator<String> locationsPathIterator();
 
     /**
