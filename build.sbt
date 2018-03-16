@@ -10,7 +10,6 @@ resolvers in ThisBuild ++= Seq(
   Resolver.sonatypeRepo("snapshots")
 )
 
-classpathTypes += "maven-plugin"
 cleanFiles += baseDirectory.value / "lib"
 val mvnInstall = Seq("mvn", "install", "-q", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
@@ -32,7 +31,7 @@ libraryDependencies ++= {
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
     "org.slf4j" % "slf4j-api" % "1.7.25",
     "ch.qos.logback" % "logback-classic" % logback,
-    "org.nd4j" % "nd4j-native" % dl4j % "test",
+//    "org.nd4j" % "nd4j-native" % dl4j % "test",
     "org.scalacheck" %% "scalacheck" % scalaCheck % "test",
     "org.scalatest" %% "scalatest" % scalaTest % "test"
   )
@@ -76,6 +75,5 @@ lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(standardSettings)
   .settings(
-    name := "ScalNet",
-    fork := true
+    name := "ScalNet"
   )
