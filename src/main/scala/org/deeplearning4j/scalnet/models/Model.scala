@@ -19,7 +19,7 @@ package org.deeplearning4j.scalnet.models
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.layers.{ OutputLayer => JOutputLayer }
-import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater, WorkspaceMode }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.core.{ Node, OutputLayer }
@@ -59,6 +59,7 @@ trait Model {
       builder = builder.seed(seed)
     }
     builder
+      .trainingWorkspaceMode(WorkspaceMode.NONE)
       .optimizationAlgo(optimizer)
       .updater(updater.getIUpdaterWithDefaultConfig)
       .miniBatch(miniBatch)
