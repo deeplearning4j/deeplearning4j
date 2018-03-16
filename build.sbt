@@ -31,7 +31,7 @@ libraryDependencies ++= {
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
     "org.slf4j" % "slf4j-api" % "1.7.25",
     "ch.qos.logback" % "logback-classic" % logback,
-//    "org.nd4j" % "nd4j-native" % dl4j % "test",
+    "org.nd4j" % "nd4j-native" % dl4j % "test",
     "org.scalacheck" %% "scalacheck" % scalaCheck % "test",
     "org.scalatest" %% "scalatest" % scalaTest % "test"
   )

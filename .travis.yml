@@ -1,10 +1,11 @@
 language: scala
-scala: dummy
+scala:
+  - 2.11.12
+  - 2.10.7
 jdk: oraclejdk8
 
 script:
-  - sbt ++2.11.12 clean compile test
-  - sbt ++2.10.7 clean compile test
+  - sbt ++$TRAVIS_SCALA_VERSION clean compile test
   - ./change-scala-versions.sh "2.11"
   - mvn -q clean package
   - ./change-scala-versions.sh "2.10"

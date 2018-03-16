@@ -59,7 +59,6 @@ trait Model {
       builder = builder.seed(seed)
     }
     builder
-      .trainingWorkspaceMode(WorkspaceMode.NONE)
       .optimizationAlgo(optimizer)
       .updater(updater.getIUpdaterWithDefaultConfig)
       .miniBatch(miniBatch)
