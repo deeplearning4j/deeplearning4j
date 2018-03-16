@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
@@ -124,6 +125,22 @@ public class DifferentialFunctionFactory   {
         return new OnesLike(name, sameDiff(),input).outputVariables()[0];
     }
 
+    /**
+     * Conv1d operation.
+     *
+     * @param inputs       the inputs to conv1d
+     * @param conv1DConfig the configuration
+     * @return
+     */
+    public SDVariable conv1d(SDVariable[] inputs, Conv1DConfig conv1DConfig) {
+        Conv1D conv1D = Conv1D.builder()
+                .inputFunctions(inputs)
+                .sameDiff(sameDiff())
+                .config(conv1DConfig)
+                .build();
+
+        return conv1D.outputVariables()[0];
+    }
 
     /**
      * Conv2d operation.
