@@ -74,9 +74,9 @@ public class Pooling3D extends DynamicCustomOp {
         addIArgument(config.getKT());
         addIArgument(config.getKW());
         addIArgument(config.getKH());
-        addIArgument(config.getDT());
-        addIArgument(config.getDW());
-        addIArgument(config.getDH());
+        addIArgument(config.getST());
+        addIArgument(config.getSW());
+        addIArgument(config.getSH());
         addIArgument(config.getPT());
         addIArgument(config.getPW());
         addIArgument(config.getPH());
@@ -88,7 +88,7 @@ public class Pooling3D extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return getPoolingPrefix() + "pool3d";
+        return getPoolingPrefix() + "pool3dnew";
     }
 
     @Override
