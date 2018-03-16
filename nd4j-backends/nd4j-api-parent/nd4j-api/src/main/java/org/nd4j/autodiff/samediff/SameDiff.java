@@ -2631,6 +2631,14 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+    public SDVariable zeroFraction(SDVariable input) {
+        return zeroFraction(null, input);
+    }
+
+    public SDVariable zeroFraction(String name, SDVariable input) {
+        SDVariable res = f().zeroFraction(input);
+        return updateVariableNameAndReference(res, name);
+    }
 
     public SDVariable countNonZero(SDVariable input) {
         return countNonZero(null, input);

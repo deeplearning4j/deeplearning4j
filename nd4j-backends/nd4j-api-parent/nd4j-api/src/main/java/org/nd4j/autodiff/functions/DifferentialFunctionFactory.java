@@ -265,6 +265,11 @@ public class DifferentialFunctionFactory   {
         return new CountZero(sameDiff(), input).outputVariables()[0];
     }
 
+    public SDVariable zeroFraction(SDVariable input) {
+        return new ZeroFraction(sameDiff(), input).outputVariables()[0];
+    }
+
+
     public SDVariable max(SDVariable i_x, int... dimensions) {
         return new Max(sameDiff(),i_x,dimensions).outputVariables()[0];
     }

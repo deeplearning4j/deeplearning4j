@@ -50,6 +50,22 @@ public class GradCheckReductions {
     }
 
     @Test
+    public void testZeroFraction() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray ia = Nd4j.create(new int[]{2, 2}, new float[] {0, 1, 0, 1});
+        SDVariable input = sd.var("in", new int[]{2, 2});
+        sd.associateArrayWithVariable(ia, input);
+
+        SDVariable zeroFraction = sd.zeroFraction(input);
+
+        sd.exec();
+
+        assert zeroFraction.getArr().getDouble(0) == 0.5;
+
+    }
+
+    @Test
     public void testReductionGradientsSimple() {
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
