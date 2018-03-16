@@ -3955,6 +3955,17 @@ public class SameDiff {
         return updateVariableNameAndReference(result, name);
     }
 
+    public SDVariable sigmoidCrossEntropyWithLogits(SDVariable logits, SDVariable weights, SDVariable labels,
+                                                    int reductionMode, double labelSmoothing) {
+        return sigmoidCrossEntropyWithLogits(null, logits, weights, labels, reductionMode, labelSmoothing);
+    }
+
+    public SDVariable sigmoidCrossEntropyWithLogits(String name, SDVariable logits, SDVariable weights, SDVariable labels,
+                                                    int reductionMode, double labelSmoothing) {
+        SDVariable res = f().sigmoidCrossEntropyWithLogits(logits, weights, labels, reductionMode, labelSmoothing);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param iX
      * @param i_y
