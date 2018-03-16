@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
@@ -2252,6 +2253,38 @@ public class SameDiffTests {
         int[] outShape = outArr.shape();
         assertArrayEquals(new int[]{mb, nOut, 27, 27}, outShape);
         // sd.execBackwards(); // TODO: test failing here
+    }
+
+    @Test
+    public void testConv1dBasic() {
+        int nIn = 3;
+        int nOut = 4;
+        int k = 2;
+        int mb = 3;
+        int img = 28;
+
+        SameDiff sd = SameDiff.create();
+        INDArray wArr = Nd4j.create(nOut, nIn, k);
+        INDArray inArr = Nd4j.create(mb, nIn, img);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("W", wArr);
+
+        SDVariable[] vars = new SDVariable[]{in, w};
+
+        Conv1DConfig conv1DConfig = Conv1DConfig.builder()
+                .k(k).p(0).s(1).d(1)
+                .isSameMode(false)
+                .build();
+
+        SDVariable out = sd.conv1d(vars, conv1DConfig);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        INDArray iOut = out.getArr();
+        //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
+        int[] outShape = outArr.shape();
+        assertArrayEquals(new int[]{mb, nOut, 27}, outShape);
     }
 
     @Test

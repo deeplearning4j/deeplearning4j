@@ -60,7 +60,6 @@ public class Conv1D extends DynamicCustomOp {
         addIArgument(config.getK(),
                 config.getS(),
                 config.getP(),
-                config.getD(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
                 ArrayUtil.fromBoolean(config.isNHWC()));
     }
@@ -154,12 +153,6 @@ public class Conv1D extends DynamicCustomOp {
                 .onnxAttrName("kernel_shape")
                 .build();
 
-        val dilationMapping = PropertyMapping.builder()
-                .onnxAttrName("dilations")
-                .propertyNames(new String[]{"d"})
-                .tfAttrName("rates")
-                .build();
-
         val paddingMapping = PropertyMapping.builder()
                 .onnxAttrName("padding")
                 .propertyNames(new String[]{"p"})
@@ -183,12 +176,9 @@ public class Conv1D extends DynamicCustomOp {
                 .tfAttrName("padding")
                 .build();
 
-
-
         map.put("s", strideMapping);
         map.put("k", kernelMapping);
         map.put("p", paddingMapping);
-        map.put("d", dilationMapping);
         map.put("isSameMode", sameMode);
         map.put("dataFormat", dataFormat);
         map.put("isNHWC", nhwc);

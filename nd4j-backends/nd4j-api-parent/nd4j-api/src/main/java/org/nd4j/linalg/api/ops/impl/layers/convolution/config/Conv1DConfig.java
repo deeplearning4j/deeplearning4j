@@ -13,8 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig  {
-    private int k, s, p, d;
-    @Builder.Default private int d = 1;
+    private int k, s, p;
     private boolean isSameMode;
     @Builder.Default
     private String dataFormat = "NWHC";
@@ -25,7 +24,6 @@ public class Conv1DConfig extends BaseConvolutionConfig  {
         ret.put("k",k);
         ret.put("s",s);
         ret.put("p",p);
-        ret.put("d",d);
         ret.put("isSameMode",isSameMode);
         ret.put("isNWHC",isNHWC);
         return ret;

@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
@@ -1661,6 +1662,30 @@ public class SameDiff {
         SameDiff grad = getFunction("grad");
         SDVariable var = grad.getVariable(varName);
         return getFunction("grad").getGradForVariable(var.getVarName());
+    }
+
+    /**
+     * Conv1d operation.
+     *
+     * @param inputs       the inputs to conv1d
+     * @param conv1DConfig the configuration
+     * @return
+     */
+    public SDVariable conv1d(SDVariable[] inputs, Conv1DConfig conv1DConfig) {
+        return conv1d(null, inputs, conv1DConfig);
+    }
+
+    /**
+     * Conv1d operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to conv1d
+     * @param conv1DConfig the configuration
+     * @return
+     */
+    public SDVariable conv1d(String name, SDVariable[] inputs, Conv1DConfig conv1DConfig) {
+        SDVariable ret = f().conv1d(inputs, conv1DConfig);
+        return updateVariableNameAndReference(ret, name);
     }
 
 
