@@ -31,7 +31,7 @@ public class SparkDataValidation {
      * @param path HDFS path of the directory containing the saved DataSet objects
      * @return Results of the validation
      */
-    public ValidationResult validateDataSets(JavaSparkContext sc, String path) {
+    public static ValidationResult validateDataSets(JavaSparkContext sc, String path) {
         return validateDataSets(sc, path, true, false, null, null);
     }
 
@@ -49,7 +49,7 @@ public class SparkDataValidation {
      * @param labelsShape   As per featuresShape, but for the labels instead
      * @return Results of the validation
      */
-    public ValidationResult validateDataSets(JavaSparkContext sc, String path, int[] featuresShape, int[] labelsShape) {
+    public static ValidationResult validateDataSets(JavaSparkContext sc, String path, int[] featuresShape, int[] labelsShape) {
         return validateDataSets(sc, path, true, false, featuresShape, labelsShape);
     }
 
@@ -63,7 +63,7 @@ public class SparkDataValidation {
      * @param path HDFS path of the directory containing the saved DataSet objects
      * @return Results of the validation/deletion
      */
-    public ValidationResult deleteInvalidDataSets(JavaSparkContext sc, String path) {
+    public static ValidationResult deleteInvalidDataSets(JavaSparkContext sc, String path) {
         return validateDataSets(sc, path, true, true, null, null);
     }
 
@@ -82,17 +82,17 @@ public class SparkDataValidation {
      * @param labelsShape   As per featuresShape, but for the labels instead
      * @return Results of the validation
      */
-    public ValidationResult deleteInvalidDataSets(JavaSparkContext sc, String path, int[] featuresShape, int[] labelsShape) {
+    public static ValidationResult deleteInvalidDataSets(JavaSparkContext sc, String path, int[] featuresShape, int[] labelsShape) {
         return validateDataSets(sc, path, true, true, featuresShape, labelsShape);
     }
 
 
-    protected ValidationResult validateDataSets(SparkContext sc, String path, boolean recursive, boolean deleteInvalid,
+    protected static ValidationResult validateDataSets(SparkContext sc, String path, boolean recursive, boolean deleteInvalid,
                                                 int[] featuresShape, int[] labelsShape) {
         return validateDataSets(new JavaSparkContext(sc), path, recursive, deleteInvalid, featuresShape, labelsShape);
     }
 
-    protected ValidationResult validateDataSets(JavaSparkContext sc, String path, boolean recursive, boolean deleteInvalid,
+    protected static ValidationResult validateDataSets(JavaSparkContext sc, String path, boolean recursive, boolean deleteInvalid,
                                                 int[] featuresShape, int[] labelsShape) {
         JavaRDD<String> paths;
         try {
@@ -116,7 +116,7 @@ public class SparkDataValidation {
      * @param path HDFS path of the directory containing the saved DataSet objects
      * @return Results of the validation
      */
-    public ValidationResult validateMultiDataSets(JavaSparkContext sc, String path) {
+    public static ValidationResult validateMultiDataSets(JavaSparkContext sc, String path) {
         return validateMultiDataSets(sc, path, true, false, -1, -1, null, null);
     }
 
@@ -133,7 +133,7 @@ public class SparkDataValidation {
      * @param numLabelArrays   Number of labels arrays that are expected for the MultiDataSet (set -1 to not check)
      * @return Results of the validation
      */
-    public ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, int numFeatureArrays, int numLabelArrays) {
+    public static ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, int numFeatureArrays, int numLabelArrays) {
         return validateMultiDataSets(sc, path, true, false, numFeatureArrays, numLabelArrays, null, null);
     }
 
@@ -153,7 +153,7 @@ public class SparkDataValidation {
      * @param labelsShape   As per featuresShape, but for the labels instead
      * @return Results of the validation
      */
-    public ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, List<int[]> featuresShape, List<int[]> labelsShape) {
+    public static ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, List<int[]> featuresShape, List<int[]> labelsShape) {
         return validateMultiDataSets(sc, path, true, false, (featuresShape == null ? -1 : featuresShape.size()),
                 (labelsShape == null ? -1 : labelsShape.size()), featuresShape, labelsShape);
     }
@@ -168,8 +168,8 @@ public class SparkDataValidation {
      * @param path HDFS path of the directory containing the saved DataSet objects
      * @return Results of the validation/deletion
      */
-    public ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path) {
-        return validateDataSets(sc, path, true, true, null, null);
+    public static ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path) {
+        return validateMultiDataSets(sc, path, true, true, -1, -1, null, null);
     }
 
     /**
@@ -188,7 +188,7 @@ public class SparkDataValidation {
      * @param labelsShape   As per featuresShape, but for the labels instead
      * @return Results of the validation
      */
-    public ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path, List<int[]> featuresShape,
+    public static ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path, List<int[]> featuresShape,
                                                        List<int[]> labelsShape) {
         return validateMultiDataSets(sc, path, true, true, (featuresShape == null ? -1 : featuresShape.size()),
                 (labelsShape == null ? -1 : labelsShape.size()), featuresShape, labelsShape);
@@ -207,18 +207,18 @@ public class SparkDataValidation {
      * @param numLabelArrays   Number of labels arrays that are expected for the MultiDataSet (set -1 to not check)
      * @return Results of the validation
      */
-    public ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path, int numFeatureArrays, int numLabelArrays) {
+    public static ValidationResult deleteInvalidMultiDataSets(JavaSparkContext sc, String path, int numFeatureArrays, int numLabelArrays) {
         return validateMultiDataSets(sc, path, true, true, numFeatureArrays, numLabelArrays, null, null);
     }
 
-    protected ValidationResult validateMultiDataSets(SparkContext sc, String path, boolean recursive, boolean deleteInvalid,
+    protected static ValidationResult validateMultiDataSets(SparkContext sc, String path, boolean recursive, boolean deleteInvalid,
                                                      int numFeatureArrays, int numLabelArrays,
                                                      List<int[]> featuresShape, List<int[]> labelsShape) {
         return validateMultiDataSets(new JavaSparkContext(sc), path, recursive, deleteInvalid, numFeatureArrays, numLabelArrays,
                 featuresShape, labelsShape);
     }
 
-    protected ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, boolean recursive, boolean deleteInvalid,
+    protected static ValidationResult validateMultiDataSets(JavaSparkContext sc, String path, boolean recursive, boolean deleteInvalid,
                                                      int numFeatureArrays, int numLabelArrays,
                                                      List<int[]> featuresShape, List<int[]> labelsShape) {
         JavaRDD<String> paths;

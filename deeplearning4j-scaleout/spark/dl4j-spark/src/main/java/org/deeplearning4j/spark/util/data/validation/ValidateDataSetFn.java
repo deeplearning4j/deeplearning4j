@@ -9,9 +9,15 @@ import org.deeplearning4j.spark.util.data.ValidationResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.io.IOException;
+import java.io.EOFException;
 import java.net.URI;
 
+/**
+ * Function used to validate DataSets on HDFS - see {@link org.deeplearning4j.spark.util.data.SparkDataValidation} for
+ * further details
+ *
+ * @author Alex Black
+ */
 public class ValidateDataSetFn implements Function<String, ValidationResult> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 
@@ -57,11 +63,10 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
         try (FSDataInputStream inputStream = fileSystem.open(p, BUFFER_SIZE)) {
             ds.load(inputStream);
             loadSuccessful = true;
-        } catch (Throwable t) {
+        } catch (RuntimeException t) {
             shouldDelete = deleteInvalid;
             ret.setCountLoadingFailure(1);
         }
-
 
         boolean isValid = loadSuccessful;
         if (loadSuccessful) {
@@ -80,7 +85,7 @@ public class ValidateDataSetFn implements Function<String, ValidationResult> {
                 ret.setCountMissingLabels(1);
                 isValid = false;
             } else {
-                if(labelsShape != null && !validateArrayShape(labelsShape, ds.getLabelsMaskArray())){
+                if(labelsShape != null && !validateArrayShape(labelsShape, ds.getLabels())){
                     ret.setCountInvalidLabels(1);
                     isValid = false;
                 }

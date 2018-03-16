@@ -1,8 +1,11 @@
 package org.deeplearning4j.spark.util.data;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
 
 /**
  * Result for validation of DataSet and MultiDataSets. See {@link SparkDataValidation} for more details
@@ -12,7 +15,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class ValidationResult {
+@Builder
+public class ValidationResult implements Serializable {
     private long countTotal;
     private long countMissingFile;
     private long countTotalValid;
