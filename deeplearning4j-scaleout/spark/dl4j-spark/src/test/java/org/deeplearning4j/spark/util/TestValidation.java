@@ -24,11 +24,6 @@ public class TestValidation extends BaseSparkTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
-    @Override
-    public int numExecutors(){
-        return 1;
-    }
-
     @Test
     public void testDataSetValidation() throws Exception {
 
