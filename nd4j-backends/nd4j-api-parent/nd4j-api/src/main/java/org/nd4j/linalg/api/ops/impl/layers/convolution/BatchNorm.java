@@ -2,14 +2,22 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 
@@ -18,42 +26,44 @@ import java.util.*;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class BatchNorm extends DynamicCustomOp {
 
-    private boolean training;
-    private boolean isLockGammaBeta;
-    private boolean isMiniBatch;
+    private boolean applyGamma;
+    private boolean applyBeta;
+    private double epsilon;
 
     @Builder(builderMethodName = "builder")
     public BatchNorm(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[]
-            outputArrays,boolean inPlace, boolean training, boolean isLockGammaBeta, boolean isMiniBatch) {
+            outputArrays, boolean inPlace, boolean applyGamma, boolean applyBeta, double epsilon) {
         super(null,sameDiff, inputFunctions, inPlace);
-        this.training = training;
-        this.isLockGammaBeta = isLockGammaBeta;
-        this.isMiniBatch = isMiniBatch;
+        this.sameDiff = sameDiff;
+
+        this.applyGamma = applyGamma;
+        this.applyBeta = applyBeta;
+        this.epsilon = epsilon;
         if(inputArrays != null) {
             addInputArgument(inputArrays);
         }
-
         if(outputArrays != null) {
             addOutputArgument(outputArrays);
         }
-
-        addIArgument(ArrayUtil.fromBoolean(training));
-        addIArgument(ArrayUtil.fromBoolean(isLockGammaBeta));
-        addIArgument(ArrayUtil.fromBoolean(isMiniBatch));
+        addArgs();
     }
 
+    public void addArgs() {
+        addIArgument(ArrayUtil.fromBoolean(applyGamma));
+        addIArgument(ArrayUtil.fromBoolean(applyBeta));
+        addTArgument(epsilon);
+    }
 
-
-    public BatchNorm() {}
 
     @Override
     public Map<String, Object> propertiesForFunction() {
         Map<String,Object> ret = new LinkedHashMap<>();
-        ret.put("training",training);
-        ret.put("isLockGammaBeta",isLockGammaBeta);
-        ret.put("isMiniBatch",isMiniBatch);
+        ret.put("applyGamma", applyGamma);
+        ret.put("applyBeta", applyBeta);
+        ret.put("epsilon", epsilon);
         return ret;
     }
 
@@ -63,6 +73,19 @@ public class BatchNorm extends DynamicCustomOp {
         Map<String,PropertyMapping> map = new HashMap<>();
 
         return ret;
+    }
+
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        addArgs();
+    }
+
+    @Override
+    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+        OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode, node, graph);
+        addArgs();
     }
 
     @Override
@@ -87,9 +110,9 @@ public class BatchNorm extends DynamicCustomOp {
         inputs.addAll(Arrays.asList(args()));
         inputs.add(f1.get(0));
         BatchNormDerivative batchNormDerivative = BatchNormDerivative.derivativeBuilder()
-                .isLockGammaBeta(isLockGammaBeta)
-                .isMiniBatch(isMiniBatch)
-                .training(training)
+                .applyGamma(applyGamma)
+                .applyBeta(applyBeta)
+                .epsilon(epsilon)
                 .build();
         ret.addAll(Arrays.asList(batchNormDerivative.outputVariables()));
         return ret;

@@ -1915,9 +1915,9 @@ public class SameDiff {
      */
     public SDVariable batchNorm(SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta, boolean training,
-                                boolean isLockGammaBeta, boolean isMiniBatch) {
-        return batchNorm(null, input, mean, variance, gamma, beta, training, isLockGammaBeta, isMiniBatch);
+                                SDVariable beta,
+                                boolean applyGamma, boolean applyBeta, double epsilon) {
+        return batchNorm(null, input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
     }
 
     /**
@@ -1926,9 +1926,9 @@ public class SameDiff {
      */
     public SDVariable batchNorm(String name, SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta, boolean training,
-                                boolean isLockGammaBeta, boolean isMiniBatch) {
-        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, training, isLockGammaBeta, isMiniBatch);
+                                SDVariable beta,
+                                boolean applyGamma, boolean applyBeta, double epsilon) {
+        SDVariable res = f().batchNorm(input, mean, variance, gamma, beta, applyGamma, applyBeta, epsilon);
         return updateVariableNameAndReference(res, name);
     }
 

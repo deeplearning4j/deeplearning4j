@@ -306,13 +306,14 @@ public class DifferentialFunctionFactory   {
      */
     public SDVariable batchNorm(SDVariable input, SDVariable mean,
                                 SDVariable variance, SDVariable gamma,
-                                SDVariable beta, boolean training,
-                                boolean isLockGammaBeta, boolean isMiniBatch) {
+                                SDVariable beta,
+                                boolean applyGamma, boolean applyBeta,
+                                double epsilon) {
         BatchNorm batchNorm = BatchNorm.builder()
                 .inputFunctions(new SDVariable[] {input, mean, variance, gamma, beta})
-                .training(training)
-                .isLockGammaBeta(isLockGammaBeta)
-                .isMiniBatch(isMiniBatch)
+                .applyGamma(applyGamma)
+                .applyBeta(applyBeta)
+                .epsilon(epsilon)
                 .sameDiff(sameDiff())
                 .build();
 
