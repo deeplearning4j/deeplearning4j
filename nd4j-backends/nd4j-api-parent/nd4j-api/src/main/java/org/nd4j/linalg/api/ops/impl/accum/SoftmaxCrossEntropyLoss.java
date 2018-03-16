@@ -53,6 +53,9 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
         this.reductionMode = reductionMode;
         this.labelSmoothing = labelSmoothing;
+        this.sameDiff = sameDiff;
+
+        addArgs();
     }
 
     public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels,

@@ -44,6 +44,7 @@ public class WeightedCrossEntropyLoss extends DynamicCustomOp {
 
     public WeightedCrossEntropyLoss(SameDiff sameDiff, SDVariable targets, SDVariable inputs, SDVariable weights) {
         super(null, sameDiff, new SDVariable[]{targets, inputs, weights}, false);
+        this.sameDiff = sameDiff;
     }
 
 
