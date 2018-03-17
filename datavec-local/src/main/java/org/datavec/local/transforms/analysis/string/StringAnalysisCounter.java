@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.spark.transform.analysis.string;
+package org.datavec.local.transforms.analysis.string;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
