@@ -1,6 +1,6 @@
 package org.deeplearning4j.text.sentenceiterator;
 
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

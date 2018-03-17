@@ -1,6 +1,6 @@
 package org.deeplearning4j.text.documentiterator;
 
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Before;

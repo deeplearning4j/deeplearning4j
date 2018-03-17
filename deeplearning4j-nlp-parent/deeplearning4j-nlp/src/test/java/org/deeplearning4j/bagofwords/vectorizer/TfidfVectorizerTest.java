@@ -19,7 +19,7 @@
 package org.deeplearning4j.bagofwords.vectorizer;
 
 import lombok.val;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;

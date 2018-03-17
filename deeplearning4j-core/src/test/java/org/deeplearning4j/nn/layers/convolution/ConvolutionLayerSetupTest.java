@@ -2,7 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;

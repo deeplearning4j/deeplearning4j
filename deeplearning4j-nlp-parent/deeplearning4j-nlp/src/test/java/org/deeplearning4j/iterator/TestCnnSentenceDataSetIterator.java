@@ -1,6 +1,6 @@
 package org.deeplearning4j.iterator;
 
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;

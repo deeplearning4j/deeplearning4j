@@ -2,7 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
