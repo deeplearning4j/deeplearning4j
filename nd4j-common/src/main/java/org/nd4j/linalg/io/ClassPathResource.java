@@ -1,9 +1,12 @@
 package org.nd4j.linalg.io;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.attribute.FileAttribute;
 
 /**
  * A slightly upgraded version of spring's
@@ -12,6 +15,7 @@ import java.net.URL;
  *
  */
 public class ClassPathResource extends AbstractFileResolvingResource {
+
     private final String path;
     private ClassLoader classLoader;
     private Class<?> clazz;
@@ -51,28 +55,64 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         return this.classLoader != null ? this.classLoader : this.clazz.getClassLoader();
     }
 
+    /**
+     * Get the File.
+     * If the file cannot be accessed directly (for example, it is in a JAR file), we will attempt to extract it from
+     * the JAR and copy it to the temporary directory, using {@link #getTempFileFromArchive()}
+     *
+     * @return The File, or a temporary copy if it can not be accessed directly
+     * @throws IOException
+     */
+    @Override
+    public File getFile() throws IOException {
+        try{
+            return super.getFile();
+        } catch (FileNotFoundException e){
+            //java.io.FileNotFoundException: class path resource [iris.txt] cannot be resolved to absolute file path because
+            // it does not reside in the file system: jar:file:/.../dl4j-test-resources-0.9.2-SNAPSHOT.jar!/iris.txt
+            return getTempFileFromArchive();
+        }
+    }
 
 
     /**
-     * Get a temp file from the classpath.
-     * This is for resources where
-     * a file is needed and the
-     * classpath resource is in a jar file
+     * Get a temp file from the classpath.<br>
+     * This is for resources where a file is needed and the classpath resource is in a jar file. The file is copied
+     * to the default temporary directory, using {@link Files#createTempFile(String, String, FileAttribute[])}.
+     * Consequently, the extracted file will have a different filename to the extracted one.
+     *
      * @return the temp file
-     * @throws IOException
+     * @throws IOException If an error occurs when files are being copied
+     * @see #getTempFileFromArchive(File)
      */
     public File getTempFileFromArchive() throws IOException {
+        return getTempFileFromArchive(null);
+    }
+
+    /**
+     * Get a temp file from the classpath, and (optionally) place it in the specified directory<br>
+     * Note that:<br>
+     * - If the directory is not specified, the file is copied to the default temporary directory, using
+     * {@link Files#createTempFile(String, String, FileAttribute[])}. Consequently, the extracted file will have a
+     * different filename to the extracted one.<br>
+     * - If the directory *is* specified, the file is copied directly - and the original filename is maintained
+     *
+     * @param rootDirectory May be null. If non-null, copy to the specified directory
+     * @return the temp file
+     * @throws IOException If an error occurs when files are being copied
+     * @see #getTempFileFromArchive(File)
+     */
+    public File getTempFileFromArchive(File rootDirectory) throws IOException {
         InputStream is = getInputStream();
         File tmpFile;
-        if (path.contains("/") || path.contains("\\")) {
-            int idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-            String subpath = path.substring(idx + 1);
-            tmpFile = new File(subpath + "tmp");
+        if(rootDirectory != null){
+            //Maintain original file names, as it's going in a directory...
+            tmpFile = new File(rootDirectory, FilenameUtils.getName(path));
         } else {
-            tmpFile = new File(path + "tmp");
+            tmpFile = Files.createTempFile(FilenameUtils.getName(path), "tmp").toFile();
         }
-        tmpFile.deleteOnExit();
 
+        tmpFile.deleteOnExit();
 
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
 
