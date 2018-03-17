@@ -1,7 +1,7 @@
 package org.deeplearning4j.text.documentiterator;
 
 
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;

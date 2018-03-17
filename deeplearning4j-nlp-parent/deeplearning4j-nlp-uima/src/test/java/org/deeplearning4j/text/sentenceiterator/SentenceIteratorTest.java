@@ -19,7 +19,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.junit.After;
