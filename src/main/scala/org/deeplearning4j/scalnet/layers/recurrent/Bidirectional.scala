@@ -31,5 +31,11 @@ class Bidirectional(layer: Layer, mode: Mode, override val name: String = "") ex
 }
 
 object Bidirectional {
+
+  val CONCAT = Mode.CONCAT
+  val ADD = Mode.ADD
+  val MUL = Mode.MUL
+  val AVERAGE = Mode.AVERAGE
+
   def apply(layer: Layer, mode: Mode = Mode.CONCAT): Bidirectional = new Bidirectional(layer, mode)
 }

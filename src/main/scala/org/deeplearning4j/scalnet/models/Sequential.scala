@@ -17,17 +17,11 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
-import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
+import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers._
-import org.deeplearning4j.scalnet.layers.core.{ Layer, Node, Preprocessor }
+import org.deeplearning4j.scalnet.layers.core.{Layer, Node, Preprocessor}
 import org.deeplearning4j.scalnet.logging.Logging
-import org.nd4j.linalg.dataset.api.DataSet
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-
-import scala.collection.JavaConverters._
 
 /**
   * Class for keras-style simple sequential neural net architectures
@@ -71,10 +65,8 @@ class Sequential(miniBatch: Boolean, biasInit: Double, rngSeed: Long) extends Mo
     checkShape(layer)
     val inferredLayer = layer.reshapeInput(inferredInput)
     inferredLayer match {
-      case _: Preprocessor =>
-        _preprocessors = _preprocessors + (layers.length -> inferredLayer)
-      case _ =>
-        layers = layers :+ inferredLayer
+      case _: Preprocessor => _preprocessors = _preprocessors + (layers.length -> inferredLayer)
+      case _               => layers = layers :+ inferredLayer
     }
   }
 
@@ -99,22 +91,6 @@ class Sequential(miniBatch: Boolean, biasInit: Double, rngSeed: Long) extends Mo
 
     model = new MultiLayerNetwork(listBuilder.build())
     model.init()
-  }
-
-  override def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
-    model.setListeners(listeners.asJavaCollection)
-    for (epoch <- 0 until nbEpoch) {
-      logger.info("Epoch " + epoch)
-      model.fit(iter)
-    }
-  }
-
-  override def fit(iter: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
-    model.setListeners(listeners.asJavaCollection)
-    for (epoch <- 0 until nbEpoch) {
-      logger.info("Epoch " + epoch)
-      model.fit(iter)
-    }
   }
 
 }
