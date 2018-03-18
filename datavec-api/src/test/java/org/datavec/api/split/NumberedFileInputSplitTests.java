@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class NumberedFileInputSplitTests {
     @Test
@@ -110,7 +111,10 @@ public class NumberedFileInputSplitTests {
         assertEquals(locs.length, (maxIdx - minIdx) + 1);
         int j = 0;
         for (int i = minIdx; i <= maxIdx; i++) {
-            assertEquals(String.format(baseString, i), locs[j++].getPath());
+            String path = locs[j++].getPath();
+            String exp = String.format(baseString, i);
+            String msg = exp + " vs " + path;
+            assertTrue(msg, path.endsWith(exp));    //Note: on Windows, Java can prepend drive to path - "/C:/"
         }
     }
 }
