@@ -6297,7 +6297,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  order - order to set
         *  shape - shape to set
         *
-        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
+        * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native FloatNDArray reshape(char order, @StdVector IntPointer shape);
 		public native FloatNDArray reshape(char order, @StdVector IntBuffer shape);
@@ -7374,7 +7374,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  order - order to set
         *  shape - shape to set
         *
-        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
+        * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native HalfNDArray reshape(char order, @StdVector IntPointer shape);
 		public native HalfNDArray reshape(char order, @StdVector IntBuffer shape);
@@ -8451,7 +8451,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         *  order - order to set
         *  shape - shape to set
         *
-        * if there was permute applied before or there are weird strides, then new buffer is allocated for new array
+        * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
 		public native DoubleNDArray reshape(char order, @StdVector IntPointer shape);
 		public native DoubleNDArray reshape(char order, @StdVector IntBuffer shape);
