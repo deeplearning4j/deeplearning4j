@@ -58,7 +58,7 @@
                   <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   </transformer>
                 </transformers>
-                <minimizeJar>true</minimizeJar>
+                <minimizeJar>false</minimizeJar>
               </configuration>
               <executions>
                 <execution>
@@ -84,7 +84,7 @@
                     <skip>${skipBackendChoice}</skip>
                     <rules>
                       <requireActiveProfile>
-                        <profiles>native,cuda</profiles>
+                        <profiles>native,cuda,cuda-snapshots,native-snapshots</profiles>
                         <all>false</all>
                       </requireActiveProfile>
                     </rules>
@@ -235,6 +235,42 @@
       <skipBackendChoice>false</skipBackendChoice>
     </properties>
   </profile>
+
+
+
+
+
+
+
+
+
+  <profile>
+    <id>native-snapshots</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+  <profile>
+    <id>cuda-snapshots</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-8.0</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+
+
   <profile>
     <id>native</id>
     <dependencies>
