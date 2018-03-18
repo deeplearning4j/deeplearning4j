@@ -6,8 +6,8 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
-import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.Max;
 import org.nd4j.linalg.api.ops.impl.accum.Min;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
@@ -780,6 +780,14 @@ public class DifferentialFunctionFactory   {
 
     public SDVariable broadcast(SDVariable iX, int... shape) {
         return new Broadcast(sameDiff(),iX,shape).outputVariables()[0];
+    }
+
+    public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off) {
+        return new OneHot(sameDiff(), indices, depth, axis, on, off).outputVariables()[0];
+    }
+
+    public SDVariable onehot(SDVariable indices, int depth) {
+        return new OneHot(sameDiff(), indices, depth).outputVariables()[0];
     }
 
 
