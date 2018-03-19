@@ -415,7 +415,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
         INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
         assertEquals(expected, result.eval());
- 
+
     }
 
     @Test
@@ -2114,11 +2114,11 @@ public class SameDiffTests {
     public void testMoments() {
         SameDiff sd = SameDiff.create();
 
-        INDArray input = Nd4j.create(new float[] {1,2,3,4}, new int[] {2,2});
+        INDArray input = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
 
         SDVariable sdInput = sd.var("input", input);
 
-        int[] axis = new int[] {0, 1};
+        int[] axis = new int[]{0, 1};
         SDVariable[] moments = sd.moments(sdInput, axis);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
@@ -2133,7 +2133,37 @@ public class SameDiffTests {
 
         assert meanArray.getDouble(0) == 2.5;
         assert varArray.getDouble(0) == 1.25;
+    }
 
+    @Test
+    public void testNormalizeMoments() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray counts = Nd4j.create(new float[]{2}, new int[]{1, 1});
+        INDArray means = Nd4j.create(new float[]{2, 4}, new int[]{1, 2});
+        INDArray vars = Nd4j.create(new float[]{6, 8}, new int[]{1, 2});
+
+
+        SDVariable sdCounts = sd.var("counts", counts);
+        SDVariable sdMeans = sd.var("means", means);
+        SDVariable sdVars = sd.var("vars", vars);
+        double shift = 0.0;
+
+        SDVariable[] moments = sd.normalizeMoments(sdCounts, sdMeans, sdVars, shift);
+        SDVariable normMean = moments[0];
+        SDVariable normVariance = moments[1];
+
+        SDVariable sum = normMean.add(normVariance);
+        SDVariable out = sd.tanh("out", sum);
+
+        INDArray outArr = sd.execAndEndResult();
+
+        INDArray meanArray = normMean.getArr();
+        INDArray varArray = normVariance.getArr();
+
+        assert meanArray.getDouble(0, 0) == 1;
+        assert meanArray.getDouble(0, 1) == 2;
+        assert Arrays.equals(meanArray.shape(), varArray.shape());
 
     }
 
@@ -2735,11 +2765,11 @@ public class SameDiffTests {
     @Test
     public void testOneHot() {
         //indices = [[0, 2], [1, -1]]
-        INDArray indicesArr = Nd4j.zeros(2,2);
-        indicesArr.put(0,1,2);
-        indicesArr.put(1,0,1);
-        indicesArr.put(1,1,-1);
-        INDArray expectedOut = Nd4j.zeros(new int[] {2,2,3});
+        INDArray indicesArr = Nd4j.zeros(2, 2);
+        indicesArr.put(0, 1, 2);
+        indicesArr.put(1, 0, 1);
+        indicesArr.put(1, 1, -1);
+        INDArray expectedOut = Nd4j.zeros(new int[]{2, 2, 3});
         /*
         # output: [2 x 2 x 3]
         # [[[1.0, 0.0, 0.0],   # one_hot(0)
@@ -2747,21 +2777,21 @@ public class SameDiffTests {
         #  [[0.0, 1.0, 0.0],   # one_hot(1)
         #   [0.0, 0.0, 0.0]]]  # one_hot(-1)
         */
-        expectedOut.putScalar(0,0,0,1.0);
-        expectedOut.putScalar(0,1,2,1.0);
-        expectedOut.putScalar(1,0,1,1.0);
+        expectedOut.putScalar(0, 0, 0, 1.0);
+        expectedOut.putScalar(0, 1, 2, 1.0);
+        expectedOut.putScalar(1, 0, 1, 1.0);
 
         SameDiff sd = SameDiff.create();
-        SDVariable indices = sd.var("indices",new int[] {2,2});
-        sd.associateArrayWithVariable(indicesArr,indices);
+        SDVariable indices = sd.var("indices", new int[]{2, 2});
+        sd.associateArrayWithVariable(indicesArr, indices);
         INDArray out1 = sd.execAndEndResult();
         log.info(out1.toString());
-        assertEquals(expectedOut,out1);
+        assertEquals(expectedOut, out1);
 
     }
 
     @Test
-    public void testOnesLikeBackprop(){
+    public void testOnesLikeBackprop() {
         SameDiff sd = SameDiff.create();
         SDVariable var0 = sd.var("in", new int[]{3, 4});
         SDVariable ones = sd.onesLike("ones", var0);

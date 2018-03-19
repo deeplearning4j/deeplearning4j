@@ -2955,6 +2955,16 @@ public class SameDiff {
         return updateVariableNamesAndReferences(res, name);
     }
 
+    public SDVariable[] normalizeMoments(SDVariable counts, SDVariable means, SDVariable variances, double shift) {
+        return normalizeMoments(null, counts, means, variances, shift);
+    }
+
+    public SDVariable[] normalizeMoments(String[] name, SDVariable counts, SDVariable means, SDVariable variances,
+                                         double shift) {
+        SDVariable[] res = f().normalizeMoments(counts, means, variances, shift);
+        return updateVariableNamesAndReferences(res, name);
+    }
+
     /**
      * @param iX
      * @param repeat

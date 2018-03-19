@@ -325,6 +325,9 @@ public class DifferentialFunctionFactory   {
         return new Moments(sameDiff(), input, axes).outputVariables();
     }
 
+    public SDVariable[] normalizeMoments(SDVariable counts, SDVariable means, SDVariable variances, double shift) {
+        return new NormalizeMoments(sameDiff(), counts, means, variances, shift).outputVariables();
+    }
 
 
     public SDVariable tile(SDVariable iX, int[] repeat) {

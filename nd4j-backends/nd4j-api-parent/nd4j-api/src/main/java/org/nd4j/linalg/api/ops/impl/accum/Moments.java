@@ -23,6 +23,7 @@ public class Moments extends DynamicCustomOp {
 
     public Moments(SameDiff sameDiff, SDVariable input, int[] axes) {
         super(null, sameDiff, new SDVariable[] {input}, false);
+        this.axes = axes;
     }
 
     private void addArgs() {
