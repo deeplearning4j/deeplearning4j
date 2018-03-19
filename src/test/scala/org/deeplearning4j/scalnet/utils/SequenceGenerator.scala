@@ -21,18 +21,18 @@ import org.nd4j.linalg.factory.Nd4j
 
 object SequenceGenerator {
 
-  def generate(rows: Int, timesteps: Int, threshold: Double = 0.5, seed: Long = 1234): DataSet = {
+  def generate(timesteps: Int, threshold: Double = 0.5, seed: Long = 1234): DataSet = {
     Nd4j.getRandom.setSeed(seed)
-    val x = Nd4j.rand(rows, timesteps)
-    val y = Nd4j.create(rows, timesteps)
-    for (i <- 0 until rows; j <- 0 until timesteps) {
-      val cumulativeSum = Nd4j.cumsum(x.getRow(i), 1)
+    val x = Nd4j.rand(1, timesteps)
+    val y = Nd4j.create(1, timesteps)
+    for (i <- 0 until timesteps) {
+      val cumulativeSum = Nd4j.cumsum(x.getRow(0), 1)
       val limit = cumulativeSum.max(1).getDouble(0) * threshold
-      y.putScalar(i, j, if (cumulativeSum.getDouble(i, j) > limit) 1 else 0)
+      y.putScalar(0, i, if (cumulativeSum.getDouble(0, i) > limit) 1 else 0)
     }
     new DataSet(
-      x.reshape(rows, timesteps, 1),
-      y.reshape(rows, timesteps, 1)
+      x.reshape(1, timesteps, 1),
+      y.reshape(1, timesteps, 1)
     )
   }
 
