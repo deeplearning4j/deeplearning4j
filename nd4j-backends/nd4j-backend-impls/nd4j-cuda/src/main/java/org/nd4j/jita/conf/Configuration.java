@@ -35,6 +35,7 @@ public class Configuration implements Serializable {
     }
 
     @Getter
+    @Deprecated //Only SEQUENTIAL is supported
     private ExecutionModel executionModel = ExecutionModel.SEQUENTIAL;
 
     @Getter
@@ -605,10 +606,14 @@ public class Configuration implements Serializable {
      *
      * @param executionModel
      * @return
+     * @deprecated Only ExecutionModel.SEQUENTIAL is supported
      */
+    @Deprecated
     public Configuration setExecutionModel(@NonNull ExecutionModel executionModel) {
-        this.executionModel = executionModel;
-
+        if(executionModel != ExecutionModel.SEQUENTIAL){
+            throw new IllegalArgumentException("Only ExecutionModel.SEQUENTIAL is supported");
+        }
+        this.executionModel = ExecutionModel.SEQUENTIAL;
         return this;
     }
 
