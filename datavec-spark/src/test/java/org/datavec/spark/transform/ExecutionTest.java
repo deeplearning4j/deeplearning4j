@@ -121,7 +121,7 @@ public class ExecutionTest extends BaseSparkTest {
 
 
     @Test
-    public void testReductionGlobal(){
+    public void testReductionGlobal() {
 
         List<List<Writable>> in = Arrays.asList(
                 Arrays.<Writable>asList(new Text("first"), new DoubleWritable(3.0)),

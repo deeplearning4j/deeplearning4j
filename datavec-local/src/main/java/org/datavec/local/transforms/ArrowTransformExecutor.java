@@ -252,8 +252,9 @@ public class ArrowTransformExecutor {
                 if (currentWritables == null)
                     throw new IllegalStateException("Error during execution of reduction: current writables are null. "
                             + "Trying to execute a reduce operation on a sequence?");
+                MapToPairForReducerFunction mapToPairForReducerFunction = new MapToPairForReducerFunction(reducer);
                 List<Pair<String, List<Writable>>> pair =
-                        currentWritables.stream().map(input -> new MapToPairForReducerFunction(reducer).apply(input))
+                        currentWritables.stream().map(input -> mapToPairForReducerFunction.apply(input))
                                 .collect(toList());
 
 
@@ -278,13 +279,17 @@ public class ArrowTransformExecutor {
                     }
                 };
 
-                val grouped = StreamUtils.aggregate(FunctionalUtils.groupByKey(pair).entrySet()
+                val groupedByKey = FunctionalUtils.groupByKey(pair);
+                val aggregated = StreamUtils.aggregate(groupedByKey.entrySet()
                         .stream(), new BiPredicate<Map.Entry<String, List<List<Writable>>>, Map.Entry<String, List<List<Writable>>>>() {
                     @Override
                     public boolean test(Map.Entry<String, List<List<Writable>>> stringListEntry, Map.Entry<String, List<List<Writable>>> stringListEntry2) {
                         return stringListEntry.getKey().equals(stringListEntry2.getKey());
                     }
-                }).map((List<Map.Entry<String, List<List<Writable>>>> input) -> {
+                }).collect(Collectors.toList());
+
+
+                aggregated.stream().forEach((List<Map.Entry<String, List<List<Writable>>>> input) -> {
                     for(Map.Entry<String, List<List<Writable>>> entry : input) {
                         if(!resultPerKey.containsKey(entry.getKey())) {
                             IAggregableReduceOp<List<Writable>, List<Writable>> reducer2 = reducer.aggregableReducer();
@@ -296,8 +301,9 @@ public class ArrowTransformExecutor {
                         }
 
                     }
-                    return  input;
                 });
+
+
 
 
                 currentWritables = resultPerKey.entrySet().stream()
