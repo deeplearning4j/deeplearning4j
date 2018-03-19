@@ -17,8 +17,8 @@
 package org.datavec.local.transforms.misc;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.Function;
 
 import java.util.List;
 
@@ -39,7 +39,7 @@ public class WritablesToStringFunction implements Function<List<Writable>, Strin
     }
 
     @Override
-    public String call(List<Writable> c) throws Exception {
+    public String apply(List<Writable> c) {
 
         StringBuilder sb = new StringBuilder();
         append(c, sb, delim, quote);

@@ -16,7 +16,7 @@ import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.arrow.recordreader.ArrowListWritable;
+import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.datavec.local.transforms.functions.EmptyRecordFunction;
 import org.datavec.local.transforms.join.ExecuteJoinFromCoGroupFlatMapFunction;
 import org.datavec.local.transforms.join.ExtractKeysFunction;
@@ -46,7 +46,7 @@ public class ArrowTransformExecutor {
     //returning empty records
     public final static String LOG_ERROR_PROPERTY = "org.datavec.spark.transform.logerrors";
 
-    public static void execute(TransformProcess transformProcess,ArrowListWritable on) {
+    public static void execute(TransformProcess transformProcess,ArrowWritableRecordBatch on) {
         List<DataAction> actionList = transformProcess.getActionList();
         for(DataAction dataAction : actionList) {
             if(dataAction.getTransform() != null) {
@@ -284,12 +284,12 @@ public class ArrowTransformExecutor {
                     public boolean test(Map.Entry<String, List<List<Writable>>> stringListEntry, Map.Entry<String, List<List<Writable>>> stringListEntry2) {
                         return stringListEntry.getKey().equals(stringListEntry2.getKey());
                     }
-                }).map(input -> {
-                    for(val entry : input) {
+                }).map((List<Map.Entry<String, List<List<Writable>>>> input) -> {
+                    for(Map.Entry<String, List<List<Writable>>> entry : input) {
                         if(!resultPerKey.containsKey(entry.getKey())) {
-                            val reducer2 = reducer.aggregableReducer();
+                            IAggregableReduceOp<List<Writable>, List<Writable>> reducer2 = reducer.aggregableReducer();
                             resultPerKey.put(entry.getKey(),reducer2);
-                            for(val value : entry.getValue()) {
+                            for(List<Writable> value : entry.getValue()) {
                                 reducer2.accept(value);
                             }
 

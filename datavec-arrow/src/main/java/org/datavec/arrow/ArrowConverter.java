@@ -21,7 +21,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
-import org.datavec.arrow.recordreader.ArrowListWritable;
+import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
@@ -88,10 +88,10 @@ public class ArrowConverter {
      * @param input the input to read
      * @return the associated datavec schema and record
      */
-    public static Pair<Schema,ArrowListWritable> readFromBytes(byte[] input) throws IOException {
+    public static Pair<Schema,ArrowWritableRecordBatch> readFromBytes(byte[] input) throws IOException {
         BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
         Schema retSchema = null;
-        ArrowListWritable ret = null;
+        ArrowWritableRecordBatch ret = null;
         SeekableReadChannel channel = new SeekableReadChannel(new ByteArrayReadableSeekableByteChannel(input));
         ArrowFileReader reader = new ArrowFileReader(channel, allocator);
         reader.loadNextBatch();
@@ -665,7 +665,7 @@ public class ArrowConverter {
 
 
 
-    private static ArrowListWritable asDataVecBatch(ArrowRecordBatch arrowRecordBatch,Schema schema,VectorSchemaRoot vectorLoader) {
+    private static ArrowWritableRecordBatch asDataVecBatch(ArrowRecordBatch arrowRecordBatch, Schema schema, VectorSchemaRoot vectorLoader) {
         //iterate column wise over the feature vectors, returning entries
         List<FieldVector> fieldVectors = new ArrayList<>();
         for(int j = 0; j < schema.numColumns(); j++) {
@@ -674,7 +674,7 @@ public class ArrowConverter {
             fieldVectors.add(fieldVector);
         }
 
-        ArrowListWritable ret = new ArrowListWritable(fieldVectors, schema);
+        ArrowWritableRecordBatch ret = new ArrowWritableRecordBatch(fieldVectors, schema);
         ret.setArrowRecordBatch(arrowRecordBatch);
 
         return ret;

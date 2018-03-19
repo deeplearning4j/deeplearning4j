@@ -16,10 +16,10 @@
 
 package org.datavec.local.transforms.misc;
 
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.transform.sequence.merge.SequenceMerge;
 import org.datavec.api.writable.Writable;
-import scala.Tuple2;
+import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class SequenceMergeFunction<T>
-                implements Function<Tuple2<T, Iterable<List<List<Writable>>>>, List<List<Writable>>> {
+                implements Function<Pair<T, Iterable<List<List<Writable>>>>, List<List<Writable>>> {
 
     private SequenceMerge sequenceMerge;
 
@@ -49,9 +49,9 @@ public class SequenceMergeFunction<T>
     }
 
     @Override
-    public List<List<Writable>> call(Tuple2<T, Iterable<List<List<Writable>>>> t2) throws Exception {
+    public List<List<Writable>> apply(Pair<T, Iterable<List<List<Writable>>>> t2) {
         List<List<List<Writable>>> sequences = new ArrayList<>();
-        for (List<List<Writable>> l : t2._2()) {
+        for (List<List<Writable>> l : t2.getSecond()) {
             sequences.add(l);
         }
 

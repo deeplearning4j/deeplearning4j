@@ -23,7 +23,7 @@ public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapt
     }
 
     @Override
-    public Iterable<List<Writable>> call(JoinedValue joinedValue) throws Exception {
+    public List<List<Writable>> call(JoinedValue joinedValue) throws Exception {
         boolean keep;
         switch (joinType) {
             case Inner:

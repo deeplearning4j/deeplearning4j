@@ -2,7 +2,7 @@ package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 
 import java.util.Collections;
 import java.util.List;
@@ -19,7 +19,7 @@ public class LocalTransformProcessFunctionAdapter implements FlatMapFunctionAdap
     }
 
     @Override
-    public Iterable<List<Writable>> call(List<Writable> v1) throws Exception {
+    public List<List<Writable>> call(List<Writable> v1) throws Exception {
         List<Writable> newList = transformProcess.execute(v1);
         if (newList == null)
             return Collections.emptyList(); //Example was filtered out

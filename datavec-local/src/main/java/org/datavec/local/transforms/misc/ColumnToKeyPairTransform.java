@@ -17,26 +17,25 @@
 package org.datavec.local.transforms.misc;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.PairFunction;
-import org.datavec.api.transform.schema.Schema;
+
 import org.datavec.api.writable.Writable;
-import scala.Tuple2;
+import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 
 /**
  * Extract out one writable, and map it to a pair with count 1.
- * Used to count the N most frequent values in a column, as in {@link org.datavec.spark.transform.AnalyzeSpark#sampleMostFrequentFromColumn(int, String, Schema, JavaRDD)}
+ * Used to count the N most frequent values in a column,
  *
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ColumnToKeyPairTransform implements PairFunction<List<Writable>, Writable, Long> {
+public class ColumnToKeyPairTransform implements Function<List<Writable>, Pair<Writable, Long>> {
     private final int columnIndex;
 
     @Override
-    public Tuple2<Writable, Long> call(List<Writable> list) throws Exception {
-        return new Tuple2<>(list.get(columnIndex), 1L);
+    public Pair<Writable, Long> apply(List<Writable> list) {
+        return Pair.of(list.get(columnIndex), 1L);
     }
 }

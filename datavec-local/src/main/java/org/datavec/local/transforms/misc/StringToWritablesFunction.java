@@ -17,11 +17,12 @@
 package org.datavec.local.transforms.misc;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.Function;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,8 +37,14 @@ public class StringToWritablesFunction implements Function<String, List<Writable
     private RecordReader recordReader;
 
     @Override
-    public List<Writable> call(String s) throws Exception {
-        recordReader.initialize(new StringSplit(s));
+    public List<Writable> apply(String s) {
+        try {
+            recordReader.initialize(new StringSplit(s));
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         Collection<Writable> next = recordReader.next();
         if (next instanceof List)
             return (List<Writable>) next;

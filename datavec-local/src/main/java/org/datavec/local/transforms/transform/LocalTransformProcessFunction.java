@@ -18,7 +18,7 @@ package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.datavec.local.transforms.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 

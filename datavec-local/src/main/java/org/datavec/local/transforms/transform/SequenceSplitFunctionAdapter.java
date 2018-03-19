@@ -19,7 +19,7 @@ public class SequenceSplitFunctionAdapter
     }
 
     @Override
-    public Iterable<List<List<Writable>>> call(List<List<Writable>> collections) throws Exception {
+    public List<List<List<Writable>>> call(List<List<Writable>> collections) throws Exception {
         return split.split(collections);
     }
 }

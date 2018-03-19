@@ -16,11 +16,11 @@
 
 package org.datavec.local.transforms.transform.filter;
 
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.function.Function;
 
 /**
  * Created by Alex on 6/03/2016.
@@ -49,7 +49,7 @@ public class FilterWritablesBySchemaFunction implements Function<Writable, Boole
     }
 
     @Override
-    public Boolean call(Writable v1) throws Exception {
+    public Boolean apply(Writable v1) {
         boolean valid = meta.isValid(v1);
         if (excludeMissing && (v1 instanceof NullWritable
                         || v1 instanceof Text && (v1.toString() == null || v1.toString().isEmpty())))

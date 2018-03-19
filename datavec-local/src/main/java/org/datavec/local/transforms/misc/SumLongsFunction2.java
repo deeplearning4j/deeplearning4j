@@ -16,14 +16,16 @@
 
 package org.datavec.local.transforms.misc;
 
-import org.apache.spark.api.java.function.Function2;
+
+import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Created by Alex on 03/09/2016.
  */
-public class SumLongsFunction2 implements Function2<Long, Long, Long> {
+public class SumLongsFunction2 implements Function<Pair<Long, Long>, Long> {
     @Override
-    public Long call(Long l1, Long l2) throws Exception {
-        return l1 + l2;
+    public Long apply(Pair<Long, Long> input) {
+        return input.getFirst() + input.getSecond();
     }
 }

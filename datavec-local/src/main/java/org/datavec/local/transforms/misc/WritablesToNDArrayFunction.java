@@ -1,10 +1,10 @@
 package org.datavec.local.transforms.misc;
 
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import java.util.List;
 public class WritablesToNDArrayFunction implements Function<List<Writable>, INDArray> {
 
     @Override
-    public INDArray call(List<Writable> c) throws Exception {
+    public INDArray apply(List<Writable> c) {
         int length = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {

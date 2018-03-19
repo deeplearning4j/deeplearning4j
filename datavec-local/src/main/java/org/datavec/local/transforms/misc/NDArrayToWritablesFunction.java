@@ -17,11 +17,11 @@
 package org.datavec.local.transforms.misc;
 
 import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.function.Function;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ public class NDArrayToWritablesFunction implements Function<INDArray, List<Writa
     }
 
     @Override
-    public List<Writable> call(INDArray arr) throws Exception {
+    public List<Writable> apply(INDArray arr) {
         if (arr.rows() != 1)
             throw new UnsupportedOperationException("Only NDArray row vectors can be converted to list"
                                                 + " of Writables (found " + arr.rows() + " rows)");

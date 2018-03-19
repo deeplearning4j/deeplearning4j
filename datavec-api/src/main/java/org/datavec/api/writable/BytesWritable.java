@@ -8,12 +8,22 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+/**
+ * {@link Writable} type for
+ * a byte array.
+ *
+ * @author Adam Gibson
+ */
 @AllArgsConstructor
 public class BytesWritable extends ArrayWritable {
     @Getter
     private byte[] content;
 
+    private transient ByteBuffer cached;
 
+    public BytesWritable(byte[] content) {
+        this.content = content;
+    }
 
     @Override
     public long length() {
@@ -22,22 +32,22 @@ public class BytesWritable extends ArrayWritable {
 
     @Override
     public double getDouble(long i) {
-        return ByteBuffer.wrap(content).getDouble((int) i);
+        return cachedByteByteBuffer().getDouble((int) i);
     }
 
     @Override
     public float getFloat(long i) {
-        return ByteBuffer.wrap(content).getFloat((int) i);
+        return cachedByteByteBuffer().getFloat((int) i);
     }
 
     @Override
     public int getInt(long i) {
-        return ByteBuffer.wrap(content).getInt((int) i);
+        return cachedByteByteBuffer().getInt((int) i);
     }
 
     @Override
     public long getLong(long i) {
-        return ByteBuffer.wrap(content).getLong((int) i);
+        return cachedByteByteBuffer().getLong((int) i);
     }
 
     @Override
@@ -59,6 +69,13 @@ public class BytesWritable extends ArrayWritable {
 
     @Override
     public WritableType getType() {
-        return WritableType.Image;
+        return WritableType.Bytes;
+    }
+
+    private ByteBuffer cachedByteByteBuffer() {
+        if(cached == null) {
+            cached = ByteBuffer.wrap(content);
+        }
+        return cached;
     }
 }
