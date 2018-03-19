@@ -36,57 +36,41 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     int isSameMode = INT_ARG(12);                                               // 0-SAME,  1-VALID
     int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // 0-NDHWC, 1-NCDHW    
 
-    if(!isNCDHW) {
-        input   = input->permute({0, 4, 1, 2, 3});                                 // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
-        weights = weights->permute({3, 0, 1, 2, 4});                               // [kD, kH, kW, iC, oC] -> [iC, kD, kH, kW, oC]                 
-    }
-    else {        
-        output  = output->permute({0, 2, 3, 4, 1});                                // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
-        weights = weights->permute({1, 2, 3, 4, 0});                               // [oC, iC, kD, kH, kW] -> [iC, kD, kH, kW, oC]
-    }
+    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+    int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
+    ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
-    int bS = input->sizeAt(0);           // batch size
-    int iC = input->sizeAt(1);           // input channels        
-    int iD = input->sizeAt(2);           // input depth
-    int iH = input->sizeAt(3);           // input height
-    int iW = input->sizeAt(4);           // input width
-    int oC = weights->sizeAt(4);         // output channels        
-    int oD = output->sizeAt(1);          // output depth
-    int oH = output->sizeAt(2);          // output height
-    int oW = output->sizeAt(3);          // output width    
-    
-    REQUIRE_TRUE(weights->sizeAt(0) == iC && weights->sizeAt(1) == kD && weights->sizeAt(2) == kH && weights->sizeAt(3) == kW, 0, "CUSTOM CONV3D OP: wrong shape of weights array !");
+    REQUIRE_TRUE(weights->sizeAt(indWiC) == iC && weights->sizeAt(indWoC) == oC && weights->sizeAt(indWkD) == kD && weights->sizeAt(indWkD+1) == kH && weights->sizeAt(indWkD+2) == kW, 0, "CUSTOM CONV3D OP: wrong shape of weights array !");
     if (bias) {
         REQUIRE_TRUE(bias->rankOf() == 1,    0, "CUSTOM CONV3D OP: rank of biases array must be equal to 1 !");
         REQUIRE_TRUE(oC == bias->lengthOf(), 0, "CUSTOM CONV3D OP: length of bias array must be equal to outChannels, but got %i instead", bias->lengthOf());        
     }            
+
+    std::vector<int> weightsAxesForDot, permutForGradW;
+
+    if(!isNCDHW) {
+        weightsAxesForDot = {3,0,1,2};                                          // iC, kD, kH, kW
+        input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
+    }
+    else {
+        weightsAxesForDot = {1,2,3,4};                                          // iC, kD, kH, kW
+        permutForGradW    = {0,2,3,4,1};                                        // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
+    }
     
     if(isSameMode)                       // SAME
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
     NDArray<T> columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());            
-    ConvolutionUtils<T>::vol2col2(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);      // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
-    
-    columns.permutei({0, 5, 6, 7, 1, 2, 3, 4});                                                          // [bS, iC, kD, kH, kW, oD, oH, oW] -> [bS, oD, oH, oW, iC, kD, kH, kW]
-    columns.reshapei({bS*oD*oH*oW, iC*kD*kH*kW});
-    NDArray<T>* outputReshaped  = output->reshape(output->ordering(), {bS*oD*oH*oW, oC});
-    NDArray<T>* weightsReshaped  = weights->reshape(weights->ordering(), {iC*kD*kH*kW, oC});
-    NDArrayFactory<T>::mmulHelper(&columns, weightsReshaped, outputReshaped, 1.0, 0.0);                  // [bS*oD*oH*oW, iC*kD*kW*kH] x [iC*kD*kH*kW, oC] = [bS*oD*oH*oW, oC]    
+    ConvolutionUtils<T>::vol2col2(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
+
+    // [bS, iC, kD, kH, kW, oD, oH, oW] x [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW] = [bS, oD, oH, oW, oC]
+    nd4j::NDArrayFactory<T>::tensorDot(&columns, weights, output, {1,2,3,4}, weightsAxesForDot, permutForGradW);
 
     if(bias)
-        outputReshaped->template applyBroadcast<simdOps::Add<T>>({1}, bias);
-
+        output->template applyBroadcast<simdOps::Add<T>>({indIOioC}, bias);
 
     if(!isNCDHW)
         delete input;                
-    else {
-        output->assign(outputReshaped);
-        delete output;        
-    }    
-
-    delete outputReshaped;
-    delete weightsReshaped;
-    delete weights;
     
     return Status::OK();
 }
@@ -182,82 +166,56 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     int isSameMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
     int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // 1-NDHWC, 0-NCDHW    
 
-    if(!isNCDHW) {
-        input   = input->permute({0, 4, 1, 2, 3});                                 // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
-        gradI   = gradI->permute({0, 4, 1, 2, 3});                                 // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]        
-        weights = weights->permute({3, 0, 1, 2, 4});                               // [kD, kH, kW, iC, oC] -> [iC, kD, kH, kW, oC]         
-        gradW   = gradW->permute({3, 0, 1, 2, 4});                                 // [kD, kH, kW, iC, oC] -> [iC, kD, kH, kW, oC]                 
-    }
-    else {
-        gradO   = gradO->permute({0, 2, 3, 4, 1});                                 // [bS, oC, oD, oH, oW] -> [bS, oD, oH, oW, oC]
-        weights = weights->permute({1, 2, 3, 4, 0});                               // [oC, iC, kD, kH, kW] -> [iC, kD, kH, kW, oC]
-        gradW   = gradW->permute({1, 2, 3, 4, 0});                                 // [oC, iC, kD, kH, kW] -> [iC, kD, kH, kW, oC]
-    }
-
-    int bS = input->sizeAt(0);           // batch size
-    int iC = input->sizeAt(1);           // input channels        
-    int iD = input->sizeAt(2);           // input depth
-    int iH = input->sizeAt(3);           // input height
-    int iW = input->sizeAt(4);           // input width
-    int oC = weights->sizeAt(4);         // output channels
-    int oD = gradO->sizeAt(1);           // output depth
-    int oH = gradO->sizeAt(2);           // output height
-    int oW = gradO->sizeAt(3);           // output width    
+    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+    int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
+    ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
     int trueoD, trueoH, trueoW;          // true output depth/height/width
     ConvolutionUtils<T>::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, isSameMode);
 
-    REQUIRE_TRUE(gradO->sizeAt(0)==bS   && gradO->sizeAt(1)==trueoD && gradO->sizeAt(2)==trueoH && gradO->sizeAt(3)==trueoW && gradO->sizeAt(4)==oC, 0, "CUSTOM CONV3D_BP OP: wrong shape of gradient_output (next epsilon) array !");    
-    REQUIRE_TRUE(weights->sizeAt(0)==iC && weights->sizeAt(1)==kD   && weights->sizeAt(2)==kH   && weights->sizeAt(3)==kW, 0, "CUSTOM CONV3D_BP OP: wrong shape of weights array !");
+    REQUIRE_TRUE(gradO->sizeAt(0)==bS && gradO->sizeAt(indIOioD)==trueoD && gradO->sizeAt(indIOioD+1)==trueoH && gradO->sizeAt(indIOioD+2)==trueoW && gradO->sizeAt(indIOioC)==oC, 0, "CUSTOM CONV3D_BP OP: wrong shape of gradient_output (next epsilon) array !");
+    REQUIRE_TRUE(weights->sizeAt(indWiC)==iC && weights->sizeAt(indWoC)==oC &&  weights->sizeAt(indWkD)==kD   && weights->sizeAt(indWkD+1)==kH   && weights->sizeAt(indWkD+2)==kW, 0, "CUSTOM CONV3D_BP OP: wrong shape of weights array !");
     if(bias)
         REQUIRE_TRUE(bias->rankOf()==1 && bias->lengthOf()==oC, 0, "CUSTOM CONV3D_BP OP: wrong shape of biases array !");
+
+    std::vector<int> gradOaxesForDot, permutForGradW, permutForColumns;    
+
+    if(!isNCDHW) {
+        input = input->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
+        gradI = gradI->permute({0,4,1,2,3});                                    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]                        
+        gradOaxesForDot  = {0,1,2,3};                                           // bS, oD, oH, oW        
+        permutForGradW   = {3,0,1,2,4};                                         // [kD, kH, kW, iC, oC] -> [iC, kD, kH, kW, oC]        
+        permutForColumns = {2,3,4,1,0,5,6,7};                                   // [bS, iC, kD, kH, kW, oD, oH, oW] -> [kD, kH, kW, iC, bS, oD, oH, oW]
+    }
+    else {
+        gradOaxesForDot  = {0,2,3,4};                                           // bS, oD, oH, oW
+        permutForGradW   = {1,2,3,4,0};                                         // [oC, iC, kD, kH, kW] -> [iC, kD, kH, kW, oC]
+        permutForColumns = {1,2,3,4,0,5,6,7};                                   // [bS, iC, kD, kH, kW, oD, oH, oW] -> [iC, kD, kH, kW, bS, oD, oH, oW]
+    }
 
     if(isSameMode)                       // SAME        
         ConvolutionUtils<T>::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);    
     
-    NDArray<T>  columns(input->ordering(), {iC, kD, kH, kW, bS, oD, oH, oW}, block.getWorkspace());      
-    NDArray<T>* columnsPermuted = columns.permute({4, 0, 1, 2, 3, 5, 6, 7});                            // [iC, kD, kH, kW, bS, oD, oH, oW] -> [bS, iC, kD, kH, kW, oD, oH, oW]
-    NDArray<T>* columnsReshaped = columns.reshape(columns.ordering(), {iC*kD*kH*kW, bS*oD*oH*oW});
-    NDArray<T>* gradWreshaped   = gradW->reshape(gradW->ordering(),{iC*kD*kH*kW, oC});    
-    NDArray<T>* weightsReshaped = weights->reshape(weights->ordering(), {iC*kD*kH*kW, oC});    
-    NDArray<T>* gradOreshaped   = gradO->reshape(gradO->ordering(),{bS*oD*oH*oW, oC});    
-    NDArray<T>* gradOreshapedT  = gradOreshaped->transpose();                                           // [bS*oD*oH*oW, oC] -> [oC, bS*oD*oH*oW]
-
     // ----- calculation of gradW and gradB ----- //                
-    ConvolutionUtils<T>::vol2col2(*input, *columnsPermuted, sD, sH, sW, pD, pH, pW, dD, dH, dW);        // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
-    NDArrayFactory<T>::mmulHelper(columnsReshaped, gradOreshaped, gradWreshaped, 1.0, 0.0);             // [iC*kD*kW*kH, bS*oD*oH*oW] x [bS*oD*oH*oW, oC] = [iC*kD*kH*kW, oC]
+    NDArray<T>  columns(input->ordering(), {bS, iC, kD, kH, kW, oD, oH, oW}, block.getWorkspace());      
+    ConvolutionUtils<T>::vol2col2(*input, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW);                         // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]        
+    nd4j::NDArrayFactory<T>::tensorDot(&columns, gradO, gradW, {0,5,6,7}, gradOaxesForDot, permutForGradW);     // [bS, iC, kD, kH, kW, oD, oH, oW] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [iC, kD, kH, kW, oC]
 
-    if(gradB) {
-        NDArray<T>* sum = gradOreshaped->sum({0});                  // sum over bS*oD*oH*oW
-        gradB->assign(sum);
-        delete sum;
+    if(gradB) {        
+        if(gradB->rankOf() == 2) 
+            gradB = gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()});
+        gradO->template reduceAlongDimension<simdOps::Sum<T>>(gradB, gradOaxesForDot);                          // sum over bS oD oH oW
+        if(gradB != OUTPUT_VARIABLE(2)) 
+            delete gradB;
     }
 
     //----- calculation of gradI -----//            
-    NDArrayFactory<T>::mmulHelper(weightsReshaped, gradOreshapedT, columnsReshaped, 1.0, 0.0);             // [iC*kD*kH*kW, oC] x [oC, bS*oD*oH*oW] = [iC*kD*kW*kH, bS*oD*oH*oW]
-    ConvolutionUtils<T>::col2vol2(*columnsPermuted, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);           // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
-
-    //----- assign array having separate shape (caused by permute+reshape ops) to output gradW -----///
-    gradW->assign(gradWreshaped);
-
-    //----- clean dynamically allocated memory -----//
-    delete gradOreshapedT;
-    delete columnsPermuted;
-    delete columnsReshaped;
-    delete gradWreshaped;
-    delete weightsReshaped;
-    delete gradOreshaped;    
-    delete weights;
-    delete gradW;
-
+    nd4j::NDArrayFactory<T>::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, permutForColumns);   // [kD, kH, kW, iC, oC]/[oC, iC, kD, kH, kW]] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]/[iC, kD, kH, kW, bS, oD, oH, oW]
+    ConvolutionUtils<T>::col2vol2(columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);                     // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
    
     if(!isNCDHW) {        
         delete input;        
         delete gradI;
-    }
-    else {
-        delete gradO;              
-            
     }
     
     return Status::OK();

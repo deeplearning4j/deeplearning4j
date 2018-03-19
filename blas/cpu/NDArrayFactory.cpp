@@ -119,7 +119,7 @@ namespace nd4j {
     
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int> axesA, const std::initializer_list<int> axesB) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB) {
         std::vector<int> aA(axesA);
         std::vector<int> aB(axesB);
         return tensorDot(A, B, aA, aB);
@@ -127,24 +127,40 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, std::vector<int>& axes_0, std::vector<int>& axes_1) {
+    nd4j::NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
 
-        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
+        std::vector<int> permutAt, permutBt, shapeAt, shapeBt;        
         std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
-        NDArray<T>* aT = a->permute(permutAt);
-        NDArray<T>* bT = b->permute(permutBt);
-        aT->reshapei('c', shapeAt);
-        bT->reshapei('c', shapeBt);        
+        NDArray<T>* aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
 
-        NDArray<T>* c = nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, nullptr, 1.0, 0.0);
+        // check whether permutation is necessary
+        if(ShapeUtils<T>::isPermutNecessary(permutAt))
+            aPR = a->permute(permutAt);
+        if(ShapeUtils<T>::isPermutNecessary(permutBt))
+            bPR = b->permute(permutBt);
+        
+        // check whether reshape is necessary
+        if(!aPR->isSameShape(shapeAt)) {
+            if(aPR == a)
+                aPR = a->reshape('c', shapeAt);
+            else 
+                aPR->reshapei('c', shapeAt);
+        }
+        if(!bPR->isSameShape(shapeBt)) {
+            if(bPR == b)
+                bPR = b->reshape('c', shapeBt);
+            else 
+                bPR->reshapei('c', shapeBt);                
+        }
+
+        NDArray<T>* c = nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, nullptr, 1.0, 0.0);
         c->reshapei('c', outShape);
-
-        if (aT != a)
-            delete aT;
-
-        if (bT != b)
-            delete bT;
+        
+        if(aPR != a)
+            delete aPR;        
+        if(bPR != b)
+            delete bPR;
 
         return c;
     }
@@ -152,30 +168,111 @@ namespace nd4j {
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, std::vector<int>& axes_0, std::vector<int>& axes_1) {
-
-        if(c->rankOf() != 2 || c->shapeOf()[0] != a->shapeOf()[0] || c->shapeOf()[1] != b->shapeOf()[1])
-            throw "NDArrayFactory::tensorDot static function: wrong shape of C array !";
+    void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC) {
 
         std::vector<int> permutAt, permutBt, shapeAt, shapeBt;
-        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+        std::vector<int> outShape = ShapeUtils<T>::evalShapeForTensorDot(a, b, axes_a, axes_b, permutAt, permutBt, shapeAt, shapeBt);
 
-        NDArray<T>* aT = a->permute(permutAt);
-        NDArray<T>* bT = b->permute(permutBt);
-        aT->reshapei('c', shapeAt);
-        bT->reshapei('c', shapeBt);        
+        NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
 
-        nd4j::NDArrayFactory<T>::mmulHelper(aT, bT, c, 1.0, 0.0);
-        c->reshapei('c', outShape);
+        // check whether permutation is necessary
+        if(!permutForC.empty()) {                        // this means permutation is possible
+            cP = c->permute(permutForC);            
+        }
+        if(ShapeUtils<T>::isPermutNecessary(permutAt))
+            aPR = a->permute(permutAt);
+        if(ShapeUtils<T>::isPermutNecessary(permutBt))
+            bPR = b->permute(permutBt);    
 
-        if (aT != a)
-            delete aT;
+        // check whether reshape is necessary        
+        if(!aPR->isSameShape(shapeAt)) {
+            if(aPR == a)
+                aPR = a->reshape('c', shapeAt);
+            else 
+                aPR->reshapei('c', shapeAt);
+        }
+        if(!bPR->isSameShape(shapeBt)) {
+            if(bPR == b)
+                bPR = b->reshape('c', shapeBt);
+            else 
+                bPR->reshapei('c', shapeBt);                
+        }
+        if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
+            cPR = cP->reshape('c', {aPR->sizeAt(0), bPR->sizeAt(1)});
+                
+        nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, cPR, 1.0, 0.0);
 
-        if (bT != b)
-            delete bT;
+        if(cPR->getBuffer() != cP->getBuffer())                     // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+            cP->assign(cPR);                        
         
+        if(cPR != c)
+            delete cPR;
+        if(aPR != a)
+            delete aPR;        
+        if(bPR != b)
+            delete bPR;
+        if(cP != c)
+            delete cP;
     }
 
+//////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC) {
+
+        NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
+                
+        // work with a input array 
+        if(!modifA.empty()) {
+            
+            if(!modifA[0].empty())                                  // if permutation of a is required
+                aPR = a->permute(modifA[0]);            
+            
+            if(!modifA[1].empty()) {                                // if reshaping of a is required
+                if(aPR == a)
+                    aPR = a->reshape(a->ordering(), modifA[1]);
+                else 
+                    aPR->reshapei(aPR->ordering(), modifA[1]);
+            }        
+        }
+
+        // work with b input array 
+        if(!modifB.empty()) {
+            
+            if(!modifB[0].empty())                                  // if permutation of b is required
+                bPR = b->permute(modifB[0]);            
+
+            if(!modifB[1].empty()) {                                // if reshaping of b is required
+                if(bPR == b)
+                    bPR = b->reshape(b->ordering(), modifB[1]);
+                else 
+                    bPR->reshapei(bPR->ordering(), modifB[1]);
+            }        
+        }
+        
+        // work with c output array 
+        if(!modifC.empty()) {
+            
+            if(!modifC[0].empty())                                 // if permutation of c is required
+                cP = c->permute(modifC[0]);            
+        
+            if(!modifC[1].empty())                                 // if reshaping of c is required
+                cPR = cP->reshape(cP->ordering(), modifC[1]);
+        }    
+                
+        nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, cPR, 1.0, 0.0);
+
+        if(cPR->getBuffer() != cP->getBuffer())             // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+            cP->assign(cPR);                        
+        
+        if(cPR != c)
+            delete cPR;
+        if(aPR != a)
+            delete aPR;
+        if(bPR != b)
+            delete bPR;
+        if(cP != c)
+            delete cP;
+    }
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>

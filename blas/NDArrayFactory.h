@@ -29,11 +29,18 @@ namespace nd4j {
 
         static nd4j::NDArray<T>* mmulHelper(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C = nullptr, T alpha = 1.0f, T beta = 0.0f);
 
-        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int> axesA, const std::initializer_list<int> axesB = {});
+        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::initializer_list<int>& axesA, const std::initializer_list<int>& axesB = {});
 
-        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, std::vector<int>& axesA, std::vector<int>& axesB);
+        static nd4j::NDArray<T>* tensorDot(const nd4j::NDArray<T>* A, const nd4j::NDArray<T>* B, const std::vector<int>& axesA, const std::vector<int>& axesB);
 
-        static void tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, std::vector<int>& axesA, std::vector<int>& axesB);
+        static void tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<int>& axes_a, const std::vector<int>& axes_b, const std::vector<int>& permutForC = {});
+
+        /**
+        *  modif    - vector, if it is not empty then it should contain exactly 2 vectors with integers 
+        *  modif[0] - permutation vector, if it is empty then no permutation is applied
+        *  modif[1] - reshape vector, if it is empty then no reshaping is applied
+        */
+        static void tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC);
 
         static NDArray<T>* linspace(T from, T to, Nd4jIndex numElements);
         

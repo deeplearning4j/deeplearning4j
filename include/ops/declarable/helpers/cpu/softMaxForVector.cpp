@@ -14,7 +14,7 @@ template <typename T>
 void softMaxForVector(const NDArray<T>& input, NDArray<T>& output) {
 
 	if(!input.isVector() || !output.isVector())
-		throw "ops::helpers::softMaxForVector function input and output arrays must be vectors !";
+		throw "ops::helpers::softMaxForVector function: input and output arrays must be vectors !";
 
 	T* inBuff  = const_cast<NDArray<T>&>(input).getBuffer();
 	T* outBuff = output.getBuffer();

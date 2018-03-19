@@ -70,7 +70,7 @@ namespace nd4j {
          * 8: same mode: 0 false, 1 true
          */
         DECLARE_CUSTOM_OP(deconv2d, 2, 1, false, 0, 9);
-        DECLARE_CUSTOM_OP(deconv2d_bp, 4, 2, false, 0, 9);
+        DECLARE_CUSTOM_OP(deconv2d_bp, 3, 2, false, 0, 9);
 
         /**
          * This op implements max pooling for convolution networks.

@@ -1220,6 +1220,56 @@ void ConvolutionUtils<T>::vol2col2(NDArray<T>& vol, NDArray<T>& col, const int s
         }
        
 
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void ConvolutionUtils<T>::getSizesAndIndexesConv2d(const bool isNCHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iH, int& iW, int& oC, int& oH, int& oW, int& indIOioC, int& indIiH, int& indWiC, int& indWoC, int& indWkH, int& indOoH) {
+
+    // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    // weights [kH, kW, iC, oC] (NHWC) or [oC, iC, kH, kW] (NCHW)
+    // output  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+
+    if(!isNCHW) {
+        indIOioC = 3; indIiH = 1; indWkH = 0; indOoH = 1; indWoC = 3; indWiC = 2;
+    }
+    else {        
+        indIOioC = 1; indIiH = 2; indWkH = 2; indOoH = 2; indWoC = 0; indWiC = 1;              
+    }    
+
+    bS = input.sizeAt(0);                          // batch size
+    iC = input.sizeAt(indIOioC);                   // input channels        
+    iH = input.sizeAt(indIiH);                     // input height
+    iW = input.sizeAt(indIiH+1);                   // input width
+    oC = output.sizeAt(indIOioC);                  // output channels
+    oH = output.sizeAt(indOoH);                    // output height
+    oW = output.sizeAt(indOoH+1);                  // output width    
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename T>
+void ConvolutionUtils<T>::getSizesAndIndexesConv3d(const bool isNCDHW, const NDArray<T>& input, const NDArray<T>& output, int& bS, int& iC, int& iD, int& iH, int& iW, int& oC, int& oD, int& oH, int& oW, int& indIOioC, int& indIOioD, int& indWiC, int& indWoC, int& indWkD) {
+    
+    // input   [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+    // weights [kD, kH, kW, iC, oC] (NDHWC) or [oC, iC, kD, kH, kW] (NCDHW)    
+    // output  [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
+
+    if(!isNCDHW) {
+        indIOioC = 4; indIOioD = 1; indWkD = 0; indWoC = 4; indWiC = 3; 
+    }
+    else {        
+        indIOioC = 1; indIOioD = 2; indWkD = 2; indWoC = 0; indWiC = 1;
+    }    
+
+    bS = input.sizeAt(0);                          // batch size
+    iC = input.sizeAt(indIOioC);                   // input channels        
+    iD = input.sizeAt(indIOioD);                   // input depth
+    iH = input.sizeAt(indIOioD+1);                 // input height
+    iW = input.sizeAt(indIOioD+2);                 // input width
+    oC = output.sizeAt(indIOioC);                  // output channels    
+    oD = output.sizeAt(indIOioD);                  // output depth
+    oH = output.sizeAt(indIOioD+1);                // output height
+    oW = output.sizeAt(indIOioD+2);                // output width    
+
+}
  
 
 

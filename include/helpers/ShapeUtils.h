@@ -16,8 +16,8 @@ namespace nd4j {
         public:
        
         // evaluate shape for array resulting from tensorDot operation, also evaluate shapes and permutation dimensions for transposition of two input arrays 
-        static std::vector<int> evalShapeForTensorDot(const int* aShapeInfo, const int* bShapeInfo, std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
-        static std::vector<int> evalShapeForTensorDot(const NDArray<T>* a,   const NDArray<T>* b,   std::vector<int>& axesA, std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
+        static std::vector<int> evalShapeForTensorDot(const int* aShapeInfo, const int* bShapeInfo, std::vector<int> axesA, std::vector<int> axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
+        static std::vector<int> evalShapeForTensorDot(const NDArray<T>* a,   const NDArray<T>* b,   const std::vector<int>& axesA, const std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<int>& shapeAt, std::vector<int>& shapeBt);
 
         // evaluate resulting shape after reduce operation
         static int* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray<T>& arr, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
@@ -82,11 +82,40 @@ namespace nd4j {
         // returns ShapeList pointer with result shape
         static int* matrixProductShape(int* theFirstShape, int* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::memory::Workspace* workspace);
 
-
-        ///////////////////////
         static int* createScalarShapeInfo(nd4j::memory::Workspace* workspace = nullptr);
         static int* createVectorShapeInfo(int length, nd4j::memory::Workspace* workspace = nullptr);
+
+        /**
+        *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo 
+        *  if shapeFrom is identical to shapeTo (permutation is unnecessary) then empty vector is returned
+        *  in case of permutation is impossible an exception is thrown
+        */
+        static std::vector<int> evalPermutFromTo(const std::vector<int>& shapeFrom, const std::vector<int>& shapeTo);
+
+        /**
+        *  method returns false if permut == {0,1,2,...permut.size()} - in that case permutation is unnecessary
+        */
+        FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);
     };
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+///// IMLEMENTATION OF INLINE METHODS ///// 
+//////////////////////////////////////////////////////////////////////////
+
+template<typename T>
+FORCEINLINE bool ShapeUtils<T>::isPermutNecessary(const std::vector<int>& permut) {        
+
+    for(int i=0; i<permut.size(); ++i)
+        if(permut[i] != i)
+            return true;
+
+    return false;
+}
+
 
 
 }

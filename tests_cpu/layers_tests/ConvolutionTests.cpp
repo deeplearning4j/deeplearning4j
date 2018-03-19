@@ -1063,12 +1063,9 @@ TEST_F(ConvolutionTests, conv2d_bp_test1) {
     nd4j::ops::conv2d_bp<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* gradI = results->at(0);
-    NDArray<double>* gradW = results->at(1);
-    
-     // for(int i = 0; i<gradI->lengthOf(); ++i)
-     //    std::cout<<std::setw(10)<<(*gradI)(i)<<"   "<<std::setw(10)<<expGradI(i)<<std::endl;
+    NDArray<double>* gradW = results->at(1);     
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results->status());    
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));    
@@ -1252,6 +1249,8 @@ TEST_F(ConvolutionTests, conv2d_test3) {
     nd4j::ops::conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);    
+
+    // output->printIndexedBuffer();
 
     ASSERT_EQ(Status::OK(), results->status());
 
@@ -1437,7 +1436,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test1) {
 
     nd4j::ops::depthwise_conv2d<double> op;
     ResultSet<double>* results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    NDArray<double>* output = results->at(0);    
+    NDArray<double>* output = results->at(0);        
 
     ASSERT_EQ(Status::OK(), results->status());
 
@@ -1500,7 +1499,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_test3) {
     ResultSet<double>* results = op.execute({&input, &weights, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray<double>* output = results->at(0);    
 
-    output->printBuffer();
+    // output->printIndexedBuffer();
 
     ASSERT_EQ(Status::OK(), results->status());
 
@@ -1538,7 +1537,7 @@ TEST_F(ConvolutionTests, depthwise_conv2d_bp_test1) {
     NDArray<double>* gradI = results->at(0);
     NDArray<double>* gradW = results->at(1);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results->status());    
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));    
@@ -1587,6 +1586,236 @@ TEST_F(ConvolutionTests, depthwise_conv2d_bp_test2) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test1) {
+
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 1;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
+    NDArray<float> expected('c', {2, 3, 4, 3, 3}, {64.,64.,64.,64.,64.,64.,32.,32.,32.,96.,96.,96.,96.,96.,96.,48.,48.,48.,96.,96.,96.,96.,96.,96.,48.,48.,48.,
+                                                   64.,64.,64.,64.,64.,64.,32.,32.,32.,64.,64.,64.,64.,64.,64.,32.,32.,32.,96.,96.,96.,96.,96.,96.,48.,48.,48.,
+                                                   96.,96.,96.,96.,96.,96.,48.,48.,48.,64.,64.,64.,64.,64.,64.,32.,32.,32.,32.,32.,32.,32.,32.,32.,16.,16.,16.,
+                                                   48.,48.,48.,48.,48.,48.,24.,24.,24.,48.,48.,48.,48.,48.,48.,24.,24.,24.,32.,32.,32.,32.,32.,32.,16.,16.,16.,
+                                                   64.,64.,64.,64.,64.,64.,32.,32.,32.,96.,96.,96.,96.,96.,96.,48.,48.,48.,96.,96.,96.,96.,96.,96.,48.,48.,48.,
+                                                   64.,64.,64.,64.,64.,64.,32.,32.,32.,64.,64.,64.,64.,64.,64.,32.,32.,32.,96.,96.,96.,96.,96.,96.,48.,48.,48.,
+                                                   96.,96.,96.,96.,96.,96.,48.,48.,48.,64.,64.,64.,64.,64.,64.,32.,32.,32.,32.,32.,32.,32.,32.,32.,16.,16.,16.,
+                                                   48.,48.,48.,48.,48.,48.,24.,24.,24.,48.,48.,48.,48.,48.,48.,24.,24.,24.,32.,32.,32.,32.,32.,32.,16.,16.,16.});
+    input = 2.;
+    weights = 1.;
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test2) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 1;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
+    NDArray<float> expected('c', {2, 3, 4, 3, 3}, {534.4,540.8,547.2,534.4,540.8,547.2,248. ,251.2,254.4,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,
+                                                   380.8,387.2,393.6,380.8,387.2,393.6,171.2,174.4,177.6,534.4,540.8,547.2,534.4,540.8,547.2,248. ,251.2,254.4,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,
+                                                   686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,380.8,387.2,393.6,380.8,387.2,393.6,171.2,174.4,177.6,152. ,155.2,158.4,152. ,155.2,158.4, 66.4, 68. , 69.6,
+                                                   170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6,170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6, 75.2, 78.4, 81.6, 75.2, 78.4, 81.6, 28. , 29.6, 31.2,
+                                                   534.4,540.8,547.2,534.4,540.8,547.2,248. ,251.2,254.4,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,
+                                                   380.8,387.2,393.6,380.8,387.2,393.6,171.2,174.4,177.6,534.4,540.8,547.2,534.4,540.8,547.2,248. ,251.2,254.4,686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,
+                                                   686.4,696. ,705.6,686.4,696. ,705.6,314.4,319.2,324. ,380.8,387.2,393.6,380.8,387.2,393.6,171.2,174.4,177.6,152. ,155.2,158.4,152. ,155.2,158.4, 66.4, 68. , 69.6,
+                                                   170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6,170.4,175.2,180. ,170.4,175.2,180. , 70.8, 73.2, 75.6, 75.2, 78.4, 81.6, 75.2, 78.4, 81.6, 28. , 29.6, 31.2});
+    input = 2.;
+    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test3) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<float> input   ('c', {bS, iD, iH, iW, iC});
+    NDArray<float> weights ('c', {kD, kH, kW, iC, oC});
+    NDArray<float> expected('c', {2, 2, 2, 2, 3},  {686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,
+                                                    686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,
+                                                    686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,
+                                                    686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6,686.4,696.,705.6});
+    input = 2.;
+    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
+    
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test4) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat =  0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> expected('c', {2, 3, 2, 2, 2});
+    input = 2.;
+    weights = 0.5;
+    expected = 48.;
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test5) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> bias    ('c', {oC});
+    NDArray<float> expected('c', {2, 3, 2, 2, 2});
+
+    input = 2.;
+    weights = 0.5;
+    expected = 49.;
+    bias = 1.;
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
+    
+    // output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test6) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> bias    ('c', {oC},{1,2,3});
+    NDArray<float> expected('c', {2, 3, 2, 2, 2},{49., 49.,49., 49., 49., 49.,49., 49., 50., 50.,50., 50., 50., 50.,50., 50., 
+                                                  51., 51.,51., 51., 51., 51.,51., 51., 49., 49.,49., 49., 49., 49.,49., 49., 
+                                                  50., 50.,50., 50., 50., 50.,50., 50., 51., 51.,51., 51., 51., 51.,51., 51.});
+    input = 2.;
+    weights = 0.5;    
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
+    
+    // output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test7) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    NDArray<float> bias    ('c', {oC},{1,2,3});
+    NDArray<float> expected('c', {2, 3, 2, 2, 2},{236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 698. , 698. , 698. , 698. ,
+                                                  698. , 698. , 698. , 698. ,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,
+                                                  236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 236.2, 698. , 698. , 698. , 698. ,
+                                                  698. , 698. , 698. , 698. ,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8,1159.8});
+    input = 2.;
+    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
+    
+    // output->printIndexedBuffer();
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test8) {
+    
+    int bS=2, iD=3,iH=4,iW=3,  iC=4,oC=3,  kD=2,kH=3,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 0;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW    
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});    
+    NDArray<float> expected('c', {2, 3, 2, 2, 2},{235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 696. , 696. , 696. , 696. , 696. , 696. , 696. , 696. ,
+                                                  1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 235.2, 
+                                                  696. , 696. , 696. , 696. , 696. , 696. , 696. , 696. ,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8,1156.8});
+    input = 2.;
+    NDArrayFactory<float>::linspace(0.1, weights, 0.1);
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
 #endif //LIBND4J_CONVOLUTIONTESTS_H
 
 
