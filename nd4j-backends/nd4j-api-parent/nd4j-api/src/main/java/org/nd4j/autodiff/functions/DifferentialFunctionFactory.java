@@ -123,6 +123,23 @@ public class DifferentialFunctionFactory   {
     }
 
     /**
+     * Local response normalization operation.
+     *
+     * @param inputs       the inputs to lrn
+     * @param lrnConfig the configuration
+     * @return
+     */
+    public SDVariable localResponseNormalization(SDVariable inputs, LocalResponseNormalizationConfig lrnConfig) {
+        LocalResponseNormalization lrn = LocalResponseNormalization.builder()
+                .inputFunctions(new SDVariable[] {inputs})
+                .sameDiff(sameDiff())
+                .config(lrnConfig)
+                .build();
+
+        return lrn.outputVariables()[0];
+    }
+
+    /**
      * Conv1d operation.
      *
      * @param inputs       the inputs to conv1d

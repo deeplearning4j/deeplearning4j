@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
@@ -2107,6 +2108,25 @@ public class SameDiffTests {
 
         INDArray outArr = sd.execAndEndResult();
         assertArrayEquals(new int[]{1, 10}, outArr.shape());
+
+    }
+
+    @Test
+    public void testLrn() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray input = Nd4j.create(new float[]{4, 4, 4, 4}, new int[]{1, 4});
+
+        SDVariable sdInput = sd.var("input", input);
+
+        LocalResponseNormalizationConfig lrn = LocalResponseNormalizationConfig.builder()
+                .alpha(1.0).beta(.5).bias(0).depth(1).build();
+
+        SDVariable out = sd.localResponseNormalization(sdInput, lrn);
+        out = sd.tanh("out", out);
+
+        INDArray outArr = sd.execAndEndResult();
+        assert outArr.getDouble(0, 0) == 0.25;
 
     }
 

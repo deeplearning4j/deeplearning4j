@@ -1783,6 +1783,32 @@ public class SameDiff {
 
 
     /**
+     * Local response normalization operation.
+     *
+     * @param inputs       the inputs to lrn
+     * @param lrnConfig the configuration
+     * @return
+     */
+    public SDVariable localResponseNormalization(SDVariable inputs, LocalResponseNormalizationConfig lrnConfig) {
+        return localResponseNormalization(null, inputs, lrnConfig);
+    }
+
+    /**
+     * Local response normalization operation.
+     *
+     * @param name         name of the operation in SameDiff
+     * @param inputs       the inputs to lrn
+     * @param lrnConfig the configuration
+     * @return
+     */
+    public SDVariable localResponseNormalization(String name, SDVariable inputs,
+                                                 LocalResponseNormalizationConfig lrnConfig) {
+        SDVariable ret = f().localResponseNormalization(inputs, lrnConfig);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    /**
      * Conv2d operation.
      *
      * @param inputs       the inputs to conv2d

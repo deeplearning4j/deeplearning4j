@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -23,6 +24,7 @@ import java.util.*;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class LocalResponseNormalization extends DynamicCustomOp {
 
 
@@ -31,22 +33,20 @@ public class LocalResponseNormalization extends DynamicCustomOp {
 
 
     @Builder(builderMethodName = "builder")
-    public LocalResponseNormalization(SameDiff sameDiff, SDVariable[] inputFunctions,INDArray[] inputs, INDArray[] outputs,boolean inPlace,LocalResponseNormalizationConfig config) {
+    public LocalResponseNormalization(SameDiff sameDiff, SDVariable[] inputFunctions,
+                                      INDArray[] inputs, INDArray[] outputs,boolean inPlace,
+                                      LocalResponseNormalizationConfig config) {
         super(null,sameDiff, inputFunctions, inPlace);
         this.config = config;
         if(inputs != null) {
             addInputArgument(inputs);
         }
-
         if(outputs!= null) {
             addOutputArgument(outputs);
         }
-
         addArgs();
     }
 
-
-    public LocalResponseNormalization() {}
 
     @Override
     public Map<String, Object> propertiesForFunction() {
@@ -54,10 +54,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
     }
 
     private void addArgs() {
+        addTArgument(config.getBias());
         addTArgument(config.getAlpha());
         addTArgument(config.getBeta());
-        addTArgument(config.getBias());
-        addTArgument(config.getDepth());
+        addIArgument(config.getDepth());
     }
 
     @Override
@@ -82,7 +82,7 @@ public class LocalResponseNormalization extends DynamicCustomOp {
                 .alpha(alpha)
                 .beta(beta)
                 .bias(bias)
-                .depth(depth)
+                .depth((int) depth)
                 .build();
         this.config = localResponseNormalizationConfig;
         addArgs();
@@ -104,7 +104,7 @@ public class LocalResponseNormalization extends DynamicCustomOp {
                 .alpha(alpha)
                 .beta(beta)
                 .bias(bias)
-                .depth(depth)
+                .depth((int) depth)
                 .build();
         this.config = localResponseNormalizationConfig;
         addArgs();
