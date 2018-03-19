@@ -2111,6 +2111,34 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testMoments() {
+        SameDiff sd = SameDiff.create();
+
+        INDArray input = Nd4j.create(new float[] {1,2,3,4}, new int[] {2,2});
+
+        SDVariable sdInput = sd.var("input", input);
+
+        int[] axis = new int[] {0, 1};
+        SDVariable[] moments = sd.moments(sdInput, axis);
+        SDVariable mean = moments[0];
+        SDVariable variance = moments[1];
+
+        SDVariable sum = mean.add(variance);
+        SDVariable out = sd.tanh("out", sum);
+
+        INDArray outArr = sd.execAndEndResult();
+
+        INDArray meanArray = mean.getArr();
+        INDArray varArray = variance.getArr();
+
+        assert meanArray.getDouble(0) == 2.5;
+        assert varArray.getDouble(0) == 1.25;
+
+
+    }
+
+
+    @Test
     public void testDepthWiseConv2dBasic() {
         int nIn = 3;
         int depthWise = 4;

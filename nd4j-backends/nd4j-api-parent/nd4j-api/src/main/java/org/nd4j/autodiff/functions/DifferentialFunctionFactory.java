@@ -321,6 +321,10 @@ public class DifferentialFunctionFactory   {
         return outputVars[0];
     }
 
+    public SDVariable[] moments(SDVariable input, int... axes) {
+        return new Moments(sameDiff(), input, axes).outputVariables();
+    }
+
 
 
     public SDVariable tile(SDVariable iX, int[] repeat) {

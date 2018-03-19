@@ -2946,6 +2946,15 @@ public class SameDiff {
         return concat(null, dimension, inputs);
     }
 
+    public SDVariable[] moments(SDVariable input, int... axes) {
+        return moments(null, input, axes);
+    }
+
+    public SDVariable[] moments(String[] name, SDVariable input, int... axes) {
+        SDVariable[] res = f().moments(input, axes);
+        return updateVariableNamesAndReferences(res, name);
+    }
+
     /**
      * @param iX
      * @param repeat
@@ -5390,7 +5399,7 @@ public class SameDiff {
 
         for (int i = 0; i < numVariables; i++) {
             SDVariable varToUpdate = variablesToUpdate[i];
-            String name = newVariableNames[i];
+            String name = newVariableNames == null ? null : newVariableNames[i];
             updatedVariables[i] = updateVariableNameAndReference(varToUpdate, name);
         }
 
