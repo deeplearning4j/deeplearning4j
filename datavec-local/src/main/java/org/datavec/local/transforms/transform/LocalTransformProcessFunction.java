@@ -14,25 +14,21 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.local.transforms.sequence;
+package org.datavec.local.transforms.transform;
 
-import lombok.AllArgsConstructor;
-import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 
 /**
- * Created by Alex on 5/03/2016.
+ * Spark function for executing a transform process
  */
-@AllArgsConstructor
-public class SparkSequenceFilterFunction implements Function<List<List<Writable>>, Boolean> {
+public class LocalTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
 
-    private final Filter filter;
-
-    @Override
-    public Boolean apply(List<List<Writable>> v1) {
-        return !filter.removeSequence(v1); //Spark: return true to keep example (Filter: return true to remove)
+    public LocalTransformProcessFunction(TransformProcess transformProcess) {
+        super(new LocalTransformProcessFunctionAdapter(transformProcess));
     }
+
 }

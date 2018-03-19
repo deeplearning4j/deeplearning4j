@@ -14,33 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.local.transforms.sequence;
+package org.datavec.local.transforms.transform.filter;
 
 import lombok.AllArgsConstructor;
+import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spark function to map an example to a pair, by using some of the column values as the key.
- *
+ * Spark function for executing filter operations
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkMapToPairByMultipleColumnsFunction
-                implements Function<List<Writable>, Pair<List<Writable>, List<Writable>>> {
+public class LocalFilterFunction implements Function<List<Writable>, Boolean> {
 
-    private final int[] keyColumnIdxs;
+    private final Filter filter;
 
     @Override
-    public Pair<List<Writable>, List<Writable>> apply(List<Writable> writables) {
-        List<Writable> keyOut = new ArrayList<>(keyColumnIdxs.length);
-        for (int keyColumnIdx : keyColumnIdxs) {
-            keyOut.add(writables.get(keyColumnIdx));
-        }
-        return Pair.of(keyOut, writables);
+    public Boolean apply(List<Writable> v1) {
+        return !filter.removeExample(v1); //Spark: return true to keep example (Filter: return true to remove)
     }
 }

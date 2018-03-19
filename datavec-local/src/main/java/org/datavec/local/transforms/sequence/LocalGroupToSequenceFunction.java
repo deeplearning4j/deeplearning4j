@@ -17,24 +17,34 @@
 package org.datavec.local.transforms.sequence;
 
 import lombok.AllArgsConstructor;
+import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Spark function to map a n example to a pair, by using one of the columns as the key.
+ * Spark function for grouping independent values/examples into a sequence, and then sorting them
+ * using a provided {@link SequenceComparator}
  *
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkMapToPairByColumnFunction implements Function<List<Writable>, Pair<Writable, List<Writable>>> {
+public class LocalGroupToSequenceFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 
-    private final int keyColumnIdx;
+    private final SequenceComparator comparator;
 
     @Override
-    public Pair<Writable, List<Writable>> apply(List<Writable> writables) {
-        return Pair.of(writables.get(keyColumnIdx), writables);
+    public List<List<Writable>> apply(List<List<Writable>> lists) {
+
+        List<List<Writable>> list = new ArrayList<>();
+        for (List<Writable> writables : lists)
+            list.add(writables);
+
+        Collections.sort(list, comparator);
+
+        return list;
     }
 }

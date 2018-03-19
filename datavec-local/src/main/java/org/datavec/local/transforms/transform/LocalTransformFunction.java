@@ -14,37 +14,37 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.local.transforms.sequence;
+package org.datavec.local.transforms.transform;
 
 import lombok.AllArgsConstructor;
-import org.datavec.api.transform.sequence.SequenceComparator;
+import lombok.extern.slf4j.Slf4j;
+import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
+import org.datavec.local.transforms.ArrowTransformExecutor;
 import org.nd4j.linalg.function.Function;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
- * Spark function for grouping independent values/examples into a sequence, and then sorting them
- * using a provided {@link SequenceComparator}
- *
- * @author Alex Black
+ * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-public class SparkGroupToSequenceFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
+@Slf4j
+public class LocalTransformFunction implements Function<List<Writable>, List<Writable>> {
 
-    private final SequenceComparator comparator;
+    private final Transform transform;
 
     @Override
-    public List<List<Writable>> apply(List<List<Writable>> lists) {
-
-        List<List<Writable>> list = new ArrayList<>();
-        for (List<Writable> writables : lists)
-            list.add(writables);
-
-        Collections.sort(list, comparator);
-
-        return list;
+    public List<Writable> apply(List<Writable> v1) {
+        if (ArrowTransformExecutor.isTryCatch()) {
+            try {
+                return transform.map(v1);
+            } catch (Exception e) {
+                log.warn("Error occurred " + e + " on record " + v1);
+                return new ArrayList<>();
+            }
+        }
+        return transform.map(v1);
     }
 }

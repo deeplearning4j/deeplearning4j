@@ -25,8 +25,8 @@ import org.datavec.local.transforms.rank.UnzipForCalculateSortedRankFunction;
 import org.datavec.local.transforms.reduce.MapToPairForReducerFunction;
 import org.datavec.local.transforms.sequence.*;
 import org.datavec.local.transforms.transform.SequenceSplitFunction;
-import org.datavec.local.transforms.transform.SparkTransformFunction;
-import org.datavec.local.transforms.transform.filter.SparkFilterFunction;
+import org.datavec.local.transforms.transform.LocalTransformFunction;
+import org.datavec.local.transforms.transform.filter.LocalFilterFunction;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.function.FunctionalUtils;
 import org.nd4j.linalg.primitives.Pair;
@@ -171,14 +171,14 @@ public class ArrowTransformExecutor {
             if (d.getTransform() != null) {
                 Transform t = d.getTransform();
                 if (currentWritables != null) {
-                    Function<List<Writable>, List<Writable>> function = new SparkTransformFunction(t);
+                    Function<List<Writable>, List<Writable>> function = new LocalTransformFunction(t);
                     if (isTryCatch())
                         currentWritables = currentWritables.stream().map(input -> function.apply(input)).filter(input -> new EmptyRecordFunction().apply(input)).collect(toList());
                     else
                         currentWritables = currentWritables.stream().map(input -> function.apply(input)).collect(toList());
                 } else {
                     Function<List<List<Writable>>, List<List<Writable>>> function =
-                            new SparkSequenceTransformFunction(t);
+                            new LocalSequenceTransformFunction(t);
                     if (isTryCatch())
                         currentSequence = currentSequence.stream().map(input -> function.apply(input)).filter(input ->
                                 new SequenceEmptyRecordFunction().apply(input)).collect(toList());
@@ -191,9 +191,9 @@ public class ArrowTransformExecutor {
                 //Filter
                 Filter f = d.getFilter();
                 if (currentWritables != null) {
-                    currentWritables = currentWritables.stream().filter(input -> new SparkFilterFunction(f).apply(input)).collect(toList());
+                    currentWritables = currentWritables.stream().filter(input -> new LocalFilterFunction(f).apply(input)).collect(toList());
                 } else {
-                    currentSequence = currentSequence.stream().filter(input -> new SparkSequenceFilterFunction(f).apply(input)).collect(toList());
+                    currentSequence = currentSequence.stream().filter(input -> new LocalSequenceFilterFunction(f).apply(input)).collect(toList());
                 }
 
             } else if (d.getConvertToSequence() != null) {
@@ -213,7 +213,7 @@ public class ArrowTransformExecutor {
                     int[] colIdxs = schema.getIndexOfColumns(cts.getKeyColumns());
                     List<Pair<List<Writable>, List<Writable>>> withKey =
                             currentWritables.stream()
-                                    .map(inputSequence2 -> new SparkMapToPairByMultipleColumnsFunction(colIdxs)
+                                    .map(inputSequence2 -> new LocalMapToPairByMultipleColumnsFunction(colIdxs)
                                             .apply(inputSequence2))
                                     .collect(toList());
 
@@ -222,7 +222,7 @@ public class ArrowTransformExecutor {
 
                     //Now: convert to a sequence...
                     currentSequence = collect.entrySet().stream().map(input -> input.getValue())
-                            .map(input -> new SparkGroupToSequenceFunction(cts.getComparator()).apply(input))
+                            .map(input -> new LocalGroupToSequenceFunction(cts.getComparator()).apply(input))
                             .collect(toList());
 
                     currentWritables = null;
@@ -303,7 +303,7 @@ public class ArrowTransformExecutor {
                 currentWritables = resultPerKey.entrySet().stream()
                         .map(input -> input.getValue().get()).collect(Collectors.toList());
 
-                
+
 
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();

@@ -10,11 +10,11 @@ import java.util.List;
 /**
  * Spark function for executing a transform process
  */
-public class SparkTransformProcessFunctionAdapter implements FlatMapFunctionAdapter<List<Writable>, List<Writable>> {
+public class LocalTransformProcessFunctionAdapter implements FlatMapFunctionAdapter<List<Writable>, List<Writable>> {
 
     private final TransformProcess transformProcess;
 
-    public SparkTransformProcessFunctionAdapter(TransformProcess transformProcess) {
+    public LocalTransformProcessFunctionAdapter(TransformProcess transformProcess) {
         this.transformProcess = transformProcess;
     }
 

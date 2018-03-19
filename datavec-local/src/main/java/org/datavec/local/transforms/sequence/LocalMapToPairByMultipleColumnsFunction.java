@@ -17,23 +17,30 @@
 package org.datavec.local.transforms.sequence;
 
 import lombok.AllArgsConstructor;
-import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.primitives.Pair;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spark function for transforming sequences using a Transform
+ * Spark function to map an example to a pair, by using some of the column values as the key.
+ *
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkSequenceTransformFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
+public class LocalMapToPairByMultipleColumnsFunction
+                implements Function<List<Writable>, Pair<List<Writable>, List<Writable>>> {
 
-    private final Transform transform;
+    private final int[] keyColumnIdxs;
 
     @Override
-    public List<List<Writable>> apply(List<List<Writable>> v1) {
-        return transform.mapSequence(v1);
+    public Pair<List<Writable>, List<Writable>> apply(List<Writable> writables) {
+        List<Writable> keyOut = new ArrayList<>(keyColumnIdxs.length);
+        for (int keyColumnIdx : keyColumnIdxs) {
+            keyOut.add(writables.get(keyColumnIdx));
+        }
+        return Pair.of(keyOut, writables);
     }
 }

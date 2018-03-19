@@ -14,21 +14,26 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.local.transforms.transform;
+package org.datavec.local.transforms.sequence;
 
-import org.datavec.api.transform.TransformProcess;
+import lombok.AllArgsConstructor;
+import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.nd4j.linalg.function.Function;
 
 import java.util.List;
 
 /**
- * Spark function for executing a transform process
+ * Spark function for transforming sequences using a Transform
+ * @author Alex Black
  */
-public class SparkTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
+@AllArgsConstructor
+public class LocalSequenceTransformFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 
-    public SparkTransformProcessFunction(TransformProcess transformProcess) {
-        super(new SparkTransformProcessFunctionAdapter(transformProcess));
+    private final Transform transform;
+
+    @Override
+    public List<List<Writable>> apply(List<List<Writable>> v1) {
+        return transform.mapSequence(v1);
     }
-
 }

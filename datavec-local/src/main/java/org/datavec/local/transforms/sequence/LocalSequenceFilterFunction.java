@@ -14,37 +14,25 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.local.transforms.transform;
+package org.datavec.local.transforms.sequence;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.writable.Writable;
-import org.datavec.local.transforms.ArrowTransformExecutor;
 import org.nd4j.linalg.function.Function;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Alex on 5/03/2016.
  */
 @AllArgsConstructor
-@Slf4j
-public class SparkTransformFunction implements Function<List<Writable>, List<Writable>> {
+public class LocalSequenceFilterFunction implements Function<List<List<Writable>>, Boolean> {
 
-    private final Transform transform;
+    private final Filter filter;
 
     @Override
-    public List<Writable> apply(List<Writable> v1) {
-        if (ArrowTransformExecutor.isTryCatch()) {
-            try {
-                return transform.map(v1);
-            } catch (Exception e) {
-                log.warn("Error occurred " + e + " on record " + v1);
-                return new ArrayList<>();
-            }
-        }
-        return transform.map(v1);
+    public Boolean apply(List<List<Writable>> v1) {
+        return !filter.removeSequence(v1); //Spark: return true to keep example (Filter: return true to remove)
     }
 }
