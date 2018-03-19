@@ -15,7 +15,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter implements
-        FlatMapFunctionAdapter<Pair<List<Writable>, Pair<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
+        FlatMapFunctionAdapter<Pair<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>>, List<Writable>> {
 
     private final Join join;
 
@@ -24,8 +24,8 @@ public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter implements
     }
 
     @Override
-    public Iterable<List<Writable>> call(
-                    Pair<List<Writable>, Pair<Iterable<List<Writable>>, Iterable<List<Writable>>>> t2)
+    public List<List<Writable>> call(
+                    Pair<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>> t2)
                     throws Exception {
 
         Iterable<List<Writable>> leftList = t2.getSecond().getFirst();

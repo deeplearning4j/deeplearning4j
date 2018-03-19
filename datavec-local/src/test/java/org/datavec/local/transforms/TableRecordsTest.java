@@ -18,6 +18,11 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 11/11/16.
  */
 public class TableRecordsTest {
+
+
+
+
+
     @Test
     public void testToTable() {
         INDArray linspace = Nd4j.linspace(1, 8, 8).reshape(2, 4);

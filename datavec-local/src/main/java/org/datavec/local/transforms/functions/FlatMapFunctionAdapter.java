@@ -1,6 +1,7 @@
 package org.datavec.local.transforms.functions;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  *
@@ -9,5 +10,5 @@ import java.io.Serializable;
  * Adapter for Spark interface in order to freeze interface changes between spark versions
  */
 public interface FlatMapFunctionAdapter<T, R> extends Serializable {
-    Iterable<R> call(T t) throws Exception;
+    List<R> call(T t) throws Exception;
 }

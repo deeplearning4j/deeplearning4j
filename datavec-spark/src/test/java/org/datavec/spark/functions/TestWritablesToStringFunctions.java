@@ -16,13 +16,20 @@
 
 package org.datavec.spark.functions;
 
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.PairFunction;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.misc.SequenceWritablesToStringFunction;
 import org.datavec.spark.transform.misc.WritablesToStringFunction;
 import org.junit.Test;
+import scala.Tuple2;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -31,7 +38,41 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 19/05/2017.
  */
-public class TestWritablesToStringFunctions {
+public class TestWritablesToStringFunctions extends BaseSparkTest {
+
+    @Test
+    public void testCGroup() {
+        List<Tuple2<String,String>> leftMap = new ArrayList<>();
+        List<Tuple2<String,String>> rightMap = new ArrayList<>();
+
+        leftMap.add(new Tuple2<>("cat","adam"));
+        leftMap.add(new Tuple2<>("dog","adam"));
+
+        rightMap.add(new Tuple2<>("fish","alex"));
+        rightMap.add(new Tuple2<>("cat","alice"));
+        rightMap.add(new Tuple2<>("dog","steve"));
+
+        List<String> pets = Arrays.asList("cat","dog");
+
+
+
+        JavaSparkContext sc = getContext();
+        JavaPairRDD<String, String> left = sc.parallelize(leftMap).mapToPair(new PairFunction<Tuple2<String, String>, String, String>() {
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, String> stringStringTuple2) throws Exception {
+                return stringStringTuple2;
+            }
+        });
+
+        JavaPairRDD<String, String> right = sc.parallelize(rightMap).mapToPair(new PairFunction<Tuple2<String, String>, String, String>() {
+            @Override
+            public Tuple2<String, String> call(Tuple2<String, String> stringStringTuple2) throws Exception {
+                return stringStringTuple2;
+            }
+        });
+
+        System.out.println(left.cogroup(right).collect());
+    }
 
     @Test
     public void testWritablesToString() throws Exception {

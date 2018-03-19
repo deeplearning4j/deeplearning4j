@@ -3,6 +3,8 @@ package org.datavec.local.transforms;
 
 import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 
+import java.util.List;
+
 /**
  * FlatMapFunction adapter to
  * hide incompatibilities between Spark 1.x and Spark 2.x
@@ -18,7 +20,7 @@ public class BaseFlatMapFunctionAdaptee<K, V>  {
         this.adapter = adapter;
     }
 
-    public Iterable<V> call(K k)  {
+    public List<V> call(K k)  {
         try {
             return adapter.call(k);
         } catch (Exception e) {

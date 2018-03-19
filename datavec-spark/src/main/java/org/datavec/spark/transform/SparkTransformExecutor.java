@@ -337,6 +337,7 @@ public class SparkTransformExecutor {
         for (int i = 0; i < leftColumnNames.length; i++) {
             leftColumnIndexes[i] = join.getLeftSchema().getIndexOfColumn(leftColumnNames[i]);
         }
+
         JavaPairRDD<List<Writable>, List<Writable>> leftJV = left.mapToPair(new ExtractKeysFunction(leftColumnIndexes));
 
         String[] rightColumnNames = join.getJoinColumnsRight();
@@ -344,6 +345,7 @@ public class SparkTransformExecutor {
         for (int i = 0; i < rightColumnNames.length; i++) {
             rightColumnIndexes[i] = join.getRightSchema().getIndexOfColumn(rightColumnNames[i]);
         }
+
         JavaPairRDD<List<Writable>, List<Writable>> rightJV =
                         right.mapToPair(new ExtractKeysFunction(rightColumnIndexes));
 

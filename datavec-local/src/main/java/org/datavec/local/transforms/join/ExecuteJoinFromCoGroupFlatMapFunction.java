@@ -29,7 +29,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class ExecuteJoinFromCoGroupFlatMapFunction extends
-        BaseFlatMapFunctionAdaptee<Pair<List<Writable>, Pair<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
+        BaseFlatMapFunctionAdaptee<Pair<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>>, List<Writable>> {
 
     public ExecuteJoinFromCoGroupFlatMapFunction(Join join) {
         super(new ExecuteJoinFromCoGroupFlatMapFunctionAdapter(join));
