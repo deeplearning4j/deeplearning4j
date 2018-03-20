@@ -158,7 +158,6 @@ public class Slice extends DynamicCustomOp {
 
 
         ret.put(tensorflowName(),map);
-        ret.put(onnxName(),map);
 
         return ret;
     }
