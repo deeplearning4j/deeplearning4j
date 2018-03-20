@@ -882,6 +882,14 @@ public class DifferentialFunctionFactory   {
         return new Reverse(sameDiff(),x, dimensions).outputVariables()[0];
     }
 
+    public SDVariable reverse_sequence(SDVariable x, SDVariable seq_lengths, int seq_dim, int batch_dim) {
+        return new ReverseSequence(sameDiff(), x, seq_lengths, seq_dim, batch_dim).outputVariables()[0];
+    }
+
+    public SDVariable reverse_sequence(SDVariable x, SDVariable seq_lengths) {
+        return new ReverseSequence(sameDiff(), x, seq_lengths).outputVariables()[0];
+    }
+
     public SDVariable rollAxis(SDVariable iX, int axis) {
         return new RollAxis(sameDiff(),iX,axis).outputVariables()[0];
     }

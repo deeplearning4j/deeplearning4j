@@ -2928,6 +2928,25 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable reverse_sequence(String name, SDVariable x, SDVariable seq_lengths, int seqDim, int batchDim) {
+        SDVariable ret = f().reverse_sequence(x, seq_lengths, seqDim, batchDim);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable reverse_sequence(String name, SDVariable x, SDVariable seq_lengths) {
+        SDVariable ret = f().reverse_sequence(x, seq_lengths);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable reverse_sequence(SDVariable x, SDVariable seq_lengths, int seqDim, int batchDim) {
+        return reverse_sequence(null, x, seq_lengths, seqDim, batchDim);
+    }
+
+    public SDVariable reverse_sequence(SDVariable x, SDVariable seq_lengths){
+        return reverse_sequence(null, x, seq_lengths);
+    }
+
+
     public SDVariable assign(SDVariable x, SDVariable y){
         return assign(null, x, y);
     }

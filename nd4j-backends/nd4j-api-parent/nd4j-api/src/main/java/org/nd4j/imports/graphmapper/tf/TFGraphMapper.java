@@ -957,8 +957,25 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                 INDArray array = Nd4j.create(jArray, arrayShape, 0, 'c');
                 return array;
             } else if (tfTensor.getTensorContent().size() > 0){
-                // FIXME: INT bytebuffers should be converted to floating point
-                throw new UnsupportedOperationException("To be implemented yet");
+                //throw new UnsupportedOperationException("To be implemented yet");
+                //Mapping INT bytebuffers should be converted to floating point
+                val bb = tfTensor.getTensorContent().asReadOnlyByteBuffer();
+                val lb = bb.order(ByteOrder.nativeOrder()).asLongBuffer();
+                val fa = new float[lb.capacity()];
+                for (int e = 0; e < lb.capacity(); e++)
+                    fa[e] = (float) lb.get(e);
+                if (fa.length == 0)
+                    throw new ND4JIllegalStateException("Can't find Tensor values! Probably you've forgot to freeze graph before saving?");
+
+                if (fa.length == 1)
+                    return Nd4j.trueScalar(fa[0]);
+
+                if (arrayShape.length == 1)
+                    return Nd4j.trueVector(fa);
+                val array = Nd4j.create(fa, arrayShape, 'c', 0);
+                //log.debug("SUM1: {}", array.sumNumber());
+                //log.debug("Data: {}", Arrays.toString(array.data().asFloat()));
+                return array;
             }
         }  else {
             throw new UnsupportedOperationException("Unknown dataType found: [" + tfTensor.getDtype() + "]");

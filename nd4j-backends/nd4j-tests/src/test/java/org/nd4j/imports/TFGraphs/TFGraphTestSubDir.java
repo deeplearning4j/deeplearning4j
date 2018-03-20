@@ -26,9 +26,10 @@ public class TFGraphTestSubDir {
     //public static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.JUST_PRINT;
     private static final String[] SKIP_ARR = new String[] {
             //"norm_11",
+            "one_hot"
     };
     public static final Set<String> SKIP_SET = new HashSet<>(Arrays.asList(SKIP_ARR));
-    public static String modelDir = "tf_graphs/examples/norm_tests";
+    public static String modelDir = "tf_graphs/examples/simple_run";
 
     @Parameterized.Parameters
     public static Collection<Object[]> data() throws IOException {
@@ -49,5 +50,6 @@ public class TFGraphTestSubDir {
             return;
         }
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, modelDir, EXECUTE_WITH);
+        TFGraphTestAllHelper.checkIntermediate(inputs,modelName,modelDir,EXECUTE_WITH);
     }
 }
