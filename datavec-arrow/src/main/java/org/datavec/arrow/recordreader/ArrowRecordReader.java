@@ -1,5 +1,6 @@
 package org.datavec.arrow.recordreader;
 
+import lombok.Getter;
 import lombok.val;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -42,6 +43,7 @@ public class ArrowRecordReader implements RecordReader {
     private String currentPath;
     private Schema schema;
     private List<Writable> recordAllocation = new ArrayList<>();
+    @Getter
     private ArrowWritableRecordBatch currentBatch;
     private List<RecordListener> recordListeners;
 

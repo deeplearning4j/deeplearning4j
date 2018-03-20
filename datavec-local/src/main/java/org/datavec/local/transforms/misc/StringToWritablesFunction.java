@@ -41,9 +41,10 @@ public class StringToWritablesFunction implements Function<String, List<Writable
         try {
             recordReader.initialize(new StringSplit(s));
         } catch (IOException e) {
-            e.printStackTrace();
+           throw new RuntimeException(e);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
         }
         Collection<Writable> next = recordReader.next();
         if (next instanceof List)

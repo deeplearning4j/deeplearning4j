@@ -22,6 +22,10 @@ import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
@@ -41,9 +45,69 @@ import static java.nio.channels.Channels.newChannel;
  */
 public class ArrowConverter {
 
+    /**
+     * Create an ndarray from a matrix.
+     * The included batch must be all the same number of rows in order
+     * to work. The reason for this is {@link INDArray} must be all the same dimensions.
+     * Note that the input columns must also be numerical. If they aren't numerical already,
+     * consider using an {@link org.datavec.api.transform.TransformProcess} to transform the data
+     * output from {@link org.datavec.arrow.recordreader.ArrowRecordReader} in to the proper format
+     * for usage with this method for direct conversion.
+     *
+     * @param arrowWritableRecordBatch the incoming batch. This is typically output from
+     *                                 an {@link org.datavec.arrow.recordreader.ArrowRecordReader}
+     * @return an {@link INDArray} representative of the input data
+     */
+    public static INDArray toArray(ArrowWritableRecordBatch arrowWritableRecordBatch) {
+        List<FieldVector> columnVectors = arrowWritableRecordBatch.getList();
+        Schema schema = arrowWritableRecordBatch.getSchema();
+        for(int i = 0; i < schema.numColumns(); i++) {
+            switch(schema.getType(i)) {
+                case Integer:
+                    break;
+                case Float:
+                    break;
+                case Double:
+                    break;
+                case Long:
+                    break;
+                default:
+                    throw new ND4JIllegalArgumentException("Illegal data type found for column " + schema.getName(i));
+            }
+        }
 
+        int rows  = arrowWritableRecordBatch.getList().get(0).getValueCount();
+        int cols = schema.numColumns();
+        INDArray arr  = Nd4j.create(rows,cols);
+        for(int i = 0; i < cols; i++) {
+            switch(schema.getType(i)) {
+                case Integer:
+                    IntVector intVector = (IntVector) columnVectors.get(i);
+                    DataBuffer buffer = Nd4j.createBuffer(intVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.INT,cols);
+                    arr.putColumn(i,Nd4j.create(buffer, new int[] {cols,1}));
+                    break;
+                case Float:
+                    Float4Vector float4Vector = (Float4Vector) columnVectors.get(i);
+                    DataBuffer floatBuffer = Nd4j.createBuffer(float4Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.FLOAT,cols);
+                    arr.putColumn(i,Nd4j.create(floatBuffer, new int[] {cols,1}));
 
+                    break;
+                case Double:
+                    Float8Vector float8Vector = (Float8Vector) columnVectors.get(i);
+                    DataBuffer doubleBuffer = Nd4j.createBuffer(float8Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.DOUBLE,cols);
+                    arr.putColumn(i,Nd4j.create(doubleBuffer, new int[] {cols,1}));
 
+                    break;
+                case Long:
+                    BigIntVector bigIntVector = (BigIntVector) columnVectors.get(i);
+                    DataBuffer longBuffer = Nd4j.createBuffer(bigIntVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.LONG,cols);
+                    arr.putColumn(i,Nd4j.create(longBuffer, new int[] {cols,1}));
+                    break;
+            }
+        }
+
+        return arr;
+    }
 
 
     /**
