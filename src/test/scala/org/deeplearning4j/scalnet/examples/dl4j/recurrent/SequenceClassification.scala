@@ -16,32 +16,28 @@
 
 package org.deeplearning4j.scalnet.examples.dl4j.recurrent
 
-import org.deeplearning4j.eval.{Evaluation, RegressionEvaluation}
+import org.deeplearning4j.eval.RegressionEvaluation
 import org.deeplearning4j.nn.conf.Updater
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.recurrent.{Bidirectional, LSTM, RnnOutputLayer}
+import org.deeplearning4j.scalnet.layers.recurrent.{ Bidirectional, LSTM, RnnOutputLayer }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.utils.SequenceGenerator
 import org.nd4j.linalg.activations.Activation
-import org.nd4j.linalg.indexing.BooleanIndexing
-import org.nd4j.linalg.indexing.conditions.Conditions
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 object SequenceClassification extends App with Logging {
 
-  val seed = 1234
   val timesteps = 10
   val hiddenSize = 32
-  val epochs = 100
+  val epochs = 500
+  val testSize = 100
   val scoreFrequency = 10
 
-
-  def generateDataset = SequenceGenerator.generate(timesteps, 0.7, seed)
-  val testData = generateDataset
+  def generateDataset = SequenceGenerator.generate(timesteps)
 
   logger.info("Build model...")
-  val model: NeuralNet = NeuralNet(rngSeed = seed)
+  val model: NeuralNet = NeuralNet()
   model.add(Bidirectional(LSTM(timesteps, hiddenSize), Bidirectional.ADD))
   model.add(RnnOutputLayer(hiddenSize, timesteps, Activation.SIGMOID))
   model.compile(LossFunction.MEAN_ABSOLUTE_ERROR, updater = Updater.ADAM)
@@ -49,15 +45,13 @@ object SequenceClassification extends App with Logging {
   logger.info("Train model...")
   model.fit(generateDataset, epochs, List(new ScoreIterationListener(scoreFrequency)))
 
-  // TODO: evaluate model
-  val trueLabels = testData.getLabels
-  val predicted = model.getNetwork.output(testData.getFeatures, false)
-  BooleanIndexing.replaceWhere(predicted, 0, Conditions.lessThan(0.5))
-  BooleanIndexing.replaceWhere(predicted, 1, Conditions.greaterThan(0.5))
+  logger.info("Evaluate model...")
   val evaluator = new RegressionEvaluation(timesteps)
-  evaluator.eval(trueLabels, predicted)
-  println(evaluator.averageMeanSquaredError())
-  println(trueLabels)
-  println(predicted)
-
+  for (_ <- 0 until testSize) {
+    val testData = generateDataset
+    val trueLabels = testData.getLabels
+    val predicted = model.predict(testData.getFeatures)
+    evaluator.eval(trueLabels, predicted)
+  }
+  logger.info(s"MAE score: ${evaluator.averageMeanAbsoluteError}")
 }
