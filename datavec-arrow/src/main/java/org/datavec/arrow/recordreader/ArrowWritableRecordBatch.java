@@ -19,7 +19,7 @@ import java.util.*;
  */
 @Data
 @AllArgsConstructor
-public class ArrowListWritable implements List<List<Writable>>,Closeable {
+public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable {
 
     private List<FieldVector> list;
     private int size;
@@ -34,7 +34,7 @@ public class ArrowListWritable implements List<List<Writable>>,Closeable {
      * @param list the list of field vectors to use
      * @param schema the schema to use
      */
-    public ArrowListWritable(List<FieldVector> list, Schema schema) {
+    public ArrowWritableRecordBatch(List<FieldVector> list, Schema schema) {
         this.list = list;
         this.schema = schema;
         //each column should have same number of rows
@@ -166,7 +166,7 @@ public class ArrowListWritable implements List<List<Writable>>,Closeable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        ArrowListWritable lists = (ArrowListWritable) o;
+        ArrowWritableRecordBatch lists = (ArrowWritableRecordBatch) o;
         return size == lists.size &&
                 Objects.equals(list, lists.list) &&
                 Objects.equals(schema, lists.schema);

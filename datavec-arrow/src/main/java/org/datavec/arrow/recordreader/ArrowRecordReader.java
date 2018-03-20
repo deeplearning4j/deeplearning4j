@@ -1,5 +1,6 @@
 package org.datavec.arrow.recordreader;
 
+import lombok.Getter;
 import lombok.val;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -24,7 +25,7 @@ import static org.datavec.arrow.ArrowConverter.readFromBytes;
 /**
  * Implements a record reader using arrow.
  * The {@link ArrowRecordReader} minimizes memory footprint by
- * using an {@link ArrowListWritable} as the current in memory
+ * using an {@link ArrowWritableRecordBatch} as the current in memory
  * batch during iteration rather than the normal of objects
  * you would find with the traditional record readers with {@link List<List<Writable>>}
  *
@@ -42,7 +43,8 @@ public class ArrowRecordReader implements RecordReader {
     private String currentPath;
     private Schema schema;
     private List<Writable> recordAllocation = new ArrayList<>();
-    private ArrowListWritable currentBatch;
+    @Getter
+    private ArrowWritableRecordBatch currentBatch;
     private List<RecordListener> recordListeners;
 
     @Override

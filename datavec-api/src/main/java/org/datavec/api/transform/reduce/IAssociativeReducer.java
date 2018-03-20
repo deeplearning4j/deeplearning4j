@@ -56,8 +56,8 @@ public interface IAssociativeReducer extends Serializable {
     Schema transform(Schema schema);
 
     /**
-     * An aggregation that has the property that reduce(List(reduce(List(l1, l2)), l3)) = reduce(List(l1, reduce(List(l2, l3)))
-     * @param examplesList
+     * An aggregation that has the property that
+     * reduce(List(reduce(List(l1, l2)), l3)) = reduce(List(l1, reduce(List(l2, l3)))
      * @return
      */
     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer();

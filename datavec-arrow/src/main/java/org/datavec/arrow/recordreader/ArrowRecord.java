@@ -11,25 +11,25 @@ import java.util.List;
 
 /**
  * An {@link ArrowRecord} is a {@link Record}
- * wrapper around {@link ArrowListWritable}
+ * wrapper around {@link ArrowWritableRecordBatch}
  * containing an index to the individual row.
  *
  * @author Adam Gibson
  */
 @AllArgsConstructor
 public class ArrowRecord implements Record {
-    private ArrowListWritable arrowListWritable;
+    private ArrowWritableRecordBatch arrowWritableRecordBatch;
     private  int index;
     private URI recordUri;
 
     @Override
     public List<Writable> getRecord() {
-        return arrowListWritable.get(index);
+        return arrowWritableRecordBatch.get(index);
     }
 
     @Override
     public void setRecord(List<Writable> record) {
-        arrowListWritable.set(index,record);
+        arrowWritableRecordBatch.set(index,record);
     }
 
     @Override

@@ -20,7 +20,7 @@ package org.datavec.api.writable;
  * Created by Alex on 30/05/2017.
  */
 public enum WritableType {
-    Boolean, Byte, Double, Float, Int, Long, Null, Text, NDArray, Image,Arrow;
+    Boolean, Byte, Double, Float, Int, Long, Null, Text, NDArray, Image,Arrow,Bytes;
 
     //NOTE TO DEVELOPERS:
     //In the current implementation, the order (ordinal idx) for the WritableType values matters.
@@ -79,6 +79,8 @@ public enum WritableType {
                 return Text.class;
             case NDArray:
                 return NDArrayWritable.class;
+            case Bytes:
+                return ByteWritable.class;
             case Image:
             case Arrow:
             default:

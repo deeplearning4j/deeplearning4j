@@ -20,7 +20,9 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
+import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
@@ -33,6 +35,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class ArrowConverterTest {
+
+    @Test
+    public void testCreateNDArray() throws Exception {
+        val recordsToWrite = recordToWrite();
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),byteArrayOutputStream);
+        byte[] arr = byteArrayOutputStream.toByteArray();
+        val read = ArrowConverter.readFromBytes(arr);
+        assertEquals(recordsToWrite,read);
+
+        //send file
+        File tmp =  tmpDataFile(recordsToWrite);
+        ArrowRecordReader recordReader = new ArrowRecordReader();
+
+        recordReader.initialize(new FileSplit(tmp));
+
+        recordReader.next();
+        ArrowWritableRecordBatch currentBatch = recordReader.getCurrentBatch();
+        INDArray arr2 = ArrowConverter.toArray(currentBatch);
+        assertEquals(2,arr2.rows());
+        assertEquals(2,arr2.columns());
+    }
+
 
     @Test
     public void testSchemaConversionBasic() {

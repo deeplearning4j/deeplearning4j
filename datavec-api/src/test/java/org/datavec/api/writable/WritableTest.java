@@ -1,13 +1,17 @@
 package org.datavec.api.writable;
 
-import org.datavec.api.writable.comparator.TextWritableComparator;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.*;
 
 public class WritableTest {
+
+
 
     @Test
     public void testWritableEqualityReflexive() {
@@ -16,7 +20,7 @@ public class WritableTest {
         assertEquals(new DoubleWritable(1), new DoubleWritable(1));
         assertEquals(new FloatWritable(1), new FloatWritable(1));
         assertEquals(new Text("Hello"), new Text("Hello"));
-
+        assertEquals(new BytesWritable("Hello".getBytes()),new BytesWritable("Hello".getBytes()));
         INDArray ndArray = Nd4j.rand(new int[]{1, 100});
 
         assertEquals(new NDArrayWritable(ndArray), new NDArrayWritable(ndArray));
@@ -24,6 +28,19 @@ public class WritableTest {
         assertEquals(new BooleanWritable(true), new BooleanWritable(true));
         byte b = 0;
         assertEquals(new ByteWritable(b), new ByteWritable(b));
+    }
+
+
+    @Test
+    public void testBytesWritableIndexing() {
+        byte[] doubleWrite = new byte[16];
+        ByteBuffer wrapped = ByteBuffer.wrap(doubleWrite);
+        wrapped.putDouble(1.0);
+        wrapped.putDouble(2.0);
+        BytesWritable byteWritable = new BytesWritable(doubleWrite);
+        assertEquals(2,byteWritable.getDouble(1),1e-1);
+        org.nd4j.linalg.api.buffer.DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});
+        assertEquals(dataBuffer,byteWritable.asNd4jBuffer(DataBuffer.Type.DOUBLE,8));
     }
 
     @Test
@@ -51,7 +68,7 @@ public class WritableTest {
 
 
     @Test
-    public void testDoubleFloatWritable(){
+    public void testDoubleFloatWritable() {
         assertEquals(new DoubleWritable(1d), new FloatWritable(1f));
         assertEquals(new FloatWritable(2f), new DoubleWritable(2d));
 
@@ -65,7 +82,7 @@ public class WritableTest {
 
 
     @Test
-    public void testFuzzies(){
+    public void testFuzzies() {
         assertTrue(new DoubleWritable(1.1d).fuzzyEquals(new FloatWritable(1.1f), 1e-6d));
         assertTrue(new FloatWritable(1.1f).fuzzyEquals(new DoubleWritable(1.1d), 1e-6d));
         byte b = 0xfffffffe;

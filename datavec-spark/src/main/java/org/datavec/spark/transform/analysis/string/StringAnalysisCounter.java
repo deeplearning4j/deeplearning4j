@@ -16,7 +16,6 @@
 
 package org.datavec.spark.transform.analysis.string;
 
-import com.clearspring.analytics.stream.quantile.TDigest;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.spark.util.StatCounter;

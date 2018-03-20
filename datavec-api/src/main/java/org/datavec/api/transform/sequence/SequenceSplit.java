@@ -40,10 +40,23 @@ import java.util.List;
                 @JsonSubTypes.Type(value = SplitMaxLengthSequence.class, name = "SplitMaxLengthSequence")})
 public interface SequenceSplit extends Serializable {
 
+    /**
+     * Split a sequence in to multiple time steps
+     * @param sequence the sequence to split
+     * @return
+     */
     List<List<List<Writable>>> split(List<List<Writable>> sequence);
 
+    /**
+     * Sets the input schema for this split
+     * @param inputSchema the schema to set
+     */
     void setInputSchema(Schema inputSchema);
 
+    /**
+     * Getter for the input schema
+     * @return
+     */
     Schema getInputSchema();
 
 }

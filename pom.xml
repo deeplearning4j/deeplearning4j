@@ -57,6 +57,7 @@
     </developers>
 
     <properties>
+        <protonpack.version>1.15</protonpack.version>
         <poi.version>3.17</poi.version>
         <jcommander.version>1.27</jcommander.version>
         <play.version>2.4.6</play.version>
