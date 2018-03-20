@@ -77,8 +77,8 @@ public class Conv3D extends DynamicCustomOp {
                 getConfig().getDilationH(),
                 getConfig().getDilationW(),
 
-                getConfig().isValidMode() ? 1 : 0,
-                getConfig().isNCDHW() ? 1 : 0
+                getConfig().isValidMode() ? 0 : 1,
+                getConfig().isNCDHW() ? 0 : 1
         );
 
     }

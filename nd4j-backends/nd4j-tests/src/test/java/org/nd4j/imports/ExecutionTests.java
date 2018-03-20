@@ -6,6 +6,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,6 +16,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.LinkedHashMap;
 
@@ -31,6 +33,12 @@ public class ExecutionTests extends BaseNd4jTest {
 
     public ExecutionTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
 

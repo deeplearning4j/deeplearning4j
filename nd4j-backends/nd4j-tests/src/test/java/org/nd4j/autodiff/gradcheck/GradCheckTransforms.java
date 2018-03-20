@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -23,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +37,12 @@ public class GradCheckTransforms {
     static {
         Nd4j.create(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
     @Test

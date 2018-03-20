@@ -1,9 +1,11 @@
 package org.nd4j.imports.TFGraphs;
 
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -70,7 +72,11 @@ public class TFGraphTestList {
 
     };
 
-
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+    }
 
     //change this to SAMEDIFF for samediff
     public static TFGraphTestAllHelper.ExecuteWith executeWith = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;

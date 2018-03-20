@@ -3,6 +3,7 @@ package org.nd4j.imports;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -12,6 +13,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -22,6 +24,12 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     public ByteOrderTests(Nd4jBackend backend) {
         super(backend);
+    }
+
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
     }
 
     @Test

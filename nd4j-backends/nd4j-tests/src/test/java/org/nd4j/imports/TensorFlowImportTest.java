@@ -2,6 +2,7 @@ package org.nd4j.imports;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.util.HashUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.tensorflow.framework.GraphDef;
 
 import java.io.DataInputStream;
@@ -48,6 +50,11 @@ public class TensorFlowImportTest {
     public void setUp() throws Exception {
     }
 
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+    }
 
     @Test
     public void testClassHolder() {

@@ -43,6 +43,7 @@ public class DifferentialFunctionClassHolder {
         add(MaxPooling2D.class.getName());
         add(Pooling2D.class.getName());
         add(Pooling3D.class.getName());
+        add(DepthwiseConv2D.class.getName());
     }};
     /**
      * Get the fields for a given {@link DifferentialFunction}

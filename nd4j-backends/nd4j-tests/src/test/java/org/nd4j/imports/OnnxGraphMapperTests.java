@@ -2,15 +2,23 @@ package org.nd4j.imports;
 
 import lombok.val;
 import onnx.OnnxProto3;
+import org.junit.After;
 import org.junit.Test;
 import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
 
 public class OnnxGraphMapperTests {
+
+    @After
+    public void tearDown() throws Exception {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(false);
+    }
 
     @Test
     public void testMapper() throws Exception {
