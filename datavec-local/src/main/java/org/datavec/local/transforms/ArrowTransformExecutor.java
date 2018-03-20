@@ -181,9 +181,11 @@ public class ArrowTransformExecutor {
                 //Filter
                 Filter f = d.getFilter();
                 if (currentWritables != null) {
-                    currentWritables = currentWritables.stream().filter(input -> new LocalFilterFunction(f).apply(input)).collect(toList());
+                    LocalFilterFunction localFilterFunction = new LocalFilterFunction(f);
+                    currentWritables = currentWritables.stream().filter(input -> localFilterFunction.apply(input)).collect(toList());
                 } else {
-                    currentSequence = currentSequence.stream().filter(input -> new LocalSequenceFilterFunction(f).apply(input)).collect(toList());
+                    LocalSequenceFilterFunction localSequenceFilterFunction = new LocalSequenceFilterFunction(f);
+                    currentSequence = currentSequence.stream().filter(input -> localSequenceFilterFunction.apply(input)).collect(toList());
                 }
 
             } else if (d.getConvertToSequence() != null) {

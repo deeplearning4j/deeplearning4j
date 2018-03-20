@@ -41,10 +41,8 @@ public class LineRecordReaderFunction implements Function<String, List<Writable>
     public List<Writable> apply(String s) {
         try {
             recordReader.initialize(new StringSplit(s));
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
         }
         return recordReader.next();
     }

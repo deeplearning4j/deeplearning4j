@@ -48,10 +48,9 @@ public class RecordReaderBytesFunction implements Function<Pair<Text, BytesWrita
         try {
             return recordReader.record(uri, dis);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
 
-        throw new IllegalStateException("");
     }
 
 

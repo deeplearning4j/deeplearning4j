@@ -49,9 +49,8 @@ public class SequenceRecordReaderBytesFunction implements Function<Pair<Text, By
         try {
             return recordReader.sequenceRecord(uri, dis);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
 
-        throw new UnsupportedOperationException("");
     }
 }

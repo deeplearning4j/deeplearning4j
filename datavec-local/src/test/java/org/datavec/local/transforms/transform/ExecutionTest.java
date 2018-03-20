@@ -19,7 +19,11 @@ package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
+import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
@@ -30,6 +34,7 @@ import org.datavec.api.writable.Writable;
 
 import org.datavec.local.transforms.ArrowTransformExecutor;
 import org.junit.Test;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.*;
 
@@ -43,10 +48,10 @@ public class ExecutionTest  {
     @Test
     public void testExecutionSimple() {
         Schema schema = new Schema.Builder().addColumnInteger("col0")
-                        .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
+                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
 
         TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1")
-                        .doubleMathOp("col2", MathOp.Add, 10.0).build();
+                .doubleMathOp("col2", MathOp.Add, 10.0).build();
 
         List<List<Writable>> inputData = new ArrayList<>();
         inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
@@ -73,13 +78,28 @@ public class ExecutionTest  {
     }
 
     @Test
+    public void testFilter() {
+        Schema filterSchema = new Schema.Builder()
+                .addColumnDouble("col1").addColumnDouble("col2")
+                .addColumnDouble("col3").build();
+        List<List<Writable>> inputData = new ArrayList<>();
+        inputData.add(Arrays.<Writable>asList(new IntWritable(0), new DoubleWritable(1), new DoubleWritable(0.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(1), new DoubleWritable(3), new DoubleWritable(1.1)));
+        inputData.add(Arrays.<Writable>asList(new IntWritable(2), new DoubleWritable(3), new DoubleWritable(2.1)));
+        TransformProcess transformProcess = new TransformProcess.Builder(filterSchema)
+                .filter(new DoubleColumnCondition("col1",ConditionOp.LessThan,1)).build();
+        List<List<Writable>> execute = ArrowTransformExecutor.execute(inputData, transformProcess);
+        assertEquals(2,execute.size());
+    }
+
+    @Test
     public void testExecutionSequence() {
 
         Schema schema = new SequenceSchema.Builder().addColumnInteger("col0")
-                        .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
+                .addColumnCategorical("col1", "state0", "state1", "state2").addColumnDouble("col2").build();
 
         TransformProcess tp = new TransformProcess.Builder(schema).categoricalToInteger("col1")
-                        .doubleMathOp("col2", MathOp.Add, 10.0).build();
+                .doubleMathOp("col2", MathOp.Add, 10.0).build();
 
         List<List<List<Writable>>> inputSequences = new ArrayList<>();
         List<List<Writable>> seq1 = new ArrayList<>();
@@ -96,7 +116,7 @@ public class ExecutionTest  {
         List<List<List<Writable>>> rdd =  (inputSequences);
 
         List<List<List<Writable>>> out =
-                        new ArrayList<>(ArrowTransformExecutor.executeSequenceToSequence(rdd, tp));
+                new ArrayList<>(ArrowTransformExecutor.executeSequenceToSequence(rdd, tp));
 
         Collections.sort(out, new Comparator<List<List<Writable>>>() {
             @Override

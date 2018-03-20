@@ -36,9 +36,9 @@ public class FilesAsBytesFunction implements Function<Pair<String, InputStream>,
         try {
             return Pair.of(new Text(in.getFirst()), new BytesWritable(IOUtils.toByteArray(in.getSecond())));
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
+
         }
 
-        throw new IllegalStateException("");
     }
 }
