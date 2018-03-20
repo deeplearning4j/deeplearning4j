@@ -52,19 +52,17 @@ public class BytesWritable extends ArrayWritable {
 
     @Override
     public void write(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
+        out.write(content);
     }
 
     @Override
     public void readFields(DataInput in) throws IOException {
-        throw new UnsupportedOperationException();
-
+        in.readFully(content);
     }
 
     @Override
     public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-
+        out.writeShort(getType().typeIdx());
     }
 
     @Override

@@ -47,9 +47,8 @@ public class RecordReaderFunction implements Function<Pair<String, InputStream>,
         try (DataInputStream dis = (DataInputStream) ds) {
             return recordReader.record(uri, dis);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Something went wrong reading file");
         }
 
-        throw new IllegalStateException("Something went wrong reading file");
     }
 }
