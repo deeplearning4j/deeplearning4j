@@ -2,12 +2,11 @@ package org.datavec.local.transforms;
 
 
 import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.List;
 
 /**
- * FlatMapFunction adapter to
- * hide incompatibilities between Spark 1.x and Spark 2.x
  *
  * This class should be used instead of direct referral to FlatMapFunction
  *
@@ -24,9 +23,8 @@ public class BaseFlatMapFunctionAdaptee<K, V>  {
         try {
             return adapter.call(k);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new IllegalStateException(e);
         }
 
-        throw new IllegalStateException("");
     }
 }
