@@ -28,7 +28,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 
-/**RecordReaderFunction: Given a SequenceRecordReader and a file (via Spark PortableDataStream), load and parse the
+/**RecordReaderFunction: Given a SequenceRecordReader and a file(via InputStream), load and parse the
  * sequence data into a {@code List<List<Writable>>}
  * @author Alex Black
  */

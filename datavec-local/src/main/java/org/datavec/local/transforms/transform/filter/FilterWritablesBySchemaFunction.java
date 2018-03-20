@@ -53,9 +53,9 @@ public class FilterWritablesBySchemaFunction implements Function<Writable, Boole
         boolean valid = meta.isValid(v1);
         if (excludeMissing && (v1 instanceof NullWritable
                         || v1 instanceof Text && (v1.toString() == null || v1.toString().isEmpty())))
-            return false; //Remove (spark)
+            return false; //Remove
         if (keepValid)
-            return valid; //Spark: return true to keep
+            return valid; //return true to keep
         else
             return !valid;
     }

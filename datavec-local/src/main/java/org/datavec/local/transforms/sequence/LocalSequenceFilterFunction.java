@@ -33,6 +33,6 @@ public class LocalSequenceFilterFunction implements Function<List<List<Writable>
 
     @Override
     public Boolean apply(List<List<Writable>> v1) {
-        return !filter.removeSequence(v1); //Spark: return true to keep example (Filter: return true to remove)
+        return !filter.removeSequence(v1); //return true to keep example (Filter: return true to remove)
     }
 }
