@@ -23,7 +23,9 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndexAll;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -2115,18 +2117,23 @@ public class SameDiffTests {
     public void testLrn() {
         SameDiff sd = SameDiff.create();
 
-        INDArray input = Nd4j.create(new float[]{4, 4, 4, 4}, new int[]{1, 4});
+        INDArray input = Nd4j.create(new float[]{4, 4, 4, 4}, new int[]{1, 4, 1, 1});
 
         SDVariable sdInput = sd.var("input", input);
 
         LocalResponseNormalizationConfig lrn = LocalResponseNormalizationConfig.builder()
-                .alpha(1.0).beta(.5).bias(0).depth(1).build();
+                .alpha(1.0)
+                .beta(.5)
+                .bias(0.0)
+                .depth(1).build();
 
         SDVariable out = sd.localResponseNormalization(sdInput, lrn);
-        out = sd.tanh("out", out);
+        SDVariable sdOut = sd.tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
-        assert outArr.getDouble(0, 0) == 0.25;
+        sd.exec();
+
+        for (int i = 0; i < 4; i++)
+           assert out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getDouble(0) == 1;
 
     }
 
