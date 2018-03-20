@@ -215,6 +215,7 @@ namespace nd4j {
             delete cP;
     }
 
+#ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
     void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC) {
@@ -273,6 +274,8 @@ namespace nd4j {
         if(cP != c)
             delete cP;
     }
+
+#endif
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
