@@ -11,6 +11,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -65,9 +66,25 @@ public class BytesWritable extends ArrayWritable {
      * @return the equivalent nd4j data buffer
      */
     public DataBuffer asNd4jBuffer(DataBuffer.Type type,int elementSize) {
-        ByteBuffer direct = ByteBuffer.allocateDirect(content.length);
-        direct.put(getContent());
-        return Nd4j.createBuffer(direct,type,content.length / elementSize);
+        int length = content.length / elementSize;
+        DataBuffer ret = Nd4j.createBuffer(ByteBuffer.allocateDirect(content.length),type,length,0);
+        for(int i = 0; i < length; i++) {
+            switch(type) {
+                case DOUBLE:
+                    ret.put(i,getDouble(i));
+                    break;
+                case INT:
+                    ret.put(i,getInt(i));
+                    break;
+                case FLOAT:
+                    ret.put(i,getFloat(i));
+                   break;
+                case LONG:
+                    ret.put(i,getLong(i));
+                    break;
+            }
+        }
+        return ret;
     }
 
     @Override

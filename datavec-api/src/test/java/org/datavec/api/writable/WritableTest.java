@@ -37,9 +37,10 @@ public class WritableTest {
         ByteBuffer wrapped = ByteBuffer.wrap(doubleWrite);
         wrapped.putDouble(1.0);
         wrapped.putDouble(2.0);
+        wrapped.rewind();
         BytesWritable byteWritable = new BytesWritable(doubleWrite);
         assertEquals(2,byteWritable.getDouble(1),1e-1);
-        org.nd4j.linalg.api.buffer.DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});
+        DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});
         assertEquals(dataBuffer,byteWritable.asNd4jBuffer(DataBuffer.Type.DOUBLE,8));
     }
 
