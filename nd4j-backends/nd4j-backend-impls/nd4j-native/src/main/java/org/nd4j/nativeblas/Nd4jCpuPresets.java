@@ -109,10 +109,6 @@ import java.util.Scanner;
                                                                 "/usr/lib/powerpc64-linux-gnu/",
                                                                 "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "ios", includepath = "/usr/local/Cellar/llvm/4.0.0/include/c++/v1"),
-                @Platform(value = "windows", preload = {"libiomp5md#libiomp5md", "mkl_avx#mkl_avx", "mkl_avx2#mkl_avx2",
-                                "mkl_avx512#mkl_avx512", "mkl_avx512_mic#mkl_avx512_mic", "mkl_def#mkl_def",
-                                "mkl_mc#mkl_mc", "mkl_mc3#mkl_mc3", "mkl_core#mkl_core", "mkl_intel_lp64#mkl_intel_lp64",
-                                "mkl_intel_thread#mkl_intel_thread", "mkl_rt#mkl_rt", "libnd4jcpu"}),
                 @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 

@@ -117,16 +117,6 @@ public class CpuBlas extends Nd4jBlas {
 
     @Override
     public void setMaxThreads(int num) {
-        try {
-            // this is required to work around some loading issue with MKL under Linux
-            mkl_rt.MKL_Set_Num_Threads(num);
-            //mkl_rt.MKL_Domain_Set_Num_Threads(num);
-            mkl_rt.MKL_Set_Num_Threads_Local(num);
-        } catch (UnsatisfiedLinkError e) {
-            log.trace("Could not load MKL", e);
-        } catch (NoClassDefFoundError e) {
-            log.trace("Could not load MKL", e);
-        }
         blas_set_num_threads(num);
     }
 
