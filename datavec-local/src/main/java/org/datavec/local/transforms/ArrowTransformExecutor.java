@@ -46,16 +46,6 @@ public class ArrowTransformExecutor {
     //returning empty records
     public final static String LOG_ERROR_PROPERTY = "org.datavec.spark.transform.logerrors";
 
-    public static void execute(TransformProcess transformProcess,ArrowWritableRecordBatch on) {
-        List<DataAction> actionList = transformProcess.getActionList();
-        for(DataAction dataAction : actionList) {
-            if(dataAction.getTransform() != null) {
-                Transform transform = dataAction.getTransform();
-                String columnName = transform.columnName();
-
-            }
-        }
-    }
 
 
     /**
@@ -201,9 +191,10 @@ public class ArrowTransformExecutor {
                 final ConvertToSequence cts = d.getConvertToSequence();
 
                 if(cts.isSingleStepSequencesMode()) {
+                    ConvertToSequenceLengthOne convertToSequenceLengthOne = new ConvertToSequenceLengthOne();
                     //Edge case: create a sequence from each example, by treating each value as a sequence of length 1
                     currentSequence = currentWritables.stream()
-                            .map(input -> new ConvertToSequenceLengthOne().apply(input))
+                            .map(input -> convertToSequenceLengthOne.apply(input))
                             .collect(toList());
                     currentWritables = null;
                 } else {
@@ -211,18 +202,19 @@ public class ArrowTransformExecutor {
                     //First: convert to PairRDD
                     Schema schema = cts.getInputSchema();
                     int[] colIdxs = schema.getIndexOfColumns(cts.getKeyColumns());
+                    LocalMapToPairByMultipleColumnsFunction localMapToPairByMultipleColumnsFunction = new LocalMapToPairByMultipleColumnsFunction(colIdxs);
                     List<Pair<List<Writable>, List<Writable>>> withKey =
                             currentWritables.stream()
-                                    .map(inputSequence2 -> new LocalMapToPairByMultipleColumnsFunction(colIdxs)
+                                    .map(inputSequence2 -> localMapToPairByMultipleColumnsFunction
                                             .apply(inputSequence2))
                                     .collect(toList());
 
 
                     Map<List<Writable>, List<List<Writable>>> collect = FunctionalUtils.groupByKey(withKey);
-
+                    LocalGroupToSequenceFunction localGroupToSequenceFunction = new LocalGroupToSequenceFunction(cts.getComparator());
                     //Now: convert to a sequence...
                     currentSequence = collect.entrySet().stream().map(input -> input.getValue())
-                            .map(input -> new LocalGroupToSequenceFunction(cts.getComparator()).apply(input))
+                            .map(input -> localGroupToSequenceFunction.apply(input))
                             .collect(toList());
 
                     currentWritables = null;
@@ -243,8 +235,10 @@ public class ArrowTransformExecutor {
                 SequenceSplit sequenceSplit = d.getSequenceSplit();
                 if (currentSequence == null)
                     throw new IllegalStateException("Error during execution of SequenceSplit: currentSequence is null");
+                SequenceSplitFunction sequenceSplitFunction = new SequenceSplitFunction(sequenceSplit);
+
                 currentSequence = currentSequence.stream()
-                        .flatMap(input -> new SequenceSplitFunction(sequenceSplit).call(input).stream())
+                        .flatMap(input -> sequenceSplitFunction.call(input).stream())
                         .collect(toList());
             } else if (d.getReducer() != null) {
                 final IAssociativeReducer reducer = d.getReducer();
@@ -259,25 +253,7 @@ public class ArrowTransformExecutor {
 
 
                 //initial op
-                IAggregableReduceOp<List<Writable>, List<Writable>> zeroOp = reducer.aggregableReducer();
                 Map<String, IAggregableReduceOp<List<Writable>, List<Writable>>> resultPerKey = new HashMap<>();
-                val seqFunction = new Function<Pair<IAggregableReduceOp<List<Writable>, List<Writable>>, List<Writable>>, IAggregableReduceOp<List<Writable>, List<Writable>>>() {
-                    @Override
-                    public IAggregableReduceOp<List<Writable>, List<Writable>> apply(
-                            Pair<IAggregableReduceOp<List<Writable>, List<Writable>>,List<Writable>> iAggregableReduceOp) {
-                        iAggregableReduceOp.getFirst().accept(iAggregableReduceOp.getSecond());
-                        return iAggregableReduceOp.getFirst();
-                    }
-                };
-
-
-                val combineFunction = new Function<Pair<IAggregableReduceOp<List<Writable>, List<Writable>>, IAggregableReduceOp<List<Writable>, List<Writable>>>, IAggregableReduceOp<List<Writable>, List<Writable>>>() {
-                    public IAggregableReduceOp<List<Writable>, List<Writable>> apply(
-                            Pair<IAggregableReduceOp<List<Writable>, List<Writable>>,IAggregableReduceOp<List<Writable>, List<Writable>>> iAggregableReduceOp2) {
-                        iAggregableReduceOp2.getFirst().combine(iAggregableReduceOp2.getSecond());
-                        return iAggregableReduceOp2.getFirst();
-                    }
-                };
 
                 val groupedByKey = FunctionalUtils.groupByKey(pair);
                 val aggregated = StreamUtils.aggregate(groupedByKey.entrySet()
@@ -356,15 +332,6 @@ public class ArrowTransformExecutor {
     }
 
 
-    public <A, B, C> Map<B, List<C>> groupsByInnerKey(Map<A, Map<B, C>> input) {
-        return input.values()
-                .stream()
-                .flatMap(it -> it.entrySet().stream())
-                .collect(groupingBy(
-                        Map.Entry::getKey,
-                        mapping(Map.Entry::getValue, toList())
-                ));
-    }
 
 
     /**
@@ -383,25 +350,26 @@ public class ArrowTransformExecutor {
         for (int i = 0; i < leftColumnNames.length; i++) {
             leftColumnIndexes[i] = join.getLeftSchema().getIndexOfColumn(leftColumnNames[i]);
         }
+        ExtractKeysFunction extractKeysFunction1 = new ExtractKeysFunction(leftColumnIndexes);
 
         List<Pair<List<Writable>, List<Writable>>> leftJV = left.stream().map(input ->
-                new ExtractKeysFunction(leftColumnIndexes).apply(input)).collect(toList());
+                extractKeysFunction1.apply(input)).collect(toList());
 
         String[] rightColumnNames = join.getJoinColumnsRight();
         int[] rightColumnIndexes = new int[rightColumnNames.length];
         for (int i = 0; i < rightColumnNames.length; i++) {
             rightColumnIndexes[i] = join.getRightSchema().getIndexOfColumn(rightColumnNames[i]);
         }
-
+        ExtractKeysFunction extractKeysFunction = new ExtractKeysFunction(rightColumnIndexes);
         List<Pair<List<Writable>, List<Writable>>> rightJV =
-                right.stream().map(input -> new ExtractKeysFunction(rightColumnIndexes).apply(input))
+                right.stream().map(input -> extractKeysFunction.apply(input))
                         .collect(toList());
 
         Map<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>> cogroupedJV = FunctionalUtils.cogroup(leftJV, rightJV);
-
+        ExecuteJoinFromCoGroupFlatMapFunction executeJoinFromCoGroupFlatMapFunction = new ExecuteJoinFromCoGroupFlatMapFunction(join);
         return cogroupedJV.entrySet().stream()
                 .flatMap(input ->
-                        new ExecuteJoinFromCoGroupFlatMapFunction(join).call(Pair.of(input.getKey(),input.getValue())).stream())
+                        executeJoinFromCoGroupFlatMapFunction.call(Pair.of(input.getKey(),input.getValue())).stream())
                 .collect(toList());
 
 
