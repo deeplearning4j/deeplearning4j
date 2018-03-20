@@ -17,9 +17,9 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
-import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{ NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.scalnet.layers.core.{Layer, Node, Preprocessor}
+import org.deeplearning4j.scalnet.layers.core.{ Layer, Node, Preprocessor }
 import org.deeplearning4j.scalnet.logging.Logging
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
