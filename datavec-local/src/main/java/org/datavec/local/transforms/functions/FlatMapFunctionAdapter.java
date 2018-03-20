@@ -7,7 +7,8 @@ import java.util.List;
  *
  * A function that returns zero or more output records from each input record.
  *
- * Adapter for Spark interface in order to freeze interface changes between spark versions
+ * Adapter for function interface in order to
+ * freeze interface changes
  */
 public interface FlatMapFunctionAdapter<T, R> extends Serializable {
     List<R> call(T t) throws Exception;

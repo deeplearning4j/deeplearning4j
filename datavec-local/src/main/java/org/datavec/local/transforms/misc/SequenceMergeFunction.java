@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spark function for merging multiple sequences, using a {@link SequenceMerge} instance.<br>
+ * Function for merging multiple sequences, using a {@link SequenceMerge} instance.<br>
  *
  * Typical usage:<br>
  * <pre>

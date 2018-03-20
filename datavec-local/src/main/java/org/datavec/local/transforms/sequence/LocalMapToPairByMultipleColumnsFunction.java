@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Spark function to map an example to a pair, by using some of the column values as the key.
+ * Function to map an example to a pair, by using some of the column values as the key.
  *
  * @author Alex Black
  */

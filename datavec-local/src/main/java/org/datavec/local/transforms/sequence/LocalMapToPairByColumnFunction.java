@@ -24,7 +24,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.List;
 
 /**
- * Spark function to map a n example to a pair, by using one of the columns as the key.
+ * Function to map a n example to a pair, by using one of the columns as the key.
  *
  * @author Alex Black
  */

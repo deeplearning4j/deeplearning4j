@@ -24,7 +24,7 @@ import org.nd4j.linalg.function.Function;
 import java.util.List;
 
 /**
- * Spark function for executing filter operations
+ * Function for executing filter operations
  * @author Alex Black
  */
 @AllArgsConstructor

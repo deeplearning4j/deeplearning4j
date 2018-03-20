@@ -24,7 +24,7 @@ import org.nd4j.linalg.function.Function;
 import java.util.List;
 
 /**
- * Spark function for executing
+ * Function for executing
  * a reduction of a set of examples by key
  *
  * @author Alex Black

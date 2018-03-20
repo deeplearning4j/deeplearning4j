@@ -24,7 +24,7 @@ import org.nd4j.linalg.function.Function;
 import java.util.List;
 
 /**
- * Spark function for transforming sequences using a Transform
+ * Function for transforming sequences using a Transform
  * @author Alex Black
  */
 @AllArgsConstructor

@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Spark function for grouping independent values/examples into a sequence, and then sorting them
+ * Function for grouping independent values/examples into a sequence, and then sorting them
  * using a provided {@link SequenceComparator}
  *
  * @author Alex Black

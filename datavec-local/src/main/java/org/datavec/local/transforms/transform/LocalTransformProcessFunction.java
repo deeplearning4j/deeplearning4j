@@ -23,7 +23,7 @@ import org.datavec.local.transforms.BaseFlatMapFunctionAdaptee;
 import java.util.List;
 
 /**
- * Spark function for executing a transform process
+ * Function for executing a transform process
  */
 public class LocalTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
 
