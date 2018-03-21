@@ -40,16 +40,20 @@ import java.util.*;
  */
 public class Tile extends DynamicCustomOp {
     private int[] axis;
+    private boolean is_static_reps = false;
 
     public Tile(SameDiff sameDiff, SDVariable i_v, int[] axis) {
         super(null,sameDiff, new SDVariable[]{i_v}, false);
         this.axis = axis;
-        addIArgument(axis);
+        addArguments();
     }
 
     public Tile() {}
 
-
+    private void addArguments() {
+        this.is_static_reps = true;
+        addIArgument(axis);
+    }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -57,7 +61,7 @@ public class Tile extends DynamicCustomOp {
         val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",lastNode,graph);
         if(arr != null) {
             this.axis = arr.data().asInt();
-            addIArgument(axis);
+            addArguments();
         }
 
 
@@ -105,6 +109,9 @@ public class Tile extends DynamicCustomOp {
          *
          * And during actual op invocation both inputs should be available due to topo sort
          */
+        if (is_static_reps)
+            return Nd4j.getExecutioner().calculateOutputShape(this);
+
         if (inputArguments().length < 2)
             return Collections.emptyList();
 
@@ -119,6 +126,7 @@ public class Tile extends DynamicCustomOp {
         else
             return Nd4j.getExecutioner().calculateOutputShape(this);
     }
+
 
     @Override
     public String opName() {
