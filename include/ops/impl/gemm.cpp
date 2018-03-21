@@ -45,7 +45,7 @@ namespace nd4j {
                        T beta,
                        T *C, int ldc) {
 
-            bool transAFlag = TransA != CblasTrans;
+            bool transAFlag = TransA == CblasTrans;
             bool transBFlag = TransB == CblasTrans;
 
             if (beta == (T) 0.0f) {

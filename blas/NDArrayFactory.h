@@ -58,6 +58,14 @@ namespace nd4j {
 
         static NDArray<T>* simpleMMul(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c , const T alpha, const T beta);
 
+    private:
+        // helpers for helper 
+        // multiptication N-dimensions tensor on other N-dimensions one
+        static nd4j::NDArray<T>* mmulHelperNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, T alpha, T beta);
+        // multiptication Matrix to vector
+        static nd4j::NDArray<T>* mmulHelperMxV(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, T alpha, T beta);
+        // multiptication Matrix to Matrix
+        static nd4j::NDArray<T>* mmulHelperMxM(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C, T alpha, T beta);
     };
 }
 
