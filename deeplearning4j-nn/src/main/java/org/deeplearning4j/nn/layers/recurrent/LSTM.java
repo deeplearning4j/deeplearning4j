@@ -166,6 +166,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop) {
+        applyDropOutIfNecessary(training);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;

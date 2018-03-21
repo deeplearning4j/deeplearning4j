@@ -165,6 +165,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     private Pair<INDArray,INDArray> activateHelper(INDArray in, INDArray prevStepOut, boolean training, boolean forBackprop){
+        applyDropOutIfNecessary(training);
         int m = in.size(0);
         int tsLength = in.size(2);
         int nOut = layerConf().getNOut();
