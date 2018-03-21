@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
     ConvolutionUtils<T>::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
-    REQUIRE_TRUE(weights->sizeAt(indWiC) == iC && weights->sizeAt(indWoC) == oC && weights->sizeAt(indWkD) == kD && weights->sizeAt(indWkD+1) == kH && weights->sizeAt(indWkD+2) == kW, 0, "CUSTOM CONV3D OP: wrong shape of weights array !");
+    REQUIRE_TRUE(weights->sizeAt(indWiC) == iC && weights->sizeAt(indWoC) == oC && weights->sizeAt(indWkD) == kD && weights->sizeAt(indWkD+1) == kH && weights->sizeAt(indWkD+2) == kW, 0, "CUSTOM CONV3D OP: wrong shape of weights array! Expected: [%i, %i, %i, %i]; Received: [%i, %i, %i, %i]", iC, oC, kD, kH, kW, weights->sizeAt(indWiC), weights->sizeAt(indWoC), weights->sizeAt(indWkD), weights->sizeAt(indWkD+1), weights->sizeAt(indWkD+2));
     if (bias) {
         REQUIRE_TRUE(bias->rankOf() == 1,    0, "CUSTOM CONV3D OP: rank of biases array must be equal to 1 !");
         REQUIRE_TRUE(oC == bias->lengthOf(), 0, "CUSTOM CONV3D OP: length of bias array must be equal to outChannels, but got %i instead", bias->lengthOf());        
