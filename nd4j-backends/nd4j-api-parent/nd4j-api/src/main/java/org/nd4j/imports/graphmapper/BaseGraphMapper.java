@@ -157,7 +157,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
         //for each variable
         for(Map.Entry<String,TENSOR_TYPE> entry : variablesForGraph.entrySet()) {
             if(dataTypeForTensor(entry.getValue()) == DataBuffer.Type.UNKNOWN) {
-                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('f'));
+                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
                 if(isPlaceHolder(entry.getValue())) {
                     importState.getSameDiff().addAsPlaceHolder(var.getVarName());
@@ -175,7 +175,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE,NODE_TYPE,ATTR_TYPE,TENSOR_TYPE
                 diff.associateArrayWithVariable(arr,var);
             }
             else if(getShapeFromTensor(entry.getValue()) == null) {
-                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('f'));
+                val var = importState.getSameDiff().var(entry.getKey(),null,new ZeroInitScheme('c'));
                 //mark as place holder for validating resolution later.
 
                 //note that this vertex id can still be a place holder

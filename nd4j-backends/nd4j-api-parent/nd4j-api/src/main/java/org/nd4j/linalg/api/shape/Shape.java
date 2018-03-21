@@ -34,14 +34,12 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to
@@ -306,9 +304,12 @@ public class Shape {
      * @return the shape of the result array as the result of the reduce
      */
     public static int[] getReducedShape(int[] wholeShape, int[] dimensions, boolean keepDims, boolean newFormat) {
+        // we need to normalize dimensions, in case they have negative values or unsorted, or whatever
+        dimensions = Shape.normalizeAxis(wholeShape.length, dimensions);
+
         // strip leading keepDims argument
-        if (newFormat)
-            dimensions = Arrays.copyOfRange(dimensions, 1, dimensions.length);
+        //if (newFormat)
+        //    dimensions = Arrays.copyOfRange(dimensions, 1, dimensions.length);
 
         if (!keepDims)
             if (!newFormat)
@@ -2444,6 +2445,39 @@ public class Shape {
      */
     public static boolean wholeArrayDimension(int... arr) {
         return arr.length == 1 && arr[0] == Integer.MAX_VALUE;
+    }
+
+    public static int[] uniquify(int[] array) {
+        if (array.length <= 1)
+            return array;
+
+        Set<Integer> ints = new LinkedHashSet<>();
+
+        for (val v: array)
+            ints.add(v);
+
+        return Ints.toArray(ints);
+    }
+
+    public static int[] normalizeAxis(int rank, int... axis) {
+        // first we should get rid of all negative axis
+        int[] tmp = new int[axis.length];
+
+        int cnt = 0;
+        for (val v: axis) {
+            val t = v < 0 ? v + rank : v;
+
+            if ((t >= rank && t != Integer.MAX_VALUE)|| t < 0)
+                throw new ND4JIllegalStateException("Axis array " + Arrays.toString(axis) + " contains values above rank " + rank);
+
+            tmp[cnt++] = t;
+        }
+
+        // now we're sorting array
+        Arrays.sort(tmp);
+
+        // and getting rid of possible duplicates
+        return uniquify(tmp);
     }
 
     /**

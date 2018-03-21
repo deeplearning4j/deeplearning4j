@@ -216,13 +216,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
             for(int i = 0; i < graph.getNodeCount(); i++) {
                 if (graph.getNode(i).getName().equals(nodeDef.getName() + "/reduction_indices")) {
                     reductionNode = graph.getNode(i);
-                    val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", graph.getNode(i), graph);
+                    val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", reductionNode, graph);
 
                     boolean keepAxis = nodeDef.getAttrOrThrow("keep_dims").getB();
 
                     // keepAxis = false by default
-                    int[] dimensions = ArrayUtils.add(arr.data().asInt(), 0, keepAxis ? 1 : 0);
-
+                    //int[] dimensions = ArrayUtils.add(arr.data().asInt(), 0, keepAxis ? 1 : 0);
+                    int[] dimensions = arr.data().asInt();
 
                     this.dimensions = dimensions;
                     break;

@@ -63,6 +63,7 @@ public class DynamicStitch extends DynamicCustomOp {
     }
 
 
+
     @Override
     public String opName() {
         return "dynamic_stitch";

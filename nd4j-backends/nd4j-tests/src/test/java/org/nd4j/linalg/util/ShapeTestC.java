@@ -8,6 +8,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -130,6 +131,46 @@ public class ShapeTestC extends BaseNd4jTest {
         assertArrayEquals(new int[]{4}, result);
     }
 
+
+    @Test
+    public void testAxisNormalization_1() throws Exception {
+        val axis = new int[] {1, -2};
+        val rank = 2;
+        val exp = new int[] {0, 1};
+
+        val norm = Shape.normalizeAxis(rank, axis);
+        assertArrayEquals(exp, norm);
+    }
+
+    @Test
+    public void testAxisNormalization_2() throws Exception {
+        val axis = new int[] {1, -2, 0};
+        val rank = 2;
+        val exp = new int[] {0, 1};
+
+        val norm = Shape.normalizeAxis(rank, axis);
+        assertArrayEquals(exp, norm);
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testAxisNormalization_3() throws Exception {
+        val axis = new int[] {1, -2, 2};
+        val rank = 2;
+        val exp = new int[] {0, 1};
+
+        val norm = Shape.normalizeAxis(rank, axis);
+        assertArrayEquals(exp, norm);
+    }
+
+    @Test
+    public void testAxisNormalization_4() throws Exception {
+        val axis = new int[] {1, 2, 0};
+        val rank = 3;
+        val exp = new int[] {0, 1, 2};
+
+        val norm = Shape.normalizeAxis(rank, axis);
+        assertArrayEquals(exp, norm);
+    }
 
     @Override
     public char ordering() {

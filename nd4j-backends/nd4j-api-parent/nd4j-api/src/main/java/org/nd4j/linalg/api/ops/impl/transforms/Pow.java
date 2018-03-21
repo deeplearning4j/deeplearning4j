@@ -19,13 +19,19 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Pow function
@@ -99,6 +105,19 @@ public class Pow extends BaseTransformOp {
         this.extraArgs = new Object[]{pow};
     }
 
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        val weightsName = nodeDef.getInput(1);
+        val variable = initWith.getVariable(weightsName);
+        val tmp = initWith.getArrForVarName(weightsName);
+
+        // if second argument is scalar - we should provide array of same shape
+        if (tmp != null) {
+            if (tmp.isScalar()) {
+                this.pow = tmp.getDouble(0);
+            }
+        }
+    }
 
     @Override
     public String onnxName() {

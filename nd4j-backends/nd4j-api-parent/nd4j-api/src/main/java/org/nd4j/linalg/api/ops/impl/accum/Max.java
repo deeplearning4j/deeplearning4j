@@ -121,7 +121,7 @@ public class Max extends BaseAccumulation {
 
     @Override
     public String tensorflowName() {
-        return "reduce_max";
+        return "Max";
     }
 
     @Override

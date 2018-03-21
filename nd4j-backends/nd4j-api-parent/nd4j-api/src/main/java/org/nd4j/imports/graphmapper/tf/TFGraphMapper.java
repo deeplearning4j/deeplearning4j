@@ -566,6 +566,11 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
         val tfProperties = properties.get(mappedTfName);
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
         val attributeAdapters = on.attributeAdaptersForFunction();
+
+        // if there's no properties announced for this function - just return
+        if (tfProperties == null)
+            return;
+
         for(val entry : tfProperties.entrySet()) {
             val tfAttrName = entry.getValue().getTfAttrName();
             val currentField = fields.get(entry.getKey());

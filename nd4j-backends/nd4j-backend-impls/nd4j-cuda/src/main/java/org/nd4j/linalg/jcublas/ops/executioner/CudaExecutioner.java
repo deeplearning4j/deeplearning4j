@@ -1444,6 +1444,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
+        // Pow operations might be special
+        if (op.opNum() == 7) {
+            if (op.y() != null && op.y().isScalar()) {
+                Nd4j.getExecutioner().commit();
+                op.setY(Nd4j.valueArrayOf(op.x().shape(), op.y().getDouble(0)));
+                Nd4j.getExecutioner().commit();
+            }
+        }
+
         CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
