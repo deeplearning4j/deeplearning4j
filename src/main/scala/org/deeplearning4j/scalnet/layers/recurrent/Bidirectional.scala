@@ -18,15 +18,13 @@ package org.deeplearning4j.scalnet.layers.recurrent
 
 import org.deeplearning4j.nn.conf.layers
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional.Mode
-import org.deeplearning4j.scalnet.layers.core.Layer
+import org.deeplearning4j.scalnet.layers.core.{ Layer, WrapperLayer }
 
-class Bidirectional(layer: Layer, mode: Mode, override val name: String = "") extends Layer {
+class Bidirectional(layer: Layer, mode: Mode, override val name: String = "") extends WrapperLayer {
 
-  override def compile: layers.Layer = new layers.recurrent.Bidirectional(mode, layer.compile)
+  val underlying: Layer = layer
 
-  override def inputShape: List[Int] = List.empty
-
-  override def outputShape: List[Int] = List.empty
+  override def compile: layers.Layer = new layers.recurrent.Bidirectional(mode, underlying.compile)
 
 }
 
