@@ -56,6 +56,11 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(matrix_set_diag, 2, 1, false, 0, 0);
 
         /**
+         * Returns a batched matrix tensor with diagonal values given (as TF.matrix_diag).
+         */
+        DECLARE_CUSTOM_OP(matrix_diag, 1, 1, false, 0, 0);
+
+        /**
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
         * - when a and b are both >  maxValue (3000.), then apply Gauss-Legendre quadrature method
@@ -92,6 +97,17 @@ namespace nd4j {
          * Returns a diagonal tensor with a given diagonal values. Given a diagonal, this operation returns a tensor with the diagonal and everything else padded with zeros.
          */
         DECLARE_CUSTOM_OP(diag_part, 1, 1, false, 0, 0);
+
+        /**
+         * Returns a diagonal vector for any submatricies with in a given tensor. 
+         * It is an op inverse to matrix_set_giag.
+         * Using input tensor as batched 2D diagonals flat them to vector (1D) with diagonal values.
+         *
+         * Input : batched tensor with rank >=2
+         * Output: tensor with rank lesser by 1 from input 
+         */
+        DECLARE_CUSTOM_OP(matrix_diag_part, 1, 1, false, 0, 0);
+
 
         /**
          * This operation takes 2 arrays: original values, and values to be excluded. And returns 2 arrays: values left after exclusion, and indices in original array for surivals.

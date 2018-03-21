@@ -273,3 +273,74 @@ TEST_F(DeclarableOpsTests7, TEST_WHERE_SCALAR) {
 
 
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestMatrixDiagPart_1) {
+    NDArray<double> x('c', {2, 4, 4}, {1., 0., 0., 0., 0., 2., 0., 0., 0., 0., 3., 0., 0., 0., 0., 4.,
+                                       5., 0., 0., 0., 0., 6., 0., 0., 0., 0., 7., 0., 0., 0., 0., 8.});
+    NDArray<double> z('c', {2, 4}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0});
+
+    nd4j::ops::matrix_diag_part<double> op;
+
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(z.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestMatrixDiagPart_2) {
+    NDArray<double> x('c', {2, 3, 4}, {1., 0., 0., 0., 0., 2., 0., 0., 0., 0., 3., 0.,
+                                       5., 0., 0., 0., 0., 6., 0., 0., 0., 0., 7., 0.});
+    NDArray<double> z('c', {2, 3}, {1.0, 2.0, 3.0, 5.0, 6.0, 7.0});
+
+    nd4j::ops::matrix_diag_part<double> op;
+
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(z.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestMatrixDiag_1) {
+    NDArray<double> z('c', {2, 4, 4}, {1., 0., 0., 0., 0., 2., 0., 0., 0., 0., 3., 0., 0., 0., 0., 4.,
+                                       5., 0., 0., 0., 0., 6., 0., 0., 0., 0., 7., 0., 0., 0., 0., 8.});
+    NDArray<double> x('c', {2, 4}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0});
+
+    nd4j::ops::matrix_diag<double> op;
+
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(z.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestMatrixDiag_2) {
+    NDArray<double> z('c', {2, 3, 3}, {1., 0., 0., 
+                                       0., 2., 0., 
+                                       0., 0., 3.,
+                                            5., 0., 0., 
+                                            0., 6., 0.,
+                                            0., 0., 7.});
+    NDArray<double> x('c', {2, 3}, {1.0, 2.0, 3.0, 5.0, 6.0, 7.0});
+
+    nd4j::ops::matrix_diag<double> op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(z.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
