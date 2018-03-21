@@ -20,14 +20,9 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.conf.{ MultiLayerConfiguration, NeuralNetConfiguration, Updater }
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
-import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.core.{ Layer, Node }
 import org.deeplearning4j.scalnet.logging.Logging
-import org.nd4j.linalg.dataset.api.DataSet
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-
-import scala.collection.JavaConverters._
 
 /**
   * Simple DL4J-style sequential neural net architecture with one input
@@ -63,22 +58,6 @@ class NeuralNet(inputType: Option[InputType], miniBatch: Boolean, biasInit: Doub
     val conf: MultiLayerConfiguration = listBuilder.build()
     model = new MultiLayerNetwork(conf)
     model.init()
-  }
-
-  override def fit(iter: DataSetIterator, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
-    model.setListeners(listeners.asJavaCollection)
-    for (epoch <- 0 until nbEpoch) {
-      logger.info("Epoch " + epoch)
-      model.fit(iter)
-    }
-  }
-
-  override def fit(iter: DataSet, nbEpoch: Int, listeners: List[IterationListener]): Unit = {
-    model.setListeners(listeners.asJavaCollection)
-    for (epoch <- 0 until nbEpoch) {
-      logger.info("Epoch " + epoch)
-      model.fit(iter)
-    }
   }
 
 }

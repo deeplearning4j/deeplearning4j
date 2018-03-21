@@ -23,7 +23,7 @@ import org.scalatest.{ Matchers, WordSpec }
 import scala.util.Try
 
 /**
-  * A suite of basic, short and non cpu-heavy integration tests which only test if example is run without errors
+  * A suite of basic, short and non cpu-heavy integration tests. Only test if example is run without errors.
   */
 class DL4Test extends WordSpec with Matchers {
 

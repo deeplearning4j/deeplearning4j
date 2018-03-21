@@ -15,8 +15,8 @@ val mvnInstall = Seq("mvn", "install", "-q", "-f", "sbt-pom.xml")
 val operatingSystem = sys.props("os.name").toLowerCase.substring(0, 3)
 update := {
   operatingSystem match {
-    case "win" => Seq("cmd", "/C") ++ mvnInstall !; update.value
-    case _     => mvnInstall !; update.value
+    case "win" => { Seq("cmd", "/C") ++ mvnInstall !; update.value }
+    case _     => { mvnInstall !; update.value }
   }
 }
 
@@ -26,7 +26,6 @@ libraryDependencies ++= {
   val logback = "1.2.3"
   val scalaCheck = "1.13.5"
   val scalaTest = "3.0.5"
-  val slf4j = "1.7.25"
 
   Seq(
     "org.deeplearning4j" % "deeplearning4j-core" % dl4j,
@@ -63,7 +62,7 @@ lazy val standardSettings = Seq(
   )
 )
 
-parallelExecution in ThisBuild := false
+parallelExecution in Test := false
 scalafmtOnCompile in ThisBuild := true
 scalafmtTestOnCompile in ThisBuild := true
 test in assembly := {}
@@ -76,5 +75,6 @@ lazy val root = (project in file("."))
   .enablePlugins(AutomateHeaderPlugin)
   .settings(standardSettings)
   .settings(
-    name := "ScalNet"
+    name := "ScalNet",
+    fork := true
   )
