@@ -395,6 +395,74 @@ public class SameDiffTests {
     }
 
     @Test
+
+    public void testShape() {
+        SameDiff sameDiff = SameDiff.create();
+        int[] shape = new int[]{2, 3};
+        SDVariable x = sameDiff.var("x", shape);
+        SDVariable result = sameDiff.shape(x);
+        assertArrayEquals(result.eval().toIntVector(), shape);
+}
+    @Test
+    public void testGather() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
+        SDVariable x = sameDiff.var("x", arr);
+        SDVariable result1 = sameDiff.gather(x, 0, new int[]{1, 0});
+        SDVariable result2 = sameDiff.gather(x, 1, new int[]{1, 0});
+        INDArray expected1 = Nd4j.create(new float[]{3, 4, 1, 2}, new int[]{2, 2});
+        INDArray expected2 = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
+        assertEquals(expected1, result1.eval());
+        assertEquals(expected2, result2.eval());
+
+    }
+
+    @Test
+    public void testGatherNd() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 24, 24)).reshape(2, 3, 4);
+        INDArray arr2 = Nd4j.create(new float[]{1, 2, 3, 0, 1, 3, 1, 0, 2}, new int[]{3, 3});
+        SDVariable x = sameDiff.var("x", arr1);
+        SDVariable idxs = sameDiff.var("idxs", arr2);
+        SDVariable result = sameDiff.gatherNd(x, idxs);
+        // build expected output array
+        INDArray expected  = Nd4j.zeros(3);
+        for (int i=0; i<3; i++){
+            INDArray idx = arr2.get(NDArrayIndex.point(i));
+            expected.get(NDArrayIndex.point(i)).assign(
+                    arr1.get(NDArrayIndex.point(idx.getInt(0)),
+                            NDArrayIndex.point(idx.getInt(1)),
+                            NDArrayIndex.point(idx.getInt(2))));
+            }
+        assertEquals(expected, result.eval());
+        }
+
+    @Test
+    public void testStack() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.stack(new SDVariable[]{x1, x2}, 1);
+        assertArrayEquals(new int[]{3, 2, 2}, result.eval().shape());
+    }
+
+    @Test
+    public void testUnStack() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable stacked = sameDiff.stack(new SDVariable[]{x1, x2}, 1);
+        SDVariable[] result = sameDiff.unstack(stacked, 1);
+        assertEquals(arr1, result[0].eval());
+        assertEquals(arr2, result[1].eval());
+
+    }
+
+    @Test
     public void testPermute() {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
@@ -412,7 +480,7 @@ public class SameDiffTests {
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
         SDVariable result = sameDiff.concat(0, x1, x2);
-        assertArrayEquals(new int[]{2, 4}, result.getShape());
+        assertArrayEquals(new int[]{2, 4}, result.eval().shape());
 
     }
 
@@ -422,7 +490,7 @@ public class SameDiffTests {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.tile(x, new int[]{2, 2});
-        assertArrayEquals(new int[]{2, 8}, result.getShape());
+        assertArrayEquals(new int[]{2, 8}, result.eval().shape());
         INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
         INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
         assertEquals(expected, result.eval());
