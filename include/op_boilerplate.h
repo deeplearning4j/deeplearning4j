@@ -1551,6 +1551,8 @@ struct __registratorDouble_##NAME {\
 
 #endif // CUDACC
 
+#define CHECK_ALLOC(PTR, MSG) if (PTR == nullptr) { nd4j_printf("%s\n", MSG); throw std::bad_alloc(); };
+
 #define LAMBDA_H(X, ...) [__VA_ARGS__] (float16 X) -> float16
 #define LAMBDA_HH(X, Y, ...) [__VA_ARGS__] (float16 X, float16 Y) -> float16
 

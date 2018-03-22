@@ -451,6 +451,9 @@ private:
 public:
 	ScalarShapeInformation(cudaStream_t stream) {
 		int *scalarDimensionBuff = (int *) malloc(sizeof(int));
+
+		CHECK_ALLOC(scalarDimensionBuff, "Failed to allocate ShapeInfoBuffer");	
+
 		scalarDimensionBuff[0] = MAX_DIMENSION;
 		scalarDimension = nd4j::buffer::createBuffer(scalarDimensionBuff,1, stream);
 		scalarShapeInfo = createScalarBuffer(stream);
@@ -494,6 +497,9 @@ class ScalarInfo {
 public:
 	ScalarInfo(cudaStream_t stream) {
 		T *scalarResult = (T*)malloc(sizeof(T));
+
+		CHECK_ALLOC(scalarResult, "Failed to allocate new scalar buffer");
+
 		shapeInfo = new ScalarShapeInformation(stream);
 		scalarData = nd4j::buffer::createBuffer(scalarResult,1, stream);
 		streamRef = stream;
@@ -4505,6 +4511,9 @@ Nd4jPointer NativeOps::createContext() {
 
 Nd4jPointer NativeOps::createStream() {
 	Nd4jPointer nativeStream = (Nd4jPointer) malloc(sizeof(cudaStream_t));
+
+	CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream");
+
 	cudaError_t result = cudaStreamCreate((cudaStream_t *) &nativeStream);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -4514,6 +4523,9 @@ Nd4jPointer NativeOps::createStream() {
 
 Nd4jPointer NativeOps::createEvent() {
 	Nd4jPointer nativeEvent= (Nd4jPointer) malloc(sizeof(cudaEvent_t));
+
+	CHECK_ALLOC(nativeEvent, "Failed to allocate new CUDA event buffer");
+
 	cudaError_t result = cudaEventCreateWithFlags((cudaEvent_t *) &nativeEvent, cudaEventDisableTiming);
 	checkCudaErrors(result);
 	if (result != 0)

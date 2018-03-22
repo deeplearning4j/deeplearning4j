@@ -29,7 +29,11 @@ namespace nd4j {
 
             return ws->allocateBytes((Nd4jIndex) i);
         } else {
-            return malloc(i);
+            auto p = malloc(i);
+            
+            CHECK_ALLOC(p, "Failed to allocate new NDArray");
+
+            return p;
         }
     }
 

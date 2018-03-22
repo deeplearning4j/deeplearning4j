@@ -5,6 +5,7 @@
 //
 
 
+#include <op_boilerplate.h>
 #include <atomic>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,8 +36,7 @@ namespace nd4j {
             if (initialSize > 0) {
                 this->_ptrHost = (char *) malloc(initialSize);
 
-                if (this->_ptrHost == nullptr)
-                    throw "Workspace allocation failed";
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
 
                 memset(this->_ptrHost, 0, initialSize);
                 this->_allocatedHost = true;
@@ -56,6 +56,9 @@ namespace nd4j {
                     free((void *)this->_ptrHost);
 
                 this->_ptrHost =(char *) malloc(bytes);
+
+                CHECK_ALLOC(this->_ptrHost, "Failed to allocate new workspace");
+
                 memset(this->_ptrHost, 0, bytes);
                 this->_currentSize = bytes;
                 this->_allocatedHost = true;
@@ -113,6 +116,8 @@ namespace nd4j {
                 this->_mutexAllocation.unlock();
 
                 void *p = malloc(numBytes);
+
+                CHECK_ALLOC(p, "Failed to allocate new workspace");
 
                 _mutexSpills.lock();
                 _spills.push_back(p);
