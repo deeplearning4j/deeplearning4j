@@ -181,9 +181,6 @@ public class ModelSerializer {
     }
 
 
-
-
-
     /**
      * Load a multi layer network from a file
      *
@@ -325,6 +322,8 @@ public class ModelSerializer {
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater)
             throws IOException {
+        checkInputStream(is);
+
         File tmpFile = null;
         try{
             tmpFile = File.createTempFile("restore", "multiLayer");
@@ -333,6 +332,7 @@ public class ModelSerializer {
             IOUtils.copy(is, bos);
             bos.flush();
             IOUtils.closeQuietly(bos);
+            checkTempFileFromInputStream(tmpFile);
             return restoreMultiLayerNetwork(tmpFile, loadUpdater);
         } finally {
             if(tmpFile != null){
@@ -409,6 +409,8 @@ public class ModelSerializer {
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater)
             throws IOException {
+        checkInputStream(is);
+
         File tmpFile = null;
         try{
             tmpFile = File.createTempFile("restore", "compGraph");
@@ -417,6 +419,7 @@ public class ModelSerializer {
             IOUtils.copy(is, bos);
             bos.flush();
             IOUtils.closeQuietly(bos);
+            checkTempFileFromInputStream(tmpFile);
             return restoreComputationGraph(tmpFile, loadUpdater);
         } finally {
             if(tmpFile != null){
@@ -729,6 +732,8 @@ public class ModelSerializer {
      * @return the loaded normalizer
      */
     public static <T extends Normalizer> T restoreNormalizerFromInputStream(InputStream is) throws IOException {
+        checkInputStream(is);
+
         File tmpFile = null;
         try {
             tmpFile = File.createTempFile("restore", "normalizer");
@@ -737,6 +742,7 @@ public class ModelSerializer {
             IOUtils.copy(is, bufferedOutputStream);
             bufferedOutputStream.flush();
             IOUtils.closeQuietly(bufferedOutputStream);
+            checkTempFileFromInputStream(tmpFile);
             return restoreNormalizerFromFile(tmpFile);
         } finally {
             if(tmpFile != null){
@@ -772,6 +778,31 @@ public class ModelSerializer {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    private static void checkInputStream(InputStream inputStream) throws IOException {
+        int available;
+        try{
+            //InputStream.available(): A subclass' implementation of this method may choose to throw an IOException
+            // if this input stream has been closed by invoking the close() method.
+            available = inputStream.available();
+        } catch (IOException e){
+            throw new IOException("Cannot read from stream: stream may have been closed or is attempting to be read from" +
+                    "multiple times?", e);
+        }
+        if(available <= 0){
+            throw new IOException("Cannot read from stream: stream may have been closed or is attempting to be read from" +
+                    "multiple times?");
+        }
+    }
+
+    private static void checkTempFileFromInputStream(File f) throws IOException {
+        if (f.length() <= 0) {
+            throw new IOException("Error reading from input stream: temporary file is empty after copying entire stream." +
+                    " Stream may have been closed before reading, is attempting to be used multiple times, or does not" +
+                    " point to a model file?");
         }
     }
 }
