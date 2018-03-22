@@ -125,7 +125,7 @@ public class FileSplit extends BaseInputSplit {
         try {
             f.createNewFile();
         } catch (IOException e) {
-            e.printStackTrace();
+           throw new IllegalStateException(e);
         }
 
         uriStrings.add(location);
@@ -157,7 +157,7 @@ public class FileSplit extends BaseInputSplit {
                 //since locations are dynamically generated, allow
                 uriStrings.add(writeFile.toURI().toString());
             } catch (IOException e) {
-                e.printStackTrace();
+               throw new IllegalStateException(e);
             }
 
 
@@ -167,14 +167,14 @@ public class FileSplit extends BaseInputSplit {
     @Override
     public OutputStream openOutputStreamFor(String location) throws Exception {
         FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
-                new FileOutputStream(new File(location));
+                new FileOutputStream(new File(URI.create(location)));
         return ret;
     }
 
     @Override
     public InputStream openInputStreamFor(String location) throws Exception {
         FileInputStream ret = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
-                new FileInputStream(new File(location));
+                new FileInputStream(new File(URI.create(location)));
         return ret;
     }
 
