@@ -18,11 +18,13 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -330,6 +332,11 @@ public class ModelSerializerTest extends BaseDL4JTest {
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("may have been closed"));
         }
+
+        //Also test reading  both model and normalizer from stream (correctly)
+        Pair<MultiLayerNetwork,Normalizer> pair = ModelSerializer.restoreMultiLayerNetworkAndNormalizer(new FileInputStream(tempFile), true);
+        assertEquals(net.params(), pair.getFirst().params());
+        assertNotNull(pair.getSecond());
     }
 
 
@@ -374,5 +381,10 @@ public class ModelSerializerTest extends BaseDL4JTest {
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("may have been closed"));
         }
+
+        //Also test reading  both model and normalizer from stream (correctly)
+        Pair<ComputationGraph,Normalizer> pair = ModelSerializer.restoreComputationGraphAndNormalizer(new FileInputStream(tempFile), true);
+        assertEquals(net.params(), pair.getFirst().params());
+        assertNotNull(pair.getSecond());
     }
 }

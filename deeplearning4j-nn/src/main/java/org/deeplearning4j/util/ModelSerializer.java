@@ -20,6 +20,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.util.Enumeration;
@@ -295,11 +296,13 @@ public class ModelSerializer {
 
 
     /**
-     * Load a MultiLayerNetwork from InputStream from a file
+     * Load a MultiLayerNetwork from InputStream from an input stream<br>
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
      *
      * @param is the inputstream to load from
      * @return the loaded multi layer network
      * @throws IOException
+     * @see #restoreMultiLayerNetworkAndNormalizer(InputStream, boolean)
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater)
             throws IOException {
@@ -307,13 +310,7 @@ public class ModelSerializer {
 
         File tmpFile = null;
         try{
-            tmpFile = File.createTempFile("restore", "multiLayer");
-            tmpFile.deleteOnExit();
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-            IOUtils.copy(is, bos);
-            bos.flush();
-            IOUtils.closeQuietly(bos);
-            checkTempFileFromInputStream(tmpFile);
+            tmpFile = tempFileFromStream(is);
             return restoreMultiLayerNetwork(tmpFile, loadUpdater);
         } finally {
             if(tmpFile != null){
@@ -323,10 +320,14 @@ public class ModelSerializer {
     }
 
     /**
-     * Restore a multi layer network from an input stream
+     * Restore a multi layer network from an input stream<br>
+     * * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     *
      * @param is the input stream to restore from
      * @return the loaded multi layer network
      * @throws IOException
+     * @see #restoreMultiLayerNetworkAndNormalizer(InputStream, boolean)
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
         return restoreMultiLayerNetwork(is, true);
@@ -354,6 +355,45 @@ public class ModelSerializer {
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path, boolean loadUpdater)
             throws IOException {
         return restoreMultiLayerNetwork(new File(path), loadUpdater);
+    }
+
+    /**
+     * Restore a MultiLayerNetwork and Normalizer (if present - null if not) from the InputStream.
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     * @param is          Input stream to read from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the stream
+     */
+    public static Pair<MultiLayerNetwork, Normalizer> restoreMultiLayerNetworkAndNormalizer(
+            @NonNull InputStream is, boolean loadUpdater) throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try {
+            tmpFile = tempFileFromStream(is);
+            return restoreMultiLayerNetworkAndNormalizer(tmpFile, loadUpdater);
+        } finally {
+            if (tmpFile != null) {
+                tmpFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Restore a MultiLayerNetwork and Normalizer (if present - null if not) from a File
+     *
+     * @param file        File to read the model and normalizer from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the File
+     */
+    public static Pair<MultiLayerNetwork, Normalizer> restoreMultiLayerNetworkAndNormalizer(@NonNull File file, boolean loadUpdater)
+            throws IOException {
+        MultiLayerNetwork net = restoreMultiLayerNetwork(file, loadUpdater);
+        Normalizer norm = restoreNormalizerFromFile(file);
+        return new Pair<>(net, norm);
     }
 
     /**
@@ -393,13 +433,7 @@ public class ModelSerializer {
 
         File tmpFile = null;
         try{
-            tmpFile = File.createTempFile("restore", "compGraph");
-            tmpFile.deleteOnExit();
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-            IOUtils.copy(is, bos);
-            bos.flush();
-            IOUtils.closeQuietly(bos);
-            checkTempFileFromInputStream(tmpFile);
+            tmpFile = tempFileFromStream(is);
             return restoreComputationGraph(tmpFile, loadUpdater);
         } finally {
             if(tmpFile != null){
@@ -428,6 +462,45 @@ public class ModelSerializer {
      */
     public static ComputationGraph restoreComputationGraph(@NonNull File file) throws IOException {
         return restoreComputationGraph(file, true);
+    }
+
+    /**
+     * Restore a ComputationGraph and Normalizer (if present - null if not) from the InputStream.
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     * @param is          Input stream to read from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the stream
+     */
+    public static Pair<ComputationGraph, Normalizer> restoreComputationGraphAndNormalizer(
+            @NonNull InputStream is, boolean loadUpdater) throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try {
+            tmpFile = tempFileFromStream(is);
+            return restoreComputationGraphAndNormalizer(tmpFile, loadUpdater);
+        } finally {
+            if (tmpFile != null) {
+                tmpFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Restore a ComputationGraph and Normalizer (if present - null if not) from a File
+     *
+     * @param file        File to read the model and normalizer from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the File
+     */
+    public static Pair<ComputationGraph, Normalizer> restoreComputationGraphAndNormalizer(@NonNull File file, boolean loadUpdater)
+            throws IOException {
+        ComputationGraph net = restoreComputationGraph(file, loadUpdater);
+        Normalizer norm = restoreNormalizerFromFile(file);
+        return new Pair<>(net, norm);
     }
 
     /**
@@ -699,13 +772,7 @@ public class ModelSerializer {
 
         File tmpFile = null;
         try {
-            tmpFile = File.createTempFile("restore", "normalizer");
-            tmpFile.deleteOnExit();
-            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
-            IOUtils.copy(is, bufferedOutputStream);
-            bufferedOutputStream.flush();
-            IOUtils.closeQuietly(bufferedOutputStream);
-            checkTempFileFromInputStream(tmpFile);
+            tmpFile = tempFileFromStream(is);
             return restoreNormalizerFromFile(tmpFile);
         } finally {
             if(tmpFile != null){
@@ -766,6 +833,25 @@ public class ModelSerializer {
             throw new IOException("Error reading from input stream: temporary file is empty after copying entire stream." +
                     " Stream may have been closed before reading, is attempting to be used multiple times, or does not" +
                     " point to a model file?");
+        }
+    }
+
+    private static File tempFileFromStream(InputStream is) throws IOException{
+        checkInputStream(is);
+        File tmpFile = File.createTempFile("dl4jModelSerializer", "bin");
+        try {
+            tmpFile.deleteOnExit();
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            IOUtils.copy(is, bufferedOutputStream);
+            bufferedOutputStream.flush();
+            IOUtils.closeQuietly(bufferedOutputStream);
+            checkTempFileFromInputStream(tmpFile);
+            return tmpFile;
+        } catch (IOException e){
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+            throw e;
         }
     }
 }
