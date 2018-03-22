@@ -19,10 +19,7 @@ package org.datavec.api.split;
 import org.datavec.api.io.filters.PathFilter;
 import org.datavec.api.util.files.ShuffledListIterator;
 import org.datavec.api.util.files.UriFromPathIterator;
-import org.datavec.api.writable.WritableType;
 
-import java.io.DataOutput;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -40,6 +37,16 @@ public abstract class BaseInputSplit implements InputSplit {
     protected List<String> uriStrings; //URIs, as a String, via toString() method (which includes file:/ etc)
     protected int[] iterationOrder;
     protected long length = 0;
+
+    @Override
+    public String addNewLocation() {
+        throw new UnsupportedOperationException("Unable to add new location.");
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        throw new UnsupportedOperationException("Unable to add new location.");
+    }
 
     @Override
     public URI[] locations() {

@@ -20,6 +20,7 @@ package org.datavec.api.records.writer;
 import org.datavec.api.conf.Configurable;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Writable;
 
 import java.io.Closeable;
@@ -37,16 +38,18 @@ public interface RecordWriter extends Closeable, Configurable {
     /**
      * Initialize a record writer with the given input split
      * @param inputSplit the input split to initialize with
+     * @param partitioner
      */
-    void initialize(InputSplit inputSplit) throws Exception;
+    void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception;
 
     /**
      * Initialize the record reader with the given configuration
      * and {@link InputSplit}
      * @param configuration the configuration to iniailize with
      * @param split the split to use
+     * @param partitioner
      */
-    void initialize(Configuration configuration, InputSplit split) throws Exception;
+    void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception;
 
     /**
      * Write a record

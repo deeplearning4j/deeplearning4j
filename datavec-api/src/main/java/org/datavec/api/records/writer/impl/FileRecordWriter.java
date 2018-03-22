@@ -20,6 +20,7 @@ package org.datavec.api.records.writer.impl;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -49,6 +50,8 @@ public class FileRecordWriter implements RecordWriter {
     public final static String PATH = "org.datavec.api.records.writer.path";
 
     protected Charset encoding = DEFAULT_CHARSET;
+
+    protected Partitioner partitioner;
 
     protected Configuration conf;
 
@@ -83,14 +86,15 @@ public class FileRecordWriter implements RecordWriter {
     }
 
     @Override
-    public void initialize(InputSplit inputSplit) throws Exception {
+    public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
         out = new DataOutputStream(inputSplit.openOutputStreamFor(writeTo.getAbsolutePath()));
+        this.partitioner = partitioner;
     }
 
     @Override
-    public void initialize(Configuration configuration, InputSplit split) throws Exception {
+    public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
         setConf(configuration);
-        initialize(split);
+        initialize(split, partitioner);
     }
 
     @Override

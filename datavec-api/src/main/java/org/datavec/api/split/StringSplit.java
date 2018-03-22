@@ -34,7 +34,22 @@ public class StringSplit implements InputSplit {
     }
 
     @Override
-    public boolean needsBootStrapForWrite() {
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
         return false;
     }
 

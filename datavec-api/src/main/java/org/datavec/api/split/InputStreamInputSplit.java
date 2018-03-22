@@ -16,9 +16,9 @@
 
 package org.datavec.api.split;
 
-import org.datavec.api.writable.WritableType;
-
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -73,7 +73,22 @@ public class InputStreamInputSplit implements InputSplit {
     }
 
     @Override
-    public boolean needsBootStrapForWrite() {
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
         throw new UnsupportedOperationException();
     }
 

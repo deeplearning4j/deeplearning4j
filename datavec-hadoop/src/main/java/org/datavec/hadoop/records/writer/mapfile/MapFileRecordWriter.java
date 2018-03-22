@@ -20,6 +20,7 @@ import lombok.NonNull;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
@@ -158,12 +159,12 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
     }
 
     @Override
-    public void initialize(InputSplit inputSplit) throws Exception {
-        
+    public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
+
     }
 
     @Override
-    public void initialize(Configuration configuration, InputSplit split) throws Exception {
+    public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
 
     }
 

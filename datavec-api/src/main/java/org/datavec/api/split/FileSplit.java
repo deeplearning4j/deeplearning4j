@@ -20,7 +20,6 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.datavec.api.util.files.URIUtil;
-import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -29,10 +28,7 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 /**
  * File input split. Splits up a root directory in to files.
@@ -103,6 +99,7 @@ public class FileSplit extends BaseInputSplit {
                 for (int i = 0; i < iterationOrder.length; i++) {
                     iterationOrder[i] = i;
                 }
+
                 MathUtils.shuffleArray(iterationOrder, random);
             }
             for (File f : subFiles) {
@@ -118,7 +115,33 @@ public class FileSplit extends BaseInputSplit {
     }
 
     @Override
-    public boolean needsBootStrapForWrite() {
+    public String addNewLocation() {
+        return addNewLocation(new File(rootDir, UUID.randomUUID().toString()).toURI().toString());
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        File f = new File(URI.create(location));
+        try {
+            f.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        uriStrings.add(location);
+        ++length;
+        return location;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+        if (reset) {
+            initialize();
+        }
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
         return locations() == null ||
                 locations().length < 1
                 || locations().length == 1 && !locations()[0].isAbsolute();

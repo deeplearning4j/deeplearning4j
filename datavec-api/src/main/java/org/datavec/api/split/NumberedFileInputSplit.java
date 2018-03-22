@@ -60,7 +60,22 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
-    public boolean needsBootStrapForWrite() {
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+        //no-op (locations() is dynamic)
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
         return locations() == null ||
                 locations().length < 1
                 || locations().length == 1 && !locations()[0].isAbsolute();

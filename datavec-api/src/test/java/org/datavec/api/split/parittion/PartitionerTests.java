@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class PartitionerTests {
@@ -16,8 +17,10 @@ public class PartitionerTests {
         Partitioner partitioner = new NumberOfRecordsPartitioner();
         File tmpDir = Files.createTempDir();
         FileSplit fileSplit = new FileSplit(tmpDir);
+        assertTrue(fileSplit.needsBootstrapForWrite());
+        fileSplit.bootStrapForWrite();
         partitioner.init(fileSplit);
-        assertEquals(NumberOfRecordsPartitioner.DEFAULT_RECORDS_PER_FILE,partitioner.numPartitions());
+        assertEquals(1,partitioner.numPartitions());
     }
 
 }

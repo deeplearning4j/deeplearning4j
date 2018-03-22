@@ -41,7 +41,12 @@ public class CollectionInputSplit extends BaseInputSplit {
     }
 
     @Override
-    public boolean needsBootStrapForWrite() {
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
         return false;
     }
 

@@ -34,6 +34,29 @@ public interface InputSplit  {
 
 
     /**
+     * Add a new location with the name generated
+     *  by this input split/
+     */
+    String addNewLocation();
+
+    /**
+     * Add a new location to this input split
+     * (this  may do anything from updating an in memory location
+     * to creating a new file)
+     * @param location the location to add
+     */
+    String addNewLocation(String location);
+
+    /**
+     * Refreshes the split locations
+     * if needed in memory.
+     * (Think a few file gets added)
+     * @param reset
+     */
+    void updateSplitLocations(boolean reset);
+
+
+    /**
      * Returns true if this {@link InputSplit}
      * needs bootstrapping for writing.
      * A simple example of needing bootstrapping is for
@@ -42,7 +65,7 @@ public interface InputSplit  {
      * @return true if this input split needs bootstrapping for
      * writing to or not
      */
-    boolean needsBootStrapForWrite();
+    boolean needsBootstrapForWrite();
 
     /**
      * Bootstrap this input split for writing.

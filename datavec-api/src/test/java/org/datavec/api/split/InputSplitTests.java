@@ -15,6 +15,7 @@
  */
 package org.datavec.api.split;
 
+import com.google.common.io.Files;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
@@ -26,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -50,7 +52,12 @@ public class InputSplitTests {
             }
 
             @Override
-            public boolean needsBootStrapForWrite() {
+            public void updateSplitLocations(boolean reset) {
+
+            }
+
+            @Override
+            public boolean needsBootstrapForWrite() {
                 return false;
             }
 
@@ -110,4 +117,15 @@ public class InputSplitTests {
         assertEquals(1, samples4[0].length());
         assertEquals(1, samples4[1].length());
     }
+
+
+    @Test
+    public void testFileSplitBootstrap() {
+        File tmpDir = Files.createTempDir();
+        FileSplit boostrap = new FileSplit(tmpDir);
+        assertTrue(boostrap.needsBootstrapForWrite());
+        boostrap.bootStrapForWrite();
+        assertTrue(tmpDir.listFiles() != null);
+    }
+
 }

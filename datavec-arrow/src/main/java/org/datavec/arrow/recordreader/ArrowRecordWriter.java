@@ -3,6 +3,7 @@ package org.datavec.arrow.recordreader;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
@@ -24,12 +25,12 @@ public class ArrowRecordWriter implements RecordWriter {
     }
 
     @Override
-    public void initialize(InputSplit inputSplit) throws Exception {
+    public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
 
     }
 
     @Override
-    public void initialize(Configuration configuration, InputSplit split) throws Exception {
+    public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
         setConf(configuration);
     }
 
