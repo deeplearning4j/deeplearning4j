@@ -463,13 +463,14 @@ namespace nd4j {
         
         if (needAllocA) {
             tA = new nd4j::NDArray<T>(A->getBuffer(), A->getShapeInfo(), A->getWorkspace());
-            nd4j_printf("Matrix A was recreated from view.\n", "");
+            nd4j_verbose("Matrix A was recreated from view.\n", "");
         }
         else 
             tA = A; 
 
         if (needAllocB) {
             tB = new nd4j::NDArray<T>(B->getBuffer(), B->getShapeInfo(), B->getWorkspace());
+            nd4j_verbose("Matrix B was recreated from view.\n", "");
         }
         else 
             tB = B; 
