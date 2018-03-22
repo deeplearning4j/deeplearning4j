@@ -141,6 +141,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop) {
+        applyDropOutIfNecessary(training);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
