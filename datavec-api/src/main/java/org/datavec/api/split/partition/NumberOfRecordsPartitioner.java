@@ -72,12 +72,27 @@ public class NumberOfRecordsPartitioner implements Partitioner {
 
     @Override
     public OutputStream openNewStream() {
-        String newInput = inputSplit.addNewLocation();
-        try {
-            return inputSplit.openOutputStreamFor(newInput);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        if(currLocation >= locations.length - 1) {
+            String newInput = inputSplit.addNewLocation();
+            try {
+                OutputStream ret =  inputSplit.openOutputStreamFor(newInput);
+                this.current = ret;
+                return ret;
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
         }
+        else {
+            try {
+                OutputStream ret=  inputSplit.openOutputStreamFor(locations[currLocation].toString());
+                currLocation++;
+                this.current = ret;
+                return ret;
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
     }
 
     @Override
