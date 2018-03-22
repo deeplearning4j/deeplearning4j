@@ -25,6 +25,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
@@ -70,10 +71,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -466,7 +463,7 @@ public class WordVectorSerializer {
 
         writeWordVectors(vectors.lookupTable(), tempFileSyn0);
 
-        Files.copy(tempFileSyn0.toPath(), zipfile);
+        FileUtils.copyFile(tempFileSyn0, zipfile);
 
         // writing out syn1
         File tempFileSyn1 = File.createTempFile("word2vec", "1");
@@ -489,7 +486,7 @@ public class WordVectorSerializer {
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
 
-        Files.copy(tempFileSyn1.toPath(), zipfile);
+        FileUtils.copyFile(tempFileSyn1, zipfile);
 
         // writing out syn1
         File tempFileSyn1Neg = File.createTempFile("word2vec", "n");
@@ -512,7 +509,7 @@ public class WordVectorSerializer {
         ZipEntry zSyn1Neg = new ZipEntry("syn1Neg.txt");
         zipfile.putNextEntry(zSyn1Neg);
 
-        Files.copy(tempFileSyn1Neg.toPath(), zipfile);
+        FileUtils.copyFile(tempFileSyn1Neg, zipfile);
 
 
         File tempFileCodes = File.createTempFile("word2vec", "h");
@@ -534,7 +531,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileCodes.toPath(), zipfile);
+        FileUtils.copyFile(tempFileCodes, zipfile);
 
 
         File tempFileHuffman = File.createTempFile("word2vec", "h");
@@ -556,7 +553,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileHuffman.toPath(), zipfile);
+        FileUtils.copyFile(tempFileHuffman, zipfile);
 
         File tempFileFreqs = File.createTempFile("word2vec", "f");
         tempFileFreqs.deleteOnExit();
@@ -576,7 +573,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileFreqs.toPath(), zipfile);
+        FileUtils.copyFile(tempFileFreqs, zipfile);
 
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
@@ -613,7 +610,7 @@ public class WordVectorSerializer {
 
         writeWordVectors(vectors.lookupTable(), tempFileSyn0);
 
-        Files.copy(tempFileSyn0.toPath(), zipfile);
+        FileUtils.copyFile(tempFileSyn0, zipfile);
 
         // writing out syn1
         File tempFileSyn1 = File.createTempFile("paravec", "1");
@@ -636,7 +633,7 @@ public class WordVectorSerializer {
         ZipEntry zSyn1 = new ZipEntry("syn1.txt");
         zipfile.putNextEntry(zSyn1);
 
-        Files.copy(tempFileSyn1.toPath(), zipfile);
+        FileUtils.copyFile(tempFileSyn1, zipfile);
 
         File tempFileCodes = File.createTempFile("paravec", "h");
         tempFileCodes.deleteOnExit();
@@ -657,7 +654,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileCodes.toPath(), zipfile);
+        FileUtils.copyFile(tempFileCodes, zipfile);
 
 
         File tempFileHuffman = File.createTempFile("paravec", "h");
@@ -679,7 +676,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileHuffman.toPath(), zipfile);
+        FileUtils.copyFile(tempFileHuffman, zipfile);
 
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
@@ -713,7 +710,7 @@ public class WordVectorSerializer {
             }
         }
 
-        Files.copy(tempFileFreqs.toPath(), zipfile);
+        FileUtils.copyFile(tempFileFreqs, zipfile);
 
         zipfile.flush();
         zipfile.close();
@@ -747,9 +744,7 @@ public class WordVectorSerializer {
             ZipEntry labels = zipFile.getEntry("labels.txt");
             if (labels != null) {
                 InputStream stream = zipFile.getInputStream(labels);
-                Path tmpFile = Files.createTempFile("paravec", "1");
-                Files.copy(stream, tmpFile, StandardCopyOption.REPLACE_EXISTING);
-                try (BufferedReader reader = Files.newBufferedReader(tmpFile, StandardCharsets.UTF_8)) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         VocabWord word = vectors.getVocab().tokenFor(decodeB64(line.trim()));
@@ -804,22 +799,22 @@ public class WordVectorSerializer {
             ZipEntry syn0 = zipFile.getEntry("syn0.txt");
             InputStream stream = zipFile.getInputStream(syn0);
 
-            Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyInputStreamToFile(stream, tmpFileSyn0);
 
             ZipEntry syn1 = zipFile.getEntry("syn1.txt");
             stream = zipFile.getInputStream(syn1);
 
-            Files.copy(stream, Paths.get(tmpFileSyn1.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyInputStreamToFile(stream, tmpFileSyn1);
 
             ZipEntry codes = zipFile.getEntry("codes.txt");
             stream = zipFile.getInputStream(codes);
 
-            Files.copy(stream, Paths.get(tmpFileC.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyInputStreamToFile(stream, tmpFileC);
 
             ZipEntry huffman = zipFile.getEntry("huffman.txt");
             stream = zipFile.getInputStream(huffman);
 
-            Files.copy(stream, Paths.get(tmpFileH.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyInputStreamToFile(stream, tmpFileH);
 
             ZipEntry config = zipFile.getEntry("config.json");
             stream = zipFile.getInputStream(config);
@@ -893,7 +888,7 @@ public class WordVectorSerializer {
      */
     public static ParagraphVectors readParagraphVectors(InputStream stream) throws IOException {
         File tmpFile = File.createTempFile("restore", "paravec");
-        Files.copy(stream, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        FileUtils.copyInputStreamToFile(stream, tmpFile);
         return readParagraphVectors(tmpFile);
     }
 
@@ -2252,8 +2247,7 @@ public class WordVectorSerializer {
                 ZipEntry syn = zipFile.getEntry("syn0.txt");
                 InputStream stream = zipFile.getInputStream(syn);
 
-                Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-
+                FileUtils.copyInputStreamToFile(stream, tmpFileSyn0);
 
                 // now we're restoring configuration saved earlier
                 ZipEntry config = zipFile.getEntry("config.json");
@@ -2469,7 +2463,7 @@ public class WordVectorSerializer {
             ZipEntry syn0 = zipFile.getEntry("syn0.txt");
             InputStream stream = zipFile.getInputStream(syn0);
 
-            Files.copy(stream, Paths.get(tmpFileSyn0.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+            FileUtils.copyInputStreamToFile(stream, tmpFileSyn0);
             storage.clear();
 
             try (Reader reader = new CSVReader(tmpFileSyn0)) {
