@@ -18,8 +18,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -312,8 +310,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private BlockingQueue<MultiDataSet> queue;
         private MultiDataSetIterator iterator;
         private MultiDataSet terminator;
-        private AtomicBoolean isShutdown = new AtomicBoolean(false);
-        private AtomicLong internalCounter = new AtomicLong(0);
+        private boolean isShutdown = false; // locked around `this`
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
                         .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                         .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -382,13 +379,24 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 //log.info("Trying destroy...");
                 //if (useWorkspaces)
                 //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
-                isShutdown.set(true);
+                synchronized (this) {
+                    isShutdown = true;
+                    this.notifyAll();
+                }
             }
         }
 
         public void shutdown() {
-            while (!isShutdown.get())
-                LockSupport.parkNanos(100L);
+            synchronized (this) {
+                while (! isShutdown) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
 
             if (workspace != null) {
                 log.debug("Manually destroying AMDSI workspace");

@@ -22,6 +22,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.ec2.AmazonEC2;
 import com.amazonaws.services.ec2.model.*;
 import org.deeplearning4j.aws.s3.BaseS3;
+import org.deeplearning4j.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -168,11 +169,7 @@ public class Ec2BoxCreator extends BaseS3 {
 
     public void blockTillAllRunning() {
         while (!allRunning()) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            ThreadUtils.uncheckedSleep(1000);
             log.info("Not all created...");
         }
     }

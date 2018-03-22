@@ -10,8 +10,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import org.deeplearning4j.util.ThreadUtils;
 
 /**
  * This BlockingQueue implementation is suited only for symmetric gradients updates, and should NOT be used anywhere else.
@@ -130,7 +131,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         } else {
             // just wait, till last thread will set isDone to true
             while (!isDone.get())
-                LockSupport.parkNanos(1000L);
+                ThreadUtils.uncheckedSleep(1);
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
@@ -138,7 +139,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
             isFirst.set(true);
         } else {
             while (!isFirst.get())
-                LockSupport.parkNanos(1000L);
+                ThreadUtils.uncheckedSleep(1);
         }
 
         if (isDebug)
@@ -157,7 +158,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
         // we block until everyone else step forward
         while (step.get() == currentStep.get().get())
-            LockSupport.parkNanos(1000L);
+            ThreadUtils.uncheckedSleep(1);
 
         E object = peek();
 

@@ -1,6 +1,8 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
+
+import org.deeplearning4j.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,11 +136,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
                 if (iterator.hasNext())
                     isRunning.set(true);
                 else
-                    try {
-                        Thread.sleep(50);
-                    } catch (Exception e) {
-                        //
-                    }
+                    ThreadUtils.uncheckedSleep(50);
                 while (!shouldTerminate.get() && iterator.hasNext()) {
 
                     int cnt = 0;
@@ -156,10 +154,7 @@ public class PrefetchingSentenceIterator implements SentenceIterator {
                         }
                         //                            log.info("Lines added: [" + cnt + "], buffer size: [" + buffer.size() + "]");
                     } else
-                        try {
-                            Thread.sleep(10);
-                        } catch (Exception e) {
-                        }
+                        ThreadUtils.uncheckedSleep(10);
                 }
                 isRunning.set(false);
             }

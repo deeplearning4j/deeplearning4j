@@ -29,7 +29,6 @@ import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -41,7 +40,6 @@ public class DiskBasedQueue<E> implements Queue<E>, Serializable {
 
     private File dir;
     private Queue<String> paths = new ConcurrentLinkedDeque<>();
-    private ScheduledExecutorService executorService;
     private AtomicBoolean running = new AtomicBoolean(true);
     private Queue<E> save = new ConcurrentLinkedDeque<>();
 
@@ -72,23 +70,20 @@ public class DiskBasedQueue<E> implements Queue<E>, Serializable {
 
         dir.mkdir();
 
-
-        executorService = Executors.newSingleThreadScheduledExecutor();
-
-        executorService.execute(new Runnable() {
+        Thread t = Executors.defaultThreadFactory().newThread(new Runnable() {
             @Override
             public void run() {
                 while (running.get()) {
                     while (!save.isEmpty())
                         addAndSave(save.poll());
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+
+                    ThreadUtils.uncheckedSleep(1000);
                 }
             }
         });
+        t.setName("DiskBasedQueueSaver");
+        t.setDaemon(true);
+        t.start();
     }
 
     @Override

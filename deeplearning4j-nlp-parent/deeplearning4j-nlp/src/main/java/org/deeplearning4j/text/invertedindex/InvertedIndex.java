@@ -26,7 +26,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executor;
 
 /**
  * An inverted index for mapping words to documents
@@ -225,7 +225,7 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabels(Function<Pair<List<T>, Collection<String>>, Void> func, ExecutorService exec);
+    void eachDocWithLabels(Function<Pair<List<T>, Collection<String>>, Void> func, Executor exec);
 
 
     /**
@@ -233,12 +233,12 @@ public interface InvertedIndex<T extends SequenceElement> extends Serializable {
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDocWithLabel(Function<Pair<List<T>, String>, Void> func, ExecutorService exec);
+    void eachDocWithLabel(Function<Pair<List<T>, String>, Void> func, Executor exec);
 
     /**
      * Iterate over each document
      * @param func the function to apply
      * @param exec executor service for execution
      */
-    void eachDoc(Function<List<T>, Void> func, ExecutorService exec);
+    void eachDoc(Function<List<T>, Void> func, Executor exec);
 }
