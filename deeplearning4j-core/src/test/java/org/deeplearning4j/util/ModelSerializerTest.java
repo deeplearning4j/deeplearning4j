@@ -357,7 +357,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         ModelSerializer.addNormalizerToModel(tempFile, norm);
 
         InputStream is = new FileInputStream(tempFile);
-        ModelSerializer.restoreComputationGraph(is):
+        ModelSerializer.restoreComputationGraph(is);
 
         try{
             ModelSerializer.restoreNormalizerFromInputStream(is);
@@ -368,7 +368,7 @@ public class ModelSerializerTest extends BaseDL4JTest {
         }
 
         try{
-            ModelSerializer.restoreMultiLayerNetwork(is);
+            ModelSerializer.restoreComputationGraph(is);
             fail("Expected exception");
         } catch (Exception e){
             String msg = e.getMessage();

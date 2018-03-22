@@ -35,7 +35,6 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class ModelSerializer {
 
-    public static final String OLD_UPDATER_BIN = "updater.bin";
     public static final String UPDATER_BIN = "updaterState.bin";
     public static final String NORMALIZER_BIN = "normalizer.bin";
 
@@ -194,7 +193,6 @@ public class ModelSerializer {
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotOldUpdater = false;
         boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
@@ -240,21 +238,6 @@ public class ModelSerializer {
         }
 
         if (loadUpdater) {
-            //This can be removed a few releases after 0.4.1...
-            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-            if (oldUpdaters != null) {
-                InputStream stream = zipFile.getInputStream(oldUpdaters);
-                ObjectInputStream ois = new ObjectInputStream(stream);
-
-                try {
-                    updater = (Updater) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-
-                gotOldUpdater = true;
-            }
-
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
@@ -303,8 +286,6 @@ public class ModelSerializer {
 
             if (gotUpdaterState && updaterState != null) {
                 network.getUpdater().setStateViewArray(network, updaterState, false);
-            } else if (gotOldUpdater && updater != null) {
-                network.setUpdater(updater);
             }
             return network;
         } else
@@ -339,7 +320,6 @@ public class ModelSerializer {
                 tmpFile.delete();
             }
         }
-
     }
 
     /**
@@ -462,7 +442,6 @@ public class ModelSerializer {
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotOldUpdater = false;
         boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
@@ -509,20 +488,6 @@ public class ModelSerializer {
 
 
         if (loadUpdater) {
-            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-            if (oldUpdaters != null) {
-                InputStream stream = zipFile.getInputStream(oldUpdaters);
-                ObjectInputStream ois = new ObjectInputStream(stream);
-
-                try {
-                    updater = (ComputationGraphUpdater) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-
-                gotOldUpdater = true;
-            }
-
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
@@ -576,8 +541,6 @@ public class ModelSerializer {
 
             if (gotUpdaterState && updaterState != null) {
                 cg.getUpdater().setStateViewArray(updaterState);
-            } else if (gotOldUpdater && updater != null) {
-                cg.setUpdater(updater);
             }
             return cg;
         } else
