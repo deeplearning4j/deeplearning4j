@@ -14,5 +14,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(random_normal, 1, 1, true, 2, 0);
         DECLARE_CUSTOM_OP(random_bernoulli, 1, 1, true, 0, 1);
         DECLARE_CUSTOM_OP(random_exponential, 1, 1, true, 1, 0);
+        DECLARE_CUSTOM_OP(random_crop, 2, 1, false, 0, 0);
     }
 }
