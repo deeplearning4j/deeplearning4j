@@ -109,7 +109,6 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testWrite() throws Exception {
-
         List<List<Writable>> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10; i++) {
@@ -195,7 +194,6 @@ public class CSVRecordReaderTest {
 
     @Test
     public void testMeta() throws Exception {
-
         CSVRecordReader rr = new CSVRecordReader(0, ',');
         rr.initialize(new FileSplit(new ClassPathResource("iris.dat").getFile()));
 

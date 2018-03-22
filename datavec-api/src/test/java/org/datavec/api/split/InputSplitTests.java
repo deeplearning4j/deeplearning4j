@@ -21,10 +21,7 @@ import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
 import org.junit.Test;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Random;
@@ -53,6 +50,21 @@ public class InputSplitTests {
             }
 
             @Override
+            public boolean needsBootStrapForWrite() {
+                return false;
+            }
+
+            @Override
+            public void bootStrapForWrite() {
+
+            }
+
+            @Override
+            public OutputStream openOutputStreamFor(String location) throws Exception {
+                return null;
+            }
+
+            @Override
             public InputStream openInputStreamFor(String location) throws Exception {
                 return null;
             }
@@ -67,11 +79,6 @@ public class InputSplitTests {
                 return true;
             }
 
-            @Override
-            public void write(DataOutput out) throws IOException {}
-
-            @Override
-            public void readFields(DataInput in) throws IOException {}
         };
 
         Random random = new Random(42);

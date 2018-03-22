@@ -61,6 +61,13 @@ public class CSVRecordWriter extends FileRecordWriter {
     }
 
     @Override
+    public void writeBatch(List<List<Writable>> batch) throws IOException {
+        for(List<Writable> record : batch) {
+            write(record);
+        }
+    }
+
+    @Override
     public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             //Add new line before appending lines rather than after (avoids newline after last line)

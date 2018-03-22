@@ -19,6 +19,7 @@ package org.datavec.api.records.writer.impl;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -82,10 +83,33 @@ public class FileRecordWriter implements RecordWriter {
     }
 
     @Override
+    public void initialize(InputSplit inputSplit) throws Exception {
+        out = new DataOutputStream(inputSplit.openOutputStreamFor(writeTo.getAbsolutePath()));
+    }
+
+    @Override
+    public void initialize(Configuration configuration, InputSplit split) throws Exception {
+        setConf(configuration);
+        initialize(split);
+    }
+
+    @Override
     public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);
+        }
+    }
+
+    @Override
+    public void writeBatch(List<List<Writable>> batch) throws IOException {
+        for(List<Writable> record : batch) {
+            Text t = (Text) record.iterator().next();
+            try {
+                t.write(out);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
 
@@ -96,7 +120,7 @@ public class FileRecordWriter implements RecordWriter {
                 out.flush();
                 out.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException(e);
             }
 
         }

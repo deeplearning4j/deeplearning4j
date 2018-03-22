@@ -128,18 +128,36 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
-        val convertedSchema = toArrowSchema(inputSchema);
-        val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-        try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
-            ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
-            writer.start();
-            writer.writeBatch();
-            writer.end();
+       if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
+           val convertedSchema = toArrowSchema(inputSchema);
+           ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) recordBatch;
+           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,arrowWritableRecordBatch.getList(),recordBatch.size());
+               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(arrowWritableRecordBatch.getList(),convertedSchema.getFields()), newChannel(outputStream))) {
+               writer.start();
+               writer.writeBatch();
+               writer.end();
 
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+
+       }
+       else {
+           val convertedSchema = toArrowSchema(inputSchema);
+           val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
+               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
+               writer.start();
+               writer.writeBatch();
+               writer.end();
+
+
+           } catch (IOException e) {
+               e.printStackTrace();
+           }
+       }
+
     }
 
 

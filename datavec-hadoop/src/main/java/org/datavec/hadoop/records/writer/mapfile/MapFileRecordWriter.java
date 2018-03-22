@@ -17,12 +17,15 @@
 package org.datavec.hadoop.records.writer.mapfile;
 
 import lombok.NonNull;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -152,5 +155,20 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
         }
 
         return new RecordWritable(input);
+    }
+
+    @Override
+    public void initialize(InputSplit inputSplit) throws Exception {
+        
+    }
+
+    @Override
+    public void initialize(Configuration configuration, InputSplit split) throws Exception {
+
+    }
+
+    @Override
+    public void writeBatch(List<List<Writable>> batch) throws IOException {
+
     }
 }

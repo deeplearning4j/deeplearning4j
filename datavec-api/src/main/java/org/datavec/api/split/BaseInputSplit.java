@@ -73,30 +73,7 @@ public abstract class BaseInputSplit implements InputSplit {
         return 0;
     }
 
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * Samples the locations based on the PathFilter and splits the result into
@@ -138,8 +115,4 @@ public abstract class BaseInputSplit implements InputSplit {
         }
     }
 
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
 }

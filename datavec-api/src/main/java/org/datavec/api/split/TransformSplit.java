@@ -3,10 +3,7 @@ package org.datavec.api.split;
 import lombok.NonNull;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -65,14 +62,21 @@ public class TransformSplit extends BaseInputSplit {
         }
     }
 
+
+
     @Override
-    public void write(DataOutput out) throws IOException {
+    public boolean needsBootStrapForWrite() {
+        return false;
+    }
+
+    @Override
+    public void bootStrapForWrite() {
 
     }
 
     @Override
-    public void readFields(DataInput in) throws IOException {
-
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        return sourceSplit.openOutputStreamFor(location);
     }
 
     @Override

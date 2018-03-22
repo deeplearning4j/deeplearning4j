@@ -48,6 +48,7 @@ public class FileSplit extends BaseInputSplit {
     protected Random random;
     protected boolean randomize = false;
 
+
     protected FileSplit(File rootDir, String[] allowFormat, boolean recursive, Random random, boolean runMain) {
         this.allowFormat = allowFormat;
         this.recursive = recursive;
@@ -117,10 +118,41 @@ public class FileSplit extends BaseInputSplit {
     }
 
     @Override
+    public boolean needsBootStrapForWrite() {
+        return locations() == null ||
+                locations().length < 1
+                || locations().length == 1 && !locations()[0].isAbsolute();
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+        if(locations().length == 1 && !locations()[0].isAbsolute()) {
+            File parentDir = new File(locations()[0]);
+            File writeFile = new File(parentDir,"write-file");
+            try {
+                writeFile.createNewFile();
+                //since locations are dynamically generated, allow
+                uriStrings.add(writeFile.toURI().toString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
+                new FileOutputStream(new File(location));
+        return ret;
+    }
+
+    @Override
     public InputStream openInputStreamFor(String location) throws Exception {
-        FileInputStream fileInputStream = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
+        FileInputStream ret = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
                 new FileInputStream(new File(location));
-        return fileInputStream;
+        return ret;
     }
 
     @Override
@@ -142,27 +174,15 @@ public class FileSplit extends BaseInputSplit {
     }
 
 
-    @Override
-    public void write(DataOutput out) throws IOException {
 
-    }
 
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
 
     public File getRootDir() {
         return rootDir;
     }
 
     private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats,
-                    boolean recursive) {
+                                       boolean recursive) {
         IOFileFilter filter;
         if (allowedFormats == null) {
             filter = new RegexFileFilter(".*");

@@ -16,12 +16,8 @@
 
 package org.datavec.api.split;
 
-import org.datavec.api.writable.WritableType;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,6 +31,21 @@ public class StringSplit implements InputSplit {
 
     public StringSplit(String data) {
         this.data = data;
+    }
+
+    @Override
+    public boolean needsBootStrapForWrite() {
+        return false;
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        return null;
     }
 
     @Override
@@ -72,47 +83,10 @@ public class StringSplit implements InputSplit {
         return true;
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException {
-        out.write(data.getBytes());
-    }
 
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
 
     public String getData() {
         return data;
     }
 
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 }
