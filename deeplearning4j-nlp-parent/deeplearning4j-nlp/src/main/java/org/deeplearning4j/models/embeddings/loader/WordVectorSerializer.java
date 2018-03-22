@@ -578,7 +578,7 @@ public class WordVectorSerializer {
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
         //log.info("Current config: {}", vectors.getConfiguration().toJson());
-        writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
+        IOUtils.copy(vectors.getConfiguration().toJson(), zipfile, StandardCharsets.UTF_8);
 
         zipfile.flush();
         zipfile.close();
@@ -680,7 +680,7 @@ public class WordVectorSerializer {
 
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
-        writeEntry(new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes()), zipfile);
+        IOUtils.write(vectors.getConfiguration().toJson(), zipfile, StandardCharsets.UTF_8);
 
 
         ZipEntry labels = new ZipEntry("labels.txt");
@@ -690,7 +690,7 @@ public class WordVectorSerializer {
             if (word.isLabel())
                 builder.append(encodeB64(word.getLabel())).append("\n");
         }
-        writeEntry(new ByteArrayInputStream(builder.toString().trim().getBytes()), zipfile);
+        IOUtils.write(builder.toString().trim(), zipfile, StandardCharsets.UTF_8);
 
         ZipEntry hF = new ZipEntry("frequencies.txt");
         zipfile.putNextEntry(hF);
@@ -892,14 +892,6 @@ public class WordVectorSerializer {
         return readParagraphVectors(tmpFile);
     }
 
-    private static void writeEntry(InputStream inputStream, ZipOutputStream zipStream) throws IOException {
-        byte[] bytes = new byte[1024];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(bytes)) != -1) {
-            zipStream.write(bytes, 0, bytesRead);
-        }
-    }
-
     /**
      * This method allows you to read ParagraphVectors from externally originated vectors and syn1.
      * So, technically this method is compatible with any other w2v implementation
@@ -1005,8 +997,8 @@ public class WordVectorSerializer {
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
-        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
-            return readParagraphVectorsFromText(bis);
+        try (FileInputStream fis = new FileInputStream(file)) {
+            return readParagraphVectorsFromText(fis);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -1024,7 +1016,7 @@ public class WordVectorSerializer {
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
             ArrayList<String> labels = new ArrayList<>();
             ArrayList<INDArray> arrays = new ArrayList<>();
             VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
@@ -2400,8 +2392,7 @@ public class WordVectorSerializer {
         if (configuration == null)
             return null;
 
-        if (configuration != null && configuration.getTokenizerFactory() != null
-                        && !configuration.getTokenizerFactory().isEmpty()) {
+        if (configuration.getTokenizerFactory() != null && !configuration.getTokenizerFactory().isEmpty()) {
             try {
                 TokenizerFactory factory =
                                 (TokenizerFactory) Class.forName(configuration.getTokenizerFactory()).newInstance();
