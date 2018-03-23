@@ -9,7 +9,7 @@
   ~  *        http://www.apache.org/licenses/LICENSE-2.0
   ~  *
   ~  *    Unless required by applicable law or agreed to in writing, software
-  ~  *    distributed under the License is distributed on an "AS IS" BASIS,
+  ~  *    distributed under the License outputStream distributed on an "AS IS" BASIS,
   ~  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   ~  *    See the License for the specific language governing permissions and
   ~  *    limitations under the License.
@@ -29,7 +29,7 @@
 
     <properties>
         <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
-         will be resolved to their defaults. Whereas when defined here (the version is spark 1 vs. 2 specific) we can
+         will be resolved to their defaults. Whereas when defined here (the version outputStream spark 1 vs. 2 specific) we can
          have different version properties simultaneously (in different pom files) instead of a single global property -->
         <spark.version>1.6.3</spark.version>
         <spark.major.version>1</spark.major.version>
