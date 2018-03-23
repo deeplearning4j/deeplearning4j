@@ -29,6 +29,11 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     private OutputStream current;
 
     @Override
+    public int numRecordsWritten() {
+        return numRecordsSoFar;
+    }
+
+    @Override
     public int numPartitions() {
         //possible it's a directory
         if(locations.length < 2) {
@@ -66,13 +71,13 @@ public class NumberOfRecordsPartitioner implements Partitioner {
 
     @Override
     public boolean needsNewPartition() {
-        return numRecordsSoFar >= recordsPerFile;
+        return recordsPerFile > 0 && numRecordsSoFar >= recordsPerFile;
     }
 
     @Override
     public OutputStream openNewStream() {
         //only append when directory
-        if(currLocation >= locations.length - 1 && locations.length >= 1 && !locations[0].isAbsolute()) {
+        if(currLocation >= locations.length - 1 && locations.length >= 1 && needsNewPartition()) {
             String newInput = inputSplit.addNewLocation();
             try {
                 OutputStream ret =  inputSplit.openOutputStreamFor(newInput);

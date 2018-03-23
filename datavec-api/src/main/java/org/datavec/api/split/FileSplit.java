@@ -16,6 +16,7 @@
 
 package org.datavec.api.split;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
@@ -123,14 +124,21 @@ public class FileSplit extends BaseInputSplit {
         } else {
             // Lists one file
             String toString = URIUtil.fileToURI(rootDir).toString(); //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
-            uriStrings = Collections.singletonList(toString);
+            uriStrings = new ArrayList<>(1);
+            uriStrings.add(toString);
             length += rootDir.length();
         }
     }
 
     @Override
     public String addNewLocation() {
-        return addNewLocation(new File(rootDir, UUID.randomUUID().toString()).toURI().toString());
+        if(rootDir.isDirectory())
+            return addNewLocation(new File(rootDir, UUID.randomUUID().toString()).toURI().toString());
+        else {
+            //add a file in the same directory as the file with the same extension as the original file
+            return addNewLocation(new File(rootDir.getParent(), UUID.randomUUID().toString() + "." + FilenameUtils.getExtension(rootDir.getAbsolutePath())).toURI().toString());
+
+        }
     }
 
     @Override
@@ -139,7 +147,7 @@ public class FileSplit extends BaseInputSplit {
         try {
             f.createNewFile();
         } catch (IOException e) {
-           throw new IllegalStateException(e);
+            throw new IllegalStateException(e);
         }
 
         uriStrings.add(location);
@@ -171,7 +179,7 @@ public class FileSplit extends BaseInputSplit {
                 //since locations are dynamically generated, allow
                 uriStrings.add(writeFile.toURI().toString());
             } catch (IOException e) {
-               throw new IllegalStateException(e);
+                throw new IllegalStateException(e);
             }
 
 

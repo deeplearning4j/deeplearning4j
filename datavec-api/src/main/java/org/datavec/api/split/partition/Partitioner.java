@@ -13,6 +13,13 @@ import java.io.OutputStream;
 public interface Partitioner {
 
     /**
+     * Number of records written so far
+     *
+     * @return
+     */
+    int numRecordsWritten();
+
+    /**
      * Returns the number of partitions
      * @return
      */
