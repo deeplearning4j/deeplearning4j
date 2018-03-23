@@ -3,6 +3,7 @@
 //
 
 #include <ops/declarable/headers/common.h>
+#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 namespace nd4j {
     namespace ops {
@@ -179,6 +180,44 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(assign, 2, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(assign_bp, 3, 2, false, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x == _y ? (T) 1.0f : (T) 0.0f;
+         * 
+         */
+        DECLARE_CUSTOM_OP(equals, 2, 1, true, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x != _y ? (T) 1.0f : (T) 0.0f;
+         */
+        DECLARE_CUSTOM_OP(not_equals, 2, 1, true, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x <= _y ? (T) 1.0f : (T) 0.0f;
+         */
+        DECLARE_CUSTOM_OP(less_equal, 2, 1, true, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x >= _y ? (T) 1.0f : (T) 0.0f;
+         */
+        DECLARE_CUSTOM_OP(greater_equal, 2, 1, true, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x < _y ? (T) 1.0f : (T) 0.0f;
+         */
+        DECLARE_CUSTOM_OP(less, 2, 1, true, 0, 0);
+
+        /**
+         * This op takes 2 equally shaped arrays as input, and provides binary matrix as output.
+         * Math is: _x > _y ? (T) 1.0f : (T) 0.0f;
+         */
+        DECLARE_CUSTOM_OP(greater, 2, 1, true, 0, 0);
+
 
         DECLARE_CUSTOM_OP(meshgrid, -1, -1, false, 0, 0);
     }

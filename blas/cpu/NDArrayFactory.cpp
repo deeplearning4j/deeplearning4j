@@ -443,9 +443,9 @@ namespace nd4j {
         CBLAS_TRANSPOSE transA = CblasNoTrans, 
                         transB = CblasNoTrans;
 
-        M = cShape[0];
-        N = cShape[1];
-        K = aShape[1];
+        M = cShape[0]; // c.rows
+        N = cShape[1]; // c.columns
+        K = aShape[1]; // a.columns
 
         rOrder = 'f'; //aOrder;
 
@@ -485,8 +485,6 @@ namespace nd4j {
 // the lines in gemm.cpp for reference
 //        bool transAFlag = TransA == CblasTrans;
 //        bool transBFlag = TransB == CblasTrans;
-        transA = (aOrder == 'c'?CblasNoTrans:CblasTrans);
-        transB = (bOrder == 'c'?CblasTrans:CblasNoTrans);
 
         if (tB->ews() == -1) {
             pB = tB->dup('f');
@@ -501,14 +499,19 @@ namespace nd4j {
         else 
             pA = tA; //->dup('c');
         
-        lda = (transA?K:M);
-        ldb = (transB?K:N);
-        ldc = N;
+        lda = pA->ordering() == 'f' ? pA->rows() : pA->columns();
+        ldb = pB->ordering() == 'f' ? pB->rows() : pB->columns();
+        ldc = pC->rows();
+
+
+        transA = (pA->ordering() == 'c'? CblasTrans:CblasNoTrans);
+        transB = (pB->ordering() == 'c' ? CblasTrans:CblasNoTrans);
 
         // we'll use platform-specific gemm here eventually. maybe tomorrow.
         // TODO: put proper _gemm here
         if (BlasHelper::getInstance()->template hasGEMM<T>()) {
             nd4j_debug("Using provided GEMM pointer\n","");
+
             if (sizeof(T) == 4)
                 BlasHelper::getInstance()->sgemm()(CblasColMajor, transA, transB, M, N, K, (float) alpha, (float *) pA->getBuffer(), lda, (float *) pB->getBuffer(), ldb, (float) beta, (float *) pC->getBuffer(), ldc);
             else if (sizeof(T) == 8)

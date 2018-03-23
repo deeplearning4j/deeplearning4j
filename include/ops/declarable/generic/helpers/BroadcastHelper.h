@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#ifndef LIBND4J_BROADCAST_HELPER_H
+#define LIBND4J_BROADCAST_HELPER_H
+
 #include <NDArray.h>
 #include <NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
@@ -39,3 +42,5 @@ namespace nd4j {
         };
     }
 }
+
+#endif

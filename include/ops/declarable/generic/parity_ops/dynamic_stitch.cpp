@@ -1,5 +1,5 @@
 //
-//  @author raver119@gmail.com
+//  @author @shugeo
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -19,7 +19,7 @@ namespace ops {
         for (int e = 0; e < numOfData; e++) {
             NDArray<T>* data = INPUT_VARIABLE(numOfData + e);
             NDArray<T>* index = INPUT_VARIABLE(e);
-            REQUIRE_TRUE(data->lengthOf() == index->lengthOf(), 0, 
+            REQUIRE_TRUE(data->lengthOf() == index->lengthOf(), 0,
                 "dynamic_stitch: The length of proper index and data arrays should be equal. But %i and %i were given.", 
                 index->lengthOf(), data->lengthOf());
 

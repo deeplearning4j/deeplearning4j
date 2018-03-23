@@ -1,5 +1,5 @@
 //
-//  @author raver119@gmail.com
+//  @author @shugeo
 //
 
 #include <ops/declarable/CustomOperations.h>

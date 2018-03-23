@@ -324,6 +324,21 @@ TEST_F(NDArrayFactoryTests, tensordot_test_6) {
 }
 
 
+TEST_F(NDArrayFactoryTests, mmmulHelperAgain) {
+    NDArray<float> x('c', {128, 156});
+    NDArray<float> y('c', {156, 256});
+    NDArray<float> z('c', {128, 256});
+    NDArray<float> e('c', {128, 256});
+
+    x.assign(1.0f);
+    y.assign(1.0f);
+    e.assign(156.0f);
+
+    NDArrayFactory<float>::mmulHelper(&x, &y, &z);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+}
 
 
 

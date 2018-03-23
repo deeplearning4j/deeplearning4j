@@ -4,17 +4,18 @@
 //
 
 #include <gemm.h>
+#include <op_boilerplate.h>
 
 namespace nd4j {
     namespace blas {
 
         template <typename T>
-        int GEMM<T>::linearIndexC(int rows, int cols, int r, int c) {
+        int FORCEINLINE GEMM<T>::linearIndexC(int rows, int cols, int r, int c) {
             return (r * cols + c);
         }
 
         template <typename T>
-        int GEMM<T>::linearIndexF(int rows, int cols, int r, int c) {
+        int FORCEINLINE GEMM<T>::linearIndexF(int rows, int cols, int r, int c) {
             return (c * rows + r);
         }
 
@@ -62,9 +63,8 @@ namespace nd4j {
             }
 
 
-#pragma omp parallel for proc_bind(spread)
+#pragma omp parallel for simd collapse(2) proc_bind(close)
             for (int r = 0; r < M; r++) {
-                int aIdx;
                 for (int c = 0; c < N; c++) {
                     int zIdx = linearIndexF(M, N, r, c);
 
@@ -72,10 +72,11 @@ namespace nd4j {
 
                     if (alpha != (T) 0.0f) {
                         int bIdx; // = linearIndexF(K, N, 0, c);
+                        int aIdx;
 
                         for (int k = 0; k < K; k++) {
-                            aIdx = (transAFlag?linearIndexF(M, K, r, k):linearIndexC(M, K, r, k));
-                            bIdx = (transBFlag?linearIndexC(K, N, k, c):linearIndexF(K,N, k, c));
+                            aIdx = (transAFlag ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k));
+                            bIdx = (transBFlag ? linearIndexC(K, N, k, c) : linearIndexF(K,N, k, c));
                             dot += alpha * A[aIdx] * B[bIdx];//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
                         }
                     }

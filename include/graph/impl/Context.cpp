@@ -190,7 +190,7 @@ namespace nd4j {
 
             if (Environment::getInstance()->isDebugAndVerbose() && v != nullptr &&  v->getNDArray() != nullptr) {
                 std::string shape_ = ShapeUtils<T>::shapeAsString(*(v->getNDArray()));
-                nd4j_printf("Debug info for node_%i input[%i]; shape: %s; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), (float) v->getNDArray()->meanNumber());
+                nd4j_printf("Debug info for node_%i input[%i]; shape: %s; ews: %i; order: %i; mean value: [%f]\n", this->_nodeId, idx, shape_.c_str(), v->getNDArray()->ews(), v->getNDArray()->ordering(), (float) v->getNDArray()->meanNumber());
             }
 
             return v;
