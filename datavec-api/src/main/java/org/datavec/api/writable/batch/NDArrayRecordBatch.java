@@ -85,7 +85,7 @@ public class NDArrayRecordBatch extends AbstractWritableRecordBatch {
 
     private static INDArray getExample(int idx, INDArray from){
         INDArrayIndex[] idxs = new INDArrayIndex[from.rank()];
-        idxs[0] = NDArrayIndex.point(idx);
+        idxs[0] = NDArrayIndex.interval(idx, idx, true);    //Use interval to avoid collapsing point dimension
         for( int i=1; i<from.rank(); i++){
             idxs[i] = NDArrayIndex.all();
         }
