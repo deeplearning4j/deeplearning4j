@@ -16,7 +16,6 @@
 
 package org.datavec.image.recordreader;
 
-import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
@@ -226,7 +225,7 @@ public class TestImageRecordReader {
     private List<Writable> flatten(List<List<Writable>> input) {
         List<Writable> ret = new ArrayList<>();
         for(List<Writable> image : input) {
-            ret.add(image.get(0));
+            ret.addAll(image);
         }
 
         return ret;
