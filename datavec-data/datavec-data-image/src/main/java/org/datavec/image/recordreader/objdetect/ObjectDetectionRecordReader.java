@@ -101,7 +101,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
 
     @Override
     public List<Writable> next() {
-        return next(1);
+        return next(1).get(0);
     }
 
     @Override
@@ -179,7 +179,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
             exampleNum++;
         }
 
-        return Arrays.<Writable>asList(new NDArrayWritable(outImg), new NDArrayWritable(outLabel));
+        return Arrays.asList(Arrays.<Writable>asList(new NDArrayWritable(outImg), new NDArrayWritable(outLabel)));
     }
 
     private void label(Image image, List<ImageObject> objectsThisImg, INDArray outLabel, int exampleNum) {
