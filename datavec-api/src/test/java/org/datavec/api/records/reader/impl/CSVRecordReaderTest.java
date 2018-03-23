@@ -26,6 +26,7 @@ import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -130,7 +131,9 @@ public class CSVRecordReaderTest {
         Path p = Files.createTempFile("csvwritetest", "csv");
         p.toFile().deleteOnExit();
 
-        FileRecordWriter writer = new CSVRecordWriter(p.toFile());
+        FileRecordWriter writer = new CSVRecordWriter();
+        FileSplit fileSplit = new FileSplit(p.toFile());
+        writer.initialize(fileSplit,new NumberOfRecordsPartitioner());
         for (List<Writable> c : list) {
             writer.write(c);
         }

@@ -13,11 +13,16 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Output arrow records to an output stream.
+ *
+ * @author Adam Gibson
+ */
 public class ArrowRecordWriter implements RecordWriter {
 
     private Configuration configuration;
     private Schema schema;
-    private OutputStream to;
+    private Partitioner partitioner;
 
     public ArrowRecordWriter(Configuration configuration, Schema schema) {
         this.configuration = configuration;
@@ -26,6 +31,8 @@ public class ArrowRecordWriter implements RecordWriter {
 
     @Override
     public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
+        this.partitioner = partitioner;
+        partitioner.init(inputSplit);
 
     }
 
@@ -43,24 +50,17 @@ public class ArrowRecordWriter implements RecordWriter {
     public void writeBatch(List<List<Writable>> batch) throws IOException {
         if(batch instanceof ArrowWritableRecordBatch) {
             ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) batch;
-
+            ArrowConverter.writeRecordBatchTo(arrowWritableRecordBatch,schema,partitioner.currentOutputStream());
         }
         else {
-            ArrowConverter.writeRecordBatchTo(batch, schema, to);
+            ArrowConverter.writeRecordBatchTo(batch, schema, partitioner.currentOutputStream());
         }
 
-        to.flush();
+        partitioner.currentOutputStream().flush();
     }
 
     @Override
     public void close() {
-        if(to != null) {
-            try {
-                to.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     @Override

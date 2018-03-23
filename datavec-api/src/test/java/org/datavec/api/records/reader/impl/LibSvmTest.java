@@ -23,6 +23,7 @@ import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.records.writer.impl.misc.LibSvmRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
@@ -62,8 +63,9 @@ public class LibSvmTest {
         RecordReader libSvmRecordReader = new LibSvmRecordReader();
         libSvmRecordReader.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
 
-        RecordWriter writer = new LibSvmRecordWriter(out, true);
-        writer.setConf(conf);
+        RecordWriter writer = new LibSvmRecordWriter();
+        FileSplit fileSplit = new FileSplit(out);
+        writer.initialize(conf,fileSplit,new NumberOfRecordsPartitioner());
         List<List<Writable>> data = new ArrayList<>();
         while (libSvmRecordReader.hasNext()) {
             List<Writable> record = libSvmRecordReader.next();

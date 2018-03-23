@@ -34,17 +34,6 @@ import java.util.List;
 public class MatlabRecordWriter extends FileRecordWriter {
     public MatlabRecordWriter() {}
 
-    public MatlabRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
-
-    public MatlabRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public MatlabRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-    }
 
     @Override
     public void write(List<Writable> record) throws IOException {

@@ -50,6 +50,10 @@ public abstract class BaseInputSplit implements InputSplit {
 
     @Override
     public URI[] locations() {
+        if(uriStrings == null) {
+            uriStrings = new ArrayList<>();
+        }
+
         URI[] uris = new URI[uriStrings.size()];
         int i = 0;
         for (String s : uriStrings) {

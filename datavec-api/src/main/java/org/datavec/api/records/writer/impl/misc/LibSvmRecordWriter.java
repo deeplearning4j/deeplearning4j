@@ -45,21 +45,5 @@ public class LibSvmRecordWriter extends SVMLightRecordWriter {
         super();
     }
 
-    public LibSvmRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
 
-    public LibSvmRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public LibSvmRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-        setConf(conf);
-    }
-
-    @Override
-    public void setConf(Configuration conf) {
-        super.setConf(conf);
-    }
 }

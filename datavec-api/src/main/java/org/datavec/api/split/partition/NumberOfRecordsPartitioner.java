@@ -72,7 +72,8 @@ public class NumberOfRecordsPartitioner implements Partitioner {
 
     @Override
     public OutputStream openNewStream() {
-        if(currLocation >= locations.length - 1) {
+        //only append when directory
+        if(currLocation >= locations.length - 1 && locations.length >= 1 && !locations[0].isAbsolute()) {
             String newInput = inputSplit.addNewLocation();
             try {
                 OutputStream ret =  inputSplit.openOutputStreamFor(newInput);
@@ -97,6 +98,9 @@ public class NumberOfRecordsPartitioner implements Partitioner {
 
     @Override
     public OutputStream currentOutputStream() {
+        if(current == null) {
+            current = openNewStream();
+        }
         return current;
     }
 }

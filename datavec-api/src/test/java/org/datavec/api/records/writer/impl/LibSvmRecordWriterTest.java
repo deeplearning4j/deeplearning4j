@@ -21,6 +21,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.LibSvmRecordReader;
 import org.datavec.api.records.writer.impl.misc.LibSvmRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -131,9 +132,9 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
-            writer.setConf(configWriter);
-
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
+           FileSplit outputSplit = new FileSplit(tempFile);
+           writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             LibSvmRecordReader rr = new LibSvmRecordReader();
             rr.initialize(configReader, new FileSplit(inputFile));
             while (rr.hasNext()) {
@@ -184,11 +185,12 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "13.0,14.0,15.0,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -219,12 +221,13 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "2,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -255,14 +258,15 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "1,3 0:1.0 1:11.0 2:12.0 3:2.0 4:3.0";
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(LibSvmRecordWriter.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -281,12 +285,13 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }
@@ -302,12 +307,13 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 1);
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL, true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }
@@ -323,12 +329,13 @@ public class LibSvmRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN,0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN,1);
             configWriter.setBoolean(LibSvmRecordWriter.MULTILABEL,true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }

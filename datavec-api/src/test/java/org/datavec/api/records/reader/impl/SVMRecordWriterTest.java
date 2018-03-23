@@ -25,6 +25,7 @@ import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
@@ -82,7 +83,9 @@ public class SVMRecordWriterTest {
         if (out.exists())
             out.delete();
         out.deleteOnExit();
-        RecordWriter writer = new SVMLightRecordWriter(out, true);
+        FileSplit fileSplit = new FileSplit(out);
+        RecordWriter writer = new SVMLightRecordWriter();
+        writer.initialize(fileSplit,new NumberOfRecordsPartitioner());
         for (List<Writable> record : records)
             writer.write(record);
 

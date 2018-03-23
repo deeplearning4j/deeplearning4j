@@ -86,18 +86,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
 
     public SVMLightRecordWriter() {}
 
-    public SVMLightRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
 
-    public SVMLightRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public SVMLightRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-        setConf(conf);
-    }
 
     /**
      * Set DataVec configuration

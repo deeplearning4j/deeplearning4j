@@ -21,6 +21,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.NDArrayWritable;
@@ -129,9 +130,9 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
-            writer.setConf(configWriter);
-
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             SVMLightRecordReader rr = new SVMLightRecordReader();
             rr.initialize(configReader, new FileSplit(inputFile));
             while (rr.hasNext()) {
@@ -182,11 +183,12 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "13.0,14.0,15.0,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -217,12 +219,13 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "2,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -253,14 +256,15 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "1,3 0:1.0 1:11.0 2:12.0 3:2.0 4:3.0";
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_LABEL_INDEXING, true); // NOT STANDARD!
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
 
@@ -279,12 +283,13 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }
@@ -300,12 +305,13 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }
@@ -321,12 +327,13 @@ public class SVMLightRecordWriterTest {
         if (tempFile.exists())
             tempFile.delete();
 
-        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter()) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 1);
             configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-            writer.setConf(configWriter);
+            FileSplit outputSplit = new FileSplit(tempFile);
+            writer.initialize(configWriter,outputSplit,new NumberOfRecordsPartitioner());
             writer.write(record);
         }
     }

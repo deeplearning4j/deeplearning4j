@@ -17,12 +17,9 @@
 package org.datavec.api.records.writer.impl;
 
 
-import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -33,17 +30,6 @@ import java.util.List;
 public class LineRecordWriter extends FileRecordWriter {
     public LineRecordWriter() {}
 
-    public LineRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
-
-    public LineRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public LineRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-    }
 
     @Override
     public void write(List<Writable> record) throws IOException {

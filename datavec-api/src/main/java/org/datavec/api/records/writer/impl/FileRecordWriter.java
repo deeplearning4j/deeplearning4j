@@ -57,43 +57,20 @@ public class FileRecordWriter implements RecordWriter {
 
     public FileRecordWriter() {}
 
-    public FileRecordWriter(File path) throws FileNotFoundException {
-        this(path, false, DEFAULT_CHARSET);
-    }
 
-
-    public FileRecordWriter(File path, boolean append) throws FileNotFoundException {
-        this(path, append, DEFAULT_CHARSET);
-    }
-
-    public FileRecordWriter(File path, boolean append, Charset encoding) throws FileNotFoundException {
-        this.writeTo = path;
-        this.append = append;
-        this.encoding = encoding;
-        out = new DataOutputStream(new FileOutputStream(writeTo, append));
-    }
-
-
-    /**
-     * Initialized based on configuration
-     * Set the following attributes in the conf:
-     *
-     * @param conf the configuration to use
-     * @throws FileNotFoundException
-     */
-    public FileRecordWriter(Configuration conf) throws FileNotFoundException {
-        setConf(conf);
-    }
 
     @Override
     public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
-        out = new DataOutputStream(inputSplit.openOutputStreamFor(writeTo.getAbsolutePath()));
+        partitioner.init(inputSplit);
+        out = new DataOutputStream(partitioner.currentOutputStream());
         this.partitioner = partitioner;
+
     }
 
     @Override
     public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
         setConf(configuration);
+        partitioner.init(configuration,split);
         initialize(split, partitioner);
     }
 

@@ -83,6 +83,20 @@ public class FileSplit extends BaseInputSplit {
 
         if (rootDir == null)
             throw new IllegalArgumentException("File path must not be null");
+        else if(rootDir.isAbsolute() && !rootDir.exists()) {
+            try {
+                if(!rootDir.createNewFile()) {
+                    throw new IllegalArgumentException("Unable to create file " + rootDir.getAbsolutePath());
+                }
+                //ensure uri strings has the root file if it's not a directory
+                else {
+                    uriStrings = new ArrayList<>();
+                    uriStrings.add(rootDir.toURI().toString());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         else if (!rootDir.getAbsoluteFile().exists())
             // When implementing wild card characters in the rootDir, remove this if exists,
             // verify expanded paths exist and check for the edge case when expansion cannot be

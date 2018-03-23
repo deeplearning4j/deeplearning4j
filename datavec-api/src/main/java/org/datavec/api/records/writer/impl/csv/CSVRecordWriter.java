@@ -17,14 +17,10 @@
 package org.datavec.api.records.writer.impl.csv;
 
 
-import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.writable.Writable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.List;
 
 /**
@@ -42,23 +38,7 @@ public class CSVRecordWriter extends FileRecordWriter {
         delimBytes = DEFAULT_DELIMITER.getBytes(encoding);
     }
 
-    public CSVRecordWriter(File path) throws FileNotFoundException {
-        this(path, false, DEFAULT_CHARSET, DEFAULT_DELIMITER);
-    }
 
-    public CSVRecordWriter(File path, boolean append) throws FileNotFoundException {
-        this(path, append, DEFAULT_CHARSET, DEFAULT_DELIMITER);
-    }
-
-    public CSVRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-        delimBytes = DEFAULT_DELIMITER.getBytes(encoding);
-    }
-
-    public CSVRecordWriter(File path, boolean append, Charset encoding, String delimiter) throws FileNotFoundException {
-        super(path, append, encoding);
-        this.delimBytes = delimiter.getBytes(encoding);
-    }
 
     @Override
     public void writeBatch(List<List<Writable>> batch) throws IOException {
