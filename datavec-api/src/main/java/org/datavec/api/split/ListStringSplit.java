@@ -16,12 +16,8 @@
 
 package org.datavec.api.split;
 
-import org.datavec.api.writable.WritableType;
-
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,6 +33,36 @@ public class ListStringSplit implements InputSplit {
 
     public ListStringSplit(List<List<String>> data) {
         this.data = data;
+    }
+
+    @Override
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
+        return false;
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        return null;
     }
 
     @Override
@@ -84,72 +110,7 @@ public class ListStringSplit implements InputSplit {
         return true;
     }
 
-    /**
-     * Serialize the fields of this object to <code>out</code>.
-     *
-     * @param out <code>DataOuput</code> to serialize this object into.
-     * @throws IOException
-     */
-    @Override
-    public void write(DataOutput out) throws IOException {
 
-    }
-
-    /**
-     * Deserialize the fields of this object from <code>in</code>.
-     * <p>
-     * <p>For efficiency, implementations should attempt to re-use storage in the
-     * existing object where possible.</p>
-     *
-     * @param in <code>DataInput</code> to deseriablize this object from.
-     * @throws IOException
-     */
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
-
-    /**
-     * Convert Writable to double. Whether this is supported depends on the specific writable.
-     */
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Convert Writable to float. Whether this is supported depends on the specific writable.
-     */
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Convert Writable to int. Whether this is supported depends on the specific writable.
-     */
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    /**
-     * Convert Writable to long. Whether this is supported depends on the specific writable.
-     */
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     public List<List<String>> getData() {
         return data;

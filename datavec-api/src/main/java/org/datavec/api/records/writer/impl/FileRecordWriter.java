@@ -19,6 +19,9 @@ package org.datavec.api.records.writer.impl;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.PartitionMetaData;
+import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -41,52 +44,60 @@ public class FileRecordWriter implements RecordWriter {
 
     public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
-    protected File writeTo;
     protected DataOutputStream out;
     public final static String NEW_LINE = "\n";
-    private boolean append;
-    public final static String PATH = "org.datavec.api.records.writer.path";
 
     protected Charset encoding = DEFAULT_CHARSET;
+
+    protected Partitioner partitioner;
 
     protected Configuration conf;
 
     public FileRecordWriter() {}
 
-    public FileRecordWriter(File path) throws FileNotFoundException {
-        this(path, false, DEFAULT_CHARSET);
-    }
 
-
-    public FileRecordWriter(File path, boolean append) throws FileNotFoundException {
-        this(path, append, DEFAULT_CHARSET);
-    }
-
-    public FileRecordWriter(File path, boolean append, Charset encoding) throws FileNotFoundException {
-        this.writeTo = path;
-        this.append = append;
-        this.encoding = encoding;
-        out = new DataOutputStream(new FileOutputStream(writeTo, append));
-    }
-
-
-    /**
-     * Initialized based on configuration
-     * Set the following attributes in the conf:
-     *
-     * @param conf the configuration to use
-     * @throws FileNotFoundException
-     */
-    public FileRecordWriter(Configuration conf) throws FileNotFoundException {
-        setConf(conf);
+    @Override
+    public boolean supportsBatch() {
+        return false;
     }
 
     @Override
-    public void write(List<Writable> record) throws IOException {
+    public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
+        partitioner.init(inputSplit);
+        out = new DataOutputStream(partitioner.currentOutputStream());
+        this.partitioner = partitioner;
+
+    }
+
+    @Override
+    public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
+        setConf(configuration);
+        partitioner.init(configuration,split);
+        initialize(split, partitioner);
+    }
+
+    @Override
+    public PartitionMetaData write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);
         }
+
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
+    }
+
+    @Override
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        for(List<Writable> record : batch) {
+            Text t = (Text) record.iterator().next();
+            try {
+                t.write(out);
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
+
     }
 
     @Override
@@ -96,7 +107,7 @@ public class FileRecordWriter implements RecordWriter {
                 out.flush();
                 out.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException(e);
             }
 
         }
@@ -105,27 +116,6 @@ public class FileRecordWriter implements RecordWriter {
     @Override
     public void setConf(Configuration conf) {
         this.conf = conf;
-        if (this.writeTo == null) {
-            this.writeTo = new File(conf.get(PATH, "input.txt"));
-            this.append = conf.getBoolean(APPEND, true);
-            this.out = null;
-        } else {
-            String currPath = this.writeTo.getAbsolutePath();
-            String configPath = conf.get(PATH, currPath);
-            if (!configPath.equals(currPath))
-                throw new IllegalArgumentException("File path in configuration (" + configPath + ") does not match existing file path (" + currPath);
-            boolean configAppend = conf.getBoolean(APPEND, this.append);
-            if (configAppend != this.append)
-                throw new IllegalArgumentException("File append setting in configuration (" + configAppend + ") does not match existing setting (" + this.append);
-        }
-
-        if (out == null) {
-            try {
-                out = new DataOutputStream(new FileOutputStream(writeTo, append));
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        }
     }
 
     @Override

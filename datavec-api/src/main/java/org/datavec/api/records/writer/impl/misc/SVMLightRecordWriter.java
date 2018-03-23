@@ -20,11 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,18 +85,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
 
     public SVMLightRecordWriter() {}
 
-    public SVMLightRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
 
-    public SVMLightRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public SVMLightRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-        setConf(conf);
-    }
 
     /**
      * Set DataVec configuration
@@ -124,7 +112,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
      * @throws IOException
      */
     @Override
-    public void write(List<Writable> record) throws IOException {
+    public PartitionMetaData write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             List<Writable> recordList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
 
@@ -233,6 +221,9 @@ public class SVMLightRecordWriter extends FileRecordWriter {
             String line = result.substring(1).toString();
             out.write(line.getBytes());
             out.write(NEW_LINE.getBytes());
+
         }
+
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
     }
 }

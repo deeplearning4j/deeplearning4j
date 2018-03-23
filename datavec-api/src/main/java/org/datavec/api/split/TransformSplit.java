@@ -3,10 +3,7 @@ package org.datavec.api.split;
 import lombok.NonNull;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
@@ -30,7 +27,7 @@ public class TransformSplit extends BaseInputSplit {
      * @throws URISyntaxException thrown if the transformed URI is malformed
      */
     public TransformSplit(@NonNull BaseInputSplit sourceSplit, @NonNull URITransform transform)
-                    throws URISyntaxException {
+            throws URISyntaxException {
         this.sourceSplit = sourceSplit;
         this.transform = transform;
         initialize();
@@ -45,7 +42,7 @@ public class TransformSplit extends BaseInputSplit {
      * @throws URISyntaxException thrown if the transformed URI is malformed
      */
     public static TransformSplit ofSearchReplace(@NonNull BaseInputSplit sourceSplit, @NonNull final String search,
-                    @NonNull final String replace) throws URISyntaxException {
+                                                 @NonNull final String replace) throws URISyntaxException {
         return new TransformSplit(sourceSplit, new URITransform() {
             @Override
             public URI apply(URI uri) throws URISyntaxException {
@@ -65,14 +62,25 @@ public class TransformSplit extends BaseInputSplit {
         }
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException {
 
+    @Override
+    public void updateSplitLocations(boolean reset) {
+        sourceSplit.updateSplitLocations(reset);
     }
 
     @Override
-    public void readFields(DataInput in) throws IOException {
+    public boolean needsBootstrapForWrite() {
+        return sourceSplit.needsBootstrapForWrite();
+    }
 
+    @Override
+    public void bootStrapForWrite() {
+        sourceSplit.bootStrapForWrite();
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        return sourceSplit.openOutputStreamFor(location);
     }
 
     @Override

@@ -250,7 +250,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
+    public List<List<Writable>> next(int num) {
         Preconditions.checkArgument(num > 0, "Number of examples must be > 0: got " + num);
 
         if (imageLoader == null) {

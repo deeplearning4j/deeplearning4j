@@ -19,6 +19,7 @@ package org.datavec.api.records.writer.impl;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Before;
@@ -44,9 +45,9 @@ public class CSVRecordWriterTest {
     public void testWrite() throws Exception {
         File tempFile = File.createTempFile("datavec", "writer");
         tempFile.deleteOnExit();
-
-        CSVRecordWriter writer = new CSVRecordWriter(tempFile);
-
+        FileSplit fileSplit = new FileSplit(tempFile);
+        CSVRecordWriter writer = new CSVRecordWriter();
+        writer.initialize(fileSplit,new NumberOfRecordsPartitioner());
         List<Writable> collection = new ArrayList<>();
         collection.add(new Text("12"));
         collection.add(new Text("13"));

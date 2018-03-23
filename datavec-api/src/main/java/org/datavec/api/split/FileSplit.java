@@ -16,11 +16,11 @@
 
 package org.datavec.api.split;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.datavec.api.util.files.URIUtil;
-import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -29,10 +29,7 @@ import java.net.URI;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.Random;
+import java.util.*;
 
 /**
  * File input split. Splits up a root directory in to files.
@@ -47,6 +44,7 @@ public class FileSplit extends BaseInputSplit {
     protected boolean recursive = true;
     protected Random random;
     protected boolean randomize = false;
+
 
     protected FileSplit(File rootDir, String[] allowFormat, boolean recursive, Random random, boolean runMain) {
         this.allowFormat = allowFormat;
@@ -86,6 +84,20 @@ public class FileSplit extends BaseInputSplit {
 
         if (rootDir == null)
             throw new IllegalArgumentException("File path must not be null");
+        else if(rootDir.isAbsolute() && !rootDir.exists()) {
+            try {
+                if(!rootDir.createNewFile()) {
+                    throw new IllegalArgumentException("Unable to create file " + rootDir.getAbsolutePath());
+                }
+                //ensure uri strings has the root file if it's not a directory
+                else {
+                    uriStrings = new ArrayList<>();
+                    uriStrings.add(rootDir.toURI().toString());
+                }
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
         else if (!rootDir.getAbsoluteFile().exists())
             // When implementing wild card characters in the rootDir, remove this if exists,
             // verify expanded paths exist and check for the edge case when expansion cannot be
@@ -102,6 +114,7 @@ public class FileSplit extends BaseInputSplit {
                 for (int i = 0; i < iterationOrder.length; i++) {
                     iterationOrder[i] = i;
                 }
+
                 MathUtils.shuffleArray(iterationOrder, random);
             }
             for (File f : subFiles) {
@@ -111,16 +124,80 @@ public class FileSplit extends BaseInputSplit {
         } else {
             // Lists one file
             String toString = URIUtil.fileToURI(rootDir).toString(); //URI.getPath(), getRawPath() etc don't have file:/ prefix necessary for conversion back to URI
-            uriStrings = Collections.singletonList(toString);
+            uriStrings = new ArrayList<>(1);
+            uriStrings.add(toString);
             length += rootDir.length();
         }
     }
 
     @Override
+    public String addNewLocation() {
+        if(rootDir.isDirectory())
+            return addNewLocation(new File(rootDir, UUID.randomUUID().toString()).toURI().toString());
+        else {
+            //add a file in the same directory as the file with the same extension as the original file
+            return addNewLocation(new File(rootDir.getParent(), UUID.randomUUID().toString() + "." + FilenameUtils.getExtension(rootDir.getAbsolutePath())).toURI().toString());
+
+        }
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        File f = new File(URI.create(location));
+        try {
+            f.createNewFile();
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+
+        uriStrings.add(location);
+        ++length;
+        return location;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+        if (reset) {
+            initialize();
+        }
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
+        return locations() == null ||
+                locations().length < 1
+                || locations().length == 1 && !locations()[0].isAbsolute();
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+        if(locations().length == 1 && !locations()[0].isAbsolute()) {
+            File parentDir = new File(locations()[0]);
+            File writeFile = new File(parentDir,"write-file");
+            try {
+                writeFile.createNewFile();
+                //since locations are dynamically generated, allow
+                uriStrings.add(writeFile.toURI().toString());
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+
+
+        }
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
+                new FileOutputStream(new File(URI.create(location)));
+        return ret;
+    }
+
+    @Override
     public InputStream openInputStreamFor(String location) throws Exception {
-        FileInputStream fileInputStream = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
-                new FileInputStream(new File(location));
-        return fileInputStream;
+        FileInputStream ret = location.startsWith("file://") ? new FileInputStream(new File(URI.create(location))):
+                new FileInputStream(new File(URI.create(location)));
+        return ret;
     }
 
     @Override
@@ -142,27 +219,15 @@ public class FileSplit extends BaseInputSplit {
     }
 
 
-    @Override
-    public void write(DataOutput out) throws IOException {
 
-    }
 
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
 
     public File getRootDir() {
         return rootDir;
     }
 
     private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats,
-                    boolean recursive) {
+                                       boolean recursive) {
         IOFileFilter filter;
         if (allowedFormats == null) {
             filter = new RegexFileFilter(".*");

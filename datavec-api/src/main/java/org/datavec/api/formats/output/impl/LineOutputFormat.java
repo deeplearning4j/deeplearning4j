@@ -34,10 +34,6 @@ public class LineOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {
         String outputPath = conf.get(OutputFormat.OUTPUT_PATH, ".");
-        try {
-            return new LineRecordWriter(new File(outputPath));
-        } catch (FileNotFoundException e) {
-            throw new DataVecException(e);
-        }
+        return new LineRecordWriter();
     }
 }

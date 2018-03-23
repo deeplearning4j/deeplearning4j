@@ -39,10 +39,10 @@ import java.util.List;
  */
 public interface RecordReader extends Closeable, Serializable, Configurable {
 
-    public final static String NAME_SPACE = RecordReader.class.getName();
+    String NAME_SPACE = RecordReader.class.getName();
 
-    public final static String APPEND_LABEL = NAME_SPACE + ".appendlabel";
-    public final static String LABELS = NAME_SPACE + ".labels";
+    String APPEND_LABEL = NAME_SPACE + ".appendlabel";
+    String LABELS = NAME_SPACE + ".labels";
 
     /**
      * Called once at initialization.
@@ -76,7 +76,7 @@ public interface RecordReader extends Closeable, Serializable, Configurable {
      * @param num
      * @return
      */
-    List<Writable> next(int num);
+    List<List<Writable>> next(int num);
 
     /**
      * Get the next record

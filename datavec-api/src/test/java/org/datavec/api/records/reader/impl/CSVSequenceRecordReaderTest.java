@@ -141,6 +141,36 @@ public class CSVSequenceRecordReaderTest {
     private static class TestInputSplit implements InputSplit {
 
         @Override
+        public String addNewLocation() {
+            return null;
+        }
+
+        @Override
+        public String addNewLocation(String location) {
+            return null;
+        }
+
+        @Override
+        public void updateSplitLocations(boolean reset) {
+
+        }
+
+        @Override
+        public boolean needsBootstrapForWrite() {
+            return false;
+        }
+
+        @Override
+        public void bootStrapForWrite() {
+
+        }
+
+        @Override
+        public OutputStream openOutputStreamFor(String location) throws Exception {
+            return null;
+        }
+
+        @Override
         public InputStream openInputStreamFor(String location) throws Exception {
             return null;
         }
@@ -188,45 +218,9 @@ public class CSVSequenceRecordReaderTest {
             return true;
         }
 
-        @Override
-        public void write(DataOutput out) throws IOException {
-            throw new UnsupportedOperationException();
-        }
 
-        @Override
-        public void readFields(DataInput in) throws IOException {
-            throw new UnsupportedOperationException();
-        }
 
-        @Override
-        public void writeType(DataOutput out) throws IOException {
-            throw new UnsupportedOperationException();
-        }
 
-        @Override
-        public double toDouble() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public float toFloat() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int toInt() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public long toLong() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public WritableType getType() {
-            throw new UnsupportedOperationException();
-        }
     }
 
 

@@ -40,26 +40,4 @@ import java.io.FileNotFoundException;
  * @author dave@skymind.io
  */
 @Slf4j
-public class LibSvmRecordWriter extends SVMLightRecordWriter {
-    public LibSvmRecordWriter() {
-        super();
-    }
-
-    public LibSvmRecordWriter(File path) throws FileNotFoundException {
-        super(path);
-    }
-
-    public LibSvmRecordWriter(File path, boolean append) throws FileNotFoundException {
-        super(path, append);
-    }
-
-    public LibSvmRecordWriter(Configuration conf) throws FileNotFoundException {
-        super(conf);
-        setConf(conf);
-    }
-
-    @Override
-    public void setConf(Configuration conf) {
-        super.setConf(conf);
-    }
-}
+public class LibSvmRecordWriter extends SVMLightRecordWriter {}

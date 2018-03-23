@@ -35,7 +35,7 @@ public class SVMLightOutputFormat implements OutputFormat {
         String outputPath = conf.get(OutputFormat.OUTPUT_PATH, ".");
         try {
             //return new LineRecordWriter(new File(outputPath));
-            return new SVMLightRecordWriter(new File(outputPath));
+            return new SVMLightRecordWriter();
         } catch (Exception e) {
             throw new DataVecException(e);
         }

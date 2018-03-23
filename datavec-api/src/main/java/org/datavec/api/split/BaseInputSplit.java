@@ -19,10 +19,7 @@ package org.datavec.api.split;
 import org.datavec.api.io.filters.PathFilter;
 import org.datavec.api.util.files.ShuffledListIterator;
 import org.datavec.api.util.files.UriFromPathIterator;
-import org.datavec.api.writable.WritableType;
 
-import java.io.DataOutput;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -42,7 +39,21 @@ public abstract class BaseInputSplit implements InputSplit {
     protected long length = 0;
 
     @Override
+    public String addNewLocation() {
+        throw new UnsupportedOperationException("Unable to add new location.");
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        throw new UnsupportedOperationException("Unable to add new location.");
+    }
+
+    @Override
     public URI[] locations() {
+        if(uriStrings == null) {
+            uriStrings = new ArrayList<>();
+        }
+
         URI[] uris = new URI[uriStrings.size()];
         int i = 0;
         for (String s : uriStrings) {
@@ -73,30 +84,7 @@ public abstract class BaseInputSplit implements InputSplit {
         return 0;
     }
 
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
 
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     /**
      * Samples the locations based on the PathFilter and splits the result into
@@ -138,8 +126,4 @@ public abstract class BaseInputSplit implements InputSplit {
         }
     }
 
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -148,6 +148,16 @@ public class FileRecordReader extends BaseRecordReader {
     }
 
     @Override
+    public List<List<Writable>> next(int num) {
+        List<List<Writable>> ret = new ArrayList<>(num);
+        int numBatches = 0;
+        while (hasNext() && numBatches < num) {
+            ret.add(next());
+        }
+
+        return ret;
+    }
+    @Override
     public void reset() {
         if (inputSplit == null)
             throw new UnsupportedOperationException("Cannot reset without first initializing");
@@ -190,7 +200,7 @@ public class FileRecordReader extends BaseRecordReader {
         List<Writable> ret = loadFromFile(next);
 
         return new org.datavec.api.records.impl.Record(ret,
-                        new RecordMetaDataURI(next.toURI(), FileRecordReader.class));
+                new RecordMetaDataURI(next.toURI(), FileRecordReader.class));
     }
 
     protected File nextFile() {

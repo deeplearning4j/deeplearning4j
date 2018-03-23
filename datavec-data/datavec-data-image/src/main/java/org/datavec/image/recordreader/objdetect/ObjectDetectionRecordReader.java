@@ -139,7 +139,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
+    public List<List<Writable>> next(int num) {
         List<File> files = new ArrayList<>(num);
         List<List<ImageObject>> objects = new ArrayList<>(num);
 

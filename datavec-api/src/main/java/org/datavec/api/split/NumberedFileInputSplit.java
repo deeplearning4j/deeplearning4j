@@ -60,6 +60,50 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+        //no-op (locations() is dynamic)
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
+        return locations() == null ||
+                locations().length < 1
+                || locations().length == 1 && !locations()[0].isAbsolute();
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+        if(locations().length == 1 && !locations()[0].isAbsolute()) {
+            File parentDir = new File(locations()[0]);
+            File writeFile = new File(parentDir,"write-file");
+            try {
+                writeFile.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+
+        }
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        FileOutputStream ret = location.startsWith("file://") ? new FileOutputStream(new File(URI.create(location))):
+                new FileOutputStream(new File(location));
+        return ret;
+    }
+
+    @Override
     public InputStream openInputStreamFor(String location) throws Exception {
         FileInputStream fileInputStream = new FileInputStream(location);
         return fileInputStream;
@@ -100,45 +144,6 @@ public class NumberedFileInputSplit implements InputSplit {
         return true;
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException {
-
-    }
-
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
-
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     private class NumberedFileIterator implements Iterator<String> {
 

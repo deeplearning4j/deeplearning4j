@@ -16,10 +16,7 @@
 
 package org.datavec.api.split;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -44,6 +41,26 @@ public class CollectionInputSplit extends BaseInputSplit {
     }
 
     @Override
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
+        return false;
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        return null;
+    }
+
+    @Override
     public InputStream openInputStreamFor(String location) throws Exception {
         return null;
     }
@@ -63,33 +80,4 @@ public class CollectionInputSplit extends BaseInputSplit {
         return true;
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void readFields(DataInput in) throws IOException {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-}
+ }

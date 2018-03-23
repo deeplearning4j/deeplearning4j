@@ -16,9 +16,9 @@
 
 package org.datavec.api.split;
 
-import org.datavec.api.writable.WritableType;
-
-import java.io.*;
+import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.Iterator;
@@ -73,6 +73,37 @@ public class InputStreamInputSplit implements InputSplit {
     }
 
     @Override
+    public String addNewLocation() {
+        return null;
+    }
+
+    @Override
+    public String addNewLocation(String location) {
+        return null;
+    }
+
+    @Override
+    public void updateSplitLocations(boolean reset) {
+
+    }
+
+    @Override
+    public boolean needsBootstrapForWrite() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void bootStrapForWrite() {
+        throw new UnsupportedOperationException();
+
+    }
+
+    @Override
+    public OutputStream openOutputStreamFor(String location) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public InputStream openInputStreamFor(String location) throws Exception {
         return is;
     }
@@ -110,15 +141,6 @@ public class InputStreamInputSplit implements InputSplit {
         return location != null;
     }
 
-    @Override
-    public void write(DataOutput out) throws IOException {
-
-    }
-
-    @Override
-    public void readFields(DataInput in) throws IOException {
-
-    }
 
     public InputStream getIs() {
         return is;
@@ -128,33 +150,4 @@ public class InputStreamInputSplit implements InputSplit {
         this.is = is;
     }
 
-    @Override
-    public double toDouble() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float toFloat() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int toInt() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public long toLong() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public WritableType getType() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeType(DataOutput out) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 }

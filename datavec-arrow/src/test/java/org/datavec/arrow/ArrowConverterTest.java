@@ -20,6 +20,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
+import org.datavec.arrow.recordreader.ArrowRecordWriter;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,6 +36,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
 public class ArrowConverterTest {
+
+    @Test
+    public void testRecordWriter() throws Exception {
+        Pair<Schema, List<List<Writable>>> schemaListPair = recordToWrite();
+        ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(schemaListPair.getFirst());
+        arrowRecordWriter.writeBatch(schemaListPair.getRight());
+    }
 
     @Test
     public void testCreateNDArray() throws Exception {

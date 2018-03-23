@@ -15,20 +15,19 @@
  */
 package org.datavec.api.split;
 
+import com.google.common.io.Files;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
 import org.junit.Test;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -53,6 +52,26 @@ public class InputSplitTests {
             }
 
             @Override
+            public void updateSplitLocations(boolean reset) {
+
+            }
+
+            @Override
+            public boolean needsBootstrapForWrite() {
+                return false;
+            }
+
+            @Override
+            public void bootStrapForWrite() {
+
+            }
+
+            @Override
+            public OutputStream openOutputStreamFor(String location) throws Exception {
+                return null;
+            }
+
+            @Override
             public InputStream openInputStreamFor(String location) throws Exception {
                 return null;
             }
@@ -67,11 +86,6 @@ public class InputSplitTests {
                 return true;
             }
 
-            @Override
-            public void write(DataOutput out) throws IOException {}
-
-            @Override
-            public void readFields(DataInput in) throws IOException {}
         };
 
         Random random = new Random(42);
@@ -103,4 +117,15 @@ public class InputSplitTests {
         assertEquals(1, samples4[0].length());
         assertEquals(1, samples4[1].length());
     }
+
+
+    @Test
+    public void testFileSplitBootstrap() {
+        File tmpDir = Files.createTempDir();
+        FileSplit boostrap = new FileSplit(tmpDir);
+        assertTrue(boostrap.needsBootstrapForWrite());
+        boostrap.bootStrapForWrite();
+        assertTrue(tmpDir.listFiles() != null);
+    }
+
 }
