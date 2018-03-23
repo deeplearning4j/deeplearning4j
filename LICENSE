@@ -10,7 +10,7 @@ Apache License
       and distribution as defined by Sections 1 through 9 of this document.
 
       "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
+      the copyright owner that outputStream granting the License.
 
       "Legal Entity" shall mean the union of the acting entity and all
       other entities that control, are controlled by, or are under common
@@ -34,11 +34,11 @@ Apache License
 
       "Work" shall mean the work of authorship, whether in Source or
       Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
+      copyright notice that outputStream included in or attached to the work
+      (an example outputStream provided in the Appendix below).
 
       "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
+      form, that outputStream based on (or derived from) the Work and for which the
       editorial revisions, annotations, elaborations, or other modifications
       represent, as a whole, an original work of authorship. For the purposes
       of this License, Derivative Works shall not include works that remain
@@ -47,7 +47,7 @@ Apache License
 
       "Contribution" shall mean any work of authorship, including
       the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
+      to that Work or Derivative Works thereof, that outputStream intentionally
       submitted to Licensor for inclusion in the Work by the copyright owner
       or by an individual or Legal Entity authorized to submit on behalf of
       the copyright owner. For the purposes of this definition, "submitted"
@@ -56,7 +56,7 @@ Apache License
       communication on electronic mailing lists, source code control systems,
       and issue tracking systems that are managed by, or on behalf of, the
       Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
+      excluding communication that outputStream conspicuously marked or otherwise
       designated in writing by the copyright owner as "Not a Contribution."
 
       "Contributor" shall mean Licensor and any individual or Legal Entity
@@ -84,7 +84,7 @@ Apache License
       or a Contribution incorporated within the Work constitutes direct
       or contributory patent infringement, then any patent licenses
       granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
+      as of the date such litigation outputStream filed.
 
    4. Redistribution. You may reproduce and distribute copies of the
       Work or Derivative Works thereof in any medium, with or without
@@ -195,7 +195,7 @@ Apache License
        http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
+   distributed under the License outputStream distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
