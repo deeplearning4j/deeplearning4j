@@ -449,9 +449,6 @@ namespace nd4j {
 
         rOrder = 'f'; //aOrder;
 
-        lda = aShape[0];
-        ldb = bShape[0];
-        ldc = cShape[0];
 
         nd4j::NDArray<T>* pA = nullptr;
         nd4j::NDArray<T>* pB = nullptr;
@@ -504,6 +501,9 @@ namespace nd4j {
         else 
             pA = tA; //->dup('c');
         
+        lda = (transA?K:M);
+        ldb = (transB?K:N);
+        ldc = N;
 
         // we'll use platform-specific gemm here eventually. maybe tomorrow.
         // TODO: put proper _gemm here
