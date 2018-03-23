@@ -130,16 +130,16 @@ public class ArrowConverter {
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
        if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
            val convertedSchema = toArrowSchema(inputSchema);
-           ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) recordBatch;
-           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,arrowWritableRecordBatch.getList(),recordBatch.size());
-               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(arrowWritableRecordBatch.getList(),convertedSchema.getFields()), newChannel(outputStream))) {
+           val columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
+               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
                writer.start();
                writer.writeBatch();
                writer.end();
 
 
            } catch (IOException e) {
-               e.printStackTrace();
+               throw new IllegalStateException(e);
            }
 
        }
@@ -368,40 +368,46 @@ public class ArrowConverter {
             }
         }
 
-        //TODO: Convert to factory with wrapper class instead
-        for(int i = 0; i < ret.size(); i++) {
-            FieldVector fieldVector = ret.get(i);
-
-            for(int j = 0; j < dataVecRecord.get(i).size(); j++) {
-                switch (schema.getType(i)) {
+        for(int j = 0; j < schema.numColumns(); j++) {
+            FieldVector fieldVector = ret.get(j);
+            int row = 0;
+            for(List<Writable> record : dataVecRecord) {
+                Writable writable = record.get(j);
+                switch (schema.getType(j)) {
                     case Integer:
                         IntVector intVector = (IntVector) fieldVector;
-                        intVector.set(j,dataVecRecord.get(i).get(j).toInt());
+                        int set = writable.toInt();
+                        intVector.set(row++,set);
                         break;
                     case Float:
                         Float4Vector float4Vector = (Float4Vector) fieldVector;
-                        float4Vector.set(j,dataVecRecord.get(i).get(j).toFloat());
+                        float set2 = writable.toFloat();
+                        float4Vector.set(row++,set2);
                         break;
                     case Double:
+                        double set3 = writable.toDouble();
                         Float8Vector float8Vector = (Float8Vector) fieldVector;
-                        float8Vector.set(j,dataVecRecord.get(i).get(j).toFloat());
+                        float8Vector.set(row++,set3);
                         break;
                     case Long:
                         BigIntVector largeIntVector = (BigIntVector) fieldVector;
-                        largeIntVector.set(j,dataVecRecord.get(i).get(j).toLong());
+                        largeIntVector.set(row++,writable.toLong());
                         break;
                     case Categorical:
                     case String:
+                        String stringSet = writable.toString();
                         VarCharVector textVector = (VarCharVector) fieldVector;
-                        textVector.set(j,dataVecRecord.get(i).get(j).toString().getBytes());
+                        textVector.set(row++,stringSet.getBytes());
                         break;
                     case Time:
+                        int timeSet = writable.toInt();
                         TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
-                        timeMilliVector.set(j,dataVecRecord.get(i).get(j).toInt());
+                        timeMilliVector.set(row++,timeSet);
                         break;
 
                 }
             }
+
         }
 
         return ret;

@@ -60,7 +60,7 @@ public class TransformProcessRecordReader implements RecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
+    public List<List<Writable>> next(int num) {
         throw new UnsupportedOperationException();
     }
 

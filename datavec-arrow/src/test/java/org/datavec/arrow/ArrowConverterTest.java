@@ -40,7 +40,7 @@ public class ArrowConverterTest {
     @Test
     public void testRecordWriter() throws Exception {
         Pair<Schema, List<List<Writable>>> schemaListPair = recordToWrite();
-        ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(null,schemaListPair.getFirst());
+        ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(schemaListPair.getFirst());
         arrowRecordWriter.writeBatch(schemaListPair.getRight());
     }
 

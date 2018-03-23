@@ -144,8 +144,24 @@ public class CSVRecordReader extends LineRecordReader {
     }
 
     @Override
+    public boolean batchesSupported() {
+        return true;
+    }
+
+    @Override
     public boolean hasNext() {
         return skipLines() && super.hasNext();
+    }
+
+    @Override
+    public List<List<Writable>> next(int num) {
+        List<List<Writable>> ret = new ArrayList<>(num);
+        int recordsRead = 0;
+        while(hasNext() && recordsRead < num) {
+            ret.add(next());
+        }
+
+        return ret;
     }
 
     @Override

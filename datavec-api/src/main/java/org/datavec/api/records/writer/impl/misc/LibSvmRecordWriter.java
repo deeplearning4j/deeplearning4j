@@ -40,10 +40,4 @@ import java.io.FileNotFoundException;
  * @author dave@skymind.io
  */
 @Slf4j
-public class LibSvmRecordWriter extends SVMLightRecordWriter {
-    public LibSvmRecordWriter() {
-        super();
-    }
-
-
-}
+public class LibSvmRecordWriter extends SVMLightRecordWriter {}

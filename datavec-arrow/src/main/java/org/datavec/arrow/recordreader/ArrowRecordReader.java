@@ -66,8 +66,14 @@ public class ArrowRecordReader implements RecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
-        return next();
+    public List<List<Writable>> next(int num) {
+        List<List<Writable>> ret = new ArrayList<>(num);
+        int numBatches = 0;
+        while(hasNext() && numBatches < num) {
+            ret.add(next());
+        }
+
+        return ret;
     }
 
     @Override

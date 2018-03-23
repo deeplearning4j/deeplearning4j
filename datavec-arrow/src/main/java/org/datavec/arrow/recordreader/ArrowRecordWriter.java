@@ -3,13 +3,13 @@ package org.datavec.arrow.recordreader;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -24,9 +24,13 @@ public class ArrowRecordWriter implements RecordWriter {
     private Schema schema;
     private Partitioner partitioner;
 
-    public ArrowRecordWriter(Configuration configuration, Schema schema) {
-        this.configuration = configuration;
+    public ArrowRecordWriter(Schema schema) {
         this.schema = schema;
+    }
+
+    @Override
+    public boolean supportsBatch() {
+        return true;
     }
 
     @Override
@@ -39,15 +43,16 @@ public class ArrowRecordWriter implements RecordWriter {
     @Override
     public void initialize(Configuration configuration, InputSplit split, Partitioner partitioner) throws Exception {
         setConf(configuration);
+        this.partitioner = partitioner;
     }
 
     @Override
-    public void write(List<Writable> record) throws IOException {
-        writeBatch(Arrays.asList(record));
+    public PartitionMetaData write(List<Writable> record) throws IOException {
+        return writeBatch(Arrays.asList(record));
     }
 
     @Override
-    public void writeBatch(List<List<Writable>> batch) throws IOException {
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
         if(batch instanceof ArrowWritableRecordBatch) {
             ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) batch;
             ArrowConverter.writeRecordBatchTo(arrowWritableRecordBatch,schema,partitioner.currentOutputStream());
@@ -57,6 +62,7 @@ public class ArrowRecordWriter implements RecordWriter {
         }
 
         partitioner.currentOutputStream().flush();
+        return PartitionMetaData.builder().numRecordsUpdated(batch.size()).build();
     }
 
     @Override

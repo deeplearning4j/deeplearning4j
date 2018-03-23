@@ -39,11 +39,11 @@ public interface Partitioner {
      * (to indicate whether the next partition is needed or not)
      * @param metadata
      */
-    void updatePartitionInfo(Object...metadata);
+    void updatePartitionInfo(PartitionMetaData metadata);
 
     /**
      * Returns true if the partition needs to be moved to the next.
-     * This is controlled with {@link #updatePartitionInfo(Object...)}
+     * This is controlled with {@link #updatePartitionInfo(PartitionMetaData)}
      * which handles incrementing counters and the like
      * to determine whether the current partition has been exhausted.
      * @return

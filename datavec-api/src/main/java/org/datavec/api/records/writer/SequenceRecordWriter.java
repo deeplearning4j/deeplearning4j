@@ -19,6 +19,7 @@ package org.datavec.api.records.writer;
 
 
 import org.datavec.api.conf.Configurable;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.Writable;
 
 import java.io.Closeable;
@@ -37,7 +38,7 @@ public interface SequenceRecordWriter extends Closeable, Configurable {
      * Write a record
      * @param sequence the record to write
      */
-    void write(List<List<Writable>> sequence) throws IOException;
+    PartitionMetaData write(List<List<Writable>> sequence) throws IOException;
 
 
     /**

@@ -70,7 +70,7 @@ public class InMemorySequenceRecordReader implements SequenceRecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
+    public List<List<Writable>> next(int num) {
         throw new UnsupportedOperationException();
     }
 

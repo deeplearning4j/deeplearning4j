@@ -20,6 +20,7 @@ import lombok.NonNull;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
@@ -102,7 +103,7 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
      * @param hadoopConfiguration Hadoop configuration.
      */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
-                                       org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+                               org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         super(outputDir, mapFileSplitSize, convertTextTo, DEFAULT_INDEX_INTERVAL, hadoopConfiguration);
     }
 
@@ -120,7 +121,7 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
      * @param hadoopConfiguration Hadoop configuration.
      */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
-                                       int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+                               int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         super(outputDir, mapFileSplitSize, convertTextTo, indexInterval, hadoopConfiguration);
     }
 
@@ -139,8 +140,8 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
      * @param hadoopConfiguration Hadoop configuration.
      */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
-                                       int indexInterval, String filenamePattern,
-                                       org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+                               int indexInterval, String filenamePattern,
+                               org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         super(outputDir, mapFileSplitSize, convertTextTo, indexInterval, filenamePattern, hadoopConfiguration);
     }
 
@@ -159,6 +160,11 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
     }
 
     @Override
+    public boolean supportsBatch() {
+        return false;
+    }
+
+    @Override
     public void initialize(InputSplit inputSplit, Partitioner partitioner) throws Exception {
 
     }
@@ -169,7 +175,7 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
     }
 
     @Override
-    public void writeBatch(List<List<Writable>> batch) throws IOException {
-
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        return null;
     }
 }

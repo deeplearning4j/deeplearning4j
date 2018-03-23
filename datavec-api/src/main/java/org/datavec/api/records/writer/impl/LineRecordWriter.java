@@ -17,6 +17,7 @@
 package org.datavec.api.records.writer.impl;
 
 
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
@@ -32,13 +33,15 @@ public class LineRecordWriter extends FileRecordWriter {
 
 
     @Override
-    public void write(List<Writable> record) throws IOException {
+    public PartitionMetaData write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);
             out.write(NEW_LINE.getBytes());
         }
 
+
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
 
     }
 }

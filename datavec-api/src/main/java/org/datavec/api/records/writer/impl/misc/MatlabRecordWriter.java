@@ -17,12 +17,10 @@
 package org.datavec.api.records.writer.impl.misc;
 
 
-import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.Writable;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
@@ -36,7 +34,7 @@ public class MatlabRecordWriter extends FileRecordWriter {
 
 
     @Override
-    public void write(List<Writable> record) throws IOException {
+    public PartitionMetaData write(List<Writable> record) throws IOException {
         StringBuilder result = new StringBuilder();
 
         int count = 0;
@@ -54,7 +52,7 @@ public class MatlabRecordWriter extends FileRecordWriter {
         out.write(result.toString().getBytes());
         out.write(NEW_LINE.getBytes());
 
-
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
 
     }
 }

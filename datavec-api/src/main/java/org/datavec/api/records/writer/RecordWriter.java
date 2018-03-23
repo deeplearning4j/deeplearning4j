@@ -20,6 +20,7 @@ package org.datavec.api.records.writer;
 import org.datavec.api.conf.Configurable;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Writable;
 
@@ -35,6 +36,12 @@ public interface RecordWriter extends Closeable, Configurable {
     String APPEND = "org.datavec.api.record.writer.append";
 
 
+    /**
+     * Returns true if this record writer
+     * supports efficient batch writing using {@link #writeBatch(List)}
+     * @return
+     */
+    boolean supportsBatch();
     /**
      * Initialize a record writer with the given input split
      * @param inputSplit the input split to initialize with
@@ -55,14 +62,14 @@ public interface RecordWriter extends Closeable, Configurable {
      * Write a record
      * @param record the record to write
      */
-    void write(List<Writable> record) throws IOException;
+    PartitionMetaData write(List<Writable> record) throws IOException;
 
 
     /**
      * Write a batch of records
      * @param batch the batch to write
      */
-    void writeBatch(List<List<Writable>> batch) throws IOException;
+    PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException;
 
 
     /**

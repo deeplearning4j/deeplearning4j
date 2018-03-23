@@ -22,6 +22,7 @@ import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.WritableComparable;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.*;
 
 import java.io.File;
@@ -230,7 +231,7 @@ public abstract class AbstractMapFileWriter<T> {
         return newList;
     }
 
-    public void write(T record) throws IOException {
+    public PartitionMetaData write(T record) throws IOException {
         if (isClosed.get()) {
             throw new UnsupportedOperationException("Cannot write to MapFileRecordReader that has already been closed");
         }
@@ -260,6 +261,8 @@ public abstract class AbstractMapFileWriter<T> {
         org.apache.hadoop.io.Writable hadoopWritable = getHadoopWritable(record);
 
         w.append(new org.apache.hadoop.io.LongWritable(key), hadoopWritable);
+
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
     }
 
 

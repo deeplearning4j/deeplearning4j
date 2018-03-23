@@ -4,6 +4,7 @@ import com.google.common.io.Files;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.split.partition.Partitioner;
 import org.junit.Test;
 
@@ -36,13 +37,13 @@ public class PartitionerTests {
         Configuration configuration = new Configuration();
         configuration.set(NumberOfRecordsPartitioner.RECORDS_PER_FILE_CONFIG,String.valueOf(5));
         partitioner.init(configuration,fileSplit);
-        partitioner.updatePartitionInfo(5);
+        partitioner.updatePartitionInfo(PartitionMetaData.builder().numRecordsUpdated(5).build());
         assertTrue(partitioner.needsNewPartition());
         OutputStream os = partitioner.openNewStream();
         os.close();
         assertNotNull(os);
         //run more than once to ensure output stream creation works properly
-        partitioner.updatePartitionInfo(5);
+        partitioner.updatePartitionInfo(PartitionMetaData.builder().numRecordsUpdated(5).build());
         os = partitioner.openNewStream();
         os.close();
         assertNotNull(os);

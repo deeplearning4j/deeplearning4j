@@ -18,6 +18,7 @@ package org.datavec.api.records.writer.impl.csv;
 
 
 import org.datavec.api.records.writer.impl.FileRecordWriter;
+import org.datavec.api.split.partition.PartitionMetaData;
 import org.datavec.api.writable.Writable;
 
 import java.io.IOException;
@@ -39,16 +40,39 @@ public class CSVRecordWriter extends FileRecordWriter {
     }
 
 
-
     @Override
-    public void writeBatch(List<List<Writable>> batch) throws IOException {
-        for(List<Writable> record : batch) {
-            write(record);
-        }
+    public boolean supportsBatch() {
+        return true;
     }
 
     @Override
-    public void write(List<Writable> record) throws IOException {
+    public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        for(List<Writable> record : batch) {
+            if (!record.isEmpty()) {
+                //Add new line before appending lines rather than after (avoids newline after last line)
+                if (!firstLine) {
+                    out.write(NEW_LINE.getBytes());
+                } else {
+                    firstLine = false;
+                }
+
+                int count = 0;
+                int last = record.size() - 1;
+                for (Writable w : record) {
+                    out.write(w.toString().getBytes(encoding));
+                    if (count++ != last)
+                        out.write(delimBytes);
+                }
+
+                out.flush();
+            }
+        }
+
+        return PartitionMetaData.builder().numRecordsUpdated(batch.size()).build();
+    }
+
+    @Override
+    public PartitionMetaData write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             //Add new line before appending lines rather than after (avoids newline after last line)
             if (!firstLine) {
@@ -67,5 +91,7 @@ public class CSVRecordWriter extends FileRecordWriter {
 
             out.flush();
         }
+
+        return PartitionMetaData.builder().numRecordsUpdated(1).build();
     }
 }

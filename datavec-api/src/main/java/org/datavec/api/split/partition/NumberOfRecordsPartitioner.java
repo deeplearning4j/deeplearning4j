@@ -60,9 +60,8 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     }
 
     @Override
-    public void updatePartitionInfo(Object... metadata) {
-        Integer numRecords = (Integer) metadata[0];
-        this.numRecordsSoFar += numRecords;
+    public void updatePartitionInfo(PartitionMetaData metadata) {
+        this.numRecordsSoFar += metadata.getNumRecordsUpdated();
     }
 
     @Override

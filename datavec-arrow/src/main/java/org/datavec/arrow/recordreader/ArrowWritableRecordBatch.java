@@ -113,7 +113,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
 
     @Override
     public List<Writable> get(int i) {
-        List<Writable> ret = new ArrayList<>();
+        List<Writable> ret = new ArrayList<>(schema.numColumns());
         for(int column = 0; column < schema.numColumns(); column++) {
             ret.add(ArrowConverter.fromEntry(i,list.get(column),schema.getType(column)));
         }
