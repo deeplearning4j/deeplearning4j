@@ -344,7 +344,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             }
         }
 
-        return ret;
+        List<List<Writable>> ret2 = new ArrayList<>(1);
+        ret2.add(ret);
+        return ret2;
     }
 
     @Override

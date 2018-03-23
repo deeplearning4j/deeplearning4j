@@ -207,8 +207,9 @@ public class TestImageRecordReader {
 
         //Test batch ops:
         rr.reset();
-        List<Writable> b1 = rr.next(3);
-        List<Writable> b2 = rr.next(3);
+
+        List<Writable> b1 = flatten(rr.next(3));
+        List<Writable> b2 = flatten(rr.next(3));
         assertFalse(rr.hasNext());
         assertEquals(2, b1.size());
         assertEquals(2, b2.size());
@@ -221,6 +222,16 @@ public class TestImageRecordReader {
         assertEquals(l1, b1.get(1));
         assertEquals(l2, b2.get(1));
     }
+
+    private List<Writable> flatten(List<List<Writable>> input) {
+        List<Writable> ret = new ArrayList<>();
+        for(List<Writable> image : input) {
+            ret.add(image.get(0));
+        }
+
+        return ret;
+    }
+
 
     private static class TestRegressionLabelGen implements PathLabelGenerator {
 
@@ -296,8 +307,8 @@ public class TestImageRecordReader {
 
         //Test batch ops:
         rr.reset();
-        List<Writable> b1 = rr.next(3);
-        List<Writable> b2 = rr.next(3);
+        List<Writable> b1 = flatten(rr.next(3));
+        List<Writable> b2 = flatten(rr.next(3));
         assertFalse(rr.hasNext());
         assertEquals(4, b1.size());
         assertEquals(4, b2.size());
