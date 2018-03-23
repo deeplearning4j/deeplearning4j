@@ -1,11 +1,16 @@
 package org.datavec.api.writable;
 
+import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -91,6 +96,64 @@ public class WritableTest {
         assertFalse(new IntWritable(1).fuzzyEquals(new FloatWritable(1.1f), 1e-2d));
         assertTrue(new IntWritable(1).fuzzyEquals(new FloatWritable(1.05f), 1e-1d));
         assertTrue(new LongWritable(1).fuzzyEquals(new DoubleWritable(1.05f), 1e-1d));
+    }
 
+
+    @Test
+    public void testNDArrayRecordBatch(){
+        Nd4j.getRandom().setSeed(12345);
+
+        List<List<INDArray>> orig = new ArrayList<>();  //Outer list over writables/columns, inner list over examples
+        for( int i=0; i<3; i++ ){
+            orig.add(new ArrayList<INDArray>());
+        }
+
+        for( int i=0; i<5; i++ ){
+            orig.get(0).add(Nd4j.rand(1,10));
+            orig.get(1).add(Nd4j.rand(new int[]{1,5,6}));
+            orig.get(2).add(Nd4j.rand(new int[]{1,3,4,5}));
+        }
+
+        List<List<INDArray>> origByExample = new ArrayList<>(); //Outer list over examples, inner list over writables
+        for( int i=0; i<5; i++ ){
+            origByExample.add(Arrays.asList(orig.get(0).get(i), orig.get(1).get(i), orig.get(2).get(i)));
+        }
+
+        List<INDArray> batched = new ArrayList<>();
+        for(List<INDArray> l : orig){
+            batched.add(Nd4j.concat(0, l.toArray(new INDArray[5])));
+        }
+
+        NDArrayRecordBatch batch = new NDArrayRecordBatch(batched);
+        assertEquals(5, batch.size());
+        for( int i=0; i<5; i++ ){
+            List<Writable> act = batch.get(i);
+            List<INDArray> unboxed = new ArrayList<>();
+            for(Writable w : act){
+                unboxed.add(((NDArrayWritable)w).get());
+            }
+            List<INDArray> exp = origByExample.get(i);
+            assertEquals(exp.size(), unboxed.size());
+            for( int j=0; j<exp.size(); j++ ){
+                assertEquals(exp.get(j), unboxed.get(j));
+            }
+        }
+
+        Iterator<List<Writable>> iter = batch.iterator();
+        int count = 0;
+        while(iter.hasNext()){
+            List<Writable> next = iter.next();
+            List<INDArray> unboxed = new ArrayList<>();
+            for(Writable w : next){
+                unboxed.add(((NDArrayWritable)w).get());
+            }
+            List<INDArray> exp = origByExample.get(count++);
+            assertEquals(exp.size(), unboxed.size());
+            for( int j=0; j<exp.size(); j++ ){
+                assertEquals(exp.get(j), unboxed.get(j));
+            }
+        }
+
+        assertEquals(5, count);
     }
 }
