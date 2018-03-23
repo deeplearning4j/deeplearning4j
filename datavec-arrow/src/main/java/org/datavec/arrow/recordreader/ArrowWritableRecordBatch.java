@@ -58,7 +58,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
 
     @Override
     public Iterator<List<Writable>> iterator() {
-        throw new UnsupportedOperationException();
+        return new ArrowListIterator();
     }
 
     @Override

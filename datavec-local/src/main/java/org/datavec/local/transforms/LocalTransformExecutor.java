@@ -40,7 +40,10 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.*;
 
-public class ArrowTransformExecutor {
+/**
+ * Local transform executor
+ */
+public class LocalTransformExecutor {
     //a boolean jvm argument that when the system property is true
     //will cause some functions to invoke a try catch block and just log errors
     //returning empty records

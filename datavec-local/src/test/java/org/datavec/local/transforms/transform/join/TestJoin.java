@@ -23,7 +23,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 
 
-import org.datavec.local.transforms.ArrowTransformExecutor;
+import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
 
 import java.util.*;
@@ -73,7 +73,7 @@ public class TestJoin  {
         List<List<Writable>> info = (infoList);
         List<List<Writable>> purchases = (purchaseList);
 
-        List<List<Writable>> joined = ArrowTransformExecutor.executeJoin(join, info, purchases);
+        List<List<Writable>> joined = LocalTransformExecutor.executeJoin(join, info, purchases);
         List<List<Writable>> joinedList = new ArrayList<>(joined);
         //Sort by order ID (column 3, index 2)
         Collections.sort(joinedList, new Comparator<List<Writable>>() {
@@ -106,7 +106,7 @@ public class TestJoin  {
         expectedManyToOne.add(Arrays.<Writable>asList(new LongWritable(1000002), new LongWritable(98765),
                         new DoubleWritable(30.00), new Text("Customer98765")));
 
-        List<List<Writable>> joined2 = ArrowTransformExecutor.executeJoin(join2, purchases, info);
+        List<List<Writable>> joined2 = LocalTransformExecutor.executeJoin(join2, purchases, info);
         List<List<Writable>> joinedList2 = new ArrayList<>(joined2);
         //Sort by order ID (column 0)
         Collections.sort(joinedList2, new Comparator<List<Writable>>() {
@@ -185,7 +185,7 @@ public class TestJoin  {
             Join join = new Join.Builder(jt).setJoinColumnsLeft("category").setJoinColumnsRight("otherCategory")
                             .setSchemas(schema1, schema2).build();
             List<List<Writable>> out =
-                            new ArrayList<>(ArrowTransformExecutor.executeJoin(join, firstRDD, secondRDD));
+                            new ArrayList<>(LocalTransformExecutor.executeJoin(join, firstRDD, secondRDD));
 
             //Sort output by column 0, then column 1, then column 2 for comparison to expected...
             Collections.sort(out, new Comparator<List<Writable>>() {
