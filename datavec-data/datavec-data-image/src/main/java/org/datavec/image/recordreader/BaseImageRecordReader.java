@@ -32,6 +32,7 @@ import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;
@@ -304,7 +305,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         Nd4j.getAffinityManager().ensureLocation(features, AffinityManager.Location.DEVICE);
 
 
-        List<Writable> ret = (RecordConverter.toRecord(features));
+        List<INDArray> ret = new ArrayList<>();
+        ret.add(features);
         if (appendLabel || writeLabel) {
             //And convert the previously collected label Writables from the label generators
             if(labelMultiGenerator != null){
@@ -316,7 +318,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                         temp.add(multiGenLabel.get(col));
                     }
                     INDArray currCol = RecordConverter.toMinibatchArray(temp);
-                    ret.add(new NDArrayWritable(currCol));
+                    ret.add(currCol);
                 }
             } else {
                 INDArray labels;
@@ -340,13 +342,11 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                     }
                 }
 
-                ret.add(new NDArrayWritable(labels));
+                ret.add(labels);
             }
         }
 
-        List<List<Writable>> ret2 = new ArrayList<>(1);
-        ret2.add(ret);
-        return ret2;
+        return new NDArrayRecordBatch(ret);
     }
 
     @Override
