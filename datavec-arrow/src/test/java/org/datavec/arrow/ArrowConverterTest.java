@@ -225,6 +225,11 @@ public class ArrowConverterTest {
     }
 
 
+    @Test
+    public void testArrowWritablesTimeSeries() {
+
+    }
+
 
 
 

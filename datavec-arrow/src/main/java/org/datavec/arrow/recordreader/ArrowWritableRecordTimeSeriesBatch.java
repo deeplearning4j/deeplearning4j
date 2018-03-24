@@ -9,6 +9,7 @@ import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.util.*;
  */
 @Data
 @AllArgsConstructor
-public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable {
+public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writable>>>,Closeable {
 
     private List<FieldVector> list;
     private int size;
@@ -27,16 +28,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     private ArrowRecordBatch arrowRecordBatch;
     private VectorSchemaRoot vectorLoader;
     private VectorUnloader unloader;
-    private int offset,rows;
-
-    public ArrowWritableRecordBatch(List<FieldVector> list,Schema schema,int offset,int rows) {
-        this.list = list;
-        this.schema = schema;
-        //each column should have same number of rows
-        this.offset = offset;
-        this.size = rows;
-
-    }
+    private int timeSeriesStride;
 
     /**
      * An index in to an individual
@@ -44,8 +36,13 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
      * @param list the list of field vectors to use
      * @param schema the schema to use
      */
-    public ArrowWritableRecordBatch(List<FieldVector> list, Schema schema) {
-        this(list,schema,0,list.get(0).getValueCount());
+    public ArrowWritableRecordTimeSeriesBatch(List<FieldVector> list, Schema schema,int timeSeriesStride) {
+        this.list = list;
+        this.schema = schema;
+        //each column should have same number of rows
+        this.timeSeriesStride = timeSeriesStride;
+        this.size = list.get(0).getValueCount() / timeSeriesStride;
+
     }
 
     @Override
@@ -64,7 +61,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
     @Override
-    public Iterator<List<Writable>> iterator() {
+    public Iterator<List<List<Writable>>> iterator() {
         return new ArrowListIterator();
     }
 
@@ -79,7 +76,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
     @Override
-    public boolean add(List<Writable> writable) {
+    public boolean add(List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
     }
 
@@ -94,12 +91,12 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
     @Override
-    public boolean addAll(Collection<? extends List<Writable>> collection) {
+    public boolean addAll(Collection<? extends List<List<Writable>>> collection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean addAll(int i,  Collection<? extends List<Writable>> collection) {
+    public boolean addAll(int i,  Collection<? extends List<List<Writable>>> collection) {
         throw new UnsupportedOperationException();
     }
 
@@ -119,27 +116,25 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
     @Override
-    public List<Writable> get(int i) {
-        List<Writable> ret = new ArrayList<>(schema.numColumns());
-        for(int column = 0; column < schema.numColumns(); column++) {
-            ret.add(ArrowConverter.fromEntry(offset + i * size,list.get(column),schema.getType(column)));
-        }
-        return ret;
+    public List<List<Writable>> get(int i) {
+        int timeStepLength = list.get(0).getValueCount() / schema.numColumns();
+        int offset = timeStepLength * i;
+        return new ArrowWritableRecordBatch(list,schema,offset,timeStepLength);
     }
 
     @Override
-    public List<Writable> set(int i, List<Writable> writable) {
+    public List<List<Writable>> set(int i, List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void add(int i, List<Writable> writable) {
+    public void add(int i, List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public List<Writable> remove(int i) {
+    public List<List<Writable>> remove(int i) {
         throw new UnsupportedOperationException();
     }
 
@@ -154,18 +149,18 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
     @Override
-    public ListIterator<List<Writable>> listIterator() {
+    public ListIterator<List<List<Writable>>> listIterator() {
         return new ArrowListIterator();
     }
 
     @Override
-    public ListIterator<List<Writable>> listIterator(int i) {
+    public ListIterator<List<List<Writable>>> listIterator(int i) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<List<Writable>> subList(int i, int i1) {
-        throw new UnsupportedOperationException();
+    public List<List<List<Writable>>> subList(int i, int i1) {
+        return null;
     }
 
     @Override
@@ -173,7 +168,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-        ArrowWritableRecordBatch lists = (ArrowWritableRecordBatch) o;
+        ArrowWritableRecordTimeSeriesBatch lists = (ArrowWritableRecordTimeSeriesBatch) o;
         return size == lists.size &&
                 Objects.equals(list, lists.list) &&
                 Objects.equals(schema, lists.schema);
@@ -196,7 +191,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     }
 
 
-    private class ArrowListIterator implements ListIterator<List<Writable>> {
+    private class ArrowListIterator implements ListIterator<List<List<Writable>>> {
         private int index;
 
         @Override
@@ -205,7 +200,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
         }
 
         @Override
-        public List<Writable> next() {
+        public List<List<Writable>> next() {
             return get(index++);
         }
 
@@ -215,7 +210,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
         }
 
         @Override
-        public List<Writable> previous() {
+        public List<List<Writable>> previous() {
             return get(index - 1);
         }
 
@@ -235,12 +230,12 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
         }
 
         @Override
-        public void set(List<Writable> writables) {
+        public void set(List<List<Writable>> writables) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void add(List<Writable> writables) {
+        public void add(List<List<Writable>> writables) {
             throw new UnsupportedOperationException();
 
         }

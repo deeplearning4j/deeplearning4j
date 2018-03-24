@@ -13,7 +13,7 @@
     <name>datavec-arrow</name>
 
     <properties>
-        <arrow.version>0.8.0</arrow.version>
+        <arrow.version>0.9.0</arrow.version>
     </properties>
 
     <dependencies>

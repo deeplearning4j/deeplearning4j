@@ -17,11 +17,15 @@ import org.apache.arrow.vector.types.pojo.DictionaryEncoding;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.FieldType;
 import org.apache.arrow.vector.util.ByteArrayReadableSeekableByteChannel;
+import org.datavec.api.records.Buffer;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.schema.conversion.TypeConversion;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.*;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
+import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
@@ -31,6 +35,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -44,6 +49,29 @@ import static java.nio.channels.Channels.newChannel;
  * @author Adam Gibson
  */
 public class ArrowConverter {
+
+
+
+
+    /**
+     * Create an ndarray from a matrix.
+     * The included batch must be all the same number of rows in order
+     * to work. The reason for this is {@link INDArray} must be all the same dimensions.
+     * Note that the input columns must also be numerical. If they aren't numerical already,
+     * consider using an {@link org.datavec.api.transform.TransformProcess} to transform the data
+     * output from {@link org.datavec.arrow.recordreader.ArrowRecordReader} in to the proper format
+     * for usage with this method for direct conversion.
+     *
+     * @param arrowWritableRecordBatch the incoming batch. This is typically output from
+     *                                 an {@link org.datavec.arrow.recordreader.ArrowRecordReader}
+     * @return an {@link INDArray} representative of the input data
+     */
+    public static INDArray toArray(ArrowWritableRecordTimeSeriesBatch arrowWritableRecordBatch) {
+        return RecordConverter.toTensor(arrowWritableRecordBatch);
+    }
+
+
+
 
     /**
      * Create an ndarray from a matrix.
@@ -128,39 +156,75 @@ public class ArrowConverter {
      * @param outputStream the output stream to write to
      */
     public static void writeRecordBatchTo(BufferAllocator bufferAllocator ,List<List<Writable>> recordBatch, Schema inputSchema,OutputStream outputStream) {
-       if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
-           val convertedSchema = toArrowSchema(inputSchema);
-           val columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
-               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
-               writer.start();
-               writer.writeBatch();
-               writer.end();
+        if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
+            val convertedSchema = toArrowSchema(inputSchema);
+            val columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+            try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
+                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
+                writer.start();
+                writer.writeBatch();
+                writer.end();
 
 
-           } catch (IOException e) {
-               throw new IllegalStateException(e);
-           }
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
 
-       }
-       else {
-           val convertedSchema = toArrowSchema(inputSchema);
-           val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-           try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
-               ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
-               writer.start();
-               writer.writeBatch();
-               writer.end();
+        }
+        else {
+            val convertedSchema = toArrowSchema(inputSchema);
+            val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
+            try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
+                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
+                writer.start();
+                writer.writeBatch();
+                writer.end();
 
 
-           } catch (IOException e) {
-               e.printStackTrace();
-           }
-       }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
     }
 
 
+    /**
+     * Convert the input field vectors (the input data) and
+     * the given schema to a proper list of writables.
+     * @param fieldVectors the field vectors to use
+     * @param schema the schema to use
+     * @param timeSeriesLength the length of the time series
+     * @return the equivalent datavec batch given the input data
+     */
+    public static List<List<List<Writable>>> toArrowWritablesTimeSeries(List<FieldVector> fieldVectors,Schema schema,int timeSeriesLength) {
+        ArrowWritableRecordTimeSeriesBatch arrowWritableRecordBatch = new ArrowWritableRecordTimeSeriesBatch(fieldVectors,schema,timeSeriesLength);
+        return arrowWritableRecordBatch;
+    }
+
+
+    /**
+     * Convert the input field vectors (the input data) and
+     * the given schema to a proper list of writables.
+     * @param fieldVectors the field vectors to use
+     * @param schema the schema to use
+     * @return the equivalent datavec batch given the input data
+     */
+    public static List<List<Writable>> toArrowWritables(List<FieldVector> fieldVectors,Schema schema) {
+        ArrowWritableRecordBatch arrowWritableRecordBatch = new ArrowWritableRecordBatch(fieldVectors,schema);
+        return arrowWritableRecordBatch;
+    }
+
+    /**
+     * Return a singular record based on the converted
+     * writables result.
+     * @param fieldVectors the field vectors to use
+     * @param schema the schema to use for input
+     * @return
+     */
+    public static List<Writable> toArrowWritablesSingle(List<FieldVector> fieldVectors,Schema schema) {
+        return toArrowWritables(fieldVectors,schema).get(0);
+    }
 
 
 
@@ -351,6 +415,96 @@ public class ArrowConverter {
     public static List<FieldVector> toArrowColumns(final BufferAllocator bufferAllocator, final Schema schema, List<List<Writable>> dataVecRecord) {
         int numRows = dataVecRecord.size();
 
+        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+
+        for(int j = 0; j < schema.numColumns(); j++) {
+            FieldVector fieldVector = ret.get(j);
+            int row = 0;
+            for(List<Writable> record : dataVecRecord) {
+                Writable writable = record.get(j);
+                setValue(schema.getType(j),fieldVector,writable,row);
+                row++;
+            }
+
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Convert a set of input strings to arrow columns
+     * @param bufferAllocator the buffer allocator to use
+     * @param schema the schema to use
+     * @param dataVecRecord the collection of input strings to process
+     * @return the created vectors
+     */
+    public static  List<FieldVector> toArrowColumnsStringSingle(final BufferAllocator bufferAllocator, final Schema schema, List<String> dataVecRecord) {
+        return toArrowColumnsString(bufferAllocator,schema, Arrays.asList(dataVecRecord));
+    }
+
+
+
+    /**
+     * Convert a set of input strings to arrow columns
+     * for a time series.
+     * @param bufferAllocator the buffer allocator to use
+     * @param schema the schema to use
+     * @param dataVecRecord the collection of input strings to process
+     * @return the created vectors
+     */
+    public static  List<FieldVector> toArrowColumnsStringTimeSeries(final BufferAllocator bufferAllocator,
+                                                                    final Schema schema,
+                                                                    List<List<List<String>>> dataVecRecord) {
+        //time series length * number of columns
+        int numRows = dataVecRecord.size() * dataVecRecord.get(0).size();
+
+        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+
+        for(int i = 0; i < dataVecRecord.size(); i++)
+            for(int j = 0; j < schema.numColumns(); j++) {
+                FieldVector fieldVector = ret.get(j);
+                int row = 0;
+                for(List<List<String>> record : dataVecRecord) {
+                    String writable = record.get(i).get(j);
+                    setValue(schema.getType(j),fieldVector,writable,row * i);
+                    row++;
+                }
+
+            }
+
+        return ret;
+    }
+
+
+    /**
+     * Convert a set of input strings to arrow columns
+     * @param bufferAllocator the buffer allocator to use
+     * @param schema the schema to use
+     * @param dataVecRecord the collection of input strings to process
+     * @return the created vectors
+     */
+    public static  List<FieldVector> toArrowColumnsString(final BufferAllocator bufferAllocator, final Schema schema, List<List<String>> dataVecRecord) {
+        int numRows = dataVecRecord.size();
+
+        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+
+        for(int j = 0; j < schema.numColumns(); j++) {
+            FieldVector fieldVector = ret.get(j);
+            int row = 0;
+            for(List<String> record : dataVecRecord) {
+                String writable = record.get(j);
+                setValue(schema.getType(j),fieldVector,writable,row);
+                row++;
+            }
+
+        }
+
+        return ret;
+    }
+
+
+    private static List<FieldVector> createFieldVectors(BufferAllocator bufferAllocator,Schema schema, int numRows) {
         List<FieldVector> ret = new ArrayList<>(schema.numColumns());
 
         for(int i = 0; i < schema.numColumns(); i++) {
@@ -368,51 +522,44 @@ public class ArrowConverter {
             }
         }
 
-        for(int j = 0; j < schema.numColumns(); j++) {
-            FieldVector fieldVector = ret.get(j);
-            int row = 0;
-            for(List<Writable> record : dataVecRecord) {
-                Writable writable = record.get(j);
-                switch (schema.getType(j)) {
-                    case Integer:
-                        IntVector intVector = (IntVector) fieldVector;
-                        int set = writable.toInt();
-                        intVector.set(row++,set);
-                        break;
-                    case Float:
-                        Float4Vector float4Vector = (Float4Vector) fieldVector;
-                        float set2 = writable.toFloat();
-                        float4Vector.set(row++,set2);
-                        break;
-                    case Double:
-                        double set3 = writable.toDouble();
-                        Float8Vector float8Vector = (Float8Vector) fieldVector;
-                        float8Vector.set(row++,set3);
-                        break;
-                    case Long:
-                        BigIntVector largeIntVector = (BigIntVector) fieldVector;
-                        largeIntVector.set(row++,writable.toLong());
-                        break;
-                    case Categorical:
-                    case String:
-                        String stringSet = writable.toString();
-                        VarCharVector textVector = (VarCharVector) fieldVector;
-                        textVector.set(row++,stringSet.getBytes());
-                        break;
-                    case Time:
-                        int timeSet = writable.toInt();
-                        TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
-                        timeMilliVector.set(row++,timeSet);
-                        break;
-
-                }
-            }
-
-        }
-
         return ret;
     }
 
+    private static void setValue(ColumnType columnType,FieldVector fieldVector,Object value,int row) {
+        switch (columnType) {
+            case Integer:
+                IntVector intVector = (IntVector) fieldVector;
+                int set = TypeConversion.getInstance().convertInt(value);
+                intVector.set(row,set);
+                break;
+            case Float:
+                Float4Vector float4Vector = (Float4Vector) fieldVector;
+                float set2 = TypeConversion.getInstance().convertFloat(value);
+                float4Vector.set(row,set2);
+                break;
+            case Double:
+                double set3 = TypeConversion.getInstance().convertDouble(value);
+                Float8Vector float8Vector = (Float8Vector) fieldVector;
+                float8Vector.set(row,set3);
+                break;
+            case Long:
+                BigIntVector largeIntVector = (BigIntVector) fieldVector;
+                largeIntVector.set(row,TypeConversion.getInstance().convertLong(value));
+                break;
+            case Categorical:
+            case String:
+                String stringSet = TypeConversion.getInstance().convertString(value);
+                VarCharVector textVector = (VarCharVector) fieldVector;
+                textVector.set(row,stringSet.getBytes());
+                break;
+            case Time:
+                int timeSet = TypeConversion.getInstance().convertInt(value);
+                TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
+                timeMilliVector.set(row,timeSet);
+                break;
+
+        }
+    }
 
 
 
