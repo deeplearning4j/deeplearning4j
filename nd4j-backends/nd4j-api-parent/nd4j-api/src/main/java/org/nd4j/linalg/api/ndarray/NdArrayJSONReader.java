@@ -10,6 +10,7 @@ import java.io.IOException;
 /**
  * Created by susaneraly on 6/16/16.
  */
+@Deprecated
 public class NdArrayJSONReader {
 
     public INDArray read(File jsonFile) {

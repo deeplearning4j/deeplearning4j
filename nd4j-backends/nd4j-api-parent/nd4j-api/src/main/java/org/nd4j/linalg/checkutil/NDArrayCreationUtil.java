@@ -1,5 +1,6 @@
 package org.nd4j.linalg.checkutil;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -69,6 +70,51 @@ public class NDArrayCreationUtil {
 
         return all;
     }
+
+    /**
+     * Test utility to sweep shapes given a rank
+     * Given a rank will generate random test matrices that will cover all cases of a shape with a '1' anywhere in the shape
+     * as well a shape with random ints that are not 0 or 1
+     * eg. rank 2: 1,1; 1,2; 2,1; 2,2; 3,4
+     * Motivated by TADs that often hit bugs when a "1" occurs as the size of a dimension
+     *
+     * @param rank any rank including true scalars i.e rank >= 0
+     * @param order what order array to return i.e 'c' or 'f' order arrays
+     * @return List of arrays and the shapes as strings
+     */
+    public static List<Pair<INDArray, String>> getTestMatricesWithVaryingShapes(int rank, char order) {
+        List<Pair<INDArray, String>> all = new ArrayList<>();
+        if (rank == 0) {
+            //scalar
+            all.add(new Pair<>(Nd4j.trueScalar(Nd4j.rand(1, 1).getDouble(0)), "{}"));
+            return all;
+        }
+        //generate all possible combinations with a 1 and a 2
+        int maxCount = (int) Math.pow(2.0, rank);
+        int[] defaultOnes = new int[rank];
+        Arrays.fill(defaultOnes, 1);
+        //use binary and just add 1
+        for (int i = 0; i < maxCount; i++) {
+            int num = i;
+            int[] iShape = ArrayUtils.clone(defaultOnes);
+            int b = 0;
+            while (num > 0) {
+                iShape[b] = (num % 2) + 1;
+                b++;
+                num /= 2;
+            }
+            all.add(new Pair<>(Nd4j.rand(order, iShape), ArrayUtils.toString(iShape)));
+        }
+        // add a random shape of correct rank with elements > 2 that is not too big
+        int[] aRandomShape = new int[rank];
+        Random ran = new Random();
+        for (int i = 0; i < rank; i++) {
+            aRandomShape[i] = 2 + ran.nextInt(6);
+        }
+        all.add(new Pair<>(Nd4j.rand(order, aRandomShape), ArrayUtils.toString(aRandomShape)));
+        return all;
+    }
+
 
     public static Pair<INDArray, String> getTransposedMatrixWithShape(char ordering, int rows, int cols, int seed) {
         Nd4j.getRandom().setSeed(seed);
