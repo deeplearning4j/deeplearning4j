@@ -319,12 +319,13 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
     private INDArray convertWritablesBatched(List<INDArray> list, SubsetDetails details) {
         INDArray arr;
         if (details.entireReader) {
-            //Expect to have a SINGLE INDArray here
-            if (list.size() > 1) {
-                throw new UnsupportedOperationException(
-                                "Cannot use batched operations on entire reader with multiple " + "writables");
+            if (list.size() == 1) {
+                arr = list.get(0);
+            } else {
+                //Need to concat column vectors
+                INDArray[] asArray = list.toArray(new INDArray[list.size()]);
+                arr = Nd4j.concat(1, asArray);
             }
-            arr = list.get(0);
         } else if (details.subsetStart == details.subsetEndInclusive || details.oneHot) {
             arr = list.get(details.subsetStart);
         } else {
