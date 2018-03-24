@@ -20,6 +20,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.files.FileFromPathIterator;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.datavec.image.data.Image;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.BaseImageRecordReader;
@@ -179,7 +180,7 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
             exampleNum++;
         }
 
-        return Arrays.asList(Arrays.<Writable>asList(new NDArrayWritable(outImg), new NDArrayWritable(outLabel)));
+        return new NDArrayRecordBatch(Arrays.asList(outImg, outLabel));
     }
 
     private void label(Image image, List<ImageObject> objectsThisImg, INDArray outLabel, int exampleNum) {

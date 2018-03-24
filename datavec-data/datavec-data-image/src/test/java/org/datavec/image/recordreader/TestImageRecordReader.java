@@ -28,7 +28,9 @@ import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -207,28 +209,24 @@ public class TestImageRecordReader {
         //Test batch ops:
         rr.reset();
 
-        List<Writable> b1 = flatten(rr.next(3));
-        List<Writable> b2 = flatten(rr.next(3));
+        List<List<Writable>> b1 = rr.next(3);
+        List<List<Writable>> b2 = rr.next(3);
         assertFalse(rr.hasNext());
-        assertEquals(2, b1.size());
-        assertEquals(2, b2.size());
+
+        NDArrayRecordBatch b1a = (NDArrayRecordBatch)b1;
+        NDArrayRecordBatch b2a = (NDArrayRecordBatch)b2;
+        assertEquals(2, b1a.getArrays().size());
+        assertEquals(2, b2a.getArrays().size());
 
         NDArrayWritable l1 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(0).toDouble(),
                 expLabels.get(1).toDouble(), expLabels.get(2).toDouble()}, new int[]{3,1}));
         NDArrayWritable l2 = new NDArrayWritable(Nd4j.create(new double[]{expLabels.get(3).toDouble(),
                 expLabels.get(4).toDouble(), expLabels.get(5).toDouble()}, new int[]{3,1}));
 
-        assertEquals(l1, b1.get(1));
-        assertEquals(l2, b2.get(1));
-    }
-
-    private List<Writable> flatten(List<List<Writable>> input) {
-        List<Writable> ret = new ArrayList<>();
-        for(List<Writable> image : input) {
-            ret.addAll(image);
-        }
-
-        return ret;
+        INDArray act1 = b1a.getArrays().get(1);
+        INDArray act2 = b2a.getArrays().get(1);
+        assertEquals(l1.get(), act1);
+        assertEquals(l2.get(), act2);
     }
 
 
@@ -306,11 +304,14 @@ public class TestImageRecordReader {
 
         //Test batch ops:
         rr.reset();
-        List<Writable> b1 = flatten(rr.next(3));
-        List<Writable> b2 = flatten(rr.next(3));
+        List<List<Writable>> b1 = rr.next(3);
+        List<List<Writable>> b2 = rr.next(3);
         assertFalse(rr.hasNext());
-        assertEquals(4, b1.size());
-        assertEquals(4, b2.size());
+
+        NDArrayRecordBatch b1a = (NDArrayRecordBatch)b1;
+        NDArrayRecordBatch b2a = (NDArrayRecordBatch)b2;
+        assertEquals(4, b1a.getArrays().size());
+        assertEquals(4, b2a.getArrays().size());
 
         NDArrayWritable l1a = new NDArrayWritable(Nd4j.vstack(
                 ((NDArrayWritable)expLabels.get(0).get(0)).get(),
@@ -341,13 +342,13 @@ public class TestImageRecordReader {
 
 
 
-        assertEquals(l1a, b1.get(1));
-        assertEquals(l1b, b1.get(2));
-        assertEquals(l1c, b1.get(3));
+        assertEquals(l1a.get(), b1a.getArrays().get(1));
+        assertEquals(l1b.get(), b1a.getArrays().get(2));
+        assertEquals(l1c.get(), b1a.getArrays().get(3));
 
-        assertEquals(l2a, b2.get(1));
-        assertEquals(l2b, b2.get(2));
-        assertEquals(l2c, b2.get(3));
+        assertEquals(l2a.get(), b2a.getArrays().get(1));
+        assertEquals(l2b.get(), b2a.getArrays().get(2));
+        assertEquals(l2c.get(), b2a.getArrays().get(3));
     }
 
     private static class TestPathMultiLabelGenerator implements PathMultiLabelGenerator {
