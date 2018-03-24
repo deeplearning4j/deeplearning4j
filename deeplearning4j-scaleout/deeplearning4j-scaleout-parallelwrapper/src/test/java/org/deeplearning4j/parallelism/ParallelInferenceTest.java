@@ -4,6 +4,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.nd4j.linalg.activations.Activation;
@@ -307,7 +309,7 @@ public class ParallelInferenceTest {
     }
 
 
-    @Test
+    @Test(timeout = 30000L)
     public void testParallelInferenceVariableLengthTS() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
@@ -344,41 +346,98 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
 
-                final INDArray[] act = new INDArray[arrs.size()];
-                final AtomicInteger counter = new AtomicInteger(0);
-                final AtomicInteger failedCount = new AtomicInteger(0);
-
-                for( int i=0; i<arrs.size(); i++ ){
-                    final int j=i;
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try{
-                                act[j] = inf.output(arrs.get(j));
-                                counter.incrementAndGet();
-                            } catch (Exception e){
-                                e.printStackTrace();
-                                failedCount.incrementAndGet();
-                            }
-                        }
-                    }).start();
-                }
-
-                long start = System.currentTimeMillis();
-                long current = System.currentTimeMillis();
-                while(current < start + 20000 && failedCount.get() == 0 && counter.get() < arrs.size()){
-                    Thread.sleep(1000L);
-                }
-
-                assertEquals(0, failedCount.get());
-                assertEquals(arrs.size(), counter.get());
-                for( int i=0; i<arrs.size(); i++ ){
-                    INDArray e = exp.get(i);
-                    INDArray a = act[i];
-
-                    assertEquals(e, a);
-                }
+                testParallelInference(inf, arrs, exp);
             }
+        }
+    }
+
+    @Test(timeout = 30000L)
+    public void testParallelInferenceVariableSizeCNN() throws Exception {
+        //Variable size input for CNN model - for example, YOLO models
+        //In these cases, we can't batch and have to execute the different size inputs separately
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 3;
+        int[][] shapes = new int[][]{
+                {1,nIn,10,10},
+                {1,nIn,10,15},
+                {1,nIn,20,15},
+                {1,nIn,20,20},
+                {1,nIn,30,30},
+                {1,nIn,40,40},
+                {1,nIn,40,45},
+        };
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(5).build())
+                .layer(new CnnLossLayer())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(20)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray> arrs = new ArrayList<>();
+                List<INDArray> exp = new ArrayList<>();
+                for (int[] shape : shapes) {
+                    INDArray in = Nd4j.rand(shape);
+                    arrs.add(in);
+                    INDArray out = net.output(in);
+                    exp.add(out);
+                }
+
+                testParallelInference(inf, arrs, exp);
+            }
+        }
+    }
+
+    private static void testParallelInference(ParallelInference inf, List<INDArray> in, List<INDArray> exp) throws Exception {
+        final INDArray[] act = new INDArray[in.size()];
+        final AtomicInteger counter = new AtomicInteger(0);
+        final AtomicInteger failedCount = new AtomicInteger(0);
+
+        for( int i=0; i<in.size(); i++ ){
+            final int j=i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        act[j] = inf.output(in.get(j));
+                        counter.incrementAndGet();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        failedCount.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+
+        long start = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
+        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
+            Thread.sleep(1000L);
+        }
+
+        assertEquals(0, failedCount.get());
+        assertEquals(in.size(), counter.get());
+        for( int i=0; i<in.size(); i++ ){
+            INDArray e = exp.get(i);
+            INDArray a = act[i];
+
+            assertEquals(e, a);
         }
     }
 }
