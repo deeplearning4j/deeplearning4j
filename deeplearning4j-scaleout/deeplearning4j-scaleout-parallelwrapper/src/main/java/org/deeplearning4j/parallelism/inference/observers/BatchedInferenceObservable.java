@@ -7,6 +7,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,9 +54,20 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         // this method should pile individual examples into single batch
         if (counter.get() > 1) {
             INDArray[] result = new INDArray[inputs.get(0).length];
+
+            //First: determine which we can actually batch...
+            int lastPossible = 0;
+            for( int i=1; i<inputs.size(); i++ ){
+                if(canBatch(inputs.get(0), inputs.get(i))){
+                    lastPossible = i;
+                } else {
+                    break;
+                }
+            }
+
             for (int i = 0; i < result.length; i++) {
                 List<INDArray> examples = new ArrayList<>();
-                for (int e = 0; e < inputs.size(); e++) {
+                for (int e = 0; e <= lastPossible; e++) {
                     examples.add(inputs.get(e)[i]);
                 }
                 result[i] = Nd4j.pile(examples);
@@ -67,16 +79,28 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
             realLocker.writeLock().unlock();
             return inputs.get(0);
         }
+    }
 
-
+    private static boolean canBatch(INDArray[] first, INDArray[] candidate){
+        //For now: let's simply require that the inputs have the same shape
+        //In the future: we'll intelligently handle the RNN variable length case
+        for(int i=0; i<first.length; i++ ){
+            if(!Arrays.equals(first[i].shape(), candidate[i].shape())){
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public void setOutput(INDArray... output) {
         //this method should split batched output INDArray[] into multiple separate INDArrays
         // pre-create outputs
-        if (counter.get() > 1) {
-            for (int i = 0; i < counter.get(); i++) {
+        int exampleCount = output[0].size(0);
+        if(exampleCount == 1){
+            outputs.add(output);
+        } else {
+            for (int i = 0; i < exampleCount; i++) {
                 outputs.add(new INDArray[output.length]);
             }
 
@@ -89,17 +113,12 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                 }
 
                 INDArray[] split = Nd4j.tear(array, dimensions);
-                if (split.length != counter.get())
-                    throw new ND4JIllegalStateException("Number of splits [" + split.length
-                                    + "] doesn't match number of queries [" + counter.get() + "]");
 
-                for (int e = 0; e < counter.get(); e++) {
+                for (int e = 0; e < exampleCount; e++) {
                     outputs.get(e)[cnt] = split[e];
                 }
                 cnt++;
             }
-        } else {
-            outputs.add(output);
         }
 
         this.setChanged();
