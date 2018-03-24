@@ -63,98 +63,91 @@ public class WeightInitUtil {
 
     public static INDArray initWeights(double fanIn, double fanOut, int[] shape, WeightInit initScheme,
                     Distribution dist, char order, INDArray paramView) {
-        //Note: using f order here as params get flattened to f order
-
-        INDArray ret;
         switch (initScheme) {
             case DISTRIBUTION:
-                ret = dist.sample(shape);
+                dist.sample(paramView);
                 break;
             case RELU:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
+                Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / fanIn)); //N(0, 2/nIn)
                 break;
             case RELU_UNIFORM:
                 double u = Math.sqrt(6.0 / fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-u, u)); //U(-sqrt(6/fanIn), sqrt(6/fanIn)
                 break;
             case SIGMOID_UNIFORM:
                 double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-r, r));
                 break;
             case UNIFORM:
                 double a = 1.0 / Math.sqrt(fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-a, a));
                 break;
             case LECUN_UNIFORM:
                 double b = 3.0 / Math.sqrt(fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-b, b));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-b, b));
                 break;
             case XAVIER:
-                ret = Nd4j.randn(order, shape).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
+                Nd4j.randn(paramView).muli(FastMath.sqrt(2.0 / (fanIn + fanOut)));
                 break;
             case XAVIER_UNIFORM:
                 //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
                 //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
                 double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-s, s));
                 break;
             case LECUN_NORMAL:  //Fall through: these 3 are equivalent
             case NORMAL:
             case XAVIER_FAN_IN:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
+                Nd4j.randn(paramView).divi(FastMath.sqrt(fanIn));
                 break;
             case XAVIER_LEGACY:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(shape[0] + shape[1]));
+                Nd4j.randn(paramView).divi(FastMath.sqrt(shape[0] + shape[1]));
                 break;
             case ZERO:
-                ret = Nd4j.create(shape, order);
+                paramView.assign(0.0);
                 break;
             case ONES:
-                ret = Nd4j.createUninitialized(shape, order).assign(1.0);    //No Nd4j.ones(int[], char)
+                paramView.assign(1.0);
                 break;
             case IDENTITY:
                 if(shape.length != 2 || shape[0] != shape[1]){
                     throw new IllegalStateException("Cannot use IDENTITY init with parameters of shape "
                             + Arrays.toString(shape) + ": weights must be a square matrix for identity");
                 }
+                INDArray ret;
                 if(order == Nd4j.order()){
                     ret = Nd4j.eye(shape[0]);
                 } else {
                     ret = Nd4j.createUninitialized(shape, order).assign(Nd4j.eye(shape[0]));
                 }
+                INDArray flat = Nd4j.toFlattened(order, ret);
+                paramView.assign(flat);
                 break;
             case VAR_SCALING_NORMAL_FAN_IN:
                 // TODO: needs to be truncated normal to match keras.
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanIn));
+                Nd4j.randn(paramView).divi(FastMath.sqrt(fanIn));
                 break;
             case VAR_SCALING_NORMAL_FAN_OUT:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt(fanOut));
+                Nd4j.randn(paramView).divi(FastMath.sqrt(fanOut));
                 break;
             case VAR_SCALING_NORMAL_FAN_AVG:
-                ret = Nd4j.randn(order, shape).divi(FastMath.sqrt((fanIn + fanOut) / 2));
+                Nd4j.randn(paramView).divi(FastMath.sqrt((fanIn + fanOut) / 2));
                 break;
             case VAR_SCALING_UNIFORM_FAN_IN:
                 double scalingFanIn = 3.0 / Math.sqrt(fanIn);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanIn, scalingFanIn));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-scalingFanIn, scalingFanIn));
                 break;
             case VAR_SCALING_UNIFORM_FAN_OUT:
                 double scalingFanOut = 3.0 / Math.sqrt(fanOut);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut));
                 break;
             case VAR_SCALING_UNIFORM_FAN_AVG:
                 double scalingFanAvg = 3.0 / Math.sqrt((fanIn + fanOut) / 2);
-                ret = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanAvg, scalingFanAvg));
+                Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-scalingFanAvg, scalingFanAvg));
                 break;
             default:
                 throw new IllegalStateException("Illegal weight init value: " + initScheme);
         }
-        INDArray flat = Nd4j.toFlattened(order, ret);
-        if (flat.length() != paramView.length())
-            throw new RuntimeException("ParamView length does not match initialized weights length (view length: "
-                            + paramView.length() + ", view shape: " + Arrays.toString(paramView.shape())
-                            + "; flattened length: " + flat.length());
-
-        paramView.assign(flat);
 
         return paramView.reshape(order, shape);
     }
