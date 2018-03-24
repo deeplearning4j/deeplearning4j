@@ -2,6 +2,11 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
@@ -21,9 +26,12 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -296,5 +304,81 @@ public class ParallelInferenceTest {
             eval.eval(output.getFirst(), output.getSecond());
         }
         log.info(eval.stats());
+    }
+
+
+    @Test
+    public void testParallelInferenceVariableLengthTS() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 10;
+        int[] tsLengths = {3,5,7,10,50,100};
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new RnnOutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(20)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray> arrs = new ArrayList<>();
+                List<INDArray> exp = new ArrayList<>();
+                for (int l : tsLengths) {
+                    INDArray in = Nd4j.rand(new int[]{1, nIn, l});
+                    arrs.add(in);
+                    INDArray out = net.output(in);
+                    exp.add(out);
+                }
+
+                final INDArray[] act = new INDArray[arrs.size()];
+                final AtomicInteger counter = new AtomicInteger(0);
+                final AtomicInteger failedCount = new AtomicInteger(0);
+
+                for( int i=0; i<arrs.size(); i++ ){
+                    final int j=i;
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try{
+                                act[j] = inf.output(arrs.get(j));
+                                counter.incrementAndGet();
+                            } catch (Exception e){
+                                e.printStackTrace();
+                                failedCount.incrementAndGet();
+                            }
+                        }
+                    }).start();
+                }
+
+                long start = System.currentTimeMillis();
+                long current = System.currentTimeMillis();
+                while(current < start + 20000 && failedCount.get() == 0 && counter.get() < arrs.size()){
+                    Thread.sleep(1000L);
+                }
+
+                assertEquals(0, failedCount.get());
+                assertEquals(arrs.size(), counter.get());
+                for( int i=0; i<arrs.size(); i++ ){
+                    INDArray e = exp.get(i);
+                    INDArray a = act[i];
+
+                    assertEquals(e, a);
+                }
+            }
+        }
     }
 }
