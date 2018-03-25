@@ -64,13 +64,14 @@ public class RecordMapper {
         if(batchSize > 0 && recordReader.batchesSupported() && recordWriter.supportsBatch()) {
             while(recordReader.hasNext()) {
                 List<List<Writable>> next = recordReader.next(batchSize);
-                //update records written
-                partitioner.updatePartitionInfo(recordWriter.writeBatch(next));
                 if(recordReader.hasNext() && partitioner.needsNewPartition()) {
                     partitioner.currentOutputStream().flush();
                     partitioner.currentOutputStream().close();
                     partitioner.openNewStream();
                 }
+                //update records written
+                partitioner.updatePartitionInfo(recordWriter.writeBatch(next));
+
             }
 
             partitioner.currentOutputStream().flush();

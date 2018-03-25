@@ -177,8 +177,11 @@ public class ArrowConverter {
         if(!(recordBatch instanceof ArrowWritableRecordBatch)) {
             val convertedSchema = toArrowSchema(inputSchema);
             val columns  = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-            try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
-                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()), newChannel(outputStream))) {
+            try {
+                VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,columns,recordBatch.size());
+
+                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(columns,convertedSchema.getFields()),
+                        newChannel(outputStream));
                 writer.start();
                 writer.writeBatch();
                 writer.end();
@@ -192,15 +195,18 @@ public class ArrowConverter {
         else {
             val convertedSchema = toArrowSchema(inputSchema);
             val pair = toArrowColumns(bufferAllocator,inputSchema,recordBatch);
-            try(VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema.getFields(),pair,recordBatch.size());
-                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()), newChannel(outputStream))) {
+            try {
+                VectorSchemaRoot root = new VectorSchemaRoot(convertedSchema,pair,recordBatch.size());
+
+                ArrowFileWriter writer = new ArrowFileWriter(root, providerForVectors(pair,convertedSchema.getFields()),
+                        newChannel(outputStream));
                 writer.start();
                 writer.writeBatch();
                 writer.end();
 
 
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new IllegalStateException(e);
             }
         }
 
@@ -444,6 +450,40 @@ public class ArrowConverter {
                 row++;
             }
 
+        }
+
+        return ret;
+    }
+
+
+    /**
+     * Convert a set of input strings to arrow columns
+     * for a time series.
+     * @param bufferAllocator the buffer allocator to use
+     * @param schema the schema to use
+     * @param dataVecRecord the collection of input strings to process
+     * @return the created vectors
+     */
+    public static  List<FieldVector> toArrowColumnsTimeSeries(final BufferAllocator bufferAllocator,
+                                                                    final Schema schema,
+                                                                    List<List<List<Writable>>> dataVecRecord) {
+        //time series length * number of columns
+        int numRows = 0;
+        for(List<List<Writable>> timeStep : dataVecRecord) {
+            numRows += timeStep.get(0).size() * timeStep.size();
+        }
+
+        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+
+        for(int i = 0; i < dataVecRecord.size(); i++) {
+            List<List<Writable>> record = dataVecRecord.get(i);
+            for(int j = 0; j < record.size(); j++) {
+                for(int k = 0; k < record.get(j).size(); k++) {
+                    FieldVector fieldVector = ret.get(k);
+                    Writable writable = record.get(j).get(k);
+                    setValue(schema.getType(k), fieldVector, writable, i + j * k);
+                }
+            }
         }
 
         return ret;

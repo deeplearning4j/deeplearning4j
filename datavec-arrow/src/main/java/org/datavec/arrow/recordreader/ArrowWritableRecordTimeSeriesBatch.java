@@ -67,7 +67,11 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public Object[] toArray() {
-        throw new UnsupportedOperationException();
+        Object[] ret = new Object[size()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = get(i);
+        }
+        return ret;
     }
 
     @Override
@@ -240,5 +244,6 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
         }
     }
+
 
 }

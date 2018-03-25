@@ -53,6 +53,12 @@ public class ArrowRecordWriter implements RecordWriter {
 
     @Override
     public PartitionMetaData writeBatch(List<List<Writable>> batch) throws IOException {
+        if(partitioner.needsNewPartition()) {
+            partitioner.currentOutputStream().flush();
+            partitioner.currentOutputStream().close();
+            partitioner.openNewStream();
+        }
+
         if(batch instanceof ArrowWritableRecordBatch) {
             ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) batch;
             ArrowConverter.writeRecordBatchTo(arrowWritableRecordBatch,schema,partitioner.currentOutputStream());
