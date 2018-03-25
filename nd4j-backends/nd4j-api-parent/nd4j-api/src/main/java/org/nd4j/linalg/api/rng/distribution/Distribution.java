@@ -205,4 +205,12 @@ public interface Distribution {
     INDArray sample(int[] shape);
 
 
+    /**
+     * Fill the target array by sampling from the distribution
+     *
+     * @param target  target array
+     * @return an ndarray with random samples from this distribution
+     */
+    INDArray sample(INDArray target);
+
 }

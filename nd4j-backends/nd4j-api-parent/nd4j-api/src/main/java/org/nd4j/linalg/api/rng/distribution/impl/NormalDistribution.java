@@ -329,17 +329,22 @@ public class NormalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
+        final INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+        return sample(ret);
+    }
+
+    @Override
+    public INDArray sample(INDArray ret) {
         if (random.getStatePointer() != null) {
             if (means != null) {
                 return Nd4j.getExecutioner().exec(new GaussianDistribution(
-                                Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
+                        ret, means, standardDeviation), random);
             } else {
                 return Nd4j.getExecutioner().exec(new GaussianDistribution(
-                                Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
+                        ret, mean, standardDeviation), random);
             }
         } else {
-            INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
-            Iterator<int[]> idxIter = new NdIndexIterator(shape); //For consistent values irrespective of c vs. fortran ordering
+            Iterator<int[]> idxIter = new NdIndexIterator(ret.shape()); //For consistent values irrespective of c vs. fortran ordering
             int len = ret.length();
             if (means != null) {
                 for (int i = 0; i < len; i++) {

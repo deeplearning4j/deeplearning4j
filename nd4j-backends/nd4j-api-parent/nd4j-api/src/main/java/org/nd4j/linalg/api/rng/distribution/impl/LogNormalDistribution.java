@@ -26,7 +26,6 @@ import org.apache.commons.math3.exception.util.LocalizedFormats;
 import org.apache.commons.math3.special.Erf;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -323,12 +322,18 @@ public class LogNormalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(int[] shape) {
+        final INDArray ret = Nd4j.createUninitialized(shape, Nd4j.order());
+        return sample(ret);
+    }
+
+    @Override
+    public INDArray sample(INDArray ret) {
         if (means != null) {
             return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.LogNormalDistribution(
-                    Nd4j.createUninitialized(shape, Nd4j.order()), means, standardDeviation), random);
+                    ret, means, standardDeviation), random);
         } else {
             return Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.random.impl.LogNormalDistribution(
-                    Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), random);
+                    ret, mean, standardDeviation), random);
         }
     }
 }
