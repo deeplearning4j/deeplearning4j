@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.datavec.arrow.ArrowConverter.*;
 import static org.datavec.local.transforms.LocalTransformExecutor.execute;
+import static org.datavec.local.transforms.LocalTransformExecutor.executeToSequence;
 
 /**
  * CSVSpark Transform runs
@@ -125,14 +126,18 @@ public class CSVSparkTransform {
      * @return
      */
     public SequenceBatchCSVRecord transformSequenceIncremental(BatchCSVRecord transform) {
-        List<List<Writable>> converted =  execute(toArrowWritables(toArrowColumnsString(
-                bufferAllocator,transformProcess.getInitialSchema(),
-                transform.getRecordsAsString()),
-                transformProcess.getInitialSchema()),transformProcess);
+        /**
+         * Sequence schema?
+         */
+        List<List<List<Writable>>> converted = executeToSequence(
+                toArrowWritables(toArrowColumnsStringTimeSeries(
+                        bufferAllocator, transformProcess.getInitialSchema(),
+                        Arrays.asList(transform.getRecordsAsString())),
+                        transformProcess.getInitialSchema()), transformProcess);
 
         SequenceBatchCSVRecord batchCSVRecord = new SequenceBatchCSVRecord();
         for (int i = 0; i < converted.size(); i++) {
-            BatchCSVRecord batchCSVRecord1 = BatchCSVRecord.fromWritables(Arrays.asList(converted.get(i)));
+            BatchCSVRecord batchCSVRecord1 = BatchCSVRecord.fromWritables(converted.get(i));
             batchCSVRecord.add(Arrays.asList(batchCSVRecord1));
         }
 

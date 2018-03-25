@@ -3,6 +3,8 @@ package org.datavec.local.transforms;
 import com.codepoetics.protonpack.Indexed;
 import com.codepoetics.protonpack.StreamUtils;
 import lombok.val;
+import org.apache.arrow.memory.BufferAllocator;
+import org.apache.arrow.memory.RootAllocator;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
@@ -16,7 +18,7 @@ import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
+import org.datavec.arrow.ArrowConverter;
 import org.datavec.local.transforms.functions.EmptyRecordFunction;
 import org.datavec.local.transforms.join.ExecuteJoinFromCoGroupFlatMapFunction;
 import org.datavec.local.transforms.join.ExtractKeysFunction;
@@ -24,21 +26,18 @@ import org.datavec.local.transforms.misc.ColumnAsKeyPairFunction;
 import org.datavec.local.transforms.rank.UnzipForCalculateSortedRankFunction;
 import org.datavec.local.transforms.reduce.MapToPairForReducerFunction;
 import org.datavec.local.transforms.sequence.*;
-import org.datavec.local.transforms.transform.SequenceSplitFunction;
 import org.datavec.local.transforms.transform.LocalTransformFunction;
+import org.datavec.local.transforms.transform.SequenceSplitFunction;
 import org.datavec.local.transforms.transform.filter.LocalFilterFunction;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.function.FunctionalUtils;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.toList;
 
 /**
  * Local transform executor
@@ -49,7 +48,7 @@ public class LocalTransformExecutor {
     //returning empty records
     public final static String LOG_ERROR_PROPERTY = "org.datavec.spark.transform.logerrors";
 
-
+    private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
 
     /**
      * Execute the specified TransformProcess with the given input data<br>
@@ -118,7 +117,12 @@ public class LocalTransformExecutor {
     public static List<List<List<Writable>>> executeSequenceToSequence(List<List<List<Writable>>> inputSequence,
                                                                        TransformProcess transformProcess) {
         if (!(transformProcess.getFinalSchema() instanceof SequenceSchema)) {
-            throw new IllegalStateException("Cannot return non-sequence data with this method");
+            List<List<List<Writable>>> ret = new ArrayList<>(inputSequence.size());
+            for(List<List<Writable>> timeStep : inputSequence) {
+                ret.add(execute(timeStep,null, transformProcess).getFirst());
+            }
+
+            return ret;
         }
 
         return execute(null, inputSequence, transformProcess).getSecond();
@@ -333,7 +337,13 @@ public class LocalTransformExecutor {
 
         //log.info("Completed {} of {} execution steps", count - 1, dataActions.size());       //Lazy execution means this can be printed before anything has actually happened...
 
-        return new Pair<>(currentWritables, currentSequence);
+        return new Pair<>(ArrowConverter.
+                toArrowWritables(ArrowConverter.toArrowColumns(
+                        bufferAllocator,
+                        sequence.getFinalSchema(),
+                        currentWritables)
+                        ,sequence.getFinalSchema()),
+                currentSequence);
     }
 
 
@@ -365,6 +375,7 @@ public class LocalTransformExecutor {
         for (int i = 0; i < rightColumnNames.length; i++) {
             rightColumnIndexes[i] = join.getRightSchema().getIndexOfColumn(rightColumnNames[i]);
         }
+
         ExtractKeysFunction extractKeysFunction = new ExtractKeysFunction(rightColumnIndexes);
         List<Pair<List<Writable>, List<Writable>>> rightJV =
                 right.stream().map(input -> extractKeysFunction.apply(input))
@@ -372,12 +383,13 @@ public class LocalTransformExecutor {
 
         Map<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>> cogroupedJV = FunctionalUtils.cogroup(leftJV, rightJV);
         ExecuteJoinFromCoGroupFlatMapFunction executeJoinFromCoGroupFlatMapFunction = new ExecuteJoinFromCoGroupFlatMapFunction(join);
-        return cogroupedJV.entrySet().stream()
+        List<List<Writable>> ret =  cogroupedJV.entrySet().stream()
                 .flatMap(input ->
                         executeJoinFromCoGroupFlatMapFunction.call(Pair.of(input.getKey(),input.getValue())).stream())
                 .collect(toList());
 
-
+        Schema retSchema = Schema.infer(ret.get(0));
+        return ArrowConverter.toArrowWritables(ArrowConverter.toArrowColumns(bufferAllocator,retSchema,ret),retSchema);
 
     }
 

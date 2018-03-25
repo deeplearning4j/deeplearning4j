@@ -108,34 +108,52 @@ public class ArrowConverter {
         int cols = schema.numColumns();
         INDArray arr  = Nd4j.create(rows,cols);
         for(int i = 0; i < cols; i++) {
-            switch(schema.getType(i)) {
-                case Integer:
-                    IntVector intVector = (IntVector) columnVectors.get(i);
-                    DataBuffer buffer = Nd4j.createBuffer(intVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.INT,cols);
-                    arr.putColumn(i,Nd4j.create(buffer, new int[] {cols,1}));
+            INDArray put = ArrowConverter.convertArrowVector(columnVectors.get(i),schema.getType(i));
+            switch(arr.data().dataType()) {
+                case FLOAT:
+                    arr.putColumn(i,put.convertToFloats());
                     break;
-                case Float:
-                    Float4Vector float4Vector = (Float4Vector) columnVectors.get(i);
-                    DataBuffer floatBuffer = Nd4j.createBuffer(float4Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.FLOAT,cols);
-                    arr.putColumn(i,Nd4j.create(floatBuffer, new int[] {cols,1}));
-
-                    break;
-                case Double:
-                    Float8Vector float8Vector = (Float8Vector) columnVectors.get(i);
-                    DataBuffer doubleBuffer = Nd4j.createBuffer(float8Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.DOUBLE,cols);
-                    arr.putColumn(i,Nd4j.create(doubleBuffer, new int[] {cols,1}));
-
-                    break;
-                case Long:
-                    BigIntVector bigIntVector = (BigIntVector) columnVectors.get(i);
-                    DataBuffer longBuffer = Nd4j.createBuffer(bigIntVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.LONG,cols);
-                    arr.putColumn(i,Nd4j.create(longBuffer, new int[] {cols,1}));
+                case DOUBLE:
+                    arr.putColumn(i,put.convertToDoubles());
                     break;
             }
+
         }
 
         return arr;
     }
+
+    /**
+     * Convert a field vector to a column vector
+     * @param fieldVector the field vector to convert
+     * @param type the type of the column vector
+     * @return the converted ndarray
+     */
+    public static INDArray convertArrowVector(FieldVector fieldVector,ColumnType type) {
+        DataBuffer buffer = null;
+        int cols = fieldVector.getValueCount();
+        switch(type) {
+            case Integer:
+                IntVector intVector = (IntVector) fieldVector;
+                buffer = Nd4j.createBuffer(intVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.INT,cols);
+                break;
+            case Float:
+                Float4Vector float4Vector = (Float4Vector) fieldVector;
+                buffer = Nd4j.createBuffer(float4Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.FLOAT,cols);
+                break;
+            case Double:
+                Float8Vector float8Vector = (Float8Vector) fieldVector;
+                buffer = Nd4j.createBuffer(float8Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.DOUBLE,cols);
+                break;
+            case Long:
+                BigIntVector bigIntVector = (BigIntVector) fieldVector;
+                buffer =  Nd4j.createBuffer(bigIntVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.LONG,cols);
+                break;
+        }
+
+        return Nd4j.create(buffer,new int[] {cols,1});
+    }
+
 
 
     /**
@@ -210,7 +228,7 @@ public class ArrowConverter {
      * @param schema the schema to use
      * @return the equivalent datavec batch given the input data
      */
-    public static List<List<Writable>> toArrowWritables(List<FieldVector> fieldVectors,Schema schema) {
+    public static ArrowWritableRecordBatch toArrowWritables(List<FieldVector> fieldVectors,Schema schema) {
         ArrowWritableRecordBatch arrowWritableRecordBatch = new ArrowWritableRecordBatch(fieldVectors,schema);
         return arrowWritableRecordBatch;
     }
@@ -461,17 +479,16 @@ public class ArrowConverter {
 
         List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
 
-        for(int i = 0; i < dataVecRecord.size(); i++)
-            for(int j = 0; j < schema.numColumns(); j++) {
-                FieldVector fieldVector = ret.get(j);
-                int row = 0;
-                for(List<List<String>> record : dataVecRecord) {
-                    String writable = record.get(i).get(j);
-                    setValue(schema.getType(j),fieldVector,writable,row * i);
-                    row++;
+        for(int i = 0; i < dataVecRecord.size(); i++) {
+            List<List<String>> record = dataVecRecord.get(i);
+            for(int j = 0; j < record.size(); j++) {
+                for(int k = 0; k < record.get(j).size(); k++) {
+                    FieldVector fieldVector = ret.get(k);
+                    String writable = record.get(j).get(k);
+                    setValue(schema.getType(k), fieldVector, writable, i * j * k);
                 }
-
             }
+        }
 
         return ret;
     }
@@ -488,14 +505,15 @@ public class ArrowConverter {
         int numRows = dataVecRecord.size();
 
         List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+        /**
+         * Need to change iteration scheme
+         */
 
         for(int j = 0; j < schema.numColumns(); j++) {
             FieldVector fieldVector = ret.get(j);
-            int row = 0;
-            for(List<String> record : dataVecRecord) {
-                String writable = record.get(j);
+            for(int row = 0; row < numRows; row++) {
+                String writable = dataVecRecord.get(row).get(j);
                 setValue(schema.getType(j),fieldVector,writable,row);
-                row++;
             }
 
         }
@@ -511,7 +529,7 @@ public class ArrowConverter {
             switch (schema.getType(i)) {
                 case Integer: ret.add(intVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Long: ret.add(longVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
-                case Double: ret.add(doubleVectorOf(bufferAllocator,schema.getName(i),numRows));
+                case Double: ret.add(doubleVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Float: ret.add(floatVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case Boolean: ret.add(booleanVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case String: ret.add(stringVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
@@ -869,17 +887,13 @@ public class ArrowConverter {
 
         switch(columnType) {
             case Integer:
-                UInt4Vector intVector = (UInt4Vector) from;
-                return new IntWritable(intVector.get(item));
+                return new IntWritable(getIntFromFieldVector(item,from));
             case Long:
-                UInt8Vector intVector1 = (UInt8Vector) from;
-                return new LongWritable(intVector1.get(item));
+                return new LongWritable(getLongFromFieldVector(item,from));
             case Float:
-                Float4Vector float4Vector = (Float4Vector) from;
-                return new FloatWritable(float4Vector.get(item));
+                return new FloatWritable(getFloatFromFieldVector(item,from));
             case Double:
-                Float8Vector float8Vector = (Float8Vector) from;
-                return new DoubleWritable(float8Vector.get(item));
+                return new DoubleWritable(getDoubleFromFieldVector(item,from));
             case Boolean:
                 BitVector bitVector = (BitVector) from;
                 return new BooleanWritable(bitVector.get(item) > 0);
@@ -891,13 +905,63 @@ public class ArrowConverter {
                 return new Text(varCharVector2.get(item));
             case Time:
                 //TODO: need to look at closer
-                TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) from;
-                return new LongWritable(timeStampMilliVector.get(item));
+                return new LongWritable(getLongFromFieldVector(item,from));
             default:
                 throw new IllegalArgumentException("Illegal type " + from.getClass().getName());
         }
     }
 
+
+    private static int getIntFromFieldVector(int row,FieldVector fieldVector) {
+        if(fieldVector instanceof UInt4Vector) {
+            UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
+            return uInt4Vector.get(row);
+        }
+        else if(fieldVector instanceof IntVector) {
+            IntVector intVector = (IntVector) fieldVector;
+            return intVector.get(row);
+        }
+
+        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+    }
+
+    private static long getLongFromFieldVector(int row,FieldVector fieldVector) {
+        if(fieldVector instanceof UInt8Vector) {
+            UInt8Vector uInt4Vector = (UInt8Vector) fieldVector;
+            return uInt4Vector.get(row);
+        }
+        else if(fieldVector instanceof IntVector) {
+            BigIntVector intVector = (BigIntVector) fieldVector;
+            return intVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            return timeStampMilliVector.get(row);
+        }
+
+        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+    }
+
+    private static double getDoubleFromFieldVector(int row,FieldVector fieldVector) {
+        if(fieldVector instanceof Float8Vector) {
+            Float8Vector uInt4Vector = (Float8Vector) fieldVector;
+            return uInt4Vector.get(row);
+        }
+
+
+        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+    }
+
+
+    private static float getFloatFromFieldVector(int row,FieldVector fieldVector) {
+        if(fieldVector instanceof Float4Vector) {
+            Float4Vector uInt4Vector = (Float4Vector) fieldVector;
+            return uInt4Vector.get(row);
+        }
+
+
+        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+    }
 
 
     private static ArrowWritableRecordBatch asDataVecBatch(ArrowRecordBatch arrowRecordBatch, Schema schema, VectorSchemaRoot vectorLoader) {

@@ -122,7 +122,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     public List<Writable> get(int i) {
         List<Writable> ret = new ArrayList<>(schema.numColumns());
         for(int column = 0; column < schema.numColumns(); column++) {
-            ret.add(ArrowConverter.fromEntry(offset + i * size,list.get(column),schema.getType(column)));
+            ret.add(ArrowConverter.fromEntry(offset + i,list.get(column),schema.getType(column)));
         }
         return ret;
     }

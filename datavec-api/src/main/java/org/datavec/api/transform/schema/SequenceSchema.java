@@ -143,7 +143,7 @@ public class SequenceSchema extends Schema {
                 builder.addColumnFloat(String.valueOf(i));
 
             else
-                throw new IllegalStateException("Illegal writable for infering schema of type "
+                throw new IllegalStateException("Illegal writable for inferring schema of type "
                                 + record.get(i).getClass().toString() + " with record " + record.get(0));
             builder.minSequenceLength(Math.min(record.get(i).size(), minSequenceLength));
             builder.maxSequenceLength(Math.max(record.get(i).size(), maxSequenceLength));
