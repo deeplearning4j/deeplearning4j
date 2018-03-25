@@ -191,10 +191,10 @@ template <typename T>
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<T> NDArray<T>::getBufferAsVector() {
-        std::vector<T> vector;
+        std::vector<T> vector(this->lengthOf());
 
         for (int e = 0; e < this->lengthOf(); e++) {
-            vector.push_back(this->getScalar(e));
+            vector[e] = this->getScalar(e);
         }
 
         return vector;
@@ -203,10 +203,10 @@ template <typename T>
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     std::vector<int> NDArray<T>::getShapeAsVector() {
-        std::vector<int> vector;
+        std::vector<int> vector(this->rankOf());
 
         for (int e = 0; e < this->rankOf(); e++)
-            vector.emplace_back(this->sizeAt(e));
+            vector[e] = this->sizeAt(e);
 
         return vector;
     }

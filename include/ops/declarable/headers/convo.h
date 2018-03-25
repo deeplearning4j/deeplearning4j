@@ -19,8 +19,8 @@ namespace nd4j {
          * 1: stride
          * 2: padding
          */
-        DECLARE_CUSTOM_OP(conv1d, 2, 1, false, 0, 3);
-        DECLARE_CUSTOM_OP(conv1d_bp, 3, 2, false, 0, 3);
+        DECLARE_CUSTOM_OP(conv1d, 2, 1, false, 0, 4);
+        DECLARE_CUSTOM_OP(conv1d_bp, 3, 2, false, 0, 4);
 
         /**
          * 2D convolution implementation
@@ -53,7 +53,7 @@ namespace nd4j {
          * bias: optional, vector
          */
         DECLARE_CUSTOM_OP(sconv2d, 2, 1, false, 0, 9);
-        DECLARE_CUSTOM_OP(sconv2d_bp, 4, 2, false, 0, 9);
+        DECLARE_CUSTOM_OP(sconv2d_bp, 3, 2, false, 0, 9);
 
         /**
          * 2D deconvolution implementation
@@ -243,6 +243,19 @@ namespace nd4j {
 
         DECLARE_CUSTOM_OP(depthwise_conv2d, 2, 1, false, 0, 9);
         DECLARE_CUSTOM_OP(depthwise_conv2d_bp, 3, 2, false, 0, 9);
+
+        /**
+         * point-wise 2D convolution 
+         * Expected input: 
+         * x: 4D array
+         * weight: 4D Array [1,  1,  iC, oC] (NHWC) or [oC, iC,  1,  1] (NCHW)
+         * bias: optional vector, length of oC
+         * 
+         * IntArgs:
+         * 0: data format: 1 NHWC, 0 NCHW (optional, by default = NHWC)
+         */
+        DECLARE_CUSTOM_OP(pointwise_conv2d, 2, 1, false, 0, 0);
+        
     }
 }
 

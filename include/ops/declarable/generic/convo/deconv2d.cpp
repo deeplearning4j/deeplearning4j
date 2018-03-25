@@ -1,5 +1,6 @@
 //
-// @authors raver119@gmail.com and Yurii Shyrma
+// @author raver119@gmail.com
+// @author Yurii Shyrma
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -15,8 +16,8 @@ namespace nd4j {
             NDArray<T> *bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
             NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
     
-            REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D OP: rank of input array must be equal to 4 !");
-            REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D OP: rank of weights array must be equal to 4 !");
+            REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
+            REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D OP: rank of weights array must be equal to 4, but got %i instead !", weights->rankOf());
                                      
             int kH = INT_ARG(0);                                                        // filter(kernel) height
             int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -33,9 +34,10 @@ namespace nd4j {
             int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
             ConvolutionUtils<T>::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-            REQUIRE_TRUE(weights->sizeAt(indWoC) == oC && weights->sizeAt(indWkH) == kH && weights->sizeAt(indWkH+1) == kW, 0, "CUSTOM DECONV2D OP: wrong shape of weights array !");    
+            std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kH,kW,  indWiC,indWoC,indWkH,indWkH+1}));            
+            REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(*weights), 0, "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(*weights).c_str());    
             if (bias)
-                REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D OP: wrong shape of array with biases !");
+                REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
             std::vector<int> permutForColumns;
 
@@ -43,7 +45,7 @@ namespace nd4j {
                 output  = output->permute({0, 3, 1, 2});                                // [bS, oH, oW, oC] -> [bS, oC, oH, oW] 
                 permutForColumns = {2, 3, 1, 0, 4, 5};                                  // [bS, oC, kH, kW, iH, iW] -> [kH, kW, oC, bS, iH, iW]
             }
-            else 
+            else
                 permutForColumns = {1, 2, 3, 0, 4, 5};                                  // [bS, oC, kH, kW, iH, iW] -> [oC, kH, kW, bS, iH, iW]
             
             if(isSameMode)                       // SAME        
@@ -122,92 +124,6 @@ namespace nd4j {
 
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
-            //  NDArray<T> *input = INPUT_VARIABLE(0);
-            // NDArray<T> *weights = INPUT_VARIABLE(1);
-            // NDArray<T> *bias = nullptr;
-            // NDArray<T> *epsilonNext = nullptr; //INPUT_VARIABLE(2);
-
-            // REQUIRE_TRUE(block.width() >= 3, 0, "deconv2d_bp: Number of input variables should be 3 or 4, but got %i instead", block.width());
-
-            // // bias is still optional
-            // if (block.width() == 4) {
-            //     bias = INPUT_VARIABLE(2);
-            //     epsilonNext = INPUT_VARIABLE(3);
-            // } else if (block.width() == 3) {
-            //     epsilonNext = INPUT_VARIABLE(2);
-            // }
-
-            // REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "epsilon should have rank of 4, but got %i instead", epsilonNext->rankOf());
-
-            // //epsilonNext->rankOf() == 4 && weights->rankOf() == 4
-            // REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should be 4D, but got %iD instead", input->rankOf());
-            // REQUIRE_TRUE(weights->rankOf() == 4, 0, "Weights should be 4D, but got %iD instead", weights->rankOf());
-            // REQUIRE_TRUE(epsilonNext->rankOf() == 4, 0, "Epsilon should be 4D, but got %iD instead", epsilonNext->rankOf());
-
-            // int kY = INT_ARG(0);
-            // int kX = INT_ARG(1);
-            // int sY = INT_ARG(2);
-            // int sX = INT_ARG(3);
-            // int pY = INT_ARG(4);
-            // int pX = INT_ARG(5);
-            // int dY = INT_ARG(6);
-            // int dX = INT_ARG(7);
-            // const bool isSameMode = INT_ARG(8) != 0;
-            // bool isNCHW = true;
-            // if (block.getIArguments()->size() > 9)
-            //     isNCHW = INT_ARG(9) == 0;
-
-            // NDArray<T>* epsilon = OUTPUT_VARIABLE(0);
-            // NDArray<T>* gradW = OUTPUT_VARIABLE(1);
-            // NDArray<T>* gradB = nullptr;
-
-            // if (bias != nullptr)
-            //     gradB = OUTPUT_VARIABLE(2);
-
-            // // epsilon for deconv2d is FF conv pass
-
-            // nd4j::ops::conv2d<T> op;
-            // Nd4jStatus r1 = op.execute({epsilonNext, weights}, {epsilon}, {}, {kY, kX, sY, sX, pY, pX, dY, dX, INT_ARG(8), 0});
-            // if (r1 != ND4J_STATUS_OK)
-            //     return r1;
-
-            // int oY = 0;
-            // int oX = 0;
-            // int inY = epsilonNext->sizeAt(2);
-            // int inX = epsilonNext->sizeAt(3);
-
-            // ConvolutionUtils<T>::calcOutSizePool2D(oY, oX, kY, kX, sY, sX, pY, pX, dY, dX, inY, inX, isSameMode);
-
-            // if (isSameMode) {
-            //     ConvolutionUtils<T>::_calcPadding2D(pY, pX, oY, oX, inY, inX, kY, kX, sY, sX, dY, dX);
-            // }
-
-            // std::vector<T> extrasIm2Col({(T) kY, (T) kX, (T) sY, (T) sX, (T) pY, (T) pX, (T) dY, (T) dX, isSameMode ? (T) 1.0f : (T) 0.0f, 0.0});
-            // auto columns = new NDArray<T>('c', {input->sizeAt(0), weights->sizeAt(1), kY, kX, oY, oX });
-            // epsilonNext->template applyTransform<simdOps::Im2col<T>>(columns, extrasIm2Col.data());
-
-            // auto gW = NDArrayFactory<T>::tensorDot(input, columns, {0, 2, 3}, {0, 4, 5});
-            // gradW->assign(gW);
-
-            // delete gW;
-            // delete columns;
-
-            // if (gradB != nullptr) {
-            //     auto sum = epsilonNext->template reduceAlongDimension<simdOps::Sum<T>>({0, 2, 3});
-            //     gradB->assign(sum);
-            //     delete sum;
-
-            //     STORE_3_RESULTS(*epsilon, *gradW, *gradB);
-            // } else {
-            //     STORE_2_RESULTS(*epsilon, *gradW);
-            // }
-
-            // return ND4J_STATUS_OK;
-
-
-
-
-
 
             NDArray<T> *input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
             NDArray<T> *weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
@@ -218,9 +134,9 @@ namespace nd4j {
             NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, oC, iC] (NDHWC) or [iC, oC, kH, kW] (NCDHW)
             NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
-            REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to 4 !");
-            REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D_BP OP: rank of weights array must be equal to 4 !");
-            REQUIRE_TRUE(gradO->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of gradO array must be equal to 4 !");
+            REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
+            REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D_BP OP: rank of weights array must be equal to 4 , but got %i instead !", weights->rankOf());
+            REQUIRE_TRUE(gradO->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of gradO array must be equal to 4, but got %i instead !", gradO->rankOf());
 
             int kH = INT_ARG(0);                                                        // filter(kernel) height
             int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -240,17 +156,19 @@ namespace nd4j {
             int trueoH, trueoW;          // true output height, width
             ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
-            REQUIRE_TRUE(gradO->sizeAt(0)==bS   && gradO->sizeAt(indOoH)==trueoH && gradO->sizeAt(indOoH+1)==trueoW && gradO->sizeAt(indIOioC)==oC, 0,  "CUSTOM DECONV2D_BP OP: wrong shape of gradient_output (next epsilon) array !");
-            REQUIRE_TRUE(weights->sizeAt(indWoC)==oC && weights->sizeAt(indWiC)==iC && weights->sizeAt(indWkH)==kH && weights->sizeAt(indWkH+1)==kW, 0, "CUSTOM DECONV2D_BP OP: wrong shape of weights array !");
+            std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1}));            
+            std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kH,kW,  indWiC,indWoC,indWkH,indWkH+1}));
+            REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(*gradO), 0,  "CUSTOM DECONV2D_BP OP: wrong shape of gradient_output (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(*gradO).c_str());
+            REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(*weights), 0, "CUSTOM DECONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(*weights).c_str());    
             if(bias)
-                REQUIRE_TRUE(bias->rankOf()<=2 && bias->lengthOf()==oC, 0, "CUSTOM DECONV2D_BP OP: wrong shape of biases array !");
+                REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
             if(isSameMode)                       // SAME        
                 ConvolutionUtils<T>::_calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);                
 
             // ----- calculation of gradI -> pass it through conv2d_ff ----- //
             nd4j::ops::conv2d<T> conv2d;
-            const Nd4jStatus status = conv2d.execute({gradO, weights}, {gradI}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  isSameMode,  !isNCHW});             
+            const Nd4jStatus status = conv2d.execute({gradO, weights}, {gradI}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  isSameMode,  !isNCHW});
             if (status != ND4J_STATUS_OK)
                 return status;
 

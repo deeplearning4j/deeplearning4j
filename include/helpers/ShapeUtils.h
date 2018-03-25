@@ -70,8 +70,8 @@ namespace nd4j {
         // returns shape part of shapeInfo as std::vector
         static std::vector<int> pullShapeFromShapeInfo(int *shapeInfo);
 
-        static std::string shapeAsString(NDArray<T> &array);
-        static std::string shapeAsString(std::vector<int>& shape);
+        static std::string shapeAsString(const NDArray<T> &array);
+        static std::string shapeAsString(const std::vector<int>& shape);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
         static int* evalDiagShapeInfo(const NDArray<T>& arr, nd4j::memory::Workspace* workspace);
@@ -93,7 +93,14 @@ namespace nd4j {
         static std::vector<int> evalPermutFromTo(const std::vector<int>& shapeFrom, const std::vector<int>& shapeTo);
 
         /**
-        *  method returns false if permut == {0,1,2,...permut.size()} - in that case permutation is unnecessary
+        *  This method composes shape (shape only, not whole shapeInfo!) using dimensions values and corresponding indexes,
+        *  please note: the size of input vector dimsAndIdx must always be even, since the numbers of dimensions and indexes are the same, 
+        *  for example if dimsAndIdx = {dimC,dimB,dimA,  2,1,0} then output vector = {dimA,dimB,dimC} 
+        */
+        static std::vector<int> composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx);
+
+        /**
+        *  method returns false if permut == {0,1,2,...permut.size()-1} - in that case permutation is unnecessary
         */
         FORCEINLINE static bool isPermutNecessary(const std::vector<int>& permut);
     };

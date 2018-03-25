@@ -28,7 +28,7 @@ CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 10) {
     int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID
     int isNCHW = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;         // 1-NDHWC, 0-NCDHW    
 
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3D OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
 
     int idxID, idxIC;
     if(isNCHW) { idxID = 2; idxIC = 1;}
@@ -138,7 +138,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 10) {
     
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
     
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3DNEW_BP OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM AVGPOOL3DNEW_BP OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
                                      
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height

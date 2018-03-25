@@ -541,7 +541,7 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
     }
 
     template<typename T>
-    std::string ShapeUtils<T>::shapeAsString(NDArray<T> &array) {
+    std::string ShapeUtils<T>::shapeAsString(const NDArray<T> &array) {
         std::string result;
 
         result.append("[");
@@ -556,7 +556,7 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
     }
 
     template<typename T>
-    std::string ShapeUtils<T>::shapeAsString(std::vector<int>& shape) {
+    std::string ShapeUtils<T>::shapeAsString(const std::vector<int>& shape) {
         std::string result;
 
         result.append("[");
@@ -784,7 +784,28 @@ std::vector<int> ShapeUtils<T>::evalPermutFromTo(const std::vector<int>& shapeFr
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+template<typename T>
+std::vector<int> ShapeUtils<T>::composeShapeUsingDimsAndIdx(const std::vector<int>& dimsAndIdx) {
 
+    int size = dimsAndIdx.size();
+    if(size % 2 != 0)
+        throw "ShapeUtils::composeShapeUsingDimsAndIdx static method: the size of input vector must be even !";
+
+    size /= 2;
+
+    std::vector<int> shape(size);
+    int index;
+
+    for(int i = 0; i < size; ++i) {
+        index = dimsAndIdx[i + size];
+        if(index > size-1)
+            throw "ShapeUtils::composeShapeUsingDimsAndIdx static method: input index is too large !";
+        shape[index] = dimsAndIdx[i];
+    }
+
+    return shape;
+}
 
 
 

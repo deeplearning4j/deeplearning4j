@@ -12,7 +12,6 @@
 #include <types/float16.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/BlasHelper.h>
-//#include <cblas.h>
 
 namespace nd4j {
 
@@ -219,65 +218,100 @@ namespace nd4j {
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    void nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, nd4j::NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC) {
+    void nd4j::NDArrayFactory<T>::tensorDot(const NDArray<T>* a, const NDArray<T>* b, NDArray<T>* c, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB, const std::vector<std::vector<int>>& modifC) {
 
-        NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
-                
-        // work with a input array 
-        if(!modifA.empty()) {
-            
-            if(!modifA[0].empty())                                  // if permutation of a is required
-                aPR = a->permute(modifA[0]);            
-            
-            if(!modifA[1].empty()) {                                // if reshaping of a is required
-                if(aPR == a)
-                    aPR = a->reshape(a->ordering(), modifA[1]);
-                else 
-                    aPR->reshapei(aPR->ordering(), modifA[1]);
-            }        
+        NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
+        std::string whatToDoWithA, whatToDoWithB, whatToDoWithC;         // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" - reshaping/permutation, and so on; if another string is produced - throw exception
+
+        for(const auto& arr : modifA) 
+            whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
+
+        for(const auto& arr : modifB) 
+            whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";    
+
+        for(const auto& arr : modifC) 
+            whatToDoWithC = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithC + "p" : whatToDoWithC + "r";    
+
+
+        // first step for a array
+        if(!whatToDoWithA.empty())
+            aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0]) : a->reshape(a->ordering(), modifA[0]);
+        // first step for b array
+        if(!whatToDoWithB.empty())
+            bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0]) : b->reshape(b->ordering(), modifB[0]);
+
+        // rest steps for a array
+        for(int i = 1; i < whatToDoWithA.size(); ++i)
+            if(whatToDoWithA[i] == 'p') aPR->permutei(modifA[i]); else aPR->reshapei(modifA[i]);
+        // rest steps for b array
+        for(int i = 1; i < whatToDoWithB.size(); ++i)
+            if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
+
+        // now work with c array
+        std::vector<NDArray<T>*> cArrs = {c}; 
+        if(!whatToDoWithC.empty()) {
+            cArrs = std::vector<NDArray<T>*>(whatToDoWithC.size()+1, c);
+            for(int i = 0; i < cArrs.size()-1; ++i)                               
+                cArrs[i+1] = (whatToDoWithC[i] == 'p') ? cArrs[i]->permute(modifC[i]) : cArrs[i]->reshape(c->ordering(), modifC[i]);  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
         }
+        
+        nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, cArrs[cArrs.size()-1], 1.0, 0.0);
 
-        // work with b input array 
-        if(!modifB.empty()) {
-            
-            if(!modifB[0].empty())                                  // if permutation of b is required
-                bPR = b->permute(modifB[0]);            
-
-            if(!modifB[1].empty()) {                                // if reshaping of b is required
-                if(bPR == b)
-                    bPR = b->reshape(b->ordering(), modifB[1]);
-                else 
-                    bPR->reshapei(bPR->ordering(), modifB[1]);
-            }        
+        // check whether new buffer allocation was happened for c array        
+        if(!whatToDoWithC.empty()) {
+            for(int i = cArrs.size()-1; i > 0; --i) {
+                if(cArrs[i]->getBuffer() != cArrs[i-1]->getBuffer())
+                    cArrs[i-1]->assign(cArrs[i]);
+                delete cArrs[i];
+            }
         }
         
-        // work with c output array 
-        if(!modifC.empty()) {
-            
-            if(!modifC[0].empty())                                 // if permutation of c is required
-                cP = c->permute(modifC[0]);            
-        
-            if(!modifC[1].empty())                                 // if reshaping of c is required
-                cPR = cP->reshape(cP->ordering(), modifC[1]);
-        }    
-                
-        nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, cPR, 1.0, 0.0);
-
-        if(cPR->getBuffer() != cP->getBuffer())             // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
-            cP->assign(cPR);                        
-        
-        if(cPR != c)
-            delete cPR;
         if(aPR != a)
             delete aPR;
         if(bPR != b)
             delete bPR;
-        if(cP != c)
-            delete cP;
+
     }
 
+//////////////////////////////////////////////////////////////////////////
+    template<typename T>
+    NDArray<T>* nd4j::NDArrayFactory<T>::tensorDot(const nd4j::NDArray<T>* a, const nd4j::NDArray<T>* b, const std::vector<std::vector<int>>& modifA, const std::vector<std::vector<int>>& modifB) {
+
+        NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
+        std::string whatToDoWithA, whatToDoWithB;         // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp" - reshaping/permutation; another string - throw exception
+
+        for(const auto& arr : modifA) 
+            whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
+
+        for(const auto& arr : modifB) 
+            whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";    
+
+        // first step for a array
+        if(!whatToDoWithA.empty())
+            aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0]) : a->reshape(a->ordering(), modifA[0]);
+        // first step for b array
+        if(!whatToDoWithB.empty())
+            bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0]) : b->reshape(b->ordering(), modifB[0]);
+
+        // rest steps for a array
+        for(int i = 1; i < whatToDoWithA.size(); ++i)
+            if(whatToDoWithA[i] == 'p') aPR->permutei(modifA[i]); else aPR->reshapei(modifA[i]);
+        // rest steps for b array
+        for(int i = 1; i < whatToDoWithB.size(); ++i)
+            if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
+                
+        NDArray<T>* result = nd4j::NDArrayFactory<T>::mmulHelper(aPR, bPR, nullptr, 1.0, 0.0);
+        
+        if(aPR != a)
+            delete aPR;
+        if(bPR != b)
+            delete bPR;
+
+        return result;
+    }
 #endif
 
+//////////////////////////////////////////////////////////////////////////
     template<typename T>
     nd4j::NDArray<T>* NDArrayFactory<T>::mmulHelperNxN(nd4j::NDArray<T>* A, nd4j::NDArray<T>* B, nd4j::NDArray<T>* C , 
         T alpha, T beta) {
@@ -409,7 +443,7 @@ namespace nd4j {
 
         return result;
     }
-    ////////////////////////////////////////////////////////////////////////////
+
 //////////////////////////////////////////////////////////////////////////////
     // static
     template<typename T>

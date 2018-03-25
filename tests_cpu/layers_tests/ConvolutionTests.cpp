@@ -261,105 +261,6 @@ TEST_F(ConvolutionTests, SeparableConv2D_FF_NoBias_1) {
     delete variableSpace;
 }
 
-TEST_F(ConvolutionTests, SeparableConv2D_BP_NoBias_1) {
-    int sY = 1;
-    int sX = 1;
-    int pY = 0;
-    int pX = 0;
-    int iC = 2;
-    int oC = 3;
-    int kY = 5;
-    int kX = 5;
-    int iY = 10;
-    int iX = 10;
-    int B = 2;
-    
-    //double _expWB[] = {10658316.0,  10892892.0,  11127468.0,  11362044.0,  11596620.0,  11831196.0,     12065772.0,  12300348.0,  12534924.0,  12769500.0,  13004076.0,  13238652.0,     13473228.0,  13707804.0,  13942380.0,  14176956.0,  14411532.0,  14646108.0,     14880684.0,  15115260.0,  15349836.0,  15584412.0,  15818988.0,  16053564.0,     16288140.0,  25949820.0,  26371020.0,  26792220.0,  27213420.0,  27634620.0,     28055820.0,  28477020.0,  28898220.0,  29319420.0,  29740620.0,  30161820.0,     30583020.0,  31004220.0,  31425420.0,  31846620.0,  32267820.0,  32689020.0,     33110220.0,  33531420.0,  33952620.0,  34373820.0,  34795020.0,  35216220.0,     35637420.0,  36058620.0,  13039068.0,  13366956.0,  13694844.0,  14022732.0,     14350620.0,  14678508.0,  15006396.0,  15334284.0,  15662172.0,  15990060.0,     16317948.0,  16645836.0,  16973724.0,  17301612.0,  17629500.0,  17957388.0,     18285276.0,  18613164.0,  18941052.0,  19268940.0,  19596828.0,  19924716.0,     20252604.0,  20580492.0,  20908380.0,  30663372.0,  31177884.0,  31692396.0,     32206908.0,  32721420.0,  33235932.0,  33750444.0,  34264956.0,  34779468.0,     35293980.0,  35808492.0,  36323004.0,  36837516.0,  37352028.0,  37866540.0,     38381052.0,  38895564.0,  39410076.0,  39924588.0,  40439100.0,  40953612.0,     41468124.0,  41982636.0,  42497148.0,  43011660.0};
-    double _expWB[] = {15371868.0f,  15699756.0f,  16027644.0f,  16355532.0f,  16683420.0f,  17011308.0f,    17339196.0f,  17667084.0f,  17994972.0f,  18322860.0f,  18650748.0f,  18978636.0f,    19306524.0f,  19634412.0f,  19962300.0f,  20290188.0f,  20618076.0f,  20945964.0f,    21273852.0f,  21601740.0f,  21929628.0f,  22257516.0f,  22585404.0f,  22913292.0f,    23241180.0f,  37709724.0f,  38317548.0f,  38925372.0f,  39533196.0f,  40141020.0f,    40748844.0f,  41356668.0f,  41964492.0f,  42572316.0f,  43180140.0f,  43787964.0f,    44395788.0f,  45003612.0f,  45611436.0f,  46219260.0f,  46827084.0f,  47434908.0f,    48042732.0f,  48650556.0f,  49258380.0f,  49866204.0f,  50474028.0f,  51081852.0f,    51689676.0f,  52297500.0f,  17752620.0f,  18173820.0f,  18595020.0f,  19016220.0f,    19437420.0f,  19858620.0f,  20279820.0f,  20701020.0f,  21122220.0f,  21543420.0f,    21964620.0f,  22385820.0f,  22807020.0f,  23228220.0f,  23649420.0f,  24070620.0f,    24491820.0f,  24913020.0f,  25334220.0f,  25755420.0f,  26176620.0f,  26597820.0f,    27019020.0f,  27440220.0f,  27861420.0f,  42423276.0f,  43124412.0f,  43825548.0f,    44526684.0f,  45227820.0f,  45928956.0f,  46630092.0f,  47331228.0f,  48032364.0f,    48733500.0f,  49434636.0f,  50135772.0f,  50836908.0f,  51538044.0f,  52239180.0f,    52940316.0f,  53641452.0f,  54342588.0f,  55043724.0f,  55744860.0f,  56445996.0f,    57147132.0f,  57848268.0f,  58549404.0f,  59250540.0f,  20133372.0f,  20647884.0f,    21162396.0f,  21676908.0f,  22191420.0f,  22705932.0f,  23220444.0f,  23734956.0f,    24249468.0f,  24763980.0f,  25278492.0f,  25793004.0f,  26307516.0f,  26822028.0f,    27336540.0f,  27851052.0f,  28365564.0f,  28880076.0f,  29394588.0f,  29909100.0f,    30423612.0f,  30938124.0f,  31452636.0f,  31967148.0f,  32481660.0f,  47136828.0f,    47931276.0f,  48725724.0f,  49520172.0f,  50314620.0f,  51109068.0f,  51903516.0f,    52697964.0f,  53492412.0f,  54286860.0f,  55081308.0f,  55875756.0f,  56670204.0f,    57464652.0f,  58259100.0f,  59053548.0f,  59847996.0f,  60642444.0f,  61436892.0f,    62231340.0f,  63025788.0f,  63820236.0f,  64614684.0f,  65409132.0f,  66203580.0f,};
-    int _expWS[] = {4, 3, 2, 5, 5, 50, 25 ,5, 1,  0, 1, 99};
-    
-    double _expEB[] = {9261.0f,    18786.0f,    28578.0f,    38640.0f,    48975.0f,    49770.0f,    40386.0f,    30720.0f,    20769.0f,    10530.0f,    19995.0f,    40551.0f,    61674.0f,    83370.0f,    105645.0f,   107310.0f,    87054.0f,    66201.0f,    44745.0f,    22680.0f,    32292.0f,    65475.0f,    99558.0f,   134550.0f,   170460.0f,   173070.0f,   140364.0f,   106713.0f,    72108.0f,    36540.0f,    46242.0f,    93738.0f,   142500.0f,   192540.0f,   243870.0f,    247500.0f,   200676.0f,   152526.0f,   103038.0f,    52200.0f,    61935.0f,   125520.0f,    190770.0f,   257700.0f,   326325.0f,   331050.0f,   268350.0f,   203910.0f,   137715.0f,    69750.0f,    67425.0f,   136590.0f,   207510.0f,   280200.0f,   354675.0f,   359400.0f,    291210.0f,   221190.0f,   149325.0f,    75600.0f,    58146.0f,   117750.0f,   178824.0f,    241380.0f,   305430.0f,   309360.0f,   250572.0f,   190254.0f,   128394.0f,    64980.0f,    46854.0f,    94851.0f,   144000.0f,   194310.0f,   245790.0f,   248850.0f,   201492.0f,    152937.0f,   103176.0f,    52200.0f,    33459.0f,    67713.0f,   102768.0f,   138630.0f,    175305.0f,   177420.0f,   143610.0f,   108969.0f,    73491.0f,    37170.0f,    17871.0f,    36156.0f,    54858.0f,    73980.0f,    93525.0f,    94620.0f,    76566.0f,    58080.0f,    39159.0f,    19800.0f,    36660.0f,    73983.0f,   111972.0f,   150630.0f,   189960.0f,    191130.0f,   154272.0f,   116733.0f,    78510.0f,    39600.0f,    76863.0f,   155085.0f,    234672.0f,   315630.0f,   397965.0f,   400380.0f,   323106.0f,   244437.0f,   164367.0f,    82890.0f,   120699.0f,   243486.0f,   368370.0f,   495360.0f,   624465.0f,   628200.0f,    506862.0f,   383382.0f,   257751.0f,   129960.0f,   168258.0f,   339366.0f,   513336.0f,    690180.0f,   869910.0f,   875040.0f,   705900.0f,   533838.0f,   358842.0f,   180900.0f,    219630.0f,   442905.0f,   669840.0f,   900450.0f,  1134750.0f,  1141350.0f,   920580.0f,    696075.0f,   467820.0f,   235800.0f,   227370.0f,   458475.0f,   693330.0f,   931950.0f,    1174350.0f,  1180950.0f,   952440.0f,   720105.0f,   483930.0f,   243900.0f,   190242.0f,    383538.0f,   579900.0f,   779340.0f,   981870.0f,   987300.0f,   796116.0f,   601806.0f,    404358.0f,   203760.0f,   149031.0f,   300402.0f,   454122.0f,   610200.0f,   768645.0f,    772830.0f,   623070.0f,   470916.0f,   316359.0f,   159390.0f,   103647.0f,   208887.0f,    315726.0f,   424170.0f,   534225.0f,   537090.0f,   432942.0f,   327165.0f,   219753.0f,    110700.0f,    54000.0f,   108813.0f,   164442.0f,   220890.0f,   278160.0f,   279630.0f,    225372.0f,   170283.0f,   114360.0f,    57600.0f,    42309.0f,    85530.0f,   129666.0f,    174720.0f,   220695.0f,   221490.0f,   179058.0f,   135696.0f,    91401.0f,    46170.0f,    89331.0f,   180519.0f,   273570.0f,   368490.0f,   465285.0f,   466950.0f,   377358.0f,    285873.0f,   192489.0f,    97200.0f,   141156.0f,   285147.0f,   431982.0f,   581670.0f,    734220.0f,   736830.0f,   595260.0f,   450801.0f,   303444.0f,   153180.0f,   197874.0f,    399594.0f,   605172.0f,   814620.0f,  1027950.0f,  1031580.0f,   833124.0f,   630750.0f,    424446.0f,   214200.0f,   259575.0f,   524040.0f,   793410.0f,  1067700.0f,  1346925.0f,    1351650.0f,  1091310.0f,   825990.0f,   555675.0f,   280350.0f,   265065.0f,   535110.0f,    810150.0f,  1090200.0f,  1375275.0f,  1380000.0f,  1114170.0f,   843270.0f,   567285.0f,    286200.0f,   222738.0f,   449526.0f,   680376.0f,   915300.0f,  1154310.0f,  1158240.0f,    934860.0f,   707358.0f,   475722.0f,   239940.0f,   175158.0f,   353403.0f,   534744.0f,    719190.0f,   906750.0f,   909810.0f,   734148.0f,   555345.0f,   373392.0f,   188280.0f,    122235.0f,   246561.0f,   372984.0f,   501510.0f,   632145.0f,   634260.0f,   511674.0f,    386961.0f,   260115.0f,   131130.0f,    63879.0f,   128820.0f,   194826.0f,   261900.0f,    330045.0f,   331140.0f,   267078.0f,   201936.0f,   135711.0f,    68400.0f,    85908.0f,    173127.0f,   261660.0f,   351510.0f,   442680.0f,   443850.0f,   357744.0f,   270309.0f,    181542.0f,    91440.0f,   178599.0f,   359853.0f,   543768.0f,   730350.0f,   919605.0f,    922020.0f,   743010.0f,   561309.0f,   376911.0f,   189810.0f,   278163.0f,   560358.0f,    846594.0f,  1136880.0f,  1431225.0f,  1434960.0f,  1156158.0f,   873270.0f,   586287.0f,    295200.0f,   384690.0f,   774822.0f,  1170408.0f,  1571460.0f,  1977990.0f,  1983120.0f,    1597548.0f,  1206462.0f,   809850.0f,   407700.0f,   498270.0f,  1003425.0f,  1515480.0f,    2034450.0f,  2560350.0f,  2566950.0f,  2067540.0f,  1561155.0f,  1047780.0f,   527400.0f,    506010.0f,  1018995.0f,  1538970.0f,  2065950.0f,  2599950.0f,  2606550.0f,  2099400.0f,    1585185.0f,  1063890.0f,   535500.0f,   419634.0f,   844914.0f,  1275852.0f,  1712460.0f,    2154750.0f,  2160180.0f,  1739604.0f,  1313310.0f,   881286.0f,   443520.0f,   325935.0f,    656154.0f,   990666.0f,  1329480.0f,  1672605.0f,  1676790.0f,  1350126.0f,  1019124.0f,    683775.0f,   344070.0f,   224823.0f,   452535.0f,   683142.0f,   916650.0f,  1153065.0f,    1155930.0f,   930606.0f,   702357.0f,   471177.0f,   237060.0f,   116208.0f,   233877.0f,    353010.0f,   473610.0f,   595680.0f,   597150.0f,   480684.0f,   362739.0f,   243312.0f,    122400.0f,};
-    int _expES[] = {4, 2, 2, 10, 10, 200, 100, 10, 1, 0, 1, 99};
-
-    NDArray<double> expW(_expWB, _expWS);
-    expW.triggerAllocationFlag(false, false);
-
-    NDArray<double> expE(_expEB, _expES);
-    expE.triggerAllocationFlag(false, false);
-
-    auto input = new NDArray<double>('c', {B, iC, iY, iX});
-    for (int e = 0; e < input->lengthOf(); e++)
-        input->putScalar(e, e+1);
-
-    auto weights = new NDArray<double> ('c', {oC, iC, kY, kX});
-    for (int e = 0; e < weights->lengthOf(); e++)
-        weights->putScalar(e, e+1);
-
-
-    auto epsilonNext = new NDArray<double>('c', {B, iC * oC, 6, 6});
-    for (int e = 0; e < epsilonNext->lengthOf(); e++)
-        epsilonNext->putScalar(e, e+1);
-
-    auto col = new NDArray<double>('c', {B, iC, kY, kX, 6, 6});
-    for (int e = 0; e < col->lengthOf(); e++)
-        col->putScalar(e, e+1);
-
-
-    auto variableSpace = new VariableSpace<double>();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-3, weights);
-    variableSpace->putVariable(-2, epsilonNext);
-
-    auto block = new Context<double>(1, variableSpace, false);
-    block->fillInputs({-1, -2, -3});
-
-    block->getIArguments()->push_back(kY);
-    block->getIArguments()->push_back(kX);
-
-    block->getIArguments()->push_back(sY);
-    block->getIArguments()->push_back(sX);
-
-    block->getIArguments()->push_back(pY);
-    block->getIArguments()->push_back(pX);
-
-    // dilation
-    block->getIArguments()->push_back(1);
-    block->getIArguments()->push_back(1);
-
-    // NOT same mode
-    block->getIArguments()->push_back(0);
-
-
-    variableSpace->getStash()->storeArray(1, "im2col", col);
-
-
-    nd4j::ops::sconv2d_bp<double> op;
-
-    Nd4jStatus status = op.execute(block);
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    std::pair<int, int> pe(1, 0);
-    std::pair<int, int> pgw(1, 1);
-    auto epsilon = variableSpace->getVariable(pe)->getNDArray();
-    auto gradW = variableSpace->getVariable(pgw)->getNDArray();
-
-    ASSERT_TRUE(expW.isSameShape(gradW));
-
-    //expW.printBuffer("Expctd buffer");
-    //gradW->printBuffer("Result buffer");
-    ASSERT_TRUE(expW.equalsTo(gradW));
-
-
-    ASSERT_TRUE(expE.isSameShape(epsilon));
-
-    //    expE.printBuffer("Expctd buffer");
-    //epsilon->printBuffer("Result buffer");
-    ASSERT_TRUE(expE.equalsTo(epsilon));
-
-    delete variableSpace;
-    delete block;
-}
 
 TEST_F(ConvolutionTests, deconv2D_FF_NoBias_1) {
     int _expS[] = {4, 2, 3, 8, 8, 192, 64, 8, 1, 0, 1, 99};
@@ -654,14 +555,13 @@ TEST_F(ConvolutionTests, sconv2D_BP_pointwise_1) {
     ASSERT_TRUE(_gradWP->isSameShape(&expGWP));
     ASSERT_TRUE(_gradWP->isSameShape(&weightsP));
 
-    ASSERT_TRUE(_gradWP->equalsTo(&expGWP));
+    ASSERT_TRUE(_gradWP->equalsTo(&expGWP));    
 
-    //_gradWD->printShapeInfo("gradWD shape");
-    //_gradWD->printBuffer("gradWD");
+    //_gradWD->printShapeInfo("gradWD shape");    
 
     ASSERT_TRUE(_gradWD->isSameShape(&expGWD));
     ASSERT_TRUE(_gradWD->isSameShape(&weightsD));
-
+// _gradWD->printIndexedBuffer();
     ASSERT_TRUE(_gradWD->equalsTo(&expGWD));
 
     ASSERT_TRUE(_epsilon->isSameShape(&input));
@@ -918,23 +818,21 @@ TEST_F(ConvolutionTests, Test_Conv1D_ff_1) {
     NDArrayFactory<double>::linspace(1, bias);
 
     nd4j::ops::conv1d<double> op;
-    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0});
+    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result_FF->status());
 
     auto z = result_FF->at(0);
 
-
     ASSERT_TRUE(expFF.isSameShape(z));
     ASSERT_TRUE(expFF.equalsTo(z));
-
 
     nd4j::ops::conv1d_bp<double> op_bp;
 
     auto epsilonNxt = z->dup();
     NDArrayFactory<double>::linspace(1, *epsilonNxt);
 
-    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0});
+    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result_BP->status());
 
     auto eps = result_BP->at(0);
@@ -1808,17 +1706,16 @@ TEST_F(ConvolutionTests, conv3d_test8) {
     
     nd4j::ops::conv3dnew<float> op;
     ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
-
-    NDArray<float>* output = results->at(0);
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));    
     
     delete results;
 }
 
-
+//////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests, conv3d_test9) {
     NDArray<float> x('c', {4, 2, 28, 28, 3});
     NDArray<float> y('c', {2, 5, 5, 3, 4});
@@ -1835,11 +1732,76 @@ TEST_F(ConvolutionTests, conv3d_test9) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, pointwise_conv2d_test1) {
+
+    int bS=2, iH=4,iW=3,  iC=4,oC=3;        
+ 
+    int dataFormat = 1;           // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> weights ('c', {1,   1, iC, oC});
+    NDArray<double> bias    ('c', {oC});
+
+    
+    NDArray<double> expOutput('c', {bS, iH, iW, oC},{ 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 
+                                                      7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 
+                                                      6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 
+                                                      5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0, 5.4, 6.2, 7.0});
+    input = 2.;
+    NDArrayFactory<double>::linspace(0.1, weights, 0.1);
+    bias = 1.;
+
+    nd4j::ops::pointwise_conv2d<double> op;
+    ResultSet<double>* results = op.execute({&input, &weights, &bias}, {}, {dataFormat});
+    NDArray<double>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));    
+    
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, sconv2d_bp_test1) {
+
+    int bS=2, iH=4,iW=3,  iC=2,mC=2,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;    
+    int       oH=4,oW=3;
+    int       oC=iC*mC;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW    
+
+    NDArray<double> input   ('c', {bS, iH, iW, iC});
+    NDArray<double> weightsDepth ('c', {kH, kW, iC, mC});
+    NDArray<double> bias    ('c', {oC}, {1,2,3,4});
+    NDArray<double> gradO   ('c', {bS, oH, oW, oC});
+    
+    NDArray<double> expGradI('c', {bS, iH, iW, iC},{0.07 ,  0.19 , 0.348,  0.652, 0.588,  0.956, 0.387,  0.687, 1.326,  2.022, 1.878,  2.67 , 1.071,  1.515, 2.982,  3.966, 3.534,  4.614, 1.606,  1.982, 3.932,  4.748, 4.428,  5.308,
+                                                    1.126,  1.63 , 3.228,  4.3  , 3.468,  4.604, 3.123,  3.999, 7.95 ,  9.798, 8.502, 10.446, 3.807,  4.827, 9.606, 11.742,10.158, 12.39 , 4.198,  4.958, 9.884, 11.468,10.38 , 12.028});
+    
+    NDArray<double> expGradW('c', {kH, kW, iC, mC},{19.08, 19.44,19.8 , 20.16,12.24, 12.48,12.72, 12.96,22.56, 23.04,23.52, 24. ,14.4 , 14.72,15.04, 15.36,14.76, 15.12,15.48, 15.84, 9.36,  9.6 , 9.84, 10.08});
+
+    input = 2.;
+    NDArrayFactory<double>::linspace(0.1, weightsDepth, 0.1);
+    NDArrayFactory<double>::linspace(0.01, gradO, 0.01);    
+
+    nd4j::ops::sconv2d_bp<double> op;
+    ResultSet<double>* results = op.execute({&input, &gradO, &weightsDepth, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    NDArray<double>* gradI = results->at(0);
+    NDArray<double>* gradWD = results->at(1);
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expGradI.isSameShape(gradI));
+    ASSERT_TRUE(expGradI.equalsTo(gradI));    
+
+    ASSERT_TRUE(expGradW.isSameShape(gradWD));
+    ASSERT_TRUE(expGradW.equalsTo(gradWD));    
+    
+    delete results;
+}
+
 #endif //LIBND4J_CONVOLUTIONTESTS_H
-
-
- 
-
-
- 
-
