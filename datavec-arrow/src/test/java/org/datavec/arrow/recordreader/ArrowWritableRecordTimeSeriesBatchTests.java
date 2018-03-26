@@ -14,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ArrowWritableRecordTimeSeriesBatchTests {
 
@@ -42,11 +43,13 @@ public class ArrowWritableRecordTimeSeriesBatchTests {
 
         List<FieldVector> fieldVectors = ArrowConverter.toArrowColumnsTimeSeries(bufferAllocator, schema.build(), timeSteps);
         assertEquals(3,fieldVectors.size());
+        for(FieldVector fieldVector : fieldVectors) {
+            for(int i = 0; i < fieldVector.getValueCount(); i++) {
+                assertFalse("Index " + i + " was null for field vector " + fieldVector, fieldVector.isNull(i));
+            }
+        }
         ArrowWritableRecordTimeSeriesBatch arrowWritableRecordTimeSeriesBatch = new ArrowWritableRecordTimeSeriesBatch(fieldVectors,schema.build(),timeStep.size() * timeStep.get(0).size());
-
-        List<List<List<Writable>>> timeStepsTest = new ArrayList<>(arrowWritableRecordTimeSeriesBatch);
-
-        assertEquals(timeSteps,timeStepsTest);
+        assertEquals(timeSteps,arrowWritableRecordTimeSeriesBatch.toArrayList());
 
     }
 

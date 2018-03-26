@@ -7,6 +7,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 import org.jetbrains.annotations.NotNull;
@@ -41,9 +42,30 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
         this.schema = schema;
         //each column should have same number of rows
         this.timeSeriesStride = timeSeriesStride;
-        this.size = list.get(0).getValueCount() / timeSeriesStride;
+        this.size = (list.get(0).getValueCount()  * list.size()) / timeSeriesStride;
 
     }
+
+    public List<List<List<Writable>>> toArrayList() {
+        List<List<List<Writable>>> ret = new ArrayList<>();
+        for(int i = 0; i < size(); i++) {
+            List<List<Writable>> timeStep = get(i);
+            List<List<Writable>> addTimeStep = new ArrayList<>();
+            for(int j = 0 ; j < timeStep.size(); j++) {
+                List<Writable> currRecord = new ArrayList<>();
+                for(int k = 0; k < timeStep.get(j).size(); k++) {
+                    currRecord.add(timeStep.get(j).get(k));
+                }
+
+                addTimeStep.add(currRecord);
+            }
+
+            ret.add(addTimeStep);
+        }
+
+        return ret;
+    }
+
 
     @Override
     public int size() {
@@ -121,9 +143,9 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public List<List<Writable>> get(int i) {
-        int timeStepLength = list.get(0).getValueCount() / schema.numColumns();
-        int offset = timeStepLength * i;
-        return new ArrowWritableRecordBatch(list,schema,offset,timeStepLength);
+        int timeStepLength = timeSeriesStride;
+        int offset = (timeStepLength * i) / timeStepLength;
+        return new ArrowWritableRecordBatch(list,schema,offset,timeStepLength / schema.numColumns());
     }
 
     @Override

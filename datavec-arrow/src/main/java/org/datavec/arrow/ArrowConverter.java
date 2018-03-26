@@ -34,10 +34,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
 
@@ -473,15 +470,24 @@ public class ArrowConverter {
             numRows += timeStep.get(0).size() * timeStep.size();
         }
 
-        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+        numRows /= schema.numColumns();
 
+
+        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
+        Map<Integer,Integer> currIndex = new HashMap<>(ret.size());
+        for(int i = 0; i < ret.size(); i++) {
+            currIndex.put(i,0);
+        }
         for(int i = 0; i < dataVecRecord.size(); i++) {
             List<List<Writable>> record = dataVecRecord.get(i);
             for(int j = 0; j < record.size(); j++) {
-                for(int k = 0; k < record.get(j).size(); k++) {
+                List<Writable> curr = record.get(j);
+                for(int k = 0; k < curr.size(); k++) {
+                    Integer idx = currIndex.get(k);
                     FieldVector fieldVector = ret.get(k);
-                    Writable writable = record.get(j).get(k);
-                    setValue(schema.getType(k), fieldVector, writable, i + j * k);
+                    Writable writable = curr.get(k);
+                    setValue(schema.getType(k), fieldVector, writable, idx);
+                    currIndex.put(k,idx + 1);
                 }
             }
         }
