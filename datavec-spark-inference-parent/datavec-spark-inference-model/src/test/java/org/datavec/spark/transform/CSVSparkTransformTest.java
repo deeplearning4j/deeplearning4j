@@ -66,6 +66,7 @@ public class CSVSparkTransformTest {
         BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
         for (int i = 0; i < 3; i++)
             batchCSVRecord.add(record);
+        //data type is string, unable to convert
         BatchCSVRecord batchCSVRecord1 = csvSparkTransform.transform(batchCSVRecord);
       /*  Base64NDArrayBody body = csvSparkTransform.toArray(batchCSVRecord1);
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
