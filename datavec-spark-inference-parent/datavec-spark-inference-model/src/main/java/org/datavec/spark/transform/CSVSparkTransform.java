@@ -183,12 +183,12 @@ public class CSVSparkTransform {
      * @return
      */
     public Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord) {
-        List<List<Writable>> converted =  execute(toArrowWritables(toArrowColumnsString(
+        List<List<List<Writable>>> converted =  executeToSequence(toArrowWritables(toArrowColumnsString(
                 bufferAllocator,transformProcess.getInitialSchema(),
                 singleCsvRecord.getRecordsAsString()),
                 transformProcess.getInitialSchema()),transformProcess);
-        ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) converted;
-        INDArray arr = ArrowConverter.toArray(arrowWritableRecordBatch);
+        ArrowWritableRecordTimeSeriesBatch arrowWritableRecordBatch = (ArrowWritableRecordTimeSeriesBatch) converted;
+        INDArray arr = RecordConverter.toTensor(arrowWritableRecordBatch);
         try {
             return new Base64NDArrayBody(Nd4jBase64.base64String(arr));
         } catch (IOException e) {

@@ -462,11 +462,26 @@ public class ArrowConverter {
      * @return the created vectors
      */
     public static  List<FieldVector> toArrowColumnsTimeSeries(final BufferAllocator bufferAllocator,
-                                                                    final Schema schema,
-                                                                    List<List<List<Writable>>> dataVecRecord) {
+                                                              final Schema schema,
+                                                              List<List<List<Writable>>> dataVecRecord) {
+        return toArrowColumnsTimeSeriesHelper(bufferAllocator,schema,dataVecRecord);
+    }
+
+
+    /**
+     * Convert a set of input strings to arrow columns
+     * for a time series.
+     * @param bufferAllocator the buffer allocator to use
+     * @param schema the schema to use
+     * @param dataVecRecord the collection of input strings to process
+     * @return the created vectors
+     */
+    public static <T>  List<FieldVector> toArrowColumnsTimeSeriesHelper(final BufferAllocator bufferAllocator,
+                                                                        final Schema schema,
+                                                                        List<List<List<T>>> dataVecRecord) {
         //time series length * number of columns
         int numRows = 0;
-        for(List<List<Writable>> timeStep : dataVecRecord) {
+        for(List<List<T>> timeStep : dataVecRecord) {
             numRows += timeStep.get(0).size() * timeStep.size();
         }
 
@@ -479,13 +494,13 @@ public class ArrowConverter {
             currIndex.put(i,0);
         }
         for(int i = 0; i < dataVecRecord.size(); i++) {
-            List<List<Writable>> record = dataVecRecord.get(i);
+            List<List<T>> record = dataVecRecord.get(i);
             for(int j = 0; j < record.size(); j++) {
-                List<Writable> curr = record.get(j);
+                List<T> curr = record.get(j);
                 for(int k = 0; k < curr.size(); k++) {
                     Integer idx = currIndex.get(k);
                     FieldVector fieldVector = ret.get(k);
-                    Writable writable = curr.get(k);
+                    T writable = curr.get(k);
                     setValue(schema.getType(k), fieldVector, writable, idx);
                     currIndex.put(k,idx + 1);
                 }
@@ -494,6 +509,7 @@ public class ArrowConverter {
 
         return ret;
     }
+
 
 
     /**
@@ -520,23 +536,8 @@ public class ArrowConverter {
     public static  List<FieldVector> toArrowColumnsStringTimeSeries(final BufferAllocator bufferAllocator,
                                                                     final Schema schema,
                                                                     List<List<List<String>>> dataVecRecord) {
-        //time series length * number of columns
-        int numRows = dataVecRecord.size() * dataVecRecord.get(0).size();
+        return toArrowColumnsTimeSeriesHelper(bufferAllocator,schema,dataVecRecord);
 
-        List<FieldVector> ret = createFieldVectors(bufferAllocator,schema,numRows);
-
-        for(int i = 0; i < dataVecRecord.size(); i++) {
-            List<List<String>> record = dataVecRecord.get(i);
-            for(int j = 0; j < record.size(); j++) {
-                for(int k = 0; k < record.get(j).size(); k++) {
-                    FieldVector fieldVector = ret.get(k);
-                    String writable = record.get(j).get(k);
-                    setValue(schema.getType(k), fieldVector, writable, i * j * k);
-                }
-            }
-        }
-
-        return ret;
     }
 
 

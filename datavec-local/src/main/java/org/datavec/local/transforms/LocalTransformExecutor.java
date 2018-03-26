@@ -5,6 +5,7 @@ import com.codepoetics.protonpack.StreamUtils;
 import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
+import org.apache.arrow.vector.FieldVector;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
@@ -63,6 +64,7 @@ public class LocalTransformExecutor {
                                                TransformProcess transformProcess) {
         if (transformProcess.getFinalSchema() instanceof SequenceSchema) {
             throw new IllegalStateException("Cannot return sequence data with this method");
+
         }
 
         return execute(inputWritables, null, transformProcess).getFirst();
@@ -336,14 +338,30 @@ public class LocalTransformExecutor {
         }
 
         //log.info("Completed {} of {} execution steps", count - 1, dataActions.size());       //Lazy execution means this can be printed before anything has actually happened...
+        if(currentSequence != null) {
+            List<FieldVector> arrowColumns = ArrowConverter.toArrowColumnsTimeSeries(
+                    bufferAllocator,
+                    sequence.getFinalSchema(),
+                    currentSequence);
+            List<List<List<Writable>>> writablesConvert = ArrowConverter.toArrowWritablesTimeSeries(
+                    arrowColumns,
+                    sequence.getFinalSchema(),
+                    currentSequence.get(0).size() * currentSequence.get(0).get(0).size());
+            currentSequence = writablesConvert;
+            return Pair.of(null, currentSequence);
 
-        return new Pair<>(ArrowConverter.
-                toArrowWritables(ArrowConverter.toArrowColumns(
-                        bufferAllocator,
-                        sequence.getFinalSchema(),
-                        currentWritables)
-                        ,sequence.getFinalSchema()),
-                currentSequence);
+        }
+        else {
+
+            return new Pair<>(ArrowConverter.
+                    toArrowWritables(ArrowConverter.toArrowColumns(
+                            bufferAllocator,
+                            sequence.getFinalSchema(),
+                            currentWritables)
+                            ,sequence.getFinalSchema()),
+                    null);
+        }
+
     }
 
 
