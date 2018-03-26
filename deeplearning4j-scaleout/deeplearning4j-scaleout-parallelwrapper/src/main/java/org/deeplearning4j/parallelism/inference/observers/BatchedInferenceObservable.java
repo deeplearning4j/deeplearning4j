@@ -27,6 +27,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     private List<INDArray[]> outputs = new ArrayList<>();
     private AtomicInteger counter = new AtomicInteger(0);
     private ThreadLocal<Integer> position = new ThreadLocal<>();
+    private List<int[]> outputBatchInputArrays = new ArrayList<>();
 
     private final Object locker = new Object();
 
@@ -54,6 +55,8 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         realLocker.writeLock().lock();
         isLocked.set(true);
 
+        outputBatchInputArrays.clear();
+
         // this method should pile individual examples into single batch
 
         if (counter.get() > 1) {
@@ -79,9 +82,10 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                     for (int e = pos; e <= lastPossible; e++) {
                         examples[toStackPos++] = inputs.get(e)[i];
                     }
-//                    result[i] = Nd4j.pile(examples);
                     result[i] = Nd4j.concat(0, examples);
                 }
+
+                outputBatchInputArrays.add(new int[]{pos, lastPossible});
 
                 out.add(result);
                 pos = lastPossible+1;
@@ -89,6 +93,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
             realLocker.writeLock().unlock();
             return out;
         } else {
+            outputBatchInputArrays.add(new int[]{0,0});
             realLocker.writeLock().unlock();
             return Collections.singletonList(inputs.get(0));
         }
@@ -110,17 +115,19 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         //this method should split batched output INDArray[] into multiple separate INDArrays
         // pre-create outputs
         int countAllBatches = 0;
-        for (INDArray[] currBatchOutputs : output) {
-            int exampleCount = currBatchOutputs[0].size(0);
-            for (int i = 0; i < exampleCount; i++) {
+        for( int o=0; o<output.size(); o++ ){
+            INDArray[] currBatchOutputs = output.get(o);
+            int[] inputBatchIdxs = outputBatchInputArrays.get(o);
+            int inputBatchCount = inputBatchIdxs[1] - inputBatchIdxs[0] + 1;
+            for (int i = 0; i < inputBatchCount; i++) {
                 outputs.add(new INDArray[currBatchOutputs.length]);
             }
 
-            // pull back results for individual examples
+            // pull back results for individual input batches
             for (int outputNumber = 0; outputNumber < currBatchOutputs.length; outputNumber++) {
-                INDArray[] split = splitExamples(currBatchOutputs[outputNumber]);
+                INDArray[] split = splitExamples(currBatchOutputs[outputNumber], inputBatchIdxs[0], inputBatchIdxs[1]);
 
-                for (int exInBatch = 0; exInBatch < exampleCount; exInBatch++) {
+                for (int exInBatch = 0; exInBatch < inputBatchCount; exInBatch++) {
                     outputs.get(countAllBatches++)[outputNumber] = split[exInBatch];
                 }
             }
@@ -130,19 +137,26 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         notifyObservers();
     }
 
-    private static INDArray[] splitExamples(INDArray input){
-        //This isn't pretty, but Nd4j.tear() changes dimensionality...
-        INDArrayIndex[] indices = new INDArrayIndex[input.rank()];
-        for(int i=1; i<indices.length; i++ ){
-            indices[i] = NDArrayIndex.all();
+    private INDArray[] splitExamples(INDArray netOutput, int firstInputComponent, int lastInputComponent){
+
+        int numSplits = lastInputComponent - firstInputComponent + 1;
+        if(numSplits == 1){
+            return new INDArray[]{netOutput};
+        } else {
+            INDArray[] out = new INDArray[numSplits];
+            INDArrayIndex[] indices = new INDArrayIndex[netOutput.rank()];
+            for(int i=1; i<indices.length; i++ ){
+                indices[i] = NDArrayIndex.all();
+            }
+            int examplesSoFar = 0;
+            for( int inNum = 0; inNum < numSplits; inNum++ ){
+                int inSizeEx = inputs.get(firstInputComponent + inNum)[0].size(0);
+                indices[0] = NDArrayIndex.interval(examplesSoFar, examplesSoFar+inSizeEx);
+                out[inNum] = netOutput.get(indices);
+                examplesSoFar += inSizeEx;
+            }
+            return out;
         }
-        int nEx = input.size(0);
-        INDArray[] out = new INDArray[nEx];
-        for( int i=0; i<nEx; i++ ){
-            indices[0] = NDArrayIndex.interval(i, i, true); //Can't use point, as it reduces # dimensions
-            out[i] = input.get(indices);
-        }
-        return out;
     }
 
     /**

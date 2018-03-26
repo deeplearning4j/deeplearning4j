@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -232,6 +234,19 @@ public class ParallelInferenceTest {
         for (int i = 0; i < bigOutput.rows(); i++)
             bigOutput.getRow(i).assign((float) i);
 
+
+        Field f = BatchedInferenceObservable.class.getDeclaredField("outputBatchInputArrays");
+        f.setAccessible(true);
+        List<int[]> l = new ArrayList<>();
+        l.add(new int[]{0,2});
+        f.set(observable3, l);
+
+        f = BatchedInferenceObservable.class.getDeclaredField("inputs");
+        f.setAccessible(true);
+        f.set(observable3, Arrays.asList(new INDArray[]{bigOutput.getRow(0)},
+                new INDArray[]{bigOutput.getRow(1)}, new INDArray[]{bigOutput.getRow(2)}));
+
+
         observable3.setOutputBatches(Collections.singletonList(new INDArray[]{bigOutput}));
         INDArray out = null;
 
@@ -355,6 +370,57 @@ public class ParallelInferenceTest {
         }
     }
 
+    @Test(timeout = 60000L)
+    public void testParallelInferenceVariableLengthTS2() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 10;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new RnnOutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        int[] defaultSize = new int[]{1, 10, 5};
+
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{2,3}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(20)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray> arrs = new ArrayList<>();
+                List<INDArray> exp = new ArrayList<>();
+
+                Random r = new Random();
+                for( int i=0; i<500; i++ ){
+                    int[] shape = defaultSize;
+                    if(r.nextDouble() < 0.4){
+                        shape = new int[]{r.nextInt(5)+1, 10, r.nextInt(10)+1};
+                    }
+
+                    INDArray in = Nd4j.rand(shape);
+                    arrs.add(in);
+                    INDArray out = net.output(in);
+                    exp.add(out);
+                }
+                testParallelInference(inf, arrs, exp);
+            }
+        }
+    }
+
+
+
     @Test(timeout = 30000L)
     public void testParallelInferenceVariableSizeCNN() throws Exception {
         //Variable size input for CNN model - for example, YOLO models
@@ -403,6 +469,58 @@ public class ParallelInferenceTest {
                     exp.add(out);
                 }
 
+                testParallelInference(inf, arrs, exp);
+            }
+        }
+    }
+
+
+    @Test(timeout = 30000L)
+    public void testParallelInferenceVariableSizeCNN2() throws Exception {
+        //Variable size input for CNN model - for example, YOLO models
+        //In these cases, we can't batch and have to execute the different size inputs separately
+
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 3;
+        int[] defaultShape = new int[]{1, nIn, 16, 16};
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .convolutionMode(ConvolutionMode.Same)
+                .list()
+                .layer(new ConvolutionLayer.Builder().nIn(nIn).nOut(5).build())
+                .layer(new CnnLossLayer())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(20)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray> arrs = new ArrayList<>();
+                List<INDArray> exp = new ArrayList<>();
+                Random r = new Random();
+                for( int i=0; i<500; i++ ){
+                    int[] shape = defaultShape;
+                    if(r.nextDouble() < 0.4){
+                        shape = new int[]{r.nextInt(5)+1, nIn, 10, r.nextInt(10)+1};
+                    }
+
+                    INDArray in = Nd4j.rand(shape);
+                    arrs.add(in);
+                    INDArray out = net.output(in);
+                    exp.add(out);
+                }
                 testParallelInference(inf, arrs, exp);
             }
         }
