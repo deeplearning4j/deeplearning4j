@@ -25,6 +25,7 @@ import org.datavec.arrow.recordreader.ArrowRecordWriter;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
@@ -91,9 +92,16 @@ public class ArrowConverterTest {
         assertEquals(3,fieldVectors.size());
         assertEquals(5,fieldVectors.get(0).getValueCount());
 
+        //Convert to ArrowWritableRecordBatch - note we can't do this in general with time series...
         ArrowWritableRecordBatch wri = ArrowConverter.toArrowWritables(fieldVectors, schema.build());
         INDArray arr = ArrowConverter.toArray(wri);
         assertArrayEquals(new int[] {5,3}, arr.shape());
+
+        INDArray exp = Nd4j.create(5, 3);
+        for( int i=0; i<5; i++ ){
+            exp.getRow(i).assign(i);
+        }
+        assertEquals(exp, arr);
     }
 
     @Test
