@@ -5107,7 +5107,7 @@ public class Nd4j {
 
         checkShapeValues(shape);
 
-        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
+        INDArray ret = INSTANCE.createUninitializedDetached(shape, ordering);
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5132,8 +5132,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray createUninitializedDetached(int[] shape) {
-        checkShapeValues(shape);
-        //ensure shapes that wind up being scalar end up with the write shape
         return createUninitializedDetached(shape, Nd4j.order());
     }
 
