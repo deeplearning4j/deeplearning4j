@@ -157,6 +157,11 @@ public class ImageSparkTransformServer extends SparkTransformServer {
     }
 
     @Override
+    public SequenceBatchCSVRecord transform(SequenceBatchCSVRecord batchCSVRecord) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
     public BatchCSVRecord transform(BatchCSVRecord batchCSVRecord) {
         throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }

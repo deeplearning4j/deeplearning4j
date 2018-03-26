@@ -42,7 +42,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
         this.schema = schema;
         //each column should have same number of rows
         this.timeSeriesStride = timeSeriesStride;
-        this.size = (list.get(0).getValueCount()  * list.size()) / timeSeriesStride;
+        this.size = list.size() * list.get(0).getValueCount() / timeSeriesStride;
 
     }
 
@@ -79,7 +79,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public boolean contains(Object o) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -150,7 +150,12 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public List<List<Writable>> set(int i, List<List<Writable>> writable) {
-        throw new UnsupportedOperationException();
+        ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) get(i);
+        for(int batch = 0; batch < writable.size(); batch++) {
+            arrowWritableRecordBatch.set(batch,writable.get(i));
+        }
+
+        return arrowWritableRecordBatch;
     }
 
     @Override
@@ -257,7 +262,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
         @Override
         public void set(List<List<Writable>> writables) {
-            throw new UnsupportedOperationException();
+            ArrowWritableRecordTimeSeriesBatch.this.set(index,writables);
         }
 
         @Override

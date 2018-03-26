@@ -107,6 +107,28 @@ public class DataVecTransformClient implements DataVecTransformService {
         return null;
     }
 
+
+    /**
+     * @param batchCSVRecord
+     * @return
+     */
+    @Override
+    public SequenceBatchCSVRecord transform(SequenceBatchCSVRecord batchCSVRecord) {
+        try {
+            SequenceBatchCSVRecord batchCSVRecord1 = Unirest.post(url + "/transform").header("accept", "application/json")
+                    .header("Content-Type", "application/json")
+                    .header(SEQUENCE_OR_NOT_HEADER,"TRUE")
+                    .body(batchCSVRecord)
+                    .asObject(SequenceBatchCSVRecord.class)
+                    .getBody();
+            return batchCSVRecord1;
+        } catch (UnirestException e) {
+            log.error("Error in transform(BatchCSVRecord)", e);
+            e.printStackTrace();
+        }
+
+        return null;
+    }
     /**
      * @param batchCSVRecord
      * @return
@@ -116,6 +138,7 @@ public class DataVecTransformClient implements DataVecTransformService {
         try {
             BatchCSVRecord batchCSVRecord1 = Unirest.post(url + "/transform").header("accept", "application/json")
                     .header("Content-Type", "application/json")
+                    .header(SEQUENCE_OR_NOT_HEADER,"FALSE")
                     .body(batchCSVRecord)
                     .asObject(BatchCSVRecord.class)
                     .getBody();

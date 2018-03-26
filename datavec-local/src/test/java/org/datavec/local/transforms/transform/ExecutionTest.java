@@ -30,6 +30,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
+import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
 import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
 
@@ -112,8 +113,7 @@ public class ExecutionTest  {
 
         List<List<List<Writable>>> rdd =  (inputSequences);
 
-        List<List<List<Writable>>> out =
-                new ArrayList<>(LocalTransformExecutor.executeSequenceToSequence(rdd, tp));
+        List<List<List<Writable>>> out = LocalTransformExecutor.executeSequenceToSequence(rdd, tp);
 
         Collections.sort(out, new Comparator<List<List<Writable>>>() {
             @Override

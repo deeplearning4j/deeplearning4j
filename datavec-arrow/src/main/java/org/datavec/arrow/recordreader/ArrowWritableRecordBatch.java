@@ -7,6 +7,7 @@ import org.apache.arrow.vector.VectorSchemaRoot;
 import org.apache.arrow.vector.VectorUnloader;
 import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 
@@ -60,7 +61,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
 
     @Override
     public boolean contains(Object o) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -70,7 +71,12 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
 
     @Override
     public Object[] toArray() {
-        throw new UnsupportedOperationException();
+        Object[] ret = new Object[size()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = get(i);
+        }
+
+        return ret;
     }
 
     @Override
@@ -90,7 +96,7 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
 
     @Override
     public boolean containsAll(Collection<?> collection) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -122,14 +128,30 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
     public List<Writable> get(int i) {
         List<Writable> ret = new ArrayList<>(schema.numColumns());
         for(int column = 0; column < schema.numColumns(); column++) {
-            ret.add(ArrowConverter.fromEntry(offset + i,list.get(column),schema.getType(column)));
+            if(!list.get(column).isNull(offset + i))
+                ret.add(ArrowConverter.fromEntry(offset + i,list.get(column),schema.getType(column)));
+            else {
+                ret.add(new NullWritable());
+            }
         }
         return ret;
     }
 
     @Override
     public List<Writable> set(int i, List<Writable> writable) {
-        throw new UnsupportedOperationException();
+        int rowOffset = offset + i;
+        List<Writable> old = get(i);
+        if(writable.size() != schema.numColumns()) {
+            throw new IllegalArgumentException("Unable to set value. Wrong input types coming in");
+        }
+
+        int colIdx = 0;
+        for(FieldVector fieldVector : list) {
+            ArrowConverter.setValue(schema.getType(colIdx),fieldVector,writable.get(colIdx),rowOffset);
+            colIdx++;
+        }
+
+        return old;
     }
 
     @Override
@@ -193,6 +215,18 @@ public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable 
             vectorLoader.close();
 
 
+    }
+
+
+    public List<List<Writable>> toArrayList() {
+        List<List<Writable>> ret = new ArrayList<>();
+        for(int i = 0; i < size(); i++) {
+            List<Writable> add = new ArrayList<>();
+            add.addAll(get(i));
+            ret.add(add);
+        }
+
+        return ret;
     }
 
 

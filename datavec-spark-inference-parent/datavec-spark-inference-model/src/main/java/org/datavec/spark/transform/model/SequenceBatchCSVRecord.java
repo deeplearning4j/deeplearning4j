@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 
@@ -51,6 +52,20 @@ public class SequenceBatchCSVRecord implements Serializable {
             }
 
             ret.add(add);
+        }
+
+        return ret;
+    }
+
+    /**
+     * Convert a writables time series to a sequence batch
+     * @param input
+     * @return
+     */
+    public static SequenceBatchCSVRecord fromWritables(List<List<List<Writable>>> input) {
+        SequenceBatchCSVRecord ret = new SequenceBatchCSVRecord();
+        for(int i = 0; i < input.size(); i++) {
+            ret.add(Arrays.asList(BatchCSVRecord.fromWritables(input.get(i))));
         }
 
         return ret;
