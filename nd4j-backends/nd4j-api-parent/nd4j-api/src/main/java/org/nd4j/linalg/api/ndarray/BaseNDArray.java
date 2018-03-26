@@ -3478,7 +3478,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         if (isScalar()) {
-            return other.divi(getDouble(0), result);
+            return other.rdivi(getDouble(0), result);
         }
 
 
@@ -3566,7 +3566,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return subi(other.getDouble(0), result);
         }
         if (isScalar()) {
-            return other.subi(getDouble(0), result);
+            return other.rsubi(getDouble(0), result);
         }
 
 

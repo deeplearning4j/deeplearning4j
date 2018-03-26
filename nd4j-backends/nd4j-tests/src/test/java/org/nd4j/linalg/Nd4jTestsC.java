@@ -6065,6 +6065,44 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testRdiv()    {
+        final INDArray a = Nd4j.create(new double[]{2.0, 2.0, 2.0, 2.0});
+        final INDArray b = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0});
+        final INDArray c = Nd4j.create(new double[]{2.0, 2.0}).reshape(2, 1);
+        final INDArray d = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0}).reshape(2, 2);
+
+        final INDArray expected = Nd4j.create(new double[]{2.0, 1.0, 0.5, 0.25});
+        final INDArray expected2 = Nd4j.create(new double[]{2.0, 1.0, 0.5, 0.25}).reshape(2, 2);
+
+        assertEquals(expected, a.div(b));
+        assertEquals(expected, b.rdiv(a));
+        assertEquals(expected, b.rdiv(2));
+        assertEquals(expected2, d.rdivColumnVector(c));
+
+        assertEquals(expected, b.rdiv(Nd4j.scalar(2)));
+        assertEquals(expected, b.rdivColumnVector(Nd4j.scalar(2)));
+    }
+
+    @Test
+    public void testRsub()    {
+        final INDArray a = Nd4j.create(new double[]{2.0, 2.0, 2.0, 2.0});
+        final INDArray b = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0});
+        final INDArray c = Nd4j.create(new double[]{2.0, 2.0}).reshape(2, 1);
+        final INDArray d = Nd4j.create(new double[]{1.0, 2.0, 4.0, 8.0}).reshape('c',2, 2);
+
+        final INDArray expected = Nd4j.create(new double[]{1.0, 0.0, -2.0, -6.0});
+        final INDArray expected2 = Nd4j.create(new double[]{1, 0, -2.0, -6.0}).reshape('c',2, 2);
+
+        assertEquals(expected, a.sub(b));
+        assertEquals(expected, b.rsub(a));
+        assertEquals(expected, b.rsub(2));
+        assertEquals(expected2, d.rsubColumnVector(c));
+
+        assertEquals(expected, b.rsub(Nd4j.scalar(2)));
+        assertEquals(expected, b.rsubColumnVector(Nd4j.scalar(2)));
+    }
+
 
     @Override
     public char ordering() {
