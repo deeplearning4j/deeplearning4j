@@ -5,9 +5,12 @@ import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,7 +39,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     }
 
     @Override
-    public void setInput(INDArray... input) {
+    public void addInput(INDArray... input) {
         synchronized (locker) {
             inputs.add(input);
             position.set(counter.getAndIncrement());
@@ -47,37 +50,47 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     }
 
     @Override
-    public INDArray[] getInput() {
+    public List<INDArray[]> getInputBatches() {
         realLocker.writeLock().lock();
         isLocked.set(true);
 
         // this method should pile individual examples into single batch
+
         if (counter.get() > 1) {
-            INDArray[] result = new INDArray[inputs.get(0).length];
 
-            //First: determine which we can actually batch...
-            int lastPossible = 0;
-            for( int i=1; i<inputs.size(); i++ ){
-                if(canBatch(inputs.get(0), inputs.get(i))){
-                    lastPossible = i;
-                } else {
-                    break;
+            int pos = 0;
+            List<INDArray[]> out = new ArrayList<>();
+            while(pos < inputs.size()) {
+                INDArray[] result = new INDArray[inputs.get(0).length];
+
+                //First: determine which we can actually batch...
+                int lastPossible = pos;
+                for (int i = pos+1; i < inputs.size(); i++) {
+                    if (canBatch(inputs.get(pos), inputs.get(i))) {
+                        lastPossible = i;
+                    } else {
+                        break;
+                    }
                 }
-            }
 
-            for (int i = 0; i < result.length; i++) {
-                List<INDArray> examples = new ArrayList<>();
-                for (int e = 0; e <= lastPossible; e++) {
-                    examples.add(inputs.get(e)[i]);
+                for (int i = 0; i < result.length; i++) {
+                    INDArray[] examples = new INDArray[lastPossible-pos+1];
+                    int toStackPos = 0;
+                    for (int e = pos; e <= lastPossible; e++) {
+                        examples[toStackPos++] = inputs.get(e)[i];
+                    }
+//                    result[i] = Nd4j.pile(examples);
+                    result[i] = Nd4j.concat(0, examples);
                 }
-                result[i] = Nd4j.pile(examples);
-            }
 
+                out.add(result);
+                pos = lastPossible+1;
+            }
             realLocker.writeLock().unlock();
-            return result;
+            return out;
         } else {
             realLocker.writeLock().unlock();
-            return inputs.get(0);
+            return Collections.singletonList(inputs.get(0));
         }
     }
 
@@ -93,36 +106,43 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     }
 
     @Override
-    public void setOutput(INDArray... output) {
+    public void setOutputBatches(List<INDArray[]> output) {
         //this method should split batched output INDArray[] into multiple separate INDArrays
         // pre-create outputs
-        int exampleCount = output[0].size(0);
-        if(exampleCount == 1){
-            outputs.add(output);
-        } else {
+        int countAllBatches = 0;
+        for (INDArray[] currBatchOutputs : output) {
+            int exampleCount = currBatchOutputs[0].size(0);
             for (int i = 0; i < exampleCount; i++) {
-                outputs.add(new INDArray[output.length]);
+                outputs.add(new INDArray[currBatchOutputs.length]);
             }
 
             // pull back results for individual examples
-            int cnt = 0;
-            for (INDArray array : output) {
-                int[] dimensions = new int[array.rank() - 1];
-                for (int i = 1; i < array.rank(); i++) {
-                    dimensions[i - 1] = i;
-                }
+            for (int outputNumber = 0; outputNumber < currBatchOutputs.length; outputNumber++) {
+                INDArray[] split = splitExamples(currBatchOutputs[outputNumber]);
 
-                INDArray[] split = Nd4j.tear(array, dimensions);
-
-                for (int e = 0; e < exampleCount; e++) {
-                    outputs.get(e)[cnt] = split[e];
+                for (int exInBatch = 0; exInBatch < exampleCount; exInBatch++) {
+                    outputs.get(countAllBatches++)[outputNumber] = split[exInBatch];
                 }
-                cnt++;
             }
         }
 
         this.setChanged();
         notifyObservers();
+    }
+
+    private static INDArray[] splitExamples(INDArray input){
+        //This isn't pretty, but Nd4j.tear() changes dimensionality...
+        INDArrayIndex[] indices = new INDArrayIndex[input.rank()];
+        for(int i=1; i<indices.length; i++ ){
+            indices[i] = NDArrayIndex.all();
+        }
+        int nEx = input.size(0);
+        INDArray[] out = new INDArray[nEx];
+        for( int i=0; i<nEx; i++ ){
+            indices[0] = NDArrayIndex.interval(i, i, true); //Can't use point, as it reduces # dimensions
+            out[i] = input.get(indices);
+        }
+        return out;
     }
 
     /**
@@ -164,6 +184,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     public INDArray[] getOutput() {
         // basically we should take care of splits here: each client should get its own part of output, wrt order number
 
+        int pos = position.get();
         return outputs.get(position.get());
     }
 }

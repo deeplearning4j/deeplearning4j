@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -29,7 +30,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.setInput(Nd4j.create(100).assign(i));
+            observable.addInput(Nd4j.create(100).assign(i));
         }
 
         assertEquals(1, observable.getInput().length);
@@ -50,7 +51,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.setInput(Nd4j.create(3, 72, 72).assign(i));
+            observable.addInput(Nd4j.create(3, 72, 72).assign(i));
         }
 
         assertEquals(1, observable.getInput().length);
@@ -71,7 +72,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.setInput(Nd4j.create(3, 72, 72).assign(i), Nd4j.create(100, 100).assign(100 + i));
+            observable.addInput(Nd4j.create(3, 72, 72).assign(i), Nd4j.create(100, 100).assign(100 + i));
         }
 
         assertEquals(2, observable.getInput().length);
@@ -101,7 +102,7 @@ public class BatchedInferenceObservableTest {
         }
 
         observable.setCounter(32);
-        observable.setOutput(output0, output1);
+        observable.setOutputBatches(Collections.singletonList(new INDArray[]{output0, output1}));
 
         List<INDArray[]> outputs = observable.getOutputs();
 

@@ -28,10 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -176,7 +173,9 @@ public class ParallelInferenceTest {
 
         assertTrue(observable1 == observable2);
 
-        INDArray[] input = observable1.getInput();
+        List<INDArray[]> l = observable1.getInputBatches();
+        assertEquals(1, l.size());
+        INDArray[] input = l.get(0);
 
         assertEquals(1, input.length);
         assertArrayEquals(new int[] {2, 100}, input[0].shape());
@@ -202,12 +201,17 @@ public class ParallelInferenceTest {
         assertTrue(observable1 == observable2);
         assertTrue(observable1 != observable3);
 
-        INDArray[] input = observable1.getInput();
+        List<INDArray[]> l = observable1.getInputBatches();
+        assertEquals(1, l.size());
+        INDArray[] input = l.get(0);
 
         assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
         assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
 
-        input = observable3.getInput();
+
+        l = observable3.getInputBatches();
+        assertEquals(1, l.size());
+        input = l.get(0);
         assertEquals(3.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
     }
 
@@ -228,7 +232,7 @@ public class ParallelInferenceTest {
         for (int i = 0; i < bigOutput.rows(); i++)
             bigOutput.getRow(i).assign((float) i);
 
-        observable3.setOutput(bigOutput);
+        observable3.setOutputBatches(Collections.singletonList(new INDArray[]{bigOutput}));
         INDArray out = null;
 
         observable3.setPosition(0);
@@ -436,6 +440,14 @@ public class ParallelInferenceTest {
         for( int i=0; i<in.size(); i++ ){
             INDArray e = exp.get(i);
             INDArray a = act[i];
+
+//            float[] fe = e.dup().data().asFloat();
+//            float[] fa = a.dup().data().asFloat();
+//            System.out.println(Arrays.toString(fe));
+//            System.out.println(Arrays.toString(fa));
+//            assertArrayEquals(fe, fa, 1e-8f);
+//            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
+//            assertArrayEquals(e.shape(), a.shape());
 
             assertEquals(e, a);
         }

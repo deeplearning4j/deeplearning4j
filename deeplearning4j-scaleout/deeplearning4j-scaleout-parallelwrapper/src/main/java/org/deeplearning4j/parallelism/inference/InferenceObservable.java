@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism.inference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.List;
 import java.util.Observer;
 
 /**
@@ -9,11 +10,11 @@ import java.util.Observer;
  */
 public interface InferenceObservable {
 
-    INDArray[] getInput();
+    List<INDArray[]> getInputBatches();
 
-    void setInput(INDArray... input);
+    void addInput(INDArray... input);
 
-    void setOutput(INDArray... output);
+    void setOutputBatches(List<INDArray[]> output);
 
     void addObserver(Observer observer);
 

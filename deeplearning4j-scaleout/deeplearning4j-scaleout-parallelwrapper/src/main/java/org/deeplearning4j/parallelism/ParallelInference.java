@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -332,11 +334,21 @@ public class ParallelInference {
 
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
                         if (replicatedModel instanceof ComputationGraph) {
-                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
-                            request.setOutput(output);
+                            List<INDArray[]> batches = request.getInputBatches();
+                            List<INDArray[]> out = new ArrayList<>(batches.size());
+                            for( INDArray[] inBatch : batches ) {
+                                INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch);
+                                out.add(output);
+                            }
+                            request.setOutputBatches(out);
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
-                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
-                            request.setOutput(output);
+                            List<INDArray[]> batches = request.getInputBatches();
+                            List<INDArray[]> out = new ArrayList<>(batches.size());
+                            for( INDArray[] inBatch : batches ) {
+                                INDArray output = ((MultiLayerNetwork) replicatedModel).output(inBatch[0]);
+                                out.add(new INDArray[]{output});
+                            }
+                            request.setOutputBatches(out);
                         }
 
 
@@ -386,7 +398,7 @@ public class ParallelInference {
                     currentObservable = new BatchedInferenceObservable();
                 }
 
-                currentObservable.setInput(input);
+                currentObservable.addInput(input);
                 currentObservable.addObserver(observer);
 
                 try {
