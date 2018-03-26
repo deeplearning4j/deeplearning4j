@@ -66,8 +66,6 @@ import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -78,8 +76,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
-
-// FIXME: remove that
 
 /**
  * This is utility class, providing various methods for WordVectors serialization
@@ -578,7 +574,9 @@ public class WordVectorSerializer {
         ZipEntry config = new ZipEntry("config.json");
         zipfile.putNextEntry(config);
         //log.info("Current config: {}", vectors.getConfiguration().toJson());
-        IOUtils.copy(vectors.getConfiguration().toJson(), zipfile, StandardCharsets.UTF_8);
+        try(ByteArrayInputStream bais = new ByteArrayInputStream(vectors.getConfiguration().toJson().getBytes(StandardCharsets.UTF_8))){
+            IOUtils.copy(bais, zipfile);
+        }
 
         zipfile.flush();
         zipfile.close();
