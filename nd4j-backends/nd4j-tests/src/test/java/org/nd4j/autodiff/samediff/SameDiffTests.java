@@ -3523,6 +3523,89 @@ public class SameDiffTests {
         }
     }
 
+    @Test
+    public void testScatterAdd() {
+        INDArray arr1 = Nd4j.zeros(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new int[]{2});
+        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray expected = Nd4j.create(new float[]{1, 1, 1,
+                                                    1, 1, 1,
+                                                    0, 0, 0},
+                                            new int[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterAdd(refs, idxs, upds);
+        assertArrayEquals(new int[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+
+    }
+
+    @Test
+    public void testScatterMul() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new int[]{2});
+        INDArray arr3 = Nd4j.zeros(3, 3);
+        INDArray expected = Nd4j.create(new float[]{0, 0, 0,
+                                                    0, 0, 0,
+                                                    1, 1, 1},
+                                            new int[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterMul(refs, idxs, upds);
+        assertArrayEquals(new int[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+
+    }
+
+    @Test
+    public void testScatterSub() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new int[]{2});
+        INDArray arr3 = Nd4j.ones(3, 3);
+        INDArray expected = Nd4j.create(new float[]{0, 0, 0,
+                                                    0, 0, 0,
+                                                    1, 1, 1},
+                                            new int[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterSub(refs, idxs, upds);
+        assertArrayEquals(new int[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+
+    }
+
+    @Test
+    public void testScatterDiv() {
+        INDArray arr1 = Nd4j.ones(3, 3);
+        INDArray arr2 = Nd4j.create(new float[]{0,1}, new int[]{2});
+        INDArray arr3 = Nd4j.ones(3, 3).assign(2);
+        INDArray expected = Nd4j.create(new float[]{0.5f, 0.5f, 0.5f,
+                                                    0.5f, 0.5f, 0.5f,
+                                                    1.0f, 1.0f, 1.0f},
+                                            new int[]{3, 3});
+
+        SameDiff sd  = SameDiff.create();
+        SDVariable refs = sd.var("refs", arr1);
+        SDVariable idxs = sd.var("idxs", arr2);
+        SDVariable upds = sd.var("upds", arr3);
+
+        SDVariable result = sd.scatterDiv(refs, idxs, upds);
+        assertArrayEquals(new int[]{3, 3}, result.eval().shape());
+        assertEquals(expected, result.eval());
+
+    }
 
     @Test  //*** Test is failing ***
     public void testRollAxis() {

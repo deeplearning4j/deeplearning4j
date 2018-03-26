@@ -4580,6 +4580,45 @@ public class SameDiff {
     }
 
 
+    public SDVariable scatterAdd(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterAdd(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scatterMul(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterMul(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scatterSub(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterSub(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable scatterDiv(String name, SDVariable ref, SDVariable indices, SDVariable updates) {
+        SDVariable ret = f().scatterDiv(ref, indices, updates);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+
+    public SDVariable scatterAdd(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterAdd(null, ref, indices, updates);
+    }
+
+    public SDVariable scatterMul(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterMul(null, ref, indices, updates);
+    }
+
+    public SDVariable scatterSub(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterSub(null, ref, indices, updates);
+    }
+
+    public SDVariable scatterDiv(SDVariable ref, SDVariable indices, SDVariable updates) {
+        return scatterDiv(null, ref, indices, updates);
+    }
+
+
+
     /**
      * Generate the variables based on the given input op
      * and return the output variable names.
