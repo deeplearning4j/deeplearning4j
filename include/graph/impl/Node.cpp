@@ -278,6 +278,16 @@ namespace nd4j {
         }
 
         template <typename T>
+        int Node<T>::totalReferences() {
+            return _referencedBy.size();
+        }
+
+        template <typename T>
+        void Node<T>::addReference(int nodeId) {
+            _referencedBy.emplace_back(nodeId);
+        }
+
+        template <typename T>
         nd4j::graph::OpType nd4j::graph::Node<T>::opType() {
             return _opType;
         }

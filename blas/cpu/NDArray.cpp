@@ -19,6 +19,7 @@
 #include <indexing/NDIndex.h>
 #include <indexing/IndicesList.h>
 #include <helpers/ShapeUtils.h>
+#include <sstream>
 
 namespace nd4j {
 
@@ -187,6 +188,68 @@ template <typename T>
     _isBuffAlloc = true;
     _isShapeAlloc = true;
 }
+
+    template<typename T>
+    std::string NDArray<T>::toStringValue(T value) {
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << value ;
+
+        //convert the string stream into a string and return
+        return os.str() ;
+    }
+
+    template<>
+    std::string NDArray<float16>::toStringValue(float16 value) {
+        std::ostringstream os ;
+
+        //throw the value into the string stream
+        os << (float) value ;
+
+        //convert the string stream into a string and return
+        return os.str() ;
+    }
+
+    template<typename T>
+    std::string NDArray<T>::asIndexedString(int limit) {
+        std::ostringstream os;
+        os << "[";
+
+        if (limit < 1 || limit > this->lengthOf())
+            limit = this->lengthOf();
+
+        for (int e = 0; e < limit; e++) {
+            os << toStringValue(this->getIndexedScalar(e));
+
+            if (e < limit - 1)
+                os << ", ";
+        }
+
+        os << "]";
+
+        return os.str();
+    }
+
+    template<typename T>
+    std::string NDArray<T>::asString(int limit) {
+        std::ostringstream os;
+        os << "[";
+
+        if (limit < 1 || limit > this->lengthOf())
+            limit = this->lengthOf();
+
+        for (int e = 0; e < limit; e++) {
+            os << toStringValue(_buffer[e]);
+
+            if (e < limit - 1)
+                os << ", ";
+        }
+
+        os << "]";
+
+        return os.str();
+    }
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>

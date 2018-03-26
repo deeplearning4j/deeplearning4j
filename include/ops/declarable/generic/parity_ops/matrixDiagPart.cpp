@@ -24,6 +24,8 @@ namespace nd4j {
             int* in = inputShape->at(0);
             int inRank = shape::rank(in);
 
+            REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
+
             int outRank = inRank - 1;
             int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {

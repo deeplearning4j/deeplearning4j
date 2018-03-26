@@ -1589,11 +1589,17 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
                                       13, 23, 14, 24, 15, 25, 16, 26, 17, 27,
                                       18, 28, 19, 29, 20, 30, 21, 31});
     
-    NDArray<float> y({0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
+    NDArray<float> y('c', {3, 4, 2}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
                       2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 
                       1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f 
                     }
     );
+/*    NDArray<float> y('c', {3, 4}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
+                      2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 2.f, 
+                      1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f 
+                    }
+    );
+*/
     int numPartition = 3;
     std::vector<NDArray<float>> exp( { NDArray<float>('c', {6}, {10, 20, 11, 21, 12, 22}), 
                                       NDArray<float>('c', {8}, {18, 28, 19, 29, 20, 30, 21, 31}),

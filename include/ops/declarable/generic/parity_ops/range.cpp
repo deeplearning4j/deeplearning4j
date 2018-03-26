@@ -89,7 +89,6 @@ namespace nd4j {
                     memcpy(array->buffer(), data.data(), data.size() * sizeof(T));
 
                     //block.pushNDArrayToVariableSpace(block.nodeId(), 0, array);
-                    nd4j_debug("Range overwrite!\n","");
                     OVERWRITE_RESULT(array);
                 }
             } else {

@@ -40,11 +40,7 @@ namespace nd4j {
                                 z->putIndexedScalar(e, r);
                             }
                         }
-
-                        REQUIRE_TRUE(numMatches == y->lengthOf(), 44, "Num matches %d != length of put array %d", numMatches,y->lengthOf());
-
                     }
-
                 }
                 else {
                     REQUIRE_TRUE(condition->lengthOf() == x->sizeAt(0), 0, "Condition length should be equal to the dim0 of x/y to act as TAD-mask, but got %d instead", condition->lengthOf());

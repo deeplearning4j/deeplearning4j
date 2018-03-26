@@ -178,6 +178,10 @@ namespace ops {
             block_shape = blocks->template asVectorT<int>();
             crops_shape = crops->template asVectorT<int>();
 
+            shape::printShapeInfoLinear("STB input shape: ",in);
+            blocks->printBuffer("STB blocks");
+            crops->printBuffer("STB crops");
+
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();
 
@@ -265,6 +269,8 @@ namespace ops {
 
         int *newShape;
         ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength((int) external_output_shape.size()), int);
+
+        nd4j_printv("STB shape: ", external_output_shape);
 
         // we always give out C order here
         shape::shapeBuffer((int) external_output_shape.size(), external_output_shape.data(), newShape);

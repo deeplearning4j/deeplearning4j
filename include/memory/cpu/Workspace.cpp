@@ -106,6 +106,11 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jIndex numBytes) {
+            if (numBytes < 1) {
+                nd4j_printf("Bad number of bytes requested for allocation: %i\n", numBytes);
+                throw std::invalid_argument("Number of bytes for allocation should be positive");
+            }
+
             //numBytes += 32;
             void* result = nullptr;
             this->_cycleAllocations += numBytes;

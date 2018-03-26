@@ -1376,7 +1376,7 @@ TEST_F(GraphTests, Test_Inplace_Execution_1) {
     ASSERT_TRUE(graph->nodeById(9)->isInplace());
     ASSERT_TRUE(graph->nodeById(10)->isInplace());
     ASSERT_FALSE(graph->nodeById(11)->isInplace());
-    ASSERT_TRUE(graph->nodeById(12)->isInplace());
+    ASSERT_FALSE(graph->nodeById(12)->isInplace());
     ASSERT_TRUE(graph->nodeById(17)->isInplace());
     ASSERT_TRUE(graph->nodeById(18)->isInplace());
 

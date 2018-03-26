@@ -719,6 +719,39 @@ namespace nd4j {
             if (!_built.load())
                 this->buildGraph();
 
+            bool buildRef = false;
+
+            // checking for non-refenenced nodes
+            for (auto v: *_nodes) {
+                // skipping unmapped nodes
+                if (_mapped->count(v) == 0)
+                    continue;
+
+                Node<T>* node = _mapped->at(v);
+                if (node->totalReferences() == 0) {
+                    buildRef = true;
+                    break;
+                }
+            }
+
+            if (buildRef) {
+                for (auto v: *_nodes) {
+                    // skipping unmapped nodes
+                    if (_mapped->count(v) == 0)
+                        continue;
+
+                    Node<T>* node = _mapped->at(v);
+                    auto inputs = node->input();
+                    for (auto &t: *inputs) {
+                        if (_mapped->count(t.first) == 0)
+                            continue;
+
+                        Node<T>* inode = _mapped->at(t.first);
+                        inode->addReference(node->id());
+                    }
+                }
+            }
+
 
             for (auto v: *_nodes) {
                 // skipping unmapped nodes
@@ -742,9 +775,12 @@ namespace nd4j {
                             if (_mapped->count(t.first) == 0)
                                 continue;
 
-                            auto inode = _mapped->at(t.first);
+                            Node<T>* inode = _mapped->at(t.first);
+
+                            int output_size = inode->output()->size();
+
                             // checking for second requirement: inputNode must not be used as input anywhere
-                            if (inode->isMultiOutput()) {
+                            if (inode->totalReferences() > 1) {
                                 singleInput = false;
                                 break;
                             }

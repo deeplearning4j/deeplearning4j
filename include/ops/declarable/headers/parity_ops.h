@@ -115,7 +115,7 @@ namespace nd4j {
          * 0: vector with original values
          * 1: vector with values to exclude
          */
-        DECLARE_OP(listdiff, 2, 2, false);
+        DECLARE_CUSTOM_OP(listdiff, 2, 2, false, 0, 0);
 
         /**
          * This operation applies Add opeartion to specific inputs wrt indices

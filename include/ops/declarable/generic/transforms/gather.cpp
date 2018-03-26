@@ -13,12 +13,12 @@ namespace nd4j {
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(gather, 1, 1, false, 0, 1) {
+CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
 	NDArray<T>* input   = INPUT_VARIABLE(0);
 	NDArray<T>* output  = OUTPUT_VARIABLE(0);
 
-	int axis = block.getIArguments()->at(0);    
+	int axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
     int inputRank = input->rankOf();
 	if(axis < 0)
         axis += inputRank;
@@ -42,6 +42,11 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, 1) {
     		NDArray<T> tadArr(input->getBuffer() + tad.tadOffsets[(int)indices->getScalar(0)], tad.tadOnlyShapeInfo);
     		output->assign(&tadArr);
    		}
+		else if (input->rankOf() == 1 && indices->isVector()) {
+			// special case
+			for (int e = 0; e < indices->lengthOf(); e++)
+				output->putScalar(e, input->getScalar(indices->getScalar(e)));
+		}
    		// second case: indices is vector
    		else if(indices->isVector()) {   	
    			ResultSet<T>* listOut = NDArrayFactory<T>::allTensorsAlongDimension(output, ShapeUtils<T>::evalDimsToExclude(output->rankOf(), {axis}));
@@ -105,7 +110,7 @@ DECLARE_SHAPE_FN(gather) {
 	NDArray<T>* input   = INPUT_VARIABLE(0);
 	int* outputShapeInfo = nullptr;
 
-	int axis = block.getIArguments()->at(0);
+	int axis = block.numI() > 0 ? block.getIArguments()->at(0) : 0;
 	int inputRank = input->rankOf();
 	if(axis < 0)
 		axis += inputRank;

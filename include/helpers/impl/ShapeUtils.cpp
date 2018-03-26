@@ -372,6 +372,13 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(const NDArray<T> &max, const NDArray<
 
 template <typename T>
 bool ShapeUtils<T>::evalBroadcastShapeInfo(int *max, int*min, const bool evalMinMax, int*& resultShapeInfo, nd4j::memory::Workspace* workspace) {
+
+    if ((shape::rank(max) == 0 && shape::isScalar(min))) {
+        // X is the driver here
+        resultShapeInfo = ShapeUtils<T>::createScalarShapeInfo(workspace);
+        return true;
+    }
+
     // check whether broadcast operation is possible for input arrays
     if(!areShapesBroadcastable(max, min))
         return false;
@@ -392,6 +399,8 @@ bool ShapeUtils<T>::evalBroadcastShapeInfo(int *max, int*min, const bool evalMin
         throw "ShapeUtils::evalBroadcastShapeInfo method: the input pointer on shapeInfo must be empty (=nullptr) !" ;
     
     ALLOCATE(resultShapeInfo, workspace, shape::shapeInfoLength(maxRank), int);
+
+    // FIXME: get rid of memcpy here
     memcpy(resultShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
     for (int i = 0; i < minRank; ++i)
         if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
@@ -745,8 +754,8 @@ ShapeUtils<T>::matrixProductShape(int* theFirstShape, int* theSecondShape,
         int *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(1), int);
 
-        newShape[0] = length;
-        newShape[1] = 1;
+        newShape[0] = 1;
+        newShape[1] = length;
         newShape[2] = 1;
         newShape[3] = 0;
         newShape[4] = 1;

@@ -22,5 +22,6 @@
 #include <helpers/ShapeUtils.h>
 #include <array/ShapeList.h>
 #include <Status.h>
+#include <stdexcept>
 
 #endif

@@ -65,6 +65,7 @@ namespace nd4j {
         */  
         DataType _dataType = DataType_FLOAT;
 
+        std::string toStringValue(T value);
     public:        
         
         /**
@@ -269,6 +270,9 @@ namespace nd4j {
         *  limit - number of array elements to print out
         */ 
         void printIndexedBuffer(const char* msg = nullptr, int limit = -1) const;
+
+        std::string asIndexedString(int limit = -1);
+        std::string asString(int limit = -1);
 
         /**
         *  this method assigns values of given array to this one

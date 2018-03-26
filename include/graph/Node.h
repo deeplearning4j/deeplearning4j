@@ -32,6 +32,8 @@ namespace nd4j {
             std::vector<std::pair<int, int>> _output;
             std::vector<int> _dimensions;
 
+            std::vector<int> _referencedBy;
+
             int * _dim = nullptr;
             std::string _name;
 
@@ -140,6 +142,8 @@ namespace nd4j {
             std::string * getName();
             std::string * name();
 
+            int totalReferences();
+            void addReference(int nodeId);
 
             void setContextPrototype(ContextPrototype<T> *block);
             ContextPrototype<T>* getContextPrototype();

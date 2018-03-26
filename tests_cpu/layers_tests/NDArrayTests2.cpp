@@ -610,3 +610,13 @@ TEST_F(NDArrayTest2, Test_Reshape_To_Vector_1) {
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 }
+
+
+TEST_F(NDArrayTest2, Test_toIndexedString_1) {
+    NDArray<float> x('c', {2, 2}, {1.5f, 2.5f, 3.f, 4.5f});
+
+    auto str = x.asIndexedString();
+    std::string exp = "[1.5, 2.5, 3, 4.5]";
+
+    ASSERT_EQ(exp, str);
+}
