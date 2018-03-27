@@ -321,12 +321,6 @@ public class ArrowConverterTest {
     }
 
 
-    @Test
-    public void testArrowWritablesTimeSeries() {
-
-    }
-
-
 
 
     private File tmpDataFile(Pair<Schema,List<List<Writable>>> recordsToWrite) throws IOException {
