@@ -136,13 +136,14 @@ public class LSTMParamInitializer implements ParamInitializer {
             int[] recurrentWShape = new int[] {nL, 4 * nL};
 
             WeightInit rwInit;
-            Distribution rwDist;
+            Distribution rwDist = dist;
             if(layerConf.getWeightInitRecurrent() != null){
                 rwInit = layerConf.getWeightInitRecurrent();
-                rwDist = Distributions.createDistribution(layerConf.getDistRecurrent());
+                if(layerConf.getDistRecurrent() != null) {
+                    rwDist = Distributions.createDistribution(layerConf.getDistRecurrent());
+                }
             } else {
                 rwInit = layerConf.getWeightInit();
-                rwDist = dist;
             }
 
             params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,

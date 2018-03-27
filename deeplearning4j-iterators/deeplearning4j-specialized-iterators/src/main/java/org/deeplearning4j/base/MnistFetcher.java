@@ -149,47 +149,50 @@ public class MnistFetcher {
         }
 
         log.info("Downloading {}...", getName());
-        // getFromOrigin training records
-        File tarFile = new File(baseDir, getTrainingFilesFilename());
-        File testFileLabels = new File(baseDir, getTestFilesFilename());
+        // get features
+        File trainFeatures = new File(baseDir, getTrainingFilesFilename());
+        File testFeatures = new File(baseDir, getTestFilesFilename());
 
-        tryDownloadingAFewTimes(new URL(getTrainingFilesURL()), tarFile, getTrainingFilesMD5());
-        tryDownloadingAFewTimes(new URL(getTestFilesURL()), testFileLabels, getTestFilesMD5());
+        downloadAndExtract(new URL(getTrainingFilesURL()), trainFeatures, baseDir, getTrainingFilesMD5());
+        downloadAndExtract(new URL(getTestFilesURL()), testFeatures, baseDir, getTestFilesMD5());
 
-        ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), baseDir.getAbsolutePath());
-        ArchiveUtils.unzipFileTo(testFileLabels.getAbsolutePath(), baseDir.getAbsolutePath());
+        // get labels
+        File trainLabels = new File(baseDir, getTrainingFileLabelsFilename());
+        File testLabels = new File(baseDir, getTestFileLabelsFilename());
 
-        // getFromOrigin training records
-        File labels = new File(baseDir, getTrainingFileLabelsFilename());
-        File labelsTest = new File(baseDir, getTestFileLabelsFilename());
-
-        tryDownloadingAFewTimes(new URL(getTrainingFileLabelsURL()), labels, getTrainingFileLabelsMD5());
-        tryDownloadingAFewTimes(new URL(getTestFileLabelsURL()), labelsTest, getTestFileLabelsMD5());
-
-        ArchiveUtils.unzipFileTo(labels.getAbsolutePath(), baseDir.getAbsolutePath());
-        ArchiveUtils.unzipFileTo(labelsTest.getAbsolutePath(), baseDir.getAbsolutePath());
+        downloadAndExtract(new URL(getTrainingFileLabelsURL()), trainLabels, baseDir, getTrainingFileLabelsMD5());
+        downloadAndExtract(new URL(getTestFileLabelsURL()), testLabels, baseDir, getTestFileLabelsMD5());
 
         fileDir = baseDir;
         return fileDir;
     }
 
-    private void tryDownloadingAFewTimes(URL url, File f, String targetMD5) throws IOException {
-        tryDownloadingAFewTimes(0, url, f, targetMD5);
+    private void downloadAndExtract(URL url, File f, File extractToDir, String targetMD5) throws IOException {
+        downloadAndExtract(0, url, f, extractToDir, targetMD5);
     }
 
-    private void tryDownloadingAFewTimes(int attempt, URL url, File f, String targetMD5) throws IOException {
+    private void downloadAndExtract(int attempt, URL url, File f, File extractToDir, String targetMD5) throws IOException {
         int maxTries = 3;
-        boolean isCorrectFile = f.isFile();
-        if (attempt < maxTries && !isCorrectFile) {
-            FileUtils.copyURLToFile(url, f);
-            if (!checkMD5OfFile(targetMD5, f)) {
-                f.delete();
-                tryDownloadingAFewTimes(attempt + 1, url, f, targetMD5);
+        boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
+        if (attempt < maxTries) {
+            if(!isCorrectFile) {
+                FileUtils.copyURLToFile(url, f);
+                if (!checkMD5OfFile(targetMD5, f)) {
+                    f.delete();
+                    downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
+                }
             }
-        } else if (isCorrectFile) {
-            // do nothing, file downloaded
-        } else {
-            throw new IOException("Could not download " + url.getPath() + "\n properly despite trying " + maxTries
+            // try extracting
+            try{
+                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath());
+            } catch (Throwable t){
+                log.warn("Error extracting MNIST files from file {} - retrying...", f.getAbsolutePath(), t);
+                f.delete();
+                downloadAndExtract(attempt + 1, url, f, extractToDir, targetMD5);
+            }
+        } else if (!isCorrectFile) {
+            //Too many attempts
+            throw new IOException("Could not download and extract " + url.getPath() + "\n properly despite trying " + maxTries
                             + " times, check your connection. File info:" + "\nTarget MD5: " + targetMD5
                             + "\nHash matches: " + checkMD5OfFile(targetMD5, f) + "\nIs valid file: " + f.isFile());
         }

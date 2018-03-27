@@ -27,6 +27,8 @@ import org.deeplearning4j.earlystopping.termination.IterationTerminationConditio
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -36,9 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**Base/abstract class for conducting early stopping training locally (single machine).<br>
  * Can be used to train a {@link MultiLayerNetwork} or a {@link ComputationGraph} via early stopping
@@ -105,6 +105,7 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
             boolean terminate = false;
             IterationTerminationCondition terminationReason = null;
             int iterCount = 0;
+            triggerEpochListeners(true, model, epochCount);
             while (iterator.hasNext()) {
                 try {
                     if (train != null) {
@@ -140,6 +141,12 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
 
                 iterCount++;
             }
+
+            if(!iterator.hasNext()){
+                //End of epoch (if iterator does have next - means terminated)
+                triggerEpochListeners(false, model, epochCount);
+            }
+
             if (terminate) {
                 //Handle termination condition:
                 log.info("Hit per iteration epoch termination condition at epoch {}, iteration {}. Reason: {}",
@@ -278,6 +285,34 @@ public abstract class BaseEarlyStoppingTrainer<T extends Model> implements IEarl
     @Override
     public void setListener(EarlyStoppingListener<T> listener) {
         this.listener = listener;
+    }
+
+    //Trigger epoch listener methods manually - these won't be triggered due to not calling fit(DataSetIterator) etc
+    protected void triggerEpochListeners(boolean epochStart, Model model, int epochNum){
+        Collection<IterationListener> listeners;
+        if(model instanceof MultiLayerNetwork){
+            MultiLayerNetwork n = ((MultiLayerNetwork) model);
+            listeners = n.getListeners();
+            n.setEpochCount(epochNum);
+        } else if(model instanceof ComputationGraph){
+            ComputationGraph cg = ((ComputationGraph) model);
+            listeners = cg.getListeners();
+            cg.getConfiguration().setEpochCount(epochNum);
+        } else {
+            return;
+        }
+
+        if(listeners != null && !listeners.isEmpty()){
+            for(IterationListener l : listeners){
+                if(l instanceof TrainingListener){
+                    if(epochStart){
+                        ((TrainingListener) l).onEpochStart(model);
+                    } else {
+                        ((TrainingListener) l).onEpochEnd(model);
+                    }
+                }
+            }
+        }
     }
 
     protected void reset() {

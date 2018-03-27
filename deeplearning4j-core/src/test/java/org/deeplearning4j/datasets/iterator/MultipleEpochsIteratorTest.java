@@ -3,7 +3,6 @@ package org.deeplearning4j.datasets.iterator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
@@ -22,6 +21,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Iterator;
@@ -37,7 +37,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
@@ -54,7 +54,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         DataSet ds = iter.next(50);
 

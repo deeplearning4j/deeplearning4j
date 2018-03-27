@@ -350,7 +350,7 @@ public class StringGrid extends ArrayList<List<String>> {
 
         //wtf is wrong with you people?
         if (chosenKey == null) {
-            //getFromOrigin the max value of the cluster
+            //get the max value of the cluster
             String max2 = maximalValue(cluster);
             StringTokenizer val = new StringTokenizer(max2);
             List<String> list = new ArrayList<>();

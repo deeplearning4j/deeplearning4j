@@ -11,20 +11,25 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 
 import static org.junit.Assert.*;
 
@@ -32,6 +37,9 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class ModelSerializerTest extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
 
     @Test
     public void testWriteMLNModel() throws Exception {
@@ -181,7 +189,6 @@ public class ModelSerializerTest extends BaseDL4JTest {
     @Test
     public void testSaveRestoreNormalizerFromInputStream() throws Exception {
         DataSet dataSet = trivialDataSet();
-
         NormalizerStandardize norm = new NormalizerStandardize();
         norm.fit(dataSet);
 
@@ -284,5 +291,100 @@ public class ModelSerializerTest extends BaseDL4JTest {
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("JSON") && msg.contains("restoreMultiLayerNetwork"));
         }
+    }
+
+    @Test
+    public void testInvalidStreamReuse() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .list()
+                .layer(new OutputLayer.Builder().nIn(nIn).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        DataSet dataSet = trivialDataSet();
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        File tempFile = tempDir.newFile();
+        ModelSerializer.writeModel(net, tempFile, true);
+        ModelSerializer.addNormalizerToModel(tempFile, norm);
+
+        InputStream is = new FileInputStream(tempFile);
+        ModelSerializer.restoreMultiLayerNetwork(is);
+
+        try{
+            ModelSerializer.restoreNormalizerFromInputStream(is);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("may have been closed"));
+        }
+
+        try{
+            ModelSerializer.restoreMultiLayerNetwork(is);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("may have been closed"));
+        }
+
+        //Also test reading  both model and normalizer from stream (correctly)
+        Pair<MultiLayerNetwork,Normalizer> pair = ModelSerializer.restoreMultiLayerNetworkAndNormalizer(new FileInputStream(tempFile), true);
+        assertEquals(net.params(), pair.getFirst().params());
+        assertNotNull(pair.getSecond());
+    }
+
+
+    @Test
+    public void testInvalidStreamReuseCG() throws Exception {
+        int nIn = 5;
+        int nOut = 6;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new OutputLayer.Builder().nIn(nIn).nOut(nOut).build(), "in")
+                .setOutputs("0")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        DataSet dataSet = trivialDataSet();
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        File tempFile = tempDir.newFile();
+        ModelSerializer.writeModel(net, tempFile, true);
+        ModelSerializer.addNormalizerToModel(tempFile, norm);
+
+        InputStream is = new FileInputStream(tempFile);
+        ModelSerializer.restoreComputationGraph(is);
+
+        try{
+            ModelSerializer.restoreNormalizerFromInputStream(is);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("may have been closed"));
+        }
+
+        try{
+            ModelSerializer.restoreComputationGraph(is);
+            fail("Expected exception");
+        } catch (Exception e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("may have been closed"));
+        }
+
+        //Also test reading  both model and normalizer from stream (correctly)
+        Pair<ComputationGraph,Normalizer> pair = ModelSerializer.restoreComputationGraphAndNormalizer(new FileInputStream(tempFile), true);
+        assertEquals(net.params(), pair.getFirst().params());
+        assertNotNull(pair.getSecond());
     }
 }

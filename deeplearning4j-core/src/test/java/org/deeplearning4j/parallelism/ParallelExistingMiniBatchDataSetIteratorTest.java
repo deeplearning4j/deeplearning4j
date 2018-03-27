@@ -1,7 +1,9 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.util.ClassPathResource;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
 import org.deeplearning4j.datasets.iterator.parallel.FileSplitParallelDataSetIterator;
@@ -23,15 +25,16 @@ import static org.junit.Assert.assertNotNull;
 @Slf4j
 public class ParallelExistingMiniBatchDataSetIteratorTest extends BaseDL4JTest {
 
+    @Rule
+    public TemporaryFolder tempDir = new TemporaryFolder();
     private static File rootFolder;
 
     @Before
-    public void setUp() {
+    public void setUp() throws Exception {
         if (rootFolder == null) {
-            try {
-                rootFolder = new ClassPathResource("/datasets/mnist").getFile();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            rootFolder = tempDir.newFolder();
+            for( int i=0; i<26; i++){
+                new ClassPathResource("/datasets/mnist/mnist-train-" + i + ".bin").getTempFileFromArchive(rootFolder);
             }
         }
     }

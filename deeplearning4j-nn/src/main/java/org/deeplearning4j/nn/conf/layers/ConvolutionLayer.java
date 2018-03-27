@@ -312,7 +312,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         public int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
         protected int[] padding = new int[] {0, 0};
-        protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+        protected AlgoMode cudnnAlgoMode = null;
         protected FwdAlgo cudnnFwdAlgo;
         protected BwdFilterAlgo cudnnBwdFilterAlgo;
         protected BwdDataAlgo cudnnBwdDataAlgo;

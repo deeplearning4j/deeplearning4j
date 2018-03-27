@@ -21,7 +21,7 @@ package org.deeplearning4j.models;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
@@ -77,7 +77,7 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if (binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(".gz");
+            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getTempFileFromArchive();
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();

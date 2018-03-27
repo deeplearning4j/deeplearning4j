@@ -25,10 +25,9 @@ import org.kohsuke.args4j.CmdLineParser;
 import org.kohsuke.args4j.Option;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threadly.concurrent.PriorityScheduler;
 
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Sets up a DL4J cluster
@@ -57,7 +56,7 @@ public class ClusterSetup {
     @Option(name = "-region", usage = "specify a region")
     private String region = Regions.US_EAST_1.getName();
 
-    private ExecutorService as;
+    private PriorityScheduler as;
 
     private static final Logger log = LoggerFactory.getLogger(ClusterSetup.class);
 
@@ -81,7 +80,7 @@ public class ClusterSetup {
         boxCreator.create();
         boxCreator.blockTillAllRunning();
         List<String> hosts = boxCreator.getHosts();
-        //provisionMaster(hosts.getFromOrigin(0));
+        //provisionMaster(hosts.get(0));
         provisionWorkers(hosts);
 
 
@@ -90,10 +89,10 @@ public class ClusterSetup {
 
 
     private void provisionWorkers(List<String> workers) {
-        as = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        as = new PriorityScheduler(Runtime.getRuntime().availableProcessors());
         for (final String workerHost : workers) {
             try {
-                as.submit(new Runnable() {
+                as.execute(new Runnable() {
                     @Override
                     public void run() {
                         HostProvisioner uploader = new HostProvisioner(workerHost, "ec2-user");

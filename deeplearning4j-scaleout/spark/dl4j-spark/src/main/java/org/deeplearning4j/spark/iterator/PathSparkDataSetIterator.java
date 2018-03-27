@@ -70,7 +70,8 @@ public class PathSparkDataSetIterator extends BaseDataSetIterator<String> {
         try (FSDataInputStream inputStream = fileSystem.open(new Path(path), BUFFER_SIZE)) {
             ds.load(inputStream);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error loading DataSet at path " + path + " - DataSet may be corrupt or invalid." +
+                    " Spark DataSets can be validated using org.deeplearning4j.spark.util.data.SparkDataValidation", e);
         }
 
         cursor++;

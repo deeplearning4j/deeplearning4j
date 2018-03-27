@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -385,7 +384,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private BlockingQueue<DataSet> queue;
         private DataSetIterator iterator;
         private DataSet terminator;
-        private AtomicBoolean isShutdown = new AtomicBoolean(false);
+        private boolean isShutdown = false; // locked around `this`
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
                         .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                         .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -450,13 +449,24 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 //log.info("Trying destroy...");
                 //if (useWorkspace)
                 //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
-                isShutdown.set(true);
+                synchronized (this) {
+                    isShutdown = true;
+                    this.notifyAll();
+                }
             }
         }
 
         public void shutdown() {
-            while (!isShutdown.get())
-                LockSupport.parkNanos(100L);
+            synchronized (this) {
+                while (! isShutdown) {
+                    try {
+                        this.wait();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
 
             if (workspace != null) {
                 log.debug("Manually destroying ADSI workspace");

@@ -2169,7 +2169,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Assigns the parameters of this model to the ones specified by this
      * network. This is used in loading from input streams, factory methods, etc
      *
-     * @param network the network to getFromOrigin parameters from
+     * @param network the network to get parameters from
      */
     public void update(MultiLayerNetwork network) {
         this.defaultConfiguration =
@@ -2228,7 +2228,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**Sets the input and labels and returns a score for the prediction with respect to the true labels<br>
-     * This is equivalent to {@link #score(DataSet, boolean)} with training==true.
+     * This is equivalent to {@link #score(DataSet, boolean)} with training==false.
      * @param data the data to score
      * @return the score for the given input,label pairs
      * @see #score(DataSet, boolean)

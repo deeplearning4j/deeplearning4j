@@ -24,6 +24,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 
+import static org.deeplearning4j.zoo.model.helper.DarknetHelper.*;
+
 /**
  * Tiny YOLO
  *  Reference: https://arxiv.org/pdf/1612.08242.pdf
@@ -118,54 +120,6 @@ public class TinyYOLO extends ZooModel {
         return ComputationGraph.class;
     }
 
-    private GraphBuilder addLayers(GraphBuilder graphBuilder, int layerNumber, int filterSize, int nIn, int nOut, int poolSize, int poolStride) {
-        String input = "maxpooling2d_" + (layerNumber - 1);
-        if (!graphBuilder.getVertices().containsKey(input)) {
-            input = "activation_" + (layerNumber - 1);
-        }
-        if (!graphBuilder.getVertices().containsKey(input)) {
-            input = "input";
-        }
-
-        graphBuilder
-                .addLayer("convolution2d_" + layerNumber,
-                        new ConvolutionLayer.Builder(filterSize,filterSize)
-                                .nIn(nIn)
-                                .nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .convolutionMode(ConvolutionMode.Same)
-                                .hasBias(false)
-                                .stride(1,1)
-                                .activation(Activation.IDENTITY)
-                                .cudnnAlgoMode(cudnnAlgoMode)
-                                .build(),
-                        input)
-                .addLayer("batchnormalization_" + layerNumber,
-                        new BatchNormalization.Builder()
-                                .nIn(nOut).nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .activation(Activation.IDENTITY)
-                                .build(),
-                        "convolution2d_" + layerNumber)
-                .addLayer("activation_" + layerNumber,
-                        new ActivationLayer.Builder()
-                                .activation(new ActivationLReLU(0.1))
-                                .build(),
-                        "batchnormalization_" + layerNumber);
-        if (poolSize > 0) {
-            graphBuilder
-                    .addLayer("maxpooling2d_" + layerNumber,
-                            new SubsamplingLayer.Builder()
-                                    .kernelSize(poolSize, poolSize)
-                                    .stride(poolStride, poolStride)
-                                    .convolutionMode(ConvolutionMode.Same)
-                                    .build(),
-                            "activation_" + layerNumber);
-        }
-
-        return graphBuilder;
-    }
-
     public ComputationGraphConfiguration conf() {
         INDArray priors = Nd4j.create(priorBoxes);
 
@@ -179,6 +133,7 @@ public class TinyYOLO extends ZooModel {
                 .activation(Activation.IDENTITY)
                 .trainingWorkspaceMode(workspaceMode)
                 .inferenceWorkspaceMode(workspaceMode)
+                .cudnnAlgoMode(cudnnAlgoMode)
                 .graphBuilder()
                 .addInputs("input")
                 .setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]));
@@ -237,15 +192,5 @@ public class TinyYOLO extends ZooModel {
     @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
-    }
-
-    /** Returns {@code inputShape[1] / 32}, where {@code inputShape[1]} should be a multiple of 32. */
-    public int getGridWidth() {
-        return inputShape[1] / 32;
-    }
-
-    /** Returns {@code inputShape[2] / 32}, where {@code inputShape[2]} should be a multiple of 32. */
-    public int getGridHeight() {
-        return inputShape[2] / 32;
     }
 }
