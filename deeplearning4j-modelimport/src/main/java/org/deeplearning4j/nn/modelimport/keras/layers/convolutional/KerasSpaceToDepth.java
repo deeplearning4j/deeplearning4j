@@ -37,7 +37,7 @@ public class KerasSpaceToDepth extends KerasLayer {
         // TODO: we hard-code block size here to import YOLO9000. This size is not available as property
         // in the hdf5 file outside of the serialized lambda function (that we can't really well deserialize).
         SpaceToDepthLayer.Builder builder = new SpaceToDepthLayer.Builder()
-                .blocks(new int[]{2, 2})
+                .blocks(2)
                 .dataFormat(SpaceToDepthLayer.DataFormat.NCHW)
                 .name(layerName);
 

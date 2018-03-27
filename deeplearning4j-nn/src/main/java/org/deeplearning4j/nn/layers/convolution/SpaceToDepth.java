@@ -62,8 +62,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         super(conf, input);
     }
 
-    private int[] getBlocks() {
-        return layerConf().getBlocks();
+    private int getBlockSize() {
+        return layerConf().getBlockSize();
     }
 
     private int isNHWC() {return layerConf().getDataFormat().equals(SpaceToDepthLayer.DataFormat.NHWC)? 1: 0;}
@@ -82,8 +82,9 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
+        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon;
+
         if (isNHWC() == 1) {
             reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inH, inW, inDepth);
         } else {
@@ -92,11 +93,11 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
-        int[] blocks = getBlocks();
+        int blockSize = getBlockSize();
 
         CustomOp op = DynamicCustomOp.builder("depth_to_space")
                 .addInputs(epsilon)
-                .addIntegerArguments(blocks[0], blocks[1], isNHWC())
+                .addIntegerArguments(blockSize, isNHWC())
                 .addOutputs(reshapedEpsilon)
                 .build();
         Nd4j.getExecutioner().exec(op);
@@ -129,11 +130,11 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        int[] blocks = getBlocks();
+        int blockSize = getBlockSize();
 
-        int outH = inH / blocks[0];
-        int outW = inW / blocks[1];
-        int outDepth = depth * blocks[0] * blocks[1];
+        int outH = inH / blockSize;
+        int outW = inW / blockSize;
+        int outDepth = depth * blockSize * blockSize;
 
         INDArray out = Nd4j.create(miniBatch * outDepth * outH * outW);
         INDArray reshapedOut;
@@ -141,12 +142,11 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             reshapedOut = out.reshape('c', miniBatch, outH, outW,  outDepth);
         } else {
             reshapedOut = out.reshape('c', miniBatch, outDepth, outH, outW);
-
         }
 
         CustomOp op = DynamicCustomOp.builder("space_to_depth")
                 .addInputs(input)
-                .addIntegerArguments(blocks[0], blocks[1], isNHWC())
+                .addIntegerArguments(blockSize, isNHWC())
                 .addOutputs(reshapedOut)
                 .build();
         Nd4j.getExecutioner().exec(op);
