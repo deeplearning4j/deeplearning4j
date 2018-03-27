@@ -20,6 +20,7 @@ package org.deeplearning4j.arbiter.saver.local;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -57,17 +58,18 @@ public class FileModelSaver implements ResultSaver {
     private File fPath;
 
     @JsonCreator
-    public FileModelSaver(String path) {
-        if (path == null)
-            throw new NullPointerException();
-        this.path = path;
-        this.fPath = new File(path);
+    public FileModelSaver(@NonNull String path) {
+        this(new File(path));
+    }
 
-        File baseDirectory = new File(path);
-        if(!baseDirectory.exists()){
-            baseDirectory.mkdirs();
-        } else if (!baseDirectory.isDirectory()) {
-            throw new IllegalArgumentException("Invalid path: is not directory. " + path);
+    public FileModelSaver(@NonNull File file){
+        this.path = file.getPath();
+        this.fPath = file;
+
+        if(!fPath.exists()){
+            fPath.mkdirs();
+        } else if (!fPath.isDirectory()) {
+            throw new IllegalArgumentException("Invalid path: exists and is not directory. " + path);
         }
 
         log.info("FileModelSaver saving networks to local directory: {}", path);

@@ -5,9 +5,11 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.layers.fixed.FixedLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.api.TaskCreatorProvider;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
+import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -27,6 +29,11 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
+
+    static {
+        TaskCreatorProvider.registerDefaultTaskCreatorClass(MultiLayerSpace.class, MultiLayerNetworkTaskCreator.class);
+    }
+
     @JsonProperty
     protected ParameterSpace<InputType> inputType;
     @JsonProperty

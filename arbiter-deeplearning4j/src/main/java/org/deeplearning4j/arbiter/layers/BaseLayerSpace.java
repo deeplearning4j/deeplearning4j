@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,6 +25,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.adapter.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -156,6 +158,13 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         protected ParameterSpace<GradientNormalization> gradientNormalization;
         protected ParameterSpace<Double> gradientNormalizationThreshold;
 
+        public T activation(Activation... activations){
+            Preconditions.checkArgument(activations.length > 0, "Activations length must be 1 or more");
+            if(activations.length == 1){
+                return activation(activations[0]);
+            }
+            return activation(new DiscreteParameterSpace<>(activations));
+        }
 
         public T activation(Activation activation) {
             return activation(new FixedValue<>(activation));
@@ -181,6 +190,11 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         public T weightInit(ParameterSpace<WeightInit> weightInit) {
             this.weightInit = weightInit;
             return (T) this;
+        }
+
+        public T weightInit(Distribution distribution){
+            weightInit(WeightInit.DISTRIBUTION);
+            return dist(distribution);
         }
 
         public T biasInit(double biasInit){
