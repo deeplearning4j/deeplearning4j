@@ -2,6 +2,8 @@ from .java_classes import *
 import numpy as np
 import ctypes
 
+
+
 # Java instance initializations
 native_ops = NativeOpsHolder.getInstance().getDeviceNativeOps()
 
@@ -398,57 +400,11 @@ class ndarray(object):
             self.array = x.div(y)
         return self
 
-
-
-
-    # Array manipulation routines
-
-    ## Changing array shape
-
-
-    def reshape(self, *args):
-        if len(args) == 0:
-            args = tuple(args[0])
-        return ndarray(self.array.reshape(*args))
-
-    def ravel(self):
-        return ndarray(self.array.ravel())
-
-    def flatten(self):
-        return ndarray(self.array.ravel().dup())
-
-    def moveaxis(self, source, destination):
-        assert type(source) == type(destination), 'source and destination should be of same type.'
-        shape = self.array.shape()
-        ndim = len(shape)
-        x = list(range(ndim))
-        if type(source) is int:
-            if source < 0:
-                source += ndim
-            if destination < 0:
-                destination += ndim
-            z = x.pop(source)
-            x.insert(destination, z)
-            return ndarray(self.array.permute(*x))
-        if type(source) in (list, tuple):
-            source = list(source)
-            destination = list(destination)
-            assert len(source) == len(destination)
-            for src, dst in zip(source, destination):
-                if src < 0:
-                    src += ndim
-                if dst < 0:
-                    dst += ndim
-                z = x.pop(src)
-                x.insert(dst, z)
-            return ndarray(self.array.permute(*x))
-
-    def permute(self, *axis):
-        if len(axis) == 1:
-            axis = axis[0]
-        assert set(axis) in [set(list(range(len(axis)))),
-                set(list(range(len(self.array.shape()))))]
-        return ndarray(self.array.permute(*axis))
+    def __getattr__(self, attr):
+        import ops
+        f = getattr(ops, attr)
+        setattr(ndarray, attr, f)
+        return getattr(self, attr)
 
 
 def array(*args, **kwargs):
