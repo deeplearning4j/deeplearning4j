@@ -20,11 +20,6 @@
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-api</artifactId>
             <version>${project.parent.version}</version>
