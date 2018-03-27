@@ -13,7 +13,6 @@
     <name>deeplearning4j-manifold</name>
     <modules>
         <module>deeplearning4j-tsne</module>
-        <module>deeplearning4j-nn-descent</module>
     </modules>
 
 
