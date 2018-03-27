@@ -90,6 +90,9 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                     if(inputMasks.get(i) != null) {
                         if(fMasksToMerge == null){
                             fMasksToMerge = new INDArray[countToMerge][0];
+                            for( int j=0; j<countToMerge; j++ ){
+                                fMasksToMerge[j] = null;
+                            }
                         }
                         fMasksToMerge[fPos] = inputMasks.get(i);
                     }

@@ -527,52 +527,6 @@ public class ParallelInferenceTest {
         }
     }
 
-    private static void testParallelInference(ParallelInference inf, List<INDArray> in, List<INDArray> exp) throws Exception {
-        final INDArray[] act = new INDArray[in.size()];
-        final AtomicInteger counter = new AtomicInteger(0);
-        final AtomicInteger failedCount = new AtomicInteger(0);
-
-        for( int i=0; i<in.size(); i++ ){
-            final int j=i;
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try{
-                        act[j] = inf.output(in.get(j));
-                        counter.incrementAndGet();
-                    } catch (Exception e){
-                        e.printStackTrace();
-                        failedCount.incrementAndGet();
-                    }
-                }
-            }).start();
-        }
-
-        long start = System.currentTimeMillis();
-        long current = System.currentTimeMillis();
-        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
-            Thread.sleep(1000L);
-        }
-
-        assertEquals(0, failedCount.get());
-        assertEquals(in.size(), counter.get());
-        for( int i=0; i<in.size(); i++ ){
-            INDArray e = exp.get(i);
-            INDArray a = act[i];
-
-//            float[] fe = e.dup().data().asFloat();
-//            float[] fa = a.dup().data().asFloat();
-//            System.out.println(Arrays.toString(fe));
-//            System.out.println(Arrays.toString(fa));
-//            assertArrayEquals(fe, fa, 1e-8f);
-//            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
-//            assertArrayEquals(e.shape(), a.shape());
-
-            assertEquals(e, a);
-        }
-    }
-
-
     @Test(timeout = 20000L)
     public void testParallelInferenceErrorPropagation(){
 
@@ -622,6 +576,121 @@ public class ParallelInferenceTest {
                 actOk = inf.output(inOk);
                 assertEquals(expOk, actOk);
             }
+        }
+    }
+
+    @Test(timeout = 60000)
+    public void testInputMasking() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
+
+        int nIn = 10;
+        int tsLength = 16;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(new LSTM.Builder().nIn(nIn).nOut(5).build())
+                .layer(new GlobalPoolingLayer(PoolingType.AVG))
+                .layer(new OutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        Random r = new Random();
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+                for (boolean randomTSLength : new boolean[]{false, true}) {
+
+                    final ParallelInference inf =
+                            new ParallelInference.Builder(net)
+                                    .inferenceMode(m)
+                                    .batchLimit(5)
+                                    .queueLimit(64)
+                                    .workers(w).build();
+
+                    List<INDArray> in = new ArrayList<>();
+                    List<INDArray> inMasks = new ArrayList<>();
+                    List<INDArray> exp = new ArrayList<>();
+                    for (int i = 0; i < 100; i++) {
+                        int currTSLength = (randomTSLength ? 1 + r.nextInt(tsLength) : tsLength);
+                        int currNumEx = 1 + r.nextInt(3);
+                        INDArray inArr = Nd4j.rand(new int[]{currNumEx, nIn, currTSLength});
+                        in.add(inArr);
+
+                        INDArray inMask = null;
+                        if(r.nextDouble() < 0.5){
+                            inMask = Nd4j.ones(currNumEx, currTSLength);
+                            for( int mb = 0; mb < currNumEx; mb++) {
+                                if (currTSLength > 1) {
+                                    int firstMaskedStep = 1 + r.nextInt(currTSLength);
+                                    for (int j = firstMaskedStep; j < currTSLength; j++) {
+                                        inMask.putScalar(mb, j, 0.0);
+                                    }
+                                }
+                            }
+                        }
+                        inMasks.add(inMask);
+
+                        INDArray out = net.output(inArr, false, inMask, null);
+                        exp.add(out);
+                    }
+
+                    testParallelInference(inf, in, inMasks, exp);
+                }
+            }
+        }
+    }
+
+
+    private static void testParallelInference(ParallelInference inf, List<INDArray> in, List<INDArray> exp) throws Exception {
+        testParallelInference(inf, in, null, exp);
+    }
+
+    private static void testParallelInference(ParallelInference inf, List<INDArray> in, List<INDArray> inMasks, List<INDArray> exp) throws Exception {
+        final INDArray[] act = new INDArray[in.size()];
+        final AtomicInteger counter = new AtomicInteger(0);
+        final AtomicInteger failedCount = new AtomicInteger(0);
+
+        for( int i=0; i<in.size(); i++ ){
+            final int j=i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        INDArray inMask = (inMasks == null ? null : inMasks.get(j));
+                        act[j] = inf.output(in.get(j), inMask);
+                        counter.incrementAndGet();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        failedCount.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+
+        long start = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
+        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
+            Thread.sleep(1000L);
+        }
+
+        assertEquals(0, failedCount.get());
+        assertEquals(in.size(), counter.get());
+        for( int i=0; i<in.size(); i++ ){
+            INDArray e = exp.get(i);
+            INDArray a = act[i];
+
+//            float[] fe = e.dup().data().asFloat();
+//            float[] fa = a.dup().data().asFloat();
+//            System.out.println(Arrays.toString(fe));
+//            System.out.println(Arrays.toString(fa));
+//            assertArrayEquals(fe, fa, 1e-8f);
+//            System.out.println(Arrays.toString(e.shape()) + " vs " + Arrays.toString(a.shape()));
+//            assertArrayEquals(e.shape(), a.shape());
+
+            assertEquals(e, a);
         }
     }
 }
