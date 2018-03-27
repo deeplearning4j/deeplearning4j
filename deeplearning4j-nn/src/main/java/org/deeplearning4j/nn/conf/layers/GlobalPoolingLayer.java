@@ -56,6 +56,10 @@ public class GlobalPoolingLayer extends Layer {
         this.layerName = builder.layerName;
     }
 
+    public GlobalPoolingLayer(PoolingType poolingType){
+        this(new GlobalPoolingLayer.Builder().poolingType(poolingType));
+    }
+
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
