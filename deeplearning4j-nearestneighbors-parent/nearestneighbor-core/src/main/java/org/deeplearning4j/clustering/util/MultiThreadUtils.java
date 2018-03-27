@@ -20,8 +20,6 @@ package org.deeplearning4j.clustering.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.threadly.concurrent.PriorityScheduler;
-import org.threadly.concurrent.wrapper.compatibility.PrioritySchedulerServiceWrapper;
 
 import java.util.List;
 import java.util.concurrent.*;
@@ -30,14 +28,24 @@ public class MultiThreadUtils {
 
     private static Logger log = LoggerFactory.getLogger(MultiThreadUtils.class);
 
+    private static ExecutorService instance;
+
     private MultiThreadUtils() {}
 
-    public static ExecutorService newExecutorService() {
+    public static synchronized ExecutorService newExecutorService() {
         int nThreads = Runtime.getRuntime().availableProcessors();
-        return new PrioritySchedulerServiceWrapper(new PriorityScheduler(nThreads));
+        return new ThreadPoolExecutor(nThreads, nThreads, 60L, TimeUnit.SECONDS, new LinkedTransferQueue<Runnable>(),
+                        new ThreadFactory() {
+                            @Override
+                            public Thread newThread(Runnable r) {
+                                Thread t = Executors.defaultThreadFactory().newThread(r);
+                                t.setDaemon(true);
+                                return t;
+                            }
+                        });
     }
 
-    public static void parallelTasks(final List<Runnable> tasks, Executor executorService) {
+    public static void parallelTasks(final List<Runnable> tasks, ExecutorService executorService) {
         int tasksCount = tasks.size();
         final CountDownLatch latch = new CountDownLatch(tasksCount);
         for (int i = 0; i < tasksCount; i++) {
@@ -54,10 +62,10 @@ public class MultiThreadUtils {
                 }
             });
         }
+
         try {
             latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

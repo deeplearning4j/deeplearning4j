@@ -89,7 +89,7 @@ public class MathUtils {
 
     /**
      * See: http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2
-     * @param v the number to get the next power of 2 for
+     * @param v the number to getFromOrigin the next power of 2 for
      * @return the next power of 2 for the passed in value
      */
     public static long nextPowOf2(long v) {
@@ -364,7 +364,7 @@ public class MathUtils {
      * This returns the minimized loss values for a given vector.
      * It is assumed that  the x, y pairs are at
      * vector[i], vector[i+1]
-     * @param vector the vector of numbers to get the weights for
+     * @param vector the vector of numbers to getFromOrigin the weights for
      * @return a double array with w_0 and w_1 are the associated indices.
      */
     public static double[] weightsFor(List<Double> vector) {
@@ -430,7 +430,7 @@ public class MathUtils {
      * This returns the minimized loss values for a given vector.
      * It is assumed that  the x, y pairs are at
      * vector[i], vector[i+1]
-     * @param vector the vector of numbers to get the weights for
+     * @param vector the vector of numbers to getFromOrigin the weights for
      * @return a double array with w_0 and w_1 are the associated indices.
      */
     public static double[] weightsFor(double[] vector) {
@@ -544,7 +544,7 @@ public class MathUtils {
 
     /**
      * This returns the given column over an n arrays
-     * @param column the column to get values for
+     * @param column the column to getFromOrigin values for
      * @param nums the arrays to extract values from
      * @return a double array containing all of the numbers in that column
      * for all of the arrays.
@@ -668,7 +668,7 @@ public class MathUtils {
     /**
      * This returns the x values of the given vector.
      * These are assumed to be the even values of the vector.
-     * @param vector the vector to get the values for
+     * @param vector the vector to getFromOrigin the values for
      * @return the x values of the given vector
      */
     public static double[] xVals(double[] vector) {
@@ -767,7 +767,7 @@ public class MathUtils {
 
     /**
      * This returns the entropy (information gain, or uncertainty of a random variable).
-     * @param vector the vector of values to get the entropy for
+     * @param vector the vector of values to getFromOrigin the entropy for
      * @return the entropy of the given vector
      */
     public static double entropy(double[] vector) {
@@ -875,7 +875,7 @@ public class MathUtils {
 
     /**
      * This returns the entropy for a given vector of probabilities.
-     * @param probabilities the probabilities to get the entropy for
+     * @param probabilities the probabilities to getFromOrigin the entropy for
      * @return the entropy of the given probabilities.
      */
     public static double information(double[] probabilities) {
@@ -912,7 +912,7 @@ public class MathUtils {
 
     /**
      * This will return the factorial of the given number n.
-     * @param n the number to get the factorial for
+     * @param n the number to getFromOrigin the factorial for
      * @return the factorial for this number
      */
     public static double factorial(double n) {

@@ -47,6 +47,8 @@ public class NearestNeighborTest {
         Executor executor = Executors.newSingleThreadExecutor();
         VPTree vpTree = new VPTree(matrix);
         System.out.println("Ran!");
+
+        Thread.sleep(600000);
     }
 
 
