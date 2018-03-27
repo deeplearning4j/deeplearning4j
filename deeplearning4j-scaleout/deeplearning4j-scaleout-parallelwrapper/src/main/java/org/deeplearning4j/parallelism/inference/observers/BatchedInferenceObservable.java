@@ -132,22 +132,28 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     @Override
     public void setOutputBatches(List<INDArray[]> output) {
         //this method should split batched output INDArray[] into multiple separate INDArrays
-        // pre-create outputs
-        int countAllBatches = 0;
-        for( int o=0; o<output.size(); o++ ){
-            INDArray[] currBatchOutputs = output.get(o);
-            int[] inputBatchIdxs = outputBatchInputArrays.get(o);
+        int countNumInputBatches = 0;   //Counter for total number of input batches processed
+        for( int outBatchNum=0; outBatchNum<output.size(); outBatchNum++ ){ //Iterate over output batch
+            INDArray[] currBatchOutputs = output.get(outBatchNum);
+            int[] inputBatchIdxs = outputBatchInputArrays.get(outBatchNum);
             int inputBatchCount = inputBatchIdxs[1] - inputBatchIdxs[0] + 1;
             for (int i = 0; i < inputBatchCount; i++) {
                 outputs.add(new INDArray[currBatchOutputs.length]);
             }
 
             // pull back results for individual input batches
-            for (int outputNumber = 0; outputNumber < currBatchOutputs.length; outputNumber++) {
+            int firstInputBatch = countNumInputBatches;
+            for (int outputNumber = 0; outputNumber < currBatchOutputs.length; outputNumber++) {    //Iterate over net outputs
                 INDArray[] split = splitExamples(currBatchOutputs[outputNumber], inputBatchIdxs[0], inputBatchIdxs[1]);
 
-                for (int exInBatch = 0; exInBatch < inputBatchCount; exInBatch++) {
-                    outputs.get(countAllBatches++)[outputNumber] = split[exInBatch];
+                int currentInputBatch = firstInputBatch;
+                //Iterate over input batch (examples) - note that each output batch is made up of 1 or more input batches
+                for (int inputInBatch = 0; inputInBatch < inputBatchCount; inputInBatch++) {
+                    outputs.get(currentInputBatch++)[outputNumber] = split[inputInBatch];
+
+                    if(outputNumber == 0){
+                        countNumInputBatches++;
+                    }
                 }
             }
         }

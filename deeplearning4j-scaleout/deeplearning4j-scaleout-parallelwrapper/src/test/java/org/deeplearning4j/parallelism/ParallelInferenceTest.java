@@ -3,10 +3,12 @@ package org.deeplearning4j.parallelism;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -643,6 +645,50 @@ public class ParallelInferenceTest {
         }
     }
 
+    @Test(timeout = 60000L)
+    public void testMultiOutputNet() throws Exception {
+
+        int nIn = 5;
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("out0", new OutputLayer.Builder().nIn(nIn).nOut(4).build(), "in")
+                .layer("out1", new OutputLayer.Builder().nIn(nIn).nOut(6).build(), "in")
+                .setOutputs("out0", "out1")
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        Random r = new Random();
+        for( InferenceMode m : InferenceMode.values()) {
+            for( int w : new int[]{1,2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(5)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                List<INDArray[]> in = new ArrayList<>();
+                List<INDArray[]> exp = new ArrayList<>();
+                for (int i = 0; i < 100; i++) {
+                    int currNumEx = 1 + r.nextInt(3);
+                    INDArray inArr = Nd4j.rand(new int[]{currNumEx, nIn});
+                    in.add(new INDArray[]{inArr});
+
+                    INDArray[] out = net.output(inArr);
+                    exp.add(out);
+                }
+
+                testParallelInferenceMulti(inf, in, null, exp);
+            }
+        }
+
+    }
+
 
     private static void testParallelInference(ParallelInference inf, List<INDArray> in, List<INDArray> exp) throws Exception {
         testParallelInference(inf, in, null, exp);
@@ -691,6 +737,44 @@ public class ParallelInferenceTest {
 //            assertArrayEquals(e.shape(), a.shape());
 
             assertEquals(e, a);
+        }
+    }
+
+    private static void testParallelInferenceMulti(ParallelInference inf, List<INDArray[]> in, List<INDArray[]> inMasks, List<INDArray[]> exp) throws Exception {
+        final INDArray[][] act = new INDArray[in.size()][0];
+        final AtomicInteger counter = new AtomicInteger(0);
+        final AtomicInteger failedCount = new AtomicInteger(0);
+
+        for( int i=0; i<in.size(); i++ ){
+            final int j=i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        INDArray[] inMask = (inMasks == null ? null : inMasks.get(j));
+                        act[j] = inf.output(in.get(j), inMask);
+                        counter.incrementAndGet();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        failedCount.incrementAndGet();
+                    }
+                }
+            }).start();
+        }
+
+        long start = System.currentTimeMillis();
+        long current = System.currentTimeMillis();
+        while(current < start + 20000 && failedCount.get() == 0 && counter.get() < in.size()){
+            Thread.sleep(1000L);
+        }
+
+        assertEquals(0, failedCount.get());
+        assertEquals(in.size(), counter.get());
+        for( int i=0; i<in.size(); i++ ){
+            INDArray[] e = exp.get(i);
+            INDArray[] a = act[i];
+
+            assertArrayEquals(e, a);
         }
     }
 }

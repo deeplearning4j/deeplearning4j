@@ -17,7 +17,6 @@ import java.util.Observable;
  */
 @Slf4j
 public class BasicInferenceObservable extends Observable implements InferenceObservable {
-    @Getter
     private INDArray[] input;
     private INDArray[] inputMasks;
     @Getter
