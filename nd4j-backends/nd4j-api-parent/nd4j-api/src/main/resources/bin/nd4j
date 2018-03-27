@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-if [ -z ${ND4J_BACKEND+x} ];
-    then export ND4J_BACKEND="jblas" &&  echo "USING BACKEND $ND4J_BACKEND";
-fi
-
-export ND4j_CLASSPATH="/usr/local/Skymind/nd4j/lib/$ND4J_BACKEND/*:/usr/local/Skymind/nd4j/lib/cli/*"
-echo "USING $ND4j_CLASSPATH for class path"
-java -Dscala.usejavacp=true -cp $ND4j_CLASSPATH org.nd4j.api.scala.repl.RunRepl

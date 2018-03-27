@@ -2961,6 +2961,12 @@ public interface INDArray extends Serializable {
     int underlyingRank();
 
 
+    /**
+     * Add an {@link INDArray}
+     * to flatbuffers builder
+     * @param builder the builder to use
+     * @return the offset to add
+     */
     int toFlatArray(FlatBufferBuilder builder);
 
     INDArray convertToFloats();
