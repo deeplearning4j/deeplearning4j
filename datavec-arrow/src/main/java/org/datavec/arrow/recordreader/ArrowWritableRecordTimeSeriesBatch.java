@@ -53,11 +53,8 @@ public class ArrowWritableRecordTimeSeriesBatch extends AbstractTimeSeriesWritab
             List<List<Writable>> timeStep = get(i);
             List<List<Writable>> addTimeStep = new ArrayList<>();
             for(int j = 0 ; j < timeStep.size(); j++) {
-                List<Writable> currRecord = new ArrayList<>();
-                for(int k = 0; k < timeStep.get(j).size(); k++) {
-                    currRecord.add(timeStep.get(j).get(k));
-                }
-
+                List<Writable> addingFrom = timeStep.get(j);
+                List<Writable> currRecord = new ArrayList<>(addingFrom);
                 addTimeStep.add(currRecord);
             }
 
@@ -144,7 +141,7 @@ public class ArrowWritableRecordTimeSeriesBatch extends AbstractTimeSeriesWritab
 
     @Override
     public List<List<Writable>> get(int i) {
-        return new ArrowWritableRecordBatch(list,schema,i,timeSeriesStride / schema.numColumns());
+        return new ArrowWritableRecordBatch(list,schema,i * schema.numColumns(),timeSeriesStride / schema.numColumns());
     }
 
     @Override
