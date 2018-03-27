@@ -20,9 +20,11 @@ import lombok.*;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.layers.fixed.FixedLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.api.TaskCreatorProvider;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
+import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -54,6 +56,10 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonTypeName("ComputationGraphSpace")
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
+    static {
+        TaskCreatorProvider.registerDefaultTaskCreatorClass(ComputationGraphSpace.class, ComputationGraphTaskCreator.class);
+    }
+
     @JsonProperty
     protected List<LayerConf> layerSpaces = new ArrayList<>();
     @JsonProperty
