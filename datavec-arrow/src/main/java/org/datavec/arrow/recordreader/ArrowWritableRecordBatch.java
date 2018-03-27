@@ -9,6 +9,7 @@ import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.batch.AbstractWritableRecordBatch;
 import org.datavec.arrow.ArrowConverter;
 
 import java.io.Closeable;
@@ -20,7 +21,7 @@ import java.util.*;
  */
 @Data
 @AllArgsConstructor
-public class ArrowWritableRecordBatch implements List<List<Writable>>,Closeable {
+public class ArrowWritableRecordBatch extends AbstractWritableRecordBatch implements Closeable {
 
     private List<FieldVector> list;
     private int size;
