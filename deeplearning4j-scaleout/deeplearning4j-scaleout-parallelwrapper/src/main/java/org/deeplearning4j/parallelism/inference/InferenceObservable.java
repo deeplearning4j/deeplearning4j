@@ -21,6 +21,8 @@ public interface InferenceObservable {
      */
     List<Pair<INDArray[],INDArray[]>> getInputBatches();
 
+    void addInput(INDArray... input);
+
     void addInput(INDArray[] input, INDArray[] inputMasks);
 
     void setOutputBatches(List<INDArray[]> output);

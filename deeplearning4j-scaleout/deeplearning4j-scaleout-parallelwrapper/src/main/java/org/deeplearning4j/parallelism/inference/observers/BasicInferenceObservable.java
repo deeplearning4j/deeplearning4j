@@ -36,6 +36,11 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     }
 
     @Override
+    public void addInput(@NonNull INDArray... input){
+        addInput(input, null);
+    }
+
+    @Override
     public void addInput(@NonNull INDArray[] input, INDArray[] inputMasks) {
         this.input = input;
         this.inputMasks = inputMasks;

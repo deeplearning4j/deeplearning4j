@@ -421,6 +421,10 @@ public class ParallelInference {
             return setInput(observer, new INDArray[]{input}, null);
         }
 
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input){
+            return setInput(observer, input, null);
+        }
+
         protected InferenceObservable setInput(@NonNull Observer observer, INDArray[] input, INDArray[] inputMask) {
             synchronized (locker) {
                 boolean isNew = false;
