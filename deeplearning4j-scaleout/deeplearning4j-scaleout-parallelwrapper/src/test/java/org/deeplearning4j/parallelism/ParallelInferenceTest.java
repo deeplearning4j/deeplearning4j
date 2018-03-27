@@ -173,9 +173,10 @@ public class ParallelInferenceTest {
 
         assertTrue(observable1 == observable2);
 
-        List<INDArray[]> l = observable1.getInputBatches();
+        List<Pair<INDArray[],INDArray[]>> l = observable1.getInputBatches();
         assertEquals(1, l.size());
-        INDArray[] input = l.get(0);
+        INDArray[] input = l.get(0).getFirst();
+        assertNull(l.get(0).getSecond());
 
         assertEquals(1, input.length);
         assertArrayEquals(new int[] {2, 100}, input[0].shape());
@@ -201,9 +202,10 @@ public class ParallelInferenceTest {
         assertTrue(observable1 == observable2);
         assertTrue(observable1 != observable3);
 
-        List<INDArray[]> l = observable1.getInputBatches();
+        List<Pair<INDArray[],INDArray[]>> l = observable1.getInputBatches();
         assertEquals(1, l.size());
-        INDArray[] input = l.get(0);
+        INDArray[] input = l.get(0).getFirst();
+        assertNull(l.get(0).getSecond());
 
         assertEquals(1.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
         assertEquals(2.0f, input[0].tensorAlongDimension(1, 1).meanNumber().floatValue(), 0.001);
@@ -211,7 +213,8 @@ public class ParallelInferenceTest {
 
         l = observable3.getInputBatches();
         assertEquals(1, l.size());
-        input = l.get(0);
+        input = l.get(0).getFirst();
+        assertNull(l.get(0).getSecond());
         assertEquals(3.0f, input[0].tensorAlongDimension(0, 1).meanNumber().floatValue(), 0.001);
     }
 

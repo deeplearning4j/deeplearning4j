@@ -3,10 +3,12 @@ package org.deeplearning4j.parallelism.inference.observers;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,6 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Slf4j
 public class BatchedInferenceObservable extends BasicInferenceObservable implements InferenceObservable {
     private List<INDArray[]> inputs = new ArrayList<>();
+    private List<INDArray[]> inputMasks = new ArrayList<>();
     private List<INDArray[]> outputs = new ArrayList<>();
     private AtomicInteger counter = new AtomicInteger(0);
     private ThreadLocal<Integer> position = new ThreadLocal<>();
@@ -40,9 +43,10 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     }
 
     @Override
-    public void addInput(INDArray... input) {
+    public void addInput(INDArray[] input, INDArray[] inputMasks) {
         synchronized (locker) {
             inputs.add(input);
+            this.inputMasks.add(inputMasks);
             position.set(counter.getAndIncrement());
 
             if (isReadLocked.get())
@@ -51,7 +55,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     }
 
     @Override
-    public List<INDArray[]> getInputBatches() {
+    public List<Pair<INDArray[],INDArray[]>> getInputBatches() {
         realLocker.writeLock().lock();
         isLocked.set(true);
 
@@ -62,9 +66,9 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         if (counter.get() > 1) {
 
             int pos = 0;
-            List<INDArray[]> out = new ArrayList<>();
+            List<Pair<INDArray[],INDArray[]>> out = new ArrayList<>();
+            int numArrays = inputs.get(0).length;
             while(pos < inputs.size()) {
-                INDArray[] result = new INDArray[inputs.get(0).length];
 
                 //First: determine which we can actually batch...
                 int lastPossible = pos;
@@ -76,18 +80,26 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
                     }
                 }
 
-                for (int i = 0; i < result.length; i++) {
-                    INDArray[] examples = new INDArray[lastPossible-pos+1];
-                    int toStackPos = 0;
-                    for (int e = pos; e <= lastPossible; e++) {
-                        examples[toStackPos++] = inputs.get(e)[i];
+                int countToMerge = lastPossible-pos+1;
+                INDArray[][] featuresToMerge = new INDArray[countToMerge][0];
+                INDArray[][] fMasksToMerge = null;
+                int fPos = 0;
+                for( int i=pos; i<=lastPossible; i++ ){
+                    featuresToMerge[fPos] = inputs.get(i);
+
+                    if(inputMasks.get(i) != null) {
+                        if(fMasksToMerge == null){
+                            fMasksToMerge = new INDArray[countToMerge][0];
+                        }
+                        fMasksToMerge[fPos] = inputMasks.get(i);
                     }
-                    result[i] = Nd4j.concat(0, examples);
+                    fPos++;
                 }
 
-                outputBatchInputArrays.add(new int[]{pos, lastPossible});
+                Pair<INDArray[],INDArray[]> merged = DataSetUtil.mergeFeatures(featuresToMerge, fMasksToMerge);
+                out.add(merged);
 
-                out.add(result);
+                outputBatchInputArrays.add(new int[]{pos, lastPossible});
                 pos = lastPossible+1;
             }
             realLocker.writeLock().unlock();
@@ -95,13 +107,17 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
         } else {
             outputBatchInputArrays.add(new int[]{0,0});
             realLocker.writeLock().unlock();
-            return Collections.singletonList(inputs.get(0));
+            return Collections.singletonList(new Pair<>(inputs.get(0), inputMasks.get(0)));
         }
     }
 
     private static boolean canBatch(INDArray[] first, INDArray[] candidate){
+        //Check if we can batch these inputs into the one array. This isn't always possible - for example, some fully
+        // convolutional nets can support different input image sizes
         //For now: let's simply require that the inputs have the same shape
         //In the future: we'll intelligently handle the RNN variable length case
+        //Note also we can ignore input masks here - they should have shared dimensions with the input, thus if the
+        // inputs can be batched, so can the masks
         for(int i=0; i<first.length; i++ ){
             if(!Arrays.equals(first[i].shape(), candidate[i].shape())){
                 return false;

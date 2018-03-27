@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Observable;
 public class BasicInferenceObservable extends Observable implements InferenceObservable {
     @Getter
     private INDArray[] input;
+    private INDArray[] inputMasks;
     @Getter
     private long id;
     private INDArray[] output;
@@ -25,13 +27,19 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
 
 
     public BasicInferenceObservable(INDArray... inputs) {
+        this(inputs, null);
+    }
+
+    public BasicInferenceObservable(INDArray[] inputs, INDArray[] inputMasks){
         super();
         this.input = inputs;
+        this.inputMasks = inputMasks;
     }
 
     @Override
-    public void addInput(@NonNull INDArray... input) {
+    public void addInput(@NonNull INDArray[] input, INDArray[] inputMasks) {
         this.input = input;
+        this.inputMasks = inputMasks;
     }
 
     @Override
@@ -43,8 +51,8 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     }
 
     @Override
-    public List<INDArray[]> getInputBatches(){
-        return Collections.singletonList(input);
+    public List<Pair<INDArray[],INDArray[]>> getInputBatches(){
+        return Collections.singletonList(new Pair<>(input, inputMasks));
     }
 
     @Override

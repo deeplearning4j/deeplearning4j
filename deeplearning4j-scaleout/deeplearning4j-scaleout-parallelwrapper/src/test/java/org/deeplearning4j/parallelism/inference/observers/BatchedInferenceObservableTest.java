@@ -30,7 +30,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.addInput(Nd4j.create(100).assign(i));
+            observable.addInput(new INDArray[]{Nd4j.create(100).assign(i)}, null);
         }
 
         assertEquals(1, observable.getInput().length);
@@ -51,7 +51,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.addInput(Nd4j.create(3, 72, 72).assign(i));
+            observable.addInput(new INDArray[]{Nd4j.create(3, 72, 72).assign(i)}, null);
         }
 
         assertEquals(1, observable.getInput().length);
@@ -72,7 +72,7 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.addInput(Nd4j.create(3, 72, 72).assign(i), Nd4j.create(100, 100).assign(100 + i));
+            observable.addInput(new INDArray[]{Nd4j.create(3, 72, 72).assign(i), Nd4j.create(100, 100).assign(100 + i)}, null);
         }
 
         assertEquals(2, observable.getInput().length);
