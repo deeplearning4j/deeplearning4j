@@ -139,6 +139,35 @@ public class DataSetUtil {
     }
 
     /**
+     * Merge all of the features arrays into one minibatch.
+     *
+     * @param featuresToMerge     features to merge. Note that first index is the input array (example) index, the second
+     *                            index is the input array.
+     *                            Thus to merge 10 examples with 3 input arrays each, featuresToMerge will be indexed
+     *                            like featuresToMerge[0..9][0..2]
+     * @param featureMasksToMerge May be null. If non-null: feature masks to merge
+     * @return Merged features, and feature masks. Note that feature masks may be added automatically, if required - even
+     * if no feature masks were present originally
+     */
+    public Pair<INDArray[], INDArray[]> mergeFeatures(@NonNull INDArray[][] featuresToMerge, INDArray[][] featureMasksToMerge) {
+        int nInArrs = featuresToMerge[0].length;
+        INDArray[] outF = new INDArray[nInArrs];
+        INDArray[] outM = null;
+
+        for (int i = 0; i < nInArrs; i++) {
+            Pair<INDArray, INDArray> p = mergeFeatures(featuresToMerge, featureMasksToMerge, i);
+            outF[i] = p.getFirst();
+            if (p.getSecond() != null) {
+                if (outM == null) {
+                    outM = new INDArray[nInArrs];
+                }
+                outM[i] = p.getSecond();
+            }
+        }
+        return new Pair<>(outF, outM);
+    }
+
+    /**
      * Merge the specified features and mask arrays (i.e., concatenate the examples)
      *
      * @param featuresToMerge     Features to merge
