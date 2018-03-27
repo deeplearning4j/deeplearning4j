@@ -336,19 +336,27 @@ public class ParallelInference {
                         if (replicatedModel instanceof ComputationGraph) {
                             List<INDArray[]> batches = request.getInputBatches();
                             List<INDArray[]> out = new ArrayList<>(batches.size());
-                            for( INDArray[] inBatch : batches ) {
-                                INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch);
-                                out.add(output);
+                            try {
+                                for (INDArray[] inBatch : batches) {
+                                    INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch);
+                                    out.add(output);
+                                }
+                                request.setOutputBatches(out);
+                            } catch (Exception e){
+                                request.setOutputException(e);
                             }
-                            request.setOutputBatches(out);
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
                             List<INDArray[]> batches = request.getInputBatches();
                             List<INDArray[]> out = new ArrayList<>(batches.size());
-                            for( INDArray[] inBatch : batches ) {
-                                INDArray output = ((MultiLayerNetwork) replicatedModel).output(inBatch[0]);
-                                out.add(new INDArray[]{output});
+                            try {
+                                for (INDArray[] inBatch : batches) {
+                                    INDArray output = ((MultiLayerNetwork) replicatedModel).output(inBatch[0]);
+                                    out.add(new INDArray[]{output});
+                                }
+                                request.setOutputBatches(out);
+                            } catch (Exception e){
+                                request.setOutputException(e);
                             }
-                            request.setOutputBatches(out);
                         }
 
 

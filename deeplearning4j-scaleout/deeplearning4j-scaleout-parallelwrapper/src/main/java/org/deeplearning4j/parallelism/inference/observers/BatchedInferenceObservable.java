@@ -197,8 +197,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
     @Override
     public INDArray[] getOutput() {
         // basically we should take care of splits here: each client should get its own part of output, wrt order number
-
-        int pos = position.get();
+        checkOutputException();
         return outputs.get(position.get());
     }
 }

@@ -16,6 +16,8 @@ public interface InferenceObservable {
 
     void setOutputBatches(List<INDArray[]> output);
 
+    void setOutputException(Exception e);
+
     void addObserver(Observer observer);
 
     INDArray[] getOutput();

@@ -2,13 +2,11 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -568,6 +566,59 @@ public class ParallelInferenceTest {
 //            assertArrayEquals(e.shape(), a.shape());
 
             assertEquals(e, a);
+        }
+    }
+
+
+    @Test(timeout = 20000L)
+    public void testParallelInferenceErrorPropagation(){
+
+        int nIn = 10;
+        int wrongNIn = 5;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .seed(12345)
+                .list()
+                .layer(new DenseLayer.Builder().nIn(nIn).nOut(5).build())
+                .layer(new OutputLayer.Builder().nIn(5).nOut(5).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray inOk = Nd4j.ones(1, nIn);
+        INDArray inWrong = Nd4j.ones(1, wrongNIn);
+
+        INDArray expOk = net.output(inOk);
+
+        for( InferenceMode m : InferenceMode.values()) {
+            for (int w : new int[]{1, 2}) {
+
+                final ParallelInference inf =
+                        new ParallelInference.Builder(net)
+                                .inferenceMode(m)
+                                .batchLimit(20)
+                                .queueLimit(64)
+                                .workers(w).build();
+
+                INDArray actOk = inf.output(inOk);
+                assertEquals(expOk, actOk);
+
+                try {
+                    inf.output(inWrong);
+                    fail("Expected exception");
+                } catch (DL4JInvalidInputException e){
+                    //OK
+                    System.out.println("Expected exception: " + e.getMessage());
+                } catch (Exception e){
+                    e.printStackTrace();
+                    fail("Expected other exception type");
+                }
+
+                actOk = inf.output(inOk);
+                assertEquals(expOk, actOk);
+            }
         }
     }
 }

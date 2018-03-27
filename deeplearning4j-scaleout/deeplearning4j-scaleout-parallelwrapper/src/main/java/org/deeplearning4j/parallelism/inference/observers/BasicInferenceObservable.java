@@ -20,8 +20,8 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     private INDArray[] input;
     @Getter
     private long id;
-    @Getter
     private INDArray[] output;
+    protected Exception exception;
 
 
     public BasicInferenceObservable(INDArray... inputs) {
@@ -45,5 +45,28 @@ public class BasicInferenceObservable extends Observable implements InferenceObs
     @Override
     public List<INDArray[]> getInputBatches(){
         return Collections.singletonList(input);
+    }
+
+    @Override
+    public void setOutputException(Exception exception){
+        this.exception = exception;
+        this.setChanged();
+        notifyObservers();
+    }
+
+    @Override
+    public INDArray[] getOutput(){
+        checkOutputException();
+        return output;
+    }
+
+    protected void checkOutputException(){
+        if(exception != null){
+            if(exception instanceof RuntimeException){
+                throw (RuntimeException)exception;
+            } else {
+                throw new RuntimeException("Exception encountered while getting output: " + exception.getMessage(), exception);
+            }
+        }
     }
 }
