@@ -1,7 +1,6 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,13 +9,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.Tanh;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -251,26 +253,34 @@ public class LoneTest extends BaseNd4jTest {
     }
 
     @Test
-    public void checkSlice() {
+    public void checkSliceofSlice() {
         /*
-            Slice works fine for C order arrays and for almost all F order arrays
+            Issue 1: Slice of slice with c order and f order views are not equal
 
-            However not in the case below for F order arrays
-            Issue is for f order arrays if (rank-1) dim shape == 1 and rank > 2
-            and accessing a slice of the last two dims
-            Gets an index out of bound exception
+            Comment out assert and run then -> Issue 2: Index out of bound exception with certain shapes when accessing elements with getDouble() in f order
+            (looks like problem is when rank-1==1) eg. 1,2,1 and 2,2,1
          */
-        INDArray someArr = Nd4j.rand('f', new int[]{2, 3, 1});
-        INDArray sameArrC = someArr.dup('c');
-        log.info("\nDirect print of data buffer, F order:" + ArrayUtils.toString(someArr.data().asDouble()));
-        INDArray view = someArr.slice(0);
-        INDArray viewC = sameArrC.slice(0);
-        for (int i = 0; i < view.slices(); i++) {
-            log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(0)); //C order is fine
-            log.info("\nF order slice " + i + ", element 0 :" + view.slice(i).getDouble(0)); //throws index out of bound err on F order
-            assertEquals(view.slice(i),viewC.slice(i));
+        int [] ranksToCheck = new int[] {2,3,4,5};
+        for (int rank=0; rank<ranksToCheck.length;rank++) {
+            log.info("\nRunning through rank "+ rank);
+            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,'f');
+            Iterator<Pair<INDArray,String>> iter = allF.iterator();
+            while (iter.hasNext()) {
+                Pair<INDArray,String> currentPair = iter.next();
+                INDArray origArrayF = currentPair.getFirst();
+                INDArray sameArrayC = origArrayF.dup('c');
+                log.info("\nLooping through slices for shape "+ currentPair.getSecond());
+                log.info("\nOriginal array:\n"+origArrayF);
+                INDArray viewF = origArrayF.slice(0);
+                INDArray viewC = sameArrayC.slice(0);
+                log.info("\nSlice 0, C order:\n"+viewC.toString());
+                log.info("\nSlice 0, F order:\n"+viewF.toString());
+                for (int i = 0; i < viewF.slices(); i++) {
+                    assertEquals(viewF.slice(i),viewC.slice(i));
+                    log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(0)); //C order is fine
+                    log.info("\nF order slice " + i + ", element 0 :" + viewF.slice(i).getDouble(0)); //throws index out of bound err on F order
+                }
+            }
         }
-        log.info("\nF order completed succesfully");
-        log.info("\n----------------------------------");
     }
 }
