@@ -173,7 +173,7 @@ public class YOLO2 extends ZooModel {
         // reorg
         graphBuilder
                 .addLayer("rearrange_21",
-                        new SpaceToDepthLayer.Builder(new int[] {2, 2}).build(),
+                        new SpaceToDepthLayer.Builder(2).build(),
                         "activation_21")
         // route
                 .addVertex("concatenate_21", new MergeVertex(),
