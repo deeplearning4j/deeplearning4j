@@ -105,7 +105,7 @@ TEST_F(DeclarableOpsTests6, Test_Conv3D_NDHWC_11) {
 
     auto s = shapes->at(0);
 
-    shape::printShapeInfoLinear("calculated shape", s);
+    //shape::printShapeInfoLinear("calculated shape", s);
 
     auto z = result->at(0);
     z->printShapeInfo("z shape");

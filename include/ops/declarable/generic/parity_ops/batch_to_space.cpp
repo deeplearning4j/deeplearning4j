@@ -178,9 +178,9 @@ namespace ops {
             block_shape = blocks->template asVectorT<int>();
             crops_shape = crops->template asVectorT<int>();
 
-            shape::printShapeInfoLinear("STB input shape: ",in);
-            blocks->printBuffer("STB blocks");
-            crops->printBuffer("STB crops");
+            //shape::printShapeInfoLinear("STB input shape: ",in);
+            //blocks->printBuffer("STB blocks");
+            //crops->printBuffer("STB crops");
 
         } else if (block.numI() > 0) {
             int totalArgs = block.numI();

@@ -1038,10 +1038,10 @@ template<typename OpType>
                 int *yStride = shape::stride(yShapeInfo);
                 int yRank = shape::rank(yShapeInfo);
 
-                shape::printShapeInfoLinear(xShapeInfo);
-                shape::printShapeInfoLinear(yShapeInfo);
-                shape::printShapeInfoLinear(resultShapeInfoBuffer);
-                shape::printShapeInfoLinear(tadShapeInfo);
+                //shape::printShapeInfoLinear(xShapeInfo);
+                //shape::printShapeInfoLinear(yShapeInfo);
+                //shape::printShapeInfoLinear(resultShapeInfoBuffer);
+                //shape::printShapeInfoLinear(tadShapeInfo);
 
                 int xCoord[MAX_RANK];
                 int yCoord[MAX_RANK];

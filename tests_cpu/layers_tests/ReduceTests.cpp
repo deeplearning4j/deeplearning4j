@@ -47,7 +47,7 @@ public:
 TEST_F(EuclideanDistanceTest,Test1) {
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     int *tadShapeBuffer = nd4j::ShapeUtils<float>::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
-    shape::printShapeInfoLinear("tadShape", tadShapeBuffer);
+    //shape::printShapeInfoLinear("tadShape", tadShapeBuffer);
     functions::reduce3::Reduce3<float>::exec(opNum,
                                              x,
                                              shapeBuffer,
