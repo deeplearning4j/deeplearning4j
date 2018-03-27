@@ -33,7 +33,7 @@ public class WeightInitUtilTest extends BaseDL4JTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = dist.sample(shape);
+        INDArray weightsExpected = dist.sample(params);
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -60,7 +60,7 @@ public class WeightInitUtilTest extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(123);
         double min = -4.0 * Math.sqrt(6.0 / (double) (shape[0] + shape[1]));
         double max = 4.0 * Math.sqrt(6.0 / (double) (shape[0] + shape[1]));
-        INDArray weightsExpected = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(min, max));
+        INDArray weightsExpected = Nd4j.getDistributions().createUniform(min, max).sample(Nd4j.createUninitialized(shape, 'f'));
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -73,7 +73,7 @@ public class WeightInitUtilTest extends BaseDL4JTest {
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         double a = 1.0 / Math.sqrt(fanIn);
-        INDArray weightsExpected = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
+        INDArray weightsExpected = Nd4j.getDistributions().createUniform(-a, a).sample(Nd4j.create(shape, 'f'));
 
         assertEquals(weightsExpected, weightsActual);
     }
