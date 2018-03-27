@@ -149,7 +149,7 @@ public class DataSetUtil {
      * @return Merged features, and feature masks. Note that feature masks may be added automatically, if required - even
      * if no feature masks were present originally
      */
-    public Pair<INDArray[], INDArray[]> mergeFeatures(@NonNull INDArray[][] featuresToMerge, INDArray[][] featureMasksToMerge) {
+    public static Pair<INDArray[], INDArray[]> mergeFeatures(@NonNull INDArray[][] featuresToMerge, INDArray[][] featureMasksToMerge) {
         int nInArrs = featuresToMerge[0].length;
         INDArray[] outF = new INDArray[nInArrs];
         INDArray[] outM = null;
