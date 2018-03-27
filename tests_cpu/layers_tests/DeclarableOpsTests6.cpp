@@ -907,3 +907,32 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_4) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, ReluLayer_1) {
+    NDArray<double> x('c', {3, 4}, {1.0, -2.0, 3.0, 4.0, 5.0, -6.0, 7.0, 8.0, 9.0, -10.0, 11.0, 12});
+    NDArray<double> w('c', {4, 3}, {0.5, 0.1, 0.8, 0.5, 0.2, 0.5, 0.5, 0.25, 0.5, 0.1, 0.0, 0.25}); 
+    NDArray<double> b({20.0, 30.0, 50.0});
+
+
+
+    NDArray<double> exp('c', {3, 3}, {
+                        21.4,  30.45, 52.3, 
+                        23.8,  31.05, 56.5, 
+                        26.2,  31.65, 60.7}); 
+
+    nd4j::ops::relu_layer<double> op;
+    auto result = op.execute({&x, &w, &b}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output ");
+    exp.printIndexedBuffer("Expected ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}

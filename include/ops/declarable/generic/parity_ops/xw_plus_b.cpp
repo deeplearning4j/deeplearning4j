@@ -14,7 +14,7 @@ namespace nd4j {
             NDArray<T>* z = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(x->rankOf() <= 2 && y->rankOf() <= 2 && z->rankOf() <= 2, 0, "xw_plus_b: Input and Output NDArrays should have rank less or equal to 2");
-            REQUIRE_TRUE(b->rankOf() == 1 && b->lengthOf() == x->rankOf(), 0, "xw_plus_b: Input vector should have proper dimension 1x%i. "
+            REQUIRE_TRUE(b->rankOf() == 1 && b->lengthOf() == z->sizeAt(-1), 0, "xw_plus_b: Input vector should have proper dimension 1x%i. "
                 "But %ix%i given.", x->rankOf(), b->rankOf(), b->lengthOf()) 
 
             // multiply x to y
