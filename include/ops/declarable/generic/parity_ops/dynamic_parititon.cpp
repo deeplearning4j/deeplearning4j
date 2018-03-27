@@ -26,14 +26,14 @@ namespace ops {
             for (int i = sourceDims.size(); i > 0;  i--)
                 sourceDims[sourceDims.size() - i] = input->rankOf() - i;
 
-            ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, sourceDims);
+            std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(input, sourceDims));
             for (int i = 0; i < numPartition; i++)
             {
                 outputs[i].first = OUTPUT_VARIABLE(i);
                 std::vector<int> outDims(outputs[i].first->rankOf() - 1);
                 for (int k = 1; k < outputs[i].first->rankOf(); k++)
                     outDims[k - 1] = k;
-                ResultSet<T>* listOutForCurrent = NDArrayFactory<T>::allTensorsAlongDimension(outputs[i].first, outDims);
+                std::unique_ptr<ResultSet<T>> listOutForCurrent(NDArrayFactory<T>::allTensorsAlongDimension(outputs[i].first, outDims));
                 outputs[i].second = 0;
                 for (int e = 0; e < indices->lengthOf(); ++e)
                     if ((*indices)(e) == T(i))
