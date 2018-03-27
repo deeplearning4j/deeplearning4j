@@ -232,6 +232,7 @@ public class PerformanceListener implements IterationListener {
             listener.reportTime = this.reportTime;
             listener.reportBatch = this.reportBatch;
             listener.reportSample = this.reportSample;
+            listener.reportEtl = this.reportEtl;
 
             return listener;
         }
