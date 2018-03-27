@@ -143,9 +143,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public List<List<Writable>> get(int i) {
-        int timeStepLength = timeSeriesStride;
-        int offset = (timeStepLength * i) / timeStepLength;
-        return new ArrowWritableRecordBatch(list,schema,offset,timeStepLength / schema.numColumns());
+        return new ArrowWritableRecordBatch(list,schema,i,timeSeriesStride / schema.numColumns());
     }
 
     @Override

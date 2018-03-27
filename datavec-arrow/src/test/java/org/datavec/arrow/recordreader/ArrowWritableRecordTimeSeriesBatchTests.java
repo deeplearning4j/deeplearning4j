@@ -48,8 +48,14 @@ public class ArrowWritableRecordTimeSeriesBatchTests {
                 assertFalse("Index " + i + " was null for field vector " + fieldVector, fieldVector.isNull(i));
             }
         }
+
         ArrowWritableRecordTimeSeriesBatch arrowWritableRecordTimeSeriesBatch = new ArrowWritableRecordTimeSeriesBatch(fieldVectors,schema.build(),timeStep.size() * timeStep.get(0).size());
         assertEquals(timeSteps,arrowWritableRecordTimeSeriesBatch.toArrayList());
+
+    }
+
+    @Test
+    public void testIndividualIndexingPerTimeStep() {
 
     }
 
