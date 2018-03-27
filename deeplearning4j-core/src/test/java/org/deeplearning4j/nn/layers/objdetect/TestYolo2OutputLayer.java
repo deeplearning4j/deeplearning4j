@@ -543,8 +543,8 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         double p1 = o1.getClassPredictions().getDouble(idxCat);
         double c1 = o1.getConfidence();
         assertEquals(idxCat, o1.getPredictedClass() );
-        assertTrue(String.valueOf(p1), p1 >= 0.9);
-        assertTrue(String.valueOf(c1), c1 >= 0.9);
+        assertTrue(String.valueOf(p1), p1 >= 0.85);
+        assertTrue(String.valueOf(c1), c1 >= 0.85);
         assertEquals(cx1, o1.getCenterX(), 0.1);
         assertEquals(cy1, o1.getCenterY(), 0.1);
         assertEquals(wGrid1, o1.getWidth(), 0.2);
@@ -555,8 +555,8 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         double p2 = o2.getClassPredictions().getDouble(idxCat);
         double c2 = o2.getConfidence();
         assertEquals(idxCat, o2.getPredictedClass() );
-        assertTrue(String.valueOf(p2), p2 >= 0.9);
-        assertTrue(String.valueOf(c2), c2 >= 0.9);
+        assertTrue(String.valueOf(p2), p2 >= 0.85);
+        assertTrue(String.valueOf(c2), c2 >= 0.85);
         assertEquals(cx2, o2.getCenterX(), 0.1);
         assertEquals(cy2, o2.getCenterY(), 0.1);
         assertEquals(wGrid2, o2.getWidth(), 0.2);
