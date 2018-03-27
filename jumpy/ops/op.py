@@ -31,6 +31,9 @@ def reshape(arr, shape):
 x = jp.zeros((2, 2, 3))  # x is jumpy ndarray
 y = reshape(x, (4, 3))  # y is a jumpy ndarray
 
+Note that methods with first argument named 'arr'
+will be automatically bound to ndarray class.
+
 '''
 def op(f):
 	def wrapper(*args, **kwargs):

@@ -10,6 +10,13 @@ def reshape(arr, *args):
     return arr.reshape(*args)
 
 @op
+def transpose(arr):
+    return arr.transpose()
+@op
+def T(arr):
+    return arr.transpose()
+
+@op
 def ravel(arr):
     return arr.ravel()
 
@@ -51,3 +58,52 @@ def permute(arr, *axis):
     assert set(axis) in [set(list(range(len(axis)))),
             set(list(range(len(arr.array.shape()))))]
     return arr.permute(*axis)
+
+@op
+def expand_dims(arr, axis):
+    return arr.expandDims(axis)
+
+@op
+def squeeze(arr, axis):
+    shape = arr.shape()
+    if type(axis) in (list, tuple):
+        shape = [shape[i] for i in range(len(shape)) if i not in axis]
+    else
+        shape.pop(axis)
+    return arr.reshape(*shape)
+
+@op
+def concatenate(arrs, axis):
+    return Nd4j.concat(axis, *arrs)
+
+@op
+def hstack(arrs):
+    return Nd4j.hstack(arrs)
+
+@op
+def vstack(arrs):
+    return Nd4j.vstack(arrs)
+
+@op
+def stack(arrs, axis):
+    for i, arr in enumerate(arrs):
+        shape = arr.shape()
+        shape.insert(axis, 1)
+        arrs[i] = arr.reshape(*shape)
+    return Nd4j.concat(axis, *arrs)
+
+@op
+def tile(arr, reps):
+    if type(reps) is int:
+        return Nd4j.tile(arr, reps)
+    else:
+        return Nd4j.tile(arr, *reps)
+
+@op
+def repeat(arr, repeats, axis=None):
+    if type(repeats) is int:
+        repeats = (repeats,)
+    if axis is None:
+        return arr.repeat(-1, *repeats).reshape(-1)
+    else:
+        return arr.repeat(axis, *repeats)
