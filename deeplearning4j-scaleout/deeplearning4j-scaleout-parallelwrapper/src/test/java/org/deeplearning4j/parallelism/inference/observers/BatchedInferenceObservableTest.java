@@ -53,14 +53,14 @@ public class BatchedInferenceObservableTest {
         BatchedInferenceObservable observable = new BatchedInferenceObservable();
 
         for (int i = 0; i < 32; i++) {
-            observable.addInput(new INDArray[]{Nd4j.create(3, 72, 72).assign(i)}, null);
+            observable.addInput(new INDArray[]{Nd4j.create(1,3, 72, 72).assign(i)}, null);
         }
 
         assertEquals(1, observable.getInputBatches().size());
 
         INDArray array = observable.getInputBatches().get(0).getFirst()[0];
-        assertEquals(3, array.rank());
-        assertEquals(32, array.shape()[0]);
+        assertEquals(4, array.rank());
+        assertEquals(32, array.size(0));
 
         log.info("Array shape: {}", Arrays.toString(array.shapeInfoDataBuffer().asInt()));
 
