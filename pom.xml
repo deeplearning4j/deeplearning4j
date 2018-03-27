@@ -65,7 +65,7 @@
         <commons.math.version>3.4.1</commons.math.version>
         <commons.lang.version>3.3.1</commons.lang.version>
         <commons.io.version>2.4</commons.io.version>
-        <lombok.version>1.16.10</lombok.version>
+        <lombok.version>1.16.20</lombok.version>
         <junit.version>4.12</junit.version>
         <slf4j.version>1.7.21</slf4j.version>
         <logback.version>1.1.2</logback.version>
@@ -86,6 +86,15 @@
         <maven-build-helper-plugin.version>3.0.0</maven-build-helper-plugin.version>
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
     <profiles>
 
