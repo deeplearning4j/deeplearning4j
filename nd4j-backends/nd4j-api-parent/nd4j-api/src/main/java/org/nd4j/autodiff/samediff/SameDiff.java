@@ -3038,6 +3038,16 @@ public class SameDiff {
         return updateVariableNameAndReference(res, name);
     }
 
+
+    public SDVariable reluLayer(SDVariable input, SDVariable weights, SDVariable bias) {
+        return reluLayer(null, input, weights, bias);
+    }
+
+    public SDVariable reluLayer(String name, SDVariable input, SDVariable weights, SDVariable bias) {
+        SDVariable res = f().reluLayer(input, weights, bias);
+        return updateVariableNameAndReference(res, name);
+    }
+
     /**
      * @param x
      * @param y

@@ -259,6 +259,27 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testReluLayer() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray input = Nd4j.create(new int[]{2, 2});
+        INDArray weights = Nd4j.create(new int[]{2, 2});
+        INDArray b = Nd4j.create(new int[]{1, 2});
+
+        SDVariable sdInput = sameDiff.var("input", input);
+        SDVariable sdWeights = sameDiff.var("weights", weights);
+        SDVariable sdBias = sameDiff.var("bias", b);
+
+        SDVariable res = sameDiff.reluLayer(sdInput, sdWeights, sdBias);
+        sameDiff.exec();
+
+        INDArray out = res.getArr();
+
+        assertArrayEquals(new int[]{2, 2}, res.getShape());
+
+    }
+
+
+    @Test
     public void testBiasAdd() {
         SameDiff sameDiff = SameDiff.create();
         INDArray ia = Nd4j.create(new int[]{2, 2});

@@ -1035,6 +1035,9 @@ public class DifferentialFunctionFactory   {
         return new XwPlusB(sameDiff(), input, weights, bias).outputVariables()[0];
     }
 
+    public SDVariable reluLayer(SDVariable input, SDVariable weights, SDVariable bias) {
+        return new ReluLayer(sameDiff(), input, weights, bias).outputVariables()[0];
+    }
 
     public SDVariable mmul(SDVariable x,
                            SDVariable y,
