@@ -590,7 +590,22 @@ public class ArrowConverter {
         return ret;
     }
 
-    private static void setValue(ColumnType columnType,FieldVector fieldVector,Object value,int row) {
+    /**
+     * Set the value of the specified column vector
+     * at the specified row based on the given value.
+     * The value will be converted relative to the specified column type.
+     * Note that the passed in value may only be a {@link Writable}
+     * or a {@link String}
+     * @param columnType the column type of the value
+     * @param fieldVector the field vector to set
+     * @param value the value to set ({@link Writable} or {@link String} types)
+     * @param row the row of the item
+     */
+    public static void setValue(ColumnType columnType,FieldVector fieldVector,Object value,int row) {
+        if(value instanceof NullWritable) {
+            return;
+        }
+
         switch (columnType) {
             case Integer:
                 IntVector intVector = (IntVector) fieldVector;
@@ -984,6 +999,10 @@ public class ArrowConverter {
         else if(fieldVector instanceof TimeStampMilliVector) {
             TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
             return timeStampMilliVector.get(row);
+        }
+        else if(fieldVector instanceof BigIntVector) {
+            BigIntVector bigIntVector = (BigIntVector) fieldVector;
+            return bigIntVector.get(row);
         }
 
         throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());

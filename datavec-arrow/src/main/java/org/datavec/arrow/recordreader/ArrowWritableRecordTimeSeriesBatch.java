@@ -9,6 +9,7 @@ import org.apache.arrow.vector.ipc.message.ArrowRecordBatch;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.batch.AbstractTimeSeriesWritableRecordBatch;
 import org.datavec.arrow.ArrowConverter;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +22,7 @@ import java.util.*;
  */
 @Data
 @AllArgsConstructor
-public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writable>>>,Closeable {
+public class ArrowWritableRecordTimeSeriesBatch extends AbstractTimeSeriesWritableRecordBatch implements Closeable {
 
     private List<FieldVector> list;
     private int size;
@@ -42,7 +43,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
         this.schema = schema;
         //each column should have same number of rows
         this.timeSeriesStride = timeSeriesStride;
-        this.size = (list.get(0).getValueCount()  * list.size()) / timeSeriesStride;
+        this.size = list.size() * list.get(0).getValueCount() / timeSeriesStride;
 
     }
 
@@ -79,7 +80,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public boolean contains(Object o) {
-        return false;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -143,14 +144,17 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
     @Override
     public List<List<Writable>> get(int i) {
-        int timeStepLength = timeSeriesStride;
-        int offset = (timeStepLength * i) / timeStepLength;
-        return new ArrowWritableRecordBatch(list,schema,offset,timeStepLength / schema.numColumns());
+        return new ArrowWritableRecordBatch(list,schema,i,timeSeriesStride / schema.numColumns());
     }
 
     @Override
     public List<List<Writable>> set(int i, List<List<Writable>> writable) {
-        throw new UnsupportedOperationException();
+        ArrowWritableRecordBatch arrowWritableRecordBatch = (ArrowWritableRecordBatch) get(i);
+        for(int batch = 0; batch < writable.size(); batch++) {
+            arrowWritableRecordBatch.set(batch,writable.get(i));
+        }
+
+        return arrowWritableRecordBatch;
     }
 
     @Override
@@ -257,7 +261,7 @@ public class ArrowWritableRecordTimeSeriesBatch implements List<List<List<Writab
 
         @Override
         public void set(List<List<Writable>> writables) {
-            throw new UnsupportedOperationException();
+            ArrowWritableRecordTimeSeriesBatch.this.set(index,writables);
         }
 
         @Override

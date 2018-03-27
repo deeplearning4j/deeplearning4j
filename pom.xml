@@ -72,7 +72,7 @@
         <commons-io.version>2.4</commons-io.version>
         <commons-codec.version>1.10</commons-codec.version>
         <args4j.version>2.0.29</args4j.version>
-        <lombok.version>1.16.18</lombok.version>
+        <lombok.version>1.16.20</lombok.version>
         <jodatime.version>2.9.2</jodatime.version>
         <freemarker.version>2.3.23</freemarker.version>
         <logback.version>1.1.2</logback.version>
@@ -698,6 +698,12 @@
         <version>${junit.version}</version>
         <scope>test</scope>
       </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
 

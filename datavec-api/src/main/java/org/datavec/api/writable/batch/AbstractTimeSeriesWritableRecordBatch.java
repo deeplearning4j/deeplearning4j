@@ -29,7 +29,7 @@ import java.util.ListIterator;
  *
  * @author Alex Black
  */
-public abstract class AbstractWritableRecordBatch implements List<List<Writable>> {
+public abstract class AbstractTimeSeriesWritableRecordBatch implements List<List<List<Writable>>> {
 
 
     @Override
@@ -43,13 +43,13 @@ public abstract class AbstractWritableRecordBatch implements List<List<Writable>
     }
 
     @Override
-    public Iterator<List<Writable>> iterator() {
+    public Iterator<List<List<Writable>>> iterator() {
         return listIterator();
     }
 
     @Override
-    public ListIterator<List<Writable>> listIterator() {
-        return new RecordBatchListIterator(this);
+    public ListIterator<List<List<Writable>>> listIterator() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -63,7 +63,7 @@ public abstract class AbstractWritableRecordBatch implements List<List<Writable>
     }
 
     @Override
-    public boolean add(List<Writable> writable) {
+    public boolean add(List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
     }
 
@@ -78,12 +78,12 @@ public abstract class AbstractWritableRecordBatch implements List<List<Writable>
     }
 
     @Override
-    public boolean addAll(Collection<? extends List<Writable>> collection) {
+    public boolean addAll(Collection<? extends List<List<Writable>>> collection) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean addAll(int i,  Collection<? extends List<Writable>> collection) {
+    public boolean addAll(int i,  Collection<? extends List<List<Writable>>> collection) {
         throw new UnsupportedOperationException();
     }
 
@@ -103,18 +103,18 @@ public abstract class AbstractWritableRecordBatch implements List<List<Writable>
     }
 
     @Override
-    public List<Writable> set(int i, List<Writable> writable) {
+    public List<List<Writable>> set(int i, List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void add(int i, List<Writable> writable) {
+    public void add(int i, List<List<Writable>> writable) {
         throw new UnsupportedOperationException();
 
     }
 
     @Override
-    public List<Writable> remove(int i) {
+    public List<List<Writable>> remove(int i) {
         throw new UnsupportedOperationException();
     }
 
@@ -129,68 +129,15 @@ public abstract class AbstractWritableRecordBatch implements List<List<Writable>
     }
 
     @Override
-    public ListIterator<List<Writable>> listIterator(int i) {
+    public ListIterator<List<List<Writable>>> listIterator(int i) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<List<Writable>> subList(int i, int i1) {
+    public List<List<List<Writable>>> subList(int i, int i1) {
         throw new UnsupportedOperationException();
     }
 
 
-    public static class RecordBatchListIterator implements ListIterator<List<Writable>> {
-        private int index;
-        private AbstractWritableRecordBatch underlying;
 
-        public RecordBatchListIterator(AbstractWritableRecordBatch underlying){
-            this.underlying = underlying;
-        }
-
-        @Override
-        public boolean hasNext() {
-            return index < underlying.size();
-        }
-
-        @Override
-        public List<Writable> next() {
-            return underlying.get(index++);
-        }
-
-        @Override
-        public boolean hasPrevious() {
-            return index > 0;
-        }
-
-        @Override
-        public List<Writable> previous() {
-            return underlying.get(index - 1);
-        }
-
-        @Override
-        public int nextIndex() {
-            return index + 1;
-        }
-
-        @Override
-        public int previousIndex() {
-            return index - 1;
-        }
-
-        @Override
-        public void remove() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void set(List<Writable> writables) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void add(List<Writable> writables) {
-            throw new UnsupportedOperationException();
-
-        }
-    }
 }

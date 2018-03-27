@@ -76,6 +76,28 @@ public class ArrowConverterTest {
 
 
     @Test
+    public void testArrowBatchSet() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        for(int i = 0; i < 2; i++) {
+            schema.addColumnInteger(String.valueOf(i));
+            single.add(String.valueOf(i));
+        }
+
+        List<List<Writable>> input = Arrays.asList(
+                Arrays.<Writable>asList(new IntWritable(0),new IntWritable(1)),
+                Arrays.<Writable>asList(new IntWritable(2),new IntWritable(3))
+        );
+
+        List<FieldVector> fieldVector = ArrowConverter.toArrowColumns(bufferAllocator,schema.build(),input);
+        ArrowWritableRecordBatch writableRecordBatch = new ArrowWritableRecordBatch(fieldVector,schema.build());
+        List<Writable> assertion = Arrays.<Writable>asList(new IntWritable(4), new IntWritable(5));
+        writableRecordBatch.set(1, Arrays.<Writable>asList(new IntWritable(4),new IntWritable(5)));
+        List<Writable> recordTest = writableRecordBatch.get(1);
+        assertEquals(assertion,recordTest);
+    }
+
+    @Test
     public void testArrowColumnsStringTimeSeries() {
         Schema.Builder schema = new Schema.Builder();
         List<List<List<String>>> entries = new ArrayList<>();
@@ -304,12 +326,6 @@ public class ArrowConverterTest {
 
         Record record = recordReader.nextRecord();
         assertEquals(2,record.getRecord().size());
-    }
-
-
-    @Test
-    public void testArrowWritablesTimeSeries() {
-
     }
 
 
