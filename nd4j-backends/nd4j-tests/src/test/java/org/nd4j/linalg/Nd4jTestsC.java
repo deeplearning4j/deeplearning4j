@@ -28,6 +28,7 @@ import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.LogSumExp;
+import org.nd4j.linalg.api.ops.impl.accum.Mmul;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -419,9 +420,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray test = arr.mmul(arr.transpose());
         assertEquals(getFailureMessage(), assertion, test);
-
     }
 
+    @Test
+    public void testMmulOp() {
+        INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
+        INDArray z = Nd4j.create(2, 2);
+        INDArray assertion = Nd4j.create(new double[][] {{14, 32}, {32, 77}});
+        MMulTranspose mMulTranspose = MMulTranspose.builder()
+          .transposeB(true)
+          .a(arr)
+          .b(arr)
+          .build();
+
+        DynamicCustomOp op = new Mmul(arr, arr, z, mMulTranspose);
+        Nd4j.getExecutioner().exec(op);
+        
+        assertEquals(getFailureMessage(), assertion, z);
+    }
 
 
     @Test

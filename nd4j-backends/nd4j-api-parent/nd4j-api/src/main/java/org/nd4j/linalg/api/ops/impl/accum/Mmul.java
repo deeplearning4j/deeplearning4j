@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -73,6 +74,23 @@ public class Mmul extends DynamicCustomOp {
         this(sameDiff,i_v1,i_v2,MMulTranspose.allFalse());
     }
 
+    /**
+     *
+     * @param x
+     * @param y
+     * @param z
+     */
+    public Mmul(INDArray x,
+                INDArray y,
+                INDArray z,
+                MMulTranspose mMulTranspose) {
+        super(null, new INDArray[]{x, y}, z == null ? null : new INDArray[]{z});
+        if (mMulTranspose != null) {
+          this.mMulTranspose = mMulTranspose;
+          addIArgument(ArrayUtil.fromBoolean(mMulTranspose.isTransposeA()),
+                       ArrayUtil.fromBoolean(mMulTranspose.isTransposeB()));
+        }
+    }
 
 
     public Mmul() {}
