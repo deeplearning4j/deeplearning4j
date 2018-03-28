@@ -684,6 +684,18 @@ namespace nd4j {
         DECLARE_OP(matrix_inverse, 1, 1, true);
 
         /**
+         * sequence_mask op. - make mask for given tensor filled by (j > x[i_1, i_2,...,i_n]) -> z[i_1, i_2,...,i_n,j]
+         *
+         * input params:
+         *    0 - the ND-tensor filled by integer-like values
+         *
+         * optional int param - maxlength (maxlength >= max(x)). By default maxlength = max(x).
+         * return value:
+         *    (N+1)D tensor filled by 0 and 1 accordingly the mask
+         */
+        DECLARE_CUSTOM_OP(sequence_mask, 1, 1, false, 0, 0);
+
+        /**
          * segment_max op. - make a tensor filled by max values according to index tensor given.
          *
          * input params:
