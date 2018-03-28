@@ -13,7 +13,7 @@ To setup jumpy, you need to set a jumpy classpath via the environment variable:
 JUMPY_CLASS_PATH
 ```
 
-The JUMPY_CLASSPATH can be set to a list of jar files that contain
+The JUMPY_CLASS_PATH can be set to a list of jar files that contain
 the necessary jar files for running an [nd4j backend](http://nd4j.org/backend.html)
 
 
