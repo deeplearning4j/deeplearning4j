@@ -56,7 +56,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -77,6 +76,7 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -487,6 +487,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String name = nodeEntry.getKey();
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
+
+            if(gv == null){
+                throw new IllegalStateException("Encountered null layer/vertex during initialization for layer \"" + name +
+                        "\": " + n.getClass().getSimpleName() + " initialization returned null layer/vertex?");
+            }
 
             if (gv.hasLayer()) {
                 numLayers++;
