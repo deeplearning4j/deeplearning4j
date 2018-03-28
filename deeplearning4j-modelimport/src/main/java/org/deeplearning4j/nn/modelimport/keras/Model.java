@@ -31,29 +31,29 @@ import java.io.InputStream;
  * Routines for importing saved Keras models.
  *
  * @author dave@skymind.io
- *
  * @deprecated Use {@link KerasModelImport} instead.
  */
 @Deprecated
 @Slf4j
 public class Model {
 
-    private Model() {}
+    private Model() {
+    }
 
     /**
      * Load Keras model saved using model.save_model(...).
      *
-     * @param  modelHdf5Stream      input stream storing Keras Sequential model
-     * @return                      DL4J MultiLayerNetwork
-     * @see    MultiLayerNetwork
-     * @throws UnsupportedKerasConfigurationException
-     * @throws IOException
-     * @throws org.deeplearning4j.nn.api.Model
+     * @param modelHdf5Stream input stream storing Keras Sequential model
+     * @return DL4J MultiLayerNetwork
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     * @see MultiLayerNetwork
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModelInputStream(InputStream modelHdf5Stream)
-                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);
     }
 
@@ -61,17 +61,17 @@ public class Model {
      * Imports a Keras Sequential model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param  modelHdf5Stream input stream storing Keras Sequential model
-     * @return                   DL4J MultiLayerNetwork
-     * @see    MultiLayerNetwork
-     * @throws UnsupportedKerasConfigurationException
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
+     * @param modelHdf5Stream input stream storing Keras Sequential model
+     * @return DL4J MultiLayerNetwork
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     * @see MultiLayerNetwork
      * @deprecated Use {@link KerasModelImport#importKerasSequentialModelAndWeights} instead
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModelInputStream(InputStream modelHdf5Stream)
-                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Stream, false);
     }
 
@@ -79,31 +79,31 @@ public class Model {
      * Imports a Keras Functional API model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param modelHdf5Stream  input stream storing storing Keras Functional API model
-     * @return                   DL4J ComputationGraph
-     * @throws UnsupportedKerasConfigurationException
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
+     * @param modelHdf5Stream input stream storing storing Keras Functional API model
+     * @return DL4J ComputationGraph
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModelInputStream(InputStream modelHdf5Stream)
-                    throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Stream, false);
     }
 
     /**
      * Load Keras model saved using model.save_model(...).
      *
-     * @param modelHdf5Filename    path to HDF5 archive storing Keras model
-     * @return                     DL4J Model interface
-     * @throws IOException
+     * @param modelHdf5Filename path to HDF5 archive storing Keras model
+     * @return DL4J Model interface
+     * @throws IOException IO exception
      * @see org.deeplearning4j.nn.api.Model
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModel(String modelHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -111,16 +111,16 @@ public class Model {
      * Load Keras model where the config and weights were saved separately using calls to
      * model.to_json() and model.save_weights(...).
      *
-     * @param configJsonFilename    path to JSON file storing Keras Functional API model configuration
-     * @param weightsHdf5Filename   path to HDF5 archive storing Keras Functional API model weights
-     * @return                      DL4J Model interface
-     * @throws IOException
+     * @param configJsonFilename  path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename path to HDF5 archive storing Keras Functional API model weights
+     * @return DL4J Model interface
+     * @throws IOException IO exception
      * @see org.deeplearning4j.nn.api.Model
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static org.deeplearning4j.nn.api.Model importModel(String configJsonFilename, String weightsHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 
@@ -128,15 +128,15 @@ public class Model {
      * Imports a Keras Sequential model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param modelHdf5Filename    path to HDF5 archive storing Keras Sequential model
-     * @return                     DL4J MultiLayerNetwork
-     * @throws IOException
+     * @param modelHdf5Filename path to HDF5 archive storing Keras Sequential model
+     * @return DL4J MultiLayerNetwork
+     * @throws IOException IO exception
      * @see MultiLayerNetwork
      * @deprecated Use {@link KerasModelImport#importKerasSequentialModelAndWeights} instead
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModel(String modelHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -144,15 +144,15 @@ public class Model {
      * Imports a Keras Functional API model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param modelHdf5Filename  path to HDF5 archive storing Keras Functional API model
-     * @return                   DL4J ComputationGraph
-     * @throws IOException
-     * @see    ComputationGraph
+     * @param modelHdf5Filename path to HDF5 archive storing Keras Functional API model
+     * @return DL4J ComputationGraph
+     * @throws IOException IO exception
+     * @see ComputationGraph
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModel(String modelHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(modelHdf5Filename, false);
     }
 
@@ -160,16 +160,16 @@ public class Model {
      * Imports a Keras Sequential model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param configJsonFilename     path to JSON file storing Keras Functional API model configuration
-     * @param weightsHdf5Filename    path to HDF5 archive storing Keras Functional API model weights
-     * @return                       DL4J MultiLayerNetwork
-     * @throws IOException
+     * @param configJsonFilename  path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename path to HDF5 archive storing Keras Functional API model weights
+     * @return DL4J MultiLayerNetwork
+     * @throws IOException IO exception
      * @see MultiLayerNetwork
      * @deprecated Use {@link KerasModelImport#importKerasSequentialModelAndWeights} instead
      */
     @Deprecated
     public static MultiLayerNetwork importSequentialModel(String configJsonFilename, String weightsHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasSequentialModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 
@@ -177,16 +177,16 @@ public class Model {
      * Imports a Keras Functional API model saved using model.save_model(...). Model
      * configuration and weights are loaded from single HDF5 archive.
      *
-     * @param configJsonFilename     path to JSON file storing Keras Functional API model configuration
-     * @param weightsHdf5Filename    path to HDF5 archive storing Keras Functional API model weights
-     * @return                       DL4J ComputationGraph
-     * @throws IOException
-     * @see    ComputationGraph
+     * @param configJsonFilename  path to JSON file storing Keras Functional API model configuration
+     * @param weightsHdf5Filename path to HDF5 archive storing Keras Functional API model weights
+     * @return DL4J ComputationGraph
+     * @throws IOException IO exception
+     * @see ComputationGraph
      * @deprecated Use {@link KerasModelImport#importKerasModelAndWeights} instead
      */
     @Deprecated
     public static ComputationGraph importFunctionalApiModel(String configJsonFilename, String weightsHdf5Filename)
-                    throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         return KerasModelImport.importKerasModelAndWeights(configJsonFilename, weightsHdf5Filename, false);
     }
 }
