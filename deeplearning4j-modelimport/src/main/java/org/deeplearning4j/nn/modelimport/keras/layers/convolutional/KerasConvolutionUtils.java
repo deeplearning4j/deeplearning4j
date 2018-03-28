@@ -270,27 +270,31 @@ public class KerasConvolutionUtils {
     }
 
     /**
-     * Get zero padding from Keras layer configuration.
+     * Get padding and cropping configurations from Keras layer configuration.
      *
      * @param layerConfig       dictionary containing Keras layer configuration
      * @param conf              KerasLayerConfiguration
+     * @param layerField        String value of the layer config name to check for (e.g. "padding" or "cropping")
      * @param dimension         Dimension of the padding layer
      * @return padding list of integers
      * @throws InvalidKerasConfigurationException Invalid keras configuration
      */
-    public static int[] getZeroPaddingFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf, int dimension)
+    public static int[] getPaddingFromConfig(Map<String, Object> layerConfig,
+                                             KerasLayerConfiguration conf,
+                                             String layerField,
+                                             int dimension)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        if (!innerConfig.containsKey(conf.getLAYER_FIELD_ZERO_PADDING()))
+        if (!innerConfig.containsKey(layerField))
             throw new InvalidKerasConfigurationException(
-                    "Field " + conf.getLAYER_FIELD_ZERO_PADDING() + " not found in Keras ZeroPadding layer");
+                    "Field " + layerField + " not found in Keras cropping or padding layer");
         int[] padding;
         if (dimension == 2) {
             List<Integer> paddingList;
-            // For 2D layers, padding can either be a pair [[x_0, x_1].[y_0, y_1]] or a pair [x, y]
+            // For 2D layers, padding/cropping can either be a pair [[x_0, x_1].[y_0, y_1]] or a pair [x, y]
             // or a single integer x. yeah, really.
             try {
-                List paddingNoCast = (List) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+                List paddingNoCast = (List) innerConfig.get(layerField);
                 boolean isNested;
                 try {
                     List<Integer> firstItem = (List<Integer>) paddingNoCast.get(0);
@@ -319,12 +323,12 @@ public class KerasConvolutionUtils {
                     throw new InvalidKerasConfigurationException("Found Keras ZeroPadding2D layer with invalid "
                             + paddingList.size() + "D padding.");
             } catch (Exception e) {
-                int paddingInt = (int) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+                int paddingInt = (int) innerConfig.get(layerField);
                 padding = new int[]{ paddingInt, paddingInt };
             }
 
         } else if (dimension == 1) {
-            int paddingInt = (int) innerConfig.get(conf.getLAYER_FIELD_ZERO_PADDING());
+            int paddingInt = (int) innerConfig.get(layerField);
             padding = new int[]{ paddingInt };
         } else {
             throw new UnsupportedKerasConfigurationException(
