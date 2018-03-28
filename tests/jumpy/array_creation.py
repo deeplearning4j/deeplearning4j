@@ -1,6 +1,8 @@
 import unittest
 
-from jumpy import *
+import jumpy as jp
+import numpy as np
+
 
 import gc
 gc.disable()
@@ -9,27 +11,11 @@ class TestArrayCreation(unittest.TestCase):
     init()
 
     def test_arr_creation(self):
-        a = np.linspace(1, 4, 4).reshape(2, 2)
-        nd4j_arr = from_np(a)
-        length = nd4j_arr.length()
-        self.assertEqual(4, length)
-        self.assertEquals(list(a.shape), nd4j_arr.shape())
-        strides_assertion = [2,1]
-        self.assertEquals(strides_assertion, nd4j_arr.stride())
-        for i in xrange(0, 4):
-            self.assertEquals(i + 1, nd4j_arr.data().getDouble(i))
-
-        self.assertEquals(1.0, nd4j_arr[0])
-
-    def test_arr_creation_vector(self):
-        a = np.linspace(1, 4, 4).reshape((1, 4))
-        nd4j_arr = from_np(a)
-        self.assertEqual(2, nd4j_arr.rank())
-        self.assertEquals(list(a.shape), nd4j_arr.array.shape())
-
-
-    def test_add(self):
-        a = np.reshape(np.linspace(1, 4, 4), (2, 2))
-        nd4j_arr = from_np(a)
-        nd4j_arr_output = nd4j_arr + nd4j_arr
-        nd4j_times_2 = nd4j_arr * 2.0
+        x_np = np.random.random((100, 32, 16))
+        x_jp = jp.array(x_np)
+        x_np_2 = x_jp.numpy()
+        self.assertEquals(x_np.shape, x_jp.shape)
+        self.assertEquals(x_np.shape, x_np_2.shape)
+        x_np = x_np.ravel()
+        x_np_2 = x_np_2.ravel()
+        assertEquals(list(x_np), list(x_np_2))

@@ -3,7 +3,6 @@ import numpy as np
 import ctypes
 
 
-
 # Java instance initializations
 native_ops = NativeOpsHolder.getInstance().getDeviceNativeOps()
 
@@ -406,6 +405,15 @@ class ndarray(object):
         setattr(ndarray, attr, f)
         return getattr(self, attr)
 
+    def __int__(self):
+        if self.array.length() == 1:
+            return self.array.getInt(0)
+        raise Exception('Applicable only for scalars')
+
+    def __float__(self):
+        if self.array.length() == 1:
+            return self.array.getDouble(0)
+        raise Exception('Applicable only for scalars')
 
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)
