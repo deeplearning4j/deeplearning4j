@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
-import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
@@ -15,8 +14,9 @@ public class KerasGaussianDropout extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Invalid Keras config
      */
     public KerasGaussianDropout(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -25,10 +25,9 @@ public class KerasGaussianDropout extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration.
-     *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasGaussianDropout(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -39,10 +38,10 @@ public class KerasGaussianDropout extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasGaussianDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -63,9 +62,9 @@ public class KerasGaussianDropout extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -78,7 +77,7 @@ public class KerasGaussianDropout extends KerasLayer {
     /**
      * Get DL4J DropoutLayer with Gaussian dropout.
      *
-     * @return  DropoutLayer
+     * @return DropoutLayer
      */
     public DropoutLayer getGaussianDropoutLayer() {
         return (DropoutLayer) this.layer;
