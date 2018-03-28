@@ -46,7 +46,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
     /**
      * Pass-through constructor from KerasLayer
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAtrousConvolution1D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);

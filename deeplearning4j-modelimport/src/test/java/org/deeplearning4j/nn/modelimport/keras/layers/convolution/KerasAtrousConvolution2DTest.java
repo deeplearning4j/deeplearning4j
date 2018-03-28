@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasAtrousConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
@@ -108,7 +108,7 @@ public class KerasAtrousConvolution2DTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        ConvolutionLayer layer = new KerasConvolution2D(layerConfig).getConvolution2DLayer();
+        ConvolutionLayer layer = new KerasAtrousConvolution2D(layerConfig).getAtrousConvolution2D();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());

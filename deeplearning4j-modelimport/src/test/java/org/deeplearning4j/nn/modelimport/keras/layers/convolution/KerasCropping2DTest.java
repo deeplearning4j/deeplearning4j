@@ -44,7 +44,7 @@ public class KerasCropping2DTest {
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testZeroPadding2DLayer() throws Exception {
+    public void testCropping2DLayer() throws Exception {
         Integer keras1 = 1;
         buildCropping2DLayer(conf1, keras1);
         Integer keras2 = 2;
