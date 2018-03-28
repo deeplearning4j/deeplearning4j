@@ -36,23 +36,24 @@ import static org.junit.Assert.assertEquals;
 public class KerasZeroPadding2DTest {
 
     private final String LAYER_NAME = "zero_padding_2D_layer";
-    private final int[] ZERO_PADDING = new int[] {2, 3};
+    private final int[] ZERO_PADDING = new int[]{2, 3};
 
-    private Integer keras1 = 1;
-    private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
     public void testZeroPadding2DLayer() throws Exception {
+        Integer keras1 = 1;
         buildZeroPadding2DLayer(conf1, keras1);
+        Integer keras2 = 2;
         buildZeroPadding2DLayer(conf2, keras2);
         buildZeroPaddingSingleDim2DLayer(conf1, keras1);
         buildZeroPaddingSingleDim2DLayer(conf2, keras2);
     }
 
 
-    void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildZeroPadding2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
         Map<String, Object> config = new HashMap<>();
@@ -73,7 +74,8 @@ public class KerasZeroPadding2DTest {
 
     }
 
-    void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildZeroPaddingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+            throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_1D());
         Map<String, Object> config = new HashMap<>();
