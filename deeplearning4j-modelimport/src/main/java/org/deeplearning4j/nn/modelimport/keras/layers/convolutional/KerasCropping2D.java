@@ -15,7 +15,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.Keras
 /**
  * Imports a Keras Cropping 2D layer.
  *
- * @author dave@skymind.io
+ * @author Max Pumperla
  */
 @Slf4j
 @Data
@@ -26,8 +26,8 @@ public class KerasCropping2D extends KerasLayer {
      *
      * @param layerConfig   dictionary containing Keras layer configuration.
      *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasCropping2D(Map<String, Object> layerConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -39,8 +39,8 @@ public class KerasCropping2D extends KerasLayer {
      *
      * @param layerConfig               dictionary containing Keras layer configuration
      * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasCropping2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -54,9 +54,9 @@ public class KerasCropping2D extends KerasLayer {
     }
 
     /**
-     * Get DL4J SubsamplingLayer.
+     * Get DL4J Cropping2D layer.
      *
-     * @return  SubsamplingLayer
+     * @return  Cropping2D layer
      */
     public Cropping2D getCropping2DLayer() {
         return (Cropping2D) this.layer;
