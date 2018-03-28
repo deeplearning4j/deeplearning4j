@@ -576,10 +576,17 @@ public class VPTree {
         public void fetchFutures() {
             try {
                 if (futureLeft != null) {
+                    while (!futureLeft.isDone())
+                        Thread.sleep(100);
+
+
                     left = futureLeft.get();
                 }
 
                 if (futureRight != null) {
+                    while (!futureRight.isDone())
+                        Thread.sleep(100);
+
                     right = futureRight.get();
                 }
 
@@ -589,10 +596,7 @@ public class VPTree {
 
                 if (right != null)
                     right.fetchFutures();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 

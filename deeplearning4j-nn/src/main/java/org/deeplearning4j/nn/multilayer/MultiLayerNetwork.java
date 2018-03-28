@@ -643,6 +643,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
         for (int i = 0; i < layers.length; i++) {
+            if(layers[i] == null){
+                throw new IllegalStateException("Encountered null layer during initialization for layer " + i +
+                        ": " + layerWiseConfigurations.getConf(i).getLayer().getClass().getSimpleName() + " initialization " +
+                        "returned null layer?");
+            }
+
             for (String s : layers[i].conf().variables()) {
                 variables.add(i + "_" + s);
             }

@@ -488,6 +488,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
 
+            if(gv == null){
+                throw new IllegalStateException("Encountered null layer/vertex during initialization for layer \"" + name +
+                        "\": " + n.getClass().getSimpleName() + " initialization returned null layer/vertex?");
+            }
+
             if (gv.hasLayer()) {
                 numLayers++;
                 Layer l = gv.getLayer();
