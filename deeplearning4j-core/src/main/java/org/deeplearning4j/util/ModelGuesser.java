@@ -158,11 +158,6 @@ public class ModelGuesser {
      * @throws Exception
      */
     public static Model loadModelGuess(InputStream stream) throws Exception {
-        //Currently (Nov 2017): KerasModelImport doesn't support loading from input streams
-        //Simplest solution here: write to a temporary file
-        File f = File.createTempFile("loadModelGuess",".bin");
-        f.deleteOnExit();
-
         return loadModelGuess(stream, null);
     }
 
