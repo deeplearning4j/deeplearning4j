@@ -1,12 +1,11 @@
-import jumpy
-from jumpy import Nd4jArray
+import jumpy as jp
 import numpy as np
 from random import randint
 import timeit
 import gc
 
 gc.disable()
-jumpy.disable_gc()
+jp.disable_gc()
 
 
 class Benchmark(object):
@@ -20,7 +19,7 @@ class Benchmark(object):
             self.np_arr.append(np.linspace(1, n * n, n * n).reshape((n, n)))
 
         for counter in range(0, self.m + 1):
-            self.nd4j_arr.append(jumpy.from_np(self.np_arr[counter]))
+            self.nd4j_arr.append(jp.array(self.np_arr[counter]))
 
     def run_nd4j_scalar(self):
         self.nd4j_arr[randint(0, self.m)] += 1.0172
@@ -41,7 +40,7 @@ class Benchmark(object):
         self.nd4j_arr[randint(0, self.m)] -= self.nd4j_arr[randint(0, self.m)]
 
     def run_nd4j_mmul(self):
-        jumpy.dot(self.nd4j_arr[randint(0, self.m)], self.nd4j_arr[randint(0, self.m)])
+        jp.dot(self.nd4j_arr[randint(0, self.m)], self.nd4j_arr[randint(0, self.m)])
 
     def run_numpy_mmul(self):
         np.dot(self.np_arr[randint(0, self.m)], self.np_arr[randint(0, self.m)])

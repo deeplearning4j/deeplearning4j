@@ -8,8 +8,8 @@ def disable_gc():
 
 
 def enable_gc():
-	memory_manager.togglePeriodicGc(True)
+    memory_manager.togglePeriodicGc(True)
 
 
 def set_gc_interval(interval=5000):
-memory_manager.setAutoGcWindow(interval)
+    memory_manager.setAutoGcWindow(interval)
