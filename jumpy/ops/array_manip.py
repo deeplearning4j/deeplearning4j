@@ -68,7 +68,7 @@ def squeeze(arr, axis):
     shape = arr.shape()
     if type(axis) in (list, tuple):
         shape = [shape[i] for i in range(len(shape)) if i not in axis]
-    else
+    else:
         shape.pop(axis)
     return arr.reshape(*shape)
 
