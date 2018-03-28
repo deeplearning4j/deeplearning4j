@@ -40,7 +40,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 /**
  *
@@ -61,7 +61,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
     private int currentIteration = 0;
     private ClusterSet clusterSet;
     private List<Point> initialPoints;
-    private transient Executor exec;
+    private transient ExecutorService exec;
 
 
 
