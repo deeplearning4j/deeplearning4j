@@ -46,9 +46,9 @@ public class KerasCropping2D extends KerasLayer {
     public KerasCropping2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-        String croppingField = conf.getLAYER_FIELD_ZERO_PADDING();
-        Cropping2D.Builder builder = new Cropping2D.Builder(
-                getPaddingFromConfig(layerConfig, conf, croppingField, 2))
+        String croppingField = conf.getLAYER_FIELD_CROPPING();
+        int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 2);
+        Cropping2D.Builder builder = new Cropping2D.Builder(cropping)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;

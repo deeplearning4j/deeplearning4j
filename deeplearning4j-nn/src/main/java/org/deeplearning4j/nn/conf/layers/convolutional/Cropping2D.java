@@ -105,12 +105,17 @@ public class Cropping2D extends NoParamLayer {
         }
 
         /**
-         * @param cropping Cropping amount for top/left/bottom/right (in that order). Must be length 4 array.
+         * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 4 array.
          */
         public Builder(@NonNull int[] cropping){
-            Preconditions.checkArgument(cropping.length == 4, "Exactly 4 cropping values (top, bottom," +
-                    " left, right) must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
-            this.cropping = cropping;
+            Preconditions.checkArgument(cropping.length == 4 || cropping.length == 2,
+                    "Either 2 or 4 cropping values,  i.e. (top/bottom. left/right) or (top, bottom," +
+                            " left, right) must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
+            if (cropping.length == 2) {
+                this.cropping = new int[] {cropping[0], cropping[0], cropping[1], cropping[1]};
+            } else {
+                this.cropping = cropping;
+            }
         }
 
         /**
