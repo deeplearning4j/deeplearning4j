@@ -40,7 +40,6 @@ public class KerasModelBuilder implements Cloneable {
 
     public KerasModelBuilder modelJsonFilename(String modelJsonFilename) throws IOException {
         this.modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
-        ;
         return this;
     }
 
@@ -101,7 +100,7 @@ public class KerasModelBuilder implements Cloneable {
             modelMapper.put(config.getFieldBackend(), backend);
         }
 
-        this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
+        this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);
         if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
             this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
         return this;

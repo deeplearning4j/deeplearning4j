@@ -57,7 +57,7 @@ public class KerasPoolingUtils {
     /**
      * Map Keras pooling layers to DL4J pooling dimensions.
      *
-     * @param className  name of the Keras pooling class
+     * @param className name of the Keras pooling class
      * @return pooling dimensions as int array
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */

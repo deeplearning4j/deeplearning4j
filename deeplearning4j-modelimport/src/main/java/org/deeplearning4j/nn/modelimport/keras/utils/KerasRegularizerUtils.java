@@ -11,9 +11,9 @@ public class KerasRegularizerUtils {
     /**
      * Get weight regularization from Keras weight regularization configuration.
      *
-     * @param layerConfig Map containing Keras weight regularization configuration
-     * @param conf Keras layer configuration
-     * @param configField regularization config field to use
+     * @param layerConfig     Map containing Keras weight regularization configuration
+     * @param conf            Keras layer configuration
+     * @param configField     regularization config field to use
      * @param regularizerType type of regularization as string (e.g. "l2")
      * @return L1 or L2 regularization strength (0.0 if none)
      */
@@ -35,7 +35,7 @@ public class KerasRegularizerUtils {
                             KerasLayerUtils.getInnerLayerConfigFromConfig(regularizerConfig, conf);
                     try {
                         return (double) innerRegularizerConfig.get(regularizerType);
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         return (double) (int) innerRegularizerConfig.get(regularizerType);
                     }
 
