@@ -10,7 +10,7 @@ Jumpy is a thin wrapper around numpy and [jnius](https://github.com/kivy/pyjnius
 To setup jumpy, you need to set a jumpy classpath via the environment variable:
 
 ```
-JUMPY_CLASSPATH
+JUMPY_CLASS_PATH
 ```
 
 The JUMPY_CLASSPATH can be set to a list of jar files that contain
