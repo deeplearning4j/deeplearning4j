@@ -259,6 +259,8 @@ public class KerasLayerUtils {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_2D())) {
+            layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
         } else {
             // check if user registered a custom config
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
