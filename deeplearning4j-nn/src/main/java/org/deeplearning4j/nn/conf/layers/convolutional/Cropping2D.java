@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -11,11 +12,14 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 
 /**
  * Cropping layer for convolutional (2d) neural networks.
@@ -38,41 +42,34 @@ public class Cropping2D extends NoParamLayer {
         this(new Builder(cropTop, cropBottom, cropLeft, cropRight));
     }
 
+    public Cropping2D(int[] cropping){
+        this(new Builder(cropping));
+    }
+
     protected Cropping2D(Builder builder){
         super(builder);
         this.cropping = builder.cropping;
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        return null;
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
+                                                       int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+        Cropping2DLayer ret = new Cropping2DLayer(conf);
+        ret.setListeners(iterationListeners);
+        ret.setIndex(layerIndex);
+        Map<String, INDArray> paramTable = initializer().init(conf, layerParamsView, initializeParams);
+        ret.setParamTable(paramTable);
+        ret.setConf(conf);
+        return ret;
     }
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        int inH;
-        int inW;
-        int inDepth;
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getDepth();
-        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getDepth();
-        } else {
-            throw new IllegalStateException(
-                    "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
-                            + " Got: " + inputType);
-        }
+        int[] hwd = ConvolutionUtils.getHWDFromInputType(inputType);
+        int outH = hwd[0] - cropping[0] - cropping[1];
+        int outW = hwd[1] - cropping[2] - cropping[3];
 
-        int outH = inH - cropping[0] - cropping[1];
-        int outW = inW - cropping[2] - cropping[3];
-
-        return InputType.convolutional(outH, outW, inDepth);
+        return InputType.convolutional(outH, outW, hwd[2]);
     }
 
     @Override
@@ -94,6 +91,12 @@ public class Cropping2D extends NoParamLayer {
 
         public Builder(){
 
+        }
+
+        public Builder(@NonNull int[] cropping){
+            Preconditions.checkArgument(cropping.length == 4, "Exactly 4 cropping values (top, bottom," +
+                    " left, right) must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
+            this.cropping = cropping;
         }
 
         public Builder(int cropTopBottom, int cropLeftRight){

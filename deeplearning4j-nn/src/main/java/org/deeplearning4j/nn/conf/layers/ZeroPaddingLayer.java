@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
@@ -65,29 +66,11 @@ public class ZeroPaddingLayer extends NoParamLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        int inH;
-        int inW;
-        int inDepth;
-        if (inputType instanceof InputType.InputTypeConvolutional) {
-            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getDepth();
-        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
-            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
-            inH = conv.getHeight();
-            inW = conv.getWidth();
-            inDepth = conv.getDepth();
-        } else {
-            throw new IllegalStateException(
-                            "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
-                                            + " Got: " + inputType);
-        }
+        int[] hwd = ConvolutionUtils.getHWDFromInputType(inputType);
+        int outH = hwd[0] + padding[0] + padding[1];
+        int outW = hwd[1] + padding[2] + padding[3];
 
-        int outH = inH + padding[0] + padding[1];
-        int outW = inW + padding[2] + padding[3];
-
-        return InputType.convolutional(outH, outW, inDepth);
+        return InputType.convolutional(outH, outW, hwd[2]);
     }
 
     @Override
