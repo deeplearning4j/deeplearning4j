@@ -51,10 +51,10 @@ public class KerasAlphaDropoutTest {
     }
 
 
-    public void buildAlphaDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+    private void buildAlphaDropoutLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DROPOUT());
-        Map<String, Object> config = new HashMap<String, Object>();
+        Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(conf.getLAYER_FIELD_RATE(), RATE_KERAS);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
