@@ -138,7 +138,13 @@ public class CSVSequenceRecordReaderTest {
         }
     }
 
-    private static class TestInputSplit implements InputSplit {
+    private static class
+    TestInputSplit implements InputSplit {
+
+        @Override
+        public boolean canWriteToLocation(URI location) {
+            return false;
+        }
 
         @Override
         public String addNewLocation() {

@@ -39,6 +39,11 @@ public abstract class BaseInputSplit implements InputSplit {
     protected long length = 0;
 
     @Override
+    public boolean canWriteToLocation(URI location) {
+        return location.isAbsolute();
+    }
+
+    @Override
     public String addNewLocation() {
         throw new UnsupportedOperationException("Unable to add new location.");
     }

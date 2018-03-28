@@ -60,6 +60,11 @@ public class NumberedFileInputSplit implements InputSplit {
     }
 
     @Override
+    public boolean canWriteToLocation(URI location) {
+        return location.isAbsolute();
+    }
+
+    @Override
     public String addNewLocation() {
         return null;
     }

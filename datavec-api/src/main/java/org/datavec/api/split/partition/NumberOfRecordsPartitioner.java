@@ -27,6 +27,7 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     private int currLocation;
     private InputSplit inputSplit;
     private OutputStream current;
+    private boolean doneWithCurrentLocation = false;
 
     @Override
     public int numRecordsWritten() {
@@ -67,17 +68,30 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     @Override
     public void updatePartitionInfo(PartitionMetaData metadata) {
         this.numRecordsSoFar += metadata.getNumRecordsUpdated();
+        if(numRecordsSoFar >= recordsPerFile && recordsPerFile > 0)  {
+            doneWithCurrentLocation = true;
+        }
     }
 
     @Override
     public boolean needsNewPartition() {
-        return recordsPerFile > 0 && numRecordsSoFar >= recordsPerFile;
+        doneWithCurrentLocation = numRecordsSoFar >= recordsPerFile && recordsPerFile > 0;
+        return recordsPerFile > 0 && numRecordsSoFar >= recordsPerFile ||  doneWithCurrentLocation;
     }
 
     @Override
     public OutputStream openNewStream() {
-        //only append when directory
-        if(currLocation >= locations.length - 1 && locations.length >= 1 && needsNewPartition()) {
+        //reset status of location
+        doneWithCurrentLocation = false;
+        //ensure count is 0 for records so far for current record
+        numRecordsSoFar = 0;
+
+        //only append when directory, also ensure we can bootstrap and we can write to the current location
+        if(currLocation >= locations.length - 1 && locations.length >= 1 && needsNewPartition() || inputSplit.needsBootstrapForWrite() ||
+                locations.length < 1 ||
+                !inputSplit.canWriteToLocation(locations[currLocation])
+                        && needsNewPartition()) {
+
             String newInput = inputSplit.addNewLocation();
             try {
                 OutputStream ret =  inputSplit.openOutputStreamFor(newInput);
@@ -87,9 +101,10 @@ public class NumberOfRecordsPartitioner implements Partitioner {
                 throw new IllegalStateException(e);
             }
         }
+
         else {
             try {
-                OutputStream ret=  inputSplit.openOutputStreamFor(locations[currLocation].toString());
+                OutputStream ret =  inputSplit.openOutputStreamFor(locations[currLocation].toString());
                 currLocation++;
                 this.current = ret;
                 return ret;

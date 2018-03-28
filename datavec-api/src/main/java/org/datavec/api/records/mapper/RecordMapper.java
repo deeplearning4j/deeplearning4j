@@ -64,7 +64,8 @@ public class RecordMapper {
         if(batchSize > 0 && recordReader.batchesSupported() && recordWriter.supportsBatch()) {
             while(recordReader.hasNext()) {
                 List<List<Writable>> next = recordReader.next(batchSize);
-                if(recordReader.hasNext() && partitioner.needsNewPartition()) {
+                //ensure we can write a file for either the current or next iterations
+                if(partitioner.needsNewPartition()) {
                     partitioner.currentOutputStream().flush();
                     partitioner.currentOutputStream().close();
                     partitioner.openNewStream();
