@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -35,6 +36,7 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@EqualsAndHashCode(callSuper = false)
 public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private int[] inputShape;
@@ -63,7 +65,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             if (i == 0)
                 miniBatchShape[i] = miniBatchSize;
             else
-                miniBatchShape[i] = shape[i-1];
+                miniBatchShape[i] = shape[i - 1];
         }
         return miniBatchShape;
     }

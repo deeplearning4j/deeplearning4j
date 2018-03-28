@@ -41,7 +41,7 @@ public class KerasEmbeddingTest {
     private final String LAYER_NAME = "embedding_layer";
     private final String INIT_KERAS = "glorot_normal";
     private final int[] INPUT_SHAPE = new int[]{100, 20};
-    private static final boolean[] MASK_ZERO = new boolean[] { false, true};
+    private static final boolean[] MASK_ZERO = new boolean[]{false, true};
     private Integer keras1 = 1;
     private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
@@ -49,7 +49,7 @@ public class KerasEmbeddingTest {
 
     @Test
     public void testEmbeddingLayer() throws Exception {
-        for (boolean mz: MASK_ZERO) {
+        for (boolean mz : MASK_ZERO) {
             buildEmbeddingLayer(conf1, keras1, mz);
             buildEmbeddingLayer(conf2, keras2, mz);
         }
@@ -66,7 +66,7 @@ public class KerasEmbeddingTest {
     }
 
 
-    KerasEmbedding buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean maskZero) throws Exception {
+    private KerasEmbedding buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean maskZero) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_EMBEDDING());
         Map<String, Object> config = new HashMap<>();
@@ -76,7 +76,9 @@ public class KerasEmbeddingTest {
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), outputDim);
 
         List<Integer> inputShape = new ArrayList<>(INPUT_SHAPE.length);
-        for (int i: INPUT_SHAPE) { inputShape.add(i); };
+        for (int i : INPUT_SHAPE) {
+            inputShape.add(i);
+        }
         config.put(conf.getLAYER_FIELD_BATCH_INPUT_SHAPE(), inputShape);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);

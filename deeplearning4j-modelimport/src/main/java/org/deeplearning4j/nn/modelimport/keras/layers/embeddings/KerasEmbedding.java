@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -33,6 +34,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode (callSuper = false)
 public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
@@ -41,7 +43,7 @@ public class KerasEmbedding extends KerasLayer {
 
     /**
      * Pass through constructor for unit tests
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding() throws UnsupportedKerasConfigurationException {
     }
@@ -50,8 +52,8 @@ public class KerasEmbedding extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -63,8 +65,8 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -118,7 +120,7 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -143,7 +145,7 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights
+     * @param weights Embedding layer weights
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {

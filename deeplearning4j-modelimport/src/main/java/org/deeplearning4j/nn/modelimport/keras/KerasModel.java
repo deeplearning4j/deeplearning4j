@@ -51,13 +51,13 @@ import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
  * Build ComputationGraph from Keras (Functional API) Model or
  * Sequential model configuration.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 public class KerasModel {
 
     protected static KerasModelConfiguration config = new KerasModelConfiguration();
-    protected KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
+    KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
 
     protected String className; // Keras model class name
     protected boolean enforceTrainingConfig; // whether to build model in training mode
@@ -82,9 +82,9 @@ public class KerasModel {
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
      *
      * @param modelBuilder builder object
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasModel(KerasModelBuilder modelBuilder)
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
@@ -103,9 +103,9 @@ public class KerasModel {
      * @param modelJson             model configuration JSON string
      * @param modelYaml             model configuration YAML string
      * @param enforceTrainingConfig whether to enforce training-related configurations
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                          String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
@@ -174,7 +174,7 @@ public class KerasModel {
      *
      * @param layerConfigs List of Keras layer configurations
      */
-     void prepareLayers(List<Object> layerConfigs)
+    void prepareLayers(List<Object> layerConfigs)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.layersOrdered = new ArrayList<>();
         this.layers = new HashMap<>();
@@ -202,11 +202,11 @@ public class KerasModel {
      * Includes loss function, optimization details, etc.
      *
      * @param trainingConfigJson JSON containing Keras training configuration
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    protected void importTrainingConfiguration(String trainingConfigJson)
+    void importTrainingConfiguration(String trainingConfigJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> trainingConfig = KerasModelUtils.parseJsonString(trainingConfigJson);
 
@@ -245,7 +245,7 @@ public class KerasModel {
      * Helper method called from constructor. Infers and records output type
      * for every layer.
      */
-    protected void inferOutputTypes()
+    void inferOutputTypes()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.outputTypes = new HashMap<>();
         for (KerasLayer layer : this.layersOrdered) {
@@ -258,7 +258,7 @@ public class KerasModel {
                 int i = 0;
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = this.outputTypes.get(inboundLayerName);
-                    outputType = layer.getOutputType(inputTypes);
+                outputType = layer.getOutputType(inputTypes);
             }
             this.outputTypes.put(layer.getLayerName(), outputType);
         }

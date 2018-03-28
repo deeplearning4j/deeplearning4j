@@ -36,8 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
-
 /**
  * Builds a DL4J Bidirectional layer from a Keras Bidirectional layer wrapper
  *
@@ -46,12 +44,12 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 public class KerasBidirectional extends KerasLayer {
 
     private KerasLayer kerasRnnlayer;
-    private String rnnClass;
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBidirectional(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -60,9 +58,9 @@ public class KerasBidirectional extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBidirectional(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -72,10 +70,10 @@ public class KerasBidirectional extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBidirectional(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -90,6 +88,7 @@ public class KerasBidirectional extends KerasLayer {
             throw new InvalidKerasConfigurationException("Field 'layer' not found in configuration of" +
                     "Bidirectional layer, i.e. no layer to be wrapped found.");
         }
+        @SuppressWarnings("unchecked")
         Map<String, Object> innerRnnConfig = (Map<String, Object>) innerConfig.get("layer");
         if (!innerRnnConfig.containsKey("class_name")) {
             throw new InvalidKerasConfigurationException("No 'class_name' specified within Bidirectional layer" +
@@ -118,7 +117,7 @@ public class KerasBidirectional extends KerasLayer {
 
         innerRnnConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasMajorVersion);
 
-        rnnClass = (String) innerRnnConfig.get("class_name");
+        String rnnClass = (String) innerRnnConfig.get("class_name");
         switch (rnnClass) {
             case "LSTM":
                 kerasRnnlayer = new KerasLstm(innerRnnConfig, enforceTrainingConfig);
@@ -150,12 +149,14 @@ public class KerasBidirectional extends KerasLayer {
      *
      * @return Layer, recurrent layer
      */
-    public Layer getUnderlyingRecurrentLayer() { return kerasRnnlayer.getLayer();}
+    public Layer getUnderlyingRecurrentLayer() {
+        return kerasRnnlayer.getLayer();
+    }
 
     /**
      * Get DL4J Bidirectional layer.
      *
-     * @return  Bidirectional Layer
+     * @return Bidirectional Layer
      */
     public Bidirectional getBidirectionalLayer() {
         return (Bidirectional) this.layer;
@@ -164,9 +165,9 @@ public class KerasBidirectional extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -175,7 +176,7 @@ public class KerasBidirectional extends KerasLayer {
                     "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null)
-            return  preProcessor.getOutputType(inputType[0]);
+            return preProcessor.getOutputType(inputType[0]);
         else
             return this.getBidirectionalLayer().getOutputType(-1, inputType[0]);
     }
@@ -186,13 +187,15 @@ public class KerasBidirectional extends KerasLayer {
      * @return number of trainable parameters
      */
     @Override
-    public int getNumParams() { return 2 * kerasRnnlayer.getNumParams(); }
+    public int getNumParams() {
+        return 2 * kerasRnnlayer.getNumParams();
+    }
 
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              DL4J InputPreProcessor
+     * @param inputType Array of InputTypes
+     * @return DL4J InputPreProcessor
      * @throws InvalidKerasConfigurationException Invalid Keras configuration exception
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
@@ -201,8 +204,7 @@ public class KerasBidirectional extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
-        InputPreProcessor preProcessor = InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
-        return preProcessor;
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
     }
 
     /**
@@ -218,15 +220,15 @@ public class KerasBidirectional extends KerasLayer {
 
         this.weights = new HashMap<>();
 
-        for (String key: forwardWeights.keySet())
+        for (String key : forwardWeights.keySet())
             this.weights.put("f" + key, forwardWeights.get(key));
-        for (String key: backwardWeights.keySet())
+        for (String key : backwardWeights.keySet())
             this.weights.put("b" + key, backwardWeights.get(key));
     }
 
 
     private Map<String, INDArray> getUnderlyingWeights(Map<String, INDArray> weights, String direction)
-            throws InvalidKerasConfigurationException  {
+            throws InvalidKerasConfigurationException {
         int keras1SubstringLength;
         if (kerasRnnlayer instanceof KerasLstm)
             keras1SubstringLength = 3;

@@ -44,8 +44,8 @@ public class KerasReshape extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasReshape(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -57,8 +57,8 @@ public class KerasReshape extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasReshape(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -66,6 +66,7 @@ public class KerasReshape extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         String targetShape = "target_shape";
         if (innerConfig.containsKey(targetShape)) {
+            @SuppressWarnings("unchecked")
             List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
             this.targetShape = ArrayUtil.toArray(targetShapeList);
         }
@@ -87,7 +88,7 @@ public class KerasReshape extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return DL4J InputPreProcessor
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     @Override
@@ -126,7 +127,7 @@ public class KerasReshape extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {

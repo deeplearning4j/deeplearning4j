@@ -80,13 +80,11 @@ public class KerasLSTMTest {
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
 
-        KerasLstm lstm = new KerasLstm(kerasVersion);
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
@@ -136,7 +134,8 @@ public class KerasLSTMTest {
 
     }
 
-    void buildMaskZeroLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean maskZero) throws Exception {
+    private void buildMaskZeroLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean maskZero)
+            throws Exception {
         String innerActivation = "hard_sigmoid";
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
@@ -144,8 +143,8 @@ public class KerasLSTMTest {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
@@ -174,14 +173,14 @@ public class KerasLSTMTest {
         layerConfig.put(conf.getLAYER_FIELD_INBOUND_NODES(),
                 Arrays.asList(Arrays.asList(
                         Arrays.asList("embedding"))));
-        KerasEmbedding embedding = getEmbedding(conf, kerasVersion, maskZero);
+        KerasEmbedding embedding = getEmbedding(maskZero);
         Map<String, KerasEmbedding> previousLayers = Collections.singletonMap("embedding", embedding);
 
         KerasLstm kerasLstm = new KerasLstm(layerConfig, previousLayers);
         Assert.assertEquals(kerasLstm.getLayer() instanceof MaskZeroLayer, maskZero);
     }
 
-    private KerasEmbedding getEmbedding(KerasLayerConfiguration conf, Integer kerasVersion, boolean maskZero)
+    private KerasEmbedding getEmbedding(boolean maskZero)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasEmbedding embedding = new KerasEmbedding();
         embedding.setHasZeroMasking(maskZero);

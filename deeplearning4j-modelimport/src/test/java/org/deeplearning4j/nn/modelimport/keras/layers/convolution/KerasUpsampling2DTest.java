@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
 public class KerasUpsampling2DTest {
 
     private final String LAYER_NAME = "upsampling_2D_layer";
-    private int[] size = new int[] {2, 2};
+    private int[] size = new int[]{2, 2};
 
     private Integer keras1 = 1;
     private Integer keras2 = 2;
@@ -53,7 +53,7 @@ public class KerasUpsampling2DTest {
     }
 
 
-    public void buildUpsampling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildUpsampling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_UPSAMPLING_2D());
         Map<String, Object> config = new HashMap<>();

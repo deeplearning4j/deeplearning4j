@@ -40,8 +40,7 @@ public class KerasActivationUtils {
      */
     public static IActivation mapActivation(String kerasActivation, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
-        IActivation dl4jActivation = null;
-        /* Keras and DL4J use the same name for most activations. */
+        IActivation dl4jActivation;
         if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SOFTMAX())) {
             dl4jActivation = new ActivationSoftmax();
         } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SOFTPLUS())) {
@@ -73,9 +72,9 @@ public class KerasActivationUtils {
      * Get activation function from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @return DL4J activation function
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public static IActivation getActivationFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {

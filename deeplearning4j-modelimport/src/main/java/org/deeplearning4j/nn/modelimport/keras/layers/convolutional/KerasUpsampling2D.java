@@ -85,7 +85,7 @@ public class KerasUpsampling2D extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
