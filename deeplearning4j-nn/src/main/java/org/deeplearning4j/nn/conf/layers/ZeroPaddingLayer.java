@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -26,9 +27,17 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class ZeroPaddingLayer extends Layer {
+public class ZeroPaddingLayer extends NoParamLayer {
 
     private int[] padding;
+
+    public ZeroPaddingLayer(int padTopBottom, int padLeftRight){
+        this(new Builder(padTopBottom, padLeftRight));
+    }
+
+    public ZeroPaddingLayer(int padTop, int padBottom, int padLeft, int padRight){
+        this(new Builder(padTop, padBottom, padLeft, padRight));
+    }
 
     private ZeroPaddingLayer(Builder builder) {
         super(builder);
@@ -52,11 +61,6 @@ public class ZeroPaddingLayer extends Layer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
         return ret;
-    }
-
-    @Override
-    public ParamInitializer initializer() {
-        return EmptyParamInitializer.getInstance();
     }
 
     @Override
@@ -87,33 +91,10 @@ public class ZeroPaddingLayer extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
-        //No op
-    }
-
-    @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if (inputType == null) {
-            throw new IllegalStateException("Invalid input for ZeroPaddingLayer layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
-        }
-
+        Preconditions.checkArgument(inputType != null, "Invalid input for ZeroPaddingLayer layer (layer name=\""
+                + getLayerName() + "\"): InputType is null");
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
-    }
-
-    @Override
-    public double getL1ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        return 0;
-    }
-
-    @Override
-    public boolean isPretrainParam(String paramName) {
-        throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
     }
 
     @Override
