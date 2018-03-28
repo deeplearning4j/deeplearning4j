@@ -35,31 +35,32 @@ import static org.junit.Assert.assertEquals;
  */
 public class KerasLeakyReLUTest {
 
-    private Integer keras1 = 1;
-    private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
     public void testLeakyReLULayer() throws Exception {
+        Integer keras1 = 1;
         buildLeakyReLULayer(conf1, keras1);
+        Integer keras2 = 2;
         buildLeakyReLULayer(conf2, keras2);
     }
 
-    String LAYER_NAME = "leaky_relu";
+    private void buildLeakyReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        double alpha = 0.3;
 
-    public void buildLeakyReLULayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LEAKY_RELU());
-        Map<String, Object> config = new HashMap<String, Object>();
+        Map<String, Object> config = new HashMap<>();
         String LAYER_FIELD_LEAKY_RELU_ALPHA = "alpha";
-        config.put(LAYER_FIELD_LEAKY_RELU_ALPHA, 0.3); // set leaky ReLU alpha
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        config.put(LAYER_FIELD_LEAKY_RELU_ALPHA, alpha);
+        String layerName = "leaky_relu";
+        config.put(conf.getLAYER_FIELD_NAME(), layerName);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
         ActivationLayer layer = new KerasLeakyReLU(layerConfig).getActivationLayer();
         assertEquals("leakyrelu(a=0.3)", layer.getActivationFn().toString());
-        assertEquals(LAYER_NAME, layer.getLayerName());
+        assertEquals(layerName, layer.getLayerName());
     }
 }
