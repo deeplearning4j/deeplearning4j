@@ -26,7 +26,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.comparator.DoubleWritableComparator;
 
 
-import org.datavec.local.transforms.ArrowTransformExecutor;
+import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -61,7 +61,7 @@ public class TestCalculateSortedRank  {
         assertEquals(Arrays.asList("TextCol", "DoubleCol", "rank"), outSchema.getColumnNames());
         assertEquals(Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Long), outSchema.getColumnTypes());
 
-        List<List<Writable>> out = ArrowTransformExecutor.execute(rdd, tp);
+        List<List<Writable>> out = LocalTransformExecutor.execute(rdd, tp);
 
         List<List<Writable>> collected = out;
         assertEquals(4, collected.size());

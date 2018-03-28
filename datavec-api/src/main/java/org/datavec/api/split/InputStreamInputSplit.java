@@ -73,6 +73,11 @@ public class InputStreamInputSplit implements InputSplit {
     }
 
     @Override
+    public boolean canWriteToLocation(URI location) {
+        return false;
+    }
+
+    @Override
     public String addNewLocation() {
         return null;
     }

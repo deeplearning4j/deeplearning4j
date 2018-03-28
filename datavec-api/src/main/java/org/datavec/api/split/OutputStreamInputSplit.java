@@ -45,6 +45,11 @@ public class OutputStreamInputSplit implements InputSplit {
     }
 
     @Override
+    public boolean canWriteToLocation(URI location) {
+        return true;
+    }
+
+    @Override
     public String addNewLocation() {
        throw new UnsupportedOperationException();
     }

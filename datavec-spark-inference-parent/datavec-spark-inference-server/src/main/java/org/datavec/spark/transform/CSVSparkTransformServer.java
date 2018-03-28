@@ -123,7 +123,8 @@ public class CSVSparkTransformServer extends SparkTransformServer {
                 }
             } else {
                 try {
-                    BatchCSVRecord batch = transform(objectMapper.readValue(getJsonText(), BatchCSVRecord.class));
+                    BatchCSVRecord input = objectMapper.readValue(getJsonText(), BatchCSVRecord.class);
+                    BatchCSVRecord batch = transform(input);
                     if (batch == null)
                         return badRequest();
                     return ok(objectMapper.writeValueAsString(batch)).as(contentType);
@@ -268,6 +269,11 @@ public class CSVSparkTransformServer extends SparkTransformServer {
     @Override
     public SingleCSVRecord transformIncremental(SingleCSVRecord transform) {
         return this.transform.transform(transform);
+    }
+
+    @Override
+    public SequenceBatchCSVRecord transform(SequenceBatchCSVRecord batchCSVRecord) {
+        return this.transform.transform(batchCSVRecord);
     }
 
     /**

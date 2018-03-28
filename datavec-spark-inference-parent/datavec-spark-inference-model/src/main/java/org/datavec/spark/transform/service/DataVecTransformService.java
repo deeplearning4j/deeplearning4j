@@ -45,6 +45,8 @@ public interface DataVecTransformService {
      */
     SingleCSVRecord transformIncremental(SingleCSVRecord singleCsvRecord);
 
+    SequenceBatchCSVRecord transform(SequenceBatchCSVRecord batchCSVRecord);
+
     /**
      *
      * @param batchCSVRecord

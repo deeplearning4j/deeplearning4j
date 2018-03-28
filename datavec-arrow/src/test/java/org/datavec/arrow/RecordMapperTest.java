@@ -80,7 +80,7 @@ public class RecordMapperTest {
         ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(recordsPair.getMiddle());
         File outputFile = Files.createTempFile("outputarrow","arrow").toFile();
         FileSplit outputFileSplit = new FileSplit(outputFile);
-        RecordMapper mapper = RecordMapper.builder().batchSize(5).inputUrl(fileSplit)
+        RecordMapper mapper = RecordMapper.builder().batchSize(10).inputUrl(fileSplit)
                 .outputUrl(outputFileSplit).partitioner(new NumberOfRecordsPartitioner())
                 .recordReader(recordReader).recordWriter(arrowRecordWriter)
                 .build();

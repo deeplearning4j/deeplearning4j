@@ -25,7 +25,7 @@ public class CSVSparkTransformServerTest {
     private static CSVSparkTransformServer server;
     private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
     private static TransformProcess transformProcess =
-                    new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
+                    new TransformProcess.Builder(schema).convertToDouble("1.0").convertToDouble("2.0").build();
     private static File fileSave = new File(UUID.randomUUID().toString() + ".json");
 
     @BeforeClass

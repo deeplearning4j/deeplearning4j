@@ -19,9 +19,7 @@ package org.datavec.local.transforms.transform;
 
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.reduce.Reducer;
@@ -32,9 +30,9 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-import org.datavec.local.transforms.ArrowTransformExecutor;
+import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
+import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.*;
 
@@ -60,7 +58,7 @@ public class ExecutionTest  {
 
         List<List<Writable>> rdd = (inputData);
 
-        List<List<Writable>> out = new ArrayList<>(ArrowTransformExecutor.execute(rdd, tp));
+        List<List<Writable>> out = new ArrayList<>(LocalTransformExecutor.execute(rdd, tp));
 
         Collections.sort(out, new Comparator<List<Writable>>() {
             @Override
@@ -88,7 +86,7 @@ public class ExecutionTest  {
         inputData.add(Arrays.<Writable>asList(new IntWritable(2), new DoubleWritable(3), new DoubleWritable(2.1)));
         TransformProcess transformProcess = new TransformProcess.Builder(filterSchema)
                 .filter(new DoubleColumnCondition("col1",ConditionOp.LessThan,1)).build();
-        List<List<Writable>> execute = ArrowTransformExecutor.execute(inputData, transformProcess);
+        List<List<Writable>> execute = LocalTransformExecutor.execute(inputData, transformProcess);
         assertEquals(2,execute.size());
     }
 
@@ -115,8 +113,7 @@ public class ExecutionTest  {
 
         List<List<List<Writable>>> rdd =  (inputSequences);
 
-        List<List<List<Writable>>> out =
-                new ArrayList<>(ArrowTransformExecutor.executeSequenceToSequence(rdd, tp));
+        List<List<List<Writable>>> out = LocalTransformExecutor.executeSequenceToSequence(rdd, tp);
 
         Collections.sort(out, new Comparator<List<List<Writable>>>() {
             @Override
@@ -162,7 +159,7 @@ public class ExecutionTest  {
                         .meanColumns("doubleCol").build())
                 .build();
 
-        List<List<Writable>> outRdd = ArrowTransformExecutor.execute(inData, tp);
+        List<List<Writable>> outRdd = LocalTransformExecutor.execute(inData, tp);
 
         List<List<Writable>> out = outRdd;
 
@@ -196,7 +193,7 @@ public class ExecutionTest  {
                         .meanColumns("doubleCol").build())
                 .build();
 
-        List<List<Writable>> outRdd = ArrowTransformExecutor.execute(inData, tp);
+        List<List<Writable>> outRdd = LocalTransformExecutor.execute(inData, tp);
 
         List<List<Writable>> out = outRdd;
 

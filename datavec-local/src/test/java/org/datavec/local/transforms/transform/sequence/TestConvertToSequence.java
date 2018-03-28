@@ -25,7 +25,8 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 
-import org.datavec.local.transforms.ArrowTransformExecutor;
+import org.datavec.arrow.recordreader.ArrowWritableRecordTimeSeriesBatch;
+import org.datavec.local.transforms.LocalTransformExecutor;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class TestConvertToSequence  {
 
         List<List<Writable>> rdd = (allExamples);
 
-        List<List<List<Writable>>> out = ArrowTransformExecutor.executeToSequence(rdd, tp);
+        List<List<List<Writable>>> out = LocalTransformExecutor.executeToSequence(rdd, tp);
 
         assertEquals(2, out.size());
         List<List<Writable>> seq0;
@@ -86,7 +87,7 @@ public class TestConvertToSequence  {
     }
 
     @Test
-    public void testConvertToSequenceLength1(){
+    public void testConvertToSequenceLength1() {
 
         Schema s = new Schema.Builder()
                 .addColumnsString("string")
@@ -104,13 +105,13 @@ public class TestConvertToSequence  {
 
         List<List<Writable>> rdd = (allExamples);
 
-        List<List<List<Writable>>> out = ArrowTransformExecutor.executeToSequence(rdd, tp);
+        ArrowWritableRecordTimeSeriesBatch out = (ArrowWritableRecordTimeSeriesBatch) LocalTransformExecutor.executeToSequence(rdd, tp);
 
-        List<List<List<Writable>>> out2 = out;
+        List<List<List<Writable>>> out2 = out.toArrayList();
 
         assertEquals(3, out2.size());
 
-        for( int i=0; i<3; i++ ){
+        for( int i = 0; i < 3; i++) {
             assertTrue(out2.contains(Collections.singletonList(allExamples.get(i))));
         }
     }

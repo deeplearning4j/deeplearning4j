@@ -34,6 +34,11 @@ public class StringSplit implements InputSplit {
     }
 
     @Override
+    public boolean canWriteToLocation(URI location) {
+        return true;
+    }
+
+    @Override
     public String addNewLocation() {
         return null;
     }

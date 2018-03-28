@@ -34,6 +34,14 @@ public interface InputSplit  {
 
 
     /**
+     * Returns true if the given uri
+     * can be written to
+     * @param location the location to determine
+     * @return
+     */
+    boolean canWriteToLocation(URI location);
+
+    /**
      * Add a new location with the name generated
      *  by this input split/
      */

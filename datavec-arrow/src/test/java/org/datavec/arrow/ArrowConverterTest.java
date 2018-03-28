@@ -18,12 +18,14 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowRecordWriter;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
@@ -37,11 +39,109 @@ import static org.junit.Assert.assertFalse;
 
 public class ArrowConverterTest {
 
+    private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
+
+
     @Test
-    public void testRecordWriter() throws Exception {
-        Pair<Schema, List<List<Writable>>> schemaListPair = recordToWrite();
-        ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(schemaListPair.getFirst());
-        arrowRecordWriter.writeBatch(schemaListPair.getRight());
+    public void testArrowColumnString() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        for(int i = 0; i < 2; i++) {
+            schema.addColumnInteger(String.valueOf(i));
+            single.add(String.valueOf(i));
+        }
+
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumnsStringSingle(bufferAllocator, schema.build(), single);
+        List<List<Writable>> records = ArrowConverter.toArrowWritables(fieldVectors, schema.build());
+        List<List<Writable>> assertion = new ArrayList<>();
+        assertion.add(Arrays.<Writable>asList(new IntWritable(0),new IntWritable(1)));
+        assertEquals(assertion,records);
+
+        List<List<String>> batch = new ArrayList<>();
+        for(int i = 0; i < 2; i++) {
+            batch.add(Arrays.asList(String.valueOf(i),String.valueOf(i)));
+        }
+
+        List<FieldVector> fieldVectorsBatch = ArrowConverter.toArrowColumnsString(bufferAllocator, schema.build(), batch);
+        List<List<Writable>> batchRecords = ArrowConverter.toArrowWritables(fieldVectorsBatch, schema.build());
+
+        List<List<Writable>> assertionBatch = new ArrayList<>();
+        assertionBatch.add(Arrays.<Writable>asList(new IntWritable(0),new IntWritable(0)));
+        assertionBatch.add(Arrays.<Writable>asList(new IntWritable(1),new IntWritable(1)));
+        assertEquals(assertionBatch,batchRecords);
+
+
+    }
+
+
+    @Test
+    public void testArrowBatchSet() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        for(int i = 0; i < 2; i++) {
+            schema.addColumnInteger(String.valueOf(i));
+            single.add(String.valueOf(i));
+        }
+
+        List<List<Writable>> input = Arrays.asList(
+                Arrays.<Writable>asList(new IntWritable(0),new IntWritable(1)),
+                Arrays.<Writable>asList(new IntWritable(2),new IntWritable(3))
+        );
+
+        List<FieldVector> fieldVector = ArrowConverter.toArrowColumns(bufferAllocator,schema.build(),input);
+        ArrowWritableRecordBatch writableRecordBatch = new ArrowWritableRecordBatch(fieldVector,schema.build());
+        List<Writable> assertion = Arrays.<Writable>asList(new IntWritable(4), new IntWritable(5));
+        writableRecordBatch.set(1, Arrays.<Writable>asList(new IntWritable(4),new IntWritable(5)));
+        List<Writable> recordTest = writableRecordBatch.get(1);
+        assertEquals(assertion,recordTest);
+    }
+
+    @Test
+    public void testArrowColumnsStringTimeSeries() {
+        Schema.Builder schema = new Schema.Builder();
+        List<List<List<String>>> entries = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            schema.addColumnInteger(String.valueOf(i));
+        }
+
+        for(int i = 0; i < 5; i++) {
+            List<List<String>> arr = Arrays.asList(Arrays.asList(String.valueOf(i), String.valueOf(i), String.valueOf(i)));
+            entries.add(arr);
+        }
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumnsStringTimeSeries(bufferAllocator, schema.build(), entries);
+        assertEquals(3,fieldVectors.size());
+        assertEquals(5,fieldVectors.get(0).getValueCount());
+
+        //Convert to ArrowWritableRecordBatch - note we can't do this in general with time series...
+        ArrowWritableRecordBatch wri = ArrowConverter.toArrowWritables(fieldVectors, schema.build());
+        INDArray arr = ArrowConverter.toArray(wri);
+        assertArrayEquals(new int[] {5,3}, arr.shape());
+
+        INDArray exp = Nd4j.create(5, 3);
+        for( int i=0; i<5; i++ ){
+            exp.getRow(i).assign(i);
+        }
+        assertEquals(exp, arr);
+    }
+
+    @Test
+    public void testConvertVector() {
+        Schema.Builder schema = new Schema.Builder();
+        List<List<List<String>>> entries = new ArrayList<>();
+        for(int i = 0; i < 3; i++) {
+            schema.addColumnInteger(String.valueOf(i));
+        }
+
+        for(int i = 0; i < 5; i++) {
+            List<List<String>> arr = Arrays.asList(Arrays.asList(String.valueOf(i), String.valueOf(i), String.valueOf(i)));
+            entries.add(arr);
+        }
+
+        List<FieldVector> fieldVectors = ArrowConverter.toArrowColumnsStringTimeSeries(bufferAllocator, schema.build(), entries);
+        INDArray arr = ArrowConverter.convertArrowVector(fieldVectors.get(0),schema.build().getType(0));
+        assertEquals(5,arr.length());
     }
 
     @Test
@@ -204,8 +304,6 @@ public class ArrowConverterTest {
         Record record = recordReader.nextRecord();
         assertEquals(2,record.getRecord().size());
 
-
-
     }
 
     @Test
@@ -229,7 +327,6 @@ public class ArrowConverterTest {
         Record record = recordReader.nextRecord();
         assertEquals(2,record.getRecord().size());
     }
-
 
 
 
