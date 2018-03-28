@@ -536,6 +536,7 @@
         <module>deeplearning4j-nearestneighbors-parent</module>
         <module>deeplearning4j-iterators</module>
         <module>deeplearning4j-manifold</module>
+        <module>deeplearning4j-util</module>
     </modules>
 
     <licenses>

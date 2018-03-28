@@ -7,13 +7,15 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-iterators</artifactId>
+    <artifactId>deeplearning4j-data</artifactId>
     <packaging>pom</packaging>
 
     <name>deeplearning4j-iterators</name>
     <modules>
         <module>deeplearning4j-datavec-iterators</module>
-        <module>deeplearning4j-specialized-iterators</module>
+        <module>deeplearning4j-datasets</module>
+        <module>deeplearning4j-utility-iterators</module>
+
     </modules>
 
 </project>

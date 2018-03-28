@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.OneTimeLogger;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
 import java.util.HashSet;

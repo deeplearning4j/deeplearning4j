@@ -33,7 +33,6 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
-import org.deeplearning4j.exception.DL4JException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -392,7 +391,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             return convertWritablesHelper(list, minValues, details);
         } catch (NumberFormatException e) {
             throw new RuntimeException("Error parsing data (writables) from record readers - value is non-numeric", e);
-        } catch(DL4JException e){
+        } catch(IllegalStateException e){
             throw e;
         } catch (Throwable t){
             throw new RuntimeException("Error parsing data (writables) from record readers", t);
@@ -440,7 +439,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 //Index of class
                 int classIdx = w.toInt();
                 if (classIdx >= details.oneHotNumClasses) {
-                    throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
+                    throw new IllegalStateException("Cannot convert sequence writables to one-hot: class index " + classIdx
                                     + " >= numClass (" + details.oneHotNumClasses + "). (Note that classes are zero-" +
                             "indexed, thus only values 0 to nClasses-1 are valid)");
                 }
@@ -614,7 +613,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                     }
                     int classIdx = w.toInt();
                     if (classIdx >= details.oneHotNumClasses) {
-                        throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
+                        throw new IllegalStateException("Cannot convert sequence writables to one-hot: class index " + classIdx
                                         + " >= numClass (" + details.oneHotNumClasses + "). (Note that classes are zero-" +
                                 "indexed, thus only values 0 to nClasses-1 are valid)");
                     }
