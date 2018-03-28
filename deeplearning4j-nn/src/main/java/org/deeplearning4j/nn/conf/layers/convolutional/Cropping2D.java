@@ -34,10 +34,21 @@ public class Cropping2D extends NoParamLayer {
 
     private int[] cropping;
 
+    /**
+     * @param cropTopBottom Amount of cropping to apply to both the top and the bottom of the input activations
+     * @param cropLeftRight Amount of cropping to apply to both the left and the right of the input activations
+     */
     public Cropping2D(int cropTopBottom, int cropLeftRight){
         this(cropTopBottom, cropTopBottom, cropLeftRight, cropLeftRight);
     }
 
+    /**
+     *
+     * @param cropTop    Amount of cropping to apply to the top of the input activations
+     * @param cropBottom Amount of cropping to apply to the bottom of the input activations
+     * @param cropLeft   Amount of cropping to apply to the left of the input activations
+     * @param cropRight  Amount of cropping to apply to the right of the input activations
+     */
     public Cropping2D(int cropTop, int cropBottom, int cropLeft, int cropRight){
         this(new Builder(cropTop, cropBottom, cropLeft, cropRight));
     }
@@ -93,16 +104,30 @@ public class Cropping2D extends NoParamLayer {
 
         }
 
+        /**
+         * @param cropping Cropping amount for top/left/bottom/right (in that order). Must be length 4 array.
+         */
         public Builder(@NonNull int[] cropping){
             Preconditions.checkArgument(cropping.length == 4, "Exactly 4 cropping values (top, bottom," +
                     " left, right) must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
             this.cropping = cropping;
         }
 
+        /**
+         * @param cropTopBottom Amount of cropping to apply to both the top and the bottom of the input activations
+         * @param cropLeftRight Amount of cropping to apply to both the left and the right of the input activations
+         */
         public Builder(int cropTopBottom, int cropLeftRight){
             this(cropTopBottom, cropTopBottom, cropLeftRight, cropLeftRight);
         }
 
+        /**
+         *
+         * @param cropTop    Amount of cropping to apply to the top of the input activations
+         * @param cropBottom Amount of cropping to apply to the bottom of the input activations
+         * @param cropLeft   Amount of cropping to apply to the left of the input activations
+         * @param cropRight  Amount of cropping to apply to the right of the input activations
+         */
         public Builder(int cropTop, int cropBottom, int cropLeft, int cropRight){
             this.cropping = new int[]{cropTop, cropBottom, cropLeft, cropRight};
             Preconditions.checkArgument(cropTop >= 0 && cropBottom >= 0 && cropLeft >= 0 && cropRight >= 0,
