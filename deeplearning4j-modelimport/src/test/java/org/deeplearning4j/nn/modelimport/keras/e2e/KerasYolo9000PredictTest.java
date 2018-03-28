@@ -54,9 +54,6 @@ import java.nio.file.StandardCopyOption;
 public class KerasYolo9000PredictTest {
 
     private static final String DL4J_MODEL_FILE_NAME = ".";
-    private static String H5_FILENAME = "modelimport/keras/examples/yolo/yolo-voc.h5";
-    private static int WIDTH = 416;
-    private static int HEIGHT = 416;
     private static ImagePreProcessingScaler IMAGE_PREPROCESSING_SCALER = new ImagePreProcessingScaler(0, 1);
 
     @Ignore
@@ -64,12 +61,15 @@ public class KerasYolo9000PredictTest {
     public void testYoloPredictionImport() throws Exception {
 
 
+        int HEIGHT = 416;
+        int WIDTH = 416;
         INDArray indArray = Nd4j.create(HEIGHT, WIDTH, 3);
         IMAGE_PREPROCESSING_SCALER.transform(indArray);
 
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
 
-        ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(H5_FILENAME, false);
+        String h5_FILENAME = "modelimport/keras/examples/yolo/yolo-voc.h5";
+        ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(h5_FILENAME, false);
 
         double[][] priorBoxes = {{1.3221, 1.73145}, {3.19275, 4.00944}, {5.05587, 8.09892}, {9.47112, 4.84053}, {11.2364, 10.0071}};
         INDArray priors = Nd4j.create(priorBoxes);
