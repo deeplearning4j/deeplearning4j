@@ -23,7 +23,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 @Slf4j
 public class KerasLayerConfigurationFactory {
 
-    public KerasLayerConfigurationFactory() {}
+    public KerasLayerConfigurationFactory() {
+    }
 
     public static KerasLayerConfiguration get(Integer kerasMajorVersion) throws UnsupportedKerasConfigurationException {
         if (kerasMajorVersion != 1 && kerasMajorVersion != 2)
