@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
 
@@ -426,7 +427,13 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
                             ? CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
                     0, algo);
-            checkCudnn(true, "cudnnGetConvolutionForwardAlgorithm", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
+            if(code != CUDNN_STATUS_SUCCESS){
+                OneTimeLogger.warn(log, "Error getting CuDNN forward algorithm - falling back on IMPLICIT_GEMM");
+                mode = AlgoMode.USER_SPECIFIED;
+                fwdAlgo = FwdAlgo.IMPLICIT_GEMM;
+                algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+            }
         }
 
         Allocator allocator = AtomicAllocator.getInstance();
