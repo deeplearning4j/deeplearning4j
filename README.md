@@ -77,3 +77,9 @@ x_np = x_jp.numpy()
 * Indexing, slicing and assignment behaviour has been made as close to numpy as possible.
 * Check `jumpy/ops/` to see available ops.
 
+---
+## Contribute
+
+* Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
+* We could use more ops! Have a look at available ops (`jumpy/ops/`), it's quite easy to add new ones.
+* Send a pull request and bug us on Gitter until it gets merged and published. :)
