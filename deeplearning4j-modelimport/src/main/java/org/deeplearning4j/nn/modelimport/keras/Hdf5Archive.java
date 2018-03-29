@@ -29,21 +29,23 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.Exception;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.bytedeco.javacpp.hdf5.*;
-
 /**
- * Class for reading ND4J arrays and JSON strings from HDF5
- * achive files.
+ * Class for reading ND4J arrays and JSON strings from HDF5 archive files.
+ *
+ * HDF5 is <i>really</i> sensitive about the order its resources are deallocated in.
+ * Make sure to <b>ALWAYS</b> call {@link #close()} explicitly or with try-with-resources,
+ * or it might decide to crash the JVM.
  *
  * @author dave@skymind.io
  */
 @Slf4j
-public class Hdf5Archive {
+public class Hdf5Archive implements Closeable {
 
     static {
         try {
@@ -55,10 +57,14 @@ public class Hdf5Archive {
     }
 
     private hdf5.H5File file;
-    private hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
+    private static hdf5.DataType dataType = new hdf5.DataType(hdf5.PredType.NATIVE_FLOAT());
 
     public Hdf5Archive(String archiveFilename) {
-        this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY());
+        this.file = new hdf5.H5File(archiveFilename, hdf5.H5F_ACC_RDONLY());
+    }
+
+    @Override public void close() {
+        file.deallocate();
     }
 
     private hdf5.Group[] openGroups(String... groups) {
@@ -103,10 +109,16 @@ public class Hdf5Archive {
      */
     public String readAttributeAsJson(String attributeName, String... groups)
             throws UnsupportedKerasConfigurationException {
-        if (groups.length == 0)
-            return readAttributeAsJson(this.file.openAttribute(attributeName));
+        if (groups.length == 0) {
+            hdf5.Attribute a = this.file.openAttribute(attributeName);
+            String s = readAttributeAsJson(a);
+            a.deallocate();
+            return s;
+        }
         hdf5.Group[] groupArray = openGroups(groups);
-        String s = readAttributeAsJson(groupArray[groups.length - 1].openAttribute(attributeName));
+        hdf5.Attribute a = groupArray[groups.length - 1].openAttribute(attributeName);
+        String s = readAttributeAsJson(a);
+        a.deallocate();
         closeGroups(groupArray);
         return s;
     }
@@ -121,10 +133,16 @@ public class Hdf5Archive {
      */
     public String readAttributeAsString(String attributeName, String... groups)
             throws UnsupportedKerasConfigurationException {
-        if (groups.length == 0)
-            return readAttributeAsString(this.file.openAttribute(attributeName));
+        if (groups.length == 0) {
+            hdf5.Attribute a = this.file.openAttribute(attributeName);
+            String s = readAttributeAsString(a);
+            a.deallocate();
+            return s;
+        }
         hdf5.Group[] groupArray = openGroups(groups);
-        String s = readAttributeAsString(groupArray[groupArray.length - 1].openAttribute(attributeName));
+        hdf5.Attribute a = groupArray[groups.length - 1].openAttribute(attributeName);
+        String s = readAttributeAsString(a);
+        a.deallocate();
         closeGroups(groupArray);
         return s;
     }
@@ -153,9 +171,9 @@ public class Hdf5Archive {
      */
     public List<String> getDataSets(String... groups) {
         if (groups.length == 0)
-            return getObjects(this.file, H5O_TYPE_DATASET);
+            return getObjects(this.file, hdf5.H5O_TYPE_DATASET);
         hdf5.Group[] groupArray = openGroups(groups);
-        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_DATASET);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], hdf5.H5O_TYPE_DATASET);
         closeGroups(groupArray);
         return ls;
     }
@@ -168,9 +186,9 @@ public class Hdf5Archive {
      */
     public List<String> getGroups(String... groups) {
         if (groups.length == 0)
-            return getObjects(this.file, H5O_TYPE_GROUP);
+            return getObjects(this.file, hdf5.H5O_TYPE_GROUP);
         hdf5.Group[] groupArray = openGroups(groups);
-        List<String> ls = getObjects(groupArray[groupArray.length - 1], H5O_TYPE_GROUP);
+        List<String> ls = getObjects(groupArray[groupArray.length - 1], hdf5.H5O_TYPE_GROUP);
         closeGroups(groupArray);
         return ls;
     }
@@ -304,6 +322,7 @@ public class Hdf5Archive {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
+        vl.deallocate();
         return s;
     }
 
@@ -342,7 +361,7 @@ public class Hdf5Archive {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
-
+        vl.deallocate();
         return s;
     }
 
@@ -356,7 +375,10 @@ public class Hdf5Archive {
      */
     public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
             throws UnsupportedKerasConfigurationException {
-        return readAttributeAsFixedLengthString(this.file.openAttribute(attributeName), bufferSize);
+        hdf5.Attribute a = this.file.openAttribute(attributeName);
+        String s = readAttributeAsFixedLengthString(a, bufferSize);
+        a.deallocate();
+        return s;
     }
 
     /**
@@ -373,6 +395,7 @@ public class Hdf5Archive {
         BytePointer attrPointer = new BytePointer(attrBuffer);
         attribute.read(vl, attrPointer);
         attrPointer.get(attrBuffer);
+        vl.deallocate();
         return new String(attrBuffer);
     }
 }

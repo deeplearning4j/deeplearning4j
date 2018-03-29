@@ -249,7 +249,10 @@ public class KerasModelEndToEndTest {
      */
     @Test
     public void importWganDiscriminator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_discriminator.h5");
+        for (int i = 0; i < 100; i++) {
+            // run a few times to make sure HDF5 doesn't crash
+            importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_discriminator.h5");
+        }
     }
 
     @Test
@@ -298,7 +301,7 @@ public class KerasModelEndToEndTest {
                         KerasModelEndToEndTest.class.getClassLoader());
         File outputsFile = File.createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
         Files.copy(outputsResource.getInputStream(), outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath());
+        try (Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath())) {
 
         if (checkPredictions) {
             INDArray input = getInputs(outputsArchive, tfOrdering)[0];
@@ -343,6 +346,7 @@ public class KerasModelEndToEndTest {
                 throw new RuntimeException("Cannot gradient check 4d output array");
             }
             checkGradients(model, input, testLabels);
+        }
         }
     }
 
