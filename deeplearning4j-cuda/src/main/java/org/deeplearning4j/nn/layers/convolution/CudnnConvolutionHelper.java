@@ -569,6 +569,13 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                                                    ConvolutionMode convolutionMode){
         INDArray origInput = input;
 
+        //Check if we need to dup the input: views, non-contiguous, etc. CuDNN also seems to have has issues if strides
+        // are non-default for C order - even if they *should* be OK otherwise
+        if(input.isView() || !Shape.hasDefaultStridesForShape(input)){
+            input = input.dup('c');
+        }
+
+
         int inH = input.size(2);
         int inW = input.size(3);
 
