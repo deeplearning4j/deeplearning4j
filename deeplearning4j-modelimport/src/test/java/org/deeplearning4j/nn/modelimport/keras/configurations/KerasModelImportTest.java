@@ -29,7 +29,6 @@ import java.io.IOException;
 
 /**
  * Test import of Keras models.
- *
  */
 @Slf4j
 public class KerasModelImportTest {
@@ -57,7 +56,8 @@ public class KerasModelImportTest {
         assert (model != null);
     }
 
-    private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename) {
+    private MultiLayerNetwork loadModel(String modelJsonFilename, String modelWeightFilename)
+            throws NullPointerException {
         ClassLoader classLoader = getClass().getClassLoader();
         File modelJsonFile = new File(classLoader.getResource(modelJsonFilename).getFile());
         File modelWeightFile = new File(classLoader.getResource(modelWeightFilename).getFile());
@@ -66,7 +66,7 @@ public class KerasModelImportTest {
         try {
             network = KerasModelImport.importKerasSequentialModelAndWeights(modelJsonFile.getAbsolutePath(),
                     modelWeightFile.getAbsolutePath());
-        } catch(IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
+        } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
 
@@ -80,7 +80,7 @@ public class KerasModelImportTest {
         MultiLayerNetwork model = null;
         try {
             model = KerasModelImport.importKerasSequentialModelAndWeights(modelFile.getAbsolutePath());
-        } catch(IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
+        } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
             e.printStackTrace();
         }
 

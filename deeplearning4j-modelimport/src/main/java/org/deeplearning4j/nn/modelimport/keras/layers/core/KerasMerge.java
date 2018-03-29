@@ -14,7 +14,7 @@ import java.util.Map;
 
 /**
  * Imports a Keras Merge layer as a DL4J Merge (graph) vertex.
- *
+ * <p>
  * TODO: handle axes arguments that alter merge behavior (requires changes to DL4J?)
  *
  * @author dave@skymind.io
@@ -36,8 +36,9 @@ public class KerasMerge extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasMerge(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -46,24 +47,23 @@ public class KerasMerge extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration.
-     *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasMerge(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary and merge mode passed in.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param mergeMode                 ElementWiseVertex merge mode
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param mergeMode             ElementWiseVertex merge mode
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasMerge(Map<String, Object> layerConfig, ElementWiseVertex.Op mergeMode, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -77,13 +77,13 @@ public class KerasMerge extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasMerge(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = getMergeMode(layerConfig);
         if (this.mergeMode == null)
@@ -92,12 +92,12 @@ public class KerasMerge extends KerasLayer {
             this.vertex = new ElementWiseVertex(mergeMode);
     }
 
-    public ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private ElementWiseVertex.Op getMergeMode(Map<String, Object> layerConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
-                            "Keras Merge layer config missing " + LAYER_FIELD_MODE + " field");
+                    "Keras Merge layer config missing " + LAYER_FIELD_MODE + " field");
         ElementWiseVertex.Op op = null;
         String mergeMode = (String) innerConfig.get(LAYER_FIELD_MODE);
         switch (mergeMode) {
@@ -120,7 +120,7 @@ public class KerasMerge extends KerasLayer {
             case LAYER_MERGE_MODE_DOT:
             default:
                 throw new UnsupportedKerasConfigurationException(
-                                "Keras Merge layer mode " + mergeMode + " not supported");
+                        "Keras Merge layer mode " + mergeMode + " not supported");
         }
         return op;
     }
@@ -128,9 +128,8 @@ public class KerasMerge extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
      */
     @Override
     public InputType getOutputType(InputType... inputType) {

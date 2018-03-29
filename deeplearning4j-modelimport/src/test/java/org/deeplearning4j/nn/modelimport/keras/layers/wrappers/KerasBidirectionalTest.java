@@ -59,10 +59,9 @@ public class KerasBidirectionalTest {
         buildLstmLayer(conf2, keras2);
     }
 
-    void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         String innerActivation = "hard_sigmoid";
         String lstmForgetBiasString = "one";
-        boolean lstmUnroll = true;
 
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
@@ -90,7 +89,7 @@ public class KerasBidirectionalTest {
         lstmConfig.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         lstmConfig.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         lstmConfig.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        lstmConfig.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
+        lstmConfig.put(conf.getLAYER_FIELD_UNROLL(), true);
 
         Map<String, Object> innerRnnConfig = new HashMap<>();
         innerRnnConfig.put("class_name", "LSTM");

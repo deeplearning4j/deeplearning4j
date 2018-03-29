@@ -55,7 +55,7 @@ public class KerasModelUtils {
      *
      * @param model DL4J Model interface
      * @return DL4J Model interface
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> layers)
             throws InvalidKerasConfigurationException {
@@ -91,7 +91,7 @@ public class KerasModelUtils {
      * @param modelConfig parsed model configuration for keras model
      * @param config      basic model configuration (KerasModelConfiguration)
      * @return Major Keras version (1 or 2)
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static int determineKerasMajorVersion(Map<String, Object> modelConfig, KerasModelConfiguration config)
             throws InvalidKerasConfigurationException {
@@ -121,7 +121,7 @@ public class KerasModelUtils {
      * @param modelConfig parsed model configuration for keras model
      * @param config      basic model configuration (KerasModelConfiguration)
      * @return Keras backend string
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config)
             throws InvalidKerasConfigurationException {
@@ -317,8 +317,8 @@ public class KerasModelUtils {
      * @param modelJson JSON string representing model (potentially null)
      * @param modelYaml YAML string representing model (potentially null)
      * @return Model configuration as Map<String, Object>
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
+     * @throws IOException                        IO exception
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static Map<String, Object> parseModelConfig(String modelJson, String modelYaml) throws IOException, InvalidKerasConfigurationException {
         Map<String, Object> modelConfig;
@@ -337,7 +337,7 @@ public class KerasModelUtils {
      *
      * @param json String containing valid JSON
      * @return Nested (key,value) map of arbitrary depth
-     * @throws IOException
+     * @throws IOException IO exception
      */
     public static Map<String, Object> parseJsonString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -351,7 +351,7 @@ public class KerasModelUtils {
      *
      * @param yaml String containing valid YAML
      * @return Nested (key,value) map of arbitrary depth
-     * @throws IOException
+     * @throws IOException IO exception
      */
     public static Map<String, Object> parseYamlString(String yaml) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());

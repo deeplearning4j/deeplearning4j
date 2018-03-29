@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -60,6 +61,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class KerasLstm extends KerasLayer {
 
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
@@ -89,7 +91,7 @@ public class KerasLstm extends KerasLayer {
      * Pass-through constructor from KerasLayer
      *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -99,8 +101,8 @@ public class KerasLstm extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration.
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -110,10 +112,10 @@ public class KerasLstm extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig dictionary containing Keras layer configuration.
-     * @param enforceTrainingConfig
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration.
+     * @param enforceTrainingConfig whether to load Keras training configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -124,10 +126,10 @@ public class KerasLstm extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig dictionary containing Keras layer configuration.
-     * @param previousLayers - dictionary containing the previous layers in the topology
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig    dictionary containing Keras layer configuration.
+     * @param previousLayers dictionary containing the previous layers in the topology
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -135,15 +137,14 @@ public class KerasLstm extends KerasLayer {
     }
 
 
-
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @param previousLayers - dictionary containing the previous layers in the topology
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param previousLayers        - dictionary containing the previous layers in the topology
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -162,7 +163,8 @@ public class KerasLstm extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
-        double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        // TODO: support recurrent dropout
+        // double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -227,7 +229,7 @@ public class KerasLstm extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -275,7 +277,7 @@ public class KerasLstm extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights
+     * @param weights LSTM layer weights
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
@@ -454,7 +456,7 @@ public class KerasLstm extends KerasLayer {
     /**
      * Get whether LSTM layer should be unrolled (for truncated BPTT).
      *
-     * @return
+     * @return whether to unroll the LSTM
      */
     public boolean getUnroll() {
         return this.unroll;
@@ -465,8 +467,8 @@ public class KerasLstm extends KerasLayer {
      * Get LSTM gate activation function from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return epsilon
-     * @throws InvalidKerasConfigurationException
+     * @return LSTM inner activation function
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -481,8 +483,8 @@ public class KerasLstm extends KerasLayer {
      * Get LSTM forget gate bias initialization from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return epsilon
-     * @throws InvalidKerasConfigurationException
+     * @return LSTM forget gate bias init
+     * @throws InvalidKerasConfigurationException Unsupported Keras config
      */
     public double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {

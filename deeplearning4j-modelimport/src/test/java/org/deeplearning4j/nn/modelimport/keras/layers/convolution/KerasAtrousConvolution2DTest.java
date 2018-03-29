@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolution2D;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasAtrousConvolution2D;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 
@@ -51,36 +51,34 @@ public class KerasAtrousConvolution2DTest {
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
     private final int[] DILATION = new int[]{2, 2};
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
     private final int[] STRIDE = new int[]{3, 4};
-    private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
 
-    private Integer keras1 = 1;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
 
     @Test
     public void testAtrousConvolution2DLayer() throws Exception {
+        Integer keras1 = 1;
         buildAtrousConvolution2DLayer(conf1, keras1);
     }
 
-    public void buildAtrousConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
+    private void buildAtrousConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
             throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_2D());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
         } else {
-            Map<String, Object> init = new HashMap<String, Object>();
+            Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }
-        Map<String, Object> W_reg = new HashMap<String, Object>();
+        Map<String, Object> W_reg = new HashMap<>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
@@ -108,7 +106,7 @@ public class KerasAtrousConvolution2DTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
-        ConvolutionLayer layer = new KerasConvolution2D(layerConfig).getConvolution2DLayer();
+        ConvolutionLayer layer = new KerasAtrousConvolution2D(layerConfig).getAtrousConvolution2D();
         assertEquals(ACTIVATION_DL4J, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());

@@ -40,8 +40,8 @@ public class KerasLeakyReLU extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Invalid Keras config
      */
     public KerasLeakyReLU(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -53,15 +53,14 @@ public class KerasLeakyReLU extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Invalid Keras config
      */
     public KerasLeakyReLU(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        // Set default alpha to default in nd4j
-        double alpha = 0.01;
+        double alpha = 0.01; // Set default alpha to default in nd4j
         String layerFieldLeakyReluAlpha = "alpha";
         if (innerConfig.containsKey(layerFieldLeakyReluAlpha)) {
             alpha = (double) innerConfig.get(layerFieldLeakyReluAlpha);
@@ -75,7 +74,7 @@ public class KerasLeakyReLU extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)

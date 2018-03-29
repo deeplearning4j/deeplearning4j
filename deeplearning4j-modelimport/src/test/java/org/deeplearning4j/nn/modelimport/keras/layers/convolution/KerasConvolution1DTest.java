@@ -48,9 +48,9 @@ public class KerasConvolution1DTest {
     private final double L2_REGULARIZATION = 0.02;
     private final double DROPOUT_KERAS = 0.3;
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
-    private final int[] KERNEL_SIZE = new int[] {2};
-    private final int[] DILATION = new int[] {2};
-    private final int[] STRIDE = new int[] {4};
+    private final int[] KERNEL_SIZE = new int[]{2};
+    private final int[] DILATION = new int[]{2};
+    private final int[] STRIDE = new int[]{4};
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
@@ -67,18 +67,18 @@ public class KerasConvolution1DTest {
         buildConvolution1DLayer(conf2, keras2, true);
     }
 
-    public void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+    private void buildConvolution1DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
             throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_1D());
-        Map<String, Object> config = new HashMap<String, Object>();
+        Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
         } else {
-            Map<String, Object> init = new HashMap<String, Object>();
+            Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }

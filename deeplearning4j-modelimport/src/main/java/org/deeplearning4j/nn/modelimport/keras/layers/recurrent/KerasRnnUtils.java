@@ -17,7 +17,7 @@ public class KerasRnnUtils {
     /**
      * Get unroll parameter to decide whether to unroll RNN with BPTT or not.
      *
-     * @param conf KerasLayerConfiguration
+     * @param conf        KerasLayerConfiguration
      * @param layerConfig dictionary containing Keras layer properties
      * @return boolean unroll parameter
      * @throws InvalidKerasConfigurationException Invalid Keras configuration
@@ -35,7 +35,7 @@ public class KerasRnnUtils {
      * Get recurrent weight dropout from Keras layer configuration.
      * Non-zero dropout rates are currently not supported.
      *
-     * @param conf KerasLayerConfiguration
+     * @param conf        KerasLayerConfiguration
      * @param layerConfig dictionary containing Keras layer properties
      * @return recurrent dropout rate
      * @throws InvalidKerasConfigurationException Invalid Keras configuration

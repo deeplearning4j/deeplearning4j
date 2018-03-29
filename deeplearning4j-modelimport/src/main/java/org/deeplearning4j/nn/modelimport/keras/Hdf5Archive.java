@@ -61,7 +61,7 @@ public class Hdf5Archive {
         this.file = new hdf5.H5File(archiveFilename, H5F_ACC_RDONLY());
     }
 
-    private hdf5.Group[] openGroups(String ... groups) {
+    private hdf5.Group[] openGroups(String... groups) {
         hdf5.Group[] groupArray = new hdf5.Group[groups.length];
         groupArray[0] = this.file.openGroup(groups[0]);
         for (int i = 1; i < groups.length; i++) {
@@ -79,10 +79,10 @@ public class Hdf5Archive {
     /**
      * Read data set as ND4J array from group path.
      *
-     * @param datasetName   Name of data set
-     * @param groups        Array of zero or more ancestor groups from root to parent.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param datasetName Name of data set
+     * @param groups      Array of zero or more ancestor groups from root to parent.
+     * @return INDArray of HDF5 group data
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public INDArray readDataSet(String datasetName, String... groups) throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
@@ -96,13 +96,13 @@ public class Hdf5Archive {
     /**
      * Read JSON-formatted string attribute from group path.
      *
-     * @param attributeName     Name of attribute
-     * @param groups            Array of zero or more ancestor groups from root to parent.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attributeName Name of attribute
+     * @param groups        Array of zero or more ancestor groups from root to parent.
+     * @return HDF5 attribute as JSON
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public String readAttributeAsJson(String attributeName, String... groups)
-                    throws UnsupportedKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsJson(this.file.openAttribute(attributeName));
         hdf5.Group[] groupArray = openGroups(groups);
@@ -114,13 +114,13 @@ public class Hdf5Archive {
     /**
      * Read string attribute from group path.
      *
-     * @param attributeName     Name of attribute
-     * @param groups            Array of zero or more ancestor groups from root to parent.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attributeName Name of attribute
+     * @param groups        Array of zero or more ancestor groups from root to parent.
+     * @return HDF5 attribute as String
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public String readAttributeAsString(String attributeName, String... groups)
-                    throws UnsupportedKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException {
         if (groups.length == 0)
             return readAttributeAsString(this.file.openAttribute(attributeName));
         hdf5.Group[] groupArray = openGroups(groups);
@@ -132,9 +132,9 @@ public class Hdf5Archive {
     /**
      * Check whether group path contains string attribute.
      *
-     * @param attributeName     Name of attribute
-     * @param groups            Array of zero or more ancestor groups from root to parent.
-     * @return                  Boolean indicating whether attribute exists in group path.
+     * @param attributeName Name of attribute
+     * @param groups        Array of zero or more ancestor groups from root to parent.
+     * @return Boolean indicating whether attribute exists in group path.
      */
     public boolean hasAttribute(String attributeName, String... groups) {
         if (groups.length == 0)
@@ -148,8 +148,8 @@ public class Hdf5Archive {
     /**
      * Get list of data sets from group path.
      *
-     * @param groups    Array of zero or more ancestor groups from root to parent.
-     * @return
+     * @param groups Array of zero or more ancestor groups from root to parent.
+     * @return List of HDF5 data set names
      */
     public List<String> getDataSets(String... groups) {
         if (groups.length == 0)
@@ -163,8 +163,8 @@ public class Hdf5Archive {
     /**
      * Get list of groups from group path.
      *
-     * @param groups    Array of zero or more ancestor groups from root to parent.
-     * @return
+     * @param groups Array of zero or more ancestor groups from root to parent.
+     * @return List of HDF5 groups
      */
     public List<String> getGroups(String... groups) {
         if (groups.length == 0)
@@ -178,22 +178,22 @@ public class Hdf5Archive {
     /**
      * Read data set as ND4J array from HDF5 group.
      *
-     * @param fileGroup     HDF5 file or group
-     * @param datasetName   Name of data set
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param fileGroup   HDF5 file or group
+     * @param datasetName Name of data set
+     * @return INDArray from HDF5 data set
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     private INDArray readDataSet(hdf5.Group fileGroup, String datasetName)
-                    throws UnsupportedKerasConfigurationException {
+            throws UnsupportedKerasConfigurationException {
         hdf5.DataSet dataset = fileGroup.openDataSet(datasetName);
         hdf5.DataSpace space = dataset.getSpace();
         int nbDims = space.getSimpleExtentNdims();
         long[] dims = new long[nbDims];
         space.getSimpleExtentDims(dims);
-        float[] dataBuffer = null;
-        FloatPointer fp = null;
-        int j = 0;
-        INDArray data = null;
+        float[] dataBuffer;
+        FloatPointer fp;
+        int j;
+        INDArray data;
         switch (nbDims) {
             case 4: /* 2D Convolution weights */
                 dataBuffer = new float[(int) (dims[0] * dims[1] * dims[2] * dims[3])];
@@ -252,9 +252,9 @@ public class Hdf5Archive {
     /**
      * Get list of objects with a given type from a file group.
      *
-     * @param fileGroup     HDF5 file or group
-     * @param objType       Type of object as integer
-     * @return
+     * @param fileGroup HDF5 file or group
+     * @param objType   Type of object as integer
+     * @return List of HDF5 group objects
      */
     private List<String> getObjects(hdf5.Group fileGroup, int objType) {
         List<String> groups = new ArrayList<>();
@@ -269,14 +269,14 @@ public class Hdf5Archive {
     /**
      * Read JSON-formatted string attribute.
      *
-     * @param attribute     HDF5 attribute to read as JSON formatted string.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attribute HDF5 attribute to read as JSON formatted string.
+     * @return JSON formatted string from HDF5 attribute
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     private String readAttributeAsJson(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
         hdf5.VarLenType vl = attribute.getVarLenType();
         int bufferSizeMult = 1;
-        String s = null;
+        String s;
         /* TODO: find a less hacky way to do this.
          * Reading variable length strings (from attributes) is a giant
          * pain. There does not appear to be any way to determine the
@@ -297,6 +297,7 @@ public class Hdf5Archive {
                 mapper.readTree(s);
                 break;
             } catch (IOException e) {
+                log.info(e.getMessage());
             }
             bufferSizeMult++;
             if (bufferSizeMult > 100) {
@@ -309,9 +310,9 @@ public class Hdf5Archive {
     /**
      * Read attribute as string.
      *
-     * @param attribute     HDF5 attribute to read as string.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attribute HDF5 attribute to read as string.
+     * @return HDF5 attribute as string
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     private String readAttributeAsString(hdf5.Attribute attribute) throws UnsupportedKerasConfigurationException {
         hdf5.VarLenType vl = attribute.getVarLenType();
@@ -348,10 +349,10 @@ public class Hdf5Archive {
     /**
      * Read string attribute from group path.
      *
-     * @param attributeName     Name of attribute
-     * @param bufferSize        buffer size to read
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attributeName Name of attribute
+     * @param bufferSize    buffer size to read
+     * @return Fixed-length string read from HDF5 attribute name
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public String readAttributeAsFixedLengthString(String attributeName, int bufferSize)
             throws UnsupportedKerasConfigurationException {
@@ -361,9 +362,9 @@ public class Hdf5Archive {
     /**
      * Read attribute of fixed buffer size as string.
      *
-     * @param attribute     HDF5 attribute to read as string.
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param attribute HDF5 attribute to read as string.
+     * @return Fixed-length string read from HDF5 attribute
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     private String readAttributeAsFixedLengthString(hdf5.Attribute attribute, int bufferSize)
             throws UnsupportedKerasConfigurationException {
@@ -372,7 +373,6 @@ public class Hdf5Archive {
         BytePointer attrPointer = new BytePointer(attrBuffer);
         attribute.read(vl, attrPointer);
         attrPointer.get(attrBuffer);
-        String s = new String(attrBuffer);
-        return s;
+        return new String(attrBuffer);
     }
 }

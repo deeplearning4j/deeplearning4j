@@ -72,8 +72,7 @@ public class KerasConstraintUtils {
                 || kerasConstraint.equals(conf.getLAYER_FIELD_NON_NEG_CONSTRAINT_ALIAS())
                 || kerasConstraint.equals(conf.getLAYER_FIELD_NON_NEG_CONSTRAINT_ALIAS_2())) {
             constraint = new NonNegativeConstraint();
-        }
-        else {
+        } else {
             throw new UnsupportedKerasConfigurationException("Unknown keras constraint " + kerasConstraint);
         }
 
@@ -99,7 +98,7 @@ public class KerasConstraintUtils {
             // log.warn("Keras layer is missing " + constraintField + " field");
             return null;
         }
-        HashMap  constraintMap = (HashMap) innerConfig.get(constraintField);
+        HashMap constraintMap = (HashMap) innerConfig.get(constraintField);
         if (constraintMap == null)
             return null;
 
