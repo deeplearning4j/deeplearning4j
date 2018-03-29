@@ -76,8 +76,8 @@ public class EarlyStoppingConfiguration<T extends Model> implements Serializable
 
 
     public void validate() {
-        if(scoreCalculator == null) {
-            throw new DL4JInvalidConfigException("A score calculator must be defined.");
+        if(scoreCalculator == null && scoreCalculatorSupplier == null) {
+            throw new DL4JInvalidConfigException("A score calculator or score calculator supplier must be defined.");
         }
 
         if(modelSaver == null) {
