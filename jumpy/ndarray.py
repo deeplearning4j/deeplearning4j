@@ -415,5 +415,10 @@ class ndarray(object):
             return self.array.getDouble(0)
         raise Exception('Applicable only for scalars')
 
+    @property
+    def T(self):
+        return self.transpose()
+
+
 def array(*args, **kwargs):
     return ndarray(*args, **kwargs)

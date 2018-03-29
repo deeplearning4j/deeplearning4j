@@ -12,7 +12,8 @@ def reshape(arr, *args):
 @op
 def transpose(arr):
     return arr.transpose()
-@op
+
+
 def T(arr):
     return arr.transpose()
 
