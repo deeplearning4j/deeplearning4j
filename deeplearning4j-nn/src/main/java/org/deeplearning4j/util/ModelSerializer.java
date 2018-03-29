@@ -165,7 +165,7 @@ public class ModelSerializer {
             NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
         }
 
-
+        dos.close();
         zipfile.close();
     }
 
