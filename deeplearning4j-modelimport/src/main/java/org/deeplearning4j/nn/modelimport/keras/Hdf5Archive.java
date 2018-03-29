@@ -318,7 +318,7 @@ public class Hdf5Archive implements Closeable {
                 log.info(e.getMessage());
             }
             bufferSizeMult++;
-            if (bufferSizeMult > 100) {
+            if (bufferSizeMult > 1000) {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
@@ -357,7 +357,7 @@ public class Hdf5Archive implements Closeable {
             }
 
             bufferSizeMult++;
-            if (bufferSizeMult > 100) {
+            if (bufferSizeMult > 1000) {
                 throw new UnsupportedKerasConfigurationException("Could not read abnormally long HDF5 attribute");
             }
         }
