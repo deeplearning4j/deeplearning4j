@@ -214,18 +214,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
 
-//        int[] outSize;
-//        if (convolutionMode == ConvolutionMode.Same) {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-//            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
-//                            strides, dilation);
-//        } else {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
-//        }
-//
-//        int outH = outSize[0];
-//        int outW = outSize[1];
-
         CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
         int inH = input.size(2);
