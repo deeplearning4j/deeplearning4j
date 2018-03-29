@@ -25,7 +25,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>ale</artifactId>
-            <version>0.6.0-1.4</version>
+            <version>${ale.version}-${javacpp-presets.version}</version>
         </dependency>
     </dependencies>
 </project>
