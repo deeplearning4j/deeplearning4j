@@ -10,7 +10,7 @@
     <artifactId>deeplearning4j-data</artifactId>
     <packaging>pom</packaging>
 
-    <name>deeplearning4j-iterators</name>
+    <name>deeplearning4j-data</name>
     <modules>
         <module>deeplearning4j-datavec-iterators</module>
         <module>deeplearning4j-datasets</module>
