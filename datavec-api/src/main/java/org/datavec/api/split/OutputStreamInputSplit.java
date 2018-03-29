@@ -51,7 +51,7 @@ public class OutputStreamInputSplit implements InputSplit {
 
     @Override
     public String addNewLocation() {
-       throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -67,12 +67,11 @@ public class OutputStreamInputSplit implements InputSplit {
 
     @Override
     public boolean needsBootstrapForWrite() {
-        throw new UnsupportedOperationException();
+        return false;
     }
 
     @Override
     public void bootStrapForWrite() {
-        throw new UnsupportedOperationException();
 
     }
 
@@ -93,7 +92,7 @@ public class OutputStreamInputSplit implements InputSplit {
 
     @Override
     public URI[] locations() {
-        throw new UnsupportedOperationException();
+        return new URI[0];
 
     }
 
@@ -118,7 +117,7 @@ public class OutputStreamInputSplit implements InputSplit {
 
     @Override
     public boolean resetSupported() {
-      return false;
+        return false;
     }
 
 

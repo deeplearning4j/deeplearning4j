@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -70,6 +71,7 @@ public class InputStreamInputSplit implements InputSplit {
 
     public InputStreamInputSplit(InputStream is) {
         this.is = is;
+        this.location = new URI[0];
     }
 
     @Override
@@ -130,7 +132,9 @@ public class InputStreamInputSplit implements InputSplit {
 
     @Override
     public Iterator<String> locationsPathIterator() {
-        return Collections.singletonList(location[0].getPath()).iterator();
+        if(location.length >= 1)
+            return Collections.singletonList(location[0].getPath()).iterator();
+        return Arrays.asList("").iterator();
     }
 
     @Override
