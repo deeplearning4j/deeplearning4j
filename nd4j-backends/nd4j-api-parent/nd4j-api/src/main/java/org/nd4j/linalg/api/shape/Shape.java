@@ -2598,4 +2598,19 @@ public class Shape {
 
         return true;
     }
+
+
+    public static boolean hasDefaultStridesForShape(INDArray input){
+        if(!strideDescendingCAscendingF(input)){
+            return false;
+        }
+        char order = input.ordering();
+        int[] defaultStrides;
+        if(order == 'f'){
+            defaultStrides = ArrayUtil.calcStridesFortran(input.shape());
+        } else {
+            defaultStrides = ArrayUtil.calcStrides(input.shape());
+        }
+        return Arrays.equals(input.stride(), defaultStrides);
+    }
 }
