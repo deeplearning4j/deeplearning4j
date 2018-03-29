@@ -14,9 +14,6 @@ def transpose(arr):
     return arr.transpose()
 
 
-def T(arr):
-    return arr.transpose()
-
 @op
 def ravel(arr):
     return arr.ravel()
