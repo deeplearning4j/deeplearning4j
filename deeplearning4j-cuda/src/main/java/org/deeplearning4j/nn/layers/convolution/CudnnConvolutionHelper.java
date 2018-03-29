@@ -565,7 +565,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         return activation;
     }
 
-    protected CudnnForwardArgs getCudnnForwardArgs(INDArray input, int[] kernel, int[] strides, int[] padding, int[] dilation,
+    public static CudnnForwardArgs getCudnnForwardArgs(INDArray input, int[] kernel, int[] strides, int[] padding, int[] dilation,
                                                    ConvolutionMode convolutionMode){
         INDArray origInput = input;
 
@@ -613,7 +613,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
     @AllArgsConstructor
     @Data
-    private static class CudnnForwardArgs {
+    public static class CudnnForwardArgs {
         private boolean manualPadBottom;
         private boolean manualPadRight;
         private INDArray input;
