@@ -185,7 +185,7 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
          * @param decoderLayerSizes    Size of each deccoder layer in the variational autoencoder
          */
         public Builder decoderLayerSizes(int... decoderLayerSizes) {
-            if (encoderLayerSizes == null || encoderLayerSizes.length < 1) {
+            if (decoderLayerSizes == null || decoderLayerSizes.length < 1) {
                 throw new IllegalArgumentException("Decoder layer sizes array must have length > 0");
             }
             this.decoderLayerSizes = decoderLayerSizes;
