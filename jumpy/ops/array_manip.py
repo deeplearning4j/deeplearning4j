@@ -13,7 +13,6 @@ def reshape(arr, *args):
 def transpose(arr):
     return arr.transpose()
 
-
 @op
 def ravel(arr):
     return arr.ravel()
