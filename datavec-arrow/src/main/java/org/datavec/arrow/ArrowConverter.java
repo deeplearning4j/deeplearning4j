@@ -34,6 +34,8 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
@@ -108,10 +110,10 @@ public class ArrowConverter {
             INDArray put = ArrowConverter.convertArrowVector(columnVectors.get(i),schema.getType(i));
             switch(arr.data().dataType()) {
                 case FLOAT:
-                    arr.putColumn(i,put.convertToFloats());
+                    arr.putColumn(i,Nd4j.create(put.data().asFloat()).reshape(rows,1));
                     break;
                 case DOUBLE:
-                    arr.putColumn(i,put.convertToDoubles());
+                    arr.putColumn(i,Nd4j.create(put.data().asDouble()).reshape(rows,1));
                     break;
             }
 
@@ -129,22 +131,26 @@ public class ArrowConverter {
     public static INDArray convertArrowVector(FieldVector fieldVector,ColumnType type) {
         DataBuffer buffer = null;
         int cols = fieldVector.getValueCount();
+        ByteBuffer direct = ByteBuffer.allocateDirect(fieldVector.getDataBuffer().capacity());
+        direct.order(ByteOrder.nativeOrder());
+        fieldVector.getDataBuffer().getBytes(0,direct);
+        direct.rewind();
         switch(type) {
             case Integer:
                 IntVector intVector = (IntVector) fieldVector;
-                buffer = Nd4j.createBuffer(intVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.INT,cols);
+                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.INT,cols,0);
                 break;
             case Float:
                 Float4Vector float4Vector = (Float4Vector) fieldVector;
-                buffer = Nd4j.createBuffer(float4Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.FLOAT,cols);
+                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.FLOAT,cols);
                 break;
             case Double:
                 Float8Vector float8Vector = (Float8Vector) fieldVector;
-                buffer = Nd4j.createBuffer(float8Vector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.DOUBLE,cols);
+                buffer = Nd4j.createBuffer(direct, DataBuffer.Type.DOUBLE,cols);
                 break;
             case Long:
                 BigIntVector bigIntVector = (BigIntVector) fieldVector;
-                buffer =  Nd4j.createBuffer(bigIntVector.getDataBuffer().unwrap().nioBuffer(), DataBuffer.Type.LONG,cols);
+                buffer =  Nd4j.createBuffer(direct, DataBuffer.Type.LONG,cols);
                 break;
         }
 
