@@ -665,7 +665,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                         }
 
                         String msg = "Minibatch=" + minibatchSize + ", inDepth=" + inputDepth + ", height=" + height
-                                + ", kernelSize=" + k;
+                                + ", width=" + width + ", kernelSize=" + k;
                         System.out.println(msg);
 
                         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
