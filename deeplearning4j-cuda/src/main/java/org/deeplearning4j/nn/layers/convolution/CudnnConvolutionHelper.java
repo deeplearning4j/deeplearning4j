@@ -137,21 +137,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         int code;
 
         int miniBatch = input.size(0);
-//        int inH = input.size(2);
-//        int inW = input.size(3);
-
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         int kH = weights.size(2);
         int kW = weights.size(3);
-
-//        int[] outSize;
-//        if (convolutionMode == ConvolutionMode.Same) {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-//            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-//        } else {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
-//        }
 
         CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
         input = args.getInput();
@@ -330,7 +319,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             context.syncOldStream();
 
         //Note that: if we had to manually pad for SAME mode, we have to 'undo' this manual padding for the epsilon
-        // we return...
+        // we return. The returned epsilon (i.e., dL/dIn array) has to be the same shape as the *original* input.
         if(args.isManualPadBottom() || args.isManualPadRight()) {
             epsNext = epsNext.get(all(), all(),
                     interval(0, epsNext.size(2) - (args.isManualPadBottom() ? 1 : 0)),
@@ -351,8 +340,6 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         int code;
 
         int miniBatch = input.size(0);
-
-
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         int kH = weights.size(2);
@@ -365,45 +352,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         int[] srcStride = input.stride();
         int[] outSize = args.getOutSize();
 
-//        int[] outSize;
-//        if (convolutionMode == ConvolutionMode.Same) {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-////            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-//            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-//            int[] padBottomRight = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-//            if(!Arrays.equals(pad, padBottomRight)){
-//                System.out.println("*** MANUAL PADDING APPLIED ***");
-//                /*
-//                CuDNN - even as of 7.1 (CUDA 9.1) still doesn't have support for proper SAME mode padding (i.e., asymmetric
-//                padding) - padding can *only* be specified as the same amount for both the top/bottom, and for left/right.
-//                In SAME mode padding, sometimes these are the same - but often they are not.
-//                Note that when they differ, the bottom or right padding will be exactly 1 more than the top or left padding.
-//                As per TF, we'll manually pad here: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/conv_ops.cc#L571-L607
-//                 */
-//                boolean manualPadBottom = (pad[0] != padBottomRight[0]);
-//                boolean manualPadRight = (pad[1] != padBottomRight[1]);
-//
-//                //NCHW format
-//                int[] newShape = new int[]{input.size(0), input.size(1),
-//                        input.size(2) + (manualPadBottom ? 1 : 0),
-//                        input.size(3) + (manualPadRight ? 1 : 0)};
-//                INDArray newInput = Nd4j.create(newShape);
-//                newInput.put(new INDArrayIndex[]{all(), all(), interval(0,input.size(2)),
-//                        interval(0, input.size(3))}, input);
-//                input = newInput;
-//                inH = input.size(2);
-//                inW = input.size(3);
-//                //Now: we've manually applied the "extra" bottom/right padding only - if required. Consequently, we
-//                // now have the same amount of padding required for top/bottom, and left/right - which we'll let
-//                // CuDNN handle
-//            }
-//        } else {
-//            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
-//        }
-
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
-
 
         INDArray z;
 
@@ -478,6 +428,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     0, algo);
 
             if(code != CUDNN_STATUS_SUCCESS){
+                //If CuDNN can't infer algorithm - try IMPLICIT_GEMM
+                //Why this specifically? According to the docs, it seems to have the least number of restrictions
+                // to things like dilation
+
                 OneTimeLogger.warn(log, "Error getting CuDNN forward algorithm - falling back on IMPLICIT_GEMM");
                 mode = AlgoMode.USER_SPECIFIED;
                 fwdAlgo = FwdAlgo.IMPLICIT_GEMM;

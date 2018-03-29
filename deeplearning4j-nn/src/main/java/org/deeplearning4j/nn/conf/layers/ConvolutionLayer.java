@@ -395,11 +395,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         /**
          * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the build-in (non-CuDNN)
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
          * implementation for ConvolutionLayer will be used
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
-         * @return
          */
         public T cudnnAllowFallback(boolean allowFallback){
             this.cudnnAllowFallback = allowFallback;
