@@ -83,13 +83,6 @@
             <version>${commons-io.version}</version>
         </dependency>
 
-        <!-- used to alleviate licensing issues with findbugs -->
-        <dependency>
-          <groupId>com.github.stephenc.findbugs</groupId>
-          <artifactId>findbugs-annotations</artifactId>
-          <version>1.3.9-1</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
