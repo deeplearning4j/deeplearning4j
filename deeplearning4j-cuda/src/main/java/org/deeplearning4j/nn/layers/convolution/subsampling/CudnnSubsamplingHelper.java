@@ -132,7 +132,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         //Epsilons in shape: [miniBatch, depth, outH, outW]
         //Epsilons out shape: [miniBatch, depth, inH, inW]
 
-
         int poolingMode;
         switch (poolingType) {
             case AVG:
@@ -145,9 +144,9 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
                 return null;
         }
 
-        if (!Shape.strideDescendingCAscendingF(epsilon)) {
+        if (!Shape.strideDescendingCAscendingF(epsilon) || epsilon.isView()) {
             // apparently not supported by cuDNN
-            epsilon = epsilon.dup();
+            epsilon = epsilon.dup('c');
         }
 
         int[] srcStride = input.stride();
