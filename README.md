@@ -9,7 +9,7 @@ Jumpy allows you to use nd4j from python via pointers (no network communication 
 
 Jumpy requires an uber jar (a jar file that contains nd4j and all its dependencies) and the path to this file is expected to be found in the environment variable `JUMPY_CLASS_PATH`.
 
-Easiest way to build the uber jar is by running `mvn package` on the `pom.xml` file:
+Easiest way to build the uber jar is by running `mvn package` on the [`pom.xml`](/pom.xml) file:
 
 ```bash 
 git clone https://www.github.com/deeplearning4j/jumpy.git
