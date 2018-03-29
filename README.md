@@ -34,3 +34,46 @@ Or from source:
 ```bash
 python setup.py install
 ```
+
+## Using Jumpy
+
+### Creating arrays
+
+Just like numpy, you can initialize an array using `.zeros()` or `.ones()`
+
+```python
+import jumpy as jp
+
+x = jp.zeros((32, 16))
+y = jp.ones((32, 16))
+```
+
+### Converting numpy array to jumpy array
+
+A numpy `ndarray` instance can be converted to a jumpy `ndarray` instance (and vice-versa) without copying the data
+
+```python
+import jumpy as jp
+import numpy as np
+
+x_np = np.random.random((100, 50))
+x_jp = jp.array(x_np)
+```
+
+### Converting jumpy array to numpy array
+
+Simply call the `.numpy()` method of `jumpy.ndarray.ndarray`
+
+```python
+import jumpy as jp
+
+x_jp = jp.zeros((100,50))
+x_np = x_jp.numpy()
+```
+
+### Operations
+
+* Basic operators like `+` `-` `*` `/` `+=` `-=` `*=` `/=` are overloaded and broadcasting is supported.
+* Indexing, slicing and assignment behaviour has been made as close to numpy as possible.
+* Check `jumpy/ops/` to see available ops.
+
