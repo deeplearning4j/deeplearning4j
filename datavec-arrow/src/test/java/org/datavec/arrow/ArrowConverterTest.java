@@ -99,8 +99,6 @@ public class ArrowConverterTest {
     }
 
     @Test
-    @Ignore
-    //TODO: make variable length time series work
     public void testArrowColumnsStringTimeSeries() {
         Schema.Builder schema = new Schema.Builder();
         List<List<List<String>>> entries = new ArrayList<>();
@@ -117,15 +115,17 @@ public class ArrowConverterTest {
         assertEquals(3,fieldVectors.size());
         assertEquals(5,fieldVectors.get(0).getValueCount());
 
+
+        INDArray exp = Nd4j.create(5, 3);
+        for( int i = 0; i < 5; i++) {
+            exp.getRow(i).assign(i);
+        }
         //Convert to ArrowWritableRecordBatch - note we can't do this in general with time series...
         ArrowWritableRecordBatch wri = ArrowConverter.toArrowWritables(fieldVectors, schema.build());
         INDArray arr = ArrowConverter.toArray(wri);
         assertArrayEquals(new int[] {5,3}, arr.shape());
 
-        INDArray exp = Nd4j.create(5, 3);
-        for( int i=0; i<5; i++ ){
-            exp.getRow(i).assign(i);
-        }
+
         assertEquals(exp, arr);
     }
 
