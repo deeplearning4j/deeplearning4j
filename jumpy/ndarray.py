@@ -282,7 +282,7 @@ class ndarray(object):
 
     def __getitem__(self, key):
         if type(key) is int:
-            ndarray(self.array.get(NDArrayIndex.point(key)))
+            return ndarray(self.array.get(NDArrayIndex.point(key)))
         if type(key) is slice:
             start = key.start
             stop = key.stop
