@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,6 +36,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +55,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     protected INDArray i2d;
     protected ConvolutionHelper helper = null;
+    protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
 
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
@@ -169,7 +170,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Pair<INDArray, INDArray> p = preOutput4d(true, true);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
-        if (helper != null) {
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
 
             if(!hasBias()){
                 if(dummyBiasGrad == null){
@@ -180,9 +181,19 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 biasGradView = dummyBiasGrad;
             }
 
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
-                            biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
-                            layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode, dilation);
+            Pair<Gradient, INDArray> ret = null;
+            try {
+                ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
+                        biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
+                        layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -331,7 +342,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
 
-        if (helper != null) {
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
             if (preOutput != null && forBackprop) {
                 return new Pair<>(preOutput, null);
             }
@@ -346,8 +357,18 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 bias = dummyBias;
             }
 
-            INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                            layerConf().getCudnnFwdAlgo(), convolutionMode, dilation);
+            INDArray ret = null;
+            try {
+                ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
+                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return new Pair<>(ret, null);
             }
