@@ -78,13 +78,13 @@
         <logback.version>1.1.2</logback.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <reflections.version>0.9.10</reflections.version>
-        <opencv.version>3.4.0</opencv.version>
-        <ffmpeg.version>3.4.1</ffmpeg.version>
-        <leptonica.version>1.74.4</leptonica.version>
+        <opencv.version>3.4.1</opencv.version>
+        <ffmpeg.version>3.4.2</ffmpeg.version>
+        <leptonica.version>1.75.3</leptonica.version>
         <hdf5.version>1.10.1</hdf5.version>
-        <javacpp-presets.version>1.4</javacpp-presets.version>
-        <javacpp.version>1.4.1-SNAPSHOT</javacpp.version>
-        <javacv.version>1.4</javacv.version>
+        <javacpp-presets.version>1.4.1</javacpp-presets.version>
+        <javacpp.version>1.4.1</javacpp.version>
+        <javacv.version>1.4.1</javacv.version>
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <tablesaw.version>0.11.4</tablesaw.version>
