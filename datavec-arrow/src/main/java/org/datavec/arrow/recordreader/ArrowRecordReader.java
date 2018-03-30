@@ -67,36 +67,31 @@ public class ArrowRecordReader implements RecordReader {
 
     @Override
     public List<List<Writable>> next(int num) {
-        List<List<Writable>> ret = new ArrayList<>(num);
-        int numBatches = 0;
-        while(hasNext() && numBatches < num) {
-            ret.add(next());
+        if (currentBatch == null || currIdx >= currentBatch.size()) {
+            loadNextBatch();
         }
 
-        return ret;
+        if(num == currentBatch.getArrowRecordBatch().getLength()) {
+            currIdx += num;
+            return currentBatch;
+        }
+        else {
+            List<List<Writable>> ret = new ArrayList<>(num);
+            int numBatches = 0;
+            while(hasNext() && numBatches < num) {
+                ret.add(next());
+            }
+
+            return ret;
+        }
+
+
     }
 
     @Override
     public List<Writable> next() {
         if (currentBatch == null || currIdx >= currentBatch.size()) {
-            String url = pathsIter.next();
-            try (InputStream inputStream = split.openInputStreamFor(url)) {
-                currIdx = 0;
-                byte[] arr = org.apache.commons.io.IOUtils.toByteArray(inputStream);
-                val read = readFromBytes(arr);
-                if(this.schema == null) {
-                    this.schema = read.getFirst();
-                }
-
-                this.currentBatch = read.getRight();
-                this.recordAllocation = currentBatch.get(0);
-                currIdx++;
-                this.currentPath = url;
-            }catch(Exception e) {
-                e.printStackTrace();
-            }
-
-
+            loadNextBatch();
         }
         else {
             recordAllocation = currentBatch.get(currIdx++);
@@ -105,6 +100,27 @@ public class ArrowRecordReader implements RecordReader {
         return recordAllocation;
 
     }
+
+    private void loadNextBatch() {
+        String url = pathsIter.next();
+        try (InputStream inputStream = split.openInputStreamFor(url)) {
+            currIdx = 0;
+            byte[] arr = org.apache.commons.io.IOUtils.toByteArray(inputStream);
+            val read = readFromBytes(arr);
+            if(this.schema == null) {
+                this.schema = read.getFirst();
+            }
+
+            this.currentBatch = read.getRight();
+            this.recordAllocation = currentBatch.get(0);
+            currIdx++;
+            this.currentPath = url;
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     @Override
     public boolean hasNext() {

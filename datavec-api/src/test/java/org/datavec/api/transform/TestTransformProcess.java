@@ -16,6 +16,9 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.collection.ListStringRecordReader;
+import org.datavec.api.split.ListStringSplit;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
 import org.datavec.api.writable.DoubleWritable;
@@ -51,7 +54,7 @@ public class TestTransformProcess {
     }
 
     @Test
-    public void testExecuteToSequence(){
+    public void testExecuteToSequence() {
 
         Schema schema = new Schema.Builder()
                 .addColumnsString("action")
@@ -68,7 +71,7 @@ public class TestTransformProcess {
         List<Writable> input = Collections.<Writable>singletonList(new Text(s));
 
         List<List<Writable>> expSeq = new ArrayList<>(s.length());
-        for( int i=0; i<s.length(); i++ ){
+        for( int i = 0; i<s.length(); i++) {
             expSeq.add(Collections.<Writable>singletonList(new IntWritable(m.get(s.charAt(i)))));
         }
 
@@ -76,6 +79,25 @@ public class TestTransformProcess {
         List<List<Writable>> out = transformProcess.executeToSequence(input);
 
         assertEquals(expSeq, out);
+    }
+
+    @Test
+    public void testInferColumns()  throws Exception {
+        List<List<String>> categories = Arrays.asList(
+                Arrays.asList("a","d")  ,
+                Arrays.asList("b","e"),
+                Arrays.asList("c","f")
+        );
+
+        RecordReader listReader = new ListStringRecordReader();
+        listReader.initialize(new ListStringSplit(categories));
+        List<String> inferredSingle = TransformProcess.inferCategories(listReader,0);
+        assertEquals(3,inferredSingle.size());
+        listReader.initialize(new ListStringSplit(categories));
+        Map<Integer, List<String>> integerListMap = TransformProcess.inferCategories(listReader, new int[]{0,1});
+        for(int i = 0; i < 2; i++) {
+            assertEquals(3,integerListMap.get(i).size());
+        }
     }
 
 
@@ -115,4 +137,7 @@ public class TestTransformProcess {
 
         return ret;
     }
+
+
+
 }
