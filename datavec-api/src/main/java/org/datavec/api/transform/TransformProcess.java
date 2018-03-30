@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
@@ -159,6 +160,11 @@ public class TransformProcess implements Serializable {
         this(builder.initialSchema, builder.actionList);
     }
 
+    /**
+     * Get the action list that this transform process
+     * will execute
+     * @return
+     */
     public List<DataAction> getActionList() {
         return actionList;
     }
@@ -479,6 +485,80 @@ public class TransformProcess implements Serializable {
             throw new RuntimeException(e);
         }
     }
+
+
+    /**
+     * Infer the categories for the given record reader for a particular column
+     *  Note that each "column index" is a column in the context of:
+     * List<Writable> record = ...;
+     * record.get(columnIndex);
+     *
+     *  Note that anything passed in as a column will be automatically converted to a
+     *  string for categorical purposes.
+     *
+     *  The *expected* input is strings or numbers (which have sensible toString() representations)
+     *
+     * @param recordReader the record reader to iterate through
+     * @param columnIndex te column index to get categories for
+     * @return
+     */
+    public static List<String> inferCategories(RecordReader recordReader,int columnIndex) {
+        Set<String> categories = new HashSet<>();
+        while(recordReader.hasNext()) {
+            List<Writable> next = recordReader.next();
+            categories.add(next.get(columnIndex).toString());
+        }
+
+        return new ArrayList<>(categories);
+    }
+
+    /**
+     * Infer the categories for the given record reader for
+     * a particular set of columns (this is more efficient than
+     * {@link #inferCategories(RecordReader, int)}
+     * if you have more than one column you plan on inferring categories for)
+     *
+     * Note that each "column index" is a column in the context of:
+     * List<Writable> record = ...;
+     * record.get(columnIndex);
+     *
+     *
+     *  Note that anything passed in as a column will be automatically converted to a
+     *  string for categorical purposes. Results may vary depending on what's passed in.
+     *  The *expected* input is strings or numbers (which have sensible toString() representations)
+     *
+     *
+     * @param recordReader the record reader to scan
+     * @param columnIndices the column indices the get
+     * @return the inferred categories
+     */
+    public static Map<Integer,List<String>> inferCategories(RecordReader recordReader,int[] columnIndices) {
+        if(columnIndices == null || columnIndices.length < 1) {
+            return Collections.emptyMap();
+        }
+
+        Map<Integer,List<String>> categoryMap = new HashMap<>();
+        Map<Integer,Set<String>> categories = new HashMap<>();
+        for(int i = 0; i < columnIndices.length; i++) {
+            categoryMap.put(i,new ArrayList<String>());
+            categories.put(i,new HashSet<String>());
+        }
+        while(recordReader.hasNext()) {
+            List<Writable> next = recordReader.next();
+            for(int i = 0; i < columnIndices.length; i++) {
+                categories.get(columnIndices[i]).add(next.get(columnIndices[i]).toString());
+            }
+
+        }
+
+        for(int i = 0; i < columnIndices.length; i++) {
+            categoryMap.get(columnIndices[i]).addAll(categories.get(columnIndices[i]));
+        }
+
+        return categoryMap;
+    }
+
+
 
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
         return reinitializeMapperWithSubtypes(mapper, Arrays.<Class<?>>asList(Transform.class, Condition.class,
@@ -1332,7 +1412,7 @@ public class TransformProcess implements Serializable {
          * Replace it with a "no" value, otherwise.
          *
          * @param column    Column to operate on
-         * @param yesval  Value to use as replacement, if condition is satisfied
+         * @param yesVal  Value to use as replacement, if condition is satisfied
          * @param noVal  Value to use as replacement, if condition is not satisfied
          * @param condition Condition that must be satisfied for replacement
          */
