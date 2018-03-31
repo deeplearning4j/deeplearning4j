@@ -10,9 +10,16 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public class ModelMetaData {
-    private int[][] inputShape;
+	private int[][] inputShape;
     private int numOutputs;
     private ZooType zooType;
+    
+    public ModelMetaData(int[][] inputShape, int numOutputs, ZooType zooType) {
+		super();
+		this.inputShape = inputShape;
+		this.numOutputs = numOutputs;
+		this.zooType = zooType;
+	}
 
     /**
      * If number of inputs are greater than 1, this states that the
@@ -22,4 +29,8 @@ public class ModelMetaData {
     public boolean useMDS() {
         return inputShape.length > 1 ? true : false;
     }
+
+	public int[][] getInputShape() {
+		return inputShape;
+	}
 }

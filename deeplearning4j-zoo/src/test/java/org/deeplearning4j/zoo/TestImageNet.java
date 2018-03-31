@@ -22,6 +22,8 @@ import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.VGG16ImagePreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +39,7 @@ import static org.junit.Assert.assertTrue;
  */
 @Slf4j
 public class TestImageNet {
+	private static final Logger log = LoggerFactory.getLogger(TestImageNet.class);
 
     @Test
     public void testImageNetLabels() throws IOException {
