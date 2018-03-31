@@ -32,11 +32,16 @@ public class Gather extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
 
         addIArgument(axis);
-        for (int b: broadcast){
-            addIArgument(b);
-        }
+        addIArgument(broadcast);
+        this.axis = axis;
+        this.broadcast = broadcast;
     }
 
+    public Gather(SameDiff sameDiff, SDVariable input, SDVariable indices, int axis, boolean inPlace) {
+        super(null, sameDiff, new SDVariable[] {input, indices}, inPlace);
+        addIArgument(axis);
+        this.axis = axis;
+    }
     @Override
     public String onnxName() {
         return "Gather";

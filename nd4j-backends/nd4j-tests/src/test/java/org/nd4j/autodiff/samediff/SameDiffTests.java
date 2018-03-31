@@ -429,12 +429,9 @@ public class SameDiffTests {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Nd4j.create(new float[]{1, 2, 3, 4}, new int[]{2, 2});
         SDVariable x = sameDiff.var("x", arr);
-        SDVariable result1 = sameDiff.gather(x, 0, new int[]{1, 0});
-        SDVariable result2 = sameDiff.gather(x, 1, new int[]{1, 0});
-        INDArray expected1 = Nd4j.create(new float[]{3, 4, 1, 2}, new int[]{2, 2});
-        INDArray expected2 = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
-        assertEquals(expected1, result1.eval());
-        assertEquals(expected2, result2.eval());
+        SDVariable result = sameDiff.gather(x, 1, new int[]{1, 0});
+        INDArray expected = Nd4j.create(new float[]{2, 1, 4, 3}, new int[]{2, 2});
+        assertEquals(expected, result.eval());
 
     }
 
