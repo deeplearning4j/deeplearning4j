@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +18,7 @@ import java.util.Map;
  */
 @Slf4j
 public class TestDownload {
+	private static final Logger log = LoggerFactory.getLogger(TestDownload.class);
 
     @Test
     public void testDownloadAllModels() throws Exception {

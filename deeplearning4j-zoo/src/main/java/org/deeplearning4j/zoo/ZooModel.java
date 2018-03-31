@@ -1,17 +1,20 @@
 package org.deeplearning4j.zoo;
 
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.util.ModelSerializer;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
+
+import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.ModelSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A zoo model is instantiable, returns information about itself, and can download
@@ -23,7 +26,8 @@ import java.util.zip.Checksum;
 public abstract class ZooModel<T> implements InstantiableModel {
 
     public static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), "/.deeplearning4j/");
-
+    private static final Logger log = LoggerFactory.getLogger(ZooModel.class);
+    
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
         if (pretrainedUrl(pretrainedType) == null)
             return false;

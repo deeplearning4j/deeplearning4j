@@ -13,7 +13,14 @@ import lombok.Data;
 @Data
 public class ClassPrediction {
 
-    private int number;
+    public ClassPrediction(int number, String label, double probability) {
+		super();
+		this.number = number;
+		this.label = label;
+		this.probability = probability;
+	}
+
+	private int number;
     private String label;
     private double probability;
 
@@ -21,4 +28,12 @@ public class ClassPrediction {
     public String toString() {
         return "ClassPrediction(number=" + number + ",label=" + label + ",probability=" + probability + ")";
     }
+
+	public String getLabel() {
+		return label;
+	}
+
+	public void setLabel(String label) {
+		this.label = label;
+	}
 }
