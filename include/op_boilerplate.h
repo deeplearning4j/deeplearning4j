@@ -56,6 +56,12 @@
 
 #define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
 
+#ifdef __CUDA_ARCH__
+#define PRINT_FIRST(...)    if (threadIdx.x == 0 && blockIdx.x == 0) {printf(__VA_ARGS__); }
+#else
+#define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
+#endif
+
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
 #define PASTE(x, ...) x ## __VA_ARGS__ 

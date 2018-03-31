@@ -1401,6 +1401,11 @@ ND4J_EXPORT bool isLikeVector(int *shapeInfo, int& posOfNonUnityDim);
 #ifdef __CUDACC__
     __host__ __device__
 #endif
+    ND4J_EXPORT void printShapeInfoLinear(const char *msg, int rank, int *shape, int *strides);
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
     ND4J_EXPORT void printIntArray(int *arr,int length);
 
 #ifdef __CUDACC__
@@ -4031,7 +4036,16 @@ __host__ __device__
         Nd4jIndex offset = baseOffset;
         for(int i = 0; i < rank; i++) {
             if(indices[i] >= shape[i] && shape[i] != 1) {
-                printf("Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
+#ifdef __CUDA_ARCH__
+                printf("D: Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
+#else
+                printf("H: Index %d [%d] must not be >= shape[%d].\n", i,indices[i],shape[i]);
+#endif
+
+#ifdef __CUDA_ARCH__
+                if (threadIdx.x == 0 && blockIdx.x == 0)
+                    printShapeInfoLinear("getOffsetFailed", rank, shape, stride);
+#endif
                 return -1;
             }
 
@@ -4190,7 +4204,30 @@ __host__ __device__
             }
         }
         printf("]\n");
-#ifndef __CUDACC__
+#ifndef __CUDA_ARCH__
+        fflush(stdout);
+#endif
+    }
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF void printShapeInfoLinear(const char *msg, int rank, int *shape, int *strides) {
+        printf("%s : [", msg);
+        for (int i = 0; i < rank; i++) {
+            printf("%i, ", shape[i]);
+        }
+
+        for (int i = 0; i < rank; i++) {
+            printf("%i", strides[i]);
+
+            if (i < rank - 1)
+                printf(", ");
+        }
+        printf("]\n");
+
+#ifndef __CUDA_ARCH__
         fflush(stdout);
 #endif
     }

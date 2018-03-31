@@ -4840,7 +4840,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
 		Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
-		concatKernelFloat<<< 2048, 128, funcAttributes[31].sharedSizeBytes , *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelFloat<<< 512, 512, 4096, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
@@ -4941,7 +4941,7 @@ void NativeOps::concatHalf(
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
 		Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
-		concatKernelHalf<<< 2048, 128, funcAttributes[31].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelHalf<<< 512, 128, 4096, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatHalf: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
@@ -5101,7 +5101,7 @@ void NativeOps::concatDouble(
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
         Nd4jIndex *devZOffsets = reinterpret_cast<Nd4jIndex *>(extraPointers[11]);
 
-		concatKernelDouble<<< 2048, 128, funcAttributes[35].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelDouble<<< 512, 128, 4096, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
 		printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
@@ -5341,7 +5341,8 @@ void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer 
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
-    shuffleKernelDouble<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
+
+    shuffleKernelDouble<<<32, 128, 2048, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5357,7 +5358,7 @@ void NativeOps::shuffleFloat(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
-    shuffleKernelFloat<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
+    shuffleKernelFloat<<<32, 128, 2048, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -5373,7 +5374,7 @@ void NativeOps::shuffleHalf(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *x
     int **tadOnlyShapeInfo = reinterpret_cast<int **>(tadShapeInfo);
     Nd4jIndex **tadOffset = reinterpret_cast<Nd4jIndex **>(tadOffsets);
 
-    shuffleKernelHalf<<<32, 128, 1024, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
+    shuffleKernelHalf<<<32, 128, 2048, *stream>>>(x, xShape, z, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset);
 
     if (nd4j::Environment::getInstance()->isDebug())
         checkCudaErrors(cudaStreamSynchronize(*stream));

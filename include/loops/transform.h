@@ -777,6 +777,9 @@ __device__ void concatKernelGeneric(int dimension,
 	int **tadShapes = (int **) tadPointers;
 	Nd4jIndex **tadOffsets = (Nd4jIndex **) offsetPointers;
 
+	//if (threadIdx.x == 0 && blockIdx.x == 0) {
+	//    shape::printShapeInfoLinear("zTadShape", zTadShape);
+	//}
 
     //__shared__ int tDim[1];
         __shared__ int baseIdx;
@@ -796,9 +799,9 @@ __device__ void concatKernelGeneric(int dimension,
 
 
         if (shape::isVector(resultShapeInfo)) {
-			//if (threadIdx.x == 0)
+			//if (threadIdx.x == 0 && blockIdx.x == 0)
 			//	printf("Vector here\n");
-				
+
 			if (zEWS >= 1) {
 				for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
 					if(shape::isVector(shapeInfoPointers[r]) || shape::order(shapeInfoPointers[r]) == shape::order(resultShapeInfo)) {
@@ -853,11 +856,14 @@ __device__ void concatKernelGeneric(int dimension,
 					arrOffset +=  shape::length(tadShapes[f]);
 				}
 
+				//if (threadIdx.x == 0 && blockIdx.x == 0) {
+			    //    shape::printShapeInfoLinear("currentTad", currentTad);
+			    //}
 			}
 			__syncthreads();
 
             if (yLength == 1 && _vec) {
-				//if (threadIdx.x == 0)
+				//if (threadIdx.x == 0 && blockIdx.x == 0)
 				//	printf("Branch 0\n");
 
                 // edge case, each thread will handle it's own tad then
@@ -890,7 +896,7 @@ __device__ void concatKernelGeneric(int dimension,
 					resultTAD[resultOffset] =  dataTAD[yOffset];
                 }
             } else {
-				//if (threadIdx.x == 0)
+				//if (threadIdx.x == 0 && blockIdx.x == 0)
 				//	printf("Branch 1\n");
 
 			    for (int j = blockIdx.x; j < numTads; j += gridDim.x) {
@@ -908,7 +914,7 @@ __device__ void concatKernelGeneric(int dimension,
 				    resultTAD += baseOffset;
 
 				    if (zOrder == yOrder && yEWS > 0  && tadEWS > 0) {
-				        //if (threadIdx.x == 0)
+				        //if (threadIdx.x == 0 && blockIdx.x == 0)
 				        //    printf("Branch A\n");
 
 					    for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
@@ -916,7 +922,7 @@ __device__ void concatKernelGeneric(int dimension,
 					    }
 				    } else {
 					    if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-					        //if (threadIdx.x == 0)
+					        //if (threadIdx.x == 0 && blockIdx.x == 0)
 				            //    printf("Branch B\n");
 
 						    if (threadIdx.x == 0) {
@@ -945,18 +951,20 @@ __device__ void concatKernelGeneric(int dimension,
 						    }
 						    __syncthreads();
 					    } else {
-                            //if (threadIdx.x == 0)
+                            //if (threadIdx.x == 0 && blockIdx.x  == 0)
 				            //    printf("Branch C; yLength: %i;\n", yLength);
 
+                            int zIdx[MAX_RANK];
 						    int yIdx[MAX_RANK];
 						    int yRank = shape::rank(currentTad);
 						    int tadRank = shape::rank(zTadShape);
 
 						    for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
 							    shape::ind2subC(yRank, shape::shapeOf(currentTad), i,yIdx);
+							    shape::ind2subC(tadRank, shape::shapeOf(zTadShape), i,zIdx);
 
 							    int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
-							    int resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
+							    int resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), zIdx, tadRank);
 
 							    resultTAD[resultOffset] =  dataTAD[yOffset];
 						    }
