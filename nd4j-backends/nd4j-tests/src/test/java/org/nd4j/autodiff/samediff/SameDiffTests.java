@@ -560,7 +560,7 @@ public class SameDiffTests {
         INDArray arr2 = Nd4j.create(new float[]{3, 2}).reshape(2);
         SDVariable x = sameDiff.var("x", arr1);
         SDVariable seq_lengths = sameDiff.var("seq_lengths", arr2);
-        SDVariable result = sameDiff.reverse_sequence(x, seq_lengths, 1, 0);
+        SDVariable result = sameDiff.reverseSequence(x, seq_lengths, 1, 0);
         INDArray expected = Nd4j.create(expected_output, new int[]{2, 5, 3});
         assertArrayEquals(arr1.shape(), result.eval().shape());
         assertEquals(expected, result.eval());
