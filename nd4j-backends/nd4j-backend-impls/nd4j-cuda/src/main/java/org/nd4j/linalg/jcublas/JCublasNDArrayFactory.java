@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.jcublas;
 
+import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
@@ -1178,6 +1179,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
             Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(array, dimension);
 
+//            log.info("Original shape: {}; dimension: {}; TAD shape: {}", array.shapeInfoDataBuffer().asInt(), dimension, tadBuffers.getFirst().asInt());
+
             Pointer tadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
             DataBuffer offsets = tadBuffers.getSecond();
@@ -1402,8 +1405,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (!(source instanceof CompressedDataBuffer))
             AtomicAllocator.getInstance().synchronizeHostData(source);
 
-        if (typeDst.ordinal() < 8) {
-            // all types below 6 are compression modes
+        if (CompressionUtils.goingToCompress(typeSrc, typeDst)) {
+            // all types below 8 are compression modes
             BytePointer pointer = new BytePointer(source.length() * elementSize);
             CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());
             descriptor.setCompressionType(CompressionType.LOSSY);
@@ -1548,7 +1551,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
                     (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
-                    new LongPointerWrapper((IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
+                    new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
             );
         } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.tearFloat(extraz,

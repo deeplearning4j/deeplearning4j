@@ -48,6 +48,11 @@ public class And implements Condition {
     }
 
     @Override
+    public double epsThreshold() {
+        return 0.0;
+    }
+
+    @Override
     public Boolean apply(Number input) {
         boolean ret = conditions[0].apply(input);
         //short circuit: no need to check anything else

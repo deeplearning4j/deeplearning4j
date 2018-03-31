@@ -624,7 +624,7 @@ public class Shape {
         for (int i = 0; i < shape.length; i++) {
             if (indices[i] >= shape[i])
                 throw new IllegalArgumentException(
-                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, shape[i]));
+                        String.format("J: Index [%d] must not be >= shape[%d]=%d.", i, i, shape[i]));
             if (shape[i] != 1) {
                 offset += indices[i] * stride[i];
             }
@@ -670,7 +670,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(
-                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                        String.format("J: Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }
@@ -688,7 +688,7 @@ public class Shape {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(
-                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+                        String.format("J: Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
             if (size_dimi != 1) {
                 offset += indices[i] * stride(shapeInformation, i);
             }

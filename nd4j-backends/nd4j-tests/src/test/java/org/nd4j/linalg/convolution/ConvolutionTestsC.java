@@ -340,6 +340,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testMaxPoolBackprop(){
         Nd4j.getRandom().setSeed(12345);
 

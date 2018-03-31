@@ -136,6 +136,7 @@ public class CompareAndReplace extends BaseTransformOp {
         this.compare = condition.getValue();
         this.set = 0;
         this.mode = condition.condtionNum();
+        this.eps = condition.epsThreshold();
         init(x, y, z, x.lengthLong());
     }
 

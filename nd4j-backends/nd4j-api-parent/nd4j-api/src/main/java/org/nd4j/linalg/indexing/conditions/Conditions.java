@@ -20,6 +20,7 @@
 package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Static class for conditions
@@ -47,7 +48,11 @@ public class Conditions {
     }
 
     public static Condition epsEquals(Number value) {
-        return new EpsilonEquals(value);
+        return epsEquals(value, Nd4j.EPS_THRESHOLD);
+    }
+
+    public static Condition epsEquals(Number value, Number epsilon) {
+        return new EpsilonEquals(value, epsilon.doubleValue());
     }
 
 

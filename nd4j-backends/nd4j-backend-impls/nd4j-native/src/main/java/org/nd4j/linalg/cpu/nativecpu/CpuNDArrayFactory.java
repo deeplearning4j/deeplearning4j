@@ -21,6 +21,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.compression.CompressionUtils;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
@@ -1156,7 +1157,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         DataBuffer buffer = null;
 
 
-        if (typeDst.ordinal() < 8) {
+        if (CompressionUtils.goingToCompress(typeSrc, typeDst)) {
             // all types below 6 are compression modes
             BytePointer pointer = new BytePointer(source.length() * elementSize);
             CompressionDescriptor descriptor = new CompressionDescriptor(source, typeDst.name());

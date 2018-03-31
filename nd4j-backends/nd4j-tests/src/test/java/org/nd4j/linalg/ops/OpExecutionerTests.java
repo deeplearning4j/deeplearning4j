@@ -20,6 +20,8 @@
 
 package org.nd4j.linalg.ops;
 
+import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -109,6 +111,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
 
     @Test
+    @Ignore
     public void testDistance() throws Exception {
         INDArray matrix = Nd4j.rand(new int[] {400,10});
         INDArray rowVector = matrix.getRow(70);
@@ -274,7 +277,9 @@ public class OpExecutionerTests extends BaseNd4jTest {
     public void testIamax2() {
         INDArray linspace = Nd4j.linspace(1, 4, 4);
         assertEquals(getFailureMessage(), 3, Nd4j.getBlasWrapper().iamax(linspace));
-        int iamax = Nd4j.getExecutioner().execAndReturn(new IAMax(linspace)).getFinalResult();
+        val op = new IAMax(linspace);
+
+        int iamax = Nd4j.getExecutioner().execAndReturn(op).getFinalResult();
         assertEquals(3, iamax);
     }
 

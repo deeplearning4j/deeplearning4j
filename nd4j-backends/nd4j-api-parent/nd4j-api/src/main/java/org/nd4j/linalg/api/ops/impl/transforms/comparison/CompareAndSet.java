@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.LinkedHashMap;
@@ -154,6 +155,7 @@ public class CompareAndSet extends BaseTransformOp {
         super(x, null, z, x.lengthLong());
         this.compare = condition.getValue();
         this.set = set;
+        this.eps = condition.epsThreshold();
         this.mode = condition.condtionNum();
         init(x, null, z, x.lengthLong());
     }
@@ -190,6 +192,7 @@ public class CompareAndSet extends BaseTransformOp {
         super(x, y, z, x.lengthLong());
         this.compare = condition.getValue();
         this.set = 0;
+        this.eps = condition.epsThreshold();
         this.mode = condition.condtionNum();
         init(x, y, z, x.lengthLong());
     }

@@ -36,6 +36,8 @@ public interface Condition extends Function<Number, Boolean> {
 
     double getValue();
 
+    double epsThreshold();
+
     @Override
     Boolean apply(Number input);
 

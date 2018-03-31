@@ -574,7 +574,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             retShape = new int[] {1, 1};
         }
 
-        if(op.z() == null){
+        if(op.z() == null || op.z() == op.x()){
             INDArray ret = null;
             if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
                 ret = Nd4j.zeros(retShape);

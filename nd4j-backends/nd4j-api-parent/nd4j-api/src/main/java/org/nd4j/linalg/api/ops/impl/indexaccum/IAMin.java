@@ -90,12 +90,12 @@ public class IAMin extends BaseIndexAccumulation {
 
     @Override
     public String onnxName() {
-        return "ArgMin";
+        return "AbsArgMin";
     }
 
     @Override
     public String tensorflowName() {
-        return "argmin";
+        return "absargmin";
     }
 
     @Override

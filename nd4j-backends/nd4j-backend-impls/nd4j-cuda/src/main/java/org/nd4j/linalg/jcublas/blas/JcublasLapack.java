@@ -104,8 +104,6 @@ public class JcublasLapack extends BaseLapack {
 
         if (a != A)
             A.assign(a);
-
-        log.info("A: {}", A);
     }
 
 

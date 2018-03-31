@@ -1,5 +1,6 @@
 package org.nd4j.compression.impl;
 
+import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -32,8 +33,8 @@ public class Float16 extends AbstractCompressor {
 
     @Override
     public DataBuffer decompress(DataBuffer buffer) {
-        DataBuffer result =
-                        Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.FLOAT16, buffer, getGlobalTypeEx());
+        val type = getGlobalTypeEx();
+        DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.FLOAT16, buffer, type);
 
         return result;
     }

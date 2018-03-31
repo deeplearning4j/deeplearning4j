@@ -12,25 +12,25 @@ import java.util.List;
  *
  */
 @NoArgsConstructor
-public class Where extends DynamicCustomOp {
-    public Where(SameDiff sameDiff, SDVariable[] args) {
+public class WhereNumpy extends DynamicCustomOp {
+    public WhereNumpy(SameDiff sameDiff, SDVariable[] args) {
         super(null, sameDiff, args);
     }
 
-    public Where(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
+    public WhereNumpy(String opName, INDArray[] inputs, INDArray[] outputs, List<Double> tArguments, List<Integer> iArguments) {
         super(opName, inputs, outputs, tArguments, iArguments);
     }
 
-    public Where(INDArray[] inputs, INDArray[] outputs) {
+    public WhereNumpy(INDArray[] inputs, INDArray[] outputs) {
         super(null, inputs, outputs);
     }
 
-    public Where(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
+    public WhereNumpy(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
     }
 
     @Override
     public String opName() {
-        return "Where";
+        return "where_np";
     }
 }

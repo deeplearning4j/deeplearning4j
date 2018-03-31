@@ -96,11 +96,11 @@ public class IAMax extends BaseIndexAccumulation {
 
     @Override
     public String onnxName() {
-        return "ArgMax";
+        return "AbsArgMax";
     }
 
     @Override
     public String tensorflowName() {
-        return "argmax";
+        return "absargmax";
     }
 }

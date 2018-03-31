@@ -56,4 +56,9 @@ public class Not implements Condition {
     public Boolean apply(IComplexNumber input) {
         return !opposite.apply(input);
     }
+
+    @Override
+    public double epsThreshold() {
+        return 0;
+    }
 }

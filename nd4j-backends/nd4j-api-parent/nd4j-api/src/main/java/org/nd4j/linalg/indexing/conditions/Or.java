@@ -69,4 +69,9 @@ public class Or implements Condition {
         }
         return ret;
     }
+
+    @Override
+    public double epsThreshold() {
+        return 0;
+    }
 }

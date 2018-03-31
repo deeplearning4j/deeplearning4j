@@ -1014,6 +1014,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             return (int) ((DoubleIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.INT) {
             return ((IntIndexer) indexer).get(offset() + i);
+        } else if (dataType() == Type.LONG) {
+            return (int) ((LongIndexer) indexer).get(offset() + i);
         } else {
             return (int) ((FloatIndexer) indexer).get(offset() + i);
         }

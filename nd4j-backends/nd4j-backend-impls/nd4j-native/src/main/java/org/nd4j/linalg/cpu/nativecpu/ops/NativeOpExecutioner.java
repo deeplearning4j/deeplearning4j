@@ -181,7 +181,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if(op.z() == null) {
+        if(op.z() == null || op.x() == op.z()) {
             INDArray ret;
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
                 ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());

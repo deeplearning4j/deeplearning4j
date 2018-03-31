@@ -160,7 +160,7 @@ public class Transpose extends DynamicCustomOp {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arg().getShape().length));
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(permutedShape);
-        } else if (permuteDims != null) {
+        } else if (permuteDims != null && arg() != null && arg().getShape() != null) {
             val permutedShape = ArrayUtil.permute(arg().getShape(), permuteDims);
             return Arrays.asList(permutedShape);
         }

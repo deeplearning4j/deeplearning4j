@@ -35,6 +35,11 @@ public abstract class BaseCondition implements Condition {
     }
 
     @Override
+    public double epsThreshold() {
+        return Nd4j.EPS_THRESHOLD;
+    }
+
+    @Override
     public double getValue() {
         return value.doubleValue();
     }

@@ -5829,6 +5829,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testMatmul_128by256() throws Exception {
+        val mA = Nd4j.create(128, 156).assign(1.0f);
+        val mB = Nd4j.create(156, 256).assign(1.0f);
+
+        val mC = Nd4j.create(128, 256);
+        val mE = Nd4j.create(128, 256).assign(156.0f);
+        val mL = mA.mmul(mB);
+
+        val op = DynamicCustomOp.builder("matmul")
+                .addInputs(mA, mB)
+                .addOutputs(mC)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(mE, mC);
+    }
+
+
+    @Test
     public void testScalarSqueeze() {
         val scalar = Nd4j.create(new float[]{2.0f}, new int[]{1, 1});
         val output = Nd4j.trueScalar(0.0f);

@@ -1,6 +1,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.base.Function;
+import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -9,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
+import org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -572,8 +574,17 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         }
 
 
-        Nd4j.getExecutioner().exec(new Where(new INDArray[]{mask,data,put},new INDArray[]{resultData}));
+        Nd4j.getExecutioner().exec(new WhereNumpy(new INDArray[]{mask,data,put},new INDArray[]{resultData}));
         assertEquals(assertion,resultData);
+    }
+
+    @Test
+    public void testEpsStuff_1() throws Exception {
+        val array = Nd4j.create(new float[]{0.001f, 5e-6f, 5e-6f, 5e-6f, 5e-6f});
+        val exp = Nd4j.create(new float[]{0.001f, 1.0f, 1.0f, 1.0f, 1.0f});
+        BooleanIndexing.replaceWhere(array, 1.0f, Conditions.epsEquals(0));
+
+        assertEquals(exp, array);
     }
 
     @Override
