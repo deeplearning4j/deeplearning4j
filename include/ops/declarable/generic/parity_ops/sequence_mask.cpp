@@ -20,6 +20,13 @@ namespace nd4j {
                 if (T(maxInd) < max)
                     maxInd = static_cast<Nd4jIndex>(max);
             }
+            else if (block.width() > 1) {
+                NDArray<T>* maxlen = INPUT_VARIABLE(1);
+                //REQUIRE_TRUE(maxlen->lengthOf() == 1, "sequence_mask: 2nd input (max length) should be a scalar array.");
+                T tmaxlen = maxlen->getScalar(0);
+                if (tmaxlen > max)
+                    maxInd = static_cast<Nd4jIndex>(tmaxlen);
+            }
             else
                 maxInd = static_cast<Nd4jIndex>(max);
             for (Nd4jIndex i = 0; i < maxInd; i++) {
@@ -42,6 +49,12 @@ namespace nd4j {
                 maxInd = INT_ARG(0);
                 if (T(maxInd) < max)
                     maxInd = static_cast<Nd4jIndex>(max);
+            }
+            else if (block.width() > 1) {
+                NDArray<T>* maxlen = INPUT_VARIABLE(1);
+                T tmaxlen = maxlen->getScalar(0);
+                if (tmaxlen > max)
+                    maxInd = static_cast<Nd4jIndex>(tmaxlen);
             }
             else
                 maxInd = static_cast<Nd4jIndex>(max);
