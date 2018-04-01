@@ -828,6 +828,10 @@ public class DifferentialFunctionFactory   {
         return new Stack(sameDiff(), values, axis).outputVariables()[0];
     }
 
+    public SDVariable parallel_stack(SDVariable[] values) {
+        return new ParallelStack(sameDiff(), values).outputVariables()[0];
+    }
+
     public SDVariable[] unstack(SDVariable value, int axis) {
         return new Unstack(sameDiff(), value, axis).outputVariables();
     }

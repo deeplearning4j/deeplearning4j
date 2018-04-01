@@ -2545,6 +2545,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable parallel_stack(SDVariable[] values) {
+        return parallel_stack(null, values);
+    }
+
+    public SDVariable parallel_stack(String name, SDVariable[] values) {
+        SDVariable ret = f().parallel_stack(values);
+        return updateVariableNameAndReference(ret, name);
+    }
+
     public SDVariable[] unstack(SDVariable value, int axis) {
         return unstack(null, value, axis);
     }

@@ -467,6 +467,18 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testParallelStack() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
+        INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
+        SDVariable x1 = sameDiff.var("x1", arr1);
+        SDVariable x2 = sameDiff.var("x2", arr2);
+        SDVariable result = sameDiff.parallel_stack(new SDVariable[]{x1, x2});
+        assertArrayEquals(new int[]{2, 3, 2}, result.eval().shape());
+        assertEquals(Nd4j.concat(0, arr1, arr2).reshape(2, 3, 2), result.eval());
+    }
+
+    @Test
     public void testUnStack() {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr1 = Transforms.sigmoid(Nd4j.linspace(1, 6, 6)).reshape(3, 2);
