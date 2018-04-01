@@ -2152,5 +2152,347 @@ TEST_F(DeclarableOpsTests4, maxpool2d_test1) {
 }
 
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test1) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    
+    NDArray<float> expected('c', {rows, cols}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test2) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    const int diag = 2;
+    
+    NDArray<float> expected('c', {rows, cols}, {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols, diag});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test3) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    const int diag = -1;
+    
+    NDArray<float> expected('c', {rows, cols}, {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0});
+   
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols, diag});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test4) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    const int diag = -2;
+    
+    NDArray<float> expected('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols, diag});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test5) {
+  
+    const int rows = 5;    
+    
+    NDArray<float> expected('c', {rows, rows}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test6) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    const int diag = -20;
+    
+    NDArray<float> expected('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols, diag});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, tri_test7) {
+  
+    const int rows = 3;
+    const int cols = 5;
+    const int diag = 20;
+    
+    NDArray<float> expected('c', {rows, cols}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});    
+    
+    nd4j::ops::tri<float> op;
+    ResultSet<float>* results = op.execute({}, {}, {rows, cols, diag});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test1) {    
+    
+    NDArray<float> input('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {4, 3}, {1,  2,  3, 0, 5, 6, 0,  0,  9, 0,  0, 0});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test2) {    
+    
+    NDArray<float> input('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {4, 3}, {1,  2,  3,4,  5,  6,0,  8,  9,0,  0, 12});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {-1});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test3) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {2, 3, 2}, {1, 2,3, 4,0, 6,7, 8,9,10,0,12});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {-1});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test4) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {2, 3, 2}, {1,  2,0,  4,0,  0,7,  8,0, 10,0,  0});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test5) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {2, 3, 2}, {0, 2,0,  0,0,  0,0,  8,0, 0,0,  0});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {1});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test6) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {2, 3, 2}, {0, 0,0,  0,0,  0,0,  0,0, 0,0,  0});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {10});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test7) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> expected('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {-10});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test8) {    
+    
+    NDArray<float> input('c', {6}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> expected('c', {6, 6}, {1, 2, 3, 4, 5, 6,0, 2, 3, 4, 5, 6,0, 0, 3, 4, 5, 6,0, 0, 0, 4, 5, 6,0, 0, 0, 0, 5, 6,0, 0, 0, 0, 0, 6});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test9) {    
+    
+    NDArray<float> input('c', {6}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> expected('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 0, 2, 3, 4, 5, 6, 0, 0, 3, 4, 5, 6});    
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {-3});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test10) {    
+    
+    NDArray<float> input('c', {6}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> expected('c', {6, 6}, {0, 0, 0, 4, 5, 6, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {3});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_test11) {    
+    
+    NDArray<float> input('c', {6}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> expected('c', {6, 6}, {1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6});
+    
+    nd4j::ops::triu<float> op;
+    ResultSet<float>* results = op.execute({&input}, {}, {-58});
+    NDArray<float>* output = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));    
+    
+    delete results;
+}
+
 
 

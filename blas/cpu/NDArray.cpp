@@ -3053,43 +3053,38 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
         return result;
     }
 
-    ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    void NDArray<T>::setZeros(const char* block) {
+////////////////////////////////////////////////////////////////////////
+template<typename T>
+void NDArray<T>::setValueIn2DMatrix(const T& value, const int diag, const char direction) {
 
-        if(rankOf() != 2)
-            throw "NDArray::setZeros method: input array must have rank = 2 !";
+    if(rankOf() != 2)
+       throw std::string("NDArray::setValueIn2DMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
 
-        const int rows = sizeAt(0);
-        const int cols = sizeAt(1);
+    const int rows = sizeAt(0);
+    const int cols = sizeAt(1);
         
-        if(!strcmp(block, "trianUp")) {
+    switch(direction) {
             
-            for(int i = 0; i < rows; ++i)
-                for(int j = i+1; j < cols; ++j)                                      
-                    (*this)(i, j) = 0.;
-        }
-        else if(!strcmp(block, "trianUpD")) {
+        case 'u':                           // fill upper triangular block
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)             
+            for(int i = 0; i < rows; ++i) 
+                for(int j = 0; j < cols; ++j)                                      
+                    if (i + diag <= j)
+                        (*this)(i, j) = value;    
+                break;
 
-            for(int i = 0; i < rows; ++i)
-                for(int j = i; j < cols; ++j)                                      
-                    (*this)(i, j) = 0.;
-        }
-        else if(!strcmp(block, "trianLow")) {
+        case 'l':                           // fill lower triangular block
+#pragma omp parallel for if(rows > Environment::getInstance()->elementwiseThreshold()) schedule(guided)                         
+            for(int i = 0; i < rows; ++i) 
+                for(int j = 0; j < cols; ++j)                                      
+                    if (i + diag >= j)
+                        (*this)(i, j) = value;    
+            break;
 
-            for(int i = 0; i < rows; ++i)
-                for(int j = 0; j < i; ++j)                                      
-                    (*this)(i, j) = 0.;
-        }
-        else if(!strcmp(block, "trianLowD")) {
-
-            for(int i = 0; i < rows; ++i)
-                for(int j = 0; j <= i; ++j)                                      
-                    (*this)(i, j) = 0.;
-        }
-        else 
-            throw "NDArray::setZeros method: wrong argument !";            
-    }
+        default:
+            throw std::string("NDArray::setValueIn2DMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
+    }  
+}
 
     ////////////////////////////////////////////////////////////////////////
     // default destructor

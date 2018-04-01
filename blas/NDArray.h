@@ -880,15 +880,17 @@ namespace nd4j {
         NDArray<T>* diagonal(const char type ) const;
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        void setZeros(const char* block);
+        void setValueIn2DMatrix(const T& value, const int diag, const char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

@@ -71,5 +71,9 @@ namespace nd4j {
          */
         DECLARE_CUSTOM_OP(clip_by_global_norm, 1, 2, true, 1, 0);
 
+        DECLARE_CUSTOM_OP(tri, -2, 1, false, 0, 1);
+
+        DECLARE_CUSTOM_OP(triu, 1, 1, false, 0, 0);
+
     }
 }
