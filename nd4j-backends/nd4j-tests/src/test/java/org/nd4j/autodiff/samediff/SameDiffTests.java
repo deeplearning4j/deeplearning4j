@@ -567,6 +567,30 @@ public class SameDiffTests {
     }
 
     @Test
+    public void testSequenceMask() {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
+        SDVariable lengths = sameDiff.var("lengths", arr);
+
+        // Test with static max len
+        int maxlen = 5;
+        INDArray expected = Nd4j.create(new float[] {1, 0, 0, 0, 0,
+                                                     1, 1, 1, 0, 0,
+                                                     1, 1, 0, 0, 0},
+                                                   new int[]{3, 5});
+        SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen);
+        assertArrayEquals(expected.shape(), result1.eval().shape());
+        assertEquals(expected, result1.eval());
+
+        // Test with dynamic maxlen
+        lengths = sameDiff.var("lengths2", arr); // required because of an internal samediff bug
+        SDVariable maxLen = sameDiff.var("maxLen", Nd4j.create(new float[]{5}).reshape(1));
+        SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen);
+        assertArrayEquals(expected.shape(), result2.eval().shape());
+        assertEquals(expected, result2.eval());
+    }
+
+    @Test
     public void testTensorGradMmul() {
         SameDiff sameDiff = SameDiff.create();
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2);

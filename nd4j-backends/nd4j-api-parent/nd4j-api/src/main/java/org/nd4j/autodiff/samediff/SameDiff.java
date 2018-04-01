@@ -2944,6 +2944,33 @@ public class SameDiff {
         return reverseSequence(null, x, seq_lengths);
     }
 
+    public SDVariable sequenceMask(String name, SDVariable lengths, SDVariable maxLen) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
+        return sequenceMask(null, lengths, maxLen);
+    }
+
+    public SDVariable sequenceMask(String name, SDVariable lengths, int maxLen) {
+        SDVariable ret = f().sequenceMask(lengths, maxLen);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
+        return sequenceMask(null, lengths, maxLen);
+    }
+
+    public SDVariable sequenceMask(String name, SDVariable lengths) {
+        SDVariable ret = f().sequenceMask(lengths);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    public SDVariable sequenceMask(SDVariable lengths) {
+        SDVariable ret = f().sequenceMask(lengths);
+        return updateVariableNameAndReference(ret, null);
+    }
 
     public SDVariable assign(SDVariable x, SDVariable y){
         return assign(null, x, y);

@@ -894,6 +894,18 @@ public class DifferentialFunctionFactory   {
         return new ReverseSequence(sameDiff(), x, seq_lengths).outputVariables()[0];
     }
 
+    public SDVariable sequenceMask(SDVariable lengths, SDVariable maxLen) {
+        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariables()[0];
+    }
+
+    public SDVariable sequenceMask(SDVariable lengths, int maxLen) {
+        return new SequenceMask(sameDiff(), lengths, maxLen).outputVariables()[0];
+    }
+
+    public SDVariable sequenceMask(SDVariable lengths) {
+        return new SequenceMask(sameDiff(), lengths).outputVariables()[0];
+    }
+
     public SDVariable rollAxis(SDVariable iX, int axis) {
         return new RollAxis(sameDiff(),iX,axis).outputVariables()[0];
     }
