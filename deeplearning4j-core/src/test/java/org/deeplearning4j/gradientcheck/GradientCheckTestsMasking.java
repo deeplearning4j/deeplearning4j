@@ -1,10 +1,12 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -14,6 +16,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -23,7 +26,10 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 import java.util.Arrays;
 import java.util.Random;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**Gradient checking tests with masking (i.e., variable length time series inputs, one-to-many and many-to-one etc)
  */
@@ -375,6 +381,110 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 assertTrue(msg + " (compgraph)", gradOK);
             }
+        }
+    }
+
+
+    @Test
+    public void testOutputLayerMasking(){
+        Nd4j.getRandom().setSeed(12345);
+        //Idea: RNN input, global pooling, OutputLayer - with "per example" mask arrays
+
+        int mb = 10;
+        int tsLength = 5;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(new NormalDistribution(0,2))
+                .updater(new NoOp())
+                .list()
+                .layer(new LSTM.Builder().nIn(10).nOut(10).build())
+                .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
+                .layer(new OutputLayer.Builder().nIn(10).nOut(10).build())
+                .setInputType(InputType.recurrent(10))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray f = Nd4j.rand(new int[]{mb, 10, tsLength});
+        INDArray l = TestUtils.randomOneHot(mb, 10);
+        INDArray lm = TestUtils.randomBernoulli(mb, 1);
+
+        assertTrue(lm.sumNumber().intValue() > 0);
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, lm);
+        assertTrue(gradOK);
+
+        //Also ensure score doesn't depend on masked feature or label values
+        double score = net.score(new DataSet(f,l,null,lm));
+
+        for( int i=0; i<mb; i++ ){
+            if(lm.getDouble(i) != 0.0){
+                continue;
+            }
+
+            INDArray fView = f.get(point(i), all(),all());
+            fView.assign(Nd4j.rand(fView.shape()));
+
+            INDArray lView = l.get(point(i), all());
+            lView.assign(TestUtils.randomOneHot(1, lView.size(1)));
+
+            double score2 = net.score(new DataSet(f,l,null,lm));
+
+            assertEquals(String.valueOf(i), score, score2, 1e-8);
+        }
+    }
+
+    @Test
+    public void testOutputLayerMaskingCG(){
+        Nd4j.getRandom().setSeed(12345);
+        //Idea: RNN input, global pooling, OutputLayer - with "per example" mask arrays
+
+        int mb = 10;
+        int tsLength = 5;
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(new NormalDistribution(0,2))
+                .updater(new NoOp())
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("1", new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build(), "0")
+                .layer("out", new OutputLayer.Builder().nIn(10).nOut(10).build(), "1")
+                .setOutputs("out")
+                .setInputTypes(InputType.recurrent(10))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray f = Nd4j.rand(new int[]{mb, 10, tsLength});
+        INDArray l = TestUtils.randomOneHot(mb, 10);
+        INDArray lm = TestUtils.randomBernoulli(mb, 1);
+
+        assertTrue(lm.sumNumber().intValue() > 0);
+
+        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{f}, new INDArray[]{l},
+                null, new INDArray[]{lm});
+        assertTrue(gradOK);
+
+        //Also ensure score doesn't depend on masked feature or label values
+        double score = net.score(new DataSet(f,l,null,lm));
+
+        for( int i=0; i<mb; i++ ){
+            if(lm.getDouble(i) != 0.0){
+                continue;
+            }
+
+            INDArray fView = f.get(point(i), all(),all());
+            fView.assign(Nd4j.rand(fView.shape()));
+
+            INDArray lView = l.get(point(i), all());
+            lView.assign(TestUtils.randomOneHot(1, lView.size(1)));
+
+            double score2 = net.score(new DataSet(f,l,null,lm));
+
+            assertEquals(String.valueOf(i), score, score2, 1e-8);
         }
     }
 }

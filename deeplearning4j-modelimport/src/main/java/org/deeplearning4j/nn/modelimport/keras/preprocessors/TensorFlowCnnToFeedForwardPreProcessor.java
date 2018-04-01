@@ -19,7 +19,8 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
 
     @JsonCreator
     public TensorFlowCnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+                                                  @JsonProperty("inputWidth") int inputWidth,
+                                                  @JsonProperty("numChannels") int numChannels) {
         super(inputHeight, inputWidth, numChannels);
     }
 
@@ -42,7 +43,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
         INDArray permuted = input.permute(0, 2, 3, 1).dup('c'); //To: [n, h, w, c]
 
         int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
-        int[] outShape = new int[] {inShape[0], inShape[1] * inShape[2] * inShape[3]};
+        int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
         return permuted.reshape('c', outShape);
     }

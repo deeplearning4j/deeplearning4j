@@ -26,7 +26,7 @@ import org.cleartk.syntax.constituent.type.TreebankNode;
 import org.cleartk.syntax.constituent.type.TreebankNodeUtil;
 import org.cleartk.token.type.Token;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
-import org.deeplearning4j.util.MultiDimensionalMap;
+import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;

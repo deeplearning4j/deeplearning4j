@@ -7,16 +7,12 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -37,6 +33,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] kernelSize; // Square filter
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
+    protected boolean cudnnAllowFallback = true;
 
     /** The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters
      * from the {@link FwdAlgo}, {@link BwdFilterAlgo}, and {@link BwdDataAlgo} lists, but they
@@ -105,6 +102,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
+        this.cudnnAllowFallback = builder.cudnnAllowFallback;
 
         initializeConstraints(builder);
     }
@@ -312,10 +310,11 @@ public class ConvolutionLayer extends FeedForwardLayer {
         public int[] kernelSize = new int[] {5, 5};
         protected int[] stride = new int[] {1, 1};
         protected int[] padding = new int[] {0, 0};
-        protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+        protected AlgoMode cudnnAlgoMode = null;
         protected FwdAlgo cudnnFwdAlgo;
         protected BwdFilterAlgo cudnnBwdFilterAlgo;
         protected BwdDataAlgo cudnnBwdDataAlgo;
+        protected boolean cudnnAllowFallback = true;
 
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
@@ -391,6 +390,18 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public T cudnnBwdDataMode(BwdDataAlgo cudnnBwdDataAlgo) {
             this.cudnnBwdDataAlgo = cudnnBwdDataAlgo;
+            return (T) this;
+        }
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
+         * implementation for ConvolutionLayer will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public T cudnnAllowFallback(boolean allowFallback){
+            this.cudnnAllowFallback = allowFallback;
             return (T) this;
         }
     }

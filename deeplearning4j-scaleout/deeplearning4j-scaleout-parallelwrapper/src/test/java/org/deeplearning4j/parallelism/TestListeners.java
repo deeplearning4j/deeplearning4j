@@ -23,6 +23,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -140,8 +141,8 @@ public class TestListeners {
         private static final AtomicInteger forwardPassCount = new AtomicInteger();
         private static final AtomicInteger backwardPassCount = new AtomicInteger();
         private static final AtomicInteger instanceCount = new AtomicInteger();
-        private static final Set<String> workerIDs = new ConcurrentHashSet<>();
-        private static final Set<String> sessionIDs = new ConcurrentHashSet<>();
+        private static final Set<String> workerIDs = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        private static final Set<String> sessionIDs = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
         public static void clearCounts() {
             forwardPassCount.set(0);

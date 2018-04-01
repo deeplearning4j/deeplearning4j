@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -16,6 +17,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
@@ -32,16 +34,26 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode (callSuper = false)
 public class KerasEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
+    private boolean hasZeroMasking;
+
+
+    /**
+     * Pass through constructor for unit tests
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasEmbedding() throws UnsupportedKerasConfigurationException {
+    }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -53,8 +65,8 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -66,10 +78,11 @@ public class KerasEmbedding extends KerasLayer {
         this.inputShape[0] = inputShapeOld[0];
         this.inputShape[1] = inputDim;
 
-        boolean hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
+        this.hasZeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
         if (hasZeroMasking)
-            log.warn("Masking in keras and DL4J work differently. We do not support mask_zero flag" +
-                    "on Embedding layers. If you want to have this behaviour for your imported model" +
+            log.warn("Masking in keras and DL4J work differently. We do not completely support mask_zero flag " +
+                    "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
+                    + " If you want to have this behaviour for your imported model " +
                     "in DL4J, apply masking as a pre-processing step to your input." +
                     "See https://deeplearning4j.org/usingrnns#masking for more on this.");
 
@@ -107,7 +120,7 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -132,15 +145,18 @@ public class KerasEmbedding extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights
+     * @param weights Embedding layer weights
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String, INDArray>();
+        this.weights = new HashMap<>();
         if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
         INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
+        if (this.hasZeroMasking) {
+            kernel.putRow(0, Nd4j.zeros(kernel.columns()));
+        }
         this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
 
         if (weights.size() > 2) {

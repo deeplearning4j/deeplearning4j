@@ -56,13 +56,17 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SpaceToDepthLayer extends Layer {
 
-    protected int[] blocks;
-    protected String dataFormat;
+    public enum DataFormat {
+        NCHW, NHWC
+    }
+
+    protected int blockSize;
+    protected DataFormat dataFormat;
 
 
     protected SpaceToDepthLayer(Builder builder) {
         super(builder);
-        this.blocks = builder.blocks;
+        this.blockSize = builder.blockSize;
         this.dataFormat = builder.dataFormat;
     }
 
@@ -106,7 +110,7 @@ public class SpaceToDepthLayer extends Layer {
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         return InputType.convolutional(
-                i.getHeight() / blocks[0], i.getWidth() / blocks[1], i.getDepth() * blocks[0] * blocks[1]
+                i.getHeight() / blockSize, i.getWidth() / blockSize, i.getDepth() * blockSize * blockSize
         );
     }
 
@@ -150,24 +154,24 @@ public class SpaceToDepthLayer extends Layer {
 
     @NoArgsConstructor
     public static class Builder<T extends Builder<T>> extends Layer.Builder<T>{
-        protected int[] blocks;
-        protected String dataFormat = "NCHW";
+        protected int blockSize;
+        protected DataFormat dataFormat = DataFormat.NCHW;
 
-        public Builder(int[] blocks) {
-            this.blocks = blocks;
+        public Builder(int blockSize) {
+            this.blockSize = blockSize;
         }
 
-        public Builder(int[] blocks, String dataFormat) {
-            this.blocks = blocks;
+        public Builder(int blockSize, DataFormat dataFormat) {
+            this.blockSize = blockSize;
             this.dataFormat = dataFormat;
         }
 
-        public T blocks(int[] blocks) {
-            this.blocks = blocks;
+        public T blocks(int blockSize) {
+            this.blockSize = blockSize;
             return (T) this;
         }
 
-        public T dataFormat(String dataFormat) {
+        public T dataFormat(DataFormat dataFormat) {
             this.dataFormat = dataFormat;
             return (T) this;
         }

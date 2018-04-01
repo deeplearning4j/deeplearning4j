@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -40,6 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -56,6 +56,7 @@ import java.util.Properties;
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
     protected SubsamplingHelper helper = null;
+    protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
@@ -131,9 +132,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outW = outSize[1];
 
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                    layerConf().getPoolingType(), convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            Pair<Gradient, INDArray> ret = null;
+            try{
+                ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
+                        layerConf().getPoolingType(), convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -304,9 +315,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outH = outSize[0];
         int outW = outSize[1];
 
-        if (helper != null) {
-            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                            convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            INDArray ret = null;
+            try {
+                ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
+                        convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }

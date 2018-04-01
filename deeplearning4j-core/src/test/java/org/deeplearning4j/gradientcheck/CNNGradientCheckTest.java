@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -9,8 +10,10 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -108,6 +111,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(gradOK);
+                    TestUtils.testModelSerialization(mln);
                 }
             }
         }
@@ -198,69 +202,71 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(gradOK);
+                        TestUtils.testModelSerialization(mln);
                     }
                 }
             }
         }
     }
 
+    @Ignore
     @Test
     public void testCnnWithSpaceToDepth() {
         Nd4j.getRandom().setSeed(12345);
         int nOut = 4;
+        int minibatchSize = 2;
 
-        int[] minibatchSizes = {2, 4};
         int width = 5;
         int height = 5;
         int inputDepth = 1;
 
         int[] kernel = {2, 2};
-        int[] blocks = {2, 2};
+        int blocks = 2;
 
-        String[] activations = {"sigmoid", "tanh"};
+        String[] activations = {"sigmoid"};
         SubsamplingLayer.PoolingType[] poolingTypes =
                 new SubsamplingLayer.PoolingType[]{SubsamplingLayer.PoolingType.MAX,
                         SubsamplingLayer.PoolingType.AVG, SubsamplingLayer.PoolingType.PNORM};
 
         for (String afn : activations) {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
-                for (int minibatchSize : minibatchSizes) {
-                    INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
-                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                    for (int i = 0; i < minibatchSize; i++) {
-                        labels.putScalar(new int[]{i, i % nOut}, 1.0);
-                    }
-
-                    MultiLayerConfiguration conf =
-                            new NeuralNetConfiguration.Builder()
-                                    .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
-                                    .dist(new NormalDistribution(0, 1))
-                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
-                                    .nOut(3).build()) //output: (5-2+0)/1+1 = 4
-                                    .layer(new SpaceToDepthLayer.Builder(blocks, "NCHW")
-                                            .build()) // (mb,3,4,4) -> (mb,12,2,2)
-                                    .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(2 * 2 * 12)
-                                            .nOut(nOut).build())
-                                    .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
-                                    .build();
-
-                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                    net.init();
-
-                    String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
-                            + afn;
-
-                    if (PRINT_RESULTS) {
-                        System.out.println(msg);
-                        for (int j = 0; j < net.getnLayers(); j++)
-                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
-                    }
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                    assertTrue(msg, gradOK);
+                INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
+                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                for (int i = 0; i < minibatchSize; i++) {
+                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
                 }
+
+                MultiLayerConfiguration conf =
+                        new NeuralNetConfiguration.Builder()
+                                .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1))
+                                .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth).hasBias(false)
+                                .nOut(1).build()) //output: (5-2+0)/1+1 = 4
+                                .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW)
+                                        .build()) // (mb,1,4,4) -> (mb,4,2,2)
+                                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(2 * 2 * 4)
+                                        .nOut(nOut).build())
+                                .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
+                                .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                String msg = "PoolingType=" + poolingType + ", minibatch=" + minibatchSize + ", activationFn="
+                        + afn;
+
+                if (PRINT_RESULTS) {
+                    System.out.println(msg);
+                    for (int j = 0; j < net.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                }
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                assertTrue(msg, gradOK);
+
+                TestUtils.testModelSerialization(net);
             }
         }
     }
@@ -320,6 +326,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -386,6 +394,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -455,6 +465,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -519,6 +531,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -581,6 +595,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
+
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }
@@ -640,6 +656,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                 DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                         assertTrue(msg, gradOK);
+
+                        TestUtils.testModelSerialization(net);
                     }
                 }
             }
@@ -705,6 +723,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                                     labels);
 
                             assertTrue(msg, gradOK);
+
+                            TestUtils.testModelSerialization(net);
                         }
                     }
                 }
@@ -775,6 +795,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
                 }
             }
         }
@@ -878,6 +900,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -951,6 +975,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
         }
     }
 
@@ -1032,6 +1058,79 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
             assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(net);
+        }
+    }
+
+
+    @Test
+    public void testCropping2DLayer() {
+        Nd4j.getRandom().setSeed(12345);
+        int nOut = 4;
+
+        int[] minibatchSizes = {1, 3};
+        int width = 12;
+        int height = 11;
+        int[] inputDepths = {1, 3};
+
+        int[] kernel = {2, 2};
+        int[] stride = {1, 1};
+        int[] padding = {0, 0};
+
+        int[][] cropTestCases = new int[][]{{0, 0, 0, 0}, {1, 1, 0, 0}, {2, 2, 2, 2}, {1,2,3,4}};
+
+        for (int inputDepth : inputDepths) {
+            for (int minibatchSize : minibatchSizes) {
+                INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
+                INDArray labels = Nd4j.zeros(minibatchSize, nOut);
+                for (int i = 0; i < minibatchSize; i++) {
+                    labels.putScalar(new int[]{i, i % nOut}, 1.0);
+                }
+                for (int[] crop : cropTestCases) {
+
+                    MultiLayerConfiguration conf =
+                            new NeuralNetConfiguration.Builder()
+                                    .updater(new NoOp())
+                                    .convolutionMode(ConvolutionMode.Same)
+                                    .weightInit(new NormalDistribution(0, 1)).list()
+                                    .layer(new ConvolutionLayer.Builder(kernel, stride, padding)
+                                            .nIn(inputDepth).nOut(3).build())//output: (6-2+0)/1+1 = 5
+                                    .layer(new Cropping2D(crop))
+                                    .layer(new ConvolutionLayer.Builder(kernel, stride,padding).nIn(3).nOut(3).build())
+                                    .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                            .activation(Activation.SOFTMAX).nOut(4).build())
+                                    .setInputType(InputType.convolutional(height, width, inputDepth))
+                                    .build();
+
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
+
+                    //Check cropping activation shape
+                    org.deeplearning4j.nn.layers.convolution.Cropping2DLayer cl =
+                            (org.deeplearning4j.nn.layers.convolution.Cropping2DLayer) net.getLayer(1);
+                    int[] expShape = new int[]{minibatchSize, inputDepth, height - crop[0] - crop[1],
+                            width - crop[2] - crop[3]};
+                    INDArray out = cl.activate(input);
+                    assertArrayEquals(expShape, out.shape());
+
+                    String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "
+                            + Arrays.toString(crop);
+
+                    if (PRINT_RESULTS) {
+                        System.out.println(msg);
+                        for (int j = 0; j < net.getnLayers(); j++)
+                            System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(msg, gradOK);
+
+                    TestUtils.testModelSerialization(net);
+                }
+            }
         }
     }
 }

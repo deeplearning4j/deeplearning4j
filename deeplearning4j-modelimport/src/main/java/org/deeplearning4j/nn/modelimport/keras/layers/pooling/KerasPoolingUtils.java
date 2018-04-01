@@ -31,9 +31,9 @@ public class KerasPoolingUtils {
     /**
      * Map Keras pooling layers to DL4J pooling types.
      *
-     * @param className
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param className name of the Keras pooling class
+     * @return DL4J pooling type
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public static PoolingType mapPoolingType(String className, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
@@ -57,9 +57,9 @@ public class KerasPoolingUtils {
     /**
      * Map Keras pooling layers to DL4J pooling dimensions.
      *
-     * @param className
-     * @return
-     * @throws UnsupportedKerasConfigurationException
+     * @param className name of the Keras pooling class
+     * @return pooling dimensions as int array
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public static int[] mapPoolingDimensions(String className, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {

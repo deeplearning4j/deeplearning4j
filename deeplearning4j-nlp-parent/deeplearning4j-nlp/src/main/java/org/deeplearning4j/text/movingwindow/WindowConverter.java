@@ -48,7 +48,7 @@ public class WindowConverter {
      * Keep in mind each window is a multi word context.
      *
      * From there, each word uses the passed in model
-     * as a lookup table to getFromOrigin what vectors are relevant
+     * as a lookup table to get what vectors are relevant
      * to the passed in windows
      * @param window the window to take in.
      * @param vec the model to use as a lookup table
@@ -84,7 +84,7 @@ public class WindowConverter {
      * Keep in mind each window is a multi word context.
      *
      * From there, each word uses the passed in model
-     * as a lookup table to getFromOrigin what vectors are relevant
+     * as a lookup table to get what vectors are relevant
      * to the passed in windows
      * @param window the window to take in.
      * @param vec the model to use as a lookup table

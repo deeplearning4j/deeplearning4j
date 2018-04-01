@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.junit.Ignore;
 import org.junit.Test;

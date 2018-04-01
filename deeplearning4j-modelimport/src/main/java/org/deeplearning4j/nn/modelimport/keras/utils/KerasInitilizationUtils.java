@@ -70,9 +70,9 @@ public class KerasInitilizationUtils {
                     kerasInit.equals(conf.getINIT_ONES_ALIAS())) {
                 init = WeightInit.ONES;
             } else if (kerasInit.equals(conf.getINIT_ZERO()) ||
-                kerasInit.equals(conf.getINIT_ZEROS()) ||
-                kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
-            init = WeightInit.ZERO;
+                    kerasInit.equals(conf.getINIT_ZEROS()) ||
+                    kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
+                init = WeightInit.ZERO;
             } else if (kerasInit.equals(conf.getINIT_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM_ALIAS())) {
@@ -115,7 +115,7 @@ public class KerasInitilizationUtils {
                     double scale = 1.1;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
                         scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                        dist = new OrthogonalDistribution(scale);
+                    dist = new OrthogonalDistribution(scale);
                 }
                 init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL()) ||
@@ -187,14 +187,14 @@ public class KerasInitilizationUtils {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce loading configuration for further training
-     * @return
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @return Pair of DL4J weight initialization and distribution
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public static Pair<WeightInit, Distribution> getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
-                                                 boolean enforceTrainingConfig,
-                                                 KerasLayerConfiguration conf,
-                                                 int kerasMajorVersion)
+                                                                         boolean enforceTrainingConfig,
+                                                                         KerasLayerConfiguration conf,
+                                                                         int kerasMajorVersion)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(initField))
@@ -205,6 +205,7 @@ public class KerasInitilizationUtils {
             kerasInit = (String) innerConfig.get(initField);
             initMap = innerConfig;
         } else {
+            @SuppressWarnings("unchecked")
             Map<String, Object> fullInitMap = (HashMap) innerConfig.get(initField);
             initMap = (HashMap) fullInitMap.get("config");
             if (fullInitMap.containsKey("class_name")) {

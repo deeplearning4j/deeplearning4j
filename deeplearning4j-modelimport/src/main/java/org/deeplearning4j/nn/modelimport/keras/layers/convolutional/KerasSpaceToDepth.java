@@ -37,8 +37,8 @@ public class KerasSpaceToDepth extends KerasLayer {
         // TODO: we hard-code block size here to import YOLO9000. This size is not available as property
         // in the hdf5 file outside of the serialized lambda function (that we can't really well deserialize).
         SpaceToDepthLayer.Builder builder = new SpaceToDepthLayer.Builder()
-                .blocks(new int[]{2, 2})
-                .dataFormat("NHWC")
+                .blocks(2)
+                .dataFormat(SpaceToDepthLayer.DataFormat.NCHW)
                 .name(layerName);
 
         this.layer = builder.build();
@@ -59,7 +59,7 @@ public class KerasSpaceToDepth extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {

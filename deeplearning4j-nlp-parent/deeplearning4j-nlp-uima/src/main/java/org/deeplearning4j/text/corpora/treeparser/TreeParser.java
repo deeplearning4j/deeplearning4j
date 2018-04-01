@@ -38,9 +38,9 @@ import org.deeplearning4j.text.movingwindow.ContextLabelRetriever;
 import org.deeplearning4j.text.sentenceiterator.SentencePreProcessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
-import org.deeplearning4j.util.MultiDimensionalMap;
-import org.deeplearning4j.util.SetUtils;
+import org.nd4j.linalg.collection.MultiDimensionalMap;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.util.SetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

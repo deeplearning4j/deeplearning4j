@@ -138,7 +138,7 @@ public class Keras1ModelConfigurationTest {
         runSequentialConfigTest("configs/keras1/keras1_tf_embedding_conv1d_config.json", true);
     }
 
-    void runSequentialConfigTest(String path, boolean training) throws Exception {
+    private void runSequentialConfigTest(String path, boolean training) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
@@ -147,7 +147,7 @@ public class Keras1ModelConfigurationTest {
         model.init();
     }
 
-    void runModelConfigTest(String path) throws Exception {
+    private void runModelConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())

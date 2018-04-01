@@ -22,7 +22,7 @@ import lombok.Data;
 
 /**
  * All relevant property fields of keras layers.
- *
+ * <p>
  * Empty String fields mean Keras 1 and 2 implementations differ,
  * supplied fields stand for shared properties.
  *
@@ -61,6 +61,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2D";
+
 
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     private final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
@@ -181,6 +183,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_SUBSAMPLE_LENGTH = ""; // 1: subsample_length, 2: strides
     private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
     private final String LAYER_FIELD_ZERO_PADDING = "padding";
+    private final String LAYER_FIELD_CROPPING = "cropping";
+
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_STRIDES = "strides";

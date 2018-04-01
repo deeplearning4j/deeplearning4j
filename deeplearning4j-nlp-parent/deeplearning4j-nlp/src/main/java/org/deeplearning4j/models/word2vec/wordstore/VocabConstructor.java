@@ -10,13 +10,14 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;
+import org.deeplearning4j.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threadly.concurrent.PriorityScheduler;
 
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  *
@@ -184,8 +185,7 @@ public class VocabConstructor<T extends SequenceElement> {
         int cnt = 0;
         int numProc = Runtime.getRuntime().availableProcessors();
         int numThreads = Math.max(numProc / 2, 2);
-        ExecutorService executorService = new ThreadPoolExecutor(numThreads, numThreads, 0L, TimeUnit.MILLISECONDS,
-                        new LinkedTransferQueue<Runnable>());
+        PriorityScheduler executorService = new PriorityScheduler(numThreads);
         final AtomicLong execCounter = new AtomicLong(0);
         final AtomicLong finCounter = new AtomicLong(0);
 
@@ -198,7 +198,6 @@ public class VocabConstructor<T extends SequenceElement> {
             cnt++;
 
             AbstractCache<T> tempHolder = new AbstractCache.Builder<T>().build();
-
 
 
             List<Long> timesHasNext = new ArrayList<>();
@@ -218,18 +217,19 @@ public class VocabConstructor<T extends SequenceElement> {
 
                 // if we're not in parallel mode - wait till this runnable finishes
                 if (!allowParallelBuilder) {
-                    while (execCounter.get() != finCounter.get())
-                        LockSupport.parkNanos(100);
+                    try {
+                        runnable.awaitDone();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException(e);
+                    }
                 }
 
                 // as we see in profiler, this lock isn't really happen too often
                 // we don't want too much left in tail
 
                 while (execCounter.get() - finCounter.get() > numProc) {
-                    try {
-                        LockSupport.parkNanos(100);
-                    } catch (Exception e) {
-                    }
+                    ThreadUtils.uncheckedSleep(1);
                 }
 
 
@@ -265,10 +265,7 @@ public class VocabConstructor<T extends SequenceElement> {
                 if (enableScavenger && loopCounter.get() >= 2000000 && tempHolder.numWords() > 10000000) {
                     log.info("Starting scavenger...");
                     while (execCounter.get() != finCounter.get()) {
-                        try {
-                            LockSupport.parkNanos(100);
-                        } catch (Exception e) {
-                        }
+                        ThreadUtils.uncheckedSleep(1);
                     }
 
                     filterVocab(tempHolder, Math.max(1, source.getMinWordFrequency() / 2));
@@ -284,10 +281,7 @@ public class VocabConstructor<T extends SequenceElement> {
             // block untill all threads are finished
             log.debug("Waiting till all processes stop...");
             while (execCounter.get() != finCounter.get()) {
-                try {
-                    LockSupport.parkNanos(100);
-                } catch (Exception e) {
-                }
+                ThreadUtils.uncheckedSleep(1);
             }
 
 
@@ -526,6 +520,7 @@ public class VocabConstructor<T extends SequenceElement> {
         private final Sequence<T> document;
         private final AbstractCache<T> targetVocab;
         private final AtomicLong loopCounter;
+        private boolean done;
 
         public VocabRunnable(@NonNull AbstractCache<T> targetVocab, @NonNull Sequence<T> sequence,
                         @NonNull AtomicLong finalCounter, @NonNull AtomicLong loopCounter) {
@@ -535,7 +530,15 @@ public class VocabConstructor<T extends SequenceElement> {
             this.loopCounter = loopCounter;
         }
 
-        @Override
+        public void awaitDone() throws InterruptedException {
+            synchronized (this) {
+                while (! done) {
+                    this.wait();
+                }
+            }
+        }
+
+	@Override
         public void run() {
             try {
                 Map<String, AtomicLong> seqMap = new HashMap<>();
@@ -593,6 +596,9 @@ public class VocabConstructor<T extends SequenceElement> {
                 throw new RuntimeException(e);
             } finally {
                 finalCounter.incrementAndGet();
+                synchronized (this) {
+                    this.notifyAll();
+                }
             }
         }
     }

@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -27,9 +28,11 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
@@ -41,6 +44,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -57,6 +61,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class KerasLstm extends KerasLayer {
 
     private final String LSTM_FORGET_BIAS_INIT_ZERO = "zero";
@@ -86,7 +91,7 @@ public class KerasLstm extends KerasLayer {
      * Pass-through constructor from KerasLayer
      *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -96,8 +101,8 @@ public class KerasLstm extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration.
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -107,12 +112,41 @@ public class KerasLstm extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig           dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration.
+     * @param enforceTrainingConfig whether to load Keras training configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, enforceTrainingConfig, Collections.<String, KerasLayer>emptyMap());
+    }
+
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig    dictionary containing Keras layer configuration.
+     * @param previousLayers dictionary containing the previous layers in the topology
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasLstm(Map<String, Object> layerConfig, Map<String, ? extends KerasLayer> previousLayers)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, true, previousLayers);
+    }
+
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @param previousLayers        - dictionary containing the previous layers in the topology
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public KerasLstm(Map<String, Object> layerConfig, boolean enforceTrainingConfig, Map<String, ? extends KerasLayer> previousLayers)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -129,7 +163,8 @@ public class KerasLstm extends KerasLayer {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         this.returnSequences = (Boolean) innerConfig.get(conf.getLAYER_FIELD_RETURN_SEQUENCES());
 
-        double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
+        // TODO: support recurrent dropout
+        // double recurrentDropout = KerasRnnUtils.getRecurrentDropout(conf, layerConfig);
         this.unroll = KerasRnnUtils.getUnrollRecurrentLayer(conf, layerConfig);
 
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -138,7 +173,15 @@ public class KerasLstm extends KerasLayer {
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint recurrentConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_RECURRENT_CONSTRAINT(), conf, kerasMajorVersion);
-
+        boolean zeroMasking = false;
+        for (String inboundLayerName : inboundLayerNames) {
+            if (previousLayers.containsKey(inboundLayerName)) {
+                KerasLayer inbound = previousLayers.get(inboundLayerName);
+                if (inbound instanceof KerasEmbedding && ((KerasEmbedding) inbound).isHasZeroMasking()) {
+                    zeroMasking = true;
+                }
+            }
+        }
         LSTM.Builder builder = new LSTM.Builder()
                 .gateActivationFunction(getGateActivationFromConfig(layerConfig))
                 .forgetGateBiasInit(getForgetBiasInitFromConfig(layerConfig, enforceTrainingConfig))
@@ -161,10 +204,14 @@ public class KerasLstm extends KerasLayer {
             builder.constrainInputWeights(weightConstraint);
         if (recurrentConstraint != null)
             builder.constrainRecurrent(recurrentConstraint);
-        if (this.returnSequences)
-            this.layer = builder.build();
-        else
-            this.layer = new LastTimeStep(builder.build());
+
+        this.layer = builder.build();
+        if (zeroMasking) {
+            this.layer = new MaskZeroLayer(this.layer);
+        }
+        if (!returnSequences) {
+            this.layer = new LastTimeStep(this.layer);
+        }
     }
 
     /**
@@ -182,7 +229,7 @@ public class KerasLstm extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -230,7 +277,7 @@ public class KerasLstm extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights
+     * @param weights LSTM layer weights
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
@@ -409,7 +456,7 @@ public class KerasLstm extends KerasLayer {
     /**
      * Get whether LSTM layer should be unrolled (for truncated BPTT).
      *
-     * @return
+     * @return whether to unroll the LSTM
      */
     public boolean getUnroll() {
         return this.unroll;
@@ -420,8 +467,8 @@ public class KerasLstm extends KerasLayer {
      * Get LSTM gate activation function from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return epsilon
-     * @throws InvalidKerasConfigurationException
+     * @return LSTM inner activation function
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public IActivation getGateActivationFromConfig(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -436,8 +483,8 @@ public class KerasLstm extends KerasLayer {
      * Get LSTM forget gate bias initialization from Keras layer configuration.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @return epsilon
-     * @throws InvalidKerasConfigurationException
+     * @return LSTM forget gate bias init
+     * @throws InvalidKerasConfigurationException Unsupported Keras config
      */
     public double getForgetBiasInitFromConfig(Map<String, Object> layerConfig, boolean train)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {

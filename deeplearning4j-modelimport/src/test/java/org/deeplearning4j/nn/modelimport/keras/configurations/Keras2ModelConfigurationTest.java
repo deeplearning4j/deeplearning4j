@@ -159,7 +159,12 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/keras2_tf_embedding_conv1d_config.json");
     }
 
-    void runSequentialConfigTest(String path) throws Exception {
+    @Test
+    public void embeddingLSTMMaskZeroTest() throws Exception {
+        runModelConfigTest("configs/keras2/embedding_lstm_calculator.json");
+    }
+
+    private void runSequentialConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
@@ -168,7 +173,7 @@ public class Keras2ModelConfigurationTest {
         model.init();
     }
 
-    void runModelConfigTest(String path) throws Exception {
+    private void runModelConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())

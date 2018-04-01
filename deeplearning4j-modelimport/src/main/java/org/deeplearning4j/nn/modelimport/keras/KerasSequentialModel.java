@@ -50,9 +50,9 @@ public class KerasSequentialModel extends KerasModel {
     /**
      * (Recommended) Builder-pattern constructor for Sequential model.
      *
-     * @param modelBuilder    builder object
-     * @throws IOException I/O exception
-     * @throws InvalidKerasConfigurationException Invalid Keras configuration
+     * @param modelBuilder builder object
+     * @throws IOException                            I/O exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras configuration
      * @throws UnsupportedKerasConfigurationException Unsupported Keras configuration
      */
     public KerasSequentialModel(KerasModelBuilder modelBuilder)
@@ -69,10 +69,10 @@ public class KerasSequentialModel extends KerasModel {
      * (e.g., unknown regularizers) will throw Exceptions. When enforceTrainingConfig=false, these
      * will generate warnings but will be otherwise ignored.
      *
-     * @param modelJson       model configuration JSON string
-     * @param modelYaml       model configuration YAML string
-     * @param trainingJson    training configuration JSON string
-     * @throws IOException    I/O exception
+     * @param modelJson    model configuration JSON string
+     * @param modelYaml    model configuration YAML string
+     * @param trainingJson training configuration JSON string
+     * @throws IOException I/O exception
      */
     public KerasSequentialModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                                 String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
@@ -140,7 +140,7 @@ public class KerasSequentialModel extends KerasModel {
     /**
      * Configure a MultiLayerConfiguration from this Keras Sequential model configuration.
      *
-     * @return          MultiLayerConfiguration
+     * @return MultiLayerConfiguration
      */
     public MultiLayerConfiguration getMultiLayerConfiguration()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -208,7 +208,7 @@ public class KerasSequentialModel extends KerasModel {
     /**
      * Build a MultiLayerNetwork from this Keras Sequential model configuration.
      *
-     * @return          MultiLayerNetwork
+     * @return MultiLayerNetwork
      */
     public MultiLayerNetwork getMultiLayerNetwork()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -218,7 +218,7 @@ public class KerasSequentialModel extends KerasModel {
     /**
      * Build a MultiLayerNetwork from this Keras Sequential model configuration and import weights.
      *
-     * @return          MultiLayerNetwork
+     * @return MultiLayerNetwork
      */
     public MultiLayerNetwork getMultiLayerNetwork(boolean importWeights)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {

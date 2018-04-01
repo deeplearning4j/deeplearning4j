@@ -27,15 +27,16 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.layers.recurrent.MaskZeroLayer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -82,7 +83,8 @@ import java.util.*;
                 @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
                 @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
                 @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
-                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer")}
+                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
+                @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
 )
 @Data
 @NoArgsConstructor

@@ -255,8 +255,8 @@ public class Word2VecDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public void setPreProcessor(org.nd4j.linalg.dataset.api.DataSetPreProcessor preProcessor) {
-        this.preProcessor = (DataSetPreProcessor) preProcessor;
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        this.preProcessor = preProcessor;
     }
 
     @Override

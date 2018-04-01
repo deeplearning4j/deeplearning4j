@@ -89,7 +89,7 @@ public class SparkUtils {
                     boolean equals;
                     INDArray deserialized;
                     try {
-                        deserialized = si.deserialize(bb, null);
+                        deserialized = (INDArray) si.deserialize(bb, null);
                         //Equals method may fail on malformed INDArrays, hence should be within the try-catch
                         equals = Nd4j.linspace(1, 5, 5).equals(deserialized);
                     } catch (Exception e) {
@@ -482,10 +482,23 @@ public class SparkUtils {
      * @throws IOException If error occurs getting directory contents
      */
     public static JavaRDD<String> listPaths(JavaSparkContext sc, String path) throws IOException {
+        return listPaths(sc, path, false);
+    }
+
+    /**
+     * List of the files in the given directory (path), as a {@code JavaRDD<String>}
+     *
+     * @param sc        Spark context
+     * @param path      Path to list files in
+     * @param recursive Whether to walk the directory tree recursively (i.e., include subdirectories)
+     * @return Paths in the directory
+     * @throws IOException If error occurs getting directory contents
+     */
+    public static JavaRDD<String> listPaths(JavaSparkContext sc, String path, boolean recursive) throws IOException {
         List<String> paths = new ArrayList<>();
         Configuration config = new Configuration();
         FileSystem hdfs = FileSystem.get(URI.create(path), config);
-        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(path), false);
+        RemoteIterator<LocatedFileStatus> fileIter = hdfs.listFiles(new org.apache.hadoop.fs.Path(path), recursive);
 
         while (fileIter.hasNext()) {
             String filePath = fileIter.next().getPath().toString();

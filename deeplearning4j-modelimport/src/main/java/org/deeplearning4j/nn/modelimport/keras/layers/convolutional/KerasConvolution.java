@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -39,6 +40,7 @@ import java.util.Set;
 
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 abstract public class KerasConvolution extends KerasLayer {
 
     protected int numTrainableParams;
@@ -46,19 +48,20 @@ abstract public class KerasConvolution extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
+    KerasConvolution(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasConvolution(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -68,12 +71,12 @@ abstract public class KerasConvolution extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -82,7 +85,7 @@ abstract public class KerasConvolution extends KerasLayer {
     /**
      * Returns number of trainable parameters in layer.
      *
-     * @return          number of trainable parameters (2)
+     * @return number of trainable parameters (2)
      */
     @Override
     public int getNumParams() {
@@ -92,11 +95,11 @@ abstract public class KerasConvolution extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights   Map from parameter name to INDArray.
+     * @param weights Map from parameter name to INDArray.
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String, INDArray>();
+        this.weights = new HashMap<>();
         if (weights.containsKey(conf.getKERAS_PARAM_NAME_W())) {
             /* Theano and TensorFlow backends store convolutional weights
              * with a different dimensional ordering than DL4J so we need
@@ -116,6 +119,7 @@ abstract public class KerasConvolution extends KerasLayer {
                      * Theano's default behavior is to rotate filters by 180 degree before application.
                      */
                     paramValue = kerasParamValue.dup();
+                    // TODO: duplicated in conf layers, move to common util
                     for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
                         //dup required since we only want data from the view not the whole array
                         INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();

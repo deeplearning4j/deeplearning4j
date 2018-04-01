@@ -500,6 +500,11 @@ public class TestOptimizers extends BaseDL4JTest {
                 }
 
                 @Override
+                public double epsThreshold() {
+                    return 0;
+                }
+
+                @Override
                 public Boolean apply(Number input) {
                     return Math.abs(input.doubleValue()) > 5.12;
                 }
@@ -692,6 +697,11 @@ public class TestOptimizers extends BaseDL4JTest {
 
                 @Override
                 public double getValue() {
+                    return 0;
+                }
+
+                @Override
+                public double epsThreshold() {
                     return 0;
                 }
 

@@ -1,6 +1,6 @@
 package org.deeplearning4j.models.word2vec;
 
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
@@ -16,7 +16,7 @@ public class Word2VecTestsSmall {
 
     @Before
     public void setUp() throws Exception {
-        word2vec = WordVectorSerializer.loadGoogleModel(new ClassPathResource("vec.bin").getFile(), true, true);
+        word2vec = WordVectorSerializer.readWord2VecModel(new ClassPathResource("vec.bin").getFile());
     }
 
     @Test

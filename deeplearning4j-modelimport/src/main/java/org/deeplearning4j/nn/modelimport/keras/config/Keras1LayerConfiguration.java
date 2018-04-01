@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.config;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * All relevant property fields of keras 1.x layers.
@@ -25,6 +26,7 @@ import lombok.Data;
  * @author Max Pumperla
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class Keras1LayerConfiguration extends KerasLayerConfiguration {
 
     /* Basic layer names */
@@ -98,7 +100,6 @@ public class Keras1LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_FIELD_MAX_CONSTRAINT = "m";
     private final String LAYER_FIELD_MINMAX_MIN_CONSTRAINT = "low";
     private final String LAYER_FIELD_MINMAX_MAX_CONSTRAINT = "high";
-
 
 
     /* Keras weight initializers. */

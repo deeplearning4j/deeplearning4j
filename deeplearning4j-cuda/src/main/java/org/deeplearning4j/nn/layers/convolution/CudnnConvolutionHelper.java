@@ -17,6 +17,8 @@
  */
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -39,11 +41,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.util.OneTimeLogger;
+
+import java.util.Arrays;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
+import static org.nd4j.linalg.indexing.NDArrayIndex.all;
+import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * cuDNN-based helper for the convolution layer.
@@ -126,23 +134,20 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
             return null;
         }
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        int code;
 
+        int miniBatch = input.size(0);
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         int kH = weights.size(2);
         int kW = weights.size(3);
 
-        int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-        } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
-        }
-
+        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        input = args.getInput();
+        int inH = input.size(2);
+        int inW = input.size(3);
+        int[] srcStride = input.stride();
+        int[] outSize = args.getOutSize();
         int outH = outSize[0];
         int outW = outSize[1];
 
@@ -151,7 +156,6 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             delta = delta.dup();
         }
 
-        int[] srcStride = input.stride();
         int[] deltaStride = delta.stride();
         int[] algo1 = new int[1];
         int[] algo2 = new int[1];
@@ -160,14 +164,18 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
-                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
-                        dilation[1], CUDNN_CROSS_CORRELATION, dataType));
-        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
-                        kW));
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]);
+        checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
+                        deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]);
+        checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+        code = cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+                        dilation[1], CUDNN_CROSS_CORRELATION, dataType);
+        checkCudnn(false, "cudnnSetConvolution2dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH, kW);
+        checkCudnn(false, "cudnnSetFilter4dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
         if (mode == AlgoMode.USER_SPECIFIED && bwdFilterAlgo != null && bwdDataAlgo != null) {
             switch (bwdFilterAlgo) {
                 case ALGO_0:
@@ -224,22 +232,24 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     throw new IllegalArgumentException("Unknown BwdDataAlgo: " + bwdDataAlgo);
             }
         } else {
-            checkCudnn(cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
+            code = cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
                             cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc,
                             mode == AlgoMode.NO_WORKSPACE ? CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE
                                             : CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
-                            0, algo1));
-            checkCudnn(cudnnGetConvolutionBackwardDataAlgorithm(cudnnContext, cudnnContext.filterDesc,
+                            0, algo1);
+            checkCudnn(false, "cudnnGetConvolutionBackwardFilterAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+            code = cudnnGetConvolutionBackwardDataAlgorithm(cudnnContext, cudnnContext.filterDesc,
                             cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.srcTensorDesc,
                             mode == AlgoMode.NO_WORKSPACE ? CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE
                                             : CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
-                            0, algo2));
+                            0, algo2);
+            checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
         INDArray epsNext;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                 epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
             }
         } else
@@ -257,31 +267,46 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         Pointer deltaData = allocator.getPointer(delta, context);
         Pointer dstData = allocator.getPointer(epsNext, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
-        checkCudnn(cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
+        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream()));
+        checkCudnn(false, "cudnnSetStream", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
+                        dstStride[0], dstStride[1], dstStride[2], dstStride[3]);
+        checkCudnn(false, "cudnnSetTensor4dDescriptorEx", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+        code = cudnnGetConvolutionBackwardFilterWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
                         cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc, algo1[0],
-                        sizeInBytes));
+                        sizeInBytes);
+        checkCudnn(false, "cudnnGetConvolutionBackwardFilterWorkspaceSize", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
         long sizeInBytes1 = sizeInBytes.get(0);
-        checkCudnn(cudnnGetConvolutionBackwardDataWorkspaceSize(cudnnContext, cudnnContext.filterDesc,
+        code = cudnnGetConvolutionBackwardDataWorkspaceSize(cudnnContext, cudnnContext.filterDesc,
                         cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, algo2[0],
-                        sizeInBytes));
+                        sizeInBytes);
+        checkCudnn(false, "cudnnGetConvolutionBackwardDataWorkspaceSize", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
         long sizeInBytes2 = sizeInBytes.get(0);
         if (sizeInBytes1 > workSpace.capacity() || sizeInBytes2 > workSpace.capacity()) {
             workSpace.deallocate();
             workSpace = new DataCache(Math.max(sizeInBytes1, sizeInBytes2));
         }
 
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
-        checkCudnn(cudnnConvolutionBackwardBias(cudnnContext, alpha, cudnnContext.deltaTensorDesc, deltaData, beta,
-                        cudnnContext.biasTensorDesc, biasGradData));
-        checkCudnn(cudnnConvolutionBackwardFilter(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
+        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1);
+        checkCudnn(false, "cudnnSetTensor4dDescriptor", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+        code = cudnnConvolutionBackwardBias(cudnnContext, alpha, cudnnContext.deltaTensorDesc, deltaData, beta,
+                        cudnnContext.biasTensorDesc, biasGradData);
+        checkCudnn(false, "cudnnConvolutionBackwardBias", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+        code = cudnnConvolutionBackwardFilter(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
                         cudnnContext.deltaTensorDesc, deltaData, cudnnContext.convDesc, algo1[0], workSpace,
-                        workSpace.capacity(), beta, cudnnContext.filterDesc, filterGradData));
-        checkCudnn(cudnnConvolutionBackwardData(cudnnContext, alpha, cudnnContext.filterDesc, filterData,
+                        workSpace.capacity(), beta, cudnnContext.filterDesc, filterGradData);
+        checkCudnn(false, "cudnnConvolutionBackwardFilter", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+        code = cudnnConvolutionBackwardData(cudnnContext, alpha, cudnnContext.filterDesc, filterData,
                         cudnnContext.deltaTensorDesc, deltaData, cudnnContext.convDesc, algo2[0], workSpace,
-                        workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData));
+                        workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData);
+        checkCudnn(false, "cudnnConvolutionBackwardData", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
         allocator.getFlowController().registerActionAllWrite(context, input, weights, weightGradView, biasGradView,
                         delta, epsNext);
@@ -292,6 +317,14 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             context.syncOldStream();
+
+        //Note that: if we had to manually pad for SAME mode, we have to 'undo' this manual padding for the epsilon
+        // we return. The returned epsilon (i.e., dL/dIn array) has to be the same shape as the *original* input.
+        if(args.isManualPadBottom() || args.isManualPadRight()) {
+            epsNext = epsNext.get(all(), all(),
+                    interval(0, epsNext.size(2) - (args.isManualPadBottom() ? 1 : 0)),
+                    interval(0, epsNext.size(3) - (args.isManualPadRight() ? 1 : 0)));
+        }
 
         return new Pair<>(retGradient, epsNext);
     }
@@ -304,45 +337,45 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED
             return null;
         }
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
+        int code;
 
+        int miniBatch = input.size(0);
         int outDepth = weights.size(0);
         int inDepth = weights.size(1);
         int kH = weights.size(2);
         int kW = weights.size(3);
 
+        CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode);
+        input = args.getInput();
+        int inH = input.size(2);
+        int inW = input.size(3);
         int[] srcStride = input.stride();
+        int[] outSize = args.getOutSize();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
-        } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
-        }
-
-
         INDArray z;
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                 z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
             }
         } else
             z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
 
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
-                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
-        checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
-                        kW));
-        checkCudnn(cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
-                        dilation[1], CUDNN_CROSS_CORRELATION, dataType));
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
+                        srcStride[0], srcStride[1], srcStride[2], srcStride[3]);
+        checkCudnn(true, "cudnnSetTensor4dDescriptorEx", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
+        code = cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, TENSOR_FORMAT, outDepth, inDepth, kH, kW);
+        checkCudnn(true, "cudnnSetFilter4dDescriptor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
+        code = cudnnSetConvolution2dDescriptor(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], dilation[0],
+                        dilation[1], CUDNN_CROSS_CORRELATION, dataType);
+        checkCudnn(true, "cudnnSetConvolution2dDescriptor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
 
         // find dimension of convolution output
         //        checkCudnn(cudnnGetConvolution2dForwardOutputDim(cudnnContext.convDesc, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, n, c, h, w));
@@ -351,8 +384,10 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         int[] algo = new int[1];
         int[] dstStride = z.stride();
-        checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, outDepth, outSize[0],
-                        outSize[1], dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+        code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, outDepth, outSize[0],
+                        outSize[1], dstStride[0], dstStride[1], dstStride[2], dstStride[3]);
+        checkCudnn(true, "cudnnSetTensor4dDescriptorEx", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
         if (mode == AlgoMode.USER_SPECIFIED && fwdAlgo != null) {
             switch (fwdAlgo) {
                 case IMPLICIT_GEMM:
@@ -386,11 +421,22 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     throw new IllegalArgumentException("Unknown FwdAlgo: " + fwdAlgo);
             }
         } else {
-            checkCudnn(cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
-                            cudnnContext.filterDesc, cudnnContext.convDesc,
-                            cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
-                                            ? CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
-                            0, algo));
+            code = cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
+                    cudnnContext.filterDesc, cudnnContext.convDesc,
+                    cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
+                            ? CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
+                    0, algo);
+
+            if(code != CUDNN_STATUS_SUCCESS){
+                //If CuDNN can't infer algorithm - try IMPLICIT_GEMM
+                //Why this specifically? According to the docs, it seems to have the least number of restrictions
+                // to things like dilation
+
+                OneTimeLogger.warn(log, "Error getting CuDNN forward algorithm - falling back on IMPLICIT_GEMM");
+                mode = AlgoMode.USER_SPECIFIED;
+                fwdAlgo = FwdAlgo.IMPLICIT_GEMM;
+                algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+            }
         }
 
         Allocator allocator = AtomicAllocator.getInstance();
@@ -400,21 +446,30 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         Pointer biasData = allocator.getPointer(bias, context);
         Pointer dstData = allocator.getPointer(z, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
-        checkCudnn(cudnnGetConvolutionForwardWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
+        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream()));
+        checkCudnn(true, "cudnnSetStream", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
+        code = cudnnGetConvolutionForwardWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
                         cudnnContext.filterDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, algo[0],
-                        sizeInBytes));
+                        sizeInBytes);
+        checkCudnn(true, "cudnnGetConvolutionForwardWorkspaceSize", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
         if (sizeInBytes.get(0) > workSpace.capacity()) {
             workSpace.deallocate();
             workSpace = new DataCache(sizeInBytes.get(0));
         }
-        checkCudnn(cudnnConvolutionForward(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
+        code = cudnnConvolutionForward(cudnnContext, alpha, cudnnContext.srcTensorDesc, srcData,
                         cudnnContext.filterDesc, filterData, cudnnContext.convDesc, algo[0], workSpace,
-                        workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData));
+                        workSpace.capacity(), beta, cudnnContext.dstTensorDesc, dstData);
+        checkCudnn(true, "cudnnConvolutionForward", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
-        checkCudnn(cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, tensorFormat, dataType, 1, outDepth, 1, 1));
-        checkCudnn(cudnnAddTensor(cudnnContext, alpha, cudnnContext.biasTensorDesc, biasData, alpha,
-                        cudnnContext.dstTensorDesc, dstData));
+
+        code = cudnnSetTensor4dDescriptor(cudnnContext.biasTensorDesc, TENSOR_FORMAT, dataType, 1, outDepth, 1, 1);
+        checkCudnn(true, "cudnnSetTensor4dDescriptor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
+
+        code = cudnnAddTensor(cudnnContext, alpha, cudnnContext.biasTensorDesc, biasData, alpha,
+                        cudnnContext.dstTensorDesc, dstData);
+        checkCudnn(true, "cudnnAddTensor", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         allocator.registerAction(context, z, input, weights, bias);
 
@@ -422,6 +477,39 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             context.syncOldStream();
 
         return z;
+    }
+
+    private void checkCudnn(boolean forward, String step, int code, INDArray input, INDArray weights, INDArray bias, INDArray delta,
+                            int[] kernel, int[] strides, int[] pad,
+                            AlgoMode mode, FwdAlgo fwdAlgo, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo, ConvolutionMode convolutionMode, int[] dilation) {
+
+        if (code != CUDNN_STATUS_SUCCESS) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("CuDNN error = ").append(code).append(": ").append(cudnnGetErrorString(code).getString())
+                    .append(" during ")
+                    .append(forward ? "forward pass" : "backward pass")
+                    .append(" - step ").append(step)
+                    .append(": inputShape=").append(Arrays.toString(input.shape()))
+                    .append(", weightsShape=").append(Arrays.toString(weights.shape()))
+                    .append(", biasShape=").append(bias == null ? null : Arrays.toString(bias.shape()));
+            if (!forward) {
+                sb.append(", gradientShape=").append(Arrays.toString(delta.shape()));
+            }
+            sb.append(", kernel=").append(Arrays.toString(kernel))
+                    .append(", stride=").append(Arrays.toString(strides))
+                    .append(", padding=").append(Arrays.toString(pad))
+                    .append(", dilation=").append(Arrays.toString(dilation))
+                    .append(", AlgoMode=").append(mode);
+            if (forward) {
+                sb.append(", fwdAlgo=").append(fwdAlgo);
+            } else {
+                sb.append(", bwdFilterAlgo=").append(bwdFilterAlgo)
+                        .append(", bwdDataAlgo=").append(bwdDataAlgo);
+            }
+            sb.append(", convolutionMode=").append(convolutionMode);
+
+            throw new RuntimeException(sb.toString());
+        }
     }
 
     @Override
@@ -475,6 +563,70 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
             context.syncOldStream();
 
         return activation;
+    }
+
+    public static CudnnForwardArgs getCudnnForwardArgs(INDArray input, int[] kernel, int[] strides, int[] padding, int[] dilation,
+                                                   ConvolutionMode convolutionMode){
+        INDArray origInput = input;
+
+        //Check if we need to dup the input: views, non-contiguous, etc. CuDNN also seems to have has issues if strides
+        // are non-default for C order - even if they *should* be OK otherwise
+        if(input.isView() || !Shape.hasDefaultStridesForShape(input)){
+            input = input.dup('c');
+        }
+
+
+        int inH = input.size(2);
+        int inW = input.size(3);
+
+        boolean manualPadBottom = false;
+        boolean manualPadRight = false;
+
+        int[] outSize;
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            padding = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            int[] padBottomRight = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            if(!Arrays.equals(padding, padBottomRight)){
+                /*
+                CuDNN - even as of 7.1 (CUDA 9.1) still doesn't have support for proper SAME mode padding (i.e., asymmetric
+                padding) - padding can *only* be specified as the same amount for both the top/bottom, and for left/right.
+                In SAME mode padding, sometimes these are the same - but often they are not.
+                Note that when they differ, the bottom or right padding will be exactly 1 more than the top or left padding.
+                As per TF, we'll manually pad here: https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/kernels/conv_ops.cc#L571-L607
+                 */
+                manualPadBottom = (padding[0] != padBottomRight[0]);
+                manualPadRight = (padding[1] != padBottomRight[1]);
+
+                //NCHW format
+                int[] newShape = new int[]{input.size(0), input.size(1),
+                        input.size(2) + (manualPadBottom ? 1 : 0),
+                        input.size(3) + (manualPadRight ? 1 : 0)};
+                INDArray newInput = Nd4j.create(newShape);
+                newInput.put(new INDArrayIndex[]{all(), all(), interval(0,input.size(2)),
+                        interval(0, input.size(3))}, input);
+                input = newInput;
+                //Now: we've manually applied the "extra" bottom/right padding only - if required. Consequently, we
+                // now have the same amount of padding required for top/bottom, and left/right - which we'll let
+                // CuDNN handle
+            }
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, padding, convolutionMode, dilation); //Also performs validation
+        }
+
+        return new CudnnForwardArgs(manualPadBottom, manualPadRight, input, origInput, padding, outSize);
+    }
+
+
+    @AllArgsConstructor
+    @Data
+    public static class CudnnForwardArgs {
+        private boolean manualPadBottom;
+        private boolean manualPadRight;
+        private INDArray input;
+        private INDArray origInput;
+        private int[] padding;
+        private int[] outSize;
     }
 
 }

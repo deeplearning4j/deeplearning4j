@@ -27,8 +27,10 @@ CUDA_90_VERSION="9\.0"
 CUDA_91_VERSION="9\.1"
 CUDNN_60_VERSION="6\.0"
 CUDNN_70_VERSION="7\.0"
+CUDNN_71_VERSION="7\.1"
 JAVACPP_13_VERSION="1\.3"
 JAVACPP_14_VERSION="1\.4"
+JAVACPP_141_VERSION="1\.4\.1"
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -57,8 +59,8 @@ check_cuda_version "$VERSION"
 case $VERSION in
   9.1)
     VERSION=$CUDA_91_VERSION
-    VERSION2=$CUDNN_70_VERSION
-    VERSION3=$JAVACPP_14_VERSION
+    VERSION2=$CUDNN_71_VERSION
+    VERSION3=$JAVACPP_141_VERSION
     ;;
   9.0)
     VERSION=$CUDA_90_VERSION
@@ -108,6 +110,6 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 
 #JavaCPP versions, like <javacpp-presets.cuda.version>1.4</javacpp-presets.cuda.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
-  -exec bash -c "sed_i 's/\(javacpp-presets.cuda.version>\)...<\/javacpp-presets.cuda.version>/\1'$VERSION3'<\/javacpp-presets.cuda.version>/g' {}" \;
+  -exec bash -c "sed_i 's/\(javacpp-presets.cuda.version>\).*<\/javacpp-presets.cuda.version>/\1'$VERSION3'<\/javacpp-presets.cuda.version>/g' {}" \;
 
 echo "Done updating CUDA versions.";

@@ -24,6 +24,9 @@ public class TestFileIterators extends BaseDL4JTest {
     @Rule
     public TemporaryFolder folder = new TemporaryFolder();
 
+    @Rule
+    public TemporaryFolder folder2 = new TemporaryFolder();
+
     @Test
     public void testFileDataSetIterator() throws Exception {
         folder.create();
@@ -49,6 +52,33 @@ public class TestFileIterators extends BaseDL4JTest {
             act.add(iter.next());
         }
         assertEquals(exp, act);
+
+        //Test multiple directories
+        folder2.create();
+        File f2a = folder2.newFolder();
+        File f2b = folder2.newFolder();
+        File f2c = folder2.newFolder();
+        d1.save(new File(f2a, "d1.bin"));
+        d2.save(new File(f2a, "d2.bin"));
+        d3.save(new File(f2b, "d3.bin"));
+
+        d1.save(new File(f2c, "d1.bin"));
+        d2.save(new File(f2c, "d2.bin"));
+        d3.save(new File(f2c, "d3.bin"));
+        iter = new FileDataSetIterator(f2c, true, null, -1, (String[])null);
+        DataSetIterator iterMultiDir = new FileDataSetIterator(new File[]{f2a, f2b}, true, null, -1, (String[]) null);
+
+        iter.reset();
+        int count = 0;
+        while(iter.hasNext()){
+            DataSet ds1 = iter.next();
+            DataSet ds2 = iterMultiDir.next();
+            assertEquals(ds1, ds2);
+            count++;
+        }
+        assertEquals(3, count);
+
+
 
         //Test with extension filtering:
         exp = Arrays.asList(d1, d2);
@@ -112,6 +142,31 @@ public class TestFileIterators extends BaseDL4JTest {
             act.add(iter.next());
         }
         assertEquals(exp, act);
+
+        //Test multiple directories
+        folder2.create();
+        File f2a = folder2.newFolder();
+        File f2b = folder2.newFolder();
+        File f2c = folder2.newFolder();
+        d1.save(new File(f2a, "d1.bin"));
+        d2.save(new File(f2a, "d2.bin"));
+        d3.save(new File(f2b, "d3.bin"));
+
+        d1.save(new File(f2c, "d1.bin"));
+        d2.save(new File(f2c, "d2.bin"));
+        d3.save(new File(f2c, "d3.bin"));
+        iter = new FileMultiDataSetIterator(f2c, true, null, -1, (String[])null);
+        MultiDataSetIterator iterMultiDir = new FileMultiDataSetIterator(new File[]{f2a, f2b}, true, null, -1, (String[]) null);
+
+        iter.reset();
+        int count = 0;
+        while(iter.hasNext()){
+            MultiDataSet ds1 = iter.next();
+            MultiDataSet ds2 = iterMultiDir.next();
+            assertEquals(ds1, ds2);
+            count++;
+        }
+        assertEquals(3, count);
 
         //Test with extension filtering:
         exp = Arrays.asList(d1, d2);
