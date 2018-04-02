@@ -1,5 +1,6 @@
 package org.nd4j.linalg.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,7 +19,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author clavvis
  */
-
+@Slf4j
 public class DataSetUtilsTest {
 	//
 	@Rule
@@ -56,7 +57,8 @@ public class DataSetUtilsTest {
 		//
 	//	assertEquals( 100, sis.getcharsCount() );
 		//
-		assertTrue( sis.getcharsCount() > 2150 && sis.getcharsCount() < 2160 );
+		// this test might show different length on different systems due to various regional formatting options.
+		assertTrue( sis.getcharsCount() > 2150 && sis.getcharsCount() < 2170 );
 		//
 		//
 	}

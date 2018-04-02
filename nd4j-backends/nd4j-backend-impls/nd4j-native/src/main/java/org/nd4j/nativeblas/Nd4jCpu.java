@@ -321,7 +321,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_reverse_sequense.class,
         float_trace.class,
         float_random_shuffle.class,
-        float_clip_by_global_norm.class,};
+        float_clip_by_global_norm.class,
+        float_tri.class,
+        float_triu.class,};
     Class[] halfOps = {
         half_testreduction.class,
         half_noop.class,
@@ -634,7 +636,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_reverse_sequense.class,
         half_trace.class,
         half_random_shuffle.class,
-        half_clip_by_global_norm.class,};
+        half_clip_by_global_norm.class,
+        half_tri.class,
+        half_triu.class,};
     Class[] doubleOps = {
         double_testreduction.class,
         double_noop.class,
@@ -947,7 +951,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_reverse_sequense.class,
         double_trace.class,
         double_random_shuffle.class,
-        double_clip_by_global_norm.class,};
+        double_clip_by_global_norm.class,
+        double_tri.class,
+        double_triu.class,};
 
 @Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
     static { Loader.load(); }
@@ -7501,16 +7507,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(float value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -8586,16 +8593,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(@Cast("const float16") short value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -9671,16 +9679,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(double value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -26819,6 +26828,102 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_clip_by_global_norm() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        @Name("nd4j::ops::tri<float>") public static class float_tri extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_tri(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_tri(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_tri position(long position) {
+                return (float_tri)super.position(position);
+            }
+        
+                                                                                    public float_tri() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+
+        @Name("nd4j::ops::tri<float16>") public static class half_tri extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_tri(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_tri(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_tri position(long position) {
+                return (half_tri)super.position(position);
+            }
+        
+                                                                                    public half_tri() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+
+        @Name("nd4j::ops::tri<double>") public static class double_tri extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_tri(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_tri(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_tri position(long position) {
+                return (double_tri)super.position(position);
+            }
+        
+                                                                                    public double_tri() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+        @Name("nd4j::ops::triu<float>") public static class float_triu extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_triu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_triu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_triu position(long position) {
+                return (float_triu)super.position(position);
+            }
+        
+                                                                                    public float_triu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+
+        @Name("nd4j::ops::triu<float16>") public static class half_triu extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_triu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_triu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_triu position(long position) {
+                return (half_triu)super.position(position);
+            }
+        
+                                                                                    public half_triu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+
+        @Name("nd4j::ops::triu<double>") public static class double_triu extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_triu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_triu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_triu position(long position) {
+                return (double_triu)super.position(position);
+            }
+        
+                                                                                    public double_triu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }

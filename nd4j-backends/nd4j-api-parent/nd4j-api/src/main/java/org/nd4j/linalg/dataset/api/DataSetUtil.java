@@ -2,6 +2,7 @@ package org.nd4j.linalg.dataset.api;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -223,9 +224,9 @@ public class DataSetUtil {
             case 4:
                 return DataSetUtil.merge4d(labelsToMerge, labelMasksToMerge);
             default:
-                throw new IllegalStateException("Cannot merge examples: labels rank must be in range 2 to 4"
+                throw new ND4JIllegalStateException("Cannot merge examples: labels rank must be in range 2 to 4"
                                 + " inclusive. First example features shape: "
-                                + Arrays.toString(labelMasksToMerge[0].shape()));
+                                + Arrays.toString(labelsToMerge[0].shape()));
         }
     }
 

@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
@@ -6644,16 +6645,28 @@ public class Nd4j {
          return where(mask, zeros(1, m.dtype), m)
          */
 
-        INDArray mask = tri(m.size(-2),1);
+        //INDArray mask = tri(m.size(-2),1);
         /**
          * Find a way to apply choose with an existing condition array.
          * (This appears to be the select op in libnd4j)
          */
-
+        /*
         Select select = new Select(new INDArray[]{mask,Nd4j.zeros(1),m},new INDArray[]{Nd4j.zerosLike(m)});
         Nd4j.getExecutioner().exec(select);
         return select.getOutputArgument(0);
+        */
 
+        INDArray result = Nd4j.createUninitialized(m.shape());
+
+        val op = DynamicCustomOp.builder("triu")
+                .addInputs(m)
+                .addOutputs(result)
+                .addIntegerArguments(k)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        return result;
     }
 
 
@@ -6688,8 +6701,22 @@ public class Nd4j {
      * @return
      */
     public static INDArray tri(int n,int m,int k) {
+        /*
         INDArray mRet = Transforms.greaterThanOrEqual(arange(n),arange(-k,m - k));
+
         return mRet;
+        */
+
+        INDArray ret = Nd4j.createUninitialized(n, m);
+
+        val op = DynamicCustomOp.builder("tri")
+                .addIntegerArguments(n, m, k)
+                .addOutputs(ret)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+
+        return ret;
     }
 
     /**

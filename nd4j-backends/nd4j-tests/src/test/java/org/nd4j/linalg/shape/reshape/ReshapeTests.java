@@ -1,5 +1,6 @@
 package org.nd4j.linalg.shape.reshape;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -15,6 +16,7 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class ReshapeTests extends BaseNd4jTest {
 
@@ -51,6 +53,7 @@ public class ReshapeTests extends BaseNd4jTest {
         assertArrayEquals(new int[] {3, 1}, reshaped.shape());
         assertEquals(0.0, reshaped.getDouble(1), delta);
         assertEquals(0.0, reshaped.getDouble(2), delta);
+        log.info("Reshaped: {}", reshaped.shapeInfoDataBuffer().asInt());
         assumeNotNull(reshaped.toString());
     }
 

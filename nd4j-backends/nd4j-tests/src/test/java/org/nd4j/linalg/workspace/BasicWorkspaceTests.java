@@ -683,7 +683,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation6() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "testAllocation6");
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -701,11 +701,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(2000 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
 
         //assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
+
+        workspace.close();
     }
 
     @Test
     public void testAllocation5() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(basicConfig);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "testAllocation5");
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -726,6 +728,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals((reqMemory + reqMemory % 8) * 2, workspace.getHostOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
+
+        workspace.close();
     }
 
 
@@ -767,8 +771,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation3() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
-                        MemoryWorkspace.DEFAULT_ID);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig,
+                        "testAllocation2");
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -785,12 +789,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         array.assign(1.0f);
 
         assertEquals(5, array.sumNumber().doubleValue(), 0.01);
+
+        workspace.close();
     }
 
     @Test
     public void testAllocation2() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
-                        MemoryWorkspace.DEFAULT_ID);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig,
+                        "testAllocation2");
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -807,18 +813,25 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         array.assign(1.0f);
 
         assertEquals(5, array.sumNumber().doubleValue(), 0.01);
+
+        workspace.close();
     }
 
     @Test
     public void testAllocation1() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
-                        MemoryWorkspace.DEFAULT_ID);
+
+
 
         INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig,
+                "TestAllocation1");
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
         assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        assertEquals(0, workspace.getHostOffset());
 
         INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
@@ -871,6 +884,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(6.0, array.getFloat(2), 0.01);
         assertEquals(6.0, array.getFloat(3), 0.01);
         assertEquals(6.0, array.getFloat(4), 0.01);
+
+        workspace.close();
     }
 
 

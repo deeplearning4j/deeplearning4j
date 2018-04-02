@@ -1,5 +1,8 @@
 package org.nd4j.linalg.cache;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
+
 import java.util.Arrays;
 
 /**
@@ -19,24 +22,30 @@ public class ArrayDescriptor {
 
     private DTYPE dtype;
 
+    private DataBuffer.Type bufferType;
+
     public ArrayDescriptor(int[] array) {
         this.intArray = array;
         this.dtype = DTYPE.INT;
+        this.bufferType = Nd4j.dataType();
     }
 
     public ArrayDescriptor(float[] array) {
         this.floatArray = array;
         this.dtype = DTYPE.FLOAT;
+        this.bufferType = Nd4j.dataType();
     }
 
     public ArrayDescriptor(double[] array) {
         this.doubleArray = array;
         this.dtype = DTYPE.DOUBLE;
+        this.bufferType = Nd4j.dataType();
     }
 
     public ArrayDescriptor(long[] array) {
         this.longArray = array;
         this.dtype = DTYPE.LONG;
+        this.bufferType = Nd4j.dataType();
     }
 
     @Override
@@ -47,6 +56,9 @@ public class ArrayDescriptor {
             return false;
 
         ArrayDescriptor that = (ArrayDescriptor) o;
+
+        if (this.bufferType != that.bufferType)
+            return false;
 
         if (this.dtype != that.dtype)
             return false;
@@ -67,13 +79,13 @@ public class ArrayDescriptor {
     @Override
     public int hashCode() {
         if (intArray != null) {
-            return intArray.getClass().hashCode() + 31 * Arrays.hashCode(intArray);
+            return intArray.getClass().hashCode() + 31 * Arrays.hashCode(intArray) + 31 * bufferType.ordinal();
         } else if (floatArray != null) {
-            return floatArray.getClass().hashCode() + 31 * Arrays.hashCode(floatArray);
+            return floatArray.getClass().hashCode() + 31 * Arrays.hashCode(floatArray) + 31 * bufferType.ordinal();
         } else if (doubleArray != null) {
-            return doubleArray.getClass().hashCode() + 31 * Arrays.hashCode(doubleArray);
+            return doubleArray.getClass().hashCode() + 31 * Arrays.hashCode(doubleArray) + 31 * bufferType.ordinal();
         } else if (longArray != null) {
-            return longArray.getClass().hashCode() + 31 * Arrays.hashCode(longArray);
+            return longArray.getClass().hashCode() + 31 * Arrays.hashCode(longArray) + 31 * bufferType.ordinal();
         } else {
             return 0;
         }

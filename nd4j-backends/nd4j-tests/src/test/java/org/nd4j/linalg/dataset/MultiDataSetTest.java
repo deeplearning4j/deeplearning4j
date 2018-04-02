@@ -1,5 +1,6 @@
 package org.nd4j.linalg.dataset;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -20,6 +21,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 @RunWith(Parameterized.class)
 public class MultiDataSetTest extends BaseNd4jTest {
     public MultiDataSetTest(Nd4jBackend backend) {
@@ -676,8 +678,7 @@ public class MultiDataSetTest extends BaseNd4jTest {
                 MultiDataSet mds2 = new MultiDataSet();
                 mds2.load(dis);
 
-
-                assertEquals(mds, mds2);
+                assertEquals("Failed at [" + numF + "]/[" + numL + "]",mds, mds2);
             }
         }
     }

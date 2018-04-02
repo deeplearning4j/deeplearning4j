@@ -6561,16 +6561,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native FloatNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(float value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -7646,16 +7647,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native HalfNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(@Cast("const float16") short value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape
@@ -8731,16 +8733,17 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public native DoubleNDArray diagonal(char type );
 
         /**
-        *  set zeros in specified array block, works only with 2D matrix
+        *  fill matrix with given value starting from specified diagonal in given direction, works only with 2D matrix
         *
-        *  block - block of array where to put zeros. Possible values are:
-        *      "trianUp"   - upper triangular block excluding diagonal 
-        *      "trianUpD"  - upper triangular block including diagonal 
-        *      "trianLow"  - lower triangular block excluding diagonal
-        *      "trianLowD" - lower triangular block including diagonal
+        *  diag - diagonal starting from matrix is filled. 
+        *      diag = 0 corresponds to main diagonal, 
+        *      diag < 0 below main diagonal
+        *      diag > 0 above main diagonal
+        *  direction - in what direction to fill matrix. There are 2 possible directions:
+        *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
+        *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        public native void setZeros(@Cast("char*") String block);
-        public native void setZeros(@Cast("char*") BytePointer block);
+        public native void setValueIn2DMatrix(double value, int diag, char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

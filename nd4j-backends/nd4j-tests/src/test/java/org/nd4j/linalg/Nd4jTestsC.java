@@ -235,6 +235,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     }
 
+    @Ignore // with broadcastables mechanic it'll be ok
     @Test(expected = IllegalStateException.class)
     public void testShapeEqualsOnElementWise() {
         Nd4j.ones(10000, 1).sub(Nd4j.ones(1, 2));
@@ -6137,6 +6138,25 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(expected, b.rsub(Nd4j.scalar(2)));
         assertEquals(expected, b.rsubColumnVector(Nd4j.scalar(2)));
+    }
+
+
+    @Test
+    public void testHalfStuff() {
+        if (!Nd4j.getExecutioner().getClass().getSimpleName().toLowerCase().contains("cuda"))
+            return;
+
+        val dtype = Nd4j.dataType();
+        Nd4j.setDataType(DataBuffer.Type.HALF);
+
+        val arr = Nd4j.ones(3, 3);
+        arr.addi(2.0f);
+
+        val exp = Nd4j.create(3, 3).assign(3.0f);
+
+        assertEquals(exp, arr);
+
+        Nd4j.setDataType(dtype);
     }
 
 
