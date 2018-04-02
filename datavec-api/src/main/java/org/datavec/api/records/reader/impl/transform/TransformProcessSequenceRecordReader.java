@@ -26,8 +26,9 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class TransformProcessSequenceRecordReader implements SequenceRecordReader {
-    private SequenceRecordReader sequenceRecordReader;
-    private TransformProcess transformProcess;
+
+    protected SequenceRecordReader sequenceRecordReader;
+    protected TransformProcess transformProcess;
 
 
 

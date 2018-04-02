@@ -26,8 +26,8 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class TransformProcessRecordReader implements RecordReader {
-    private RecordReader recordReader;
-    private TransformProcess transformProcess;
+    protected RecordReader recordReader;
+    protected TransformProcess transformProcess;
 
     /**
      * Called once at initialization.
@@ -56,7 +56,7 @@ public class TransformProcessRecordReader implements RecordReader {
 
     @Override
     public boolean batchesSupported() {
-        return false;
+        return recordReader.batchesSupported();
     }
 
     @Override
