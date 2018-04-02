@@ -262,26 +262,49 @@ public class LoneTest extends BaseNd4jTest {
             Comment out assert and run then -> Issue 2: Index out of bound exception with certain shapes when accessing elements with getDouble() in f order
             (looks like problem is when rank-1==1) eg. 1,2,1 and 2,2,1
          */
-        int [] ranksToCheck = new int[] {2,3,4,5};
-        for (int rank=0; rank<ranksToCheck.length;rank++) {
-            log.info("\nRunning through rank "+ rank);
-            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(rank,'f');
-            Iterator<Pair<INDArray,String>> iter = allF.iterator();
+        int[] ranksToCheck = new int[]{2, 3, 4, 5};
+        for (int rank = 0; rank < ranksToCheck.length; rank++) {
+            log.info("\nRunning through rank " + ranksToCheck[rank]);
+            List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f');
+            Iterator<Pair<INDArray, String>> iter = allF.iterator();
             while (iter.hasNext()) {
-                Pair<INDArray,String> currentPair = iter.next();
+                Pair<INDArray, String> currentPair = iter.next();
                 INDArray origArrayF = currentPair.getFirst();
                 INDArray sameArrayC = origArrayF.dup('c');
-                log.info("\nLooping through slices for shape "+ currentPair.getSecond());
-                log.info("\nOriginal array:\n"+origArrayF);
+                log.info("\nLooping through slices for shape " + currentPair.getSecond());
+                log.info("\nOriginal array:\n" + origArrayF);
                 INDArray viewF = origArrayF.slice(0);
                 INDArray viewC = sameArrayC.slice(0);
-                log.info("\nSlice 0, C order:\n"+viewC.toString());
-                log.info("\nSlice 0, F order:\n"+viewF.toString());
+                log.info("\nSlice 0, C order:\n" + viewC.toString());
+                log.info("\nSlice 0, F order:\n" + viewF.toString());
                 for (int i = 0; i < viewF.slices(); i++) {
-                    assertEquals(viewF.slice(i),viewC.slice(i));
-                    log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(0)); //C order is fine
-                    log.info("\nF order slice " + i + ", element 0 :" + viewF.slice(i).getDouble(0)); //throws index out of bound err on F order
+                    //assertEquals(viewF.slice(i),viewC.slice(i));
+                    for (int j = 0; j < viewF.slice(i).length(); j++) {
+                        //if (j>0) break;
+                        log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(j)); //C order is fine
+                        log.info("\nF order slice " + i + ", element 0 :" + viewF.slice(i).getDouble(j)); //throws index out of bound err on F order
+                    }
                 }
+            }
+        }
+    }
+
+    @Test
+    public void checkWithReshape() {
+        INDArray arr = Nd4j.create(1, 3);
+        INDArray reshaped = arr.reshape('f', 3, 1);
+        for (int i=0;i<reshaped.length();i++) {
+            log.info("C order element " + i + arr.getDouble(i));
+            log.info("F order element " + i + reshaped.getDouble(i));
+        }
+        for (int j=0;j<arr.slices();j++) {
+            for (int k=0;k<arr.slice(j).length();k++) {
+                log.info("\nArr: slice " + j + " element " + k + " " + arr.slice(j).getDouble(k));
+            }
+        }
+        for (int j=0;j<reshaped.slices();j++) {
+            for (int k=0;k<reshaped.slice(j).length();k++) {
+                log.info("\nReshaped: slice " + j + " element " + k + " " + reshaped.slice(j).getDouble(k));
             }
         }
     }
