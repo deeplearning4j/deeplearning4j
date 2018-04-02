@@ -132,7 +132,7 @@ public class ArrowWritableRecordBatch extends AbstractWritableRecordBatch implem
             if(!list.get(column).isNull(offset + i))
                 ret.add(ArrowConverter.fromEntry(offset + i,list.get(column),schema.getType(column)));
             else {
-                ret.add(new NullWritable());
+                ret.add(NullWritable.INSTANCE);
             }
         }
         return ret;

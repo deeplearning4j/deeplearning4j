@@ -137,19 +137,15 @@ public class ArrowConverter {
         direct.rewind();
         switch(type) {
             case Integer:
-                IntVector intVector = (IntVector) fieldVector;
                 buffer = Nd4j.createBuffer(direct, DataBuffer.Type.INT,cols,0);
                 break;
             case Float:
-                Float4Vector float4Vector = (Float4Vector) fieldVector;
                 buffer = Nd4j.createBuffer(direct, DataBuffer.Type.FLOAT,cols);
                 break;
             case Double:
-                Float8Vector float8Vector = (Float8Vector) fieldVector;
                 buffer = Nd4j.createBuffer(direct, DataBuffer.Type.DOUBLE,cols);
                 break;
             case Long:
-                BigIntVector bigIntVector = (BigIntVector) fieldVector;
                 buffer =  Nd4j.createBuffer(direct, DataBuffer.Type.LONG,cols);
                 break;
         }
@@ -346,6 +342,8 @@ public class ArrowConverter {
             case Time: return field(name,new ArrowType.Date(DateUnit.MILLISECOND));
             case Bytes: return field(name,new ArrowType.Binary());
             case NDArray: return field(name,new ArrowType.Binary());
+            case String: return field(name,new ArrowType.Utf8());
+
             default: throw new IllegalArgumentException("Column type invalid " + columnType);
         }
     }
@@ -614,9 +612,19 @@ public class ArrowConverter {
 
         switch (columnType) {
             case Integer:
-                IntVector intVector = (IntVector) fieldVector;
-                int set = TypeConversion.getInstance().convertInt(value);
-                intVector.set(row,set);
+                if(fieldVector instanceof IntVector) {
+                    IntVector intVector = (IntVector) fieldVector;
+                    int set = TypeConversion.getInstance().convertInt(value);
+                    intVector.set(row,set);
+                }
+                else if(fieldVector instanceof UInt4Vector) {
+                    UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
+                    int set = TypeConversion.getInstance().convertInt(value);
+                    uInt4Vector.set(row,set);
+                }
+                else {
+                    throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for int type");
+                }
                 break;
             case Float:
                 Float4Vector float4Vector = (Float4Vector) fieldVector;
@@ -629,8 +637,18 @@ public class ArrowConverter {
                 float8Vector.set(row,set3);
                 break;
             case Long:
-                BigIntVector largeIntVector = (BigIntVector) fieldVector;
-                largeIntVector.set(row,TypeConversion.getInstance().convertLong(value));
+                if(fieldVector instanceof BigIntVector) {
+                    BigIntVector largeIntVector = (BigIntVector) fieldVector;
+                    largeIntVector.set(row,TypeConversion.getInstance().convertLong(value));
+
+                }
+                else if(fieldVector instanceof UInt8Vector) {
+                    UInt8Vector uInt8Vector = (UInt8Vector) fieldVector;
+                    uInt8Vector.set(row,TypeConversion.getInstance().convertLong(value));
+                }
+                else {
+                    throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for long type");
+                }
                 break;
             case Categorical:
             case String:

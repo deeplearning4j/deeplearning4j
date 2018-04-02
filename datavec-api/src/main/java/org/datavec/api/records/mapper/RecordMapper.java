@@ -1,6 +1,7 @@
 package org.datavec.api.records.mapper;
 
 import lombok.Builder;
+import lombok.Getter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.writer.RecordWriter;
@@ -42,6 +43,7 @@ public class RecordMapper {
     private InputSplit outputUrl;
     @Builder.Default
     private Configuration configuration = new Configuration();
+    @Getter
     private Partitioner partitioner;
     private int batchSize;
 
@@ -56,6 +58,7 @@ public class RecordMapper {
      * @throws Exception
      */
     public void copy() throws Exception {
+        recordReader.reset();
         recordReader.initialize(configuration,inputUrl);
         partitioner.init(configuration,outputUrl);
         recordWriter.initialize(configuration,outputUrl,partitioner);
