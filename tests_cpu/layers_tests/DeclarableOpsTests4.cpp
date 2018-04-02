@@ -2495,4 +2495,93 @@ TEST_F(DeclarableOpsTests4, triu_test11) {
 }
 
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_bp_test1) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> gradO('c', {2, 3, 2});    
+    gradO = 0.5;
+
+    NDArray<float> expected('c', {2, 3, 2}, {0.,0.5,0.,0. ,0.,0. ,0.,0.5,0.,0. ,0.,0.});    
+    
+    nd4j::ops::triu_bp<float> op;
+    ResultSet<float>* results = op.execute({&input, &gradO}, {}, {1});
+    NDArray<float>* gradI = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(gradI));
+    ASSERT_TRUE(expected.equalsTo(gradI));    
+       
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_bp_test2) {    
+    
+    NDArray<float> input('c', {2, 3, 2}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});    
+    NDArray<float> gradO('c', {2, 3, 2});    
+    gradO = 0.5;
+
+    NDArray<float> expected('c', {2, 3, 2}, {0.5,0.5,0. ,0.5,0. ,0. ,0.5,0.5,0. ,0.5,0. ,0.});    
+    
+    nd4j::ops::triu_bp<float> op;
+    ResultSet<float>* results = op.execute({&input, &gradO}, {}, {});
+    NDArray<float>* gradI = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(gradI));
+    ASSERT_TRUE(expected.equalsTo(gradI));    
+       
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_bp_test3) {    
+    
+    NDArray<float> input('c', {6}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> gradO('c', {6,6});    
+    gradO = 0.5;
+
+    NDArray<float> expected('c', {6,6}, {0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0.5, 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0.5, 0.5, 0.5, 0.5, 0.5,0. , 0. , 0.5, 0.5, 0.5, 0.5,0. , 0. , 0. , 0.5, 0.5, 0.5});    
+    
+    nd4j::ops::triu_bp<float> op;
+    ResultSet<float>* results = op.execute({&input, &gradO}, {}, {-2});
+    NDArray<float>* gradI = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(gradI));
+    ASSERT_TRUE(expected.equalsTo(gradI));    
+       
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, triu_bp_test4) {    
+    
+    NDArray<float> input('c', {2,3}, {1, 2, 3, 4, 5, 6});    
+    NDArray<float> gradO('c', {2,3});    
+    gradO = 0.5;
+
+    NDArray<float> expected('c', {2,3}, {0., 0., 0., 0., 0., 0.});    
+    
+    nd4j::ops::triu_bp<float> op;
+    ResultSet<float>* results = op.execute({&input, &gradO}, {}, {10});
+    NDArray<float>* gradI = results->at(0);       
+
+    ASSERT_EQ(Status::OK(), results->status());    
+
+    ASSERT_TRUE(expected.isSameShape(gradI));
+    ASSERT_TRUE(expected.equalsTo(gradI));    
+       
+    delete results;
+}
+
+
+
+
+
+
 
