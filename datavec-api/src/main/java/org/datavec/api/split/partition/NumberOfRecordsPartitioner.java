@@ -89,7 +89,7 @@ public class NumberOfRecordsPartitioner implements Partitioner {
         //only append when directory, also ensure we can bootstrap and we can write to the current location
         if(currLocation >= locations.length - 1 && locations.length >= 1 && needsNewPartition() || inputSplit.needsBootstrapForWrite() ||
                 locations.length < 1 ||
-                !inputSplit.canWriteToLocation(locations[currLocation])
+                currLocation >= locations.length || !inputSplit.canWriteToLocation(locations[currLocation])
                         && needsNewPartition()) {
 
             String newInput = inputSplit.addNewLocation();

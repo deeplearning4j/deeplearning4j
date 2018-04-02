@@ -639,9 +639,11 @@ public class ArrowConverter {
                 textVector.set(row,stringSet.getBytes());
                 break;
             case Time:
+                //all timestamps are long based, just directly convert it to the super type
                 int timeSet = TypeConversion.getInstance().convertInt(value);
-                TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
-                timeMilliVector.set(row,timeSet);
+                BaseFixedWidthVector baseFixedWidthVector = (BaseFixedWidthVector) fieldVector;
+                //    valueBuffer.setLong(index * TYPE_WIDTH, value);
+                baseFixedWidthVector.getDataBuffer().setLong(row * 8,timeSet);
                 break;
 
         }
