@@ -65,13 +65,5 @@ public class ParallelStack extends DynamicCustomOp {
         ret.put(tensorflowName(), map);
         return ret;
     }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable[] values = f1.toArray(new SDVariable[f1.size()]);
-        List<SDVariable> ret = new ArrayList<SDVariable>();
-        ret.add(f().parallel_stack(values));
-        return ret;
-    }
-
+    
 }
