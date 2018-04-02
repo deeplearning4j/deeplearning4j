@@ -70,7 +70,7 @@ namespace helpers {
     template <typename T>
     static FORCEINLINE void hv_to_rgb(T h, T v_min, T v_max, T* r, T* g, T* b) {
         int h_category = static_cast<int>(h);
-        T ratio = h - h_category;
+        T ratio = h - (T)h_category;
         bool increase = ((h_category & 0x1) == 0);
         if (!increase)
             ratio = 1 - ratio;

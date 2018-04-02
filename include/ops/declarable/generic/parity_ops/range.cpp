@@ -26,7 +26,7 @@ namespace nd4j {
                 if (start > stop) {
                     while (e > (T) stop) {
                         output->putScalar(cnt++, e);
-                        e = (T) step > (T) 0.0 ? e - step : e + step;
+                        e = (T) step > (T) 0.0 ? e - (T)step : e + (T)step;
                     }
                 } else {
                     while (e < (T) stop) {
@@ -110,7 +110,7 @@ namespace nd4j {
                 if (start > stop) {
                     while (e > (T) stop) {
                         cnt++;
-                        e = (T) step > (T) 0.0 ? e - step : e + step;
+                        e = (T) step > (T) 0.0 ? e - (T)step : e + (T)step;
                     }
                 } else {
                     while (e < (T) stop) {

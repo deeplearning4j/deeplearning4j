@@ -61,7 +61,7 @@ static T continFract(const T a, const T b, const T x) {
     	i2 = 2*i;
 		
 		// even step
-		val = i * (b - i) * x / ((amu + i2) * (a + i2));		
+		val = i * (b - (T)i) * x / ((amu + (T)i2) * (a + (T)i2));		
 
 		coeff2 = (T)(1.) + val * coeff2;
 		if(math::nd4j_abs<T>(coeff2) < min)
@@ -76,7 +76,7 @@ static T continFract(const T a, const T b, const T x) {
 
 		//***********************************************//
 		// odd step
-		val = -(a + i) * (apb + i) * x / ((a + i2) * (apu + i2));
+		val = -(a + (T)i) * (apb + (T)i) * x / ((a + (T)i2) * (apu + (T)i2));
 		
 		coeff2 = (T)(1.) + val * coeff2;
 		if(math::nd4j_abs<T>(coeff2) < min)

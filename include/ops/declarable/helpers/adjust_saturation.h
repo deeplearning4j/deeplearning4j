@@ -31,7 +31,7 @@ namespace helpers {
             hh = 0;
         }
         if (hh < (T) 0.0) {
-            hh = hh + 1;
+            hh = hh + 1.;
         }
         *v = vv;
         *h = hh;
@@ -51,7 +51,7 @@ namespace helpers {
         while (fmodu >= (T) 2.0f)
             fmodu -= (T) 2.0f;
         
-        T x = c * ((T) 1 - nd4j::math::nd4j_abs<T>(fmodu - 1));
+        T x = c * (1. - nd4j::math::nd4j_abs<T>(fmodu - 1.));
         switch (h_category) {
             case 0:
                 rr = c;

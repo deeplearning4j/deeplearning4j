@@ -25,7 +25,7 @@ namespace nd4j {
 
             auto lambda = LAMBDA_TT(_x, _e) {
                 T p = nd4j::math::nd4j_pow<T>((T) M_E, _x);
-                return _e * (p / (p + 1));
+                return _e * (p / (p + 1.));
             };
 
             input->applyPairwiseLambda(epsilon, lambda, z);  

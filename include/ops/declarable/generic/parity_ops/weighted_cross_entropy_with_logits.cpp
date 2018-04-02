@@ -22,9 +22,9 @@ namespace ops {
         if (weights->isScalar()) {
             posWeight = weights->getScalar(0);
             auto mainRoutine = LAMBDA_TT(_x, _z, posWeight) {
-                T targetWeight = (1 + (posWeight - 1) * _z);
-                return (1 - _z) * _x + 
-                    targetWeight * (nd4j::math::nd4j_log(1 + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(_x))) + 
+                T targetWeight = (1. + (posWeight - 1.) * _z);
+                return (1. - _z) * _x + 
+                    targetWeight * (nd4j::math::nd4j_log(1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(_x))) + 
                     nd4j::math::nd4j_max(-_x, T(0.0))
                 );
             };
@@ -37,7 +37,7 @@ namespace ops {
             
             auto mainRoutine = LAMBDA_TTT(_x, _z, _w) {
                 return (((T)1.0 - _z) * _x) + 
-                    _w * (nd4j::math::nd4j_log(1 + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(_x))) + 
+                    _w * (nd4j::math::nd4j_log(1. + nd4j::math::nd4j_exp(-nd4j::math::nd4j_abs(_x))) + 
                     nd4j::math::nd4j_max(-_x, T(0.0)));
             };
 

@@ -936,3 +936,36 @@ TEST_F(DeclarableOpsTests6, ReluLayer_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> indices('c', {2}, {1, 0});
+    NDArray<float> e('c', {2, 2}, {3, 4, 1, 2});
+
+    nd4j::ops::gather<float> op;
+    auto result = op.execute({&x, &indices}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119_2) {
+    NDArray<float> x('c', {2, 2}, {1, 2, 3, 4});
+    NDArray<float> e('c', {2, 2}, {3, 4, 1, 2});
+
+    nd4j::ops::gather<float> op;
+    auto result = op.execute({&x}, {}, {0, 1, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}

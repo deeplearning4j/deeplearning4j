@@ -2617,3 +2617,4 @@ TEST_F(NDArrayTest, Test_diagonal_18) {
     delete diag;
 }
 
+

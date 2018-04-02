@@ -143,7 +143,7 @@ namespace aggregateOps {
             }
 
             f = expTable[idx];
-            g = ((T) 1.0f - code - f) * alpha;
+            g = ((T) 1.0f - (T)code - f) * alpha;
 
             // axpy1
 #pragma omp simd

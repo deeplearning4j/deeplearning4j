@@ -4,6 +4,7 @@
 
 #include <ops/declarable/DeclarableOp.h>
 #include <helpers/ProviderRNG.h>
+#include <Status.h>
 
 namespace nd4j {
     namespace ops {
@@ -424,8 +425,8 @@ namespace nd4j {
 
         template <typename T>
         Nd4jStatus nd4j::ops::DeclarableOp<T>::validateNonEmptyInput(Context<T>& block) {
-            if (this->getOpDescriptor()->getNumberOfInputs() == -2)
-                return ND4J_STATUS_OK;
+            if (this->getOpDescriptor()->getNumberOfInputs() == -2 || this->getOpDescriptor()->getNumberOfInputs() == 0)
+                return Status::OK();
 
             if (block.width() < 1) {
                 nd4j_printf("%s: no operands provided for the op", this->getOpName()->c_str());
