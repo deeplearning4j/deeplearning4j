@@ -667,4 +667,5 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setVerbose(false);
 
     delete[] pl;
+    delete ptr;
 }
