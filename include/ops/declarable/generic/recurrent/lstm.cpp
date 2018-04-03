@@ -13,7 +13,7 @@ namespace ops {
 CUSTOM_OP_IMPL(lstm, 8, 2, false, 3, 2) {
 
     NDArray<T>* x   = INPUT_VARIABLE(0);                   // input [time x batchSize x inSize]
-    NDArray<T>* h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [batchSize x numProj], in case of projection=false -> numProj=numUnits!!! 
+    NDArray<T>* h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [batchSize x numProj], in case of projection=false -> numProj == numUnits !!!
     NDArray<T>* c0 = INPUT_VARIABLE(2);                    // initial cell state  (at time step = 0) [batchSize x numUnits],  
 
     NDArray<T>* Wx  = INPUT_VARIABLE(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits] 

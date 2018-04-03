@@ -244,6 +244,22 @@ namespace nd4j {
        */                  
         DECLARE_CUSTOM_OP(gru, 5, 1, false, 0, 0);
 
-
+           //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation "static RNN time sequences" with peep hole connections:
+       *
+       * Input arrays: 
+       *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features       
+       *    1: input-to-hidden  weights, [inSize   x numUnits] 
+       *    2: hidden-to-hidden weights, [numUnits x numUnits] 
+       *    3: biases, [2*numUnits] 
+       *    4: (optional) initial cell output [batchSize x numUnits], that is at time step = 0       
+       *    5: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep       
+       *  
+       * Output arrays: 
+       *    0: cell outputs [time x batchSize x numUnits]
+       *    1: cell final non-zero output [batchSize x numUnits]
+       */                  
+        DECLARE_CUSTOM_OP(static_rnn, 4, 2, false, 0, 0);
     }
-}
+} 

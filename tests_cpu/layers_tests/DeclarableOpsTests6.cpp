@@ -969,3 +969,216 @@ TEST_F(DeclarableOpsTests6, Test_Gather_Discrepancy_119_2) {
 
     delete result;
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, static_rnn_test1) {
+    
+    const int bS       = 2;
+    const int inSize   = 3;    
+    const int numUnits = 4;
+    const int time     = 5;
+
+    NDArray<double> x ('c', {time, bS, inSize});
+    NDArray<double> Wx('c', {inSize, numUnits});
+    NDArray<double> Wh('c', {numUnits, numUnits});
+    NDArray<double> b ('c', {2*numUnits});
+    NDArray<double> h0('c', {bS, numUnits});
+    NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3});
+
+    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    h0 = 0.2;
+    Wx = 0.3;
+    Wh = 0.4;
+    b  = 0.25;    
+
+    NDArray<double> expH     ('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484, 0.9312333 , 0.9312333 , 0.9312333 , 0.9312333 ,
+                                                          0.93751527, 0.93751527, 0.93751527, 0.93751527,0.97136768, 0.97136768, 0.97136768, 0.97136768,0.        , 0.        , 0.        , 0.        ,
+                                                          0.97732812, 0.97732812, 0.97732812, 0.97732812,0.        , 0.        , 0.        , 0.        ,0., 0., 0., 0.,0., 0., 0., 0.});
+    
+    NDArray<double> expHFinal('c', {bS, numUnits},       {0.97732812, 0.97732812, 0.97732812, 0.97732812, 0.93751527, 0.93751527, 0.93751527, 0.93751527});
+
+    nd4j::ops::static_rnn<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &Wx, &Wh, &b, &h0, &maxTimeStep}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);
+    NDArray<double> *hFinal = results->at(1);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expHFinal.isSameShape(hFinal));
+    ASSERT_TRUE(expHFinal.equalsTo(hFinal));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, static_rnn_test2) {
+    
+    const int bS       = 2;
+    const int inSize   = 3;    
+    const int numUnits = 4;
+    const int time     = 5;
+
+    NDArray<double> x ('c', {time, bS, inSize});
+    NDArray<double> Wx('c', {inSize, numUnits});
+    NDArray<double> Wh('c', {numUnits, numUnits});
+    NDArray<double> b ('c', {2*numUnits});
+    NDArray<double> h0('c', {bS, numUnits});
+
+    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    h0 = 0.2;
+    Wx = 0.3;
+    Wh = 0.4;
+    b  = 0.25;    
+
+    NDArray<double> expH     ('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484,0.9312333 , 0.9312333 , 0.9312333 , 0.9312333,
+                                                          0.93751527, 0.93751527, 0.93751527, 0.93751527,0.97136768, 0.97136768, 0.97136768, 0.97136768,0.97338548, 0.97338548, 0.97338548, 0.97338548,
+                                                          0.97732812, 0.97732812, 0.97732812, 0.97732812,0.97864398, 0.97864398, 0.97864398, 0.97864398,0.98000654, 0.98000654, 0.98000654, 0.98000654,
+                                                          0.98112648, 0.98112648, 0.98112648, 0.98112648});
+    
+    NDArray<double> expHFinal('c', {bS, numUnits},       {0.98000654, 0.98000654, 0.98000654, 0.98000654,0.98112648, 0.98112648, 0.98112648, 0.98112648});
+
+    nd4j::ops::static_rnn<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &Wx, &Wh, &b, &h0}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);
+    NDArray<double> *hFinal = results->at(1);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expHFinal.isSameShape(hFinal));
+    ASSERT_TRUE(expHFinal.equalsTo(hFinal));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, static_rnn_test3) {
+    
+    const int bS       = 2;
+    const int inSize   = 3;    
+    const int numUnits = 4;
+    const int time     = 5;
+
+    NDArray<double> x ('c', {time, bS, inSize});
+    NDArray<double> Wx('c', {inSize, numUnits});
+    NDArray<double> Wh('c', {numUnits, numUnits});
+    NDArray<double> b ('c', {2*numUnits});
+    NDArray<double> h0('c', {bS, numUnits});
+    NDArray<double> maxTimeStep('c', {bS}, {time-1, 0});
+
+    NDArrayFactory<double>::linspace(0.01, x, 0.01);
+    h0 = 0.2;
+    Wx = 0.3;
+    Wh = 0.4;
+    b  = 0.25;    
+
+    NDArray<double> expH     ('c', {time, bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.        , 0.        , 0.        , 0.        , 0.9312333, 0.9312333, 0.9312333, 0.9312333,
+                                                          0.       , 0.       , 0.       , 0.           , 0.97136768, 0.97136768, 0.97136768, 0.97136768,0.        , 0.        , 0.        , 0. , 
+                                                          0.97732812, 0.97732812, 0.97732812, 0.97732812,0.        , 0.        , 0.        , 0.        , 0., 0., 0., 0.,0., 0., 0., 0.});
+    
+    NDArray<double> expHFinal('c', {bS, numUnits},       {0.97732812, 0.97732812, 0.97732812, 0.97732812, 0.2       , 0.2       , 0.2       , 0.2});
+
+    nd4j::ops::static_rnn<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &Wx, &Wh, &b, &h0, &maxTimeStep}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);
+    NDArray<double> *hFinal = results->at(1);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expHFinal.isSameShape(hFinal));
+    ASSERT_TRUE(expHFinal.equalsTo(hFinal));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, static_rnn_test4) {
+    
+    const int bS       = 2;
+    const int inSize   = 3;    
+    const int numUnits = 4;
+    const int time     = 5;
+
+    NDArray<double> x ('c', {time, bS, inSize});
+    NDArray<double> Wx('c', {inSize, numUnits});
+    NDArray<double> Wh('c', {numUnits, numUnits});
+    NDArray<double> b ('c', {2*numUnits});
+    NDArray<double> h0('c', {bS, numUnits});
+    NDArray<double> maxTimeStep('c', {bS}, {time-1, time-3});
+
+    NDArrayFactory<double>::linspace(0.01, x, 0.01);    
+    Wx = 0.3;
+    Wh = 0.4;
+    b  = 0.25;    
+
+    NDArray<double> expH     ('c', {time, bS, numUnits}, {0.47615493, 0.47615493, 0.47615493, 0.47615493,0.49676344, 0.49676344, 0.49676344, 0.49676344, 0.87018664, 0.87018664, 0.87018664, 0.87018664,
+                                                          0.88400882, 0.88400882, 0.88400882, 0.88400882, 0.96529784, 0.96529784, 0.96529784, 0.96529784,0.        , 0.        , 0.        , 0.        , 
+                                                          0.97688859, 0.97688859, 0.97688859, 0.97688859,0.        , 0.        , 0.        , 0.        , 0., 0., 0., 0.,0., 0., 0., 0.});
+    
+    NDArray<double> expHFinal('c', {bS, numUnits},       {0.97688859, 0.97688859, 0.97688859, 0.97688859, 0.88400882, 0.88400882, 0.88400882, 0.88400882});
+
+    nd4j::ops::static_rnn<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &Wx, &Wh, &b, &maxTimeStep}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);
+    NDArray<double> *hFinal = results->at(1);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expHFinal.isSameShape(hFinal));
+    ASSERT_TRUE(expHFinal.equalsTo(hFinal));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, static_rnn_test5) {
+    
+    const int bS       = 2;
+    const int inSize   = 3;    
+    const int numUnits = 4;
+    const int time     = 5;
+
+    NDArray<double> x ('c', {time, bS, inSize});
+    NDArray<double> Wx('c', {inSize, numUnits});
+    NDArray<double> Wh('c', {numUnits, numUnits});
+    NDArray<double> b ('c', {2*numUnits});
+    NDArray<double> h0('c', {bS, numUnits});
+    
+    NDArrayFactory<double>::linspace(0.01, x, 0.01);    
+    Wx = 0.3;
+    Wh = 0.4;
+    b  = 0.25;    
+
+    NDArray<double> expH     ('c', {time, bS, numUnits}, {0.47615493, 0.47615493, 0.47615493, 0.47615493,0.49676344, 0.49676344, 0.49676344, 0.49676344, 0.87018664, 0.87018664, 0.87018664, 0.87018664,
+                                                          0.88400882, 0.88400882, 0.88400882, 0.88400882, 0.96529784, 0.96529784, 0.96529784, 0.96529784,0.96849345, 0.96849345, 0.96849345, 0.96849345, 
+                                                          0.97688859, 0.97688859, 0.97688859, 0.97688859,0.97831069, 0.97831069, 0.97831069, 0.97831069, 0.97997868, 0.97997868, 0.97997868, 0.97997868,
+                                                          0.98110653, 0.98110653, 0.98110653, 0.98110653});
+    
+    NDArray<double> expHFinal('c', {bS, numUnits},       {0.97997868, 0.97997868, 0.97997868, 0.97997868, 0.98110653, 0.98110653, 0.98110653, 0.98110653});
+
+    nd4j::ops::static_rnn<double> op;
+    nd4j::ResultSet<double>* results = op.execute({&x, &Wx, &Wh, &b}, {}, {});    
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray<double> *h = results->at(0);
+    NDArray<double> *hFinal = results->at(1);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expHFinal.isSameShape(hFinal));
+    ASSERT_TRUE(expHFinal.equalsTo(hFinal));
+
+    delete results;
+}

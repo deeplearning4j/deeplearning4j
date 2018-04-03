@@ -60,7 +60,7 @@ void gruCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* ht) {
     NDArray<T> ht_tilde = activation<T>(mmul(*xt, (*Wx)({{},{2*numUnits, 3*numUnits}})) + mmul((*ht_1)*rt, (*Wh)({{},{2*numUnits,3*numUnits}})) + (*b)({{2*numUnits,3*numUnits}}));     // [batchSize x numUnits]
 
     // current cell output
-    *ht = ut * (*ht_1) + ((T)1. - ut) * ht_tilde;
+    ht->assign( ut * (*ht_1) + ((T)1. - ut) * ht_tilde );
 }
 
 

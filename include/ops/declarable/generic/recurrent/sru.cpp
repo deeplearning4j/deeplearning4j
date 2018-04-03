@@ -449,42 +449,25 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     NDArray<T> gradBias(input->ordering(),   {bS, 2*K, N}, block.getWorkspace());
     NDArray<T> gradU   (input->ordering(),   {bS, 3*K, N}, block.getWorkspace());
     NDArray<T> gradHX  (input->ordering(),   {bS,   K, N}, block.getWorkspace());
-    NDArray<T> gct     (state->ordering(),   {bS, K},      block.getWorkspace());
-
-    NDArray<T> gradBFt(block.getWorkspace());
-    NDArray<T> gradBRt(block.getWorkspace());
-    NDArray<T> gradUZt(block.getWorkspace()); 
-    NDArray<T> xt(block.getWorkspace());
-    NDArray<T> zt(block.getWorkspace()); 
-    NDArray<T> ft(block.getWorkspace()); 
-    NDArray<T> rt(block.getWorkspace());     
-    NDArray<T> ct(block.getWorkspace());
-    NDArray<T> ct_1(block.getWorkspace());
-    NDArray<T> gradHXt(block.getWorkspace());
-    NDArray<T> inGradHt(block.getWorkspace());
-    NDArray<T> gradTanh(block.getWorkspace());
-    NDArray<T> gradCt(block.getWorkspace());
-    NDArray<T> ftMinus(block.getWorkspace());
-    NDArray<T> rtMinus(block.getWorkspace());
-
+    NDArray<T> gct     (state->ordering(),   {bS, K},      block.getWorkspace());    
+    
     //  input = input * mask    
     if(applyMask)
         input->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, input, nullptr);             // apply mask    
+    
     // multiplication matrix wi = matmul(weights,input), U = WX
     const NDArray<T> wi = mmul(*weights, *input);                                                   //  U [bS x 3K x N]            
 
     for (int t = N-1; t >=0 ; --t) {           
         // initialization
-        xt =         (*input)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, K});           // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
-        zt =               wi({ {}, {0,    K}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, K});           // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        ft =               wi({ {}, {K,  2*K}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, K});           // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        rt =               wi({ {}, {2*K,3*K}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, K});           // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        ct =         (*state)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, K});           // [bS x K  x N] -> [bS x K x 1] -> [bS x K]        
-        inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, K});     // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
-        if(t != 0)
-            { ct_1 = (*state)({ {}, {}, {t-1,t} }); ct_1.reshapei(ct_1.ordering(), {bS, K}); }            // previous c_{t-1} 
-        else
-            ct_1 = *init;                   
+        NDArray<T> xt =         (*input)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, K});          // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
+        NDArray<T> zt =               wi({ {}, {0,    K}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        NDArray<T> ft =               wi({ {}, {K,  2*K}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        NDArray<T> rt =               wi({ {}, {2*K,3*K}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
+        NDArray<T> ct =         (*state)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, K});          // [bS x K  x N] -> [bS x K x 1] -> [bS x K]        
+        NDArray<T> inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, K});    // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
+
+        NDArray<T> ct_1 = t ? (*state)({ {}, {}, {t-1,t} }) : *init;                                                // previous c_{t-1} 
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
@@ -496,18 +479,18 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         ///////////////// backward
         // bR, *grad_brt_ptr = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
         // ftMinus = -ft + (T)1.;
-        ftMinus = (T)1. - ft;
-        rtMinus = (T)1. - rt;
-        gradBRt = inGradHt * (gct - xt) * rtMinus * rt;
+        NDArray<T> ftMinus = (T)1. - ft;
+        NDArray<T> rtMinus = (T)1. - rt;
+        NDArray<T> gradBRt = inGradHt * (gct - xt) * rtMinus * rt;
         // bF, TODO - tanh            
-        gradTanh = (T)1. - gct * gct;
-        gradCt = inGradHt * rt * gradTanh;
-        gradBFt = (gradCt + *inGradCt) * (ct_1 - zt) * ftMinus * ft;        
+        NDArray<T> gradTanh = (T)1. - gct * gct;
+        NDArray<T> gradCt = inGradHt * rt * gradTanh;
+        NDArray<T> gradBFt = (gradCt + *inGradCt) * (ct_1 - zt) * ftMinus * ft;        
         // x_t (highway connection), gradHXt = inGradHt * (1.0f - rt);
-        gradHXt = inGradHt * rtMinus;
+        NDArray<T> gradHXt = inGradHt * rtMinus;
 
         // U_t, gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
-        gradUZt = (inGradHt * rt * gradTanh + *inGradCt) * ftMinus;
+        NDArray<T> gradUZt = (inGradHt * rt * gradTanh + *inGradCt) * ftMinus;
 
         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
         *inGradCt = (gradCt + *inGradCt) * ft;
@@ -525,7 +508,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     gradInit->assign(inGradCt);
     // gradX 
     weights->transposei();                                                               // [K x 3K]
-    *gradX = mmul(*weights, gradU) + gradHX;        
+    gradX->assign( mmul(*weights, gradU) + gradHX);
     if(applyMask)
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);       // apply mask
 
@@ -534,7 +517,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
     // gradW [bS x 3K x K]
     input->permutei({0, 2, 1});                                               // [bS x N x K]
-    *gradW = mmul(gradU, *input);    
+    gradW->assign( mmul(gradU, *input) );    
     
     return ND4J_STATUS_OK;
 }

@@ -65,8 +65,8 @@ DECLARE_SHAPE_FN(gruCell) {
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
                 
     outShapeInfo[0] = 2;
-    outShapeInfo[1] = inputShape->at(0)[0];
-    outShapeInfo[2] = inputShape->at(1)[1];
+    outShapeInfo[1] = inputShape->at(0)[1];
+    outShapeInfo[2] = inputShape->at(1)[2];
     
     shape::updateStrides(outShapeInfo, shape::order(inputShape->at(1)));
          

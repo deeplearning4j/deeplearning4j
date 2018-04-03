@@ -7,6 +7,8 @@
 #include <ops/declarable/helpers/jacobiSVD.h>
 #include <ops/declarable/helpers/reverseArray.h>
 #include <ops/declarable/helpers/softMaxForVector.h>
+#include <ops/declarable/helpers/rnnCell.h>
+#include "NDArrayFactory.h"
 
 
 using namespace nd4j;
@@ -1032,14 +1034,13 @@ TEST_F(HelpersTests1, SVD_test16) {
     
     svd.DivideAndConquer(0, 3, 1, 1, 1);
     // svd._m.printIndexedBuffer();
-
-    ASSERT_TRUE(expM.equalsTo(&svd._m));
-    ASSERT_TRUE(expU.equalsTo(&svd._u));
-    ASSERT_TRUE(expV.equalsTo(&svd._v));
-
     ASSERT_TRUE(expM.isSameShapeStrict(&svd._m));
     ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
     ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+
+    ASSERT_TRUE(expM.equalsTo(&svd._m));
+    ASSERT_TRUE(expU.equalsTo(&svd._u));
+    ASSERT_TRUE(expV.equalsTo(&svd._v));    
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1330,3 +1331,119 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, rnnCell_test1) {
+    
+    const int bS = 2;
+    const int inSize   = 4;
+    const int numUnits = 4;
+
+    NDArray<double> xt  ('c', {bS, inSize});
+    NDArray<double> ht_1('c', {bS, numUnits});
+    NDArray<double> Wx  ('c', {inSize, numUnits});
+    NDArray<double> Wh  ('c', {numUnits, numUnits});
+    NDArray<double> b   ('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
+
+    NDArray<double> ht('c', {bS, numUnits});    
+
+    xt.assign(0.1);
+    ht_1.assign(0.2);
+    Wx.assign(0.3);
+    Wh.assign(0.4);
+
+    NDArray<double> expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
+
+    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, rnnCell_test2) {
+    
+    const int bS = 2;
+    const int inSize   = 10;
+    const int numUnits = 4;
+
+    NDArray<double> xt  ('c', {bS, inSize});
+    NDArray<double> ht_1('c', {bS, numUnits});
+    NDArray<double> Wx  ('c', {inSize, numUnits});
+    NDArray<double> Wh  ('c', {numUnits, numUnits});
+    NDArray<double> b   ('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
+
+    NDArray<double> ht('c', {bS, numUnits});    
+
+    xt.assign(0.1);
+    ht_1.assign(0.2);
+    Wx.assign(0.3);
+    Wh.assign(0.4);
+
+    NDArray<double> expHt('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
+
+    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, rnnCell_test3) {
+    
+    const int bS = 2;
+    const int inSize   = 10;
+    const int numUnits = 4;
+
+    NDArray<double> xt  ('c', {bS, inSize});
+    NDArray<double> ht_1('c', {bS, numUnits});
+    NDArray<double> Wx  ('c', {inSize, numUnits});
+    NDArray<double> Wh  ('c', {numUnits, numUnits});
+    NDArray<double> b   ('c', {2*numUnits}, {0.01,0.02,0.03,0.04,  0.05,0.06,0.07,0.08});
+
+    NDArray<double> ht('c', {bS, numUnits});    
+
+    xt.assign(0.1);
+    ht_1.assign(0.2);
+    Wx.assign(0.3);
+    Wh.assign(0.4);
+
+    NDArray<double> expHt('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
+
+    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, rnnCell_test4) {
+    
+    const int bS = 2;
+    const int inSize   = 3;
+    const int numUnits = 4;
+
+    NDArray<double> xt  ('c', {bS, inSize});
+    NDArray<double> ht_1('c', {bS, numUnits});
+    NDArray<double> Wx  ('c', {inSize, numUnits});
+    NDArray<double> Wh  ('c', {numUnits, numUnits});
+    NDArray<double> b   ('c', {2*numUnits});
+
+    NDArray<double> ht('c', {bS, numUnits});    
+
+    NDArrayFactory<double>::linspace(0.01, xt, 0.01);
+    ht_1 = 0.2;
+    Wx   = 0.3;
+    Wh   = 0.4;
+    b    = 0.25;
+
+    NDArray<double> expHt('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
+
+    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+    
+    ASSERT_TRUE(expHt.isSameShape(ht));
+    ASSERT_TRUE(expHt.equalsTo(ht));
+}
+
+

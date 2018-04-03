@@ -88,7 +88,7 @@ void lstmCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<
     }
 
     // current sell state = ft*ct_1 + it*activation(mmul(Wxc,xt) + mmul(Whc,ht_1) + bc
-    *ct = sigmoid<T>(zft + forgetBias) * (*ct_1) + sigmoid<T>(zit) * activation<T>(zct);
+    ct->assign( sigmoid<T>(zft + forgetBias) * (*ct_1) + sigmoid<T>(zit) * activation<T>(zct) );
     
     // if clipping value is provided then cell state is clipped by this value prior to the cell output activation
     if(clippingCellValue != (T)0.)
@@ -102,7 +102,7 @@ void lstmCell(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<
 
     // apply projection
     if(projection) {
-        *ht = mmul(htNoPeepHole, *Wp);                                  // [batchSize x numUnits] * [ numUnits x numProj] = [batchSize x numProj]
+        ht->assign( mmul(htNoPeepHole, *Wp) );                           // [batchSize x numUnits] * [ numUnits x numProj] = [batchSize x numProj]
         // if clipping projection is provided then projected cell output state is clipped by this value 
         if(clippingProjValue != (T)0.)
             clipping(ht, clippingProjValue);

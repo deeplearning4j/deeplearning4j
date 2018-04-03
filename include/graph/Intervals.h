@@ -14,7 +14,7 @@ namespace  nd4j {
     class ND4J_EXPORT Intervals {
     
     private:
-        std::initializer_list<std::vector<int>> _content;
+        std::vector<std::vector<int>> _content;
 
     public:
 
@@ -23,6 +23,7 @@ namespace  nd4j {
         
         // constructor
         Intervals(const std::initializer_list<std::vector<int>>& content );
+        Intervals(const std::vector<std::vector<int>>& content );
         
         // accessing operator
         std::vector<int> operator[](const int i) const;

@@ -17,11 +17,11 @@ CUSTOM_OP_IMPL(reverse_sequense, 2, 1, false, 0, 2) {
     int batchDim = block.numI() > 1 ? INT_ARG(1) : 0;
 
     REQUIRE_TRUE(input->rankOf() > 1, 0, "REVERSE_SEQUENSE custom operation: input array must have rank > 1 !");
-    REQUIRE_TRUE(seqDim != batchDim, 0, "REVERSE_SEQUENSE custom operation: input integer parameters seqDim batchDim  must be different !");
-    REQUIRE_TRUE(batchDim < input->rankOf(), 0, "REVERSE_SEQUENSE custom operation: input integer parameter batchDim must have value smaller than input array rank !");
-    REQUIRE_TRUE(seqDim < input->rankOf(), 0, "REVERSE_SEQUENSE custom operation: input integer parameter seqDim must have value smaller than input array rank !");
-    REQUIRE_TRUE(seqLengths->rankOf() == 1, 0, "REVERSE_SEQUENSE custom operation: input array seqLengths must be 1D vector, that is must have rank == 1 !");
-    REQUIRE_TRUE(seqLengths->lengthOf() == input->sizeAt(batchDim), 0, "REVERSE_SEQUENSE custom operation: then length of array seqLengths must be equal to the value of batchDim dimension of input array !");
+    REQUIRE_TRUE(seqDim != batchDim, 0, "REVERSE_SEQUENSE custom operation: input integer parameters seqDim and batchDim must be different !");
+    REQUIRE_TRUE(batchDim < input->rankOf(), 0, "REVERSE_SEQUENSE custom operation: input integer parameter batchDim must have value smaller than input array rank, but got %i instead !", batchDim);
+    REQUIRE_TRUE(seqDim < input->rankOf(), 0, "REVERSE_SEQUENSE custom operation: input integer parameter seqDim must have value smaller than input array rank, but got %i instead !", seqDim);
+    REQUIRE_TRUE(seqLengths->rankOf() == 1, 0, "REVERSE_SEQUENSE custom operation: input array seqLengths must be 1D vector, that is must have rank == 1, but got %i instead !", seqLengths->rankOf());
+    REQUIRE_TRUE(seqLengths->lengthOf() == input->sizeAt(batchDim), 0, "REVERSE_SEQUENSE custom operation: the length of array seqLengths must be equal to the value of batchDim dimension of input array, but got length = %i instead !", seqLengths->lengthOf());
 
     T maxElem = seqLengths->template reduceNumber<simdOps::Max<T>>();
     REQUIRE_TRUE(maxElem <= (T)input->sizeAt(seqDim), 0, "REVERSE_SEQUENSE custom operation: max element in seqLengths array must be not greater than value of seqDim dimension of input array !");

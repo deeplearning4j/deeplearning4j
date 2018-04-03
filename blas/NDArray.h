@@ -86,6 +86,11 @@ namespace nd4j {
         */
         NDArray(const NDArray<T>& other);
 
+        /**
+        *  move constructor
+        */
+        NDArray(NDArray<T>&& other) noexcept;
+
 #ifndef __JAVACPP_HACK__
         // this method only available out of javacpp
         /**
@@ -130,9 +135,14 @@ namespace nd4j {
         NDArray(T *buffer, const char order, const std::vector<int> &shape , nd4j::memory::Workspace* workspace = nullptr);
 
         /**
-        *  assignment operator
+        *  copy assignment operator
         */
         NDArray<T>& operator=(const NDArray<T>& other);
+
+        /**
+        *  move assignment operator
+        */
+        NDArray<T>& operator=(NDArray<T>&& other) noexcept;
 
         /**
         *  assignment operator, assigns the same scalar to all array elements 
@@ -731,9 +741,10 @@ namespace nd4j {
 
         /**
         *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays  to point on
+        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
-        NDArray<T> operator()(const Intervals& idx)  const;
+        NDArray<T> operator()(const Intervals& idx, bool keepUnitiesInShape = false)  const;
 
         /**
         *  addition operator: array + other
@@ -912,7 +923,7 @@ namespace nd4j {
         /**
         *  default destructor
         */        
-        ~NDArray(); 
+        ~NDArray() noexcept; 
 
         /**
         *  set _shapeInfo
