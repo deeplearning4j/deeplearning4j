@@ -227,7 +227,8 @@ endif()
     endif()
 
     if(APPLE)
-        SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
+        # We cannot use those to propagate C++ exceptions across shared libraries.
+        # SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static-libgcc -static-libstdc++")
     elseif(MSYS)
         SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -static")
     endif()

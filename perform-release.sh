@@ -15,7 +15,7 @@ RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype}
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $RELEASE_PROFILE $STAGING_REPOSITORY"
 echo "========================================================================================================="
 
-if [[ ! -z $(git tag -l "nd4j-$RELEASE_VERSION") ]]; then
+if [[ ! -z $(git tag -l "libnd4j-$RELEASE_VERSION") ]]; then
     echo "Error: Version $RELEASE_VERSION has already been released!"
     exit 1
 fi
