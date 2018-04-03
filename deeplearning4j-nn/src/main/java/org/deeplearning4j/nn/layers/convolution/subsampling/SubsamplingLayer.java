@@ -94,10 +94,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
 
         boolean isCuda = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend").equals("CUDA");
-        if(isCuda && helper != null && SystemUtils.IS_OS_WINDOWS){
+        if(isCuda && helper == null && SystemUtils.IS_OS_WINDOWS){
             throw new RuntimeException("Could not initialize CuDNN. As of release 1.0.0-alpha CuDNN MUST be used with" +
-                    "Windows when using CUDA and convolutional neural networks." +
-                    " Other operating systems (Linux, OSX) do not have this requirement. Furthermore, this requirement" +
+                    " Windows when using CUDA and convolutional neural network (CNN) layers.\n" +
+                    "Other operating systems (Linux, OSX) do not have this requirement. This requirement" +
                     " will be removed in future versions. For more details, see https://deeplearning4j.org/cudnn");
         }
     }
