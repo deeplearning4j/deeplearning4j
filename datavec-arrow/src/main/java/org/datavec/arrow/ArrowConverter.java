@@ -190,7 +190,7 @@ public class ArrowConverter {
         }
         else {
             int cols = from.size(1);
-            for(int i = 0; i < from.rows(); i++) {
+            for(int i = 0; i < cols; i++) {
                 INDArray column = from.getColumn(i);
 
                 switch(type) {
