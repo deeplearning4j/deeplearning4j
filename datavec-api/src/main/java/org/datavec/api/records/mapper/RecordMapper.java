@@ -58,7 +58,6 @@ public class RecordMapper {
      * @throws Exception
      */
     public void copy() throws Exception {
-        recordReader.reset();
         recordReader.initialize(configuration,inputUrl);
         partitioner.init(configuration,outputUrl);
         recordWriter.initialize(configuration,outputUrl,partitioner);
