@@ -494,10 +494,14 @@ public class LocalTransformExecutor {
                         bufferAllocator,
                         sequence.getFinalSchema(),
                         currentSequence);
+                 int timeSeriesLength = currentSequence.get(0).size() * currentSequence.get(0).get(0).size();
+              /*   if(currentSequence.get(0).get(0).size() == 1) {
+                     timeSeriesLength = 1;
+                 }*/
                 List<List<List<Writable>>> writablesConvert = ArrowConverter.toArrowWritablesTimeSeries(
                         arrowColumns,
                         sequence.getFinalSchema(),
-                        currentSequence.get(0).size() * currentSequence.get(0).get(0).size());
+                        timeSeriesLength);
                 currentSequence = writablesConvert;
             }
 

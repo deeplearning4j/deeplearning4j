@@ -141,7 +141,8 @@ public class ArrowWritableRecordTimeSeriesBatch extends AbstractTimeSeriesWritab
 
     @Override
     public List<List<Writable>> get(int i) {
-        return new ArrowWritableRecordBatch(list,schema,i * schema.numColumns(),timeSeriesStride / schema.numColumns());
+        ArrowWritableRecordBatch ret =  new ArrowWritableRecordBatch(list,schema,i ,timeSeriesStride / schema.numColumns());
+        return ret;
     }
 
     @Override
