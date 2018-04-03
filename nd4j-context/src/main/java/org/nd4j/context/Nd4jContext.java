@@ -40,20 +40,14 @@ public class Nd4jContext implements Serializable {
     }
 
     /**
-     * Load the additional properties from an input stream
+     * Load the additional properties from an input stream and load all system properties
      *
      * @param inputStream
      */
     public void updateProperties(InputStream inputStream) {
         try {
-            //Load only the properties that are not overridden by the system properties, which take precedence
-            Properties temp = new Properties();
-            temp.load(inputStream);
-            for(String s : temp.stringPropertyNames()){
-                if(!conf.containsKey(s)){
-                    conf.setProperty(s, temp.getProperty(s));
-                }
-            }
+            conf.load(inputStream);
+            conf.putAll(System.getProperties());
         } catch (IOException e) {
             log.warn("Error loading system properties from input stream", e);
         }
