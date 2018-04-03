@@ -2164,6 +2164,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public void commit() {
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
+        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncSpecialStream();
     }
 
     @Override

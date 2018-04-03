@@ -20,11 +20,9 @@
 package org.nd4j.linalg.api.ops.impl.accum;
 
 import lombok.NoArgsConstructor;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
@@ -32,8 +30,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 
@@ -75,6 +71,7 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
         addArgs();
     }
 
+    /*
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
@@ -95,6 +92,7 @@ public class SoftmaxCrossEntropyLoss extends DynamicCustomOp {
         ret.put(tensorflowName(),attrs);
         return ret;
     }
+    */
 
     @Override
     public String opName() {

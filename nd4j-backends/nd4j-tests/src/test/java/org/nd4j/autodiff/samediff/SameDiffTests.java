@@ -3,19 +3,17 @@ package org.nd4j.autodiff.samediff;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
-import org.junit.Ignore;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.distances.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.layers.Linear;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMaxDerivative;
@@ -24,9 +22,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndexAll;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -40,19 +36,29 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
+import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  * Created by agibsonccc on 4/11/17.
  */
 @Slf4j
 public class SameDiffTests {
-    static {
+    private DataBuffer.Type initialType;
+
+    @Before
+    public void before() throws Exception {
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        initialType = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
     }
+
+    @After
+    public void after() throws Exception {
+        Nd4j.setDataType(initialType);
+    }
+
 
     @After
     public void tearDown() throws Exception {
@@ -3668,6 +3674,17 @@ public class SameDiffTests {
         SDVariable in = sd.var("in", inArr);
         SDVariable rolled = sd.rollAxis(in, 2);
         assertArrayEquals(new int[]{4, 2, 3}, rolled.eval().shape());
+    }
+
+    @Test
+    public void testReciprocal() {
+        INDArray inArr = Nd4j.linspace(1,4,4).reshape(2,2);
+        INDArray expected = Nd4j.onesLike(inArr).divi(inArr);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", inArr);
+        SDVariable reciprocal = sd.reciprocal(in);
+        INDArray res = reciprocal.eval();
+        assertEquals(expected,res);
     }
 
 }

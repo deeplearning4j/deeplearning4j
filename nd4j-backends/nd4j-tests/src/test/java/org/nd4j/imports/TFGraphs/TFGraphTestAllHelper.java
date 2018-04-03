@@ -261,6 +261,7 @@ public class TFGraphTestAllHelper {
         String modelDir = base_dir + "/" + modelName;
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
         Resource[] resources = resolver.getResources("classpath*:" + modelDir + "/" + pattern + ".shape");
+        val dtype = Nd4j.dataType();
         for (int i = 0; i < resources.length; i++) {
             String fileName = resources[i].getFilename();
             String varPath = modelDir + "/" + fileName;

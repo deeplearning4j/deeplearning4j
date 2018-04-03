@@ -47,7 +47,7 @@ public class DivOp extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "div";
+        return "divide";
     }
 
     @Override

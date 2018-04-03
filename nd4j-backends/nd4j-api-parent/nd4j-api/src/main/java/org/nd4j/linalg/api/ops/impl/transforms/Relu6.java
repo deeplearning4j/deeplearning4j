@@ -25,7 +25,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -126,7 +125,7 @@ public class Relu6 extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "relu6";
+        return "Relu6";
     }
 
 

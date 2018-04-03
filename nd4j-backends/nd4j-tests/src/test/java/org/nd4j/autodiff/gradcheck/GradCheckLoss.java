@@ -1,6 +1,8 @@
 package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.autodiff.loss.LossFunctions;
 import org.nd4j.autodiff.loss.LossInfo;
@@ -19,11 +21,24 @@ import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class GradCheckLoss {
+    private DataBuffer.Type initialType;
 
-    static {
+    @Before
+    public void before() throws Exception {
         Nd4j.create(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        initialType = Nd4j.dataType();
+
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.getRandom().setSeed(123);
     }
+
+    @After
+    public void after() throws Exception {
+        Nd4j.setDataType(initialType);
+    }
+
+
+
 
     @Test
     public void testLossSimple2d() {

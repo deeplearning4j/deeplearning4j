@@ -2617,6 +2617,15 @@ public class SameDiff {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable reciprocal(SDVariable a) {
+        return reciprocal(null,a);
+    }
+
+    public SDVariable reciprocal(String name, SDVariable a) {
+        SDVariable ret = f().reciprocal(a);
+        return updateVariableNameAndReference(ret,name);
+    }
+
     /**
      * @param iX
      * @return

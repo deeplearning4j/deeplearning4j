@@ -855,6 +855,23 @@ public class TensorFlowImportTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/tensor_dot_misc.fb"));
     }
 
+    @Test
+    @Ignore
+    public void testCrash_119_simpleif_0() throws Exception {
+        Nd4j.create(1);
+
+        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/simpleif_0/frozen_model.pb").getInputStream());
+        assertNotNull(tg);
+
+        val input0 = Nd4j.create(new float[] {1, 2, 3, 4}, new int[] {2, 2});
+        val input1 = Nd4j.trueScalar(11f);
+
+        tg.associateArrayWithVariable(input0, tg.getVariable("input_0"));
+        tg.associateArrayWithVariable(input1, tg.getVariable("input_1"));
+
+        tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
+    }
+
     @Test(expected = ND4JIllegalStateException.class)
     public void testNonFrozenGraph1() throws Exception {
         val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/unfrozen_simple_ae.pb").getInputStream());

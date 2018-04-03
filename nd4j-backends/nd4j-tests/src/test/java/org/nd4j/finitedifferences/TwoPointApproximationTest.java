@@ -1,5 +1,7 @@
 package org.nd4j.finitedifferences;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,14 +13,26 @@ import org.nd4j.linalg.io.ClassPathResource;
 import static org.junit.Assert.assertEquals;
 
 public class TwoPointApproximationTest {
+    private DataBuffer.Type dtype;
 
+    @Before
+    public void setUp() {
+        Nd4j.create(1);
+        dtype = Nd4j.dataType();
 
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+    }
+
+    @After
+    public void tearDown() {
+        Nd4j.setDataType(dtype);
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
+    }
 
     @Test
     public void testLinspaceDerivative() throws Exception {
-        Nd4j.create(1);
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
-        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ANY_PANIC);
+
        String basePath = "/two_points_approx_deriv_numpy/";
         INDArray linspace = Nd4j.createNpyFromInputStream(new ClassPathResource(basePath + "x.npy").getInputStream());
         INDArray yLinspace = Nd4j.createNpyFromInputStream(new ClassPathResource(basePath + "y.npy").getInputStream());

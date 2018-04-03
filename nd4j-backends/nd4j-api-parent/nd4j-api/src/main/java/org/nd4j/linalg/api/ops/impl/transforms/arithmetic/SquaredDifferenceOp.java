@@ -25,8 +25,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.List;
-
 /**
  * Squared difference operation, i.e. returns (x - y) * (x - y)
  *
@@ -58,7 +56,7 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "squared_difference";
+        return "SquaredDifference";
     }
 
 
