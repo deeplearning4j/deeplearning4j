@@ -164,7 +164,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
                         .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
                         .modelSaver(saver).build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
