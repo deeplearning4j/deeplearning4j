@@ -666,6 +666,7 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setDebug(false);
     Environment::getInstance()->setVerbose(false);
 
+    char *re = reinterpret_cast<char *>(ptr);
     delete[] pl;
-    delete[] ptr;
+    delete[] re;
 }
