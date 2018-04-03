@@ -410,7 +410,7 @@ namespace simdOps {
 			int dY = (int)extraParams[6];			//Dilation, height/y dimension
 			int dX = (int)extraParams[7];			//Dilation, width/x dimension
 			int kSize = kernelWidth * kernelHeight;
-			double zeroPadVal = (T)extraParams[9];	//Value to use when value is padding. Usually 0 but not always
+			T zeroPadVal = (T)extraParams[9];	//Value to use when value is padding. Usually 0 but not always
 
 			int *outShape = shape::shapeOf(resultShapeBuffer);
 			char resultOrder = shape::order(resultShapeBuffer);
