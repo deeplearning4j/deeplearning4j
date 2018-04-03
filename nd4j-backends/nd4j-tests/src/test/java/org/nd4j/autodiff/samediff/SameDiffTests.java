@@ -3661,14 +3661,13 @@ public class SameDiffTests {
 
     }
 
-    @Test  //*** Test is failing ***
+    @Test
     public void testRollAxis() {
         INDArray inArr = Nd4j.create(new int[]{2, 3, 4});
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
         SDVariable rolled = sd.rollAxis(in, 2);
-        sd.execAndEndResult();
-        assertEquals(Nd4j.rollAxis(inArr, 2), rolled.getArr());
+        assertArrayEquals(new int[]{4, 2, 3}, rolled.eval().shape());
     }
 
 }

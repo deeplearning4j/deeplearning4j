@@ -25,10 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ShapeOp;
 
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Transpose function
@@ -99,6 +96,22 @@ public class RollAxis extends ShapeOp {
             this.z = x.transpose();
         }
 
+    }
+
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<int[]>();
+        int[] inputShape = arg().getShape();
+        int[] outputShape = new int[inputShape.length];
+        outputShape[0] = inputShape[axis];
+        for(int i = 1; i <=axis; ++i) {
+            outputShape[i] = inputShape[i - 1];
+        }
+        for(int i = axis + 1; i < inputShape.length; ++i) {
+            outputShape[i] = inputShape[i];
+        }
+        ret.add(outputShape);
+        return ret;
     }
 
     @Override
