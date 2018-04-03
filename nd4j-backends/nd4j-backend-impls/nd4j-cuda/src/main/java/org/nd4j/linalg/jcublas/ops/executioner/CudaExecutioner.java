@@ -2614,7 +2614,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 zeroPad = op.tArgs()[0];
             }
             val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8], zeroPad};
-            val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
+            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass);
+            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
 
             if (dtype == DataBuffer.Type.DOUBLE) {
@@ -2662,8 +2663,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
             val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7]};
-            val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
-
+            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass);
+            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
             if (dtype == DataBuffer.Type.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeHost, 36, (DoublePointer) x, (IntPointer) xShape, (DoublePointer) z, (IntPointer) zShape, (DoublePointer) extraArgs);
@@ -2710,8 +2711,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             val zShape = AtomicAllocator.getInstance().getPointer(zArr.shapeInfoDataBuffer(), context);
 
             val extrass = new double[]{op.iArgs()[0], op.iArgs()[1], op.iArgs()[2], op.iArgs()[3], op.iArgs()[4], op.iArgs()[5], op.iArgs()[6], op.iArgs()[7], op.iArgs()[8]};
-            val extraArgs = Nd4j.getConstantHandler().getConstantBuffer(extrass).addressPointer();
-
+            val extraArgsBuff = Nd4j.getConstantHandler().getConstantBuffer(extrass);
+            val extraArgs = AtomicAllocator.getInstance().getPointer(extraArgsBuff, context);
 
             if (dtype == DataBuffer.Type.DOUBLE) {
                 nativeOps.execTransformDouble(xShapeHost, 71, (DoublePointer) x, (IntPointer) xShape, (DoublePointer) z, (IntPointer) zShape, (DoublePointer) extraArgs);
