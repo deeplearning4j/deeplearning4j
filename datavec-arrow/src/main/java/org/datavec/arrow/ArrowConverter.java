@@ -166,22 +166,22 @@ public class ArrowConverter {
      * @param bufferAllocator the allocator to use
      * @return the list of field vectors
      */
-    public static List<FieldVector> convertToArrowVector(INDArray from,String name,ColumnType type,BufferAllocator bufferAllocator) {
+    public static List<FieldVector> convertToArrowVector(INDArray from,List<String> name,ColumnType type,BufferAllocator bufferAllocator) {
         List<FieldVector> ret = new ArrayList<>();
         if(from.isVector()) {
             int cols = from.length();
             switch(type) {
                 case Double:
                     double[] fromData = from.isView() ? from.dup().data().asDouble() : from.data().asDouble();
-                    ret.add(vectorFor(bufferAllocator,name,fromData));
+                    ret.add(vectorFor(bufferAllocator,name.get(0),fromData));
                     break;
                 case Float:
                     float[] fromDataFloat = from.isView() ? from.dup().data().asFloat() : from.data().asFloat();
-                    ret.add(vectorFor(bufferAllocator,name,fromDataFloat));
+                    ret.add(vectorFor(bufferAllocator,name.get(0),fromDataFloat));
                     break;
                 case Integer:
                     int[] fromDataInt = from.isView() ? from.dup().data().asInt() : from.data().asInt();
-                    ret.add(vectorFor(bufferAllocator,name,fromDataInt));
+                    ret.add(vectorFor(bufferAllocator,name.get(0),fromDataInt));
                     break;
                 default:
                     throw new IllegalArgumentException("Illegal type " + type);
@@ -196,15 +196,15 @@ public class ArrowConverter {
                 switch(type) {
                     case Double:
                         double[] fromData = column.isView() ? column.dup().data().asDouble() : from.data().asDouble();
-                        ret.add(vectorFor(bufferAllocator,name,fromData));
+                        ret.add(vectorFor(bufferAllocator,name.get(i),fromData));
                         break;
                     case Float:
                         float[] fromDataFloat = column.isView() ? column.dup().data().asFloat() : from.data().asFloat();
-                        ret.add(vectorFor(bufferAllocator,name,fromDataFloat));
+                        ret.add(vectorFor(bufferAllocator,name.get(i),fromDataFloat));
                         break;
                     case Integer:
                         int[] fromDataInt = column.isView() ? column.dup().data().asInt() : from.data().asInt();
-                        ret.add(vectorFor(bufferAllocator,name,fromDataInt));
+                        ret.add(vectorFor(bufferAllocator,name.get(i),fromDataInt));
                         break;
                     default:
                         throw new IllegalArgumentException("Illegal type " + type);
