@@ -152,6 +152,18 @@ public class ArrowConverterTest {
         val recordsToWrite = recordToWrite();
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),byteArrayOutputStream);
+
+        File tmpFile = new File("tmp-arrow-file-" + UUID.randomUUID().toString() + ".arrorw");
+        FileOutputStream outputStream = new FileOutputStream(tmpFile);
+        tmpFile.deleteOnExit();
+        ArrowConverter.writeRecordBatchTo(recordsToWrite.getRight(),recordsToWrite.getFirst(),outputStream);
+        outputStream.flush();
+        outputStream.close();
+
+        Pair<Schema, ArrowWritableRecordBatch> schemaArrowWritableRecordBatchPair = ArrowConverter.readFromFile(tmpFile);
+        assertEquals(recordsToWrite.getFirst(),schemaArrowWritableRecordBatchPair.getFirst());
+        assertEquals(recordsToWrite.getRight(),schemaArrowWritableRecordBatchPair.getRight().toArrayList());
+
         byte[] arr = byteArrayOutputStream.toByteArray();
         val read = ArrowConverter.readFromBytes(arr);
         assertEquals(recordsToWrite,read);

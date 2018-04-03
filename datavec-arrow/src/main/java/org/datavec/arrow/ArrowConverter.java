@@ -32,6 +32,8 @@ import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -250,6 +252,42 @@ public class ArrowConverter {
     }
 
 
+    /**
+     * Read a datavec schema and record set
+     * from the given arrow file.
+     * @param input the input to read
+     * @return the associated datavec schema and record
+     */
+    public static Pair<Schema,ArrowWritableRecordBatch> readFromFile(FileInputStream input) throws IOException {
+        BufferAllocator allocator = new RootAllocator(Long.MAX_VALUE);
+        Schema retSchema = null;
+        ArrowWritableRecordBatch ret = null;
+        SeekableReadChannel channel = new SeekableReadChannel(input.getChannel());
+        ArrowFileReader reader = new ArrowFileReader(channel, allocator);
+        reader.loadNextBatch();
+        retSchema = toDatavecSchema(reader.getVectorSchemaRoot().getSchema());
+        //load the batch
+        VectorUnloader unloader = new VectorUnloader(reader.getVectorSchemaRoot());
+        VectorLoader vectorLoader = new VectorLoader(reader.getVectorSchemaRoot());
+        ArrowRecordBatch recordBatch = unloader.getRecordBatch();
+
+        vectorLoader.load(recordBatch);
+        ret = asDataVecBatch(recordBatch,retSchema,reader.getVectorSchemaRoot());
+        ret.setUnloader(unloader);
+
+        return Pair.of(retSchema,ret);
+
+    }
+
+    /**
+     * Read a datavec schema and record set
+     * from the given arrow file.
+     * @param input the input to read
+     * @return the associated datavec schema and record
+     */
+    public static Pair<Schema,ArrowWritableRecordBatch> readFromFile(File input) throws IOException {
+        return readFromFile(new FileInputStream(input));
+    }
 
     /**
      * Read a datavec schema and record set
