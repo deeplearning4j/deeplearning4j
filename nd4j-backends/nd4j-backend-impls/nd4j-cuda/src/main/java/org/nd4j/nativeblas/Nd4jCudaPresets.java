@@ -86,17 +86,18 @@ public class Nd4jCudaPresets implements InfoMapper {
                         "short[]"));
 
         infoMap.put(new Info("__CUDACC__").define(false))
-                .put(new Info("__JAVACPP_HACK__").define(true))
-                .put(new Info("MAX_UINT").translate(false))
-                .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
-                        "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
-                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
-                        .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
-                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
-                .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
-                .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
-                .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
-                .put(new Info("nd4j::IndicesList").purify());
+               .put(new Info("__JAVACPP_HACK__").define(true))
+               .put(new Info("MAX_UINT").translate(false))
+               .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
+                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable").skip())
+               .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
+                                           .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
+               .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
+               .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
+               .put(new Info("std::vector<nd4j::NDArray<float>*>").pointerTypes("FloatNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray<float16>*>").pointerTypes("HalfNDArrayVector").define())
+               .put(new Info("std::vector<nd4j::NDArray<double>*>").pointerTypes("DoubleNDArrayVector").define())
+               .put(new Info("nd4j::IndicesList").purify());
 
         String classTemplates[] = {
                 "nd4j::NDArray",

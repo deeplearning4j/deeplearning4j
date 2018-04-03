@@ -9,6 +9,55 @@ import org.bytedeco.javacpp.annotation.*;
 public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaPresets {
     static { Loader.load(); }
 
+@Name("std::vector<std::vector<int> >") public static class IntVectorVector extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public IntVectorVector(Pointer p) { super(p); }
+    public IntVectorVector(int[] ... array) { this(array.length); put(array); }
+    public IntVectorVector()       { allocate();  }
+    public IntVectorVector(long n) { allocate(n); }
+    private native void allocate();
+    private native void allocate(@Cast("size_t") long n);
+    public native @Name("operator=") @ByRef IntVectorVector put(@ByRef IntVectorVector x);
+
+    public boolean empty() { return size() == 0; }
+    public native long size();
+    public void clear() { resize(0); }
+    public native void resize(@Cast("size_t") long n);
+    public boolean empty(@Cast("size_t") long i) { return size(i) == 0; }
+    public native @Index(function = "at") long size(@Cast("size_t") long i);
+    public void clear(@Cast("size_t") long i) { resize(i, 0); }
+    public native @Index(function = "at") void resize(@Cast("size_t") long i, @Cast("size_t") long n);
+
+    @Index(function = "at") public native int get(@Cast("size_t") long i, @Cast("size_t") long j);
+    public native IntVectorVector put(@Cast("size_t") long i, @Cast("size_t") long j, int value);
+
+    public int[][] get() {
+        int[][] array = new int[size() < Integer.MAX_VALUE ? (int)size() : Integer.MAX_VALUE][];
+        for (int i = 0; i < array.length; i++) {
+            array[i] = new int[size(i) < Integer.MAX_VALUE ? (int)size(i) : Integer.MAX_VALUE];
+            for (int j = 0; j < array[i].length; j++) {
+                array[i][j] = get(i, j);
+            }
+        }
+        return array;
+    }
+    @Override public String toString() {
+        return java.util.Arrays.deepToString(get());
+    }
+
+    public IntVectorVector put(int[] ... array) {
+        if (size() != array.length) { resize(array.length); }
+        for (int i = 0; i < array.length; i++) {
+            if (size(i) != array[i].length) { resize(i, array[i].length); }
+            for (int j = 0; j < array[i].length; j++) {
+                put(i, j, array[i][j]);
+            }
+        }
+        return this;
+    }
+}
+
 @Name("std::vector<nd4j::NDArray<float>*>") public static class FloatNDArrayVector extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -5765,6 +5814,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public FloatNDArray(@Const @ByRef FloatNDArray other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef FloatNDArray other);
 
+        /**
+        *  move constructor
+        */
+
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -5847,9 +5900,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(float[] buffer, char order, @StdVector int[] shape);
 
         /**
-        *  assignment operator
+        *  copy assignment operator
         */
         public native @ByRef @Name("operator =") FloatNDArray put(@Const @ByRef FloatNDArray other);
+
+        /**
+        *  move assignment operator
+        */
 
         /**
         *  assignment operator, assigns the same scalar to all array elements 
@@ -6412,8 +6469,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays  to point on
+        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
+        public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") FloatNDArray apply(@Const @ByRef Intervals idx);
 
         /**
@@ -6851,6 +6910,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public HalfNDArray(@Const @ByRef HalfNDArray other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef HalfNDArray other);
 
+        /**
+        *  move constructor
+        */
+
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -6933,9 +6996,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(@Cast("float16*") short[] buffer, char order, @StdVector int[] shape);
 
         /**
-        *  assignment operator
+        *  copy assignment operator
         */
         public native @ByRef @Name("operator =") HalfNDArray put(@Const @ByRef HalfNDArray other);
+
+        /**
+        *  move assignment operator
+        */
 
         /**
         *  assignment operator, assigns the same scalar to all array elements 
@@ -7498,8 +7565,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays  to point on
+        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
+        public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") HalfNDArray apply(@Const @ByRef Intervals idx);
 
         /**
@@ -7937,6 +8006,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         public DoubleNDArray(@Const @ByRef DoubleNDArray other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef DoubleNDArray other);
 
+        /**
+        *  move constructor
+        */
+
 // #ifndef __JAVACPP_HACK__
 // #endif
 
@@ -8019,9 +8092,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(double[] buffer, char order, @StdVector int[] shape);
 
         /**
-        *  assignment operator
+        *  copy assignment operator
         */
         public native @ByRef @Name("operator =") DoubleNDArray put(@Const @ByRef DoubleNDArray other);
+
+        /**
+        *  move assignment operator
+        */
 
         /**
         *  assignment operator, assigns the same scalar to all array elements 
@@ -8584,8 +8661,10 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
         /**
         *  operator returns sub-array with buffer pointing at this->_buffer with offset defined by given intervals
-        *  idx - intervals of indexes which define the sub-arrays  to point on
+        *  idx - intervals of indexes which define the sub-arrays to point on
+        *  keepUnitiesInShape - if false then eliminate unities from resulting array shape, for example {1,a,1,b} -> {a,b}
         */
+        public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
         public native @ByVal @Name("operator ()") DoubleNDArray apply(@Const @ByRef Intervals idx);
 
         /**
@@ -9991,7 +10070,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 // #include <initializer_list>
 // #include <dll.h>
 
-    @Namespace("nd4j") public static class Intervals extends Pointer {
+    @Namespace("nd4j") @NoOffset public static class Intervals extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
         public Intervals(Pointer p) { super(p); }
@@ -10008,6 +10087,8 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate();
         
         // constructor
+        public Intervals(@Const @ByRef IntVectorVector content ) { super((Pointer)null); allocate(content); }
+        private native void allocate(@Const @ByRef IntVectorVector content );
         
         // accessing operator
         public native @StdVector @Name("operator []") IntPointer get(int i);
