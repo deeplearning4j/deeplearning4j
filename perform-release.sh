@@ -20,20 +20,7 @@ if [[ ! -z $(git tag -l "nd4j-$RELEASE_VERSION") ]]; then
     exit 1
 fi
 
-cd ../libnd4j
-export TRICK_NVCC=YES
-export LIBND4J_HOME="$(pwd)"
-if [[ -z $(git tag -l "libnd4j-$RELEASE_VERSION") ]]; then
-    if [[ "${SKIP_BUILD}" == "0" ]]; then
-        bash buildnativeoperations.sh -c cpu
-        bash buildnativeoperations.sh -c cuda -v 8.0
-        bash buildnativeoperations.sh -c cuda -v 9.0
-    fi
-    git tag -s -a -m "libnd4j-$RELEASE_VERSION" "libnd4j-$RELEASE_VERSION"
-    git tag -s -a -f -m "libnd4j-$RELEASE_VERSION" "latest_release"
-fi
-cd ../nd4j
-
+sed -i "s/<dl4j-test-resources.version>.*<\/dl4j-test-resources.version>/<dl4j-test-resources.version>$RELEASE_VERSION<\/dl4j-test-resources.version>/" pom.xml
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$RELEASE_VERSION
 
 if [[ "${SKIP_BUILD}" == "0" ]]; then
@@ -41,7 +28,7 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
         # create new staging repository with everything in it
         source change-scala-versions.sh 2.10
         source change-cuda-versions.sh 8.0
-        mvn clean deploy -Dgpg.executable=gpg2 -pl '!nd4j-backends/nd4j-tests' -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -Dgpg.executable=gpg2 -pl '!nd4j-backends/nd4j-tests' -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
 
         if [[ ! $(grep stagingRepository.id target/nexus-staging/staging/*.properties) =~ ^stagingRepository.id=(.*) ]]; then
             STAGING_REPOSITORY=
@@ -51,30 +38,28 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
 
         source change-scala-versions.sh 2.11
         source change-cuda-versions.sh 9.0
-        mvn clean deploy -Dgpg.executable=gpg2 -pl '!nd4j-backends/nd4j-tests' -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -Dgpg.executable=gpg2 -pl '!nd4j-backends/nd4j-tests' -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
 
         # build for Android with the NDK
         export ANDROID_NDK=~/Android/android-ndk/
 
-        cd ../libnd4j
-        bash buildnativeoperations.sh -c cpu -platform android-arm
-        cd ../nd4j
-        mvn clean deploy -Djavacpp.platform=android-arm -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -Djavacpp.platform=android-arm -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
 
-        cd ../libnd4j
-        bash buildnativeoperations.sh -c cpu -platform android-x86
-        cd ../nd4j
-        mvn clean deploy -Djavacpp.platform=android-x86 -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -Djavacpp.platform=android-arm64 -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
+
+        mvn clean deploy -Djavacpp.platform=android-x86 -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
+
+        mvn clean deploy -Djavacpp.platform=android-x86_64 -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
 
     else
         # build only partially (on other platforms) and deploy to given repository
         source change-scala-versions.sh 2.10
         source change-cuda-versions.sh 8.0
-        mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
 
         source change-scala-versions.sh 2.11
         source change-cuda-versions.sh 9.0
-        mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+        mvn clean deploy -am -pl nd4j-backends/nd4j-backend-impls/nd4j-native,nd4j-backends/nd4j-backend-impls/nd4j-cuda -Dgpg.useagent=false -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Denforcer.skip -Dmaven.javadoc.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Plibnd4j-assembly
     fi
 
     source change-scala-versions.sh 2.11
