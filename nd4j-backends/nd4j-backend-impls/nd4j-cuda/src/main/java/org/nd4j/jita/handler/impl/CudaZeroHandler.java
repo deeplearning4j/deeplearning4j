@@ -4,6 +4,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
@@ -285,7 +286,17 @@ public class CudaZeroHandler implements MemoryHandler {
 
                             deviceAllocations.get(deviceId).put(point.getObjectId(), point.getObjectId());
 
-                            zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
+
+                            val p = point.getBucketId();
+
+                            if (p != null) {
+                                val m = zeroAllocations.get(point.getBucketId());
+
+                                // m can be null, if that's point from workspace - just no bucketId for it
+                                if (m != null)
+                                    m.remove(point.getObjectId());
+                            }
+
                             deviceMemoryTracker.addToAllocation(Thread.currentThread().getId(), deviceId, reqMemory);
 
                             //  point.tickDeviceWrite();
