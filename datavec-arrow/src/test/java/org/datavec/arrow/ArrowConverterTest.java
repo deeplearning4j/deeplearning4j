@@ -16,6 +16,7 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -181,6 +182,19 @@ public class ArrowConverterTest {
         assertEquals(2,arr2.columns());
     }
 
+
+    @Test
+    public void testConvertToArrowVectors() {
+        INDArray matrix = Nd4j.linspace(1,4,4).reshape(2,2);
+        val vectors = ArrowConverter.convertToArrowVector(matrix,"test", ColumnType.Double,bufferAllocator);
+        assertEquals(matrix.rows(),vectors.size());
+
+        INDArray vector = Nd4j.linspace(1,4,4);
+        val vectors2 = ArrowConverter.convertToArrowVector(vector,"test", ColumnType.Double,bufferAllocator);
+        assertEquals(1,vectors2.size());
+        assertEquals(matrix.length(),vectors2.get(0).getValueCount());
+
+    }
 
     @Test
     public void testSchemaConversionBasic() {
