@@ -28,9 +28,10 @@ namespace nd4j {
             } else {
                 // dimensions for TAD
                 // we should skip first argument here, because it's addressing bias correction
-                std::vector<int> dims;
-                for (int e = 1; e < block.getIArguments()->size(); e++)
-                    dims.emplace_back(INT_ARG(e));
+                std::vector<int> dims(*block.getIArguments());
+                for (int e = 0; e < dims.size(); e++)
+                    if (dims[e] < 0)
+                        dims[e] += x->rankOf();
 
                 if (dims.size() > 1)
                     std::sort(dims.begin(), dims.end());

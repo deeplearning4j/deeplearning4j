@@ -72,6 +72,9 @@ namespace nd4j {
             } else {
                 // TAD
                 std::vector<int> dims(*block.getIArguments());
+                for (int e = 0; e < dims.size(); e++)
+                    if (dims[e] < 0)
+                        dims[e] += x->rankOf();
 
                 if (dims.size() > 1)
                     std::sort(dims.begin(), dims.end());

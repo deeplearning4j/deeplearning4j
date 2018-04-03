@@ -23,6 +23,10 @@ namespace nd4j {
                 z->putScalar(0, scalar);
             } else {
                 std::vector<int> dims(*block.getIArguments());
+                for (int e = 0; e < dims.size(); e++)
+                    if (dims[e] < 0)
+                        dims[e] += x->rankOf();
+
                 std::sort(dims.begin(), dims.end());
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");

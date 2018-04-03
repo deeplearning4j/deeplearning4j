@@ -642,3 +642,27 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
     ASSERT_TRUE(e.equalsTo(output));
     ASSERT_FALSE(e.ordering() == output.ordering());
 }
+
+TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
+    NDArray<double> x('c', {3, 4, 5});
+    NDArray<double> y('c', {3, 4, 5});
+    NDArray<double> z('c', {5});
+
+    std::vector<int> dims = {0, 1};
+
+    NativeOps nativeOps;
+    nativeOps.execReduce3Double(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, y.buffer(), y.shapeInfo(), z.buffer(), z.shapeInfo(), dims.data(), (int) dims.size());
+}
+
+TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
+    Environment::getInstance()->setDebug(true);
+    Environment::getInstance()->setVerbose(true);
+
+    NativeOps ops;
+
+    auto pl = nd4j::graph::readFlatBuffers("./resources/simpleif_0_java.fb");
+    auto ptr = ops.executeFlatGraphFloat(nullptr, pl);
+
+    Environment::getInstance()->setDebug(false);
+    Environment::getInstance()->setVerbose(false);
+}

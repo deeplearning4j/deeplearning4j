@@ -2644,7 +2644,7 @@ bool NDArray<T>::isUnitary() {
         
             functions::reduce3::Reduce3<T>::template exec<OpName>(_buffer, _shapeInfo, const_cast<T*>(extraParams),
                                                                  other->_buffer, other->_shapeInfo, result->_buffer,result->_shapeInfo,
-                                                                 copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets, tadY.tadOnlyShapeInfo, tadY.tadOffsets);
+                                                                 copy.data(), copy.size(), tadX.tadOnlyShapeInfo, tadX.tadOffsets);
         }
         
         delete []extraParamsVals;
