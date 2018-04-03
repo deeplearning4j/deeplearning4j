@@ -813,6 +813,9 @@ public class ModelSerializer {
 
 
     private static void checkInputStream(InputStream inputStream) throws IOException {
+
+        /*
+        //available method can return 0 in some cases: https://github.com/deeplearning4j/deeplearning4j/issues/4887
         int available;
         try{
             //InputStream.available(): A subclass' implementation of this method may choose to throw an IOException
@@ -826,6 +829,7 @@ public class ModelSerializer {
             throw new IOException("Cannot read from stream: stream may have been closed or is attempting to be read from" +
                     "multiple times?");
         }
+        */
     }
 
     private static void checkTempFileFromInputStream(File f) throws IOException {
