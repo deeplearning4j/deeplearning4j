@@ -139,15 +139,19 @@ public class InputStreamInputSplit implements InputSplit {
 
     @Override
     public void reset() {
-        //No op
         if(!resetSupported()) {
             throw new UnsupportedOperationException("Reset not supported from streams");
+        }
+        try {
+            is = openInputStreamFor(location[0].getPath());
+        } catch (Exception e){
+            throw new RuntimeException(e);
         }
     }
 
     @Override
     public boolean resetSupported() {
-        return location != null;
+        return location != null && location.length > 0;
     }
 
 
