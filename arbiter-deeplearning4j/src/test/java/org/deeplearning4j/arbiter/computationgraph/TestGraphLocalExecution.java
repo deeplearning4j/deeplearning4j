@@ -40,6 +40,7 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
+import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -78,7 +79,7 @@ public class TestGraphLocalExecution {
     @Test
     public void testLocalExecution() throws Exception {
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace mls = new ComputationGraphSpace.Builder()
@@ -218,7 +219,7 @@ public class TestGraphLocalExecution {
                 .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define: network config (hyperparameter space)
         ComputationGraphSpace cgs = new ComputationGraphSpace.Builder()

@@ -24,6 +24,7 @@ import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
+import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -101,7 +102,7 @@ public class TestJson {
 
         //Define configuration:
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(cgs, commands);
         DataProvider dataProvider = new DataSetIteratorFactoryProvider();

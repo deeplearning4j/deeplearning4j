@@ -39,6 +39,7 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
+import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -81,7 +82,7 @@ public class TestDL4JLocalExecution {
 
         //Define configuration:
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
         DataProvider dataProvider = new DataSetIteratorFactoryProvider();
@@ -133,7 +134,7 @@ public class TestDL4JLocalExecution {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .numEpochs(3).pretrain(false).backprop(true).build();
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         CandidateGenerator candidateGenerator = new GridSearchCandidateGenerator(mls, 5,
                         GridSearchCandidateGenerator.Mode.Sequential, commands);
@@ -172,7 +173,7 @@ public class TestDL4JLocalExecution {
                         .scoreCalculator(new DataSetLossCalculator(new IrisDataSetIterator(150, 150), true))
                         .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
 
         //Define: network config (hyperparameter space)
