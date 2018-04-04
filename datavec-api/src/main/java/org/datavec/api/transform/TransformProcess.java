@@ -498,6 +498,8 @@ public class TransformProcess implements Serializable {
      *
      *  The *expected* input is strings or numbers (which have sensible toString() representations)
      *
+     *  Note that the returned categories will be sorted alphabetically
+     *
      * @param recordReader the record reader to iterate through
      * @param columnIndex te column index to get categories for
      * @return
@@ -509,7 +511,10 @@ public class TransformProcess implements Serializable {
             categories.add(next.get(columnIndex).toString());
         }
 
-        return new ArrayList<>(categories);
+        //Sort categories alphabetically - HashSet and RecordReader orders are not deterministic in general
+        List<String> ret = new ArrayList<>(categories);
+        Collections.sort(ret);
+        return ret;
     }
 
     /**
@@ -527,6 +532,7 @@ public class TransformProcess implements Serializable {
      *  string for categorical purposes. Results may vary depending on what's passed in.
      *  The *expected* input is strings or numbers (which have sensible toString() representations)
      *
+     * Note that the returned categories will be sorted alphabetically, for each column
      *
      * @param recordReader the record reader to scan
      * @param columnIndices the column indices the get
@@ -553,6 +559,9 @@ public class TransformProcess implements Serializable {
 
         for(int i = 0; i < columnIndices.length; i++) {
             categoryMap.get(columnIndices[i]).addAll(categories.get(columnIndices[i]));
+
+            //Sort categories alphabetically - HashSet and RecordReader orders are not deterministic in general
+            Collections.sort(categoryMap.get(columnIndices[i]));
         }
 
         return categoryMap;
