@@ -90,8 +90,11 @@ public class ShapeOffsetResolution implements Serializable {
                 }
 
                 this.offsets = new long[arr.rank()];
-                this.offset = indexes[0].offset() * ArrayUtil.prod(strides);
-
+                if(arr.isRowVector())
+                    this.offset = indexes[0].offset() * strides[1];
+                else {
+                    this.offset = indexes[0].offset() * strides[0];
+                }
                 return true;
             }
             if (indexes[0] instanceof PointIndex && indexes.length == 1) {
@@ -102,7 +105,11 @@ public class ShapeOffsetResolution implements Serializable {
                     strides[i] = arr.stride(i);
                 }
 
-                this.offset = indexes[0].offset() * ArrayUtil.prod(strides);
+                if(arr.isRowVector())
+                    this.offset = indexes[0].offset() * strides[1];
+                else {
+                    this.offset = indexes[0].offset() * strides[0];
+                }
 
                 return true;
             }
@@ -323,9 +330,9 @@ public class ShapeOffsetResolution implements Serializable {
             INDArrayIndex idx = indexes[i];
             // On vectors, the first dimension can be ignored when indexing them with a single point index
             if (idx instanceof PointIndex && (arr.isVector() && indexes.length == 1 ? idx.current() >= shape[i + 1]
-                            : idx.current() >= shape[i])) {
+                    : idx.current() >= shape[i])) {
                 throw new IllegalArgumentException(
-                                "INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");
+                        "INDArrayIndex[" + i + "] is out of bounds (value: " + idx.current() + ")");
             }
         }
 
@@ -405,7 +412,7 @@ public class ShapeOffsetResolution implements Serializable {
 
             //points and intervals both have a direct desired length
             else if (idx instanceof IntervalIndex && !(idx instanceof NDArrayIndexAll)
-                            || idx instanceof SpecifiedIndex) {
+                    || idx instanceof SpecifiedIndex) {
                 if (idx instanceof IntervalIndex) {
                     accumStrides.add(arr.stride(strideIndex) * idx.stride());
                     //used in computing an adjusted offset for the augmented strides
@@ -600,7 +607,7 @@ public class ShapeOffsetResolution implements Serializable {
             }
             //special case where offsets aren't caught
             if (arr.isRowVector() && !intervalStrides.isEmpty() && pointOffsets.get(0) == 0
-                            && !(indexes[1] instanceof IntervalIndex))
+                    && !(indexes[1] instanceof IntervalIndex))
                 this.offset = indexes[1].offset();
             else
                 this.offset = ArrayUtil.dotProductLong2(pointOffsets, pointStrides);
@@ -619,7 +626,7 @@ public class ShapeOffsetResolution implements Serializable {
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides);
         else
             this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides)
-                            / Math.max(1, numIntervals);
+                    / Math.max(1, numIntervals);
 
 
         //collapse singular dimensions with specified index

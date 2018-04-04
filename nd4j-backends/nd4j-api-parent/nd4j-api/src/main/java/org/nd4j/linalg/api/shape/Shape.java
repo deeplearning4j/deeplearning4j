@@ -34,7 +34,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Array;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -681,10 +680,8 @@ public class Shape {
 
     public static long getOffset(int[] shapeInformation, int... indices) {
         int rank = rank(shapeInformation);
-        if (indices.length != rank)
-            throw new IllegalArgumentException("Indexes must be same length as array rank");
-        long offset = 0;
-        for (int i = 0; i < rank; i++) {
+         long offset = 0;
+        for (int i = 0; i < Math.min(rank,indices.length); i++) {
             int size_dimi = size(shapeInformation, i);
             if (indices[i] > size_dimi)
                 throw new IllegalArgumentException(

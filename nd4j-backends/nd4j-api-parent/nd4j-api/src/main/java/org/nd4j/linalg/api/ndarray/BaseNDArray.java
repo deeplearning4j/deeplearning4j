@@ -3807,15 +3807,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (slice >= slices)
             throw new IllegalArgumentException("Illegal slice " + slice);
 
-        if (Shape.rank(javaShapeInformation) == 0 || isRowVector()) {
-            if (slice == 0)
+        if (Shape.rank(javaShapeInformation) == 0 || isVector()) {
+            if (slice == 0 || isVector()) {
                 return createScalarForIndex(slice, true);
-            else if (isRowVector())
-                return createScalarForIndex(slice, true);
-
+            }
             else {
                 throw new IllegalArgumentException("Can't slice a 0-d NDArray");
             }
+
         }
 
 
@@ -3832,7 +3831,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     protected INDArray createScalarForIndex(int i, boolean applyOffset) {
-        return create(data(), new int[] {1, 1}, new int[] {1, 1}, applyOffset ? Shape.offset(javaShapeInformation) + i : i);
+        if(isVector())
+            return getScalar(i);
+        return create(data(), new int[] {1, 1}, new int[] {1, 1}, i);
     }
 
     protected INDArray createScalar(double d) {
@@ -6054,7 +6055,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return DataBuffer.TypeEx.DOUBLE;
 
         } else if(type == DataBuffer.Type.INT) {
-             return DataBuffer.TypeEx.INT8;
+            return DataBuffer.TypeEx.INT8;
         } else if(type == DataBuffer.Type.LONG) {
             return DataBuffer.TypeEx.INT16;
 

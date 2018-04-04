@@ -94,10 +94,10 @@ public class LoneTest extends BaseNd4jTest {
         INDArray jj;
         for (int i = 0; i < elements; i++) {
             j = i + 1;
-            assertEquals(colVector.getRow(i).getInt(0), i + 1);
-            assertEquals(rowVector.getColumn(i).getInt(0), i + 1);
-            assertEquals(rowVector.get(NDArrayIndex.interval(i, j)).getInt(0), i + 1);
-            assertEquals(colVector.get(NDArrayIndex.interval(i, j)).getInt(0), i + 1);
+            assertEquals(i + 1,colVector.getRow(i).getInt(0));
+            assertEquals(i + 1,rowVector.getColumn(i).getInt(0));
+            assertEquals(i + 1,rowVector.get(NDArrayIndex.interval(i, j)).getInt(0));
+            assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j)).getInt(0));
             System.out.println("Making sure index interval will not crash with begin/end vals...");
             jj = colVector.get(NDArrayIndex.interval(i, i + 10));
             jj = colVector.get(NDArrayIndex.interval(i, i + 10));

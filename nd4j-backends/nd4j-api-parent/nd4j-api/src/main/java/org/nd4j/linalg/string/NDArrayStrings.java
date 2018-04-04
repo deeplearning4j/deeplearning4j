@@ -3,6 +3,7 @@ package org.nd4j.linalg.string;
 import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.text.DecimalFormat;
 
@@ -163,7 +164,10 @@ public class NDArrayStrings {
                     //hack fix for slice issue with 'f' order
                     if (arr.ordering() == 'f' && arr.rank() > 2 && arr.size(arr.rank() - 1) == 1) {
                         sb.append(format(arr.dup('c').slice(i), offset, summarize));
-                    } else {
+                    } else if(arr.rank() <= 1) {
+                        sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
+                    }
+                    else {
                         sb.append(format(arr.slice(i), offset, summarize));
                     }
                     if (i != arr.slices() - 1) {
