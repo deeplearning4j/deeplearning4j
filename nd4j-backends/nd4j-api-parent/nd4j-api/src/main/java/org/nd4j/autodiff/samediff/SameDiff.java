@@ -5607,7 +5607,7 @@ public class SameDiff {
 
             val args = getInputsForFunction(differentialFunction);
 
-            log.info("Step: {}; Executing op {} for node [{}]", exec_counter, opName, ownName);
+            log.debug("Step: {}; Executing op {} for node [{}]", exec_counter, opName, ownName);
 
             // check if inputs are active nodes. skip step otherwise
             // please note: Exit node can't be skipped, because it's either rewind point or exit loop point
@@ -6187,7 +6187,7 @@ public class SameDiff {
             //}
         }
 
-        log.info("Own Name: {}", node.getOwnName());
+        log.debug("Own Name: {}", node.getOwnName());
         int ownId = forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         reverseMap.put(node.getOwnName(), ownId);
 
@@ -6255,7 +6255,7 @@ public class SameDiff {
 
         int idx = 0;
         for (val variable : variables()) {
-            log.info("Exporting variable: [{}]", variable.getVarName());
+            log.debug("Exporting variable: [{}]", variable.getVarName());
             if (variable.getArr() == null || variable.getShape() == null) {
                 //putArrayForVarName(variable.getVarName(), Nd4j.scalar(1.0));
                 //addAsPlaceHolder(variable.getVarName());
@@ -6265,7 +6265,7 @@ public class SameDiff {
 
             val pair = parseVariable(variable.getVarName());
             reverseMap.put(pair.getFirst(), idCounter.incrementAndGet());
-            log.info("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
+            log.debug("Adding [{}] as [{}]", pair.getFirst(), idCounter.get());
 
             val arr = variable.getArr();
 
@@ -6305,7 +6305,7 @@ public class SameDiff {
                 val pair = parseVariable(node.getVarName());
                 reverseMap.put(pair.getFirst(), idx);
 
-                log.info("Adding [{}] as [{}]", pair.getFirst(), idx);
+                log.debug("Adding [{}] as [{}]", pair.getFirst(), idx);
 
                 int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, 0, array, -1);
                 flatVariables.add(flatVariable);
