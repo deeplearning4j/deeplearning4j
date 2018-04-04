@@ -194,7 +194,7 @@ TEST_F(ShapeUtilsTests, Test_Strings_1) {
     NDArray<float> x('c', {2, 3, 4, 5});
     std::string exp("[2, 3, 4, 5]");
 
-    auto s = ShapeUtils<float>::shapeAsString(x);
+    auto s = ShapeUtils<float>::shapeAsString(&x);
 
     ASSERT_EQ(exp, s);
 }

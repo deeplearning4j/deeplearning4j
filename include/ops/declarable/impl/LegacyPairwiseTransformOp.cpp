@@ -30,8 +30,8 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
 
             if (!x->isSameShape(y)) {
-                std::string sx = ShapeUtils<T>::shapeAsString(*x);
-                std::string sy = ShapeUtils<T>::shapeAsString(*y);
+                std::string sx = ShapeUtils<T>::shapeAsString(x);
+                std::string sy = ShapeUtils<T>::shapeAsString(y);
                 REQUIRE_TRUE(x->isSameShape(y) || y->isScalar(), 0, "Node_%i: For Pairwise transforms shapes of both operands should be equal but got %s vs %s", block.getNodeId(), sx.c_str(), sy.c_str());
             }
 

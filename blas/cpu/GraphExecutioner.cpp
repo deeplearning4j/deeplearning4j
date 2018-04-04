@@ -443,7 +443,7 @@ Nd4jStatus GraphExecutioner<T>::execute(Graph<T> *graph, VariableSpace<T>* varia
                 if (nd4j::Environment::getInstance()->isDebugAndVerbose()) {
                     auto array = __variableSpace->getVariable(node->id())->getNDArray();
                     auto list = __variableSpace->getVariable(node->id())->hasNDArrayList() ? __variableSpace->getVariable(node->id())->getNDArrayList() : nullptr;
-                    auto shape = ShapeUtils<T>::shapeAsString(*array);
+                    auto shape = ShapeUtils<T>::shapeAsString(array);
 
                     if (array != nullptr) {
                         auto values = array->asIndexedString(16);

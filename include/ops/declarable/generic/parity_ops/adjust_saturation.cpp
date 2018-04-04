@@ -19,7 +19,7 @@ namespace ops {
         else if (block.width() > 1) {
             auto _d = INPUT_VARIABLE(1);
             if (!_d->isScalar()) {
-                auto str = ShapeUtils<T>::shapeAsString(*_d);
+                auto str = ShapeUtils<T>::shapeAsString(_d);
                 REQUIRE_TRUE(_d->isScalar(), 0, "AdjustSaturation: delta should be scalar NDArray, but got %s instead", str.c_str());
             }
         }

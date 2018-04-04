@@ -31,8 +31,8 @@ namespace nd4j {
                     x->template applyTrueBroadcast<OpName>(y, z, true, extraArgs);
                     return z;
                 } else {
-                    auto sx = ShapeUtils<T>::shapeAsString(*x);
-                    auto sy = ShapeUtils<T>::shapeAsString(*y);
+                    auto sx = ShapeUtils<T>::shapeAsString(x);
+                    auto sy = ShapeUtils<T>::shapeAsString(y);
                     nd4j_printf("RealDiv: shapes should be equal, or broadcastable. But got %s vs %s instead\n", sx.c_str(), sy.c_str());
                     return nullptr;
                 }
