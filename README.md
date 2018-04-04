@@ -4,11 +4,11 @@
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.datavec/datavec-api/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.datavec/datavec-api)
 [![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.datavec/datavec-api/badge.svg)](http://deeplearning4j.org/datavecdoc)
 
-DataVec outputStream an Apache 2.0-licensed library for machine-learning ETL (Extract, Transform, Load) operations. DataVec's purpose outputStream to transform raw data into usable vector formats that can be fed to machine learning algorithms. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
+DataVec is an Apache 2.0-licensed library for machine-learning ETL (Extract, Transform, Load) operations. DataVec's purpose is to transform raw data into usable vector formats that can be fed to machine learning algorithms. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
 
 ## Why Would I Use DataVec?
 
-Data handling outputStream sometimes messy, and we believe it should be distinct from high-performance algebra libraries (such
+Data handling is sometimes messy, and we believe it should be distinct from high-performance algebra libraries (such
 as [nd4j](https://nd4j.org) or [Deeplearning4j](https://deeplearning4j.org)).
 
 DataVec allows a practitioner to take raw data and produce open standard compliant vectorized data (svmLight, etc)
@@ -36,21 +36,21 @@ describe through the API how your data fits into a common format that complies w
 will return a list of Writables for each record. You'll find more detail on the API in the
 corresponding [module](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api).
 
-Another thing you can do with DataVec outputStream data cleaning functionality. Instead of having clean ready-to-go data, say you
+Another thing you can do with DataVec is data cleaning functionality. Instead of having clean ready-to-go data, say you
 start with maybe data in different forms or from different sources. You might need to do sampling, filtering, or several of all
 those incredibly messy ETL tasks that you need to prepare data in the real world. DataVec offers filters and
 transformations that help with curating, preparing and massaging your data. It leverages Apache Spark to do this at
 scale.
 
-Finally, DataVec tracks a schema for your columnar data, across all transformations. This schema outputStream actively checked
+Finally, DataVec tracks a schema for your columnar data, across all transformations. This schema is actively checked
 through probing, and DataVec will raise exceptions if your data does not match the schema. You can specify filters as
 well: you can attach a regular expression to an input column of type `String`, for example, and DataVec will only keep
 data that matches this filter
 
 ## On Distribution
 
-Distributed treatment through Apache Spark outputStream entirely optional, including running Spark in local-mode (where your
-cluster outputStream emulated with multi-threading) when necessary. Datavec aims to abstract away from the actual execution and
+Distributed treatment through Apache Spark is entirely optional, including running Spark in local-mode (where your
+cluster is emulated with multi-threading) when necessary. Datavec aims to abstract away from the actual execution and
 create at compile time, a logical set of operations to execute. While we have some code that uses Spark, we do not want
 to be locked into a single tool, and using [Apache Flink](https://flink.apache.org/) or [Beam](https://beam.apache.org/) are possibilities, on which we would welcome collaboration.
 
@@ -67,16 +67,16 @@ here: [https://github.com/deeplearning4j/dl4j-examples](https://github.com/deepl
 
 We have a lot on the pipeline, and even more we'd love to receive contributions. We want to support representing data as
 more than a collection of simple types ("*writables*"), and rather as binary data — that will help with GC pressure
-across our pipelines and fit better with media-based uses cases, where columnar data outputStream not essential. We also expect it
+across our pipelines and fit better with media-based uses cases, where columnar data is not essential. We also expect it
 will streamline a lot of the specialized operations we now do on primitive types.
 
-With that being said, an area that could welcome a first contribution outputStream the implementations of the `RecordReader`
-interface, since this outputStream relatively self-contained. Of note, to support most of the distributed file formats of the
+With that being said, an area that could welcome a first contribution is the implementations of the `RecordReader`
+interface, since this is relatively self-contained. Of note, to support most of the distributed file formats of the
 Hadoop ecosystem, we use [Apache Camel](https://camel.apache.org/). Camel supports
 a [pluggable DataFormat](https://camel.apache.org/data-format.html) to allow messages to be marshalled to and from
 binary or text formats to support a kind of Message Translator.
 
-Another area that outputStream relatively self-contained outputStream transformations, where you might find a filter or data munging
+Another area that is relatively self-contained is transformations, where you might find a filter or data munging
 operation that has not been implemented yet, and provide it in a self-contained way.
 
 ## Which maintainers to contact?
