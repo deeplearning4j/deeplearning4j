@@ -22,7 +22,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.nd4j</groupId>
     <artifactId>nd4j</artifactId>
-    <version>0.9.2-SNAPSHOT</version>
+    <version>1.0.0-alpha</version>
 
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -529,7 +529,7 @@
     </modules>
 
     <properties>
-        <dl4j-test-resources.version>0.9.2-SNAPSHOT</dl4j-test-resources.version>
+        <dl4j-test-resources.version>1.0.0-alpha</dl4j-test-resources.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <commons-io.version>2.4</commons-io.version>
