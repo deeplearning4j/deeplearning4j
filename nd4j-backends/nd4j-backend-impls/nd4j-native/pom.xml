@@ -316,12 +316,15 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+<!-- We cannot use those to propagate C++ exceptions across shared libraries. -->
+<!--
                         <configuration>
                             <compilerOptions>
                                 <compilerOption>-static-libgcc</compilerOption>
                                 <compilerOption>-static-libstdc++</compilerOption>
                             </compilerOptions>
                         </configuration>
+-->
                     </plugin>
                 </plugins>
             </build>
