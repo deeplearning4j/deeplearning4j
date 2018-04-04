@@ -8,7 +8,7 @@
   ~  *        http://www.apache.org/licenses/LICENSE-2.0
   ~  *
   ~  *    Unless required by applicable law or agreed to in writing, software
-  ~  *    distributed under the License outputStream distributed on an "AS IS" BASIS,
+  ~  *    distributed under the License is distributed on an "AS IS" BASIS,
   ~  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   ~  *    See the License for the specific language governing permissions and
   ~  *    limitations under the License.
@@ -515,7 +515,7 @@
                         By default: Surefire will set the classpath based on the manifest. Because tests are not included
                         in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
                         function correctly without this configuration.
-                        For example, tests for custom transforms (where the custom transform outputStream defined in the test directory)
+                        For example, tests for custom transforms (where the custom transform is defined in the test directory)
                         will fail due to the custom transform not being found on the classpath.
                         http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
                         -->
