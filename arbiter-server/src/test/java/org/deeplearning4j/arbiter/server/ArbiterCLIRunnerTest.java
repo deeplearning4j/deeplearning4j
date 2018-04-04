@@ -58,7 +58,7 @@ public class ArbiterCLIRunnerTest {
          assertEquals(mls,MultiLayerSpace.fromJson(mls.toJson()));
         //Define configuration:
         Map<String,Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,TestDataFactoryProviderMnist.class.getCanonicalName());
 
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls,commands);
         DataProvider dataProvider = new DataSetIteratorFactoryProvider();
@@ -87,7 +87,7 @@ public class ArbiterCLIRunnerTest {
         log.info("Starting test");
         cliRunner.runMain(
                 "--dataSetIteratorClass",
-                MnistDataSetIteratorFactory.class.getCanonicalName(),
+                TestDataFactoryProviderMnist.class.getCanonicalName(),
                 "--neuralNetType",
                 ArbiterCliRunner.MULTI_LAYER_NETWORK,
                 "--optimizationConfigPath",

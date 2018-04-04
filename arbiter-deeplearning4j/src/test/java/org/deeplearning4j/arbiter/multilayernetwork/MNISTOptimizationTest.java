@@ -37,6 +37,7 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
+import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -93,7 +94,7 @@ public class MNISTOptimizationTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
         Map<String, Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);

@@ -80,7 +80,7 @@ public class TestBasic {
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
         Map<String, Object> commands = new HashMap<>();
-//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
@@ -210,7 +210,7 @@ public class TestBasic {
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
         Map<String, Object> commands = new HashMap<>();
-//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
@@ -276,7 +276,7 @@ public class TestBasic {
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
         Map<String, Object> commands = new HashMap<>();
-//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
@@ -411,7 +411,7 @@ public class TestBasic {
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .build();
         Map<String, Object> commands = new HashMap<>();
-//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
 
         //Define configuration:
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);

@@ -5,7 +5,6 @@ import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
@@ -15,17 +14,14 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.FileModelSaver;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
-import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.arbiter.util.TestDataProviderMnist;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
-import java.util.Map;
 
 public class TestErrors {
 
@@ -48,7 +44,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProvider())
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(10))
@@ -75,7 +71,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProvider())
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(10))
@@ -104,7 +100,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProvider())
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(new MaxCandidatesCondition(10))
                 .build();
@@ -131,7 +127,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProvider())
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(10))
@@ -139,33 +135,6 @@ public class TestErrors {
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
         runner.execute();
-    }
-
-
-    private static class TestDataProvider implements DataProvider {
-
-        @Override
-        public Object trainData(Map<String, Object> dataParameters) {
-            try {
-                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, true, 12345), 10);
-            } catch (Exception e){
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public Object testData(Map<String, Object> dataParameters) {
-            try {
-                return new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
-            } catch (Exception e){
-                throw new RuntimeException(e);
-            }
-        }
-
-        @Override
-        public Class<?> getDataType() {
-            return DataSetIterator.class;
-        }
     }
 
 }
