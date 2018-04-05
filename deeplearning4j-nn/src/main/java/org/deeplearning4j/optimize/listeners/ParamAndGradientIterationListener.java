@@ -31,8 +31,6 @@ public class ParamAndGradientIterationListener implements IterationListener {
     private static final int MAX_WRITE_FAILURE_MESSAGES = 10;
     private static final Logger logger = LoggerFactory.getLogger(ParamAndGradientIterationListener.class);
 
-    private boolean invoked = false;
-
     private int iterations;
     private long totalIterationCount = 0;
     private boolean printMean = true;
