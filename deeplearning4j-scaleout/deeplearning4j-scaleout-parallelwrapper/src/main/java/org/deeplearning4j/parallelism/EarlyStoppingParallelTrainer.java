@@ -314,7 +314,6 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
      */
     private class AveragingIterationListener<T extends Model> implements IterationListener {
         private final Logger log = LoggerFactory.getLogger(AveragingIterationListener.class);
-        private boolean invoked = false;
         private IterationTerminationCondition terminationReason = null;
         private EarlyStoppingParallelTrainer<T> trainer;
 
