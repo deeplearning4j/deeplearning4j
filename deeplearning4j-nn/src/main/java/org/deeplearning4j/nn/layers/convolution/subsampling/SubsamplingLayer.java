@@ -28,8 +28,8 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
@@ -39,6 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -55,6 +56,7 @@ import java.util.Properties;
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
     protected SubsamplingHelper helper = null;
+    protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
@@ -130,9 +132,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outW = outSize[1];
 
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                    layerConf().getPoolingType(), convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            Pair<Gradient, INDArray> ret = null;
+            try{
+                ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
+                        layerConf().getPoolingType(), convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -190,12 +202,18 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray col2d = col6d.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
 
-
         switch (layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                DynamicCustomOp op = DynamicCustomOp.builder("im2col")
+                        .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+                                ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same))
+                        .addFloatingPointArguments(minValue())
+                        .addInputs(input)
+                        .addOutputs(col6dPermuted)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d, 1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
@@ -249,6 +267,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return new Pair<>(retGradient, outEpsilon);
     }
 
+    private static double minValue(){
+        switch (Nd4j.dataType()){
+            case DOUBLE:
+                return -Double.MAX_VALUE;
+            case FLOAT:
+                return -Float.MAX_VALUE;
+            case HALF:
+                return -65504.0;
+            default:
+                throw new IllegalStateException("Unexpected data type: " + Nd4j.dataType());
+        }
+    }
+
 
     @Override
     public INDArray activate(boolean training) {
@@ -284,9 +315,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outH = outSize[0];
         int outW = outSize[1];
 
-        if (helper != null) {
-            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                            convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            INDArray ret = null;
+            try {
+                ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
+                        convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -305,6 +346,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 break;
             case AVG:
                 pt = LegacyPooling2D.Pooling2DType.AVG;
+                extra = 1.0;    //Divide by kH*kW not "number present" to match backward pass
                 break;
             case PNORM:
                 pt = LegacyPooling2D.Pooling2DType.PNORM;

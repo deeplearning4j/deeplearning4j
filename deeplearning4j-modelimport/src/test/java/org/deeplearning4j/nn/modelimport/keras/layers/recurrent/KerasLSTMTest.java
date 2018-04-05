@@ -21,12 +21,19 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +56,7 @@ public class KerasLSTMTest {
     private final int N_OUT = 13;
 
     private Boolean[] returnSequences = new Boolean[]{true, false};
+    private Boolean[] maskZero = new Boolean[]{true, false};
     private Integer keras1 = 1;
     private Integer keras2 = 2;
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
@@ -60,6 +68,10 @@ public class KerasLSTMTest {
             buildLstmLayer(conf1, keras1, rs);
             buildLstmLayer(conf2, keras2, rs);
         }
+        for (Boolean mz : maskZero) {
+            buildMaskZeroLstmLayer(conf1, keras1, mz);
+            buildMaskZeroLstmLayer(conf2, keras2, mz);
+        }
     }
 
     void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
@@ -68,25 +80,23 @@ public class KerasLSTMTest {
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
 
-        KerasLstm lstm = new KerasLstm(kerasVersion);
-
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
 
         } else {
-            Map<String, Object> init = new HashMap<String, Object>();
+            Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INNER_INIT(), init);
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }
-        Map<String, Object> W_reg = new HashMap<String, Object>();
+        Map<String, Object> W_reg = new HashMap<>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
@@ -122,5 +132,58 @@ public class KerasLSTMTest {
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
 
+    }
+
+    private void buildMaskZeroLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean maskZero)
+            throws Exception {
+        String innerActivation = "hard_sigmoid";
+        String lstmForgetBiasString = "one";
+        boolean lstmUnroll = true;
+
+        Map<String, Object> layerConfig = new HashMap<>();
+        layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        config.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation);
+        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        if (kerasVersion == 1) {
+            config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
+            config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
+
+        } else {
+            Map<String, Object> init = new HashMap<>();
+            init.put("class_name", conf.getINIT_GLOROT_NORMAL());
+            config.put(conf.getLAYER_FIELD_INNER_INIT(), init);
+            config.put(conf.getLAYER_FIELD_INIT(), init);
+        }
+        Map<String, Object> W_reg = new HashMap<>();
+        W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
+        W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
+        config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
+
+        config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
+        config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
+        config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
+        config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
+        config.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
+        config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
+
+        layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
+        layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
+        layerConfig.put(conf.getLAYER_FIELD_INBOUND_NODES(),
+                Arrays.asList(Arrays.asList(
+                        Arrays.asList("embedding"))));
+        KerasEmbedding embedding = getEmbedding(maskZero);
+        Map<String, KerasEmbedding> previousLayers = Collections.singletonMap("embedding", embedding);
+
+        KerasLstm kerasLstm = new KerasLstm(layerConfig, previousLayers);
+        Assert.assertEquals(kerasLstm.getLayer() instanceof MaskZeroLayer, maskZero);
+    }
+
+    private KerasEmbedding getEmbedding(boolean maskZero)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasEmbedding embedding = new KerasEmbedding();
+        embedding.setHasZeroMasking(maskZero);
+        return embedding;
     }
 }

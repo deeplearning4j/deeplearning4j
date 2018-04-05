@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimize.listeners;
 
+import com.google.common.base.Preconditions;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -39,6 +40,7 @@ public class PerformanceListener implements IterationListener {
     }
 
     public PerformanceListener(int frequency, boolean reportScore) {
+        Preconditions.checkArgument(frequency > 0, "Invalid frequency, must be > 0: Got " + frequency);
         this.frequency = frequency;
         this.reportScore = reportScore;
 
@@ -144,44 +146,44 @@ public class PerformanceListener implements IterationListener {
         /**
          * This method defines, if iteration number should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportIteration
          * @return
          */
-        public Builder reportIteration(boolean reallyReport) {
-            this.reportIteration = reallyReport;
+        public Builder reportIteration(boolean reportIteration) {
+            this.reportIteration = reportIteration;
             return this;
         }
 
         /**
          * This method defines, if time per iteration should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportTime
          * @return
          */
-        public Builder reportTime(boolean reallyReport) {
-            this.reportTime = reallyReport;
+        public Builder reportTime(boolean reportTime) {
+            this.reportTime = reportTime;
             return this;
         }
 
         /**
          * This method defines, if ETL time per iteration should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportEtl
          * @return
          */
-        public Builder reportETL(boolean reallyReport) {
-            this.reportEtl = reallyReport;
+        public Builder reportETL(boolean reportEtl) {
+            this.reportEtl = reportEtl;
             return this;
         }
 
         /**
          * This method defines, if samples/sec should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportSample
          * @return
          */
-        public Builder reportSample(boolean reallyReport) {
-            this.reportSample = reallyReport;
+        public Builder reportSample(boolean reportSample) {
+            this.reportSample = reportSample;
             return this;
         }
 
@@ -189,22 +191,22 @@ public class PerformanceListener implements IterationListener {
         /**
          * This method defines, if batches/sec should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportBatch
          * @return
          */
-        public Builder reportBatch(boolean reallyReport) {
-            this.reportBatch = reallyReport;
+        public Builder reportBatch(boolean reportBatch) {
+            this.reportBatch = reportBatch;
             return this;
         }
 
         /**
          * This method defines, if score should be reported together with other data
          *
-         * @param reallyReport
+         * @param reportScore
          * @return
          */
-        public Builder reportScore(boolean reallyReport) {
-            this.reportScore = reallyReport;
+        public Builder reportScore(boolean reportScore) {
+            this.reportScore = reportScore;
             return this;
         }
 
@@ -230,6 +232,7 @@ public class PerformanceListener implements IterationListener {
             listener.reportTime = this.reportTime;
             listener.reportBatch = this.reportBatch;
             listener.reportSample = this.reportSample;
+            listener.reportEtl = this.reportEtl;
 
             return listener;
         }

@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 14/11/2016.
@@ -37,11 +38,8 @@ public class TestRecordReaders extends BaseDL4JTest {
         try {
             DataSet ds = iter.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRDSI(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 
@@ -65,11 +63,8 @@ public class TestRecordReaders extends BaseDL4JTest {
         try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRMDSI(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 
@@ -105,11 +100,8 @@ public class TestRecordReaders extends BaseDL4JTest {
         try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRMDSI_MultipleReaders(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 

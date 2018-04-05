@@ -53,6 +53,12 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
 
     @Override
+    void initializeHelper(){
+        //No op - no separable conv implementation in cudnn
+    }
+
+
+    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
         if (input.rank() != 4) {
@@ -207,29 +213,6 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outH = outSize[0];
         int outW = outSize[1];
 
-
-        if (helper != null) {
-            if (preOutput != null && forBackprop) {
-                return new Pair<>(preOutput, null);
-            }
-
-            //For no-bias convolutional layers: use an empty (all 0s) value for biases
-            if(!hasBias()){
-                if(dummyBias == null){
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        dummyBias = Nd4j.create(1, layerConf().getNOut());
-                    }
-                }
-                bias = dummyBias;
-            }
-
-            INDArray ret = helper.preOutput(input, depthWiseWeights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                    layerConf().getCudnnFwdAlgo(), convolutionMode, dilation);
-            if (ret != null) {
-                return new Pair<>(ret, null);
-            }
-        }
-
         int miniBatch = input.size(0);
         INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
@@ -277,22 +260,15 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.workspaceCache)) {
+                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();
             }
         }
 
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = layerConf().getActivationFn();
-
-        if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn());
-            if (ret != null) {
-                return ret;
-            }
-        }
 
         INDArray activation = afn.getActivation(z, training);
         return activation;

@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.datasets.iterator.tools.VariableTimeseriesGenerator;
-import org.deeplearning4j.util.TestDataSetConsumer;
+import org.deeplearning4j.nn.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;

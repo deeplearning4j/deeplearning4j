@@ -1,5 +1,6 @@
 package org.deeplearning4j.earlystopping;
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
@@ -23,6 +24,7 @@ import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.RegressionEvaluation;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,7 +36,10 @@ import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDist
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.BaseTrainingListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -234,7 +239,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                                         .iterationTerminationConditions(
                                                         new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
+                                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
                                         .modelSaver(saver).build();
 
         IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
@@ -656,5 +661,66 @@ public class TestEarlyStopping extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
         }
+    }
+
+    @Test
+    public void testEarlyStoppingListeners() {
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+
+        TestListener tl = new TestListener();
+        net.setListeners(tl);
+
+        DataSetIterator irisIter = new IrisDataSetIterator(50, 150);
+        EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
+
+        IEarlyStoppingTrainer<MultiLayerNetwork> trainer = new EarlyStoppingTrainer(esConf, net, irisIter);
+
+        EarlyStoppingResult<MultiLayerNetwork> result = trainer.fit();
+
+        assertEquals(5, tl.countEpochStart);
+        assertEquals(5, tl.countEpochEnd);
+        assertEquals(5 * 150/50, tl.iterCount);
+
+        assertEquals(4, tl.maxEpochStart);
+        assertEquals(4, tl.maxEpochEnd);
+    }
+
+    @Data
+    public static class TestListener extends BaseTrainingListener {
+        private int countEpochStart = 0;
+        private int countEpochEnd = 0;
+        private int iterCount = 0;
+        private int maxEpochStart = -1;
+        private int maxEpochEnd = -1;
+
+        @Override
+        public void onEpochStart(Model model){
+            countEpochStart++;
+            maxEpochStart = Math.max(maxEpochStart, BaseOptimizer.getEpochCount(model));
+        }
+
+        @Override
+        public void onEpochEnd(Model model){
+            countEpochEnd++;
+            maxEpochEnd = Math.max(maxEpochEnd, BaseOptimizer.getEpochCount(model));
+        }
+
+        @Override
+        public void iterationDone(Model model, int iteration, int epoch){
+            iterCount++;
+        }
+
     }
 }

@@ -21,8 +21,8 @@ import java.util.Arrays;
 @Slf4j
 public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
 
-    int tsLength;
-    int depth;
+    private int tsLength;
+    private int depth;
 
     public KerasFlattenRnnPreprocessor(int depth, int tsLength) {
         super();

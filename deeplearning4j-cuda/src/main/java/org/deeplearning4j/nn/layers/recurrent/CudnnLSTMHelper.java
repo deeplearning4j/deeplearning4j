@@ -147,11 +147,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
     }
 
     // These constants might eventually become variable parameters...
-    protected static final int numLayers = 1;
-    protected static final float dropout = 0;
-    protected static final boolean bidirectional = false;
-    protected static final int RNNMode = CUDNN_LSTM;
-    protected static final int numLinearLayers = 8; // CUDNN_LSTM
+    protected static final int NUM_LAYERS = 1;
+    protected static final float DROPOUT = 0;
+    protected static final boolean BIDIRECTIONAL = false;
+    protected static final int RNN_MODE = CUDNN_LSTM;
+    protected static final int NUM_LINEAR_LAYERS = 8; // CUDNN_LSTM
 
     private CudnnLSTMContext cudnnContext = new CudnnLSTMContext();
     private TensorArray xDesc = new TensorArray();
@@ -240,8 +240,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         if (truncatedBPTT) {
             int endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength) * miniBatchSize * hiddenLayerSize;
             xData.position(endIdx * dataTypeSize);
-            dyData.position(endIdx * (bidirectional ? 2 : 1) * dataTypeSize);
-            outputActivationsData.position(endIdx * (bidirectional ? 2 : 1) * dataTypeSize);
+            dyData.position(endIdx * (BIDIRECTIONAL ? 2 : 1) * dataTypeSize);
+            outputActivationsData.position(endIdx * (BIDIRECTIONAL ? 2 : 1) * dataTypeSize);
             timeSeriesLength = Math.min(timeSeriesLength, tbpttBackwardLength);
         }
 
@@ -272,8 +272,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer linLayerMat = new Pointer();
         Pointer linLayerBias = new Pointer();
 
-        for (int layer = 0; layer < numLayers * (bidirectional ? 2 : 1); layer++) {
-            for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
+        for (int layer = 0; layer < NUM_LAYERS * (BIDIRECTIONAL ? 2 : 1); layer++) {
+            for (int linLayerID = 0; linLayerID < NUM_LINEAR_LAYERS; linLayerID++) {
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layer, xDesc0,
                                 cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc,
                                 linLayerMat));
@@ -382,7 +382,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray prevMemCell = toCOrder(prevMemCellState);
 
         INDArray outputActivations = Nd4j.createUninitialized(
-                        new int[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
+                        new int[] {timeSeriesLength, miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1)}, 'c');
         INDArray finalMemCellState = Nd4j.createUninitialized(
                         new int[] {/*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
         INDArray finalStepActivations = Nd4j.createUninitialized(
@@ -420,14 +420,14 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
             checkCudnn(cudnnSetTensorNdDescriptor(xDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
             checkCudnn(cudnnSetTensorNdDescriptor(dxDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
 
-            int[] dimB = {miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1), 1};
+            int[] dimB = {miniBatchSize, hiddenLayerSize * (BIDIRECTIONAL ? 2 : 1), 1};
             int[] strideB = {dimB[2] * dimB[1], dimB[2], 1};
 
             checkCudnn(cudnnSetTensorNdDescriptor(yDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimB, strideB));
             checkCudnn(cudnnSetTensorNdDescriptor(dyDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimB, strideB));
         }
 
-        int[] dimC = {numLayers * (bidirectional ? 2 : 1), miniBatchSize, hiddenLayerSize};
+        int[] dimC = {NUM_LAYERS * (BIDIRECTIONAL ? 2 : 1), miniBatchSize, hiddenLayerSize};
         int[] strideC = {dimC[2] * dimC[1], dimC[2], 1};
 
         checkCudnn(cudnnSetTensorNdDescriptor(cudnnContext.hxDesc, dataType, 3, dimC, strideC));
@@ -447,11 +447,11 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         }
         stateSpace.limit(stateSize);
 
-        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, dropout, stateSpace, stateSize,
+        checkCudnn(cudnnSetDropoutDescriptor(cudnnContext.dropoutDesc, cudnnContext, DROPOUT, stateSpace, stateSize,
                         Nd4j.getRandom().getSeed()));
 
-        checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, hiddenLayerSize, numLayers, cudnnContext.dropoutDesc,
-                         CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode,
+        checkCudnn(cudnnSetRNNDescriptor_v6(cudnnContext, cudnnContext.rnnDesc, hiddenLayerSize, NUM_LAYERS, cudnnContext.dropoutDesc,
+                         CUDNN_LINEAR_INPUT, BIDIRECTIONAL ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNN_MODE,
                         CUDNN_RNN_ALGO_STANDARD, dataType));
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
@@ -511,8 +511,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer linLayerMat = new Pointer();
         Pointer linLayerBias = new Pointer();
 
-        for (int layerNum = 0; layerNum < numLayers * (bidirectional ? 2 : 1); layerNum++) {
-            for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
+        for (int layerNum = 0; layerNum < NUM_LAYERS * (BIDIRECTIONAL ? 2 : 1); layerNum++) {
+            for (int linLayerID = 0; linLayerID < NUM_LINEAR_LAYERS; linLayerID++) {
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layerNum, xDesc0,
                                 cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc,
                                 linLayerMat));

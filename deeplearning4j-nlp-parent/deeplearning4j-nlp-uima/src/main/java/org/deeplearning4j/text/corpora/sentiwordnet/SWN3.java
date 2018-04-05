@@ -25,7 +25,7 @@ import org.apache.uima.cas.CASException;
 import org.apache.uima.fit.util.JCasUtil;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
 
 import java.io.BufferedReader;

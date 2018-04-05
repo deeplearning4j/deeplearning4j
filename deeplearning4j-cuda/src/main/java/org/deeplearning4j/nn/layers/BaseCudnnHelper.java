@@ -176,7 +176,7 @@ public abstract class BaseCudnnHelper {
         }
     }
 
-    protected static final int tensorFormat = CUDNN_TENSOR_NCHW;
+    protected static final int TENSOR_FORMAT = CUDNN_TENSOR_NCHW;
 
     protected int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
                     : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;

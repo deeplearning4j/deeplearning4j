@@ -6,8 +6,10 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -686,12 +688,14 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             s.computeGradientAndScore();
             Gradient sGrad = s.gradient();
 
+            s.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
+
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
             Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
 
             INDArray olEpsilon = olPairStd.getSecond();
 
-            e.feedForward(new INDArray[]{inData}, true, false);
+            e.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
             Gradient extErrorGrad = e.backpropGradient(olEpsilon);
 
             int nParamsDense = 10 * 10 + 10;
@@ -1340,4 +1344,32 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(13, net.layerSize("3"));
     }
 
+    @Test
+    public void testZeroParamNet() throws Exception {
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build(), "in")
+                .layer("1", new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build(), "0")
+                .setOutputs("1")
+                .setInputTypes(InputType.convolutionalFlat(28,28,1))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        DataSet ds = new MnistDataSetIterator(16, true, 12345).next();
+
+        INDArray out = net.outputSingle(ds.getFeatures());
+
+        INDArray labelTemp = Nd4j.create(out.shape());
+        ds.setLabels(labelTemp);
+
+        net.fit(ds);
+
+        ComputationGraph net2 = TestUtils.testModelSerialization(net);
+        INDArray out2 = net2.outputSingle(ds.getFeatures());
+        assertEquals(out, out2);
+    }
 }

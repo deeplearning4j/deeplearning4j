@@ -8,6 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** Given a DataSetIterator: calculate the total loss for the model on that data set.
@@ -20,12 +21,23 @@ public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
     @JsonProperty
     private boolean average;
 
+    /**
+     * Calculate the score (loss function value) on a given data set (usually a test set)
+     *
+     * @param dataSetIterator Data set to calculate the score for
+     * @param average         Whether to return the average (sum of loss / N) or just (sum of loss)
+     */
+    public DataSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
+        super(dataSetIterator);
+        this.average = average;
+    }
+
     /**Calculate the score (loss function value) on a given data set (usually a test set)
      *
      * @param dataSetIterator Data set to calculate the score for
      * @param average Whether to return the average (sum of loss / N) or just (sum of loss)
      */
-    public DataSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
+    public DataSetLossCalculator(MultiDataSetIterator dataSetIterator, boolean average) {
         super(dataSetIterator);
         this.average = average;
     }

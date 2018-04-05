@@ -28,15 +28,15 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
-import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.util.StringUtils;
 
 import java.util.*;
 
 /**
  * Build Layer from Keras layer configuration.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 public class KerasLayer {
@@ -135,7 +135,7 @@ public class KerasLayer {
 
         this.weightL1Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
                 layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L1());
-        this.weightL2Regularization =  KerasRegularizerUtils.getWeightRegularizerFromConfig(
+        this.weightL2Regularization = KerasRegularizerUtils.getWeightRegularizerFromConfig(
                 layerConfig, conf, conf.getLAYER_FIELD_W_REGULARIZER(), conf.getREGULARIZATION_TYPE_L2());
         this.dropout = KerasLayerUtils.getDropoutFromConfig(layerConfig, conf);
         KerasLayerUtils.checkForUnsupportedConfigurations(layerConfig, enforceTrainingConfig, conf);
@@ -143,10 +143,11 @@ public class KerasLayer {
 
     /**
      * Register a custom layer
-     * @param layerName name of custom layer
+     *
+     * @param layerName   name of custom layer
      * @param configClass class of custom layer
      */
-     public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
+    public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
         customLayers.put(layerName, configClass);
     }
 
@@ -380,7 +381,7 @@ public class KerasLayer {
      * Indicates whether this layer a valid inbound layer. Currently, only
      * (known) DL4J Layers and inputs are valid inbound layers. "Preprocessor"
      * layers (reshaping, merging, etc.) are replaced by their own inbound layers.
-
+     *
      * @return boolean indicating whether layer is valid inbound layer
      * @see org.deeplearning4j.nn.api.Layer
      */

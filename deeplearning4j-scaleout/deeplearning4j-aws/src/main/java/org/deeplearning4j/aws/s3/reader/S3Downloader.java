@@ -86,7 +86,7 @@ public class S3Downloader extends BaseS3 {
 
     /**
      * Iterator style one list at a time
-     * @param list the list to getFromOrigin the next batch for
+     * @param list the list to get the next batch for
      * @return the next batch of objects or null if
      * none are left
      */

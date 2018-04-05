@@ -45,11 +45,11 @@ public class KerasActivationLayer {
         buildActivationLayer(conf2, keras2);
     }
 
-    public void buildActivationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+    private void buildActivationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_FIELD_ACTIVATION());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);

@@ -25,17 +25,13 @@ import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
-import org.deeplearning4j.earlystopping.scorecalc.ClassificationScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
-import org.deeplearning4j.earlystopping.scorecalc.RegressionScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.AutoencoderScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.VAEReconErrorScoreCalculator;
-import org.deeplearning4j.earlystopping.scorecalc.VAEReconProbScoreCalculator;
+import org.deeplearning4j.earlystopping.scorecalc.*;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxScoreIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.ScoreImprovementEpochTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
+import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.earlystopping.trainer.IEarlyStoppingTrainer;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.RegressionEvaluation;
@@ -168,7 +164,7 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
                         .epochTerminationConditions(new MaxEpochsTerminationCondition(10000))
                         .iterationTerminationConditions(new MaxTimeIterationTerminationCondition(3, TimeUnit.SECONDS),
                                         new MaxScoreIterationTerminationCondition(7.5)) //Initial score is ~2.5
-                        //.scoreCalculator(new DataSetLossCalculator(irisIter, true))   //No score calculator in this test (don't need score)
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true))
                         .modelSaver(saver).build();
 
         IEarlyStoppingTrainer trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
@@ -511,5 +507,43 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
 
             assertNotNull(result.getBestModel());
         }
+    }
+
+
+    @Test
+    public void testEarlyStoppingListenersCG() {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(new Sgd(0.001)).weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new OutputLayer.Builder().nIn(4).nOut(3)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                .setOutputs("0")
+                .build();
+        ComputationGraph net = new ComputationGraph(conf);
+
+        TestEarlyStopping.TestListener tl = new TestEarlyStopping.TestListener();
+        net.setListeners(tl);
+
+        DataSetIterator irisIter = new IrisDataSetIterator(50, 150);
+        EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
+        EarlyStoppingConfiguration<ComputationGraph> esConf =
+                new EarlyStoppingConfiguration.Builder<ComputationGraph>()
+                        .epochTerminationConditions(new MaxEpochsTerminationCondition(5))
+                        .iterationTerminationConditions(
+                                new MaxTimeIterationTerminationCondition(1, TimeUnit.MINUTES))
+                        .scoreCalculator(new DataSetLossCalculator(irisIter, true)).modelSaver(saver)
+                        .build();
+
+        IEarlyStoppingTrainer<ComputationGraph> trainer = new EarlyStoppingGraphTrainer(esConf, net, irisIter);
+
+        trainer.fit();
+
+        assertEquals(5, tl.getCountEpochStart());
+        assertEquals(5, tl.getCountEpochEnd());
+        assertEquals(5 * 150/50, tl.getIterCount());
+
+        assertEquals(4, tl.getMaxEpochStart());
+        assertEquals(4, tl.getMaxEpochEnd());
     }
 }

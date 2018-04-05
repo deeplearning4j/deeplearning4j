@@ -83,6 +83,9 @@ public class WrapperLayerParamInitializer implements ParamInitializer {
     }
 
     private Layer underlying(Layer layer){
-        return ((BaseWrapperLayer)layer).getUnderlying();
+        while (layer instanceof BaseWrapperLayer) {
+            layer = ((BaseWrapperLayer)layer).getUnderlying();
+        }
+        return layer;
     }
 }

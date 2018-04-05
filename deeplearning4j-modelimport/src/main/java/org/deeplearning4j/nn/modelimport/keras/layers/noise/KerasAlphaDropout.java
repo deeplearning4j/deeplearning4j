@@ -37,8 +37,9 @@ public class KerasAlphaDropout extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAlphaDropout(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -47,10 +48,9 @@ public class KerasAlphaDropout extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration.
-     *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAlphaDropout(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -61,10 +61,10 @@ public class KerasAlphaDropout extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAlphaDropout(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -85,9 +85,9 @@ public class KerasAlphaDropout extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
@@ -100,7 +100,7 @@ public class KerasAlphaDropout extends KerasLayer {
     /**
      * Get DL4J DropoutLayer with Alpha dropout.
      *
-     * @return  DropoutLayer
+     * @return DropoutLayer
      */
     public DropoutLayer getAlphaDropoutLayer() {
         return (DropoutLayer) this.layer;

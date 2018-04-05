@@ -121,8 +121,7 @@ public class TestDropout extends BaseDL4JTest {
     }
 
     @Data
-    private static class CustomDropout implements IDropout{
-
+    public static class CustomDropout implements IDropout{
         private List<Triple<Integer,Integer,Boolean>> allCalls = new ArrayList<>();
 
         @Override

@@ -56,7 +56,6 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -77,6 +76,7 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -104,12 +104,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private boolean initDone = false;
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
 
-    public final static String workspaceCache = "LOOP_CACHE";
-    public final static String workspaceExternal = "LOOP_EXTERNAL";
-    public final static String workspaceFeedForward = "LOOP_FF";
-    public final static String workspacePretrain = "LOOP_PTR";
-    public final static String workspaceTBPTT = "LOOP_TBPTT";
-    public final static String workspaceLSTM = "LOOP_LSTM";
+    public final static String WORKSPACE_CACHE = "LOOP_CACHE";
+    public final static String WORKSPACE_EXTERNAL = "LOOP_EXTERNAL";
+    public final static String WORKSPACE_FEED_FORWARD = "LOOP_FF";
+    public final static String WORKSPACE_PRETRAIN = "LOOP_PTR";
+    public final static String WORKSPACE_TBPTT = "LOOP_TBPTT";
+    public final static String WORKSPACE_LSTM = "LOOP_LSTM";
 
     public final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
@@ -449,9 +449,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 flattenedParams = parameters;
 
             initializeParams = false;
-        } else {
+        } else if(numParams > 0){
             flattenedParams = Nd4j.create(1, numParams);
             initializeParams = true;
+        } else {
+            flattenedParams = null;
+            initializeParams = false;
         }
 
         //Set RNG seed, for repeatability between initializations when set
@@ -484,6 +487,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String name = nodeEntry.getKey();
             GraphVertex gv = n.instantiate(this, name, vertexNumber, paramsViewForVertex[vertexNumber],
                     initializeParams);
+
+            if(gv == null){
+                throw new IllegalStateException("Encountered null layer/vertex during initialization for layer \"" + name +
+                        "\": " + n.getClass().getSimpleName() + " initialization returned null layer/vertex?");
+            }
 
             if (gv.hasLayer()) {
                 numLayers++;
@@ -632,7 +640,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParams += numParamsForVertex[i];
                 i++;
             }
-            flattenedGradients = Nd4j.create(1, numParams);
+
+            if(numParams > 0) {
+                flattenedGradients = Nd4j.create(1, numParams);
+            }
 
             //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
             int paramOffsetSoFar = 0;
@@ -766,12 +777,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         ComputationGraph.workspaceConfigurationExternal,
-                        ComputationGraph.workspaceExternal);
+                        ComputationGraph.WORKSPACE_EXTERNAL);
         MemoryWorkspace cache =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         ComputationGraph.workspaceConfigurationCache,
-                        ComputationGraph.workspaceCache);
+                        ComputationGraph.WORKSPACE_CACHE);
 
         MemoryWorkspace wsFF;
         MemoryWorkspace wsPTR;
@@ -781,12 +792,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 wsPTR = new DummyWorkspace();
                 break;
             case SINGLE:
-                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
-                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal);
+                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL);
+                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL);
                 break;
             case SEPARATE:
-                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
-                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspacePretrain);
+                wsFF = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_FEED_FORWARD);
+                wsPTR = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_PRETRAIN);
                 break;
             default:
                 throw new RuntimeException();
@@ -813,7 +824,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         int vIdxInputNum = v.getVertexEdgeNumber();
                                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                                         vertices[vIdx].setInput(vIdxInputNum,
-                                                input.dup().leverageTo(workspacePretrain)); //TODO When to dup?
+                                                input.dup().leverageTo(WORKSPACE_PRETRAIN)); //TODO When to dup?
                                     }
 
                                 } else {
@@ -910,10 +921,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
         MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-                workspaceCache);
+                WORKSPACE_CACHE);
 
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
@@ -1020,11 +1031,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
         MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-                workspaceCache);
+                WORKSPACE_CACHE);
 
         if (configuration.isBackprop()) {
 
@@ -1138,6 +1149,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
+        if (numParams() == 0) {
+            return; //Edge case: net with no params: fitting is a no-op
+        }
+
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1150,10 +1165,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
         MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-                workspaceCache);
+                WORKSPACE_CACHE);
 
         if (configuration.isPretrain()) {
             MultiDataSetIterator iter =
@@ -1311,7 +1326,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace wsExternal = null;
         boolean shouldCloseWorkspace = false;
         if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+            wsExternal = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
             if (!wsExternal.isScopeActive()) {
                 wsExternal.notifyScopeEntered();
                 shouldCloseWorkspace = true;
@@ -1573,17 +1588,17 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
                 break;
             case SEPARATE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_FEED_FORWARD);
                 break;
             default:
                 throw new RuntimeException("Unknown workspace mode: " + wsm);
         }
 
         boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
-                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
+                Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL);
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1593,7 +1608,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (current.isInputVertex()) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
                     // pushing out copy to parent workspace - if one exists
-                    INDArray input = inputs[current.getVertexIndex()].leverageOrDetach(workspaceExternal);
+                    INDArray input = inputs[current.getVertexIndex()].leverageOrDetach(WORKSPACE_EXTERNAL);
 
 
                     layerActivations.put(current.getVertexName(), input);
@@ -1604,12 +1619,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)
                                 && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
                                 .getWorkspaceForCurrentThread(
-                                        ComputationGraph.workspaceExternal)) {
+                                        ComputationGraph.WORKSPACE_EXTERNAL)) {
                             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                    .getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                                    .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                                 // FIXME: we don't really want detach here
                                 vertices[vIdx].setInput(vIdxInputNum, input);
                             }
@@ -1628,8 +1643,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             }
                         } else {
                             //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
-                            if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
-                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                            if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)){
+                                try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL).notifyScopeBorrowed()){
                                     //Same edge case as above - but scope to workspaceExternal instead
                                     vertices[vIdx].migrateInput();
                                 }
@@ -1662,7 +1677,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             out = current.doForward(train).detach();
                         } else {
                             //Standard training case
-                            out = current.doForward(train).leverageOrDetach(workspaceExternal);
+                            out = current.doForward(train).leverageOrDetach(WORKSPACE_EXTERNAL);
                         }
                     }
 
@@ -1677,12 +1692,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)
                                     && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j
                                     .getWorkspaceManager().getWorkspaceForCurrentThread(
-                                            ComputationGraph.workspaceExternal)) {
+                                            ComputationGraph.WORKSPACE_EXTERNAL)) {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(workspaceExternal)
+                                        .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL)
                                         .notifyScopeBorrowed()) {
                                     // FIXME: we don't really want detach here.
                                     vertices[vIdx].setInput(inputNum, out);
@@ -1702,8 +1717,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 }
                             } else {
                                 //Standard training case - workspaceExternal may be open (SINGLE/SEPARATE) or is not (NONE)
-                                if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal)){
-                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()){
+                                if(Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)){
+                                    try(MemoryWorkspace scopeTo = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL).notifyScopeBorrowed()){
                                         //Same edge case as above - but scope to workspaceExternal instead
                                         vertices[vIdx].migrateInput();
                                     }
@@ -1724,7 +1739,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         if (!train && wsm == WorkspaceMode.SEPARATE) {
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_FEED_FORWARD).initializeWorkspace();
         }
 
         if(publicApi){
@@ -1800,7 +1815,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             INDArray[] tmp = silentOutput(train, input);
@@ -1874,7 +1889,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             MemoryWorkspace workspace =
                     configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                             : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                            workspaceConfigurationExternal, workspaceExternal);
+                            workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
             try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
                 INDArray[] tmp = silentOutput(train, input);
@@ -1941,10 +1956,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 workspace = new DummyWorkspace();
                 break;
             case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
                 break;
             case SEPARATE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward,workspaceFeedForward);
+                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_FEED_FORWARD);
                 break;
             default:
                 throw new RuntimeException();
@@ -1954,7 +1969,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         boolean wsExternalActive = false;
         if (wsm == WorkspaceMode.SINGLE) {
-            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceExternal);
+            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL);
         }
 
         //Do backprop according to the reverse of the topological ordering of the network
@@ -2003,12 +2018,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
 
                     if(wsm == WorkspaceMode.SEPARATE) {
-                        epsilons[x] = epsilons[x].leverageOrDetach(workspaceExternal);
+                        epsilons[x] = epsilons[x].leverageOrDetach(WORKSPACE_EXTERNAL);
                     } else if(wsm == WorkspaceMode.SINGLE){
                         if(wsExternalActive){
                             //Standard fit() training case: workspace external is active (beyond just the current for loop)
                             // hence it's safe to leverage here
-                            epsilons[x] = epsilons[x].leverageTo(workspaceExternal);
+                            epsilons[x] = epsilons[x].leverageTo(WORKSPACE_EXTERNAL);
                         } else {
                             //"External errors" backprop case: workspace external is already (and only) active in the
                             // current loop, and hence the epsilons will be invalidated at the end of the current vertex
@@ -2028,7 +2043,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         GraphVertex gv = vertices[v.getVertexIndex()];
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-                            INDArray currentEps = gv.getEpsilon().leverageOrDetach(workspaceExternal);
+                            INDArray currentEps = gv.getEpsilon().leverageOrDetach(WORKSPACE_EXTERNAL);
 
                             if (wsm == WorkspaceMode.NONE ) {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
@@ -2041,7 +2056,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 }
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(workspaceExternal)
+                                        .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL)
                                         .notifyScopeBorrowed()) {
                                     gv.setEpsilon(currentEps.add(epsilons[j++]));
                                 }
@@ -2077,7 +2092,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_FEED_FORWARD).initializeWorkspace();
 
         this.gradient = gradient;
 
@@ -2322,7 +2337,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             setInputs(dataSet.getFeatures());
@@ -2354,10 +2369,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-
-        if (hasMaskArrays)
-            clearLayerMaskArrays();
-
+        clearLayersStates();    //Clean up layer inputs/mask arrays - may be invalidated by workspace
         return score;
     }
 
@@ -2922,11 +2934,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspaceT =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationTBPTT, workspaceTBPTT);
+                        workspaceConfigurationTBPTT, WORKSPACE_TBPTT);
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
         try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
@@ -3419,12 +3431,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MemoryWorkspace workspace =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationExternal, workspaceExternal);
+                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
         MemoryWorkspace workspaceT =
                 configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                        workspaceConfigurationTBPTT, workspaceTBPTT);
+                        workspaceConfigurationTBPTT, WORKSPACE_TBPTT);
 
         boolean useRnnSegments = (configuration.getBackpropType() == BackpropType.TruncatedBPTT);
 
@@ -3493,9 +3505,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                     }
                 }
-            }
 
-            clearLayerMaskArrays();
+                //Clear inputs, masks etc. Important to avoid leaking invalidated/out of scope arrays between iterations
+                clearLayersStates();
+            }
         }
 
         if (iterator.asyncSupported())

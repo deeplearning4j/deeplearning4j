@@ -21,7 +21,7 @@ package org.deeplearning4j.models;
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.RandomUtils;
@@ -77,7 +77,7 @@ public class WordVectorSerializerTest {
             textFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
         }
         if (binaryFile == null) {
-            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getFile(".gz");
+            binaryFile = new ClassPathResource("word2vecserialization/google_news_30.bin.gz").getTempFileFromArchive();
         }
         pathToWriteto = new ClassPathResource("word2vecserialization/testing_word2vec_serialization.txt").getFile()
                         .getAbsolutePath();
@@ -112,10 +112,8 @@ public class WordVectorSerializerTest {
                         -0.000591, 0.000099, -0.000843, -0.000563});
         String w1 = "database";
         String w2 = "DBMS";
-        WordVectors vecModel = WordVectorSerializer.loadGoogleModel(
-                        new ClassPathResource("word2vec/googleload/sample_vec.txt").getFile(), false, true);
-        WordVectors vectorsBinary = WordVectorSerializer.loadGoogleModel(
-                        new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile(), true, true);
+        WordVectors vecModel = WordVectorSerializer.readWord2VecModel(new ClassPathResource("word2vec/googleload/sample_vec.txt").getFile());
+        WordVectors vectorsBinary = WordVectorSerializer.readWord2VecModel(new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile());
         INDArray textWeights = vecModel.lookupTable().getWeights();
         INDArray binaryWeights = vectorsBinary.lookupTable().getWeights();
         Collection<String> nearest = vecModel.wordsNearest("database", 10);
@@ -127,7 +125,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testLoaderText() throws IOException {
-        WordVectors vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(textFile);
         assertEquals(vec.vocab().numWords(), 30);
         assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
         assertTrue(vec.vocab().hasToken("JA_Montalbano"));
@@ -135,7 +133,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testLoaderStream() throws IOException {
-        WordVectors vec = WordVectorSerializer.loadTxtVectors(new FileInputStream(textFile), true);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(textFile);
 
         assertEquals(vec.vocab().numWords(), 30);
         assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
@@ -144,7 +142,7 @@ public class WordVectorSerializerTest {
 
     @Test
     public void testLoaderBinary() throws IOException {
-        WordVectors vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(binaryFile);
         assertEquals(vec.vocab().numWords(), 30);
         assertTrue(vec.vocab().hasToken("Morgan_Freeman"));
         assertTrue(vec.vocab().hasToken("JA_Montalbano"));
@@ -159,7 +157,7 @@ public class WordVectorSerializerTest {
     @Test
     @Ignore
     public void testWriteWordVectors() throws IOException {
-        WordVectors vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(binaryFile);
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) vec.lookupTable();
         InMemoryLookupCache lookupCache = (InMemoryLookupCache) vec.vocab();
         WordVectorSerializer.writeWordVectors(lookupTable, lookupCache, pathToWriteto);
@@ -176,7 +174,7 @@ public class WordVectorSerializerTest {
     @Test
     @Ignore
     public void testWriteWordVectorsFromWord2Vec() throws IOException {
-        WordVectors vec = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(binaryFile, true);
         WordVectorSerializer.writeWordVectors((Word2Vec) vec, pathToWriteto);
 
         WordVectors wordVectors = WordVectorSerializer.loadTxtVectors(new File(pathToWriteto));
@@ -194,7 +192,7 @@ public class WordVectorSerializerTest {
     @Ignore
     public void testFromTableAndVocab() throws IOException {
 
-        WordVectors vec = WordVectorSerializer.loadGoogleModel(textFile, false);
+        WordVectors vec = WordVectorSerializer.readWord2VecModel(textFile);
         InMemoryLookupTable lookupTable = (InMemoryLookupTable) vec.lookupTable();
         InMemoryLookupCache lookupCache = (InMemoryLookupCache) vec.vocab();
 
@@ -571,7 +569,7 @@ public class WordVectorSerializerTest {
 
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
-        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
         WordVectors vectorsStatic = WordVectorSerializer.loadStaticModel(binaryFile);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");
@@ -690,7 +688,7 @@ public class WordVectorSerializerTest {
 
         logger.info("Executor name: {}", Nd4j.getExecutioner().getClass().getSimpleName());
 
-        WordVectors vectorsLive = WordVectorSerializer.loadGoogleModel(binaryFile, true);
+        WordVectors vectorsLive = WordVectorSerializer.readWord2VecModel(binaryFile);
         WordVectors vectorsStatic = WordVectorSerializer.readWord2VecModel(binaryFile, false);
 
         INDArray arrayLive = vectorsLive.getWordVectorMatrix("Morgan_Freeman");

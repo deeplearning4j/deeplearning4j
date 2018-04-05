@@ -29,11 +29,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -41,8 +37,6 @@ import static org.junit.Assert.assertEquals;
  * @author Max Pumperla
  */
 public class KerasReshapeTest {
-
-    String LAYER_NAME = "reshape";
 
     private Integer keras1 = 1;
     private Integer keras2 = 2;
@@ -73,28 +67,28 @@ public class KerasReshapeTest {
     }
 
     private ReshapePreprocessor getReshapePreProcesser(KerasLayerConfiguration conf, Integer kerasVersion,
-            List<Integer> targetShapeList)
+                                                       List<Integer> targetShapeList)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
         Map<String, Object> config = new HashMap<>();
         String LAYER_FIELD_TARGET_SHAPE = "target_shape";
         config.put(LAYER_FIELD_TARGET_SHAPE, targetShapeList);
-        config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
+        String layerName = "reshape";
+        config.put(conf.getLAYER_FIELD_NAME(), layerName);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
         InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
-        ReshapePreprocessor preProcessor =
-                (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
-        return preProcessor;
+        return (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
+
     }
 
     private void testDynamicMinibatches(KerasLayerConfiguration conf, Integer kerasVersion) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        List<Integer> targetShape = Arrays.asList(20);
-        ReshapePreprocessor preproceser = getReshapePreProcesser(conf, kerasVersion, targetShape);
-        INDArray r1 = preproceser.preProcess(Nd4j.zeros(10, 20), 10);
-        INDArray r2 = preproceser.preProcess(Nd4j.zeros(5, 20), 5);
-        Assert.assertArrayEquals(r2.shape(), new int[] {5, 20});
-        Assert.assertArrayEquals(r1.shape(), new int[] {10, 20});
+        List<Integer> targetShape = Collections.singletonList(20);
+        ReshapePreprocessor preprocessor = getReshapePreProcesser(conf, kerasVersion, targetShape);
+        INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10);
+        INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5);
+        Assert.assertArrayEquals(r2.shape(), new int[]{5, 20});
+        Assert.assertArrayEquals(r1.shape(), new int[]{10, 20});
     }
 }

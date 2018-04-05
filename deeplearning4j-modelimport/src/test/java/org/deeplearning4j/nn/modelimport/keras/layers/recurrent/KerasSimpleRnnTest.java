@@ -60,10 +60,7 @@ public class KerasSimpleRnnTest {
         }
     }
 
-    void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
-        boolean unroll = true;
-
-        KerasSimpleRnn simpleRnn = new KerasSimpleRnn(kerasVersion);
+    private void buildSimpleRnnLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean rs) throws Exception {
 
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
@@ -80,7 +77,7 @@ public class KerasSimpleRnnTest {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), init);
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }
-        Map<String, Object> W_reg = new HashMap<String, Object>();
+        Map<String, Object> W_reg = new HashMap<>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
@@ -89,13 +86,13 @@ public class KerasSimpleRnnTest {
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
-        config.put(conf.getLAYER_FIELD_UNROLL(), unroll);
+        config.put(conf.getLAYER_FIELD_UNROLL(), true);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
 
 
         SimpleRnn layer = rs ? (SimpleRnn) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer() :
-                (SimpleRnn) ((LastTimeStep) new  KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
+                (SimpleRnn) ((LastTimeStep) new KerasSimpleRnn(layerConfig).getSimpleRnnLayer()).getUnderlying();
         assertEquals(ACTIVATION, layer.getActivationFn().toString());
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(INIT_DL4J, layer.getWeightInit());

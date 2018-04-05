@@ -5,11 +5,14 @@ import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.transferlearning.TransferLearningHelper;
 import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.GoogLeNet;
 import org.deeplearning4j.zoo.model.ResNet50;
 import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG16;
+import org.deeplearning4j.zoo.model.YOLO2;
+import org.deeplearning4j.zoo.model.helper.DarknetHelper;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -35,6 +38,7 @@ public class TestInstantiation {
         Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.VGG19, 10);
         models.putAll(ModelSelector.select(ZooType.DARKNET19, 10));
         models.putAll(ModelSelector.select(ZooType.TINYYOLO, 10));
+        models.putAll(ModelSelector.select(ZooType.YOLO2, 10));
 
         for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
             log.info("Testing training on zoo model " + entry.getKey());
@@ -43,9 +47,10 @@ public class TestInstantiation {
             int gridWidth = -1;
             int gridHeight = -1;
             int numLabels = 10;
-            if (type == ZooType.TINYYOLO) {
-                gridWidth = ((TinyYOLO)model).getGridWidth();
-                gridHeight = ((TinyYOLO)model).getGridHeight();
+            if (type == ZooType.TINYYOLO || type == ZooType.YOLO2) {
+                int[] inputShapes = model.metaData().getInputShape()[0];
+                gridWidth = DarknetHelper.getGridWidth(inputShapes);
+                gridHeight = DarknetHelper.getGridHeight(inputShapes);
                 numLabels += 4;
             }
 
@@ -137,6 +142,29 @@ public class TestInstantiation {
         initializedModel = (ComputationGraph) model.initPretrained();
         result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 416, 416}));
         assertArrayEquals(result[0].shape(), new int[] {1, 125, 13, 13});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = new YOLO2(); //num labels doesn't matter since we're getting pretrained imagenet
+        assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
+
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.rand(new int[] {1, 3, 608, 608}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 425, 19, 19});
+    }
+
+
+    @Test
+    public void testYolo4635() throws Exception {
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4635
+
+        int nClasses = 10;
+        int seed = 12345;
+        TinyYOLO model = new TinyYOLO(nClasses, seed);
+        ComputationGraph computationGraph = (ComputationGraph) model.initPretrained();
+        TransferLearningHelper transferLearningHelper = new TransferLearningHelper(computationGraph, "conv2d_9");
     }
 
 }

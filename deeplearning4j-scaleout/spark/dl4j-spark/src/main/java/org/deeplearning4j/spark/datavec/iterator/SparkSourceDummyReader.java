@@ -53,7 +53,7 @@ public class SparkSourceDummyReader implements RecordReader, Serializable {
     }
 
     @Override
-    public List<Writable> next(int i) {
+    public List<List<Writable>> next(int i) {
         throw new UnsupportedOperationException();
     }
 

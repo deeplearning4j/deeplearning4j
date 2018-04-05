@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -18,7 +19,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 @Data
-public class KerasModelBuilder implements Cloneable {
+public class KerasModelBuilder implements Cloneable, Closeable {
     protected String modelJson = null;
     protected String modelYaml = null;
     protected String trainingJson = null;
@@ -40,7 +41,6 @@ public class KerasModelBuilder implements Cloneable {
 
     public KerasModelBuilder modelJsonFilename(String modelJsonFilename) throws IOException {
         this.modelJson = new String(Files.readAllBytes(Paths.get(modelJsonFilename)));
-        ;
         return this;
     }
 
@@ -82,28 +82,33 @@ public class KerasModelBuilder implements Cloneable {
 
     public KerasModelBuilder modelHdf5Filename(String modelHdf5Filename)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException, IOException {
-        this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
-        this.weightsRoot = config.getTrainingWeightsRoot();
-        if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
-            throw new InvalidKerasConfigurationException(
-                    "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
-        String initialModelJson = this.weightsArchive.readAttributeAsJson(
-                config.getTrainingModelConfigAttribute());
+        try {
+            this.weightsArchive = this.trainingArchive = new Hdf5Archive(modelHdf5Filename);
+            this.weightsRoot = config.getTrainingWeightsRoot();
+            if (!this.weightsArchive.hasAttribute(config.getTrainingModelConfigAttribute()))
+                throw new InvalidKerasConfigurationException(
+                        "Model configuration attribute missing from " + modelHdf5Filename + " archive.");
+            String initialModelJson = this.weightsArchive.readAttributeAsJson(
+                    config.getTrainingModelConfigAttribute());
 
-        String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
-                config.getFieldKerasVersion(), 5);
-        Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
-        modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
+            String kerasVersion = this.weightsArchive.readAttributeAsFixedLengthString(
+                    config.getFieldKerasVersion(), 5);
+            Map<String, Object> modelMapper = KerasModelUtils.parseJsonString(initialModelJson);
+            modelMapper.put(config.getFieldKerasVersion(), kerasVersion);
 
-        int majorKerasVersion = Character.getNumericValue(kerasVersion.charAt(0));
-        if (majorKerasVersion == 2) {
-            String backend = this.weightsArchive.readAttributeAsString(config.getFieldBackend());
-            modelMapper.put(config.getFieldBackend(), backend);
+            int majorKerasVersion = Character.getNumericValue(kerasVersion.charAt(0));
+            if (majorKerasVersion == 2) {
+                String backend = this.weightsArchive.readAttributeAsString(config.getFieldBackend());
+                modelMapper.put(config.getFieldBackend(), backend);
+            }
+
+            this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);
+            if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
+                this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
+        } catch (Throwable t) {
+            close();
+            throw t;
         }
-
-        this.modelJson = new ObjectMapper().writeValueAsString(modelMapper);;
-        if (this.trainingArchive.hasAttribute(config.getTrainingTrainingConfigAttribute()))
-            this.trainingJson = this.trainingArchive.readAttributeAsJson(config.getTrainingTrainingConfigAttribute());
         return this;
     }
 
@@ -120,11 +125,26 @@ public class KerasModelBuilder implements Cloneable {
 
     public KerasModel buildModel()
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return new KerasModel(this);
+        KerasModel m = new KerasModel(this);
+        close();
+        return m;
     }
 
     public KerasSequentialModel buildSequential()
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        return new KerasSequentialModel(this);
+        KerasSequentialModel m = new KerasSequentialModel(this);
+        close();
+        return m;
+    }
+
+    @Override public void close() {
+        if (trainingArchive != null && trainingArchive != weightsArchive) {
+            trainingArchive.close();
+            trainingArchive = null;
+        }
+        if (weightsArchive != null) {
+            weightsArchive.close();
+            weightsArchive = null;
+        }
     }
 }

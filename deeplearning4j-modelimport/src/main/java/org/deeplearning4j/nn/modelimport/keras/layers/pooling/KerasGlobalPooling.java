@@ -18,6 +18,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -39,6 +40,7 @@ import static org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPoolin
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class KerasGlobalPooling extends KerasLayer {
 
     private final int[] dimensions;
@@ -46,34 +48,33 @@ public class KerasGlobalPooling extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration.
-     *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasGlobalPooling(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasGlobalPooling(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.dimensions = mapPoolingDimensions(this.className, conf);
         GlobalPoolingLayer.Builder builder =
-                        new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
-                                .poolingDimensions(dimensions)
-                                .collapseDimensions(false) // while this is true by default in dl4j, it's false in keras.
-                                .name(this.layerName)
-                                .dropOut(this.dropout);
+                new GlobalPoolingLayer.Builder(mapPoolingType(this.className, conf))
+                        .poolingDimensions(dimensions)
+                        .collapseDimensions(false) // while true by default in DL4J, it's false in Keras.
+                        .name(this.layerName)
+                        .dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;
     }
@@ -81,7 +82,7 @@ public class KerasGlobalPooling extends KerasLayer {
     /**
      * Get DL4J SubsamplingLayer.
      *
-     * @return  SubsamplingLayer
+     * @return SubsamplingLayer
      */
     public GlobalPoolingLayer getGlobalPoolingLayer() {
         return (GlobalPoolingLayer) this.layer;
@@ -90,15 +91,15 @@ public class KerasGlobalPooling extends KerasLayer {
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              DL4J InputPreProcessor
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras GlobalPooling layer accepts only one input (received " + inputType.length + ")");
+                    "Keras GlobalPooling layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor;
         if (inputType[0].getType() == InputType.Type.FF && this.dimensions.length == 1) {
             preprocessor = new FeedForwardToRnnPreProcessor();
@@ -111,15 +112,15 @@ public class KerasGlobalPooling extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
 
         /* Check whether layer requires a preprocessor for this InputType. */
         InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);

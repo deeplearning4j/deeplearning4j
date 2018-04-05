@@ -20,7 +20,7 @@ package org.deeplearning4j.models.word2vec;
 
 import com.google.common.primitives.Doubles;
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -65,7 +65,7 @@ public class Word2VecTests {
     @Before
     public void before() throws Exception {
         File googleModelTextFile = new ClassPathResource("word2vecserialization/google_news_30.txt").getFile();
-        googleModel = WordVectorSerializer.loadGoogleModel(googleModelTextFile, false);
+        googleModel = WordVectorSerializer.readWord2VecModel(googleModelTextFile);
         inputFile = new ClassPathResource("/big/raw_sentences.txt").getFile();
 
         File ptwt = new File(System.getProperty("java.io.tmpdir"), "testing_word2vec_serialization.txt");

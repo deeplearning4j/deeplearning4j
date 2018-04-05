@@ -48,15 +48,15 @@ public class KerasBatchNormalizationTest {
     }
 
 
-    public void buildBatchNormalizationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+    private void buildBatchNormalizationLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         double epsilon = 1E-5;
         double momentum = 0.99;
 
         KerasBatchNormalization batchNormalization = new KerasBatchNormalization(kerasVersion);
 
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_BATCHNORMALIZATION());
-        Map<String, Object> config = new HashMap<String, Object>();
+        Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         config.put(batchNormalization.getLAYER_FIELD_EPSILON(), epsilon);
         config.put(batchNormalization.getLAYER_FIELD_MOMENTUM(), momentum);

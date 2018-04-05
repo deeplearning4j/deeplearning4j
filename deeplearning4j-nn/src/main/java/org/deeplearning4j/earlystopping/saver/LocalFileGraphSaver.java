@@ -43,8 +43,8 @@ import java.nio.charset.Charset;
  */
 public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationGraph> {
 
-    private static final String bestFileName = "bestGraph.bin";
-    private static final String latestFileName = "latestGraph.bin";
+    private static final String BEST_GRAPH_BIN = "bestGraph.bin";
+    private static final String LATEST_GRAPH_BIN = "latestGraph.bin";
 
     private String directory;
     private Charset encoding;
@@ -72,13 +72,13 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
 
     @Override
     public void saveBestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory, bestFileName);
+        String confOut = FilenameUtils.concat(directory, BEST_GRAPH_BIN);
         save(net, confOut);
     }
 
     @Override
     public void saveLatestModel(ComputationGraph net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory, latestFileName);
+        String confOut = FilenameUtils.concat(directory, LATEST_GRAPH_BIN);
         save(net, confOut);
     }
 
@@ -88,13 +88,13 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
 
     @Override
     public ComputationGraph getBestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory, bestFileName);
+        String confOut = FilenameUtils.concat(directory, BEST_GRAPH_BIN);
         return load(confOut);
     }
 
     @Override
     public ComputationGraph getLatestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory, latestFileName);
+        String confOut = FilenameUtils.concat(directory, LATEST_GRAPH_BIN);
         return load(confOut);
     }
 

@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
@@ -437,5 +438,33 @@ public class ConvolutionUtils {
 
     public static INDArray reshape4dMask(INDArray mask){
         return reshape4dTo2d(mask);
+    }
+
+    /**
+     * Get heigh/width/depth as length 3 int[] from the InputType
+     *
+     * @param inputType Input type to get
+     * @return Length
+     */
+    public static int[] getHWDFromInputType(InputType inputType){
+        int inH;
+        int inW;
+        int inDepth;
+        if (inputType instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+            inH = conv.getHeight();
+            inW = conv.getWidth();
+            inDepth = conv.getDepth();
+        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
+            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+            inH = conv.getHeight();
+            inW = conv.getWidth();
+            inDepth = conv.getDepth();
+        } else {
+            throw new IllegalStateException(
+                    "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
+                            + " Got: " + inputType);
+        }
+        return new int[]{inH, inW, inDepth};
     }
 }

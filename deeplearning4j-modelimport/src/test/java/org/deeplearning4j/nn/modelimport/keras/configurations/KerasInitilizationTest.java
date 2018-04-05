@@ -17,15 +17,12 @@ import static org.junit.Assert.assertEquals;
 
 public class KerasInitilizationTest {
 
-    double scale = 0.2;
-    double minValue = -0.2;
-    double maxValue = 0.2;
-    double mean = 0.0;
-    double stdDev = 0.2;
-    double value = 42.0;
-    double gain = 0.2;
-    String distribution = "normal";
-    String mode = "fan_in";
+    private double minValue = -0.2;
+    private double maxValue = 0.2;
+    private double mean = 0.0;
+    private double stdDev = 0.2;
+    private double value = 42.0;
+    private double gain = 0.2;
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
@@ -41,17 +38,17 @@ public class KerasInitilizationTest {
         WeightInit[] dl4jInits = dl4jInitializers();
         Distribution[] dl4jDistributions = dl4jDistributions();
 
-        for (int i=0; i< dl4jInits.length - 1; i++) {
+        for (int i = 0; i < dl4jInits.length - 1; i++) {
             initilizationDenseLayer(conf1, keras1, keras1Inits[i], dl4jInits[i], dl4jDistributions[i]);
-            initilizationDenseLayer(conf2, keras2,  keras2Inits[i], dl4jInits[i], dl4jDistributions[i]);
+            initilizationDenseLayer(conf2, keras2, keras2Inits[i], dl4jInits[i], dl4jDistributions[i]);
 
-            initilizationDenseLayer(conf2, keras2,  keras2Inits[dl4jInits.length-1],
-                    dl4jInits[dl4jInits.length-1], dl4jDistributions[dl4jInits.length-1]);
+            initilizationDenseLayer(conf2, keras2, keras2Inits[dl4jInits.length - 1],
+                    dl4jInits[dl4jInits.length - 1], dl4jDistributions[dl4jInits.length - 1]);
         }
     }
 
     private String[] initializers(KerasLayerConfiguration conf) {
-        return new String[] {
+        return new String[]{
                 conf.getINIT_GLOROT_NORMAL(),
                 conf.getINIT_GLOROT_UNIFORM(),
                 conf.getINIT_LECUN_NORMAL(),
@@ -71,7 +68,7 @@ public class KerasInitilizationTest {
     }
 
     private WeightInit[] dl4jInitializers() {
-        return new WeightInit[] {
+        return new WeightInit[]{
                 WeightInit.XAVIER,
                 WeightInit.XAVIER_UNIFORM,
                 WeightInit.LECUN_NORMAL,
@@ -89,7 +86,7 @@ public class KerasInitilizationTest {
     }
 
     private Distribution[] dl4jDistributions() {
-        return new Distribution[] {
+        return new Distribution[]{
                 null,
                 null,
                 null,
@@ -105,15 +102,16 @@ public class KerasInitilizationTest {
                 new ConstantDistribution(value),
                 null};
     }
-    
+
     private void initilizationDenseLayer(KerasLayerConfiguration conf, Integer kerasVersion,
-                                 String initializer, WeightInit dl4jInitializer, Distribution dl4jDistribution)
+                                         String initializer, WeightInit dl4jInitializer, Distribution dl4jDistribution)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_DENSE());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_ACTIVATION(), "linear");
         config.put(conf.getLAYER_FIELD_NAME(), "init_test");
+        double scale = 0.2;
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INIT(), initializer);
             config.put(conf.getLAYER_FIELD_INIT_MEAN(), mean);
@@ -134,7 +132,9 @@ public class KerasInitilizationTest {
             innerInit.put(conf.getLAYER_FIELD_INIT_MAXVAL(), maxValue);
             innerInit.put(conf.getLAYER_FIELD_INIT_VALUE(), value);
             innerInit.put(conf.getLAYER_FIELD_INIT_GAIN(), gain);
+            String mode = "fan_in";
             innerInit.put(conf.getLAYER_FIELD_INIT_MODE(), mode);
+            String distribution = "normal";
             innerInit.put(conf.getLAYER_FIELD_INIT_DISTRIBUTION(), distribution);
 
             init.put(conf.getLAYER_FIELD_CONFIG(), innerInit);

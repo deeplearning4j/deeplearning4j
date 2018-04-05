@@ -27,8 +27,8 @@ public class KerasFlatten extends KerasLayer {
      * Constructor from parsed Keras layer configuration dictionary.
      *
      * @param layerConfig dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasFlatten(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -40,8 +40,8 @@ public class KerasFlatten extends KerasLayer {
      *
      * @param layerConfig           dictionary containing Keras layer configuration
      * @param enforceTrainingConfig whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasFlatten(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -63,7 +63,7 @@ public class KerasFlatten extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return DL4J InputPreProcessor
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     @Override
@@ -88,6 +88,13 @@ public class KerasFlatten extends KerasLayer {
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             preprocessor = new RnnToFeedForwardPreProcessor();
+        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            // NOTE: The output of an embedding layer in DL4J is of feed-forward type. Only if an FF to RNN input
+            // preprocessor is set or we explicitly provide 3D input data to start with, will the its output be set
+            // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
+            InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
+            int[] inputShape = new int[]{it.getSize()};
+            preprocessor = new ReshapePreprocessor(inputShape, inputShape);
         }
         return preprocessor;
     }
@@ -97,7 +104,7 @@ public class KerasFlatten extends KerasLayer {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
