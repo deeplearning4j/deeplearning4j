@@ -8,21 +8,23 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     void setConfiguration(T workspace, WorkspaceConfiguration configuration);
 
-    WorkspaceConfiguration getConfiguration(T workspace);
+    WorkspaceConfiguration getConfiguration(T arrayType);
 
-    void setDummyWorkspace(T workspace);
+    void setScopedOutFor(T arrayType);
 
-    boolean isDummyWorkspace(T workspace);
+    boolean isScopedOut(T arrayType);
 
-    MemoryWorkspace notifyScopeEntered(T workspace);
+    MemoryWorkspace notifyScopeEntered(T arrayType);
 
-    AutoCloseable notifyScopeEntered(T... workspaces);
+    AutoCloseable notifyScopeEntered(T... arrayTypes);
 
     MemoryWorkspace notifyScopeBorrowed(T workspace);
 
-    void setWorkspaceName(T workspace, String name);
+    void setWorkspaceName(T arrayType, String wsName);
 
-    String getWorkspaceName(T workspace);
+    String getWorkspaceName(T arrayType);
+
+    void setWorkspace(T arrayType, String wsName, WorkspaceConfiguration configuration);
 
     INDArray leverageTo(T toWorkspace, INDArray array);
 

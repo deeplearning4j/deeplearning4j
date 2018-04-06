@@ -9,6 +9,7 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -31,7 +32,7 @@ import java.util.Arrays;
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
         if (input.rank() != 3)
             throw new IllegalArgumentException(

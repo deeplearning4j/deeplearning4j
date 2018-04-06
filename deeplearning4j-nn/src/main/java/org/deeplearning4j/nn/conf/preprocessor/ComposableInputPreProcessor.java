@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -43,9 +44,9 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         for (InputPreProcessor preProcessor : inputPreProcessors)
-            input = preProcessor.preProcess(input, miniBatchSize);
+            input = preProcessor.preProcess(input, miniBatchSize, workspaceMgr);
         return input;
     }
 

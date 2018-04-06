@@ -14,65 +14,77 @@ import java.util.Set;
 
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
 
-    protected final Set<T> dummyWorkspaces = new HashSet<>();
+    protected final Set<T> scopeOutOfWs = new HashSet<>();
     protected final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
     protected final Map<T, String> workspaceNames = new HashMap<>();
 
     @Override
-    public void setConfiguration(@NonNull T workspace, WorkspaceConfiguration configuration) {
-        configMap.put(workspace, configuration);
+    public void setConfiguration(@NonNull T arrayType, WorkspaceConfiguration configuration) {
+        configMap.put(arrayType, configuration);
     }
 
     @Override
-    public WorkspaceConfiguration getConfiguration(@NonNull T workspace) {
-        return configMap.get(workspace);
+    public WorkspaceConfiguration getConfiguration(@NonNull T arrayType) {
+        return configMap.get(arrayType);
     }
 
     @Override
-    public void setDummyWorkspace(@NonNull T workspace) {
-        dummyWorkspaces.add(workspace);
+    public void setScopedOutFor(@NonNull T arrayType) {
+        scopeOutOfWs.add(arrayType);
+        configMap.remove(arrayType);
+        workspaceNames.remove(arrayType);
     }
 
     @Override
-    public boolean isDummyWorkspace(@NonNull T workspace) {
-        return dummyWorkspaces.contains(workspace);
+    public boolean isScopedOut(@NonNull T arrayType) {
+        return scopeOutOfWs.contains(arrayType);
     }
 
     @Override
-    public MemoryWorkspace notifyScopeEntered(@NonNull T workspace) {
-        validateConfig(workspace);
+    public MemoryWorkspace notifyScopeEntered(@NonNull T arrayType) {
+        validateConfig(arrayType);
 
-        MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                getConfiguration(workspace), getWorkspaceName(workspace));
-        return ws.notifyScopeEntered();
+        if(isScopedOut(arrayType)){
+            return Nd4j.getWorkspaceManager().scopeOutOfWorkspaces();
+        } else {
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                    getConfiguration(arrayType), getWorkspaceName(arrayType));
+            return ws.notifyScopeEntered();
+        }
     }
 
     @Override
-    public AutoCloseable notifyScopeEntered(@NonNull T... workspaces) {
-        MemoryWorkspace[] ws = new MemoryWorkspace[workspaces.length];
-        for(int i=0; i<workspaces.length; i++ ){
-            ws[i] = notifyScopeEntered(workspaces[i]);
+    public AutoCloseable notifyScopeEntered(@NonNull T... arrayTypes) {
+        MemoryWorkspace[] ws = new MemoryWorkspace[arrayTypes.length];
+        for(int i=0; i<arrayTypes.length; i++ ){
+            ws[i] = notifyScopeEntered(arrayTypes[i]);
         }
         return new WorkspacesCloseable(ws);
     }
 
     @Override
-    public MemoryWorkspace notifyScopeBorrowed(@NonNull T workspace) {
-        validateConfig(workspace);
+    public MemoryWorkspace notifyScopeBorrowed(@NonNull T arrayType) {
+        validateConfig(arrayType);
 
         MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                getConfiguration(workspace), getWorkspaceName(workspace));
+                getConfiguration(arrayType), getWorkspaceName(arrayType));
         return ws.notifyScopeBorrowed();
     }
 
     @Override
-    public void setWorkspaceName(@NonNull T workspace, @NonNull String name) {
-        workspaceNames.put(workspace, name);
+    public void setWorkspaceName(@NonNull T arrayType, @NonNull String name) {
+        workspaceNames.put(arrayType, name);
     }
 
     @Override
-    public String getWorkspaceName(@NonNull T workspace) {
-        return workspaceNames.get(workspace);
+    public String getWorkspaceName(@NonNull T arrayType) {
+        return workspaceNames.get(arrayType);
+    }
+
+    @Override
+    public void setWorkspace(@NonNull T forEnum, @NonNull String wsName, @NonNull WorkspaceConfiguration configuration) {
+        setWorkspaceName(forEnum, wsName);
+        setConfiguration(forEnum, configuration);
     }
 
     @Override
@@ -84,36 +96,40 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     }
 
     @Override
-    public INDArray create(@NonNull T workspace, @NonNull int... shape) {
-        return create(workspace, shape, Nd4j.order());
+    public INDArray create(@NonNull T arrayType, @NonNull int... shape) {
+        return create(arrayType, shape, Nd4j.order());
     }
 
     @Override
-    public INDArray create(@NonNull T workspace, @NonNull int[] shape, @NonNull char order) {
-        try(MemoryWorkspace ws = notifyScopeBorrowed(workspace)){
+    public INDArray create(@NonNull T arrayType, @NonNull int[] shape, @NonNull char order) {
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return Nd4j.create(shape, order);
         }
     }
 
     @Override
-    public INDArray createUninitialized(@NonNull T workspace, @NonNull int... shape) {
-        return createUninitialized(workspace, shape, Nd4j.order());
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull int... shape) {
+        return createUninitialized(arrayType, shape, Nd4j.order());
     }
 
     @Override
-    public INDArray createUninitialized(@NonNull T workspace, @NonNull int[] shape, char order) {
-        try(MemoryWorkspace ws = notifyScopeBorrowed(workspace)){
+    public INDArray createUninitialized(@NonNull T arrayType, @NonNull int[] shape, char order) {
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return Nd4j.createUninitialized(shape, order);
         }
     }
 
 
-    private void validateConfig(@NonNull T workspace){
-        if(!configMap.containsKey(workspace)){
-            throw new IllegalStateException("No workspace configuration has been provided for workspace: " + workspace);
+    private void validateConfig(@NonNull T arrayType){
+        if(scopeOutOfWs.contains(arrayType)){
+            return;
         }
-        if(!workspaceNames.containsKey(workspace)){
-            throw new IllegalStateException("No workspace name has been provided for workspace: " + workspace);
+
+        if(!configMap.containsKey(arrayType)){
+            throw new IllegalStateException("No workspace configuration has been provided for arrayType: " + arrayType);
+        }
+        if(!workspaceNames.containsKey(arrayType)){
+            throw new IllegalStateException("No workspace name has been provided for arrayType: " + arrayType);
         }
     }
 

@@ -11,7 +11,11 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
     }
 
     public static Builder builder(){
+        return new Builder();
+    }
 
+    public static LayerWorkspaceMgr noWorkspaces(){
+        return builder().defaultNoWorkspace().build();
     }
 
     public static class Builder {
@@ -22,17 +26,17 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
             mgr = new LayerWorkspaceMgr();
         }
 
-        public Builder defaultDummyWorkspace(){
+        public Builder defaultNoWorkspace(){
             for(NetArrayType t : NetArrayType.values()){
                 if(!mgr.configMap.containsKey(t)){
-                    mgr.setDummyWorkspace(t);
+                    mgr.setScopedOutFor(t);
                 }
             }
             return this;
         }
 
-        public Builder withDummy(NetArrayType type){
-            mgr.setDummyWorkspace(type);
+        public Builder noWorkspaceFor(NetArrayType type){
+            mgr.setScopedOutFor(type);
             return this;
         }
 

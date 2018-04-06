@@ -24,6 +24,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Zero mean and unit variance operation
@@ -36,7 +37,7 @@ public class ZeroMeanAndUnitVariancePreProcessor extends BaseInputPreProcessor {
 
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         INDArray columnMeans = input.mean(0);
         INDArray columnStds = input.std(0);
         input.subiRowVector(columnMeans);
