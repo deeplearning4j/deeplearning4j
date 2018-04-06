@@ -87,6 +87,7 @@
                         <phase>process-resources</phase>
                         <goals>
                             <goal>compile</goal>
+                            <goal>doc-jar</goal>
                         </goals>
                     </execution>
 
