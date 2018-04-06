@@ -11,6 +11,8 @@ Deeplearning4J integrates with Hadoop and Spark and runs on several backends tha
 
 The most recent stable release in Maven Central is `0.9.1`, and the current master on Github can be built from source. 
 
+For more info, see: https://docs.skymind.ai/docs
+
 ---
 ## Using Eclipse Deeplearning4j
 
