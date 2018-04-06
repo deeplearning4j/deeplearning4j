@@ -48,6 +48,7 @@
     <packaging>pom</packaging>
 
     <name>libnd4j</name>
+    <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional arrays for Java</description>
     <url>http://nd4j.org/</url>
 
     <properties>
