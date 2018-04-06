@@ -28,6 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -86,8 +87,8 @@ public class KerasReshapeTest {
     private void testDynamicMinibatches(KerasLayerConfiguration conf, Integer kerasVersion) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         List<Integer> targetShape = Collections.singletonList(20);
         ReshapePreprocessor preprocessor = getReshapePreProcesser(conf, kerasVersion, targetShape);
-        INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10);
-        INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5);
+        INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10, LayerWorkspaceMgr.noWorkspaces());
+        INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5, LayerWorkspaceMgr.noWorkspaces());
         Assert.assertArrayEquals(r2.shape(), new int[]{5, 20});
         Assert.assertArrayEquals(r1.shape(), new int[]{10, 20});
     }

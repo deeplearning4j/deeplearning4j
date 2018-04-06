@@ -32,6 +32,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -525,7 +526,7 @@ public class GradientCheckUtil {
         }
 
         //Check network configuration:
-        layer.setInput(input);
+        layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         Nd4j.getRandom().setSeed(rngSeed);
         layer.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();

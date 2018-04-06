@@ -49,6 +49,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -374,7 +375,7 @@ public class OutputLayerTest extends BaseDL4JTest {
             mln.init();
 
             INDArray out2d = mln.feedForward(input).get(2);
-            INDArray out3d = proc.preProcess(out2d, miniBatchSize);
+            INDArray out3d = proc.preProcess(out2d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration confRnn = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)

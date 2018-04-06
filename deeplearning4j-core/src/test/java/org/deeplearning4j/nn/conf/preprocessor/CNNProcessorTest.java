@@ -15,6 +15,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 
@@ -33,12 +34,12 @@ public class CNNProcessorTest extends BaseDL4JTest {
     public void testFeedForwardToCnnPreProcessor() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
 
-        INDArray check2to4 = convProcessor.preProcess(in2D, -1);
+        INDArray check2to4 = convProcessor.preProcess(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to4 = check2to4.shape().length;
         assertTrue(val2to4 == 4);
         assertEquals(Nd4j.create(1, 1, 28, 28), check2to4);
 
-        INDArray check4to4 = convProcessor.preProcess(in4D, -1);
+        INDArray check4to4 = convProcessor.preProcess(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val4to4 = check4to4.shape().length;
         assertTrue(val4to4 == 4);
         assertEquals(Nd4j.create(20, 1, 28, 28), check4to4);
@@ -65,8 +66,8 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         assertEquals(ffInput_c, ffInput_f);
 
                         //Test forward pass:
-                        INDArray convAct_c = convProcessor.preProcess(ffInput_c, -1);
-                        INDArray convAct_f = convProcessor.preProcess(ffInput_f, -1);
+                        INDArray convAct_c = convProcessor.preProcess(ffInput_c, -1, LayerWorkspaceMgr.noWorkspaces());
+                        INDArray convAct_f = convProcessor.preProcess(ffInput_f, -1, LayerWorkspaceMgr.noWorkspaces());
                         int[] convShape = {miniBatch, d, rows, cols};
                         assertArrayEquals(convShape, convAct_c.shape());
                         assertArrayEquals(convShape, convAct_f.shape());
@@ -109,7 +110,7 @@ public class CNNProcessorTest extends BaseDL4JTest {
     @Test
     public void testFeedForwardToCnnPreProcessorBackprop() {
         FeedForwardToCnnPreProcessor convProcessor = new FeedForwardToCnnPreProcessor(rows, cols, 1);
-        convProcessor.preProcess(in2D, -1);
+        convProcessor.preProcess(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray check2to2 = convProcessor.backprop(in2D, -1);
         int val2to2 = check2to2.shape().length;
@@ -135,14 +136,14 @@ public class CNNProcessorTest extends BaseDL4JTest {
     @Test
     public void testCnnToFeedForwardPreProcessorBackprop() {
         CnnToFeedForwardPreProcessor convProcessor = new CnnToFeedForwardPreProcessor(rows, cols, 1);
-        convProcessor.preProcess(in4D, -1);
+        convProcessor.preProcess(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
 
-        INDArray check2to2 = convProcessor.preProcess(in2D, -1);
+        INDArray check2to2 = convProcessor.preProcess(in2D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val2to2 = check2to2.shape().length;
         assertTrue(val2to2 == 2);
         assertEquals(Nd4j.create(1, 784), check2to2);
 
-        INDArray check4to2 = convProcessor.preProcess(in4D, -1);
+        INDArray check4to2 = convProcessor.preProcess(in4D, -1, LayerWorkspaceMgr.noWorkspaces());
         int val4to2 = check4to2.shape().length;
         assertTrue(val4to2 == 2);
         assertEquals(Nd4j.create(20, 784), check4to2);
@@ -169,8 +170,8 @@ public class CNNProcessorTest extends BaseDL4JTest {
                         assertEquals(convInput_c, convInput_f);
 
                         //Test forward pass:
-                        INDArray ffAct_c = convProcessor.preProcess(convInput_c, -1);
-                        INDArray ffAct_f = convProcessor.preProcess(convInput_f, -1);
+                        INDArray ffAct_c = convProcessor.preProcess(convInput_c, -1, LayerWorkspaceMgr.noWorkspaces());
+                        INDArray ffAct_f = convProcessor.preProcess(convInput_f, -1, LayerWorkspaceMgr.noWorkspaces());
                         int[] ffActShape = {miniBatch, d * rows * cols};
                         assertArrayEquals(ffActShape, ffAct_c.shape());
                         assertArrayEquals(ffActShape, ffAct_f.shape());

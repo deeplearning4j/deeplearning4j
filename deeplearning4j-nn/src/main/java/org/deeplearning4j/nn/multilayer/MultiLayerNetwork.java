@@ -2061,6 +2061,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     protected INDArray outputForLayer(int layerIdx, boolean train, INDArray input, INDArray featuresMask){
 
 
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such

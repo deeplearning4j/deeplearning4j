@@ -116,13 +116,13 @@ public class LayerVertex extends BaseGraphVertex {
                 //allocate 1 array (i.e., the new output), so this is usually preferable in practice
                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), null);   //TODO
                 }
             } else {
-                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize());
+                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), null);   //TODO
             }
         }
-        layer.setInput(currInput);
+        layer.setInput(currInput, null);    //TODO
         setLayerInput = true;
     }
 

@@ -11,6 +11,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 import java.util.Map;
@@ -322,8 +323,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
-        underlying.setInput(input);
+    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        underlying.setInput(input, workspaceMgr);
     }
 
     @Override

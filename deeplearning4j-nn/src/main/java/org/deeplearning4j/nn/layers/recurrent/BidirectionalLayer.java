@@ -13,9 +13,12 @@ import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -184,7 +187,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        setInput(input);
+        setInput(input, null);  //TODO
         return activate(training);
     }
 
@@ -218,7 +221,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+        setInput(input, null);  //TODO
         return activate(training);
     }
 
@@ -229,7 +232,7 @@ public class BidirectionalLayer implements RecurrentLayer {
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
+        setInput(input, null);  //TODO
         return activate();
     }
 
@@ -498,10 +501,14 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void setInput(INDArray input) {
+    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
-        fwd.setInput(input);
-        bwd.setInput(TimeSeriesUtils.reverseTimeSeries(input));
+        fwd.setInput(input, layerWorkspaceMgr);
+        INDArray reversed;
+        try(MemoryWorkspace ws = layerWorkspaceMgr.notifyScopeEntered(NetArrayType.INPUT)){
+            reversed = TimeSeriesUtils.reverseTimeSeries(input);
+        }
+        bwd.setInput(reversed, layerWorkspaceMgr);
     }
 
     @Override

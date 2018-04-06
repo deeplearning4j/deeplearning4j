@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -517,7 +518,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void fit(INDArray data) {
-        this.setInput(data);
+        this.setInput(data, null);  //TODO
         fit();
     }
 
@@ -735,7 +736,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x);
+        setInput(x, null);  //TODO
         return preOutput(training);
     }
 
@@ -810,7 +811,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+        setInput(input, null);  //TODO
         return activate(training);
     }
 
@@ -821,7 +822,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
+        setInput(input, null);
         return activate();
     }
 
@@ -896,7 +897,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void setInput(INDArray input) {
+    public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
     }
 
@@ -1008,7 +1009,7 @@ public class VariationalAutoencoder implements Layer {
         }
 
         //Forward pass through the encoder and mean for P(Z|X)
-        setInput(data);
+        setInput(data, null);   //TODO
         VAEFwdHelper fwd = doForward(true, true);
         IActivation afn = layerConf().getActivationFn();
 
@@ -1066,7 +1067,7 @@ public class VariationalAutoencoder implements Layer {
             }
         }
 
-        setInput(null);
+        setInput(null, null);   //TODO
         return sumReconstructionNegLogProbability.divi(-numSamples);
     }
 

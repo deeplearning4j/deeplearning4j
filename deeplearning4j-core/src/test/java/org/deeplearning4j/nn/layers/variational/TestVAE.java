@@ -21,6 +21,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -159,7 +160,7 @@ public class TestVAE extends BaseDL4JTest {
         Map<String, INDArray> layerParams = layer.paramTable();
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
-        layer.setInput(Nd4j.rand(3, 10));
+        layer.setInput(Nd4j.rand(3, 10), LayerWorkspaceMgr.noWorkspaces());
         layer.computeGradientAndScore();;
         Gradient g = layer.gradient();
         Map<String, INDArray> grads = g.gradientForVariable();

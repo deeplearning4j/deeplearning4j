@@ -58,7 +58,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public INDArray doForward(boolean training) {
-        return preProcessor.preProcess(inputs[0], graph.batchSize());
+        return preProcessor.preProcess(inputs[0], graph.batchSize(), null); //TODO
     }
 
     @Override

@@ -38,6 +38,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -369,7 +370,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -563,7 +564,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -766,7 +767,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 
@@ -836,7 +837,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void setInput(INDArray input) {
+        public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
 
         }
 

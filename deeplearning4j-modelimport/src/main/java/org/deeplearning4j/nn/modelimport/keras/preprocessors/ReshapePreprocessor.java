@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -71,7 +72,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         // the target shape read from a keras config does not have mini-batch size
         // included. We prepend it here dynamically.
         if (targetShape.length + 1 == input.shape().length) {

@@ -21,6 +21,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -137,7 +138,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     public void testSubSampleLayerSumBackprop() throws Exception {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         INDArray input = getData();
-        layer.setInput(input);
+        layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         layer.backpropGradient(epsilon);
     }
 

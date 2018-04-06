@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -33,7 +34,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr layerWorkspaceMgr) {
         if (input.rank() == 2)
             return input; //Should usually never happen
         /* DL4J convolutional input:       # channels, # rows, # cols

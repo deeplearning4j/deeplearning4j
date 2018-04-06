@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Created by Alex on 09/09/2016.
@@ -14,7 +15,7 @@ import org.nd4j.linalg.primitives.Pair;
 public class MyCustomPreprocessor implements InputPreProcessor {
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         return input.add(1.0);
     }
 

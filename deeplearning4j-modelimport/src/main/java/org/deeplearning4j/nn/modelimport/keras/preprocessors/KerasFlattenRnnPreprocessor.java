@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -31,7 +32,7 @@ public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray preProcess(INDArray input, int miniBatchSize) {
+    public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         INDArray output = input.dup('c');
         output.reshape(input.size(0), depth * tsLength);
         return output;
