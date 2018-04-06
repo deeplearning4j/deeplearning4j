@@ -8,12 +8,15 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
 
-    private final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
-    private final Map<T, String> workspaceNames = new HashMap<>();
+    protected final Set<T> dummyWorkspaces = new HashSet<>();
+    protected final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
+    protected final Map<T, String> workspaceNames = new HashMap<>();
 
     @Override
     public void setConfiguration(@NonNull T workspace, WorkspaceConfiguration configuration) {
@@ -23,6 +26,16 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     @Override
     public WorkspaceConfiguration getConfiguration(@NonNull T workspace) {
         return configMap.get(workspace);
+    }
+
+    @Override
+    public void setDummyWorkspace(@NonNull T workspace) {
+        dummyWorkspaces.add(workspace);
+    }
+
+    @Override
+    public boolean isDummyWorkspace(@NonNull T workspace) {
+        return dummyWorkspaces.contains(workspace);
     }
 
     @Override
@@ -60,6 +73,14 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     @Override
     public String getWorkspaceName(@NonNull T workspace) {
         return workspaceNames.get(workspace);
+    }
+
+    @Override
+    public INDArray leverageTo(T toWorkspace, INDArray array) {
+        if(array == null){
+            return null;
+        }
+        return array.leverageTo(getWorkspaceName(toWorkspace));
     }
 
     @Override

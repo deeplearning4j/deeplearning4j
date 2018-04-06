@@ -72,6 +72,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
@@ -2257,7 +2258,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace workspace =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
+                                                workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
+
+        String wsName = layerWiseConfigurations.getInferenceWorkspaceMode() == WorkspaceMode.NONE ?
+
+        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.builder()
+                .defaultWorkspace()
+                .build();
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             // activation for output layer is calculated in computeScore
@@ -2464,7 +2471,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      *
      * @param input
      */
-    @Override
     public void setInput(INDArray input) {
         this.input = input;
         if (this.layers == null) {
@@ -2477,6 +2483,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                                 "Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) + ")");
             setInputMiniBatchSize(input.size(0));
         }
+    }
+
+    @Override
+    public void setInput(INDArray input, LayerWorkspaceMgr mgr){
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

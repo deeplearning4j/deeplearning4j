@@ -33,6 +33,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.*;
 
@@ -100,8 +102,8 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public abstract Layer clone();
 
     @Override
-    public void setInput(INDArray input) {
-        this.input = input;
+    public void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        this.input = workspaceMgr.leverageTo(NetArrayType.INPUT, input);
         dropoutApplied = false;
     }
 

@@ -3,13 +3,16 @@ package org.nd4j.linalg.workspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 public interface WorkspaceMgr<T extends Enum<T>> {
 
     void setConfiguration(T workspace, WorkspaceConfiguration configuration);
 
     WorkspaceConfiguration getConfiguration(T workspace);
+
+    void setDummyWorkspace(T workspace);
+
+    boolean isDummyWorkspace(T workspace);
 
     MemoryWorkspace notifyScopeEntered(T workspace);
 
@@ -20,6 +23,8 @@ public interface WorkspaceMgr<T extends Enum<T>> {
     void setWorkspaceName(T workspace, String name);
 
     String getWorkspaceName(T workspace);
+
+    INDArray leverageTo(T toWorkspace, INDArray array);
 
     INDArray create(T workspace, int... shape);
 
