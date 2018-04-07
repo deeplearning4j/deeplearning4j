@@ -1,5 +1,6 @@
 package org.nd4s.ops
 
+import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.{Op, BaseScalarOp}
@@ -17,11 +18,17 @@ class BitFilterOps(_x:INDArray,len:Int,f:Double => Boolean, g:IComplexNumber => 
   x = _x
   override def opNum(): Int = -1
 
-  override def name(): String = "bitfilter_scalar"
+  override def opName(): String = "bitfilter_scalar"
 
-  override def opForDimension(index: Int, dimension: Int): Op = BitFilterOps(x.tensorAlongDimension(index,dimension),f,g)
+  override def onnxName(): String = throw new UnsupportedOperationException
 
-  override def opForDimension(index: Int, dimension: Int*): Op = BitFilterOps(x.tensorAlongDimension(index,dimension:_*),f,g)
+  override def tensorflowName(): String = throw new UnsupportedOperationException
+
+  override def doDiff(f1: java.util.List[SDVariable]): java.util.List[SDVariable] = throw new UnsupportedOperationException
+
+//  override def opForDimension(index: Int, dimension: Int): Op = BitFilterOps(x.tensorAlongDimension(index,dimension),f,g)
+//
+//  override def opForDimension(index: Int, dimension: Int*): Op = BitFilterOps(x.tensorAlongDimension(index,dimension:_*),f,g)
 
   override def op(origin: Double): Double = if(f(origin)) 1 else 0
 

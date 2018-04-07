@@ -1,5 +1,6 @@
 package org.nd4s.ops
 
+import org.nd4j.autodiff.samediff.SDVariable
 import org.nd4j.linalg.api.complex.IComplexNumber
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.{BaseScalarOp, BaseOp, Op}
@@ -16,11 +17,17 @@ class MapOps(_x:INDArray,f:Double => Double, g:IComplexNumber => IComplexNumber)
 
   override def opNum(): Int = -1
 
-  override def name(): String = "map_scalar"
+  override def opName(): String = "map_scalar"
 
-  override def opForDimension(index: Int, dimension: Int): Op = MapOps(x.tensorAlongDimension(index,dimension),f,g)
+  override def onnxName(): String = throw new UnsupportedOperationException
 
-  override def opForDimension(index: Int, dimension: Int*): Op = MapOps(x.tensorAlongDimension(index,dimension:_*),f,g)
+  override def tensorflowName(): String = throw new UnsupportedOperationException
+
+  override def doDiff(f1: java.util.List[SDVariable]): java.util.List[SDVariable] = throw new UnsupportedOperationException
+
+//  override def opForDimension(index: Int, dimension: Int): Op = MapOps(x.tensorAlongDimension(index,dimension),f,g)
+//
+//  override def opForDimension(index: Int, dimension: Int*): Op = MapOps(x.tensorAlongDimension(index,dimension:_*),f,g)
 
   override def op(origin: Double): Double = f(origin)
 
