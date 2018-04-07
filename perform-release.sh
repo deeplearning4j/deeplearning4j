@@ -10,6 +10,7 @@ RELEASE_VERSION=$1
 SNAPSHOT_VERSION=$2
 STAGING_REPOSITORY=${3:-}
 SKIP_BUILD=${SKIP_BUILD:-0}
+RELEASE_PROFILE=${RELEASE_PROFILE:-sonatype}
 
 echo "Releasing version $RELEASE_VERSION ($SNAPSHOT_VERSION) to repository $STAGING_REPOSITORY"
 echo "========================================================================================"
@@ -28,7 +29,7 @@ sed -i "s/\"nd4jVersion\", default = \".*\"/\"nd4jVersion\", default = \"$RELEAS
 # user=xxx
 # password=xxx
 if [[ "${SKIP_BUILD}" == "0" ]]; then
-    sbt +publishSigned
+    sbt -DrepoType=$RELEASE_PROFILE -DstageRepoId=$STAGING_REPOSITORY +publishSigned
 fi
 
 git commit -s -a -m "Update to version $RELEASE_VERSION"
