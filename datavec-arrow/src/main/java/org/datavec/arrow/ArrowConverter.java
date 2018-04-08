@@ -757,16 +757,51 @@ public class ArrowConverter {
                 break;
             case Time:
                 //all timestamps are long based, just directly convert it to the super type
-                int timeSet = TypeConversion.getInstance().convertInt(value);
-                BaseFixedWidthVector baseFixedWidthVector = (BaseFixedWidthVector) fieldVector;
-                //    valueBuffer.setLong(index * TYPE_WIDTH, value);
-                baseFixedWidthVector.getDataBuffer().setLong(row * 8,timeSet);
+                long timeSet = TypeConversion.getInstance().convertLong(value);
+                setLongInTime(fieldVector,row,timeSet);
                 break;
 
         }
     }
 
 
+    private static void setLongInTime(FieldVector fieldVector,int index,long value) {
+        if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            timeStampMilliVector.set(index,value);
+        }
+        else if(fieldVector instanceof TimeMilliVector) {
+            TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
+            timeMilliVector.set(index,(int) value);
+        }
+        else if(fieldVector instanceof TimeStampMicroVector) {
+            TimeStampMicroVector timeStampMicroVector = (TimeStampMicroVector) fieldVector;
+            timeStampMicroVector.set(index,value);
+        }
+        else if(fieldVector instanceof TimeSecVector) {
+            TimeSecVector timeSecVector = (TimeSecVector) fieldVector;
+            timeSecVector.set(index,(int) value);
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            timeStampMilliVector.set(index,value);
+        }
+        else if(fieldVector instanceof TimeStampMilliTZVector) {
+            TimeStampMilliTZVector timeStampMilliTZVector = (TimeStampMilliTZVector) fieldVector;
+            timeStampMilliTZVector.set(index, value);
+        }
+        else if(fieldVector instanceof TimeStampNanoTZVector) {
+            TimeStampNanoTZVector timeStampNanoTZVector = (TimeStampNanoTZVector) fieldVector;
+            timeStampNanoTZVector.set(index,value);
+        }
+        else if(fieldVector instanceof TimeStampMicroTZVector) {
+            TimeStampMicroTZVector timeStampMicroTZVector = (TimeStampMicroTZVector) fieldVector;
+            timeStampMicroTZVector.set(index,value);
+        }
+        else {
+            throw new UnsupportedOperationException();
+        }
+    }
 
 
     /**
@@ -1132,8 +1167,47 @@ public class ArrowConverter {
             BigIntVector bigIntVector = (BigIntVector) fieldVector;
             return bigIntVector.get(row);
         }
+        else if (fieldVector instanceof DateMilliVector) {
+            DateMilliVector dateMilliVector = (DateMilliVector) fieldVector;
+            return dateMilliVector.get(row);
 
-        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            return timeStampMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeMilliVector) {
+            TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
+            return timeMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMicroVector) {
+            TimeStampMicroVector timeStampMicroVector = (TimeStampMicroVector) fieldVector;
+            return timeStampMicroVector.get(row);
+        }
+        else if(fieldVector instanceof TimeSecVector) {
+            TimeSecVector timeSecVector = (TimeSecVector) fieldVector;
+            return timeSecVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            return timeStampMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMilliTZVector) {
+            TimeStampMilliTZVector timeStampMilliTZVector = (TimeStampMilliTZVector) fieldVector;
+            return timeStampMilliTZVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampNanoTZVector) {
+            TimeStampNanoTZVector timeStampNanoTZVector = (TimeStampNanoTZVector) fieldVector;
+            return timeStampNanoTZVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMicroTZVector) {
+            TimeStampMicroTZVector timeStampMicroTZVector = (TimeStampMicroTZVector) fieldVector;
+            return timeStampMicroTZVector.get(row);
+        }
+        else {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     private static double getDoubleFromFieldVector(int row,FieldVector fieldVector) {

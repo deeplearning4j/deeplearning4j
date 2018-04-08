@@ -23,6 +23,7 @@ public class TypeConversion {
     }
 
 
+
     public int convertInt(Writable writable) {
         return writable.toInt();
     }
