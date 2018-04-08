@@ -2,10 +2,10 @@ package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.RandomUtils;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,7 +54,8 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
             for (int i = 0; i < totalCount; i++) {
                 order[i] = i;
             }
-            RandomUtils.shuffleInPlace(order, rng);
+
+            MathUtils.shuffleArray(order, rng);
         }
 
         allLabels = new ArrayList<>(filesByLabel.keySet());
@@ -108,7 +109,7 @@ public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
     public void reset() {
         cursor = 0;
         if (rng != null) {
-            RandomUtils.shuffleInPlace(order, rng);
+            MathUtils.shuffleArray(order, rng);
         }
     }
 
