@@ -20,6 +20,7 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
@@ -75,6 +76,29 @@ public class ArrowConverterTest {
 
     }
 
+
+
+    @Test
+    public void testArrowBatchSetTime() {
+        Schema.Builder schema = new Schema.Builder();
+        List<String> single = new ArrayList<>();
+        for(int i = 0; i < 2; i++) {
+            schema.addColumnTime(String.valueOf(i),TimeZone.getDefault());
+            single.add(String.valueOf(i));
+        }
+
+        List<List<Writable>> input = Arrays.asList(
+                Arrays.<Writable>asList(new LongWritable(0),new LongWritable(1)),
+                Arrays.<Writable>asList(new LongWritable(2),new LongWritable(3))
+        );
+
+        List<FieldVector> fieldVector = ArrowConverter.toArrowColumns(bufferAllocator,schema.build(),input);
+        ArrowWritableRecordBatch writableRecordBatch = new ArrowWritableRecordBatch(fieldVector,schema.build());
+        List<Writable> assertion = Arrays.<Writable>asList(new LongWritable(4), new LongWritable(5));
+        writableRecordBatch.set(1, Arrays.<Writable>asList(new LongWritable(4),new LongWritable(5)));
+        List<Writable> recordTest = writableRecordBatch.get(1);
+        assertEquals(assertion,recordTest);
+    }
 
     @Test
     public void testArrowBatchSet() {

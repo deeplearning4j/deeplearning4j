@@ -18,12 +18,12 @@ package org.datavec.nlp.metadata;
 
 import org.nd4j.linalg.primitives.Counter;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.util.Index;
 import org.datavec.nlp.vectorizer.TextVectorizer;
 import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.util.Index;
 
 /**
- * Vocab cache uswed for storing information
+ * Vocab cache used for storing information
  * about vocab
  *
  * @author Adam Gibson

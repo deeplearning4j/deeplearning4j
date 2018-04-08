@@ -17,7 +17,7 @@
 package org.datavec.api.transform.transform.geo;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ArchiveUtils;
+import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
