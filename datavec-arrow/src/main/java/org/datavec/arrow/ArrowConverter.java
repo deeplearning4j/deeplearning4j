@@ -1167,8 +1167,47 @@ public class ArrowConverter {
             BigIntVector bigIntVector = (BigIntVector) fieldVector;
             return bigIntVector.get(row);
         }
+        else if (fieldVector instanceof DateMilliVector) {
+            DateMilliVector dateMilliVector = (DateMilliVector) fieldVector;
+            return dateMilliVector.get(row);
 
-        throw new IllegalArgumentException("Illegal vector type for int " + fieldVector.getClass().getName());
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            return timeStampMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeMilliVector) {
+            TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
+            return timeMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMicroVector) {
+            TimeStampMicroVector timeStampMicroVector = (TimeStampMicroVector) fieldVector;
+            return timeStampMicroVector.get(row);
+        }
+        else if(fieldVector instanceof TimeSecVector) {
+            TimeSecVector timeSecVector = (TimeSecVector) fieldVector;
+            return timeSecVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMilliVector) {
+            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
+            return timeStampMilliVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMilliTZVector) {
+            TimeStampMilliTZVector timeStampMilliTZVector = (TimeStampMilliTZVector) fieldVector;
+            return timeStampMilliTZVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampNanoTZVector) {
+            TimeStampNanoTZVector timeStampNanoTZVector = (TimeStampNanoTZVector) fieldVector;
+            return timeStampNanoTZVector.get(row);
+        }
+        else if(fieldVector instanceof TimeStampMicroTZVector) {
+            TimeStampMicroTZVector timeStampMicroTZVector = (TimeStampMicroTZVector) fieldVector;
+            return timeStampMicroTZVector.get(row);
+        }
+        else {
+            throw new UnsupportedOperationException();
+        }
+
     }
 
     private static double getDoubleFromFieldVector(int row,FieldVector fieldVector) {
