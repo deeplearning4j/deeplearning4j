@@ -102,12 +102,8 @@ public class Upsampling1D extends Upsampling2D {
         return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
-    }
 
-    public INDArray preOutput(boolean training, boolean forBackprop) {
+    protected INDArray preOutput(boolean training, boolean forBackprop) {
 //        INDArray originalInput = input;
 //        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 //

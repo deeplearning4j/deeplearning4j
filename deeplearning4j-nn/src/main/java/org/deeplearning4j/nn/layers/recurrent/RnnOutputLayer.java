@@ -92,24 +92,17 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-//        setInput(x);
-//        return TimeSeriesUtils.reshape2dTo3d(preOutput2d(training), input.size(0));
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    protected INDArray preOutput2d(boolean training) {
+    protected INDArray preOutput2d(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
             input = TimeSeriesUtils.reshape3dTo2d(input);
-            INDArray out = super.preOutput(input, training);
+            INDArray out = super.preOutput(training, workspaceMgr);
             this.input = inputTemp;
             return out;
         } else {
             //Case when called from BaseOutputLayer
-            INDArray out = super.preOutput(input, training);
+            INDArray out = super.preOutput(training, workspaceMgr);
             return out;
         }
     }
@@ -137,7 +130,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() != 3)
             throw new IllegalArgumentException(
                             "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray preOutput2d = preOutput2d(training);
+        INDArray preOutput2d = preOutput2d(training, workspaceMgr);
 
         if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
             INDArray out2d = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(preOutput2d));
@@ -231,7 +224,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = preOutput2d(false, null);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =

@@ -118,9 +118,4 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         return null;
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-        return null;
-    }
-
 }

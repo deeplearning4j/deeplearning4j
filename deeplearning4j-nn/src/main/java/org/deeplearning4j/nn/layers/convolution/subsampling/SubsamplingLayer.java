@@ -441,12 +441,4 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public void setParams(INDArray params) {
 
     }
-
-    @Override
-    public INDArray preOutput(boolean training) {
-//        return activate(training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-
 }

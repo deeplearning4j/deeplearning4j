@@ -83,17 +83,6 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return insideLayer.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
     public INDArray activate(TrainingMode training) {
         logTestMode(training);
         return insideLayer.activate(TrainingMode.TEST);
@@ -104,13 +93,6 @@ public class FrozenLayer implements Layer {
         logTestMode(training);
         return insideLayer.activate(input, TrainingMode.TEST);
     }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        logTestMode(training);
-        return preOutput(x, TrainingMode.TEST);
-    }
-
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);

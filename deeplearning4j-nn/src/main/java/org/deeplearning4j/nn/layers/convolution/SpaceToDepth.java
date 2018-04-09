@@ -106,13 +106,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return new Pair<>(gradient, reshapedEpsilon);
     }
 
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
-    }
-
-    public INDArray preOutput(boolean training, boolean forBackprop) {
+    protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, null);
 
         if (input.rank() != 4) {
@@ -158,7 +152,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, workspaceMgr);
-        return preOutput(training);
+        return preOutput(training, false, workspaceMgr);
     }
 
 

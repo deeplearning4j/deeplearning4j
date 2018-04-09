@@ -160,11 +160,6 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return x;
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 4)
             throw new UnsupportedOperationException(

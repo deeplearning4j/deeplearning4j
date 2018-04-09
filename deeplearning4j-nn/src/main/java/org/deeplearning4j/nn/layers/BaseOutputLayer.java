@@ -85,7 +85,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training);
+        INDArray preOut = preOutput2d(training, null);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -110,7 +110,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false);
+        INDArray preOut = preOutput2d(false, null);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
@@ -127,7 +127,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if (input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true);
+        INDArray preOut = preOutput2d(true, null);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
@@ -146,7 +146,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, null)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
         INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
@@ -422,8 +422,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         }
     }
 
-    protected INDArray preOutput2d(boolean training) {
-        return preOutput(training);
+    protected INDArray preOutput2d(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return preOutput(training, workspaceMgr);
     }
 
     @Override

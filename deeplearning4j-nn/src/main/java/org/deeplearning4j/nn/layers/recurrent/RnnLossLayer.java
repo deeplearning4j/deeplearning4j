@@ -164,11 +164,6 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return x;
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(

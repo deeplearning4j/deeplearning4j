@@ -54,7 +54,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
-        INDArray z = preOutput(input);
+        INDArray z = preOutput(true, null);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
@@ -85,7 +85,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
+    protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.columns() != 1) {
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
@@ -119,7 +119,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray rows = preOutput(training);
+        INDArray rows = preOutput(training, workspaceMgr);
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
         INDArray ret = layerConf().getActivationFn().getActivation(rows, training);

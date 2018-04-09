@@ -138,12 +138,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         return new Pair<>(retGradient, reshapedEpsilon);
     }
 
-
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false).getFirst();
-    }
-
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
 
         if (convolutionMode == ConvolutionMode.Same) {
@@ -246,7 +240,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE

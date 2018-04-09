@@ -151,12 +151,6 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray preOutput(boolean training){
-//        return activate(training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
         return activateHelper(null, training, false, workspaceMgr).getFirst();
     }

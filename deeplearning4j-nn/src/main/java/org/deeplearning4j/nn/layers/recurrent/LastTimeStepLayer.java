@@ -58,17 +58,6 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
         return underlying.backpropGradient(newEps);
     }
 
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return getLastStep(underlying.preOutput(x));
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return getLastStep(underlying.preOutput(x, training));
-    }
-
     @Override
     public INDArray activate(TrainingMode training) {
         return getLastStep(underlying.activate(training));
@@ -77,11 +66,6 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
         return getLastStep(underlying.activate(input, training));
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

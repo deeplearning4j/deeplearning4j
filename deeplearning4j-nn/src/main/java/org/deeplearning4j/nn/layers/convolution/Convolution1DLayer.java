@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -63,12 +64,12 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
+    protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's activate method
-        INDArray preOutput = super.preOutput(training);
+        INDArray preOutput = super.preOutput(training, workspaceMgr);
 
         // remove singleton fourth dimension from output activations
         input = origInput;

@@ -108,13 +108,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         return layerConf().getSize();
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-//        return preOutput(training, false);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    public INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+    protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, workspaceMgr);
 
         if (input.rank() != 4) {
@@ -159,7 +153,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, false, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE

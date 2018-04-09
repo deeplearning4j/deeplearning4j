@@ -168,12 +168,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         throw new UnsupportedOperationException("Not supported");
     }
 
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
     @Override
     public INDArray activate(TrainingMode training) {
 //        return activate(training == TrainingMode.TRAIN);
@@ -287,18 +281,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         return Collections.emptyMap();
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        setInput(x);
-        return preOutput(training);
-    }
-
-
-    public abstract INDArray preOutput(boolean training);
-
     protected void applyMask(INDArray to) {
         to.muliColumnVector(maskArray);
     }
@@ -320,20 +302,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public INDArray activate() {
 //        return activate(false, null);
         throw new UnsupportedOperationException("To be removed");
-    }
-
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, true);
     }
 
     @Override

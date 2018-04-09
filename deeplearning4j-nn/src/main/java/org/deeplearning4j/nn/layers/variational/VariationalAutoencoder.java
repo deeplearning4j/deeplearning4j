@@ -724,22 +724,6 @@ public class VariationalAutoencoder implements Layer {
         return new Pair<>(gradient, epsilon);
     }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x, null);  //TODO
-        return preOutput(training);
-    }
-
     public INDArray preOutput(boolean training) {
         VAEFwdHelper f = doForward(training, false);
         return f.pzxMeanPreOut;

@@ -130,20 +130,6 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return p;
     }
 
-
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-//        return activate(x, true);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-//        return activate(x, training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);

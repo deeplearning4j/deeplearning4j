@@ -64,12 +64,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         }
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-//        return activate(training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {

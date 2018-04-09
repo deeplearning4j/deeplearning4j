@@ -773,24 +773,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-
-    /**
-     * Compute input linear transformation (z) from previous layer
-     * Apply pre processing transformation where necessary
-     *
-     * @param curr  the current layer
-     * @param input the input
-     * @param training training or test mode
-     * @return the activation from the previous layer
-     */
-    public INDArray zFromPrevLayer(int curr, INDArray input, boolean training) {
-        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null)
-            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, input.size(0), null);   //TODO
-
-        INDArray ret = layers[curr].preOutput(input, training);
-        return ret;
-    }
-
     /**
      * Calculate activation from previous layer including pre processing where necessary
      *
@@ -2665,26 +2647,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        INDArray lastLayerActivation = x;
-        for (int i = 0; i < layers.length - 1; i++) {
-            if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(lastLayerActivation,
-                                getInputMiniBatchSize(), null);                                                 //TODO
-            lastLayerActivation = layers[i].activate(lastLayerActivation);
-        }
-        if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null)
-            lastLayerActivation = getLayerWiseConfigurations().getInputPreProcess(layers.length - 1)
-                            .preProcess(lastLayerActivation, getInputMiniBatchSize(), null);                    //TODO
-        return layers[layers.length - 1].preOutput(lastLayerActivation);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
-
-    @Override
     public INDArray activate(TrainingMode training) {
 //        return activate(training == TrainingMode.TRAIN);
         throw new UnsupportedOperationException("To be removed");
@@ -2776,12 +2738,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         // Update layerwise gradient view
         setBackpropGradientsViewArray(gradient.gradient());
-
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        throw new UnsupportedOperationException();
 
     }
 

@@ -232,11 +232,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return gradient;
     }
 
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, TrainingMode.TRAIN);
-    }
-
     public INDArray preOutput(INDArray x, TrainingMode training) {
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
@@ -403,11 +398,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
         return preOutput(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return preOutput(x, training ? TrainingMode.TRAIN : TrainingMode.TEST);
     }
 
     @Override

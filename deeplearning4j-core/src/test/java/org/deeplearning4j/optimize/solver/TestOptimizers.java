@@ -817,11 +817,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray preOutput(INDArray x, TrainingMode training) {
-            return null;
-        }
-
-        @Override
         public INDArray activate(TrainingMode training) {
             return null;
         }
@@ -861,11 +856,6 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public void update(Gradient gradient) {
 
-        }
-
-        @Override
-        public INDArray preOutput(INDArray x, boolean training) {
-            return null;
         }
 
         @Override
@@ -1011,11 +1001,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray preOutput(INDArray x) {
             throw new UnsupportedOperationException();
         }
 

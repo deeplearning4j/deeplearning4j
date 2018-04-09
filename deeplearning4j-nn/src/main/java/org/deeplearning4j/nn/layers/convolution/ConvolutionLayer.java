@@ -274,11 +274,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return preOutput(training, forBackprop);
     }
 
-    @Override
-    public INDArray preOutput(boolean training) {
-        return preOutput(training, false).getFirst();
-    }
-
     /**
      * PreOutput method that also returns the im2col2d array (if being called for backprop), as this can be re-used
      * instead of being calculated again.
@@ -440,7 +435,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE

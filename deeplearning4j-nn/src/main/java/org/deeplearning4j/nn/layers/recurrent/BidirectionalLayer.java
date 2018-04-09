@@ -171,16 +171,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return activate(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return activate(x, training);
-    }
-
-    @Override
     public INDArray activate(TrainingMode training) {
 //        return activate(training == TrainingMode.TRAIN);
         throw new UnsupportedOperationException("To be removed");
@@ -190,12 +180,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(INDArray input, TrainingMode training) {
         setInput(input, null);  //TODO
         return activate(training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-//        return activate(x, training);
-        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

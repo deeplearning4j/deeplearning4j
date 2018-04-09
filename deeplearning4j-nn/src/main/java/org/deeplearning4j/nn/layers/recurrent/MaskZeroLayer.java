@@ -44,17 +44,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         return underlying.backpropGradient(epsilon);
     }
 
-
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return underlying.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return underlying.preOutput(x, training);
-    }
-
     @Override
     public INDArray activate(TrainingMode training) {
         INDArray input = input();

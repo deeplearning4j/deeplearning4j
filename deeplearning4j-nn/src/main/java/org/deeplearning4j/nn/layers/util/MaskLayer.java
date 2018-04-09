@@ -32,12 +32,6 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
     }
 
     @Override
-    public INDArray preOutput(boolean training) {
-//        return activate(training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return false;
     }

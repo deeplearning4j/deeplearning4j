@@ -58,16 +58,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public INDArray preOutput(INDArray x) {
-        return underlying.preOutput(x);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return underlying.preOutput(x, training);
-    }
-
-    @Override
     public INDArray activate(TrainingMode training) {
         return underlying.activate(training);
     }
@@ -75,11 +65,6 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
         return underlying.activate(input, training);
-    }
-
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return underlying.preOutput(x, training);
     }
 
     @Override

@@ -89,27 +89,6 @@ public interface Layer extends Serializable, Cloneable, Model {
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
 
     /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    @Deprecated
-    INDArray preOutput(INDArray x);
-
-
-
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    @Deprecated
-    INDArray preOutput(INDArray x, TrainingMode training);
-
-
-    /**
      * Trigger an activation with the last specified input
      * @param training  training or test mode
      * @return the activation of the last specified input
@@ -127,16 +106,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     @Deprecated
     INDArray activate(INDArray input, TrainingMode training);
-
-
-    /**
-     * Raw activations
-     * @param x the input to transform
-     * @return the raw activation
-     * for this layer
-     */
-    @Deprecated
-    INDArray preOutput(INDArray x, boolean training);
 
 
     /**

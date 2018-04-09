@@ -71,7 +71,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
-        INDArray z = preOutput(true); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
+        INDArray z = preOutput(true, null); //Note: using preOutput(INDArray) can't be used as this does a setInput(input) and resets the 'appliedDropout' flag
         //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
         //        INDArray delta = epsilon.muli(activationDerivative);
@@ -118,12 +118,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
 
     protected void setScoreWithZ(INDArray z) {}
-
-
-    @Override
-    public INDArray preOutput(INDArray x, TrainingMode training) {
-        return preOutput(x, training == TrainingMode.TRAIN);
-    }
 
     @Override
     public INDArray activate(TrainingMode training) {
@@ -316,41 +310,40 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return p;
     }
 
-    public INDArray preOutput(boolean training) {
-        throw new UnsupportedOperationException("To be removed");
-//        applyDropOutIfNecessary(training);
-//        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
-//        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
-//
-//        //Input validation:
-//        if (input.rank() != 2 || input.columns() != W.rows()) {
-//            if (input.rank() != 2) {
-//                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
-//                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
-//                                + ". Missing preprocessor or wrong input type? " + layerId());
-//            }
-//            throw new DL4JInvalidInputException(
-//                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
-//                                            + ") is invalid: does not match layer input size (layer # inputs = "
-//                                            + W.size(0) + ") " + layerId());
-//        }
-//
-//
-//        INDArray ret = input.mmul(W);
-//        if(hasBias()){
-//            ret.addiRowVector(b);
-//        }
-//
-//        if (maskArray != null) {
-//            applyMask(ret);
-//        }
-//
-//        return ret;
+    protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        applyDropOutIfNecessary(training, workspaceMgr);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+
+        //Input validation:
+        if (input.rank() != 2 || input.columns() != W.rows()) {
+            if (input.rank() != 2) {
+                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
+                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
+                                + ". Missing preprocessor or wrong input type? " + layerId());
+            }
+            throw new DL4JInvalidInputException(
+                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                                            + ") is invalid: does not match layer input size (layer # inputs = "
+                                            + W.size(0) + ") " + layerId());
+        }
+
+
+        INDArray ret = input.mmul(W);
+        if(hasBias()){
+            ret.addiRowVector(b);
+        }
+
+        if (maskArray != null) {
+            applyMask(ret);
+        }
+
+        return ret;
     }
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray z = preOutput(training);
+        INDArray z = preOutput(training, workspaceMgr);
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
         if (maskArray != null) {
