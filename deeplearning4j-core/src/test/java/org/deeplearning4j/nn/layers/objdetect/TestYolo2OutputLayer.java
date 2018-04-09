@@ -113,7 +113,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score = y2impl.computeScore(0, 0, true);
+        double score = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println("SCORE: " + score);
         assertTrue(score > 0.0);
@@ -125,7 +125,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         y2impl = (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer) netLoaded.getLayer(1);
         y2impl.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         y2impl.setLabels(labels);
-        double score2 = y2impl.computeScore(0, 0, true);
+        double score2 = y2impl.computeScore(0, 0, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(score, score2, 1e-8);
     }

@@ -710,7 +710,7 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
 
     }
 

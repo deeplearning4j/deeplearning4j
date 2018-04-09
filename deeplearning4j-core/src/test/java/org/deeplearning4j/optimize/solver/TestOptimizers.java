@@ -198,7 +198,7 @@ public class TestOptimizers extends BaseDL4JTest {
         org.nd4j.linalg.api.rng.distribution.Distribution dist =
                         new org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution(rng, -10, 10);
         Model m = new SphereFunctionModel(nDimensions, dist, conf);
-        m.computeGradientAndScore();
+        m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double scoreBefore = m.score();
         assertTrue(!Double.isNaN(scoreBefore) && !Double.isInfinite(scoreBefore));
         if (PRINT_OPT_RESULTS) {
@@ -213,7 +213,7 @@ public class TestOptimizers extends BaseDL4JTest {
         for( int i=0; i<100; i++ ) {
             opt.optimize();
         }
-        m.computeGradientAndScore();
+        m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double scoreAfter = m.score();
 
         assertTrue(!Double.isNaN(scoreAfter) && !Double.isInfinite(scoreAfter));
@@ -288,14 +288,14 @@ public class TestOptimizers extends BaseDL4JTest {
 
             Model m = new SphereFunctionModel(100, dist, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 for( int j=0; j<100; j++ ) {
                     opt.optimize();
                 }
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -329,7 +329,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
@@ -425,13 +425,13 @@ public class TestOptimizers extends BaseDL4JTest {
             Model m = new RastriginFunctionModel(10, conf);
             int nParams = m.numParams();
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
                 opt.optimize();
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
             }
@@ -476,7 +476,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             //Gradient decomposes due to sum, so:
             //d(x^2 - 10*cos(2*Pi*x))/dx
             // = 2x + 20*pi*sin(2*Pi*x)
@@ -614,12 +614,12 @@ public class TestOptimizers extends BaseDL4JTest {
 
             Model m = new RosenbrockFunctionModel(100, conf);
             if (i == 0) {
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.optimize();
-                m.computeGradientAndScore();
+                m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],
                                 !Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -667,7 +667,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             int nDims = parameters.length();
             INDArray gradient = Nd4j.zeros(nDims);
             double x0 = parameters.getDouble(0);
@@ -889,7 +889,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void computeGradientAndScore() {
+        public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
             throw new UnsupportedOperationException("Ensure you implement this function.");
         }
 
@@ -920,7 +920,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, Double> gradientAndScore() {
-            computeGradientAndScore();
+            computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
             return new Pair<>(gradient(), score());
         }
 

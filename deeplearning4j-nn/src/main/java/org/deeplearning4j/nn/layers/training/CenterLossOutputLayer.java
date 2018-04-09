@@ -63,12 +63,12 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training, null);
+        INDArray preOut = preOutput2d(training, workspaceMgr);
 
         // center loss has two components
         // the first enforces inter-class dissimilarity, the second intra-class dissimilarity (squared l2 norm of differences)
@@ -113,10 +113,10 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false, null); //TODO
+        INDArray preOut = preOutput2d(false, workspaceMgr);
 
         // calculate the intra-class score component
         INDArray centers = params.get(CenterLossParamInitializer.CENTER_KEY);
@@ -138,7 +138,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
@@ -146,7 +146,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override

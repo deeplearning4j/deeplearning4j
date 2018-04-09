@@ -402,11 +402,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {}
 
     @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public double score() {
         return 0;
     }

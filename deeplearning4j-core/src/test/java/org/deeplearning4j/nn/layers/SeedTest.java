@@ -38,11 +38,11 @@ public class SeedTest extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(1, numParams));
         layer.fit(data.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
 
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double score = layer.score();
         INDArray parameters = layer.params();
         layer.setParams(parameters);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         double score2 = layer.score();
         assertEquals(parameters, layer.params());

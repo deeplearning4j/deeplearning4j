@@ -107,13 +107,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (this.input == null)
             return;
 
-        INDArray output = activate(true, null); //TODO
+        INDArray output = activate(true, workspaceMgr);
         setScoreWithZ(output);
-
     }
 
 

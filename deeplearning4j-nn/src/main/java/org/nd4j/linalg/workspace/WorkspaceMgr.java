@@ -26,7 +26,24 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     void setWorkspace(T arrayType, String wsName, WorkspaceConfiguration configuration);
 
+    /**
+     * If the array is not attached (not defined in a workspace) - array is returned unmodified
+     *
+     * @param toWorkspace
+     * @param array
+     * @return
+     */
     INDArray leverageTo(T toWorkspace, INDArray array);
+
+    /**
+     * Validate that the specified array type is actually in the workspace it's supposed to be in
+     *
+     * @param arrayType        Array type of the array
+     * @param array            Array to check
+     * @param migrateIfInvalid if true: migrate. If false: exception
+     * @return
+     */
+    INDArray validateArrayLocation(T arrayType, INDArray array, boolean migrateIfInvalid);
 
     INDArray create(T workspace, int... shape);
 

@@ -133,8 +133,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void computeGradientAndScore() {
-        underlying.computeGradientAndScore();
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
+        underlying.computeGradientAndScore(workspaceMgr);
     }
 
     @Override

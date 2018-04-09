@@ -122,8 +122,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public double score() {
-        model.computeGradientAndScore();
-        return model.score();
+//        model.computeGradientAndScore();
+//        return model.score();
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     @Override
@@ -170,22 +171,23 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         oldScore = score;
-        model.computeGradientAndScore();
-
-        if (iterationListeners != null && !iterationListeners.isEmpty()) {
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (IterationListener l : iterationListeners) {
-                    if (l instanceof TrainingListener) {
-                        ((TrainingListener) l).onGradientCalculation(model);
-                    }
-                }
-            }
-        }
-
-        Pair<Gradient, Double> pair = model.gradientAndScore();
-        score = pair.getSecond();
-        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
-        return pair;
+//        model.computeGradientAndScore();
+//
+//        if (iterationListeners != null && !iterationListeners.isEmpty()) {
+//            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+//                for (IterationListener l : iterationListeners) {
+//                    if (l instanceof TrainingListener) {
+//                        ((TrainingListener) l).onGradientCalculation(model);
+//                    }
+//                }
+//            }
+//        }
+//
+//        Pair<Gradient, Double> pair = model.gradientAndScore();
+//        score = pair.getSecond();
+//        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
+//        return pair;
+        throw new UnsupportedOperationException("Not yet reimplemented");
     }
 
     /**

@@ -90,7 +90,7 @@ public interface Model {
     /**
      * Update the score
      */
-    void computeGradientAndScore();
+    void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Sets a rolling tally for the score. This is useful for mini batch learning when

@@ -107,13 +107,13 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
-        setInput(corruptedX, null); //TODO
+        setInput(corruptedX, workspaceMgr);
 
         INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);

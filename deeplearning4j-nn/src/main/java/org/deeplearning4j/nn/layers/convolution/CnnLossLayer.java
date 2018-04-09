@@ -189,7 +189,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(input);
         INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels);
         INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input);
@@ -213,7 +213,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         //For CNN: need to sum up the score over each x/y location before returning
 
         if (input == null || labels == null)

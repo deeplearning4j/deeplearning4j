@@ -269,9 +269,9 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void computeGradientAndScore() {
-        fwd.computeGradientAndScore();
-        bwd.computeGradientAndScore();
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
+        fwd.computeGradientAndScore(workspaceMgr);
+        bwd.computeGradientAndScore(workspaceMgr);
     }
 
     @Override

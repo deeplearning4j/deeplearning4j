@@ -164,7 +164,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
     }
 

@@ -73,7 +73,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
@@ -100,7 +100,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = input;
@@ -116,7 +116,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
@@ -124,7 +124,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override

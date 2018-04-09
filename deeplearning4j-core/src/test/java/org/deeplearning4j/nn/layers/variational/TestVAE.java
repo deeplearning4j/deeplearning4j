@@ -161,7 +161,7 @@ public class TestVAE extends BaseDL4JTest {
         Map<String, INDArray> layerGradViews = layer.getGradientViews();
 
         layer.setInput(Nd4j.rand(3, 10), LayerWorkspaceMgr.noWorkspaces());
-        layer.computeGradientAndScore();;
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         Gradient g = layer.gradient();
         Map<String, INDArray> grads = g.gradientForVariable();
 

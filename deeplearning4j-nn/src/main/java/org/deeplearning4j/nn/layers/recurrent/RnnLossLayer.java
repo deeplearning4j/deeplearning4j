@@ -192,7 +192,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
     }
 
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
         INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
         INDArray maskReshaped;
@@ -224,7 +224,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         //For RNN: need to sum up the score over each time step before returning.
 
         if (input == null || labels == null)

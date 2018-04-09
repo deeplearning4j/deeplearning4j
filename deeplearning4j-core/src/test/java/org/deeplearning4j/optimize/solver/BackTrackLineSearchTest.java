@@ -61,7 +61,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
         double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
@@ -79,7 +79,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
 
         BackTrackLineSearch lineSearch =
@@ -100,7 +100,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
@@ -110,7 +110,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         score2 = layer.score();
 
@@ -128,7 +128,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
         layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score1 = layer.score();
         INDArray origGradient = layer.gradient().gradient().dup();
 
@@ -140,7 +140,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         score2 = layer.score();
 
         assertTrue("score1 = " + score1 + ", score2 = " + score2, score1 < score2);

@@ -219,12 +219,12 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         //For RNN: need to sum up the score over each time step before returning.
 
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false, null);
+        INDArray preOut = preOutput2d(false, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =

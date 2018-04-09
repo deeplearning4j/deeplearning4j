@@ -179,7 +179,7 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (!logGradient) {
             OneTimeLogger.info(log,
                             "Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");

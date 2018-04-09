@@ -202,11 +202,6 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void computeGradientAndScore() {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
     public double score() {
         return 0;
     }

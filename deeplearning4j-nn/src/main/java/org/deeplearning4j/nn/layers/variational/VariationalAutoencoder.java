@@ -166,7 +166,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         //Forward pass through the encoder and mean for P(Z|X)
         VAEFwdHelper fwd = doForward(true, true);
         IActivation afn = layerConf().getActivationFn();

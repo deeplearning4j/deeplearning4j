@@ -140,8 +140,9 @@ public class BackTrackLineSearch implements LineOptimizer {
         }
 
         layer.setParams(parameters);
-        layer.computeGradientAndScore();
-        return layer.score();
+//        layer.computeGradientAndScore();
+//        return layer.score();
+        throw new UnsupportedOperationException("NOT YET REIMPLEMENTED");
     }
 
     // returns fraction of step size if found a good step

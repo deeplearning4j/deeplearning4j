@@ -80,12 +80,12 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return score (loss function)
      */
     @Override
-    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
+    public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
-        INDArray preOut = preOutput2d(training, null);
+        INDArray preOut = preOutput2d(training, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -107,10 +107,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return A column INDArray of shape [numExamples,1], where entry i is the score of the ith example
      */
     @Override
-    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
+    public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2, LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
-        INDArray preOut = preOutput2d(false, null);
+        INDArray preOut = preOutput2d(false, workspaceMgr);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
@@ -123,7 +123,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     @Override
-    public void computeGradientAndScore() {
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         if (input == null || labels == null)
             return;
 
@@ -131,7 +131,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
-        score = computeScore(fullNetworkL1, fullNetworkL2, true);
+        score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
     }
 
     @Override

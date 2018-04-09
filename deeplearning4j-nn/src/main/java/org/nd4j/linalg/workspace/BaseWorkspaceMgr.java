@@ -54,7 +54,7 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     }
 
     @Override
-    public AutoCloseable notifyScopeEntered(@NonNull T... arrayTypes) {
+    public WorkspacesCloseable notifyScopeEntered(@NonNull T... arrayTypes) {
         MemoryWorkspace[] ws = new MemoryWorkspace[arrayTypes.length];
         for(int i=0; i<arrayTypes.length; i++ ){
             ws[i] = notifyScopeEntered(arrayTypes[i]);
@@ -89,12 +89,42 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
 
     @Override
     public INDArray leverageTo(T arrayType, INDArray array) {
-        if(array == null){
-            return null;
+        if(array == null || !array.isAttached()){
+            return array;
         }
         validateConfig(arrayType);
         enforceExistsAndActive(arrayType);
         return array.leverageTo(getWorkspaceName(arrayType));
+    }
+
+    @Override
+    public INDArray validateArrayLocation(@NonNull T arrayType, @NonNull INDArray array, boolean migrateIfInvalid) {
+        if(scopeOutOfWs.contains(arrayType)){
+            //Array is supposed to be detached (no workspace)
+            boolean ok = !array.isAttached();
+            if(!ok){
+                if(migrateIfInvalid){
+                    return leverageTo(arrayType, array);
+                } else {
+                    throw new IllegalStateException("Array workspace validation failed: Array of type " + arrayType
+                            + " should be detached (no workspace) but is in workspace: " + array.data().getParentWorkspace().getId());
+                }
+            }
+        }
+
+        String wsNameExpected = getWorkspaceName(arrayType);
+        String wsNameAct = array.data().getParentWorkspace().getId();   //TODO what if detached, even though it shouldn't be? NPE?
+        if(!wsNameExpected.equals(wsNameAct)){
+            if(migrateIfInvalid){
+                return leverageTo(arrayType, array);
+            } else {
+                throw new IllegalStateException("Array workspace validation failed: Array of type " + arrayType +
+                        " should be in workspace \"" + wsNameExpected + "\" but is in workspace \"" + wsNameAct + "\"");
+            }
+        }
+
+        //OK - return as-is
+        return array;
     }
 
     @Override
@@ -148,18 +178,6 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
         if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceNames.get(arrayType))){
             throw new IllegalStateException("Workspace \"" + workspaceNames.get(arrayType) + "\" for array type " + arrayType
                     + " is not open");
-        }
-    }
-
-    @AllArgsConstructor
-    private static class WorkspacesCloseable implements AutoCloseable {
-        private MemoryWorkspace[] workspaces;
-
-        @Override
-        public void close() {
-            for(MemoryWorkspace ws : workspaces){
-                ws.close();
-            }
         }
     }
 }

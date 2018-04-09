@@ -1321,8 +1321,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
+    public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr){
+        computeGradientAndScore();
+    }
+
     public void computeGradientAndScore() {
         synchronizeIterEpochCounts();
+
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
 
         //Initialize the workspace (should be a no-op most of the time - but is necessary here if user calls
         // computeGradientAndScore() before any fit() methods)
@@ -1368,7 +1374,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for (String s : configuration.getNetworkOutputs()) {
                 GraphVertex gv = verticesMap.get(s);
 
-                score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true);
+                score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
 
                 //Only want to add l1/l2 once...
                 l1 = 0.0;
@@ -2337,6 +2343,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return the score for the given input,label pairs
      */
     public double score(MultiDataSet dataSet, boolean training) {
+
+        LayerWorkspaceMgr mgr = null;   //TODO
+
         boolean hasMaskArrays = dataSet.hasMaskArrays();
         if (hasMaskArrays) {
             setLayerMaskArrays(dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays());
@@ -2370,7 +2379,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 IOutputLayer ol = (IOutputLayer) outLayer;
                 ol.setLabels(labels[i++]);
 
-                score += ((LayerVertex)gv).computeScore(l1, l2, training);
+                score += ((LayerVertex)gv).computeScore(l1, l2, training, mgr);
 
                 //Only want to add l1/l2 once...
                 l1 = 0.0;
@@ -2410,6 +2419,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
      */
     public INDArray scoreExamples(MultiDataSet data, boolean addRegularizationTerms) {
+        LayerWorkspaceMgr mgr = null;   //TODO
+
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
@@ -2433,7 +2444,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             IOutputLayer ol = (IOutputLayer) outLayer;
             ol.setLabels(labels[i++]);
 
-            INDArray scoreCurrLayer = ((LayerVertex)gv).computeScoreForExamples(l1, l2);
+            INDArray scoreCurrLayer = ((LayerVertex)gv).computeScoreForExamples(l1, l2, mgr);
             if (out == null)
                 out = scoreCurrLayer;
             else

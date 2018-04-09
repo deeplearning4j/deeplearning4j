@@ -512,6 +512,9 @@ public class GradientCheckUtil {
      */
     public static boolean checkGradientsPretrainLayer(Layer layer, double epsilon, double maxRelError,
                     double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, int rngSeed) {
+
+        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();
+
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -528,7 +531,7 @@ public class GradientCheckUtil {
         //Check network configuration:
         layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
         Nd4j.getRandom().setSeed(rngSeed);
-        layer.computeGradientAndScore();
+        layer.computeGradientAndScore(mgr);
         Pair<Gradient, Double> gradAndScore = layer.gradientAndScore();
 
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -566,13 +569,13 @@ public class GradientCheckUtil {
 
             //TODO add a 'score' method that doesn't calculate gradients...
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(mgr);
             double scorePlus = layer.score();
 
             //(w-epsilon): Do forward pass and score
             params.putScalar(i, origValue - epsilon);
             Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
+            layer.computeGradientAndScore(mgr);
             double scoreMinus = layer.score();
 
             //Reset original param value

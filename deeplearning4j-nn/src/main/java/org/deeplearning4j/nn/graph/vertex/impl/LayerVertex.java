@@ -239,7 +239,7 @@ public class LayerVertex extends BaseGraphVertex {
         return true;
     }
 
-    public double computeScore(double l1, double l2, boolean training){
+    public double computeScore(double l1, double l2, boolean training, LayerWorkspaceMgr workspaceMgr){
         if(!(layer instanceof IOutputLayer)){
             throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
                     + layer.getClass().getSimpleName());
@@ -250,10 +250,10 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         IOutputLayer ol = (IOutputLayer)layer;
-        return ol.computeScore(l1, l2, training);
+        return ol.computeScore(l1, l2, training, workspaceMgr);
     }
 
-    public INDArray computeScoreForExamples(double l1, double l2){
+    public INDArray computeScoreForExamples(double l1, double l2, LayerWorkspaceMgr workspaceMgr){
         if(!(layer instanceof IOutputLayer)){
             throw new UnsupportedOperationException("Cannot compute score: layer is not an output layer (layer class: "
                     + layer.getClass().getSimpleName());
@@ -264,7 +264,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
 
         IOutputLayer ol = (IOutputLayer)layer;
-        return ol.computeScoreForExamples(l1, l2);
+        return ol.computeScoreForExamples(l1, l2, workspaceMgr);
     }
 
     @Override

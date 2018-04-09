@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.layers.OutputLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +101,7 @@ class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<D
             OutputLayer o = (OutputLayer) network;
             o.fit(data);
         } else
-            network.fit(data.getFeatureMatrix());
+            network.fit(data.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
 
         return Collections.singletonList(network.params());
 
