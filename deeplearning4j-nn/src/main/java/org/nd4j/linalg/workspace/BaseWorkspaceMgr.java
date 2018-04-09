@@ -93,16 +93,19 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
             return null;
         }
         validateConfig(arrayType);
+        enforceExistsAndActive(arrayType);
         return array.leverageTo(getWorkspaceName(arrayType));
     }
 
     @Override
     public INDArray create(@NonNull T arrayType, @NonNull int... shape) {
+        enforceExistsAndActive(arrayType);
         return create(arrayType, shape, Nd4j.order());
     }
 
     @Override
     public INDArray create(@NonNull T arrayType, @NonNull int[] shape, @NonNull char order) {
+        enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return Nd4j.create(shape, order);
         }
@@ -110,11 +113,13 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
 
     @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull int... shape) {
+        enforceExistsAndActive(arrayType);
         return createUninitialized(arrayType, shape, Nd4j.order());
     }
 
     @Override
     public INDArray createUninitialized(@NonNull T arrayType, @NonNull int[] shape, char order) {
+        enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return Nd4j.createUninitialized(shape, order);
         }
@@ -134,12 +139,24 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
         }
     }
 
+    private void enforceExistsAndActive(@NonNull T arrayType){
+        validateConfig(arrayType);
+        if(scopeOutOfWs.contains(arrayType)){
+            return;
+        }
+
+        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(workspaceNames.get(arrayType))){
+            throw new IllegalStateException("Workspace \"" + workspaceNames.get(arrayType) + "\" for array type " + arrayType
+                    + " is not open");
+        }
+    }
+
     @AllArgsConstructor
     private static class WorkspacesCloseable implements AutoCloseable {
         private MemoryWorkspace[] workspaces;
 
         @Override
-        public void close() throws Exception {
+        public void close() {
             for(MemoryWorkspace ws : workspaces){
                 ws.close();
             }

@@ -93,11 +93,11 @@ public interface GraphVertex extends Serializable {
     Layer getLayer();
 
     /** Set the input activations.
-     *
-     * @param inputNumber Must be in range 0 to {@link #getNumInputArrays()}-1
+     *  @param inputNumber Must be in range 0 to {@link #getNumInputArrays()}-1
      * @param input The input array
+     * @param workspaceMgr
      */
-    void setInput(int inputNumber, INDArray input);
+    void setInput(int inputNumber, INDArray input, LayerWorkspaceMgr workspaceMgr);
 
     @Deprecated
     void migrateInput();
@@ -133,7 +133,7 @@ public interface GraphVertex extends Serializable {
     INDArray getEpsilon();
 
     /** Set all inputs for this GraphVertex
-     * @see #setInput(int, INDArray)
+     * @see #setInput(int, INDArray, LayerWorkspaceMgr)
      */
     void setInputs(INDArray... inputs);
 

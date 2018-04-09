@@ -827,7 +827,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         int vIdxInputNum = v.getVertexEdgeNumber();
                                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                                         vertices[vIdx].setInput(vIdxInputNum,
-                                                input.dup().leverageTo(WORKSPACE_PRETRAIN)); //TODO When to dup?
+                                                input.dup().leverageTo(WORKSPACE_PRETRAIN), workspaceMgr );
                                     }
 
                                 } else {
@@ -841,7 +841,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                             int vIdx = v.getVertexIndex();
                                             int inputNum = v.getVertexEdgeNumber();
                                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                                            vertices[vIdx].setInput(inputNum, out);
+                                            vertices[vIdx].setInput(inputNum, out, workspaceMgr);
                                         }
                                     }
                                 }
@@ -1633,10 +1633,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                                     .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
                                 // FIXME: we don't really want detach here
-                                vertices[vIdx].setInput(vIdxInputNum, input);
+                                vertices[vIdx].setInput(vIdxInputNum, input, workspaceMgr);
                             }
                         } else {
-                            vertices[vIdx].setInput(vIdxInputNum, input);
+                            vertices[vIdx].setInput(vIdxInputNum, input, workspaceMgr);
                         }
 
 
@@ -1707,10 +1707,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL)
                                         .notifyScopeBorrowed()) {
                                     // FIXME: we don't really want detach here.
-                                    vertices[vIdx].setInput(inputNum, out);
+                                    vertices[vIdx].setInput(inputNum, out, workspaceMgr);
                                 }
                             } else {
-                                vertices[vIdx].setInput(inputNum, out);
+                                vertices[vIdx].setInput(inputNum, out, workspaceMgr);
                             }
 
 
@@ -2747,7 +2747,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     int vIdx = v.getVertexIndex();
                     int vIdxInputNum = v.getVertexEdgeNumber();
                     //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup(), workspaceMgr); //TODO When to dup?
                 }
 
             } else {
@@ -2781,7 +2781,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         int vIdx = v.getVertexIndex();
                         int inputNum = v.getVertexEdgeNumber();
                         //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(inputNum, out);
+                        vertices[vIdx].setInput(inputNum, out, workspaceMgr);
                     }
                 }
             }
@@ -3060,7 +3060,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     int vIdx = v.getVertexIndex();
                     int vIdxInputNum = v.getVertexEdgeNumber();
                     //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup()); //TODO When to dup?
+                    vertices[vIdx].setInput(vIdxInputNum, input.dup(), workspaceMgr); //TODO When to dup?
                 }
 
             } else {
@@ -3090,7 +3090,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         int vIdx = v.getVertexIndex();
                         int inputNum = v.getVertexEdgeNumber();
                         //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(inputNum, out);
+                        vertices[vIdx].setInput(inputNum, out, workspaceMgr);
                     }
                 }
             }

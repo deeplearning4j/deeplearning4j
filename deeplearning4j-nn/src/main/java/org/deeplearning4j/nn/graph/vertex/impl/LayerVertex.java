@@ -106,7 +106,7 @@ public class LayerVertex extends BaseGraphVertex {
         return layer.activate(training, workspaceMgr);
     }
 
-    protected void applyPreprocessorAndSetInput(){
+    protected void applyPreprocessorAndSetInput(LayerWorkspaceMgr workspaceMgr){
         //Apply preprocessor
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
@@ -117,13 +117,13 @@ public class LayerVertex extends BaseGraphVertex {
                 //allocate 1 array (i.e., the new output), so this is usually preferable in practice
                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                         .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), null);   //TODO
+                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), workspaceMgr);
                 }
             } else {
-                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), null);   //TODO
+                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), workspaceMgr);
             }
         }
-        layer.setInput(currInput, null);    //TODO
+        layer.setInput(currInput, workspaceMgr);
         setLayerInput = true;
     }
 
@@ -142,14 +142,14 @@ public class LayerVertex extends BaseGraphVertex {
 
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
         if(!setLayerInput){
-            applyPreprocessorAndSetInput();
+            applyPreprocessorAndSetInput(workspaceMgr);
         }
 
         Pair<Gradient, INDArray> pair;
         if (tbptt && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
             pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon,
-                            graph.getConfiguration().getTbpttBackLength(), null);   //TODO
+                            graph.getConfiguration().getTbpttBackLength(), workspaceMgr);
         } else {
             //Normal backprop
             pair = layer.backpropGradient(epsilon, workspaceMgr); //epsTotal may be null for OutputLayers
@@ -166,14 +166,14 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public void setInput(int inputNumber, INDArray input) {
+    public void setInput(int inputNumber, INDArray input, LayerWorkspaceMgr workspaceMgr) {
         if (inputNumber > 0)
             throw new IllegalArgumentException(
                             "Invalid input number: LayerVertex instances have only 1 input (got inputNumber = "
                                             + inputNumber + ")");
         inputs[inputNumber] = input;
         setLayerInput = false;
-        applyPreprocessorAndSetInput();
+        applyPreprocessorAndSetInput(workspaceMgr);
     }
 
     @Override
@@ -246,7 +246,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
         if(!setLayerInput){
-            applyPreprocessorAndSetInput();
+            applyPreprocessorAndSetInput(LayerWorkspaceMgr.noWorkspaces()); //TODO
         }
 
         IOutputLayer ol = (IOutputLayer)layer;
@@ -260,7 +260,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
         if(!setLayerInput){
-            applyPreprocessorAndSetInput();
+            applyPreprocessorAndSetInput(LayerWorkspaceMgr.noWorkspaces()); //TODO
         }
 
         IOutputLayer ol = (IOutputLayer)layer;
