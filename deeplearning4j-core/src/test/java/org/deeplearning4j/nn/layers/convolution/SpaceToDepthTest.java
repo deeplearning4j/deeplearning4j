@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -65,7 +66,7 @@ public class SpaceToDepthTest extends BaseDL4JTest {
         INDArray containedExpectedOut = getContainedData();
         Layer std = getSpaceToDepthLayer();
 
-        std.setInput(getContainedData());
+        std.setInput(getContainedData(), LayerWorkspaceMgr.noWorkspaces());
         INDArray containedOutput = std.backpropGradient(containedInputEpsilon).getRight();
 
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
@@ -117,7 +118,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray rows = preOutput(training);
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
@@ -139,7 +140,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     }
 
     @Override
-    protected void applyDropOutIfNecessary(boolean training) {
+    protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer " + layerId());
     }
 

@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -32,7 +33,8 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -51,7 +53,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return applyMask(input, maskArray);
     }
 

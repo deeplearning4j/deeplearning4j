@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 
 /**
@@ -73,11 +74,11 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr mgr) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
         }
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, mgr);
 
         INDArray in;
         if (training) {

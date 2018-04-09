@@ -102,7 +102,7 @@ public class LayerVertex extends BaseGraphVertex {
     public INDArray doForward(boolean training) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
-        return layer.activate(training);
+        return layer.activate(training, null);  //TODO
     }
 
     protected void applyPreprocessorAndSetInput(){

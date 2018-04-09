@@ -18,8 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -45,7 +44,9 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input, preOutput;
+    @Setter(AccessLevel.PRIVATE)
+    protected INDArray input;
+    protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
     protected INDArray dropoutMask;
     protected boolean dropoutApplied = false;
@@ -175,12 +176,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
+//        return activate(training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
+//        return activate(input, training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     /**
@@ -302,19 +305,21 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate(true);
+//        setInput(input);
+//        return activate(true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input);
-        return activate(training);
+        return activate(training, workspaceMgr);
     }
 
     @Override
     public INDArray activate() {
-        return activate(false);
+//        return activate(false, null);
+        throw new UnsupportedOperationException("To be removed");
     }
 
 
@@ -359,7 +364,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         maskState = null;
     }
 
-    protected void applyDropOutIfNecessary(boolean training){//} int iteration, int epoch) {
+    protected void applyDropOutIfNecessary(boolean training, LayerWorkspaceMgr workspaceMgr){
         if(training && !dropoutApplied && layerConf().getIDropout() != null ){
             //TODO: Epoch + iteration counters...
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {

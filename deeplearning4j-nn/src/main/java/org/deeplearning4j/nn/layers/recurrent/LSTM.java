@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Map;
@@ -111,12 +112,12 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         FwdPassReturn fwdPass;
         if (truncatedBPTT) {
             fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION),
-                            stateMap.get(STATE_KEY_PREV_MEMCELL), true);
+                            stateMap.get(STATE_KEY_PREV_MEMCELL), true, null);      //TODO
             //Store last time step of output activations and memory cell state in tBpttStateMap
             tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.WORKSPACE_TBPTT));
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.WORKSPACE_TBPTT));
         } else {
-            fwdPass = activateHelper(true, null, null, true);
+            fwdPass = activateHelper(true, null, null, true, null);
         }
 
 
@@ -133,40 +134,43 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return activate(x, true);
+//        return activate(x, true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
+//        return activate(x, training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activateHelper(training, null, null, false).fwdPassOutput;
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateHelper(true, null, null, false).fwdPassOutput;
+//        setInput(input);
+//        return activateHelper(true, null, null, false).fwdPassOutput;
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return activateHelper(training, null, null, false).fwdPassOutput;
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
     }
 
     @Override
     public INDArray activate() {
-
-        return activateHelper(false, null, null, false).fwdPassOutput;
+//        return activateHelper(false, null, null, false).fwdPassOutput;
+        throw new UnsupportedOperationException("To be removed");
     }
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
-                    final INDArray prevMemCellState, boolean forBackprop) {
-        applyDropOutIfNecessary(training);
+                    final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
@@ -252,9 +256,9 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public INDArray rnnTimeStep(INDArray input) {
-        setInput(input);
+        setInput(input, null);  //TODO
         FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION),
-                        stateMap.get(STATE_KEY_PREV_MEMCELL), false);
+                        stateMap.get(STATE_KEY_PREV_MEMCELL), false, null);         //TODO
         INDArray outAct = fwdPass.fwdPassOutput;
         //Store last time step of output activations and memory cell state for later use:
         stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.detach());
@@ -267,9 +271,9 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input);
+        setInput(input, null);  //TODO
         FwdPassReturn fwdPass = activateHelper(training, tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION),
-                        tBpttStateMap.get(STATE_KEY_PREV_MEMCELL), false);
+                        tBpttStateMap.get(STATE_KEY_PREV_MEMCELL), false, null);        //TODO
         INDArray outAct = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap

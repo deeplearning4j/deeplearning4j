@@ -112,15 +112,15 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(false);
+        return insideLayer.activate(false, workspaceMgr);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
-        return insideLayer.activate(input, false);
+        return insideLayer.activate(input, false, workspaceMgr);
     }
 
     @Override

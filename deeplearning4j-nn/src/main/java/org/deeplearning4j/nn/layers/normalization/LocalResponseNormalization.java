@@ -12,6 +12,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,7 +148,7 @@ public class LocalResponseNormalization
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         k = layerConf().getK();
         n = layerConf().getN();
         alpha = layerConf().getAlpha();
@@ -221,8 +222,7 @@ public class LocalResponseNormalization
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
-
-
 }

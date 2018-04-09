@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,6 +22,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 import java.util.Random;
@@ -226,8 +228,8 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             FeedForwardToRnnPreProcessor temp = new FeedForwardToRnnPreProcessor();
             INDArray l0Before = activations2.get("0");
             INDArray l1Before = activations2.get("1");
-            INDArray l0After = temp.preProcess(l0Before, nExamples);
-            INDArray l1After = temp.preProcess(l1Before, nExamples);
+            INDArray l0After = temp.preProcess(l0Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
+            INDArray l1After = temp.preProcess(l1Before, nExamples, LayerWorkspaceMgr.noWorkspaces());
 
             for (int j = 0; j < nExamples; j++) {
                 for (int k = 0; k < nIn; k++) {

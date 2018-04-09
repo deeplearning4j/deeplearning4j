@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -58,7 +59,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
@@ -69,7 +70,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D SubsamplingLayer's activate method
-        INDArray acts = super.activate(training);
+        INDArray acts = super.activate(training, workspaceMgr);
 
         // remove singleton fourth dimension from input and output activations
         input = origInput;

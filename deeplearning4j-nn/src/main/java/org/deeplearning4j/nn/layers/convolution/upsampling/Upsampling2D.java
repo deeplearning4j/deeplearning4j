@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 
 import java.util.Arrays;
@@ -88,7 +89,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
-        INDArray forwardOutput  = preOutput(true, true);
+        INDArray forwardOutput  = preOutput(true, true, null);
 
         Gradient gradient = new DefaultGradient();
 
@@ -109,11 +110,12 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray preOutput(boolean training) {
-        return preOutput(training, false);
+//        return preOutput(training, false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
-    public INDArray preOutput(boolean training, boolean forBackprop) {
-        applyDropOutIfNecessary(training);
+    public INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -151,8 +153,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        applyDropOutIfNecessary(training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;

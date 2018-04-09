@@ -33,6 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -184,7 +185,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray z = input;
         INDArray ret = layerConf().getActivationFn().getActivation(z.dup(), training);
 
@@ -196,15 +197,16 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         return output(training);
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
+//        setInput(input);
+//        return output(true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -213,13 +215,15 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     public INDArray output(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
+//        setInput(input);
+//        return output(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     public INDArray output(INDArray input) {
-        setInput(input);
-        return output(false);
+//        setInput(input);
+//        return output(false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     /**
@@ -232,10 +236,11 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return a probability distribution for each row
      */
     public INDArray output(boolean training) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
-        return activate(training);
+//        if (input == null) {
+//            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+//        }
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

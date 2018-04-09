@@ -798,6 +798,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param input the input
      * @return the activation from the previous layer
      */
+    @Deprecated
     public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training) {
         if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)
@@ -814,7 +815,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
-        INDArray ret = layers[curr].activate(input, training);
+        INDArray ret = layers[curr].activate(input, training, null);
+        return ret;
+    }
+
+    public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
+        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
+            input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize(), mgr);
+        }
+
+        INDArray ret = layers[curr].activate(input, training, mgr);
         return ret;
     }
 
@@ -835,48 +845,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (to < 1 || to >= layers.length)
             throw new IllegalStateException("Unable to perform activation; TO is out of layer space");
 
+        LayerWorkspaceMgr mgr = LayerWorkspaceMgr.noWorkspaces();   //TODO
+
         INDArray res = input;
         for (int l = from; l <= to; l++) {
-            res = this.activationFromPrevLayer(l, res, false);
+            res = this.activationFromPrevLayer(l, res, false, mgr);
         }
         return res;
-    }
-
-    /**
-     * * Compute input linear transformation (z) of the output layer
-     *
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> computeZ(boolean training) {
-        INDArray currentInput = this.input;
-        INDArray currentZ;
-
-        List<INDArray> activations = new ArrayList<>();
-        activations.add(currentInput);
-
-        for (int i = 0; i < layers.length; i++) {
-            //It's inefficient, but we do need to do forward pass twice, as some layers (like LSTMs)
-            // don't decompose into out = activationFn(preOut)
-            currentZ = zFromPrevLayer(i, currentInput, training);
-            currentInput = activationFromPrevLayer(i, currentInput, training);
-            activations.add(currentZ);
-        }
-        return activations;
-    }
-
-    /**
-     * Compute activations from input to output of the output layer
-     *
-     * @return the list of activations for each layer
-     */
-    public List<INDArray> computeZ(INDArray input, boolean training) {
-        if (input == null)
-            throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, getInputMiniBatchSize(), null));  //TODO
-        else
-            setInput(input);
-        return computeZ(training);
     }
 
     /**
@@ -954,6 +929,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return feedForwardToLayer(layerNum, train, true, true);
     }
 
+    @Deprecated
     protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean publicApi, boolean clearInputs) {
         // TODO: maybe remove that?
         INDArray currInput =
@@ -1039,6 +1015,28 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
+        return activations;
+    }
+
+    protected List<INDArray> feedForwardToLayer(int layerNum, boolean train, boolean clearInputs, LayerWorkspaceMgr mgr){
+        INDArray currInput = (input.isAttached() ? mgr.leverageTo(NetArrayType.ACTIVATIONS, input) : input);
+        List<INDArray> activations = new ArrayList<>();
+        activations.add(currInput);
+
+
+        for (int i = 0; i <= layerNum; i++) {
+        // log.info("Activating layer: {}", i);
+            currInput = activationFromPrevLayer(i, currInput, train, mgr);
+            activations.add(currInput);
+        }
+
+        if (!train)
+            if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_FEED_FORWARD).initializeWorkspace();
+
+        if(clearInputs){
+            clearLayersStates();    //Ensure INDArrays in layer input fields don't leak out of workspace (via .input() etc)
+        }
         return activations;
     }
 
@@ -2377,6 +2375,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
+        LayerWorkspaceMgr mgr;
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            mgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            //First: we need to do a forward pass... we want the following:
+            //(a) activatinos NOT cleared from layers, and in workspace external (need to persist)
+            //(b) activation gradients: ???
+            //(c) Layer working memory:
+            mgr = LayerWorkspaceMgr.builder()
+                    .with(NetArrayType.ACTIVATIONS, WORKSPACE_EXTERNAL, workspaceConfigurationExternal)
+                    .with(NetArrayType.FF_WORKING_MEM, WORKSPACE_FEED_FORWARD, workspaceConfigurationFeedForward)
+                    .with(NetArrayType.BP_WORKING_MEM, WORKSPACE_FEED_FORWARD, workspaceConfigurationFeedForward)
+                    .with(NetArrayType.ACTIVATION_GRAD, WORKSPACE_EXTERNAL, workspaceConfigurationExternal)
+                    .build();
+        }
+
         try {
 
             //Calculate activations (which are stored in each layer, and used in backprop)
@@ -2397,7 +2411,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //First: do a feed-forward through the network
                 //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
                 // need the input to the output layer to be set (such that backprop can be done)
-                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true, false, false);
+//                List<INDArray> activations = feedForwardToLayer(layers.length - 2, true, false, false);
+                List<INDArray> activations = feedForwardToLayer(layers.length-2, true, false, mgr);
                 if (!trainingListeners.isEmpty()) {
                     //TODO: We possibly do want output layer activations in some cases here...
                     for (TrainingListener tl : trainingListeners) {
@@ -2671,12 +2686,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
+//        return activate(training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
+//        return activate(input, training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -2769,12 +2786,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr mgr) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr) {
         throw new UnsupportedOperationException();
     }
 
@@ -2825,7 +2842,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             } else if (layers[i] instanceof MultiLayerNetwork) {
                 input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
             } else {
-                input = layers[i].activate(input, false);
+                input = layers[i].activate(input, false, null); //TODO
             }
         }
         if (inputIs2d && input.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
@@ -2904,7 +2921,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                                 storeLastForTBPTT);
                 currInput = temp.get(temp.size() - 1);
             } else {
-                currInput = layers[i].activate(currInput, training);
+                currInput = layers[i].activate(currInput, training, null);      //TODO
             }
             activations.add(currInput);
         }

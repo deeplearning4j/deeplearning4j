@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import lombok.NonNull;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  *
@@ -67,22 +68,18 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         return underlying.activate(input, training);
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        return underlying.activate(x, training);
-    }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray input = input();
         setMaskFromInput(input);
-        return underlying.activate(training);
+        return underlying.activate(training, workspaceMgr);
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setMaskFromInput(input);
-        return underlying.activate(input, training);
+        return underlying.activate(input, training, workspaceMgr);
     }
 
     @Override

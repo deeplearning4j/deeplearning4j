@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -188,7 +189,7 @@ public class LocalResponseTest extends BaseDL4JTest {
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) lrn.instantiate(nnc,
                                         null, 0, null, false);
 
-        INDArray outAct = layer.activate(in, true);
+        INDArray outAct = layer.activate(in, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(outExp, outAct);
     }

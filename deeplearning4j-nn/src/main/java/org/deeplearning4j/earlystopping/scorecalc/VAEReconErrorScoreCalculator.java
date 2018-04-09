@@ -53,7 +53,7 @@ public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<Model> {
                     " got " + l.getClass().getSimpleName());
         }
         VariationalAutoencoder vae = (VariationalAutoencoder)l;
-        INDArray z = vae.activate(input, false);
+        INDArray z = vae.activate(input, false, null);      //TODO
         return vae.generateAtMeanGivenZ(z);
     }
 

@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -429,7 +430,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
@@ -437,7 +438,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         INDArray z = preOutput(training);
 

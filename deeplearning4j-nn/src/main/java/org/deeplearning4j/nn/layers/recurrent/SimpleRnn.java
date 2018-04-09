@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
@@ -34,9 +35,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray rnnTimeStep(INDArray input) {
-        setInput(input);
+        setInput(input, null);  //TODO
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, false, false).getFirst();
+        INDArray out = activateHelper(last, false, false, null).getFirst();     //TODO
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
         }
@@ -45,9 +46,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input);
+        setInput(input, null);  //TODO
         INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, training, false).getFirst();
+        INDArray out = activateHelper(last, training, false, null).getFirst();      //TODO
         if(storeLastForTBPTT){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
                 tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
@@ -66,7 +67,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         epsilon = epsilon.dup('f');
 
         //First: Do forward pass to get gate activations and Zs
-        Pair<INDArray,INDArray> p = activateHelper(null, true, true);
+        Pair<INDArray,INDArray> p = activateHelper(null, true, true, null); //TODO
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true);
@@ -151,16 +152,17 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray preOutput(boolean training){
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(boolean training){
-        return activateHelper(null, training, false).getFirst();
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+        return activateHelper(null, training, false, workspaceMgr).getFirst();
     }
 
-    private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop){
-        applyDropOutIfNecessary(training);
+    private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
+        applyDropOutIfNecessary(training, workspaceMgr);
         int m = input.size(0);
         int tsLength = input.size(2);
         int nOut = layerConf().getNOut();

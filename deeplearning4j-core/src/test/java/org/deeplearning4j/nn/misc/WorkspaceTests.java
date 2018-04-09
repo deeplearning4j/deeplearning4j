@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -187,7 +188,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
     public static class DupPreProcessor implements InputPreProcessor {
         @Override
-        public INDArray preProcess(INDArray input, int miniBatchSize) {
+        public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr mgr) {
             return input.dup();
         }
 

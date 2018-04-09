@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -50,7 +51,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if(sameDiff == null){
             doInit();
         }
@@ -65,7 +66,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
 

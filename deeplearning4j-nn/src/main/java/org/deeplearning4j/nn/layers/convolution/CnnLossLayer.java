@@ -33,6 +33,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.List;
@@ -107,7 +108,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
      */
     @Override
     public double f1Score(INDArray examples, INDArray labels) {
-        INDArray out = activate(examples, false);
+        INDArray out = activate(examples, false, null); //TODO
         Evaluation eval = new Evaluation();
         eval.evalTimeSeries(labels, out, maskArray);
         return eval.f1();
@@ -164,7 +165,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 4)
             throw new UnsupportedOperationException(
                     "Input must be rank 4. Got input with rank " + input.rank() + " " + layerId());

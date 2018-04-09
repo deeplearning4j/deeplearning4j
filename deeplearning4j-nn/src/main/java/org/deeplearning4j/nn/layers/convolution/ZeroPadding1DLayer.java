@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Zero padding 1D layer for convolutional neural networks.
@@ -45,7 +46,8 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -75,7 +77,7 @@ public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         int[] inShape = input.shape();
         int paddedOut = inShape[2] + padding[0] + padding[1];
         int[] outShape = new int[] {inShape[0], inShape[1], paddedOut};

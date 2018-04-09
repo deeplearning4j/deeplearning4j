@@ -30,6 +30,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -326,8 +327,8 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return YoloUtils.activate(layerConf().getBoundingBoxes(), input);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return YoloUtils.activate(layerConf().getBoundingBoxes(), input, workspaceMgr);
     }
 
     @Override

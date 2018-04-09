@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +24,10 @@ public class YoloUtils {
 
     /** Essentially: just apply activation functions... */
     public static INDArray activate(INDArray boundingBoxPriors, INDArray input) {
+        return activate(boundingBoxPriors, input, LayerWorkspaceMgr.noWorkspaces());
+    }
+
+    public static INDArray activate(INDArray boundingBoxPriors, INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
         int mb = input.size(0);
         int h = input.size(2);
         int w = input.size(3);

@@ -108,15 +108,16 @@ public class Upsampling1D extends Upsampling2D {
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
-        INDArray originalInput = input;
-        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
-
-        INDArray preOutput = super.preOutput(training, forBackprop);
-
-        input = originalInput;
-        preOutput = preOutput.slice(0, 3);
-
-        return preOutput;
+//        INDArray originalInput = input;
+//        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+//
+//        INDArray preOutput = super.preOutput(training, forBackprop);
+//
+//        input = originalInput;
+//        preOutput = preOutput.slice(0, 3);
+//
+//        return preOutput;
+        throw new UnsupportedOperationException("Not yet re-implemented");
     }
 
 

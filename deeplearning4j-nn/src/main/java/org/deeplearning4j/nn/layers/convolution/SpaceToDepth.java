@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -112,7 +113,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     public INDArray preOutput(boolean training, boolean forBackprop) {
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, null);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -155,8 +156,8 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        applyDropOutIfNecessary(training);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        applyDropOutIfNecessary(training, workspaceMgr);
         return preOutput(training);
     }
 

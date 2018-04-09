@@ -869,12 +869,12 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray activate(boolean training) {
+        public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
             return null;
         }
 
         @Override
-        public INDArray activate(INDArray input, boolean training) {
+        public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
             return null;
         }
 

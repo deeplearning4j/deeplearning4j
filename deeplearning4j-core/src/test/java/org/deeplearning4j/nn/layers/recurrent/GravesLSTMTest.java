@@ -18,6 +18,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -144,7 +145,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
         INDArray params = Nd4j.create(1, numParams);
         GravesLSTM lstm = (GravesLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
-        lstm.setInput(input);
+        lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
 
         Method actHelper = GravesLSTM.class.getDeclaredMethod("activateHelper", boolean.class, INDArray.class,
                         INDArray.class, boolean.class);

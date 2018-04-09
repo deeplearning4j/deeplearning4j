@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Created by davekale on 12/7/16.
@@ -72,7 +73,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, null);        //TODO
 
         if (maskArray != null) {
             input.muliColumnVector(maskArray);
@@ -82,7 +83,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray z = preOutput(training);
         return z;
     }

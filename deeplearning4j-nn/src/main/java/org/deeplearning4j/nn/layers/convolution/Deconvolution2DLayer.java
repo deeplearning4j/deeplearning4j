@@ -17,6 +17,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -235,7 +236,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
@@ -243,7 +244,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         INDArray z = preOutput(training);
 

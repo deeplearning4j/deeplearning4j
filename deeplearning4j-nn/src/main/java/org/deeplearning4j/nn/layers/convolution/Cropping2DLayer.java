@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -29,7 +30,8 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -58,7 +60,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return inputSubset(input);
     }
 

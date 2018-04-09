@@ -16,6 +16,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -64,7 +65,8 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public INDArray preOutput(boolean training) {
-        return activate(training);
+//        return activate(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -93,7 +95,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null) {
             throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
         }

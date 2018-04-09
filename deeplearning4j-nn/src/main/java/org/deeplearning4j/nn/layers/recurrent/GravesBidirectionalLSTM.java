@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
@@ -151,38 +152,40 @@ public class GravesBidirectionalLSTM
 
     @Override
     public INDArray preOutput(INDArray x) {
-        return activate(x, true);
+//        return activate(x, true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        return activate(x, training);
+//        return activate(x, training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activateOutput(training, false);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activateOutput(training, false, workspaceMgr);
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return activateOutput(true, false);
+//        setInput(input);
+//        return activateOutput(true, false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return activateOutput(training, false);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return activateOutput(training, false, workspaceMgr);
     }
 
     @Override
     public INDArray activate() {
-
-        return activateOutput(false, false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
-    private INDArray activateOutput(final boolean training, boolean forBackprop) {
+    private INDArray activateOutput(final boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         final FwdPassReturn forwardsEval;
         final FwdPassReturn backwardsEval;
 

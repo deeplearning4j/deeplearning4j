@@ -27,6 +27,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -167,7 +168,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final GravesBidirectionalLSTM lstm =
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         final INDArray input = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
-        lstm.setInput(input);
+        lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
 
 
         final INDArray fwdPassFalse = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
@@ -327,7 +328,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         Nd4j.zeros(biasWeightsB.shape()));
 
 
-        forwardsLSTM.setInput(sig);
+        forwardsLSTM.setInput(sig, LayerWorkspaceMgr.noWorkspaces());
 
         //compare activations
         final INDArray activation1 = forwardsLSTM.activate(sig).slice(0);

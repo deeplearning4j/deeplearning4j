@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -92,8 +93,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        setInput(x);
-        return TimeSeriesUtils.reshape2dTo3d(preOutput2d(training), input.size(0));
+//        setInput(x);
+//        return TimeSeriesUtils.reshape2dTo3d(preOutput2d(training), input.size(0));
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -121,15 +123,16 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray output(INDArray input) {
-        if (input.rank() != 3)
-            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
-        //Returns 3d activations from 3d input
-        setInput(input);
-        return output(false);
+//        if (input.rank() != 3)
+//            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
+//        //Returns 3d activations from 3d input
+//        setInput(input);
+//        return output(false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray output(boolean training) {
+    public INDArray output(boolean training, LayerWorkspaceMgr workspaceMgr) {
         //Assume that input is 3d
         if (input.rank() != 3)
             throw new IllegalArgumentException(
@@ -144,10 +147,10 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0));
         }
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, workspaceMgr);
         INDArray origInput = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray out = super.activate(true);
+        INDArray out = super.activate(true, workspaceMgr);
         this.input = origInput;
         if (maskArray != null) {
             out.muliColumnVector(maskArray);
@@ -156,7 +159,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());

@@ -34,6 +34,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -189,30 +190,34 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return output(training, workspaceMgr);
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return output(true);
+//        setInput(input);
+//        return output(true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray activate() {
-        return output(false);
+//        return output(false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     public INDArray output(INDArray input, boolean training) {
-        setInput(input);
-        return output(training);
+//        setInput(input);
+//        return output(training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     public INDArray output(INDArray input) {
-        setInput(input);
-        return output(false);
+//        setInput(input);
+//        return output(false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     /**
@@ -224,11 +229,11 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * Each row will be the likelihood of a label given that example
      * @return a probability distribution for each row
      */
-    public INDArray output(boolean training) {
+    public INDArray output(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
         }
-        return super.activate(training);
+        return super.activate(training, workspaceMgr);
     }
 
 
@@ -327,9 +332,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray input, INDArray labels) {
-        setInput(input);
+        setInput(input, null);  //TODO
         setLabels(labels);
-        applyDropOutIfNecessary(true);
+        applyDropOutIfNecessary(true, null);    //TODO
         if (solver == null) {
             solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively

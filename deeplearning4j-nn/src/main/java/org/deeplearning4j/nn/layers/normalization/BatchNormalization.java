@@ -18,6 +18,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
@@ -222,7 +223,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     public void fit(INDArray data) {}
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST);
     }
 

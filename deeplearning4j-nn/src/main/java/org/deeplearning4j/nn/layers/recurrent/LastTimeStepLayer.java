@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -80,17 +81,17 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        return getLastStep(underlying.activate(x, training));
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
-    public INDArray activate(boolean training) {
-        return getLastStep(underlying.activate(training));
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return getLastStep(underlying.activate(training, workspaceMgr));
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        INDArray a = underlying.activate(input, training);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        INDArray a = underlying.activate(input, training, workspaceMgr);
         return getLastStep(a);
     }
 

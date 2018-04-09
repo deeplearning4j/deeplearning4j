@@ -23,6 +23,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Collections;
 
@@ -58,7 +59,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
 
@@ -76,7 +77,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();
@@ -97,7 +98,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();
@@ -125,7 +126,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         OutputLayer layer = getIrisLogisticLayerConfig(Activation.SOFTMAX, 100, LossFunctions.LossFunction.MCXENT);
         int nParams = layer.numParams();
         layer.setBackpropGradientsViewArray(Nd4j.create(1, nParams));
-        layer.setInput(irisData.getFeatureMatrix());
+        layer.setInput(irisData.getFeatureMatrix(), LayerWorkspaceMgr.noWorkspaces());
         layer.setLabels(irisData.getLabels());
         layer.computeGradientAndScore();
         score1 = layer.score();

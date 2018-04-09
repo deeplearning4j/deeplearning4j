@@ -87,7 +87,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
                             + W.shapeInfoToString() + ") " + layerId());
         }
 
-        applyDropOutIfNecessary(training);
+        applyDropOutIfNecessary(training, null);    //TODO
 
         INDArray ret = Nd4j.zeros(input.rows(),input.columns());
 

@@ -94,6 +94,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return the raw activation
      * for this layer
      */
+    @Deprecated
     INDArray preOutput(INDArray x);
 
 
@@ -104,6 +105,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return the raw activation
      * for this layer
      */
+    @Deprecated
     INDArray preOutput(INDArray x, TrainingMode training);
 
 
@@ -112,6 +114,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @param training  training or test mode
      * @return the activation of the last specified input
      */
+    @Deprecated
     INDArray activate(TrainingMode training);
 
     /**
@@ -122,6 +125,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @param training  train or test mode
      * @return
      */
+    @Deprecated
     INDArray activate(INDArray input, TrainingMode training);
 
 
@@ -131,6 +135,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return the raw activation
      * for this layer
      */
+    @Deprecated
     INDArray preOutput(INDArray x, boolean training);
 
 
@@ -139,7 +144,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @param training  training or test mode
      * @return the activation of the last specified input
      */
-    INDArray activate(boolean training);
+    INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Initialize the layer with the given input
@@ -149,12 +154,13 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @param training  train or test mode
      * @return
      */
-    INDArray activate(INDArray input, boolean training);
+    INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr);
 
     /**
      * Trigger an activation with the last specified input
      * @return the activation of the last specified input
      */
+    @Deprecated
     INDArray activate();
 
     /**
@@ -164,6 +170,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @param input the input to use
      * @return
      */
+    @Deprecated
     INDArray activate(INDArray input);
 
     /**
@@ -179,6 +186,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      * Clone the layer
      * @return
      */
+    @Deprecated
     Layer clone();
 
 

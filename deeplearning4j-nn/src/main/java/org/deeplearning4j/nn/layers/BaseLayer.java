@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -110,7 +111,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         if (this.input == null)
             return;
 
-        INDArray output = activate(true);
+        INDArray output = activate(true, null); //TODO
         setScoreWithZ(output);
 
     }
@@ -126,12 +127,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
+//        return activate(training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return activate(input, training == TrainingMode.TRAIN);
+//        return activate(input, training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     /**
@@ -156,11 +159,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      */
     @Override
     public void iterate(INDArray input) {
-        applyDropOutIfNecessary(true);
-        Gradient gradient = gradient();
-        for (String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
-        }
+//        applyDropOutIfNecessary(true);
+//        Gradient gradient = gradient();
+//        for (String paramType : gradient.gradientForVariable().keySet()) {
+//            update(gradient.getGradientFor(paramType), paramType);
+//        }
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -313,38 +317,39 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     public INDArray preOutput(boolean training) {
-        applyDropOutIfNecessary(training);
-        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
-        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
-
-        //Input validation:
-        if (input.rank() != 2 || input.columns() != W.rows()) {
-            if (input.rank() != 2) {
-                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
-                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
-                                + ". Missing preprocessor or wrong input type? " + layerId());
-            }
-            throw new DL4JInvalidInputException(
-                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
-                                            + ") is invalid: does not match layer input size (layer # inputs = "
-                                            + W.size(0) + ") " + layerId());
-        }
-
-
-        INDArray ret = input.mmul(W);
-        if(hasBias()){
-            ret.addiRowVector(b);
-        }
-
-        if (maskArray != null) {
-            applyMask(ret);
-        }
-
-        return ret;
+        throw new UnsupportedOperationException("To be removed");
+//        applyDropOutIfNecessary(training);
+//        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
+//        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+//
+//        //Input validation:
+//        if (input.rank() != 2 || input.columns() != W.rows()) {
+//            if (input.rank() != 2) {
+//                throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
+//                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
+//                                + ". Missing preprocessor or wrong input type? " + layerId());
+//            }
+//            throw new DL4JInvalidInputException(
+//                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+//                                            + ") is invalid: does not match layer input size (layer # inputs = "
+//                                            + W.size(0) + ") " + layerId());
+//        }
+//
+//
+//        INDArray ret = input.mmul(W);
+//        if(hasBias()){
+//            ret.addiRowVector(b);
+//        }
+//
+//        if (maskArray != null) {
+//            applyMask(ret);
+//        }
+//
+//        return ret;
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray z = preOutput(training);
         INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
@@ -418,8 +423,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void fit(INDArray input) {
         if (input != null) {
-            setInput(input);
-            applyDropOutIfNecessary(true);
+            setInput(input, null);      //TODO
+            applyDropOutIfNecessary(true, null);  //TODO
         }
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();

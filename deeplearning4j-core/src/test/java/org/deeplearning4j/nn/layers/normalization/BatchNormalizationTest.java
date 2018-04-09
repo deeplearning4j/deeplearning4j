@@ -37,6 +37,7 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -96,7 +97,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         assertEquals(4 * nOut, l.numParams()); //Gamma, beta, global mean, global var
 
         INDArray randInput = Nd4j.rand(100, nOut);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray mean = output.mean(0);
         INDArray stdev = output.std(false, 0);
@@ -111,7 +112,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
         mean = output.mean(0);
         stdev = output.std(false, 0);
 
@@ -138,7 +139,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         INDArray xHat = input.subRowVector(mean).divRowVector(Transforms.sqrt(var.add(eps), true));
         INDArray outExpected = xHat.mulRowVector(gamma).addRowVector(beta);
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));
@@ -184,7 +185,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
         INDArray randInput = Nd4j.rand(12345, 100, nOut, hw, hw);
-        INDArray output = l.activate(randInput, true);
+        INDArray output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(4, output.rank());
 
@@ -199,7 +200,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         double beta = 3.0;
         l = getLayer(nOut, 0.0, true, gamma, beta);
         assertEquals(2 * nOut, l.numParams()); //Should have only global mean/var parameters
-        output = l.activate(randInput, true);
+        output = l.activate(randInput, true, LayerWorkspaceMgr.noWorkspaces());
         mean = output.mean(0, 2, 3);
         stdev = output.std(false, 0, 2, 3);
 
@@ -229,8 +230,8 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         Layer l1 = getLayer(nOut);
         Layer l2 = getLayer(nOut);
 
-        INDArray out2d = l1.activate(in.dup(), true);
-        INDArray out4d = l2.activate(in4.dup(), true);
+        INDArray out2d = l1.activate(in.dup(), true, LayerWorkspaceMgr.noWorkspaces());
+        INDArray out4d = l2.activate(in4.dup(), true, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray out4dAs2 = out4d.permute(0, 2, 3, 1).dup('c');
         out4dAs2 = Shape.newShapeNoCopy(out4dAs2, new int[] {m * h * w, nOut}, false);
@@ -276,7 +277,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         INDArray outExpected = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(xHat, gamma, xHat.dup(), 1));
         Nd4j.getExecutioner().execAndReturn(new BroadcastAddOp(outExpected, beta, outExpected, 1));
 
-        INDArray out = l.activate(input, true);
+        INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
         System.out.println(Arrays.toString(outExpected.data().asDouble()));
         System.out.println(Arrays.toString(out.data().asDouble()));

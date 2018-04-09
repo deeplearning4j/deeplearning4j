@@ -793,7 +793,8 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public INDArray activate(TrainingMode training) {
-        return activate(training == TrainingMode.TRAIN);
+//        return activate(training == TrainingMode.TRAIN);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -802,7 +803,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray output = preOutput(training); //Mean values for p(z|x)
         pzxActivationFn.getActivation(output, training);
 
@@ -810,14 +811,15 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input, null);  //TODO
-        return activate(training);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
     @Override
     public INDArray activate() {
-        return activate(false);
+//        return activate(false);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -1153,7 +1155,7 @@ public class VariationalAutoencoder implements Layer {
                                             + layerId());
         }
 
-        INDArray pZXMean = activate(data, false);
+        INDArray pZXMean = activate(data, false, LayerWorkspaceMgr.noWorkspaces());
         INDArray reconstruction = generateAtMeanGivenZ(pZXMean); //Not probabilistic -> "mean" == output
 
         if (reconstructionDistribution instanceof CompositeReconstructionDistribution) {

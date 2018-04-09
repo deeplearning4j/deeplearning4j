@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  *  Autoencoder.
@@ -44,7 +45,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
-        setInput(v);
+        setInput(v, null);      //TODO
         INDArray ret = encode(v, true);
         return new Pair<>(ret, ret);
     }
@@ -78,15 +79,16 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
+    public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         return encode(input, training);
     }
 
     @Override
     public INDArray activate(INDArray input) {
-        setInput(input);
-        return encode(input, true);
+//        setInput(input);
+//        return encode(input, true);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -95,7 +97,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public INDArray activate(boolean training) {
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return decode(encode(input, training));
     }
 
@@ -111,7 +113,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         double corruptionLevel = layerConf().getCorruptionLevel();
 
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
-        setInput(corruptedX);
+        setInput(corruptedX, null); //TODO
 
         INDArray y = encode(corruptedX, true);
         INDArray z = decode(y);
