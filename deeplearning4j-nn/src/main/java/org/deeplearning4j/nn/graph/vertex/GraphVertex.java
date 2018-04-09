@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 
@@ -98,6 +99,7 @@ public interface GraphVertex extends Serializable {
      */
     void setInput(int inputNumber, INDArray input);
 
+    @Deprecated
     void migrateInput();
 
     /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
@@ -116,13 +118,13 @@ public interface GraphVertex extends Serializable {
      * @param training if true: forward pass at training time. If false: forward pass at test time
      * @return The output (for example, activations) of the GraphVertex
      */
-    INDArray doForward(boolean training);
+    INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr);
 
     /** Do backward pass
      * @param tbptt If true: do backprop using truncated BPTT
      * @return The gradients (may be null), and the errors/epsilons for all inputs to this GraphVertex
      */
-    Pair<Gradient, INDArray[]> doBackward(boolean tbptt);
+    Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr);
 
     /** Get the array of inputs previously set for this GraphVertex */
     INDArray[] getInputs();

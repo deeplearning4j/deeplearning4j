@@ -46,7 +46,7 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN epsilons (3d) to 2d (for use in FF layer backprop calculations)
         if (output.rank() != 3)
             throw new IllegalArgumentException(

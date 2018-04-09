@@ -41,7 +41,7 @@ public class ZeroMeanPrePreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         return output;
     }
 

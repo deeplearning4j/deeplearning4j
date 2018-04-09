@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /** PreprocessorVertex is a simple adaptor class that allows a {@link InputPreProcessor} to be used in a ComputationGraph
  * GraphVertex, without it being associated with a layer.
@@ -57,13 +58,13 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
-        return preProcessor.preProcess(inputs[0], graph.batchSize(), null); //TODO
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return preProcessor.preProcess(inputs[0], graph.batchSize(), workspaceMgr);
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
-        return new Pair<>(null, new INDArray[] {preProcessor.backprop(epsilon, graph.batchSize())});
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
+        return new Pair<>(null, new INDArray[] {preProcessor.backprop(epsilon, graph.batchSize(), workspaceMgr)});
     }
 
     @Override

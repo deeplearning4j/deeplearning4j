@@ -51,11 +51,11 @@ public class ComposableInputPreProcessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Apply input preprocessors in opposite order for backprop (compared to forward pass)
         //For example, CNNtoFF + FFtoRNN, need to do backprop in order of FFtoRNN + CNNtoFF
         for (int i = inputPreProcessors.length - 1; i >= 0; i--) {
-            output = inputPreProcessors[i].backprop(output, miniBatchSize);
+            output = inputPreProcessors[i].backprop(output, miniBatchSize, workspaceMgr);
         }
         return output;
     }

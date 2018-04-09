@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * ReverseTimeSeriesVertex is used in recurrent neural networks to revert the order of time series.
@@ -43,19 +44,23 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         }
     }
 
+    @Override
     public boolean hasLayer() {
         return false;
     }
 
+    @Override
     public boolean isOutputVertex() {
         return false;
     }
 
+    @Override
     public Layer getLayer() {
         return null;
     }
 
-    public INDArray doForward(boolean training) {
+    @Override
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         // Get the mask arrays for the given input, if any
         final INDArray mask = getMask();
 
@@ -66,7 +71,8 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         return revertTimeSeries(input, mask);
     }
 
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    @Override
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         // Get the mask arrays for the given input, if any
         INDArray mask = getMask();
@@ -166,9 +172,9 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
             throw new RuntimeException("Vertex does not have gradients; gradients view array cannot be set here");
     }
 
+    @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                                                           int minibatchSize)
-    {
+                                                           int minibatchSize){
         if (maskArrays.length > 1) {
             throw new IllegalArgumentException("This vertex can only handle one input and hence only one mask");
         }

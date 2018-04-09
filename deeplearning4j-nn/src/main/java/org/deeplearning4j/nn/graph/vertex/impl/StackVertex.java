@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * StackVertex allows for stacking of inputs so that they may be forwarded through
@@ -63,7 +64,7 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         // stacking along dimension 0
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
@@ -111,7 +112,7 @@ public class StackVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         // this is basically doForward on UnstackVertex
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");

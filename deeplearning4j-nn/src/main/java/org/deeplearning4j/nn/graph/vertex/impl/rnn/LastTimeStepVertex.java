@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
  * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
@@ -74,7 +75,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         //First: get the mask arrays for the given input, if any
         INDArray[] inputMaskArrays = graph.getInputMaskArrays();
         INDArray mask = (inputMaskArrays != null ? inputMaskArrays[inputIdx] : null);
@@ -115,7 +116,7 @@ public class LastTimeStepVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
 
         //Allocate the appropriate sized array:
         INDArray epsilonsOut = Nd4j.create(fwdPassShape);

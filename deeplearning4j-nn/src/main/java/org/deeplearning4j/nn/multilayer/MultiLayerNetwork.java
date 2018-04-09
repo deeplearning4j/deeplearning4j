@@ -1346,7 +1346,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
                 currPair = new Pair<>(currPair.getFirst(),
                                 this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                                                .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                                                .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
 
             layerFrom = numLayers - 2;
         } else {
@@ -1377,7 +1377,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL);
         }
 
-
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
@@ -1401,7 +1400,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //Pass epsilon through input processor before passing to next layer (if applicable)
                 if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
                     currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                    .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                                    .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
 
 
                 if (currPair.getSecond() != null) {
@@ -1588,7 +1587,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
             currPair = new Pair<>(currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                            .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                            .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = numLayers - 2; j >= 0; j--) {
@@ -1612,7 +1611,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //Pass epsilon through input processor before passing to next layer (if applicable)
             if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
                 currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                                .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
         }
 
         //Add gradients to Gradients, in correct order

@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -99,10 +100,10 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: all inputs not set");
-        return layer.activate(training, null);  //TODO
+        return layer.activate(training, workspaceMgr);
     }
 
     protected void applyPreprocessorAndSetInput(){
@@ -127,7 +128,7 @@ public class LayerVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoBackward()) {
             if(inputs == null || inputs[0] == null){
                 throw new IllegalStateException("Cannot do backward pass: inputs not set. Layer " + vertexName
@@ -151,12 +152,12 @@ public class LayerVertex extends BaseGraphVertex {
                             graph.getConfiguration().getTbpttBackLength(), null);   //TODO
         } else {
             //Normal backprop
-            pair = layer.backpropGradient(epsilon, null); //TODO //epsTotal may be null for OutputLayers
+            pair = layer.backpropGradient(epsilon, workspaceMgr); //epsTotal may be null for OutputLayers
         }
 
         if (layerPreProcessor != null) {
             INDArray eps = pair.getSecond();
-            eps = layerPreProcessor.backprop(eps, graph.batchSize());
+            eps = layerPreProcessor.backprop(eps, graph.batchSize(), workspaceMgr);
             pair.setSecond(eps);
         }
 

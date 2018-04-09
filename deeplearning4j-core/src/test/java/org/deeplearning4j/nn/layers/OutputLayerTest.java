@@ -358,7 +358,7 @@ public class OutputLayerTest extends BaseDL4JTest {
                     labels3d.putScalar(new int[] {i, idx, j}, 1.0f);
                 }
             }
-            INDArray labels2d = proc.backprop(labels3d, miniBatchSize);
+            INDArray labels2d = proc.backprop(labels3d, miniBatchSize, LayerWorkspaceMgr.noWorkspaces());
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345L).list()
                             .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)

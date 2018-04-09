@@ -30,6 +30,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -47,14 +48,14 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 17, 18).reshape(3, 6).addi(100);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new int[] {3, 10}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10)));
 
         mergeNode.setEpsilon(out);
-        INDArray[] backward = mergeNode.doBackward(false).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -69,14 +70,14 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 89, 90).reshape(3, 6, 5).addi(100);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new int[] {3, 10, 5}, out.shape());
 
         assertEquals(first, out.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4), NDArrayIndex.all()));
         assertEquals(second, out.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 10), NDArrayIndex.all()));
 
         mergeNode.setEpsilon(out);
-        INDArray[] backward = mergeNode.doBackward(false).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -90,7 +91,7 @@ public class TestGraphNodes {
         INDArray second = Nd4j.linspace(0, 3, 4).reshape(1, 1, 2, 2).addi(10);
 
         mergeNode.setInputs(first, second);
-        INDArray out = mergeNode.doForward(false);
+        INDArray out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new int[] {1, 2, 2, 2}, out.shape());
 
         for (int i = 0; i < 2; i++) {
@@ -101,7 +102,7 @@ public class TestGraphNodes {
         }
 
         mergeNode.setEpsilon(out);
-        INDArray[] backward = mergeNode.doBackward(false).getSecond();
+        INDArray[] backward = mergeNode.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
 
@@ -111,7 +112,7 @@ public class TestGraphNodes {
         second = Nd4j.linspace(0, 17, 18).reshape(1, 2, 3, 3).addi(100);
 
         mergeNode.setInputs(first, second);
-        out = mergeNode.doForward(false);
+        out = mergeNode.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(new int[] {1, 4, 3, 3}, out.shape());
 
         for (int i = 0; i < 3; i++) {
@@ -125,7 +126,7 @@ public class TestGraphNodes {
         }
 
         mergeNode.setEpsilon(out);
-        backward = mergeNode.doBackward(false).getSecond();
+        backward = mergeNode.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
         assertEquals(first, backward[0]);
         assertEquals(second, backward[1]);
     }
@@ -137,11 +138,11 @@ public class TestGraphNodes {
 
         INDArray in = Nd4j.rand(5, 10);
         subset.setInputs(in);
-        INDArray out = subset.doForward(false);
+        INDArray out = subset.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true)), out);
 
         subset.setEpsilon(out);
-        INDArray backward = subset.doBackward(false).getSecond()[0];
+        INDArray backward = subset.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(Nd4j.zeros(5, 4), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true)));
         assertEquals(Nd4j.zeros(5, 2), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(8, 9, true)));
@@ -149,12 +150,12 @@ public class TestGraphNodes {
         //Test same for CNNs:
         in = Nd4j.rand(new int[] {5, 10, 3, 3});
         subset.setInputs(in);
-        out = subset.doForward(false);
+        out = subset.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
                         NDArrayIndex.all()), out);
 
         subset.setEpsilon(out);
-        backward = subset.doBackward(false).getSecond()[0];
+        backward = subset.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(Nd4j.zeros(5, 4, 3, 3), backward.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true),
                         NDArrayIndex.all(), NDArrayIndex.all()));
         assertEquals(out, backward.get(NDArrayIndex.all(), NDArrayIndex.interval(4, 7, true), NDArrayIndex.all(),
@@ -183,11 +184,11 @@ public class TestGraphNodes {
         GraphVertex gv = graph.getVertex("lastTS");
         gv.setInputs(in);
         //Forward pass:
-        INDArray outFwd = gv.doForward(true);
+        INDArray outFwd = gv.doForward(true, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
         //Backward pass:
         gv.setEpsilon(expOut);
-        Pair<Gradient, INDArray[]> pair = gv.doBackward(false);
+        Pair<Gradient, INDArray[]> pair = gv.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
         INDArray eps = pair.getSecond()[0];
         assertArrayEquals(in.shape(), eps.shape());
         assertEquals(Nd4j.zeros(3, 5, 5),
@@ -207,7 +208,7 @@ public class TestGraphNodes {
         expOut.putRow(2, in.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
         gv.setInputs(in);
-        outFwd = gv.doForward(true);
+        outFwd = gv.doForward(true, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
 
         String json = conf.toJson();
@@ -240,12 +241,12 @@ public class TestGraphNodes {
 
         GraphVertex gv = graph.getVertex("duplicateTS");
         gv.setInputs(in2d);
-        INDArray outFwd = gv.doForward(true);
+        INDArray outFwd = gv.doForward(true, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
 
         INDArray expOutBackward = expOut.sum(2);
         gv.setEpsilon(expOut);
-        INDArray outBwd = gv.doBackward(false).getSecond()[0];
+        INDArray outBwd = gv.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(expOutBackward, outBwd);
 
         String json = conf.toJson();
@@ -262,13 +263,13 @@ public class TestGraphNodes {
         INDArray in2 = Nd4j.rand(5, 2);
         INDArray in3 = Nd4j.rand(5, 2);
         unstack.setInputs(in1, in2, in3);
-        INDArray out = unstack.doForward(false);
+        INDArray out = unstack.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in1, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
         assertEquals(in2, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
         assertEquals(in3, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
 
         unstack.setEpsilon(out);
-        Pair<Gradient, INDArray[]> b = unstack.doBackward(false);
+        Pair<Gradient, INDArray[]> b = unstack.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(in1, b.getSecond()[0]);
         assertEquals(in2, b.getSecond()[1]);
@@ -332,13 +333,13 @@ public class TestGraphNodes {
         assertArrayEquals(new int[] {15, 7}, p.getFirst().shape());
         assertEquals(MaskState.Active, p.getSecond());
 
-        INDArray out = stack.doForward(false);
+        INDArray out = stack.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in0, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
         assertEquals(in1, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
         assertEquals(in2, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.interval(0, 7)));
 
         stack.setEpsilon(out);
-        Pair<Gradient, INDArray[]> b = stack.doBackward(false);
+        Pair<Gradient, INDArray[]> b = stack.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(in0, b.getSecond()[0]);
         assertEquals(in1, b.getSecond()[1]);
@@ -354,9 +355,9 @@ public class TestGraphNodes {
         unstack0.setInputs(out);
         unstack1.setInputs(out);
         unstack2.setInputs(out);
-        INDArray f0 = unstack0.doForward(true);
-        INDArray f1 = unstack1.doForward(true);
-        INDArray f2 = unstack2.doForward(true);
+        INDArray f0 = unstack0.doForward(true, LayerWorkspaceMgr.noWorkspaces());
+        INDArray f1 = unstack1.doForward(true, LayerWorkspaceMgr.noWorkspaces());
+        INDArray f2 = unstack2.doForward(true, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(in0, f0.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 5)));
         assertEquals(in1, f1.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 6)));
@@ -385,9 +386,9 @@ public class TestGraphNodes {
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
-        INDArray out0 = unstack0.doForward(false);
-        INDArray out1 = unstack1.doForward(false);
-        INDArray out2 = unstack2.doForward(false);
+        INDArray out0 = unstack0.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        INDArray out1 = unstack1.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        INDArray out2 = unstack2.doForward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()), out0);
         assertEquals(in.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()), out1);
         assertEquals(in.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()), out2);
@@ -395,9 +396,9 @@ public class TestGraphNodes {
         unstack0.setEpsilon(out0);
         unstack1.setEpsilon(out1);
         unstack2.setEpsilon(out2);
-        INDArray backward0 = unstack0.doBackward(false).getSecond()[0];
-        INDArray backward1 = unstack1.doBackward(false).getSecond()[0];
-        INDArray backward2 = unstack2.doBackward(false).getSecond()[0];
+        INDArray backward0 = unstack0.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
+        INDArray backward1 = unstack1.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
+        INDArray backward2 = unstack2.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(out0, backward0.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 2), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 2), backward0.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
@@ -417,9 +418,9 @@ public class TestGraphNodes {
         unstack0.setInputs(in);
         unstack1.setInputs(in);
         unstack2.setInputs(in);
-        out0 = unstack0.doForward(false);
-        out1 = unstack1.doForward(false);
-        out2 = unstack2.doForward(false);
+        out0 = unstack0.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        out1 = unstack1.doForward(false, LayerWorkspaceMgr.noWorkspaces());
+        out2 = unstack2.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(in.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()),
                         out0);
@@ -431,9 +432,9 @@ public class TestGraphNodes {
         unstack0.setEpsilon(out0);
         unstack1.setEpsilon(out1);
         unstack2.setEpsilon(out2);
-        backward0 = unstack0.doBackward(false).getSecond()[0];
-        backward1 = unstack1.doBackward(false).getSecond()[0];
-        backward2 = unstack2.doBackward(false).getSecond()[0];
+        backward0 = unstack0.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
+        backward1 = unstack1.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
+        backward2 = unstack2.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond()[0];
         assertEquals(out0, backward0.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.all()));
         assertEquals(Nd4j.zeros(5, 10, 3, 3), backward0.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(),
@@ -464,7 +465,7 @@ public class TestGraphNodes {
         INDArray in2 = Nd4j.rand(5, 2);
 
         l2.setInputs(in1, in2);
-        INDArray out = l2.doForward(false);
+        INDArray out = l2.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray expOut = Nd4j.create(5, 1);
         for (int i = 0; i < 5; i++) {
@@ -492,7 +493,7 @@ public class TestGraphNodes {
 
 
         l2.setEpsilon(epsilon);
-        Pair<Gradient, INDArray[]> p = l2.doBackward(false);
+        Pair<Gradient, INDArray[]> p = l2.doBackward(false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(dLda, p.getSecond()[0]);
         assertEquals(dLdb, p.getSecond()[1]);
     }
@@ -506,12 +507,12 @@ public class TestGraphNodes {
         INDArray input = Nd4j.create(inputShape);
 
         reshapeVertex.setInputs(input);
-        INDArray out = reshapeVertex.doForward(false);
+        INDArray out = reshapeVertex.doForward(false, LayerWorkspaceMgr.noWorkspaces());
 
         assertArrayEquals(new int[] {1, 736}, out.shape());
 
         reshapeVertex.setEpsilon(out);
-        INDArray[] backward = reshapeVertex.doBackward(false).getSecond();
+        INDArray[] backward = reshapeVertex.doBackward(false, LayerWorkspaceMgr.noWorkspaces()).getSecond();
         assert (Arrays.equals(backward[0].shape(), inputShape));
     }
 

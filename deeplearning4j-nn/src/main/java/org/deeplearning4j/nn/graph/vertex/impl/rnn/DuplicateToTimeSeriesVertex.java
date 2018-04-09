@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
  * duplication. That is, given a 2d input with shape [numExamples,nIn] duplicate each row to give output of
@@ -75,7 +76,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public INDArray doForward(boolean training) {
+    public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
 
         //First: work out the time series length
         int tsLength = graph.getInput(inputVertexIndex).size(2);
@@ -89,7 +90,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     }
 
     @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt) {
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
         return new Pair<>(null, new INDArray[] {epsilon.sum(2)});
     }

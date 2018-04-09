@@ -832,7 +832,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                                 } else {
                                     //Do forward pass:
-                                    INDArray out = current.doForward(true);
+                                    INDArray out = current.doForward(true, workspaceMgr);
 
                                     //Now, set the inputs for the next vertices:
                                     VertexIndices[] outputsTo = current.getOutputVertices();
@@ -1603,6 +1603,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         boolean wseOpenSingle = (wsm == WorkspaceMode.SINGLE) &&
                 Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL);
 
+
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
+
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
@@ -1671,16 +1675,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     // once again, pushing stuff out of this workspace
                     INDArray out;
                     if (publicApi) {
-                        out = current.doForward(train).detach();
+                        out = current.doForward(train, null).detach();
                     } else {
                         if(wsm == WorkspaceMode.SINGLE && !wseOpenSingle){
                             //workspaceExternal is ONLY open in the current loop. Consequently, we can't simply leverage to
                             // this workspace, as doing so would be a no-op. And the array would be invalidated at the end of
                             // the current for loop, hence a detach is required
-                            out = current.doForward(train).detach();
+                            out = current.doForward(train, null).detach();
                         } else {
                             //Standard training case
-                            out = current.doForward(train).leverageOrDetach(WORKSPACE_EXTERNAL);
+                            out = current.doForward(train, null).leverageOrDetach(WORKSPACE_EXTERNAL);
                         }
                     }
 
@@ -1968,6 +1972,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 throw new RuntimeException();
         }
 
+        LayerWorkspaceMgr workspaceMgr = null;      //TODO
+
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
 
         boolean wsExternalActive = false;
@@ -2012,7 +2018,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT);
+                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT, workspaceMgr);
                 INDArray[] epsilons = pair.getSecond();
 
                 for (int x = 0; x < epsilons.length; x++) {
@@ -2726,6 +2732,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         INDArray[] outputs = new INDArray[this.numOutputArrays];
 
         //Based on: feedForward()
@@ -2753,11 +2761,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
                     } else {
                         //non-recurrent layer
-                        out = current.doForward(false);
+                        out = current.doForward(false, workspaceMgr);
                     }
                 } else {
                     //GraphNode
-                    out = current.doForward(false);
+                    out = current.doForward(false, workspaceMgr);
                 }
 
                 if (current.isOutputVertex()) {
@@ -3037,6 +3045,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                                              boolean storeLastForTBPTT) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         //Do forward pass according to the topological ordering of the network
         for (int currVertexIdx : topologicalOrder) {
             GraphVertex current = vertices[currVertexIdx];
@@ -3066,11 +3076,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         out = temp.get(temp.size() - 1);
                     } else {
                         //non-recurrent layer
-                        out = current.doForward(training);
+                        out = current.doForward(training, workspaceMgr);
                     }
                     layerActivations.put(current.getVertexName(), out);
                 } else {
-                    out = current.doForward(training);
+                    out = current.doForward(training, workspaceMgr);
                 }
 
                 //Now, set the inputs for the next vertices:

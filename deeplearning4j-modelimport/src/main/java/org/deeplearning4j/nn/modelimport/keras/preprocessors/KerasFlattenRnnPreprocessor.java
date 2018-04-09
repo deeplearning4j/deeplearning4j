@@ -39,7 +39,7 @@ public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         return epsilons.dup().reshape(miniBatchSize, depth, tsLength);
     }
 

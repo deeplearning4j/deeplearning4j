@@ -71,7 +71,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Input: 4d epsilons (CNN)
         //Output: 3d epsilons (RNN)
         if (output.ordering() == 'f')

@@ -50,7 +50,7 @@ public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreP
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
             epsilons = epsilons.dup('c');
 

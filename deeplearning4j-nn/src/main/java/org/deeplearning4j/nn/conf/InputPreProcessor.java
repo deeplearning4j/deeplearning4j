@@ -66,7 +66,7 @@ public interface InputPreProcessor extends Serializable, Cloneable {
      * @param miniBatchSize
      * @return the reverse of the pre preProcess step (if any)
      */
-    INDArray backprop(INDArray output, int miniBatchSize);
+    INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
 
     InputPreProcessor clone();
 

@@ -101,7 +101,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray epsilons, int miniBatchSize) {
+    public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
             epsilons = epsilons.dup('c');

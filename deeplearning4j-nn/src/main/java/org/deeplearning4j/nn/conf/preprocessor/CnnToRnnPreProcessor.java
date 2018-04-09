@@ -69,7 +69,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public INDArray backprop(INDArray output, int miniBatchSize) {
+    public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (output.ordering() == 'c')
             output = output.dup('f');
 

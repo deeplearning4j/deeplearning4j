@@ -193,7 +193,7 @@ public class WorkspaceTests extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray backprop(INDArray output, int miniBatchSize) {
+        public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
             return output.dup();
         }
 
