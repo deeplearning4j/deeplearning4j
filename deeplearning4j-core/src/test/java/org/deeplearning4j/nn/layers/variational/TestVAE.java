@@ -133,7 +133,7 @@ public class TestVAE extends BaseDL4JTest {
         INDArray data = Nd4j.rand(1, inputSize);
 
 
-        net.fit(data);
+        net.pretrainLayer(0, data);
     }
 
 
@@ -218,7 +218,7 @@ public class TestVAE extends BaseDL4JTest {
                         (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) net.getLayer(0);
 
         INDArray input = Nd4j.rand(3, 10);
-        net.pretrain(input);
+        net.pretrainLayer(0, input);
 
         //Get a snapshot of the pretrain params after fitting:
         Map<String, INDArray> layerParams = layer.paramTable();
@@ -350,7 +350,7 @@ public class TestVAE extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);
@@ -416,7 +416,7 @@ public class TestVAE extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
                 mln.initGradientsView();
-                mln.fit(data);
+                mln.pretrainLayer(0, data);
 
                 org.deeplearning4j.nn.layers.variational.VariationalAutoencoder layer =
                                 (org.deeplearning4j.nn.layers.variational.VariationalAutoencoder) mln.getLayer(0);

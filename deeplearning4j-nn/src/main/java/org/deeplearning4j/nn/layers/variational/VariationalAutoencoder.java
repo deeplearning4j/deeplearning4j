@@ -517,14 +517,9 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        this.setInput(data, null);  //TODO
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
+        this.setInput(data, workspaceMgr);
         fit();
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        fit(input);
     }
 
     @Override

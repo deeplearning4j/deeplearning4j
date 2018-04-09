@@ -195,11 +195,6 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported - no parameters");
     }
@@ -212,10 +207,6 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public int numParams() {
         return 0;
-    }
-
-    @Override
-    public void fit(INDArray input) {
     }
 
     @Override

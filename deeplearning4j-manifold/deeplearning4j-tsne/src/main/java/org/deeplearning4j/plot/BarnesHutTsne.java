@@ -44,6 +44,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -753,10 +754,15 @@ public class BarnesHutTsne implements Model {
         throw new UnsupportedOperationException();
     }
 
-    @Override
+
     public void fit(INDArray data) {
         this.x = data;
         fit();
+    }
+
+    @Override
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr){
+        fit(data);
     }
 
     /**
@@ -769,11 +775,6 @@ public class BarnesHutTsne implements Model {
         this.x = data;
         this.numDimensions = nDims;
         fit();
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-
     }
 
     @Override

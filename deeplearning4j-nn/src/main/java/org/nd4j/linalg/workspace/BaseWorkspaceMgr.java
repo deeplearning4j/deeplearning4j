@@ -88,11 +88,12 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     }
 
     @Override
-    public INDArray leverageTo(T toWorkspace, INDArray array) {
+    public INDArray leverageTo(T arrayType, INDArray array) {
         if(array == null){
             return null;
         }
-        return array.leverageTo(getWorkspaceName(toWorkspace));
+        validateConfig(arrayType);
+        return array.leverageTo(getWorkspaceName(arrayType));
     }
 
     @Override

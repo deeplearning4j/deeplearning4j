@@ -180,8 +180,8 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     }
 
     @Override
-    public void fit(INDArray input) {
-        // no-op
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -388,11 +388,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             labels = null;
         }
         solver = null;
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

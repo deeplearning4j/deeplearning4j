@@ -103,7 +103,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     public void fit() {
-        fit(this.input);
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -144,21 +144,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Gradient gradient() {
         return gradient;
-    }
-
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-//        applyDropOutIfNecessary(true);
-//        Gradient gradient = gradient();
-//        for (String paramType : gradient.gradientForVariable().keySet()) {
-//            update(gradient.getGradientFor(paramType), paramType);
-//        }
-        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -414,10 +399,10 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void fit(INDArray input) {
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         if (input != null) {
-            setInput(input, null);      //TODO
-            applyDropOutIfNecessary(true, null);  //TODO
+            setInput(input, workspaceMgr);
+            applyDropOutIfNecessary(true, workspaceMgr);
         }
         if (solver == null) {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();

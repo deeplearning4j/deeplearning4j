@@ -187,11 +187,6 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported - no parameters");
     }
@@ -207,7 +202,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void fit(INDArray input) {
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override

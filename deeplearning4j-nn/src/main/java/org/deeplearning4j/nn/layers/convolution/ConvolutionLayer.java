@@ -476,7 +476,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     @Override
     public INDArray params() {

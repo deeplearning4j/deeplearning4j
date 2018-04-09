@@ -54,7 +54,9 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {

@@ -733,20 +733,6 @@ public class MultiLayerTest extends BaseDL4JTest {
         assertTrue(paramTable.containsKey("0_vb"));
     }
 
-    @Test
-    public void testLayerPreTrainSetFalseAfterPreTrain() {
-        INDArray input = Nd4j.linspace(1, 10, 10);
-        int nIn = 10;
-        int nOut = 10;
-
-        MultiLayerNetwork vaePre = getAeModel(true, nIn, nOut);
-        vaePre.fit(input);
-        assertTrue(vaePre.conf().isPretrain()); // check on the network
-        assertFalse(vaePre.getLayer(0).conf().isPretrain()); // check pretrain layer
-        assertFalse(vaePre.getLayer(1).conf().isPretrain()); // check none pretrain layer
-
-    }
-
     public MultiLayerNetwork getAeModel(boolean preTrain, int nIn, int nOut) {
         MultiLayerConfiguration vae = new NeuralNetConfiguration.Builder()
                 .seed(42).updater(new NoOp())

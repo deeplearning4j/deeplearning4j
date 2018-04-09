@@ -63,9 +63,6 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void fit(INDArray input) {}
-
-    @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 

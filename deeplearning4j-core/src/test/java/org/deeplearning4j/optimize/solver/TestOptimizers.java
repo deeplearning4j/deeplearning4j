@@ -914,12 +914,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public void fit(INDArray data) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void iterate(INDArray input) {
+        public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
             throw new UnsupportedOperationException();
         }
 

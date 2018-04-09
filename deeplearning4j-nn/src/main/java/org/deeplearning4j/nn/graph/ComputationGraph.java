@@ -76,6 +76,7 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
@@ -734,6 +735,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return;
         }
 
+        LayerWorkspaceMgr workspaceMgr = null;      //TODO
+
         int layerIndex = verticesMap.get(layerName).getVertexIndex();
 
         //Need to do partial forward pass. Simply folowing the topological ordering won't be efficient, as we might
@@ -846,7 +849,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                         //At this point: have done all of the required forward pass stuff. Can now pretrain layer on current input
 
-                        layer.fit(gv.getInputs()[0]);
+                        layer.fit(gv.getInputs()[0], workspaceMgr);
                         layer.conf().setPretrain(false);
                     }
                 }
@@ -2577,13 +2580,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     @Override
-    public void fit(INDArray data) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr){
         throw new UnsupportedOperationException("Cannot pretrain ComputationGraph with single INDArray");
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

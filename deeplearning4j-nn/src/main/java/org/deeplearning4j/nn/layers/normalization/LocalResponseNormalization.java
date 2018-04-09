@@ -113,7 +113,9 @@ public class LocalResponseNormalization
     }
 
     @Override
-    public void fit(INDArray input) {}
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        throw new UnsupportedOperationException("Not supported");
+    }
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (helper != null) {

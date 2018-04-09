@@ -235,17 +235,11 @@ public class FrozenLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         if (!logFit) {
             OneTimeLogger.info(log, "Frozen layers cannot be fit.Warning will be issued only once per instance");
             logFit = true;
         }
-    }
-
-    //FIXME - what is iterate
-    @Override
-    public void iterate(INDArray input) {
-        insideLayer.iterate(input);
     }
 
     @Override

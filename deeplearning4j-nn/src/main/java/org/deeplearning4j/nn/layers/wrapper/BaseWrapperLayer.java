@@ -178,13 +178,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        underlying.fit(data);
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        underlying.iterate(input);
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
+        underlying.fit(data, workspaceMgr);
     }
 
     @Override

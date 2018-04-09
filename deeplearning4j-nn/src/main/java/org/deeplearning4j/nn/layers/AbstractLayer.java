@@ -180,16 +180,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         throw new UnsupportedOperationException("To be removed");
     }
 
-    /**
-     * iterate one iteration of the network
-     *
-     * @param input  the input to iterate on
-     */
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public void update(Gradient gradient) {
         throw new UnsupportedOperationException();
@@ -369,7 +359,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public void fit(INDArray input) {
+    public void fit(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
     }
 

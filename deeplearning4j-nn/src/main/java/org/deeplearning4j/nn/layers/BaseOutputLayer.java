@@ -392,14 +392,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @param data the data to fit the model to
      */
     @Override
-    public void fit(INDArray data) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         //no-op
-
-    }
-
-    @Override
-    public void iterate(INDArray input) {
-        throw new UnsupportedOperationException(layerId());
     }
 
     @Override

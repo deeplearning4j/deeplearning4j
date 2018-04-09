@@ -328,12 +328,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void fit(INDArray data) {
-        throw new UnsupportedOperationException("Not supported");
-    }
-
-    @Override
-    public void iterate(INDArray input) {
+    public void fit(INDArray data, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported");
     }
 
