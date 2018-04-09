@@ -148,10 +148,10 @@ public class LayerVertex extends BaseGraphVertex {
         if (tbptt && layer instanceof RecurrentLayer) {
             //Truncated BPTT for recurrent layers
             pair = ((RecurrentLayer) layer).tbpttBackpropGradient(epsilon,
-                            graph.getConfiguration().getTbpttBackLength());
+                            graph.getConfiguration().getTbpttBackLength(), null);   //TODO
         } else {
             //Normal backprop
-            pair = layer.backpropGradient(epsilon); //epsTotal may be null for OutputLayers
+            pair = layer.backpropGradient(epsilon, null); //TODO //epsTotal may be null for OutputLayers
         }
 
         if (layerPreProcessor != null) {

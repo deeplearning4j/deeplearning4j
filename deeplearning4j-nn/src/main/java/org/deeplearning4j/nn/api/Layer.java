@@ -86,7 +86,7 @@ public interface Layer extends Serializable, Cloneable, Model {
      *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
      *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
      */
-    Pair<Gradient, INDArray> backpropGradient(INDArray epsilon);
+    Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Trigger an activation with the last specified input

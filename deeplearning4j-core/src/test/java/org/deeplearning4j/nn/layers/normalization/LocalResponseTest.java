@@ -109,7 +109,7 @@ public class LocalResponseTest extends BaseDL4JTest {
 
     @Test
     public void testBackpropGradient() {
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(newEpsilonExpected.getDouble(8), containedOutput.getSecond().getDouble(8), 1e-4);
         assertEquals(newEpsilonExpected.getDouble(20), containedOutput.getSecond().getDouble(20), 1e-4);

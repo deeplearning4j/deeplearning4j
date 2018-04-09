@@ -35,7 +35,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
@@ -48,7 +48,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon, workspaceMgr);
         INDArray epsNext = gradientEpsNext.getSecond();
 
         // remove singleton fourth dimension from input and current epsilon

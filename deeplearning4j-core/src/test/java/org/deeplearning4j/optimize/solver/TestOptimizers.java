@@ -995,7 +995,7 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+        public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
             throw new UnsupportedOperationException();
         }
 

@@ -97,7 +97,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.MAX);
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
@@ -108,7 +108,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
 
         epsilon = Nd4j.ones(5, depth, featureMapHeight, featureMapWidth);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
@@ -126,7 +126,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.AVG);
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
@@ -139,7 +139,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         INDArray input = getData();
         layer.setInput(input, LayerWorkspaceMgr.noWorkspaces());
-        layer.backpropGradient(epsilon);
+        layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
     }
 
     //////////////////////////////////////////////////////////////////////////////////

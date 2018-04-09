@@ -99,7 +99,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength) {
+    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported: cannot use this method (or truncated BPTT) with bidirectional layers");
     }
 
@@ -125,7 +125,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray eFwd;
         INDArray eBwd;
 
@@ -153,8 +153,8 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd);
 
-        Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd);
-        Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd);
+        Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
+        Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
 
         Gradient g = new DefaultGradient(gradientView);
         for(Map.Entry<String,INDArray> e : g1.getFirst().gradientForVariable().entrySet()){

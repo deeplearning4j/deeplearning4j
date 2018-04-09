@@ -117,7 +117,8 @@ public class LocalResponseNormalization
         throw new UnsupportedOperationException("Not supported");
     }
 
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
             if (ret != null) {

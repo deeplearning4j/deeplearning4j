@@ -55,13 +55,13 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray inputTemp = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
-        Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon, workspaceMgr);
         this.input = inputTemp;
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0));

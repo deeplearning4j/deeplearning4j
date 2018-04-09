@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -203,8 +204,9 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     }
 
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        Pair<Gradient, INDArray> result = super.backpropGradient(epsilon);
+    @Override
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        Pair<Gradient, INDArray> result = super.backpropGradient(epsilon, workspaceMgr);
         ((DefaultGradient) result.getFirst()).setFlattenedGradient(gradientsFlattened);
 
         //During backprop, visible bias gradients are set to 0 - this is necessary due to the gradient view mechanics

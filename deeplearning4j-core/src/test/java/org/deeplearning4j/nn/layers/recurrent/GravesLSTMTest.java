@@ -100,7 +100,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-        Pair<Gradient, INDArray> out = lstm.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = lstm.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         Gradient outGradient = out.getFirst();
         INDArray nextEpsilon = out.getSecond();
 

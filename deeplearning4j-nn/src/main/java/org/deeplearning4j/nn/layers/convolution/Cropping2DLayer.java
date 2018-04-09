@@ -44,7 +44,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         int[] inShape = input.shape();
         INDArray epsNext = Nd4j.create(inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext);

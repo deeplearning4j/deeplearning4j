@@ -13,6 +13,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -67,7 +68,7 @@ public class Upsampling1DTest extends BaseDL4JTest {
         Layer layer = getUpsampling1DLayer();
         layer.activate(input);
 
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
+        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
@@ -79,7 +80,7 @@ public class Upsampling1DTest extends BaseDL4JTest {
 
         epsilon = Nd4j.ones(5, depth, outputLength);
 
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(input.shape().length, out.getSecond().shape().length);
         assertEquals(depth, out.getSecond().size(1));
     }

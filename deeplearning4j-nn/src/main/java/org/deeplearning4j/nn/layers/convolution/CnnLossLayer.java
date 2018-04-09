@@ -65,7 +65,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 4)
             throw new UnsupportedOperationException(
                     "Input is not rank 4. Got input with rank " + input.rank() + " " + layerId() + " with shape "

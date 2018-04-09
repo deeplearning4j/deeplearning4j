@@ -42,7 +42,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         return new Pair<>(emptyGradient, applyMask(epsilon, maskArray));
     }
 

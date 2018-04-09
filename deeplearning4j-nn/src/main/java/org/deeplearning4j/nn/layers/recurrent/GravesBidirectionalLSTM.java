@@ -73,18 +73,18 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return backpropGradientHelper(epsilon, false, -1);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return backpropGradientHelper(epsilon, false, -1, workspaceMgr);
     }
 
     @Override
-    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength) {
-        return backpropGradientHelper(epsilon, true, tbpttBackwardLength);
+    public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
+        return backpropGradientHelper(epsilon, true, tbpttBackwardLength, workspaceMgr);
     }
 
 
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
-                    final int tbpttBackwardLength) {
+                    final int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(

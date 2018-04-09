@@ -66,7 +66,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Fitting DL4J SameDiff layers via backpropagation is not yet supported");
 
         /*

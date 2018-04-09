@@ -162,7 +162,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
                         .add(input.subRowVector(mean).mul(2.0 / minibatch).mulRowVector(dldvar))
                         .addRowVector(dldmu.mul(1.0 / minibatch));
 
-        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray dldgamma = p.getFirst().getGradientFor("gamma");
         INDArray dldbeta = p.getFirst().getGradientFor("beta");
@@ -245,8 +245,8 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         assertNotNull(epsilons4d);
         epsilons4d = epsilons4d.permute(0, 3, 1, 2).dup();
 
-        Pair<Gradient, INDArray> b2d = l1.backpropGradient(epsilons2d);
-        Pair<Gradient, INDArray> b4d = l2.backpropGradient(epsilons4d);
+        Pair<Gradient, INDArray> b2d = l1.backpropGradient(epsilons2d, LayerWorkspaceMgr.noWorkspaces());
+        Pair<Gradient, INDArray> b4d = l2.backpropGradient(epsilons4d, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray e4dAs2d = b4d.getSecond().permute(0, 2, 3, 1).dup('c');
         e4dAs2d = Shape.newShapeNoCopy(e4dAs2d, new int[] {m * h * w, nOut}, false);
@@ -316,7 +316,7 @@ public class BatchNormalizationTest extends BaseDL4JTest {
         dldinExp = Nd4j.getExecutioner().execAndReturn(
                         new BroadcastAddOp(dldinExp, dldmu.mul(1.0 / effectiveMinibatch), dldinExp.dup(), 1));
 
-        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> p = l.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray dldgamma = p.getFirst().getGradientFor("gamma");
         INDArray dldbeta = p.getFirst().getGradientFor("beta");

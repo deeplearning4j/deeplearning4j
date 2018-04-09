@@ -63,6 +63,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -395,7 +396,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         net.setInput(input);
         net.feedForward(true, false); //Need to feed forward before backprop
 
-        Pair<Gradient, INDArray> pair = net.backpropGradient(eps);
+        Pair<Gradient, INDArray> pair = net.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
         INDArray epsOut = pair.getSecond();
         assertNotNull(epsOut);
         assertArrayEquals(new int[] {miniBatch, nIn}, epsOut.shape());
@@ -1131,13 +1132,13 @@ public class MultiLayerTest extends BaseDL4JTest {
             e.feedForward(true, false); //FF without clearing inputs as we need them later
 
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null, LayerWorkspaceMgr.noWorkspaces());
 
             INDArray olEpsilon = olPairStd.getSecond().detach();
 
             e.setInput(inData);
             e.feedForward(true, false);
-            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon);
+            Pair<Gradient, INDArray> extErrorGrad = e.backpropGradient(olEpsilon, LayerWorkspaceMgr.noWorkspaces());
 
             int nParamsDense = 10 * 10 + 10;
             assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
@@ -1189,7 +1190,7 @@ public class MultiLayerTest extends BaseDL4JTest {
             }
 
             // Compute Gradient
-            Pair<Gradient,INDArray> gradient = graph.backpropGradient(error);
+            Pair<Gradient,INDArray> gradient = graph.backpropGradient(error, LayerWorkspaceMgr.noWorkspaces());
             graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch);
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();

@@ -60,7 +60,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
@@ -117,7 +117,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
-        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, null); //TODO
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         CustomOp op;

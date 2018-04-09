@@ -91,7 +91,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch

@@ -129,7 +129,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
 
         int miniBatch = input.size(0);
@@ -168,7 +168,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
 
-        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, null); //TODO
         delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
@@ -270,8 +270,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
      * the public API
      */
-    protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop) {
-        return preOutput(training, forBackprop);
+    protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        return preOutput(training, forBackprop, workspaceMgr);
     }
 
     /**
@@ -283,7 +283,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      *                    pair entry. Note that it may still be null in the case of CuDNN and the like.
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
-    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
+    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
         INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
 
@@ -435,7 +435,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training, workspaceMgr);
+        INDArray z = preOutput(training, false, workspaceMgr).getFirst();
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE

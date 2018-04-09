@@ -1306,6 +1306,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Gradient gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
 
 
         //calculate and apply the backward gradient for every layer
@@ -1334,7 +1335,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (labels == null)
                 throw new IllegalStateException("No labels found");
             outputLayer.setLabels(labels);
-            currPair = outputLayer.backpropGradient(null);
+            currPair = outputLayer.backpropGradient(null, workspaceMgr);
 
             for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                 String origName = entry.getKey();
@@ -1384,7 +1385,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 if (currLayer instanceof FrozenLayer) {
                     break;
                 }
-                currPair = currLayer.backpropGradient(currPair.getSecond());
+                currPair = currLayer.backpropGradient(currPair.getSecond(), workspaceMgr);
 
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
@@ -1548,6 +1549,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient() {
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         synchronizeIterEpochCounts();
         if (flattenedGradients == null) {
             initGradientsView();
@@ -1576,7 +1579,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
         LinkedList<Pair<String, INDArray>> gradientList = new LinkedList<>();
 
-        Pair<Gradient, INDArray> currPair = outputLayer.backpropGradient(null);
+        Pair<Gradient, INDArray> currPair = outputLayer.backpropGradient(null, workspaceMgr);
 
         for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
             multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
@@ -1592,9 +1595,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             currLayer = getLayer(j);
             if (currLayer instanceof RecurrentLayer) {
                 currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair.getSecond(),
-                                layerWiseConfigurations.getTbpttBackLength());
+                                layerWiseConfigurations.getTbpttBackLength(), workspaceMgr);
             } else {
-                currPair = currLayer.backpropGradient(currPair.getSecond());
+                currPair = currLayer.backpropGradient(currPair.getSecond(), workspaceMgr);
             }
 
             LinkedList<Pair<String, INDArray>> tempList = new LinkedList<>();
@@ -2582,7 +2585,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 

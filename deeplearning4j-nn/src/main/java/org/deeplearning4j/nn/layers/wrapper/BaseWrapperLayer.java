@@ -53,8 +53,8 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return underlying.backpropGradient(epsilon);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.backpropGradient(epsilon, workspaceMgr);
     }
 
     @Override

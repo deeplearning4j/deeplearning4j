@@ -107,7 +107,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
 
-        Pair<Gradient, INDArray> out = lstm.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> out = lstm.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         Gradient outGradient = out.getFirst();
         INDArray nextEpsilon = out.getSecond();
 
@@ -341,8 +341,8 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         reverseColumnsInPlace(randSigBackwards.slice(0));
 
 
-        final Pair<Gradient, INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig);
-        final Pair<Gradient, INDArray> backprop2 = bidirectionalLSTM.backpropGradient(randSig);
+        final Pair<Gradient, INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig, LayerWorkspaceMgr.noWorkspaces());
+        final Pair<Gradient, INDArray> backprop2 = bidirectionalLSTM.backpropGradient(randSig, LayerWorkspaceMgr.noWorkspaces());
 
         //compare gradients
         assertArrayEquals(
@@ -405,7 +405,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final INDArray refBackGradientBias = backprop1.getFirst().getGradientFor(GravesLSTMParamInitializer.BIAS_KEY);
 
         //reverse weights only with backwards signal should yield same result as forwards weights with forwards signal
-        final Pair<Gradient, INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigBackwards);
+        final Pair<Gradient, INDArray> backprop3 = bidirectionalLSTM.backpropGradient(randSigBackwards, LayerWorkspaceMgr.noWorkspaces());
 
         final INDArray backGradientRecurrent = backprop3.getFirst()
                         .getGradientFor(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS);

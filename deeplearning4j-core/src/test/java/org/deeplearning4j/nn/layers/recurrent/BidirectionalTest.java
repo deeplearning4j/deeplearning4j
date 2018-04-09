@@ -27,6 +27,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -447,9 +448,9 @@ public class BidirectionalTest extends BaseDL4JTest {
                     net2.feedForward(true, false);
                     net3.feedForward(true, false);
 
-                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1);
-                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps);
-                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps));
+                    Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps), LayerWorkspaceMgr.noWorkspaces());
                     Gradient g1 = p1.getFirst();
                     Gradient g2 = p2.getFirst();
                     Gradient g3 = p3.getFirst();

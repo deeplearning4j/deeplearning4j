@@ -40,8 +40,8 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        return underlying.backpropGradient(epsilon);
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        return underlying.backpropGradient(epsilon, workspaceMgr);
     }
 
     @Override
