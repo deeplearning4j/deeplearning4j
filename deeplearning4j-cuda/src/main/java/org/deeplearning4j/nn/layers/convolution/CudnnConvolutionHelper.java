@@ -44,6 +44,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
@@ -331,7 +332,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
     @Override
     public INDArray preOutput(INDArray input, INDArray weights, INDArray bias, int[] kernel, int[] strides, int[] pad,
-                    AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation) {
+                              AlgoMode mode, FwdAlgo fwdAlgo, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] > 2 || dilation[1] > 2){
             //CuDNN seems to not support all (valid) configurations...
             //Same mode + dilation 3: cuDNN status = 9: CUDNN_STATUS_NOT_SUPPORTED

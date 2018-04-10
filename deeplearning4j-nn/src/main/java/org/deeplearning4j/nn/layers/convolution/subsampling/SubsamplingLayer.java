@@ -138,7 +138,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             Pair<Gradient, INDArray> ret = null;
             try{
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                        layerConf().getPoolingType(), convolutionMode, dilation);
+                        layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
@@ -321,7 +321,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             INDArray ret = null;
             try {
                 ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                        convolutionMode, dilation);
+                        convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;

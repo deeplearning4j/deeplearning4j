@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Helper for the subsampling layer.
@@ -32,8 +33,8 @@ public interface SubsamplingHelper {
     boolean checkSupported();
 
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
-                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation);
+                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
 
     INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad, PoolingType poolingType,
-                    ConvolutionMode convolutionMode, int[] dilation);
+                    ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr);
 }

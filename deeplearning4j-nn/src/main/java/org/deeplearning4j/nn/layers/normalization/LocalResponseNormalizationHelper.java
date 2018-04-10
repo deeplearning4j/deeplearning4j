@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
  * Helper for the local response normalization layer.
@@ -30,7 +31,7 @@ public interface LocalResponseNormalizationHelper {
     boolean checkSupported(double k, double n, double alpha, double beta);
 
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
-                    double beta);
+                    double beta, LayerWorkspaceMgr workspaceMgr);
 
-    INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta);
+    INDArray activate(INDArray x, boolean training, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr);
 }

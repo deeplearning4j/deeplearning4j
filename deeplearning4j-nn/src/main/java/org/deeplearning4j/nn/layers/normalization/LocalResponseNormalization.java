@@ -122,7 +122,7 @@ public class LocalResponseNormalization
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta);
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
             if (ret != null) {
                 return ret;
             }
@@ -163,7 +163,7 @@ public class LocalResponseNormalization
         halfN = (int) n / 2;
 
         if (helper != null) {
-            activations = helper.activate(input, training, k, n, alpha, beta);
+            activations = helper.activate(input, training, k, n, alpha, beta, workspaceMgr);
             if (activations != null) {
                 return activations;
             }

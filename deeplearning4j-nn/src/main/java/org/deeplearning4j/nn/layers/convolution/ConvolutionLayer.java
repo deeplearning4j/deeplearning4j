@@ -159,7 +159,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             try {
                 ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
                         biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
-                        layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode, dilation);
+                        layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode,
+                        dilation, workspaceMgr);
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
@@ -319,7 +320,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             INDArray ret = null;
             try {
                 ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation);
+                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, workspaceMgr);
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
