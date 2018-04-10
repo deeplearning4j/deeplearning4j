@@ -150,7 +150,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-        this.appendLabel = conf.getBoolean(APPEND_LABEL, false);
+        this.appendLabel = conf.getBoolean(APPEND_LABEL, appendLabel);
         this.labels = new ArrayList<>(conf.getStringCollection(LABELS));
         this.height = conf.getInt(HEIGHT, height);
         this.width = conf.getInt(WIDTH, width);
