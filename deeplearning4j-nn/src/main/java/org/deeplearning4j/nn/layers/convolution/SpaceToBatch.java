@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Arrays;
 
@@ -101,19 +102,18 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        INDArray outEpsilon = Nd4j.createUninitialized(miniBatch * inDepth * inH * inW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+        INDArray outEpsilon = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Gradient gradient = new DefaultGradient();
 
         CustomOp op = DynamicCustomOp.builder("batch_to_space")
                 .addInputs(epsilon, getBlocksArray(), getPaddingArray())
-                .addOutputs(reshapedEpsilon)
+                .addOutputs(outEpsilon)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(gradient, reshapedEpsilon);
+        return new Pair<>(gradient, outEpsilon);
     }
 
     protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
@@ -145,16 +145,15 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = paddedW / blocks[1];
         int outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
 
-        INDArray out = Nd4j.create(outMiniBatch * depth * outH * outW);
-        INDArray reshapedOut = out.reshape('c', outMiniBatch, depth, outH, outW);
+        INDArray out = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{outMiniBatch, depth, outH, outW}, 'c');
 
         CustomOp op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, getBlocksArray(), getPaddingArray())
-                .addOutputs(reshapedOut)
+                .addOutputs(out)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        return reshapedOut;
+        return out;
     }
 
     @Override
@@ -197,11 +196,6 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
-    public void fit() {
-
     }
 
     @Override

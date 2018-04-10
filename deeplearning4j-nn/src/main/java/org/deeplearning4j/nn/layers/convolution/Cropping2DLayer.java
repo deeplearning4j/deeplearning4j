@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -46,7 +47,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         int[] inShape = input.shape();
-        INDArray epsNext = Nd4j.create(inShape, 'c');
+        INDArray epsNext = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, inShape, 'c');
         INDArray epsNextSubset = inputSubset(epsNext);
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);

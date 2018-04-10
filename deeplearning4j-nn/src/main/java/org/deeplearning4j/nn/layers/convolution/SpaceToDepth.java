@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Arrays;
 
@@ -83,7 +84,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
+        INDArray outEpsilon = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[]{1, miniBatch * inDepth * inH * inW}, 'c');
         INDArray reshapedEpsilon;
 
         if (isNHWC() == 1) {
@@ -131,7 +132,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = inW / blockSize;
         int outDepth = depth * blockSize * blockSize;
 
-        INDArray out = Nd4j.create(miniBatch * outDepth * outH * outW);
+        INDArray out = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{1, miniBatch * outDepth * outH * outW}, 'c');
         INDArray reshapedOut;
         if (isNHWC() == 1) {
             reshapedOut = out.reshape('c', miniBatch, outH, outW,  outDepth);
@@ -189,11 +190,6 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public Gradient gradient() {
         throw new UnsupportedOperationException("Not supported - no parameters");
-    }
-
-    @Override
-    public void fit() {
-
     }
 
     @Override

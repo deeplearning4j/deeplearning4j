@@ -37,6 +37,7 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,34 +97,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
-    public double calcL2(boolean backpropParamsOnly) {
-        double l2Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l2 = conf.getL2ByParam(entry.getKey());
-            if (l2 > 0) {
-                double norm2 = getParam(entry.getKey()).norm2Number().doubleValue();
-                l2Sum += 0.5 * l2 * norm2 * norm2;
-            }
-        }
-
-        return l2Sum;
-    }
-
-    @Override
-    public double calcL1(boolean backpropParamsOnly) {
-        double l1Sum = 0.0;
-        for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
-            double l1 = conf.getL1ByParam(entry.getKey());
-            if (l1 > 0) {
-                double norm1 = getParam(entry.getKey()).norm1Number().doubleValue();
-                l1Sum += l1 * norm1;
-            }
-        }
-
-        return l1Sum;
-    }
-
-    @Override
     public Type type() {
         return Type.CONVOLUTIONAL;
     }
@@ -168,7 +141,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
 
-        Pair<INDArray, INDArray> p = preOutput4d(true, true, null); //TODO
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
@@ -237,17 +210,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current col2im implementation expects input with order: [miniBatch,depth,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
-        INDArray epsNextOrig = null;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)
-                        && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                epsNextOrig = Nd4j.create(new int[] {inDepth, miniBatch, inH, inW}, 'c');
-            }
-        } else
-            epsNextOrig = Nd4j.create(new int[] {inDepth, miniBatch, inH, inW}, 'c');
-
+        INDArray epsNextOrig = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
 
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1, 0, 2, 3);
@@ -392,16 +355,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedW = permutedW.reshape('f', kW * kH * inDepth, outDepth);
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
-        INDArray z = null;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)
-                        && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                z = im2col2d.mmul(reshapedW);
-            }
-        } else
-            z = im2col2d.mmul(reshapedW);
+        INDArray z = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
+        im2col2d.mmuli(reshapedW, z);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
         if(layerConf().hasBias()){

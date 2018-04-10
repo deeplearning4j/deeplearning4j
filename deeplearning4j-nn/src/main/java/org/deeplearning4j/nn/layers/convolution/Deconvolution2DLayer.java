@@ -18,6 +18,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Arrays;
 
@@ -90,8 +91,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray biasGradView = gradientViews.get(DeconvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(DeconvolutionParamInitializer.WEIGHT_KEY);
 
-        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+        INDArray outEps = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -106,24 +106,19 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         CustomOp op;
+        INDArray[] opInputs;
         if(layerConf().hasBias()){
-
             bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true);
-
-            op = DynamicCustomOp.builder("deconv2d_bp")
-                    .addInputs(input, weights, bias, delta)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedEpsilon, weightGradView, biasGradView)
-                    .callInplace(false)
-                    .build();
+            opInputs = new INDArray[]{input, weights, bias, delta};
         } else {
-            op = DynamicCustomOp.builder("deconv2d_bp")
-                    .addInputs(input, weights, delta)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedEpsilon, weightGradView)
-                    .callInplace(false)
-                    .build();
+            opInputs = new INDArray[]{input, weights, delta};
         }
+        op = DynamicCustomOp.builder("deconv2d_bp")
+                .addInputs(opInputs)
+                .addIntegerArguments(args)
+                .addOutputs(outEps, weightGradView)
+                .callInplace(false)
+                .build();
         Nd4j.getExecutioner().exec(op);
 
         Gradient retGradient = new DefaultGradient();
@@ -133,12 +128,13 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         retGradient.setGradientFor(DeconvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
         weightNoiseParams.clear();
 
-        reshapedEpsilon = reshapedEpsilon.permute(1, 0, 2 , 3);
+        outEps = outEps.permute(1, 0, 2 , 3);
 
-        return new Pair<>(retGradient, reshapedEpsilon);
+        return new Pair<>(retGradient, outEps);
     }
 
-    protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop) {
+    @Override
+    protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
 
         if (convolutionMode == ConvolutionMode.Same) {
             throw new IllegalArgumentException("Border mode Same currently not supported.");
@@ -198,8 +194,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
 
         int miniBatch = input.size(0);
-        INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
-        INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
+        INDArray output = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -208,25 +203,21 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                 pad[0], pad[1], dilation[0], dilation[1], sameMode, 0   //Last arg: 0 for nchw
         };
 
-        CustomOp op;
+        INDArray[] opInputs;
         if (layerConf().hasBias()) {
-            op = DynamicCustomOp.builder("deconv2d")
-                    .addInputs(input, weights, bias)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedOutput)
-                    .callInplace(false)
-                    .build();
+            opInputs = new INDArray[]{input, weights, bias};
         } else {
-            op = DynamicCustomOp.builder("deconv2d")
-                    .addInputs(input, weights)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedOutput)
-                    .callInplace(false)
-                    .build();
+            opInputs = new INDArray[]{input, weights};
         }
+        CustomOp op = DynamicCustomOp.builder("deconv2d")
+                .addInputs(opInputs)
+                .addIntegerArguments(args)
+                .addOutputs(output)
+                .callInplace(false)
+                .build();
         Nd4j.getExecutioner().exec(op);
 
-        return new Pair<>(reshapedOutput, null);
+        return new Pair<>(output, null);
     }
 
     @Override
@@ -251,7 +242,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             }
         }
 
-        //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = layerConf().getActivationFn();
 
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {

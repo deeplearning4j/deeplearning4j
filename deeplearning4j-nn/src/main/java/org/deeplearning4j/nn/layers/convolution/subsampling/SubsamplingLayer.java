@@ -40,6 +40,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
@@ -259,7 +260,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // c-order [depth*H*W, H*W, W, 1] strides
         //To achieve this: [depth, miniBatch, H, W] in c order, then permute to [miniBatch, depth, H, W]
         //This gives us proper strides of 1 on the muli...
-        INDArray tempEpsilon = Nd4j.create(new int[] {inDepth, miniBatch, inH, inW}, 'c');
+        INDArray tempEpsilon = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
         INDArray outEpsilon = tempEpsilon.permute(1, 0, 2, 3);
         Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth, dilation[0], dilation[1]);
 
@@ -337,7 +338,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
         //Current im2col implementation expects input with shape [miniBatch,depth,kH,kW,outH,outW]
 
-        INDArray output = Nd4j.create(miniBatch, inDepth, outH, outW);
+        INDArray output = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{miniBatch, inDepth, outH, outW}, 'c');
 
         LegacyPooling2D.Pooling2DType pt;
         double extra = 0.0;
