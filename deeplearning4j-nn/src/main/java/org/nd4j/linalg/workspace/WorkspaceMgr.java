@@ -51,9 +51,11 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     INDArray create(T workspace, int[] shape, char ordering);
 
-    INDArray createUninitialized(T workspace, int... shape);
+    INDArray createUninitialized(T arrayType, int... shape);
 
-    INDArray createUninitialized(T workspace, int[] shape, char order);
+    INDArray createUninitialized(T arrayType, int[] shape, char order);
+
+    INDArray dup(T arrayType, INDArray toDup, char order);
 
 
 

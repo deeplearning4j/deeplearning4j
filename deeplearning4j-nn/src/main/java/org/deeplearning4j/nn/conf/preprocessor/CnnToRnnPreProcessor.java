@@ -5,10 +5,13 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -56,7 +59,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         //Input: 4d activations (CNN)
         //Output: 3d activations (RNN)
 
-        if (input.ordering() != 'c')
+        if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = input.dup('c');
 
         int[] shape = input.shape(); //[timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth]
@@ -64,13 +67,14 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         //First: reshape 4d to 2d, as per CnnToFeedForwardPreProcessor
         INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
         //Second: reshape 2d to 3d, as per FeedForwardToRnnPreProcessor
-        INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        INDArray reshaped = workspaceMgr.dup(NetArrayType.ACTIVATIONS, twod, 'f');
+        reshaped = reshaped.reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
         return reshaped.permute(0, 2, 1);
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        if (output.ordering() == 'c')
+        if (output.ordering() == 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('f');
 
         int[] shape = output.shape();
@@ -91,7 +95,8 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
                             + " must be equal to " + inputHeight + " x columns " + inputWidth + " x depth "
                             + numChannels + " = " + product + ", received: " + shape[1]);
-        return output2d.dup('c').reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
+        INDArray ret = workspaceMgr.dup(NetArrayType.ACTIVATIONS, output2d, 'c');
+        return ret.reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
     }
 
     @Override

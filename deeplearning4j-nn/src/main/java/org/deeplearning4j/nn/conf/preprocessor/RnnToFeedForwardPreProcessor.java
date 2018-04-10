@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Arrays;
 
@@ -38,8 +39,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 3 (i.e., activations for RNN layer)");
 
-        if (input.ordering() != 'f')
-            input = input.dup('f');
+        if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
+            input = workspaceMgr.dup(NetArrayType.ACTIVATIONS, input, 'f');
 
         int[] shape = input.shape();
         if (shape[0] == 1)
@@ -59,8 +60,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (output.rank() != 2)
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 2 (i.e., epsilons from feed forward layer)");
-        if (output.ordering() == 'c')
-            output = Shape.toOffsetZeroCopy(output, 'f');
+        if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
+            output = workspaceMgr.dup(NetArrayType.ACTIVATIONS, output, 'f');
 
         int[] shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);

@@ -6,9 +6,11 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
@@ -50,7 +52,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        if (input.ordering() == 'c')
+        if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
             input = input.dup('f');
         //Input: 3d activations (RNN)
         //Output: 4d activations (CNN)
@@ -67,20 +69,21 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             in2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
 
-        return in2d.dup('c').reshape('c', shape[0] * shape[2], numChannels, inputHeight, inputWidth);
+        return workspaceMgr.dup(NetArrayType.ACTIVATIONS, in2d, 'c')
+                .reshape('c', shape[0] * shape[2], numChannels, inputHeight, inputWidth);
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Input: 4d epsilons (CNN)
         //Output: 3d epsilons (RNN)
-        if (output.ordering() == 'f')
+        if (output.ordering() != 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('c');
         int[] shape = output.shape();
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
         //Second: reshape 2d to 4d
-        INDArray reshaped = twod.dup('f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        INDArray reshaped = workspaceMgr.dup(NetArrayType.ACTIVATIONS, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
         return reshaped.permute(0, 2, 1);
     }
 

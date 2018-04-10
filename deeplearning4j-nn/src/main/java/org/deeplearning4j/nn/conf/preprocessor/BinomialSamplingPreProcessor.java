@@ -22,9 +22,11 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 /**
  * Binomial sampling pre processor
@@ -36,7 +38,9 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(NetArrayType.ACTIVATIONS)) {
+            return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
+        }
     }
 
 

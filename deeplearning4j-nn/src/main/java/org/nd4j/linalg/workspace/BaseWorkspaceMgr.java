@@ -177,6 +177,13 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
         }
     }
 
+    @Override
+    public INDArray dup(@NonNull T arrayType, INDArray toDup, char order){
+        try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
+            return toDup.dup(order);
+        }
+    }
+
 
     private void validateConfig(@NonNull T arrayType){
         if(scopeOutOfWs.contains(arrayType)){
