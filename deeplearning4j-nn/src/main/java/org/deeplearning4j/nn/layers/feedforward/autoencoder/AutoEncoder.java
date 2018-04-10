@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 /**
  *  Autoencoder.
@@ -46,7 +47,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
         setInput(v, null);      //TODO
-        INDArray ret = encode(v, true);
+        INDArray ret = encode(v, true, null);   //TODO
         return new Pair<>(ret, ret);
     }
 
@@ -57,14 +58,12 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     // Encode
-    public INDArray encode(INDArray v, boolean training) {
+    public INDArray encode(INDArray v, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training);
         INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training);
-        INDArray preAct = v.mmul(W).addiRowVector(hBias);
-
-        //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
-        INDArray ret = layerConf().getActivationFn().getActivation(preAct, training);
-
+        INDArray ret = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, v.size(0), W.size(1));
+        INDArray preAct = v.mmuli(W, ret).addiRowVector(hBias);
+        ret = layerConf().getActivationFn().getActivation(preAct, training);
         return ret;
     }
 
@@ -81,7 +80,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
-        return encode(input, training);
+        return encode(input, training, workspaceMgr);
     }
 
     @Override
@@ -98,12 +97,12 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return decode(encode(input, training));
+        return decode(encode(input, training, workspaceMgr));
     }
 
     @Override
     public INDArray activate() {
-        return decode(encode(input, false));
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override
@@ -115,7 +114,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray corruptedX = corruptionLevel > 0 ? getCorruptedInput(input, corruptionLevel) : input;
         setInput(corruptedX, workspaceMgr);
 
-        INDArray y = encode(corruptedX, true);
+        INDArray y = encode(corruptedX, true, workspaceMgr);
         INDArray z = decode(y);
 
         INDArray visibleLoss = input.sub(z);

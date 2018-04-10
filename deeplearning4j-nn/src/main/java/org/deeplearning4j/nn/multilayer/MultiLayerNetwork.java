@@ -1583,34 +1583,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     if (labels == null)
                         throw new IllegalStateException("No labels found");
                     outputLayer.setLabels(labels);
-
-//                    try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeBorrowed(NetArrayType.BP_WORKING_MEM)){
-//                        wsActGradTemp = workspaceMgr.notifyScopeEntered(NetArrayType.ACTIVATION_GRAD);
-//                        currPair = outputLayer.backpropGradient(null, workspaceMgr);
-//
-//                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers-1,
-//                                false, "Backprop");
-//
-//                        for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-//                            String origName = entry.getKey();
-//                            multiGradientKey = String.valueOf(numLayers - 1) + "_" + origName;
-//                            gradientList.addLast(new Triple<>(multiGradientKey, entry.getValue(),
-//                                    currPair.getFirst().flatteningOrderForVariable(origName)));
-//                        }
-//                        if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null) {
-//                            currPair = new Pair<>(currPair.getFirst(),
-//                                    this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-//                                            .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
-//                            validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers-1,
-//                                    true, "Backprop");
-//                        }
-//
-//                        if(wsActGradCloseNext != null){
-//                            wsActGradCloseNext.close();
-//                        }
-//                        wsActGradCloseNext = wsActGradTemp;
-//                        wsActGradTemp = null;
-//                    }
                 }
 
                 try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(NetArrayType.BP_WORKING_MEM)){
@@ -1618,12 +1590,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     INDArray eps = (i == layers.length-1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
                     currPair = layers[i].backpropGradient(eps, workspaceMgr);
 
-                    validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers-1,
-                            false, "Backprop");
+                    if(currPair.getSecond() != null) {
+                        //Edge case: may be null for Embedding layer, for example
+                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers - 1,
+                                false, "Backprop");
+                    }
 
                     for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
                         String origName = entry.getKey();
-                        multiGradientKey = String.valueOf(numLayers - 1) + "_" + origName;
+                        multiGradientKey = String.valueOf(i) + "_" + origName;
                         gradientList.addLast(new Triple<>(multiGradientKey, entry.getValue(),
                                 currPair.getFirst().flatteningOrderForVariable(origName)));
                     }
@@ -2024,8 +1999,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param labelsMask The mask array for the labels (used for variable length time series, etc). May be null.
      */
     public void fit(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
-        throw new UnsupportedOperationException("NOT YET REIMPLEMENTED");
-        /*
         if(numParams() == 0){
             //No op: can't fit a network with 0 parameters
             return;
@@ -2033,21 +2006,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         setInput(features);
         setLabels(labels);
-        if (featuresMask != null || labelsMask != null) {
-            this.setLayerMaskArrays(featuresMask, labelsMask);
-        }
+        this.setLayerMaskArrays(featuresMask, labelsMask);
         update(TaskUtils.buildTask(features, labels));
-
-        MemoryWorkspace workspace =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
-
-        MemoryWorkspace cache =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        ComputationGraph.workspaceConfigurationCache,
-                                                        ComputationGraph.WORKSPACE_CACHE);
 
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -2059,20 +2019,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                 }
 
-                try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
-                    }
-                }
+                //TODO CACHE WORKSPACE, IF USED???
+                solver.optimize();
             }
         }
 
-        if (featuresMask != null || labelsMask != null) {
-            clearLayerMaskArrays();
-        }
-
+        clearLayerMaskArrays();
         clearLayersStates();
-        */
     }
 
     @Override
