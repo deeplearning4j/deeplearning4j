@@ -27,6 +27,7 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 
 /**
@@ -64,7 +65,8 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
+        INDArray temp = workspaceMgr.dup(NetArrayType.ACTIVATION_GRAD, input, input.ordering());
+        INDArray delta = layerConf().getActivationFn().backprop(temp, epsilon).getFirst(); //TODO handle activation function params
 
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
@@ -80,7 +82,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         INDArray in;
         if (training) {
             //dup required: need to keep original input for backprop
-            in = input.dup();
+            in = mgr.dup(NetArrayType.ACTIVATIONS, input, input.ordering());
         } else {
             in = input;
         }

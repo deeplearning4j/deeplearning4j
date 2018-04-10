@@ -941,7 +941,7 @@ public class VariationalAutoencoder implements Layer {
             }
         }
         this.optimizer = solver.getOptimizer();
-        solver.optimize();
+        solver.optimize(LayerWorkspaceMgr.noWorkspaces());      //TODO FIXME
     }
 
     /**

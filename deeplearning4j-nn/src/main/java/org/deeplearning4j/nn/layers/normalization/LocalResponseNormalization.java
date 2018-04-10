@@ -7,12 +7,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,7 +148,9 @@ public class LocalResponseNormalization
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
-        INDArray nextEpsilon = epsilon.mul(scale).subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
+        INDArray nextEpsilon = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, epsilon.shape(), epsilon.ordering());
+        Nd4j.getExecutioner().exec(new OldMulOp(epsilon, scale, nextEpsilon));
+        nextEpsilon.subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -186,10 +190,11 @@ public class LocalResponseNormalization
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
-        unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+        unitScale = sumPart.mul(alpha).addi(k).detach();
         // y = x * unitScale**-beta
-        scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
-        activations = input.mul(scale).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+        scale = Transforms.pow(unitScale, -beta).detach();
+        INDArray activations = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, input.shape(), input.ordering());
+        Nd4j.getExecutioner().exec(new OldMulOp(input, scale, activations));
         return activations;
     }
 

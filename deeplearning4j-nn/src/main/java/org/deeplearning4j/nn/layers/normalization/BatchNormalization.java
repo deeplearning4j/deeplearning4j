@@ -19,6 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
@@ -216,6 +217,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                             + layerId());
         }
 
+        //TODO could optimize this
+        nextEpsilon = workspaceMgr.leverageTo(NetArrayType.ACTIVATION_GRAD, nextEpsilon);
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -226,7 +229,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST);
+        return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST, workspaceMgr);
     }
 
     @Override
@@ -234,7 +237,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         return gradient;
     }
 
-    public INDArray preOutput(INDArray x, TrainingMode training) {
+    public INDArray preOutput(INDArray x, TrainingMode training, LayerWorkspaceMgr workspaceMgr) {
         INDArray activations;
         // TODO add this directly in layer or get the layer prior...
         // batchnorm true but need to clarify if activation before or after
@@ -347,8 +350,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 }
             } else {
                 //Standard case: gamma and beta are learned per parameter
+                activations = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, x.shape(), x.ordering());
                 activations = Nd4j.getExecutioner().execAndReturn(
-                                new BroadcastMulOp(xHat, gamma, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
+                                new BroadcastMulOp(xHat, gamma, activations, 1));
                 activations = Nd4j.getExecutioner()
                                 .execAndReturn(new BroadcastAddOp(activations, beta, activations, 1));
             }
@@ -389,6 +393,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         }
 
+        activations = workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;
     }
 
@@ -399,7 +404,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-        return preOutput(input, training);
+        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

@@ -211,7 +211,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         opt.setupSearchState(m.gradientAndScore());
         for( int i=0; i<100; i++ ) {
-            opt.optimize();
+            opt.optimize(LayerWorkspaceMgr.noWorkspaces());
         }
         m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
         double scoreAfter = m.score();
@@ -293,7 +293,7 @@ public class TestOptimizers extends BaseDL4JTest {
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 for( int j=0; j<100; j++ ) {
-                    opt.optimize();
+                    opt.optimize(LayerWorkspaceMgr.noWorkspaces());
                 }
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
@@ -430,7 +430,7 @@ public class TestOptimizers extends BaseDL4JTest {
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
                 opt.getUpdater().setStateViewArray((Layer) m, Nd4j.create(new int[] {1, nParams}, 'c'), true);
-                opt.optimize();
+                opt.optimize(LayerWorkspaceMgr.noWorkspaces());
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue(!Double.isNaN(scores[i]) && !Double.isInfinite(scores[i]));
@@ -618,7 +618,7 @@ public class TestOptimizers extends BaseDL4JTest {
                 scores[0] = m.score(); //Before optimization
             } else {
                 ConvexOptimizer opt = getOptimizer(oa, conf, m);
-                opt.optimize();
+                opt.optimize(LayerWorkspaceMgr.noWorkspaces());
                 m.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
                 scores[i] = m.score();
                 assertTrue("NaN or infinite score: " + scores[i],

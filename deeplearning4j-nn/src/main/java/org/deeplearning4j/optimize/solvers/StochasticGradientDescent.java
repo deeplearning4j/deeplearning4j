@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Collection;
 
@@ -55,8 +56,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
 
     @Override
-    public boolean optimize() {
-        Pair<Gradient, Double> pair = gradientAndScore();
+    public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
+        Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
 
         Gradient gradient = pair.getFirst();
 

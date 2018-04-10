@@ -31,6 +31,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -86,12 +87,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray epsOut = computeBackpropGradientAndScore();
+        INDArray epsOut = computeBackpropGradientAndScore(workspaceMgr);
 
         return new Pair<>(EMPTY_GRADIENT, epsOut);
     }
 
-    private INDArray computeBackpropGradientAndScore(){
+    private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr){
 
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
@@ -104,7 +105,6 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Various shape arrays, to reuse
         int[] nhw = new int[]{mb, h, w};
-        int[] nbhw = new int[]{mb, b, h, w};
 
         //Labels shape: [mb, 4+C, H, W]
         //Infer mask array from labels. Mask array is 1_i^B in YOLO paper - i.e., whether an object is present in that
@@ -237,7 +237,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         //==============================================================
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
-        INDArray epsOut = Nd4j.create(input.shape(), 'c');
+        INDArray epsOut = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, input.shape(), 'c');
         INDArray epsOut5 = Shape.newShapeNoCopy(epsOut, new int[]{mb, b, 5+c, h, w}, false);
         INDArray epsClassPredictions = epsOut5.get(all(), all(), interval(5, 5+c), all(), all());    //Shape: [mb, b, 5+c, h, w]
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
@@ -342,7 +342,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         this.fullNetworkL2 = fullNetworkL2;
 
         //TODO optimize?
-        computeBackpropGradientAndScore();
+        computeBackpropGradientAndScore(workspaceMgr);
         return score();
     }
 

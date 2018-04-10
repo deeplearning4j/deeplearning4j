@@ -170,10 +170,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     }
 
     @Override
-    public Pair<Gradient, Double> gradientAndScore() {
+    public Pair<Gradient, Double> gradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         oldScore = score;
-        log.warn("BaseOptimizer.gradientAndScore() workspaces not yet reimplemented");  //TODO
-        model.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
+        model.computeGradientAndScore(workspaceMgr);
 
         if (iterationListeners != null && !iterationListeners.isEmpty()) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -197,12 +196,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
      */
     // TODO add flag to allow retaining state between mini batches and when to apply updates
     @Override
-    public boolean optimize() {
+    public boolean optimize(LayerWorkspaceMgr workspaceMgr) {
         //validate the input before training
         INDArray gradient;
         INDArray searchDirection;
         INDArray parameters;
-        Pair<Gradient, Double> pair = gradientAndScore();
+        Pair<Gradient, Double> pair = gradientAndScore(workspaceMgr);
         if (searchState.isEmpty()) {
             searchState.put(GRADIENT_KEY, pair.getFirst().gradient());
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
@@ -249,7 +248,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
             log.debug("Step size returned by line search is 0.0.");
         }
 
-        pair = gradientAndScore();
+        pair = gradientAndScore(workspaceMgr);
 
         //updates searchDirection
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {

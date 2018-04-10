@@ -46,8 +46,8 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Pair<INDArray, INDArray> sampleHiddenGivenVisible(INDArray v) {
-        setInput(v, null);      //TODO
-        INDArray ret = encode(v, true, null);   //TODO
+        setInput(v, LayerWorkspaceMgr.noWorkspaces());      //TODO
+        INDArray ret = encode(v, true, LayerWorkspaceMgr.noWorkspaces());   //TODO
         return new Pair<>(ret, ret);
     }
 
@@ -72,7 +72,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
         INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
-        //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
         return layerConf().getActivationFn().getActivation(preAct, true);
 
     }

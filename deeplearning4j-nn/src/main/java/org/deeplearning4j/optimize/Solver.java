@@ -30,6 +30,7 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,10 +48,10 @@ public class Solver {
     private ConvexOptimizer optimizer;
     private StepFunction stepFunction;
 
-    public void optimize() {
+    public void optimize(LayerWorkspaceMgr workspaceMgr) {
         initOptimizer();
 
-        optimizer.optimize();
+        optimizer.optimize(workspaceMgr);
     }
 
     public void initOptimizer() {

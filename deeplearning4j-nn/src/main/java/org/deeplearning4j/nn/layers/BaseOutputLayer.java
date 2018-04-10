@@ -35,6 +35,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -127,7 +128,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if (input == null || labels == null)
             return;
 
-        INDArray preOut = preOutput2d(true, null);
+        INDArray preOut = preOutput2d(true, workspaceMgr);
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
         this.gradient = pair.getFirst();
 
@@ -149,7 +150,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
-        INDArray epsilonNext = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true).mmul(delta.transpose()).transpose();
+        INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true);
+        INDArray epsilonNext = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
+        epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
 
         //Normally we would clear weightNoiseParams here - but we want to reuse them for forward + backward + score
         // So this is instead done in MultiLayerNetwork/CompGraph backprop methods
@@ -332,24 +335,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public void fit(INDArray input, INDArray labels) {
-        setInput(input, null);  //TODO
-        setLabels(labels);
-        applyDropOutIfNecessary(true, null);    //TODO
-        if (solver == null) {
-            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
-            Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = 0;
-            Map<String, INDArray> paramTable = paramTable();
-            for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
-                updaterStateSize += (int) conf().getLayer().getUpdaterByParam(entry.getKey())
-                                .stateSize(entry.getValue().length());
-            }
-            if (updaterStateSize > 0)
-                updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
-                                true);
-        }
-        solver.optimize();
+        throw new UnsupportedOperationException("Not supported");
     }
 
     /**

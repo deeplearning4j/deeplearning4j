@@ -10,6 +10,7 @@ import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Arrays;
 
@@ -43,15 +44,15 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        return new Pair<>(emptyGradient, applyMask(epsilon, maskArray));
+        return new Pair<>(emptyGradient, applyMask(epsilon, maskArray, workspaceMgr, NetArrayType.ACTIVATION_GRAD));
     }
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return applyMask(input, maskArray);
+        return applyMask(input, maskArray, workspaceMgr, NetArrayType.ACTIVATIONS);
     }
 
-    private static INDArray applyMask(INDArray input, INDArray maskArray){
+    private static INDArray applyMask(INDArray input, INDArray maskArray, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
         if(maskArray == null){
             return input;
         }
@@ -62,7 +63,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                             " as input. Got mask with shape: " + Arrays.toString(maskArray.shape()) +
                             ", input shape = " + Arrays.toString(input.shape()));
                 }
-                return input.mulColumnVector(maskArray);
+                return workspaceMgr.leverageTo(type, input.mulColumnVector(maskArray));
             case 3:
                 //Time series input, shape [Minibatch, size, tsLength], Expect rank 2 mask
                 if(maskArray.rank() != 2 || input.size(0) != maskArray.size(0) || input.size(2) != maskArray.size(1)){
@@ -70,7 +71,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                             Arrays.toString(input.shape()) + ", expected 2d mask array with shape [minibatch, sequenceLength]." +
                             " Got mask with shape: "+ Arrays.toString(maskArray.shape()));
                 }
-                INDArray fwd = Nd4j.create(input.shape(), 'f');
+                INDArray fwd = workspaceMgr.createUninitialized(type, input.shape(), 'f');
                 Broadcast.mul(input, maskArray, fwd, 0, 2);
                 return fwd;
             case 4:
@@ -80,7 +81,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
                             " as input. Got mask with shape: " + Arrays.toString(maskArray.shape()) +
                             ", input shape = " + Arrays.toString(input.shape()));
                 }
-                INDArray fwd2 = Nd4j.create(input.shape(), 'c');
+                INDArray fwd2 = workspaceMgr.createUninitialized(type, input.shape(), 'c');
                 Broadcast.mul(input, maskArray, fwd2, 0);
                 return fwd2;
             default:

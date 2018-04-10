@@ -34,6 +34,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -112,7 +113,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return scoreArray;
+        return workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override

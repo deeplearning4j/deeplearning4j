@@ -929,6 +929,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
                 WORKSPACE_CACHE);
 
+        LayerWorkspaceMgr workspaceMgr = null;      //TODO
+
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
 
@@ -970,7 +972,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
+                            solver.optimize(workspaceMgr);
                         }
                     }
                 }
@@ -1040,6 +1042,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
                 WORKSPACE_CACHE);
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         if (configuration.isBackprop()) {
 
             long time1 = System.currentTimeMillis();
@@ -1075,7 +1079,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
+                            solver.optimize(workspaceMgr);
                         }
                     }
 
@@ -1173,6 +1177,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
                 WORKSPACE_CACHE);
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         if (configuration.isPretrain()) {
             MultiDataSetIterator iter =
                     new SingletonMultiDataSetIterator(new org.nd4j.linalg.dataset.MultiDataSet(inputs, labels,
@@ -1194,7 +1200,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                 try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
                     try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                        solver.optimize(workspaceMgr);
                     }
                 }
             }
@@ -2957,6 +2963,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                         workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
 
+        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+
         try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
                 try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
@@ -2977,7 +2985,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                     .build();
                         }
                     }
-                    solver.optimize();
+                    solver.optimize(workspaceMgr);
 
                     //Finally, update the state of the RNN layers:
                     rnnUpdateStateWithTBPTTState();

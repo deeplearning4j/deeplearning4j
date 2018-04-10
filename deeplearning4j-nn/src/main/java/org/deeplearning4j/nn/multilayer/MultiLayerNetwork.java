@@ -2009,6 +2009,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.setLayerMaskArrays(featuresMask, labelsMask);
         update(TaskUtils.buildTask(features, labels));
 
+        LayerWorkspaceMgr workspaceMgr;
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == null){
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .with(NetArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .build();
+        }
+
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(features, labels, featuresMask, labelsMask);
@@ -2020,7 +2030,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
 
                 //TODO CACHE WORKSPACE, IF USED???
-                solver.optimize();
+                solver.optimize(workspaceMgr);
             }
         }
 

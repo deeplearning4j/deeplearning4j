@@ -409,7 +409,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
         }
         this.optimizer = solver.getOptimizer();
-        solver.optimize();
+        solver.optimize(workspaceMgr);
     }
 
     @Override
