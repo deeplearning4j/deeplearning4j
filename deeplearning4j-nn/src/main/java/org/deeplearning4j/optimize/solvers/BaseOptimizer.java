@@ -41,6 +41,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,23 +172,23 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         oldScore = score;
-//        model.computeGradientAndScore();
-//
-//        if (iterationListeners != null && !iterationListeners.isEmpty()) {
-//            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-//                for (IterationListener l : iterationListeners) {
-//                    if (l instanceof TrainingListener) {
-//                        ((TrainingListener) l).onGradientCalculation(model);
-//                    }
-//                }
-//            }
-//        }
-//
-//        Pair<Gradient, Double> pair = model.gradientAndScore();
-//        score = pair.getSecond();
-//        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
-//        return pair;
-        throw new UnsupportedOperationException("Not yet reimplemented");
+        log.warn("BaseOptimizer.gradientAndScore() workspaces not yet reimplemented");  //TODO
+        model.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
+
+        if (iterationListeners != null && !iterationListeners.isEmpty()) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener l : iterationListeners) {
+                    if (l instanceof TrainingListener) {
+                        ((TrainingListener) l).onGradientCalculation(model);
+                    }
+                }
+            }
+        }
+
+        Pair<Gradient, Double> pair = model.gradientAndScore();
+        score = pair.getSecond();
+        updateGradientAccordingToParams(pair.getFirst(), model, model.batchSize());
+        return pair;
     }
 
     /**

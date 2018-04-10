@@ -35,6 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,9 +141,9 @@ public class BackTrackLineSearch implements LineOptimizer {
         }
 
         layer.setParams(parameters);
-//        layer.computeGradientAndScore();
-//        return layer.score();
-        throw new UnsupportedOperationException("NOT YET REIMPLEMENTED");
+        log.warn("BackTrackLineSearch.setScoreFor(INDArray) workspaces not yet reimplemented"); //TODO
+        layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
+        return layer.score();
     }
 
     // returns fraction of step size if found a good step
