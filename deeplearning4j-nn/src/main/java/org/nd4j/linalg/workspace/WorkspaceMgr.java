@@ -41,9 +41,11 @@ public interface WorkspaceMgr<T extends Enum<T>> {
      * @param arrayType        Array type of the array
      * @param array            Array to check
      * @param migrateIfInvalid if true: migrate. If false: exception
+     * @param exceptionIfDetached If true: if the workspace is detached, but is expected to be in a workspace: should an
+     *                            exception be thrown?
      * @return
      */
-    INDArray validateArrayLocation(T arrayType, INDArray array, boolean migrateIfInvalid);
+    INDArray validateArrayLocation(T arrayType, INDArray array, boolean migrateIfInvalid, boolean exceptionIfDetached);
 
     INDArray create(T workspace, int... shape);
 
