@@ -77,6 +77,7 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
@@ -2083,16 +2084,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return
      */
     protected INDArray[] outputOfLayersInference(@NonNull int[] layerIndexes, @NonNull INDArray[] features, INDArray[] fMask){
+        Preconditions.checkArgument(features.length == numInputArrays,
+                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
         for( int i=0; i<layerIndexes.length; i++ ) {
             Preconditions.checkArgument(layerIndexes[i] >= 0 && layerIndexes[i] < topologicalOrder.length,
                     "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndexes[i]);
         }
-        Preconditions.checkArgument(features.length == numInputArrays,
-                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
         setLayerMaskArrays(fMask, null);
 
         //Verify that no workspace is open externally
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayerInference");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersInference");
 
 
         //First: for each vertex, determine the highest index of the vertex that consumes it's output
@@ -2102,7 +2103,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //thus vertexOutputsFullyConsumedByStep[X.index] = IndexOf(topologicalSort, Z.index)
 
         //Position in array: index of vertex. Value at position: the step (in topological order) that the
-        //Put another way: the step that the
+        //Put another way: this is the step that it's safe to deallocate the layer's activations in
         int[] vertexOutputsFullyConsumedByStep = new int[topologicalOrder.length];
         for(GraphVertex gv : vertices){
             int idx = gv.getVertexIndex();
@@ -2161,7 +2162,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                //Is this one of the
+                //Is this one of the layers/vertices that we want the output for?
                 boolean isRequiredOutput = false;
                 String origWSAct = null;
                 WorkspaceConfiguration origWSActConf = null;
@@ -2236,21 +2237,70 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Note: In general, a workspace MUST be open outside of this method, if workspaces are used.
-     * This is because the layer inputs should be stored there.
+     * Note: In general, workspace WS_ALL_LAYERS_ACT MUST be open outside of this method, if workspaces are used.
+     * This is because the layer inputs/activations will be stored there.
      * Specifically, for training workspace mode:
      * NONE: No workspace should be open
      * Otherwise: WS_ALL_LAYERS_ACT must be open
      *
+     * After this method completes, all
      *
-     * @param layerIndex
-     * @param input
+     * @param excludeLayerIndexes
+     * @param features
      * @param fMask
      * @return
      */
-    protected INDArray outputOfLayerTraining(int layerIndex, INDArray input, INDArray fMask){
+    protected void feedForwardTraining(int[] excludeLayerIndexes, @NonNull INDArray[] features, INDArray[] fMask){
+        Preconditions.checkArgument(features.length == numInputArrays,
+                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
+        setLayerMaskArrays(fMask, null);
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        LayerWorkspaceMgr workspaceMgr;
+        if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersTraining");
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+            //Verify that no workspace is open externally
+        } else {
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "outputOfLayersTraining method requires workspace WS_ALL_LAYERS_ACT to be open");
+
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .build();
+        }
+
+        //Do forward pass according to the topological ordering of the network
+        for (int i = 0; i < topologicalOrder.length; i++) {
+            GraphVertex current = vertices[topologicalOrder[i]];
+            String vName = current.getVertexName();
+            int vIdx = current.getVertexIndex();
+
+            if(excludeLayerIndexes != null && ArrayUtils.contains(excludeLayerIndexes, vIdx)){
+                //Skip forward pass on the specified layer
+                continue;
+            }
+
+            try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                VertexIndices[] inputsTo = current.getOutputVertices();
+
+                INDArray out;
+                if (current.isInputVertex()) {
+                    out = inputs[vIdx];
+                } else {
+                    out = current.doForward(true, workspaceMgr);
+                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (training)");
+                }
+
+                for (VertexIndices v : inputsTo) {
+                    //Note that we don't have to do anything special here: the activations are always detached in
+                    // this method
+                    int inputToIndex = v.getVertexIndex();
+                    int vIdxEdge = v.getVertexEdgeNumber();
+                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                }
+            }
+        }
     }
 
 

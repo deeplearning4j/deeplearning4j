@@ -1061,8 +1061,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Note: In general, a workspace MUST be open outside of this method, if workspaces are used.
-     * This is because the layer inputs should be stored there.
+     * Note: In general, workspace WS_ALL_LAYERS_ACT MUST be open outside of this method, if workspaces are used.
+     * This is because the layer inputs/activations will be stored there.
      * Specifically, for training workspace mode:
      * NONE: No workspace should be open
      * Otherwise: WS_ALL_LAYERS_ACT must be open
