@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.weightnoise;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -29,7 +30,7 @@ public interface IWeightNoise extends Serializable, Cloneable{
      * @param train     If true: training. False: at test time
      * @return          Parameter, after applying weight noise
      */
-    INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train);
+    INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train, LayerWorkspaceMgr workspaceMgr);
 
     IWeightNoise clone();
 

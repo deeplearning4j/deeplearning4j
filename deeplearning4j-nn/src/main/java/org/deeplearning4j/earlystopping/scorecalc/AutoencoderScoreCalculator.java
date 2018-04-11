@@ -51,8 +51,9 @@ public class AutoencoderScoreCalculator extends BaseScoreCalculator<Model> {
         }
         AutoEncoder ae = (AutoEncoder) l;
 
-        INDArray encode = ae.encode(input, false, LayerWorkspaceMgr.noWorkspaces());
-        return ae.decode(encode);
+        LayerWorkspaceMgr workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        INDArray encode = ae.encode(input, false, workspaceMgr);
+        return ae.decode(encode, workspaceMgr);
     }
 
     @Override

@@ -150,7 +150,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
-        INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true);
+        INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray epsilonNext = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
         epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
 

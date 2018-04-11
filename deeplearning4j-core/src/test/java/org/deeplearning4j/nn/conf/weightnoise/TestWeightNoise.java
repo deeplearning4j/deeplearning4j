@@ -24,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.linalg.schedule.SigmoidSchedule;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -195,7 +196,7 @@ public class TestWeightNoise extends BaseDL4JTest {
         private List<WeightNoiseCall> allCalls = new ArrayList<>();
 
         @Override
-        public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train) {
+        public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train, LayerWorkspaceMgr workspaceMgr) {
             allCalls.add(new WeightNoiseCall(layer.getIndex(), paramKey, iteration, epoch, train));
             return layer.getParam(paramKey);
         }
@@ -232,9 +233,9 @@ public class TestWeightNoise extends BaseDL4JTest {
         Layer l = net.getLayer(0);
         DropConnect d = new DropConnect(0.5);
 
-        INDArray outTest = d.getParameter(l, "W", 0, 0, false);
+        INDArray outTest = d.getParameter(l, "W", 0, 0, false, LayerWorkspaceMgr.noWorkspaces());
         assertTrue(l.getParam("W") == outTest);    //Should be same object
-        INDArray outTrain = d.getParameter(l, "W", 0, 0, true);
+        INDArray outTrain = d.getParameter(l, "W", 0, 0, true, LayerWorkspaceMgr.noWorkspaces());
         assertNotEquals(l.getParam("W"), outTrain);
 
         assertEquals(l.getParam("W"), Nd4j.ones(10, 10));

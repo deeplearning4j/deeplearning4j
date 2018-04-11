@@ -156,8 +156,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
-        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
 

@@ -103,7 +103,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -248,8 +248,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training);
-        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training);
+        INDArray bias = getParamWithNoise(ConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
+        INDArray weights = getParamWithNoise(ConvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

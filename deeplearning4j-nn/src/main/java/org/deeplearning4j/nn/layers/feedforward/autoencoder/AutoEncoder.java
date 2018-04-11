@@ -53,14 +53,14 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public Pair<INDArray, INDArray> sampleVisibleGivenHidden(INDArray h) {
-        INDArray ret = decode(h);
+        INDArray ret = decode(h, LayerWorkspaceMgr.noWorkspaces()); //TODO
         return new Pair<>(ret, ret);
     }
 
     // Encode
     public INDArray encode(INDArray v, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training);
-        INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training);
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training, workspaceMgr);
+        INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray ret = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, v.size(0), W.size(1));
         INDArray preAct = v.mmuli(W, ret).addiRowVector(hBias);
         ret = layerConf().getActivationFn().getActivation(preAct, training);
@@ -68,9 +68,9 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     // Decode
-    public INDArray decode(INDArray y) {
-        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
-        INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true);
+    public INDArray decode(INDArray y, LayerWorkspaceMgr workspaceMgr) {
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray vBias = getParamWithNoise(PretrainParamInitializer.VISIBLE_BIAS_KEY, true, workspaceMgr);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
         return layerConf().getActivationFn().getActivation(preAct, true);
 
@@ -89,12 +89,12 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return decode(encode(input, training, workspaceMgr));
+        return decode(encode(input, training, workspaceMgr), workspaceMgr);
     }
 
     @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
-        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true);
+        INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         double corruptionLevel = layerConf().getCorruptionLevel();
 
@@ -102,7 +102,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         setInput(corruptedX, workspaceMgr);
 
         INDArray y = encode(corruptedX, true, workspaceMgr);
-        INDArray z = decode(y);
+        INDArray z = decode(y, workspaceMgr);
 
         INDArray visibleLoss = input.sub(z);
         INDArray hiddenLoss = layerConf().getSparsity() == 0 ? visibleLoss.mmul(W).muli(y).muli(y.rsub(1))

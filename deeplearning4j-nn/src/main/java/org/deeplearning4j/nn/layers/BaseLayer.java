@@ -94,7 +94,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
         }
 
-        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         INDArray epsilonNext = W.mmul(delta.transpose()).transpose();
 
@@ -259,7 +259,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
      * @param training If true: during training
      * @return The parameter, after applying any noise
      */
-    protected INDArray getParamWithNoise(String param, boolean training){
+    protected INDArray getParamWithNoise(String param, boolean training, LayerWorkspaceMgr workspaceMgr){
         INDArray p;
         if(layerConf().getWeightNoise() != null){
             if(training && weightNoiseParams.size() > 0 && weightNoiseParams.containsKey(param) ){
@@ -268,7 +268,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                 return weightNoiseParams.get(param);
             } else {
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    p = layerConf().getWeightNoise().getParameter(this, param, getIterationCount(), getEpochCount(), training);
+                    p = layerConf().getWeightNoise().getParameter(this, param, getIterationCount(), getEpochCount(), training, workspaceMgr);
                 }
             }
 
@@ -285,8 +285,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, workspaceMgr);
-        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training);
-        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training);
+        INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
+        INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
 
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {

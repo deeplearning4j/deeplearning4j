@@ -64,7 +64,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         }
 
         INDArray bias;
-        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true);
+        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         int miniBatch = input.size(0);
         int inH = input.size(2);
@@ -108,7 +108,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         CustomOp op;
         INDArray[] opInputs;
         if(layerConf().hasBias()){
-            bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true);
+            bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
             opInputs = new INDArray[]{input, weights, bias, delta};
         } else {
             opInputs = new INDArray[]{input, weights, delta};
@@ -140,8 +140,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             throw new IllegalArgumentException("Border mode Same currently not supported.");
         }
 
-        INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training);
-        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training);
+        INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
+        INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         //Input validation: expect rank 4 matrix
         if (input.rank() != 4) {

@@ -71,9 +71,9 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         }
         INDArray bias;
         INDArray depthWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, true);
+                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, true, workspaceMgr);
         INDArray pointWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true);
+                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, true, workspaceMgr);
 
 
         int miniBatch = input.size(0);
@@ -116,7 +116,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         CustomOp op;
         if(layerConf().hasBias()){
-            bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true);
+            bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
 
             op = DynamicCustomOp.builder("sconv2d_bp")
                     .addInputs(input, delta, depthWiseWeights, pointWiseWeights, bias)
@@ -149,11 +149,11 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
     @Override
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
 
-        INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training);
+        INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray depthWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training);
+                getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training, workspaceMgr);
         INDArray pointWiseWeights =
-                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training);
+                getParamWithNoise(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY, training, workspaceMgr);
 
         if (input.rank() != 4) {
             String layerName = conf.getLayer().getLayerName();

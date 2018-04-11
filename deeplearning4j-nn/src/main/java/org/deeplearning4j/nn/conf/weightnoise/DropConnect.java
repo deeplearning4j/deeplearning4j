@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.DropOut;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
@@ -61,7 +63,7 @@ public class DropConnect implements IWeightNoise {
     }
 
     @Override
-    public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train) {
+    public INDArray getParameter(Layer layer, String paramKey, int iteration, int epoch, boolean train, LayerWorkspaceMgr workspaceMgr) {
         ParamInitializer init = layer.conf().getLayer().initializer();
         INDArray param = layer.getParam(paramKey);
 
@@ -74,7 +76,7 @@ public class DropConnect implements IWeightNoise {
 
         if (train && init.isWeightParam(layer.conf().getLayer(), paramKey)
                 || (applyToBiases && init.isBiasParam(layer.conf().getLayer(), paramKey))) {
-            INDArray out = Nd4j.createUninitialized(param.shape(), param.ordering());
+            INDArray out = workspaceMgr.createUninitialized(NetArrayType.INPUT, param.shape(), param.ordering());
             Nd4j.getExecutioner().exec(new DropOut(param, out, p));
             return out;
         }

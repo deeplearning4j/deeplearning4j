@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
@@ -69,8 +70,8 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         //First: Do forward pass to get gate activations and Zs
         Pair<INDArray,INDArray> p = activateHelper(null, true, true, null); //TODO
 
-        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true);
-        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true);
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true, workspaceMgr);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true, workspaceMgr);
 
         INDArray wg = gradientViews.get(SimpleRnnParamInitializer.WEIGHT_KEY);
         INDArray rwg = gradientViews.get(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY);
@@ -81,7 +82,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         int tsLength = input.size(2);
 
-        INDArray epsOut = Nd4j.createUninitialized(input.shape(), 'f');
+        INDArray epsOut = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, input.shape(), 'f');
 
         INDArray dldzNext = null;
         int end;
@@ -161,9 +162,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         int tsLength = input.size(2);
         int nOut = layerConf().getNOut();
 
-        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training);
-        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training);
-        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training);
+        INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, training, workspaceMgr);
+        INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
+        INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
 
         INDArray out = Nd4j.createUninitialized(new int[]{m, nOut, tsLength}, 'f');
         INDArray outZ = (forBackprop ? Nd4j.createUninitialized(out.shape()) : null);
