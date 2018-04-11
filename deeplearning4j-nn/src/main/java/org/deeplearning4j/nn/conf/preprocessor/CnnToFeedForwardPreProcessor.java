@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -94,7 +94,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         //Assume input is standard rank 4 activations out of CNN layer
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
-            input = workspaceMgr.dup(NetArrayType.ACTIVATIONS, input, 'c');
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
         int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
@@ -104,7 +104,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(NetArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
             if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
                 epsilons = epsilons.dup('c');

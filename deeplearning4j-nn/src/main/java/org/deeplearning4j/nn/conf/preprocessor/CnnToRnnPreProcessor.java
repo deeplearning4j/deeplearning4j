@@ -5,13 +5,12 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -67,7 +66,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         //First: reshape 4d to 2d, as per CnnToFeedForwardPreProcessor
         INDArray twod = input.reshape('c', input.size(0), ArrayUtil.prod(input.shape()) / input.size(0));
         //Second: reshape 2d to 3d, as per FeedForwardToRnnPreProcessor
-        INDArray reshaped = workspaceMgr.dup(NetArrayType.ACTIVATIONS, twod, 'f');
+        INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATIONS, twod, 'f');
         reshaped = reshaped.reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
         return reshaped.permute(0, 2, 1);
     }
@@ -95,7 +94,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException("Invalid input: expected output size(1)=" + shape[1]
                             + " must be equal to " + inputHeight + " x columns " + inputWidth + " x depth "
                             + numChannels + " = " + product + ", received: " + shape[1]);
-        INDArray ret = workspaceMgr.dup(NetArrayType.ACTIVATIONS, output2d, 'c');
+        INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, output2d, 'c');
         return ret.reshape('c', output2d.size(0), numChannels, inputHeight, inputWidth);
     }
 

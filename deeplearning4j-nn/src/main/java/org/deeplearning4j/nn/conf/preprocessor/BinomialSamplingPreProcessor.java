@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 /**
  * Binomial sampling pre processor
@@ -38,7 +38,7 @@ public class BinomialSamplingPreProcessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(NetArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
             return Nd4j.getDistributions().createBinomial(1, input).sample(input.shape());
         }
     }

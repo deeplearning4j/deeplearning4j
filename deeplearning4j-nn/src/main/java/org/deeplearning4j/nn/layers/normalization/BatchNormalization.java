@@ -19,7 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
@@ -218,7 +218,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
         //TODO could optimize this
-        nextEpsilon = workspaceMgr.leverageTo(NetArrayType.ACTIVATION_GRAD, nextEpsilon);
+        nextEpsilon = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, nextEpsilon);
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -350,7 +350,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 }
             } else {
                 //Standard case: gamma and beta are learned per parameter
-                activations = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, x.shape(), x.ordering());
+                activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, x.shape(), x.ordering());
                 activations = Nd4j.getExecutioner().execAndReturn(
                                 new BroadcastMulOp(xHat, gamma, activations, 1));
                 activations = Nd4j.getExecutioner()
@@ -393,7 +393,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
         }
 
-        activations = workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
+        activations = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, activations);   //Most of the time this should be a no-op
         return activations;
     }
 

@@ -17,7 +17,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -181,13 +181,13 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         //TODO optimize without leverage
         if (collapseDimensions) {
             //Standard/common case
-            return workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, reduced2d);
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d);
         } else {
             int[] inputShape = input.shape();
             if (input.rank() == 3) {
-                return workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1));
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1));
             } else {
-                return workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, reduced2d.reshape(reduced2d.ordering(), inputShape[0], inputShape[1], 1, 1));
             }
         }
     }
@@ -273,7 +273,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
         }
 
         //TODO optimize without leverage
-        epsilonNd = workspaceMgr.leverageTo(NetArrayType.ACTIVATION_GRAD, epsilonNd);
+        epsilonNd = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNd);
         return new Pair<>(retGradient, epsilonNd);
     }
 

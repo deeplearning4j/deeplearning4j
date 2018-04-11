@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 /**
  *  Autoencoder.
@@ -61,7 +61,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     public INDArray encode(INDArray v, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray W = getParamWithNoise(PretrainParamInitializer.WEIGHT_KEY, training, workspaceMgr);
         INDArray hBias = getParamWithNoise(PretrainParamInitializer.BIAS_KEY, training, workspaceMgr);
-        INDArray ret = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, v.size(0), W.size(1));
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, v.size(0), W.size(1));
         INDArray preAct = v.mmuli(W, ret).addiRowVector(hBias);
         ret = layerConf().getActivationFn().getActivation(preAct, training);
         return ret;

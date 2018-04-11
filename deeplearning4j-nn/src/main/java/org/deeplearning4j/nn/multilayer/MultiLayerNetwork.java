@@ -24,7 +24,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JException;
@@ -74,8 +73,7 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
-import org.nd4j.linalg.workspace.NetArrayType;
-import org.nd4j.linalg.workspace.WorkspacesCloseable;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
@@ -858,7 +856,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
 
-    protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, NetArrayType arrayType, int layerIdx,
+    protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, int layerIdx,
                                            boolean isPreprocessor, String op){
         try{
             mgr.validateArrayLocation(arrayType, array, false, layerIdx > 0);
@@ -919,9 +917,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         } else {
 
             workspaceMgr = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
             //Require that WS_ALL_LAYERS_ACT is open:
@@ -931,20 +929,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         List<INDArray> out = new ArrayList<>();
-        out.add(workspaceMgr.leverageTo(NetArrayType.INPUT, input));    //Probably unnecessary usually
+        out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
 
         for( int i=0; i<=layerIndex; i++ ){
-            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(NetArrayType.FF_WORKING_MEM)){
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
-                    validateArrayWorkspaces(workspaceMgr, input, NetArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
+                    validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
                 }
 
                 input = layers[i].activate(input, true, workspaceMgr);
                 //Validation: Exception if invalid (bad layer implementation)
-                validateArrayWorkspaces(workspaceMgr, input, NetArrayType.ACTIVATIONS, i, false, "Feed forward to layer (training)");
-                validateArrayWorkspaces(workspaceMgr, layers[i].input(), NetArrayType.INPUT, i, false, "Feed forward to layer (training)");
+                validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, false, "Feed forward to layer (training)");
+                validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (training)");
 
                 out.add(input);
             }
@@ -1001,15 +999,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             mgrOdd = mgrEven;
         } else {
             mgrEven = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)
-                    .with(NetArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)            //Inputs should always be in the previous WS
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)
+                    .with(ArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)            //Inputs should always be in the previous WS
                     .build();
 
             mgrOdd = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)
-                    .with(NetArrayType.INPUT, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)            //Inputs should always be in the previous WS
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)
+                    .with(ArrayType.INPUT, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)            //Inputs should always be in the previous WS
                     .build();
         }
 
@@ -1019,27 +1017,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
 
-                try (MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(NetArrayType.FF_WORKING_MEM)) { //Working memory: opened/closed once per layer
+                try (MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) { //Working memory: opened/closed once per layer
                     //Activations workspaces: opened/closed every second layer.
                     //So mgrEven (WS_LAYER_ACT_1) open at start of 0, 2, 4, 8; closed at end of 1, 3, 5, 7 etc
                     //and mgrOdd (WS_LAYER_ACT_2) opened at start of 1, 3, 5, 7; closed at end of 2, 4, 6, 8 etc
-                    temp = mgr.notifyScopeEntered(NetArrayType.ACTIVATIONS);
+                    temp = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
 
                     if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                         input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
                         //Validation: Exception if invalid (bad preprocessor implementation)
-                        validateArrayWorkspaces(mgr, input, NetArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
+                        validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }
 
                     if ( i == layerIndex ) {
                         //Final activations: should be detached
-                        mgr.setScopedOutFor(NetArrayType.ACTIVATIONS);
+                        mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
                     }
 
                     input = layers[i].activate(input, false, mgr);
                     //Validation: Exception if invalid (bad layer implementation)
-                    validateArrayWorkspaces(mgr, input, NetArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
-                    validateArrayWorkspaces(mgr, layers[i].input(), NetArrayType.INPUT, i, true, "Output of layer (inference)");
+                    validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
+                    validateArrayWorkspaces(mgr, layers[i].input(), ArrayType.INPUT, i, true, "Output of layer (inference)");
 
                     if(wsActCloseNext != null){
                         wsActCloseNext.close();
@@ -1100,9 +1098,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         } else {
             mgr = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
             //Require that WS_ALL_LAYERS_ACT is open:
             if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WS_ALL_LAYERS_ACT)){
@@ -1111,22 +1109,22 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         for( int i=0; i<=layerIndex; i++ ){
-            try(MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(NetArrayType.FF_WORKING_MEM)){
+            try(MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
-                    validateArrayWorkspaces(mgr, input, NetArrayType.ACTIVATIONS, i, true, "Output of layer (training)");
+                    validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (training)");
                 }
 
                 if ( i == layerIndex ) {
                     //Final activations: should be detached
-                    mgr.setScopedOutFor(NetArrayType.ACTIVATIONS);
+                    mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
                 }
 
                 input = layers[i].activate(input, false, mgr);
                 //Validation: Exception if invalid (bad layer implementation)
-                validateArrayWorkspaces(mgr, input, NetArrayType.ACTIVATIONS, i, false, "Output of layer (training)");
-                validateArrayWorkspaces(mgr, layers[i].input(), NetArrayType.INPUT, i, false, "Output of layer (training)");
+                validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (training)");
+                validateArrayWorkspaces(mgr, layers[i].input(), ArrayType.INPUT, i, false, "Output of layer (training)");
             }
         }
 
@@ -1502,15 +1500,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
              */
 
             mgrEven = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(NetArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
             mgrOdd = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(NetArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
         }
@@ -1549,14 +1547,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     outputLayer.setLabels(labels);
                 }
 
-                try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(NetArrayType.BP_WORKING_MEM)){
-                    wsActGradTemp = workspaceMgr.notifyScopeEntered(NetArrayType.ACTIVATION_GRAD);
+                try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)){
+                    wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
                     INDArray eps = (i == layers.length-1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
                     currPair = layers[i].backpropGradient(eps, workspaceMgr);
 
                     if(currPair.getSecond() != null) {
                         //Edge case: may be null for Embedding layer, for example
-                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers - 1,
+                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, numLayers - 1,
                                 false, "Backprop");
                     }
 
@@ -1570,7 +1568,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         currPair = new Pair<>(currPair.getFirst(),
                                 this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
                                         .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
-                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), NetArrayType.ACTIVATION_GRAD, numLayers-1,
+                        validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, numLayers-1,
                                 true, "Backprop");
                     }
 
@@ -1978,8 +1976,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             workspaceMgr = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
 
@@ -2277,20 +2275,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             mgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             mgr = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .noWorkspaceFor(NetArrayType.ACTIVATIONS)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .noWorkspaceFor(ArrayType.ACTIVATIONS)
                     .build();
 
             if(training){
                 //TODO does this make sense? We require this to use outputOfLayerTraining, but there's no point
                 // using this workspace as all arrays will be invalidated...
-                mgr.setWorkspace(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
+                mgr.setWorkspace(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
 
         INDArray inputToOutputLayer;
         if(training){
-            try(MemoryWorkspace ws = mgr.notifyScopeEntered(NetArrayType.ACTIVATIONS)) {
+            try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
                 //TODO does this make sense? We require this to use outputOfLayerTraining, but there's no point
                 // using this workspace as all arrays will be invalidated...
                 inputToOutputLayer = outputOfLayerTraining(layers.length - 2, data.getFeatures(), data.getFeaturesMaskArray());
@@ -2308,7 +2306,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         ol.setInput(inputToOutputLayer, mgr); //Feedforward doesn't include output layer for efficiency
         ol.setLabels(data.getLabels());
         double score;
-        try(MemoryWorkspace ws = mgr.notifyScopeEntered(NetArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
             score = ol.computeScore(calcL1(true), calcL2(true), training, mgr);
         }
 
@@ -2408,15 +2406,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             mgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             mgr = LayerWorkspaceMgr.builder()
-                    .with(NetArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(NetArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(NetArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
         }
 
         //Calculate activations (which are stored in each layer, and used in backprop)
-        try(MemoryWorkspace ws = mgr.notifyScopeEntered(NetArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 List<INDArray> activations = rnnActivateUsingStoredState(getInput(), true, true);
                 if (!trainingListeners.isEmpty()) {

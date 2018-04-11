@@ -35,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 
 import java.util.Arrays;
@@ -87,7 +87,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         int size = getSize();
 
-        INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         INDArray forwardOutput  = preOutput(true, true, null);
 
@@ -131,7 +131,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outH = inH * size;
         int outW = inW * size;
 
-        INDArray reshapedOutput = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{miniBatch, inDepth, outH, outW}, 'c');
+        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{miniBatch, inDepth, outH, outW}, 'c');
 
         Upsampling upsampling = Upsampling.sameDiffBuilder()
                 .inPlace(false)

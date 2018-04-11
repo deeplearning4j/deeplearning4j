@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldAddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
@@ -67,7 +67,7 @@ public class WeightNoise implements IWeightNoise {
 
             org.nd4j.linalg.api.rng.distribution.Distribution dist = Distributions.createDistribution(distribution);
             INDArray noise = dist.sample(param.shape());
-            INDArray out = workspaceMgr.createUninitialized(NetArrayType.INPUT, param.shape(), param.ordering());
+            INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.shape(), param.ordering());
 
             if (additive) {
                 Nd4j.getExecutioner().exec(new OldAddOp(param, noise,out));

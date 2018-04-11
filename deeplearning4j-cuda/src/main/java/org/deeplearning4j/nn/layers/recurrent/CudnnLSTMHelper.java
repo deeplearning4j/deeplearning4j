@@ -35,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Map;
 
@@ -212,7 +212,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
-        INDArray dx = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
+        INDArray dx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}

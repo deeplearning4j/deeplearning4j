@@ -33,7 +33,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -302,7 +302,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
 
-        INDArray ret = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, input.size(0), W.size(1));
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), W.size(1));
         input.mmuli(W, ret);
         if(hasBias()){
             ret.addiRowVector(b);

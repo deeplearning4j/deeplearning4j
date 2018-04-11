@@ -27,14 +27,13 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,16 +73,16 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         if (labels == null)
             throw new IllegalStateException("Labels are not set (null)");
 
-        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         // delta calculation
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
-        delta2d = workspaceMgr.leverageTo(NetArrayType.ACTIVATION_GRAD, delta2d);
+        delta2d = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta2d);
 
-        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, input.shape(), workspaceMgr, NetArrayType.ACTIVATION_GRAD);
+        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, input.shape(), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -167,11 +166,11 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
             throw new UnsupportedOperationException(
                     "Input must be rank 4. Got input with rank " + input.rank() + " " + layerId());
 
-        INDArray in = workspaceMgr.dup(NetArrayType.ACTIVATIONS, input, input.ordering());
-        INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, workspaceMgr, NetArrayType.ACTIVATIONS);
+        INDArray in = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering());
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
 
-        return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), workspaceMgr, NetArrayType.ACTIVATIONS);
+        return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
@@ -193,9 +192,9 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
@@ -222,9 +221,9 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
 
-        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, NetArrayType.FF_WORKING_MEM);
-        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, NetArrayType.FF_WORKING_MEM);
+        INDArray input2d = ConvolutionUtils.reshape4dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = ConvolutionUtils.reshape4dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray maskReshaped = ConvolutionUtils.reshapeMaskIfRequired(maskArray, input, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
@@ -234,7 +233,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
         int[] newShape = input.shape().clone();
         newShape[1] = 1;
-        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, workspaceMgr, NetArrayType.FF_WORKING_MEM);
+        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray summedScores = scoreArrayTs.sum(1,2,3);
 
         double l1l2 = fullNetworkL1 + fullNetworkL2;

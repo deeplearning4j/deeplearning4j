@@ -29,7 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 
 /**
@@ -135,7 +135,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return workspaceMgr.leverageTo(NetArrayType.ACTIVATIONS, scoreArray);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override
@@ -172,7 +172,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         INDArray w = getParamWithNoise(CenterLossParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{w.size(0), delta.size(0)}, 'f');
         epsilonNext = w.mmuli(delta.transpose(), epsilonNext).transpose();
         double lambda = layerConf().getLambda();
         epsilonNext.addi(dLcdai.muli(lambda)); // add center loss here

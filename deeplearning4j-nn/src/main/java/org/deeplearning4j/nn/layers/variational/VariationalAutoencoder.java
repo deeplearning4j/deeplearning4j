@@ -29,7 +29,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.*;
 
@@ -765,7 +765,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training, workspaceMgr);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training, workspaceMgr);
 
-        INDArray pzxMean = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{current.size(0), mW.size(1)}, 'f');
+        INDArray pzxMean = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{current.size(0), mW.size(1)}, 'f');
         pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
 
 

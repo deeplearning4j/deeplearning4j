@@ -18,7 +18,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -91,7 +91,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray biasGradView = gradientViews.get(DeconvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(DeconvolutionParamInitializer.WEIGHT_KEY);
 
-        INDArray outEps = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEps = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -194,7 +194,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
 
         int miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
 
         int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

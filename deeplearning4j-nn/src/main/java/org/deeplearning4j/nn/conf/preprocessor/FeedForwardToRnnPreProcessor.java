@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -39,7 +39,7 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 2 (i.e., activations for FF layer)");
         if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
-            input = workspaceMgr.dup(NetArrayType.ACTIVATIONS, input, 'f');
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         int[] shape = input.shape();
         INDArray reshaped = input.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
@@ -53,7 +53,7 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
             throw new IllegalArgumentException(
                             "Invalid input: expect NDArray with rank 3 (i.e., epsilons from RNN layer)");
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
-            output = workspaceMgr.dup(NetArrayType.ACTIVATIONS, output, 'f');
+            output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
         int[] shape = output.shape();
         if (shape[0] == 1)
             return output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1

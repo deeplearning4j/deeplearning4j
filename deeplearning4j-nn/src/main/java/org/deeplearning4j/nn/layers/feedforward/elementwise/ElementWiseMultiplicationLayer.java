@@ -9,12 +9,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -63,7 +60,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
 //      epsilonNext is a 2d matrix
         INDArray epsilonNext = delta.mulRowVector(params.get(ElementWiseParamInitializer.WEIGHT_KEY));
-        epsilonNext = workspaceMgr.leverageTo(NetArrayType.ACTIVATION_GRAD, epsilon);
+        epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon);
 
         return new Pair<>(ret, epsilonNext);
     }
@@ -93,7 +90,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
         applyDropOutIfNecessary(training, null);    //TODO
 
-        INDArray ret = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, input.shape(), 'c');
+        INDArray ret = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), 'c');
 
         ret.assign(input.mulRowVector(W).addiRowVector(b));
 

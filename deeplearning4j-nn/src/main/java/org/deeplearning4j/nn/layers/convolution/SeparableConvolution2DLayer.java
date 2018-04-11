@@ -15,11 +15,10 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -100,7 +99,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         INDArray depthWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
         INDArray pointWiseweightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
-        INDArray outEpsilon = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
@@ -204,7 +203,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int outW = outSize[1];
 
         int miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{miniBatch, outDepth, outH, outW}, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 

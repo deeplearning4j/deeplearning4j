@@ -7,10 +7,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Broadcast;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -44,15 +43,15 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        return new Pair<>(emptyGradient, applyMask(epsilon, maskArray, workspaceMgr, NetArrayType.ACTIVATION_GRAD));
+        return new Pair<>(emptyGradient, applyMask(epsilon, maskArray, workspaceMgr, ArrayType.ACTIVATION_GRAD));
     }
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return applyMask(input, maskArray, workspaceMgr, NetArrayType.ACTIVATIONS);
+        return applyMask(input, maskArray, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
-    private static INDArray applyMask(INDArray input, INDArray maskArray, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    private static INDArray applyMask(INDArray input, INDArray maskArray, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(maskArray == null){
             return input;
         }

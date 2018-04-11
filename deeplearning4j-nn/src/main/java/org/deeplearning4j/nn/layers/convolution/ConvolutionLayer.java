@@ -37,13 +37,12 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 
 
@@ -211,7 +210,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current col2im implementation expects input with order: [miniBatch,depth,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5, 2, 1, 0, 4, 3);
-        INDArray epsNextOrig = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
+        INDArray epsNextOrig = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[] {inDepth, miniBatch, inH, inW}, 'c');
 
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1, 0, 2, 3);
@@ -356,7 +355,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedW = permutedW.reshape('f', kW * kH * inDepth, outDepth);
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
-        INDArray z = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
+        INDArray z = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{im2col2d.size(0), reshapedW.size(1)}, 'f');
         im2col2d.mmuli(reshapedW, z);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector

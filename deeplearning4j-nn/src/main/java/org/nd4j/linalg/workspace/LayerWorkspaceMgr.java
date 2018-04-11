@@ -3,7 +3,7 @@ package org.nd4j.linalg.workspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
+public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     
     public LayerWorkspaceMgr(){
         INDArray arr = null;
@@ -27,7 +27,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
         }
 
         public Builder defaultNoWorkspace(){
-            for(NetArrayType t : NetArrayType.values()){
+            for(ArrayType t : ArrayType.values()){
                 if(!mgr.configMap.containsKey(t)){
                     mgr.setScopedOutFor(t);
                 }
@@ -35,13 +35,13 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
             return this;
         }
 
-        public Builder noWorkspaceFor(NetArrayType type){
+        public Builder noWorkspaceFor(ArrayType type){
             mgr.setScopedOutFor(type);
             return this;
         }
 
         public Builder defaultWorkspace(String workspaceName, WorkspaceConfiguration configuration){
-            for(NetArrayType t : NetArrayType.values()){
+            for(ArrayType t : ArrayType.values()){
                 if(!mgr.configMap.containsKey(t)){
                     with(t, workspaceName, configuration);
                 }
@@ -49,7 +49,7 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<NetArrayType> {
             return this;
         }
 
-        public Builder with(NetArrayType type, String workspaceName, WorkspaceConfiguration configuration){
+        public Builder with(ArrayType type, String workspaceName, WorkspaceConfiguration configuration){
             mgr.setConfiguration(type, configuration);
             mgr.setWorkspaceName(type, workspaceName);
             return this;

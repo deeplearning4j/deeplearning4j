@@ -27,7 +27,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -88,7 +88,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
                     + " but was instead " + Arrays.toString(input.shape()));
 
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
-            input = workspaceMgr.dup(NetArrayType.ACTIVATIONS, input, 'c');
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
 
         this.shape = input.shape();
         if (input.rank() == 4)
@@ -101,7 +101,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     // return 4 dimensions
     public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (epsilons.ordering() != 'c' || !Shape.hasDefaultStridesForShape(epsilons))
-            epsilons = workspaceMgr.dup(NetArrayType.ACTIVATIONS, epsilons, 'c');
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATIONS, epsilons, 'c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
             if (epsilons.rank() == 2)

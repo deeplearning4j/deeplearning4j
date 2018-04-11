@@ -18,7 +18,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -463,7 +463,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.input = input;
         fwd.setInput(input, layerWorkspaceMgr);
         INDArray reversed;
-        try(MemoryWorkspace ws = layerWorkspaceMgr.notifyScopeEntered(NetArrayType.INPUT)){
+        try(MemoryWorkspace ws = layerWorkspaceMgr.notifyScopeEntered(ArrayType.INPUT)){
             reversed = TimeSeriesUtils.reverseTimeSeries(input);
         }
         bwd.setInput(reversed, layerWorkspaceMgr);

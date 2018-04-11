@@ -29,9 +29,8 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
@@ -110,7 +109,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        INDArray destination = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, input.size(0), weights.size(1));
+        INDArray destination = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.size(0), weights.size(1));
         INDArray rows = Nd4j.pullRows(weights, destination, 1, indexes);
         if(hasBias()){
             rows.addiRowVector(bias);

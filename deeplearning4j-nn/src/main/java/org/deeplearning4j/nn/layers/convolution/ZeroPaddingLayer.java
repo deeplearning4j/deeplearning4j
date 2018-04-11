@@ -6,12 +6,11 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 /**
  * Zero padding layer for convolutional neural networks.
@@ -62,7 +61,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outW = inShape[3] + padding[2] + padding[3];
         int[] outShape = new int[] {inShape[0], inShape[1], outH, outW};
 
-        INDArray out = workspaceMgr.create(NetArrayType.ACTIVATIONS, outShape, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'c');
 
         out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(padding[0], padding[0] + inShape[2]),

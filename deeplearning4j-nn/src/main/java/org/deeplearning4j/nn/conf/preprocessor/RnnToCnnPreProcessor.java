@@ -10,7 +10,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
@@ -69,7 +69,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             in2d = permuted.reshape('f', shape[0] * shape[2], shape[1]);
         }
 
-        return workspaceMgr.dup(NetArrayType.ACTIVATIONS, in2d, 'c')
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, in2d, 'c')
                 .reshape('c', shape[0] * shape[2], numChannels, inputHeight, inputWidth);
     }
 
@@ -83,7 +83,7 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
         //Second: reshape 2d to 4d
-        INDArray reshaped = workspaceMgr.dup(NetArrayType.ACTIVATIONS, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
+        INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATIONS, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
         return reshaped.permute(0, 2, 1);
     }
 

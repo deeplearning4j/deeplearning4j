@@ -21,21 +21,17 @@ package org.deeplearning4j.nn.layers.convolution;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
-import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.AbstractLayer;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -102,7 +98,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int inH = input.size(2);
         int inW = input.size(3);
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
         Gradient gradient = new DefaultGradient();
 
@@ -145,7 +141,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         int outW = paddedW / blocks[1];
         int outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
 
-        INDArray out = workspaceMgr.create(NetArrayType.ACTIVATIONS, new int[]{outMiniBatch, depth, outH, outW}, 'c');
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[]{outMiniBatch, depth, outH, outW}, 'c');
 
         CustomOp op = DynamicCustomOp.builder("space_to_batch")
                 .addInputs(input, getBlocksArray(), getPaddingArray())

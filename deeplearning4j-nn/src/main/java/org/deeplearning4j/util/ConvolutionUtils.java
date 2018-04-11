@@ -24,13 +24,12 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.NetArrayType;
+import org.nd4j.linalg.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -375,7 +374,7 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray reshape4dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    public static INDArray reshape4dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
@@ -390,7 +389,7 @@ public class ConvolutionUtils {
         return out.reshape('c', shape[0]*shape[2]*shape[3], shape[1]);
     }
 
-    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         if(toShape.length != 4)
@@ -404,7 +403,7 @@ public class ConvolutionUtils {
         return out.permute(0,3,1,2);
     }
 
-    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (mask == null)
             return null;
         if (mask.rank() == 2) {
@@ -416,7 +415,7 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray adapt2dMask(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    public static INDArray adapt2dMask(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
         //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
 
@@ -431,7 +430,7 @@ public class ConvolutionUtils {
         return bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1);
     }
 
-    public static INDArray reshape3dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, NetArrayType type){
+    public static INDArray reshape3dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         //Assume mask has shape [n,h,w] and will be broadcast along dimension
         if(mask.ordering() != 'c' || !Shape.hasDefaultStridesForShape(mask))
             mask = workspaceMgr.dup(type, mask, 'c');
