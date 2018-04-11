@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -76,7 +77,10 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.ND4JWorkspaceException;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
@@ -135,6 +139,37 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
             .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
             .policyLearning(LearningPolicy.OVER_TIME).build();
+
+    /**
+     * Workspace for working memory for a single layer: forward pass and backward pass
+     * Note that this is opened/closed once per op (activate/backpropGradient call)
+     */
+    protected static final String WS_LAYER_WORKING_MEM = "WS_LAYER_WORKING_MEM";
+    /**
+     * Workspace for storing all layers' activations - used only to store activations (layer inputs) as part of backprop
+     * Not used for inference
+     */
+    protected static final String WS_ALL_LAYERS_ACT = "WS_ALL_LAYERS_ACT";
+
+
+    protected static final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.3)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected static final WorkspaceConfiguration WS_ALL_LAYERS_ACT_CONFIG = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
 
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
@@ -1582,6 +1617,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param publicApi
      * @return
      */
+    @Deprecated
     protected Map<String, INDArray> feedForward(boolean train,
                                                 boolean excludeOutputLayers,
                                                 boolean includeNonLayerVertexActivations,
@@ -1875,6 +1911,188 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             return outputs;
         }
     }
+
+
+    protected void validateArrayWorkspaces(LayerWorkspaceMgr mgr, INDArray array, ArrayType arrayType, String vertexName, boolean isInputVertex, String op){
+        try{
+            mgr.validateArrayLocation(arrayType, array, false, isInputVertex);
+        } catch (ND4JWorkspaceException e){
+            String clazz;
+            GraphVertex v = verticesMap.get(vertexName);
+            if(v instanceof LayerVertex){
+                clazz = v.getClass().getSimpleName();
+            } else {
+                clazz = v.getLayer().getClass().getSimpleName();
+            }
+            throw new IllegalStateException(op + ": array (" + arrayType + ") workspace validation failed (" +
+                    vertexName + " - class: " + clazz + ") - array is defined in incorrect workspace", e);
+        }
+    }
+
+
+    /**
+     * FF - inference/test time, returning all array activations detached from any workspace.
+     * Note that no workspace should be active externally when calling this method
+     * Also:
+     * - Clear the inputs to each layer
+     *
+     * @param layerIndex
+     * @param input
+     * @param fMask
+     * @return
+     */
+    protected Map<String,INDArray> ffToLayerInference(int layerIndex, INDArray[] features, INDArray[] fMask){
+        Preconditions.checkArgument(layerIndex >= 0 && layerIndex < topologicalOrder.length,
+                "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
+        setLayerMaskArrays(fMask, null);
+
+        //Verify that no workspace is open externally
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerInference");
+
+        LayerWorkspaceMgr workspaceMgr;
+        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .noWorkspaceFor(ArrayType.ACTIVATIONS)
+                    .with(ArrayType.INPUT, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .build();
+        }
+
+        Map<String, INDArray> activations = new HashMap<>();
+        //Do forward pass according to the topological ordering of the network
+        for (int i = 0; i < layerIndex; i++) {
+            GraphVertex current = vertices[topologicalOrder[i]];
+            String vName = current.getVertexName();
+            int vIdx = current.getVertexIndex();
+
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
+                VertexIndices[] inputsTo = current.getOutputVertices();
+
+                INDArray out;
+                if(current.isInputVertex()){
+                    out = inputs[vIdx];
+                } else {
+                    out = current.doForward(false, workspaceMgr);
+                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
+                }
+                activations.put(current.getVertexName(), out);
+
+                for(VertexIndices v : inputsTo){
+                    //Note that we don't have to do anything special here: the activations are always detached in
+                    // this method
+                    int inputToIndex = v.getVertexIndex();
+                    int vIdxEdge = v.getVertexEdgeNumber();
+                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                }
+
+                current.clear();
+            }
+        }
+
+        return activations;
+    }
+
+    /**
+     * FF - training time
+     * Note: if using workspaces for training, requires that WS_ALL_LAYERS_ACT is open externally.
+     * If using NO workspaces, requires that no external workspace is open
+     * - Don't clear the inputs to each layer - ensure they are in the WS_ALL_LAYERS_ACT workspace (for use in backprop, for example)
+     *
+     * @param layerIndex
+     * @param input
+     * @param fMask
+     * @return
+     */
+    protected Map<String,INDArray> ffToLayerTrain(int layerIndex, INDArray[] input, INDArray[] fMask) {
+        Preconditions.checkArgument(layerIndex >= 0 && layerIndex < topologicalOrder.length,
+                "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
+        setLayerMaskArrays(fMask, null);
+
+        LayerWorkspaceMgr workspaceMgr;
+        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            //Verify that no workspace is open externally
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerInference");
+
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerTrain method requires workspace WS_ALL_LAYERS_ACT to be open");
+
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .build();
+        }
+
+        Map<String, INDArray> activations = new HashMap<>();
+        //Do forward pass according to the topological ordering of the network
+        for (int i = 0; i < layerIndex; i++) {
+            GraphVertex current = vertices[topologicalOrder[i]];
+            String vName = current.getVertexName();
+            int vIdx = current.getVertexIndex();
+
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
+                VertexIndices[] inputsTo = current.getOutputVertices();
+
+                INDArray out;
+                if(current.isInputVertex()){
+                    out = inputs[vIdx];
+                } else {
+                    out = current.doForward(false, workspaceMgr);
+                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
+                }
+                activations.put(current.getVertexName(), out);
+
+                for(VertexIndices v : inputsTo){
+                    //Note that we don't have to do anything special here: the activations are always detached in
+                    // this method
+                    int inputToIndex = v.getVertexIndex();
+                    int vIdxEdge = v.getVertexEdgeNumber();
+                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                }
+
+                current.clear();
+            }
+        }
+
+        return activations;
+    }
+
+
+    /**
+     * NOTE: in general, no workspaces should be activated externally for this method!
+     * This method handles the workspace activation as required
+     *
+     * @param layerIndex
+     * @param input
+     * @param featureMasks
+     * @return
+     */
+    protected INDArray outputOfLayerInference(int layerIndex, INDArray input, INDArray featureMasks){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    /**
+     * Note: In general, a workspace MUST be open outside of this method, if workspaces are used.
+     * This is because the layer inputs should be stored there.
+     * Specifically, for training workspace mode:
+     * NONE: No workspace should be open
+     * Otherwise: WS_ALL_LAYERS_ACT must be open
+     *
+     *
+     * @param layerIndex
+     * @param input
+     * @param fMask
+     * @return
+     */
+    protected INDArray outputOfLayerTraining(int layerIndex, INDArray input, INDArray fMask){
+
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
 
     /**
      * Calculate the gradient of the network with respect to some external errors.

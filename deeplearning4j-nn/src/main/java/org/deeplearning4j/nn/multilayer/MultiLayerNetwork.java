@@ -74,6 +74,7 @@ import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.ArrayType;
+import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.util.OneTimeLogger;
 
 import java.io.File;
@@ -125,25 +126,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     protected transient Solver solver; //Used to call optimizers during backprop
 
-//    protected final static String WORKSPACE_EXTERNAL = "LOOP_EXTERNAL";
-//    protected final static String WORKSPACE_FEED_FORWARD = "LOOP_FF";
-//    protected final static String WORKSPACE_BACK_PROP = "LOOP_BP";
     public final static String WORKSPACE_TBPTT = "LOOP_TBPTT";
-
-//    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
-//                    .initialSize(0).overallocationLimit(0.3).policyLearning(LearningPolicy.FIRST_LOOP)
-//                    .policyReset(ResetPolicy.BLOCK_LEFT).policySpill(SpillPolicy.REALLOCATE)
-//                    .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-//
-//    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder().initialSize(0)
-//                    .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-//                    .policyLearning(LearningPolicy.OVER_TIME).policySpill(SpillPolicy.REALLOCATE)
-//                    .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
-//
-//    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
-//                    .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-//                    .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
-//                    .policyLearning(LearningPolicy.OVER_TIME).build();
 
 
     /**
@@ -875,23 +858,60 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * FF - inference/test time. Also:
+     * FF - inference/test time, returning all array activations detached from any workspace.
+     * Note that no workspace should be active externally when calling this method
+     * Also:
      * - Clear the inputs to each layer
      *
      * @param layerIndex
-     * @param features
+     * @param input
      * @param fMask
      * @return
      */
-    protected List<INDArray> ffToLayerInference(int layerIndex, INDArray features, INDArray fMask){
+    protected List<INDArray> ffToLayerInference(int layerIndex, INDArray input, INDArray fMask){
+        setLayerMaskArrays(fMask, null);
 
-        throw new RuntimeException("Not yet implemented");
+        //Verify that no workspace is open externally
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerInference");
+
+        LayerWorkspaceMgr workspaceMgr;
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .noWorkspaceFor(ArrayType.ACTIVATIONS)
+                    .with(ArrayType.INPUT, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .build();
+        }
+
+        List<INDArray> out = new ArrayList<>();
+        out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
+
+        for( int i=0; i<=layerIndex; i++ ){
+            try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
+                if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
+                    //Validation: Exception if invalid (bad preprocessor implementation)
+                    validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (inference)");
+                }
+
+                input = layers[i].activate(input, true, workspaceMgr);
+                //Validation: Exception if invalid (bad layer implementation)
+                validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, false, "Feed forward to layer (inference)");
+                validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (inference)");
+
+                out.add(input);
+            }
+        }
+
+        return out;
     }
 
     /**
      * FF - training time
      * Note: if using workspaces for training, requires that WS_ALL_LAYERS_ACT is open externally.
-     * If using NO workspaces, requires that no extrenal workspace is open
+     * If using NO workspaces, requires that no external workspace is open
      * - Don't clear the inputs to each layer - ensure they are in the WS_ALL_LAYERS_ACT workspace (for use in backprop, for example)
      *
      * @param layerIndex
@@ -904,16 +924,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         LayerWorkspaceMgr workspaceMgr;
         if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerTrain when training workspace is set to NONE");
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
-            if(Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()){
-                List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
-                List<String> workspaces = new ArrayList<>(l.size());
-                for( MemoryWorkspace ws : l){
-                    workspaces.add(ws.getId());
-                }
-                throw new IllegalStateException("Expected no workspace active in ffToLayerTrain when training " +
-                        "workspace is set to NONE. Open/active workspaces: " + workspaces);
-            }
         } else {
 
             workspaceMgr = LayerWorkspaceMgr.builder()
@@ -922,10 +934,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
-            //Require that WS_ALL_LAYERS_ACT is open:
-            if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WS_ALL_LAYERS_ACT)){
-                throw new IllegalStateException("ffToLayerTrain method requires workspace WS_ALL_LAYERS_ACT to be open");
-            }
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerTrain method requires workspace WS_ALL_LAYERS_ACT to be open");
         }
 
         List<INDArray> out = new ArrayList<>();
@@ -981,15 +990,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
 
-        if(Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()){
-            List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
-            List<String> workspaces = new ArrayList<>(l.size());
-            for( MemoryWorkspace ws : l){
-                workspaces.add(ws.getId());
-            }
-            throw new IllegalStateException("Expected no workspace active in outputOfLayerInference when inference " +
-                    "workspace is set to NONE. Open/active workspaces: " + workspaces);
-        }
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerInference");
 
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
@@ -1086,16 +1087,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
          */
         LayerWorkspaceMgr mgr;
         if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerTraining when training workspace is set to NONE");
             mgr = LayerWorkspaceMgr.noWorkspaces();
-            if(Nd4j.getWorkspaceManager().anyWorkspaceActiveForCurrentThread()){
-                List<MemoryWorkspace> l = Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread();
-                List<String> workspaces = new ArrayList<>(l.size());
-                for( MemoryWorkspace ws : l){
-                    workspaces.add(ws.getId());
-                }
-                throw new IllegalStateException("Expected no workspace active in outputOfLayerTraining when training " +
-                        "workspace is set to NON. Open/Active WS: " + workspaces);
-            }
         } else {
             mgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
