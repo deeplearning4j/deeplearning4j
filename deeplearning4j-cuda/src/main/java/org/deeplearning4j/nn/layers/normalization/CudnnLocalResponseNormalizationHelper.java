@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -118,7 +120,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
-                    double beta) {
+                                                     double beta, LayerWorkspaceMgr workspaceMgr) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -143,7 +145,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
         checkCudnn(cudnnSetLRNDescriptor(cudnnContext.lrnDesc, (int) n, alpha, beta, k));
 
-        INDArray nextEpsilon = Nd4j.createUninitialized(new int[] {miniBatch, depth, inH, inW}, 'c');
+        INDArray nextEpsilon = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
         int[] dstStride = nextEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
@@ -171,7 +173,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
 
 
     @Override
-    public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta) {
+    public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta, LayerWorkspaceMgr workspaceMgr) {
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -181,7 +183,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        activations = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        activations = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, inH, inW}, 'c');
         int[] dstStride = activations.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));

@@ -32,6 +32,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -109,7 +111,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
-                    INDArray dGammaView, INDArray dBetaView, double eps) {
+                    INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
         int miniBatch = input.size(0);
         int depth = input.size(1);
         int inH = input.size(2);
@@ -133,7 +135,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, depth, inH, inW,
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
 
-        INDArray nextEpsilon = Nd4j.createUninitialized(new int[] {miniBatch, depth, inH, inW}, 'c');
+        INDArray nextEpsilon = layerWorkspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
         int[] dstStride = nextEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
@@ -172,7 +174,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
 
     @Override
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
-                    INDArray var, double decay, double eps) {
+                    INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
         int miniBatch = x.size(0);
         int inDepth = x.size(1);
         int inH = x.size(2);
@@ -182,7 +184,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        INDArray activations = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        INDArray activations = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, inH, inW}, 'c');
         int[] dstStride = activations.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));

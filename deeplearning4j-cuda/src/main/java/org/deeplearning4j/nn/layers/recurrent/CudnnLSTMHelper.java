@@ -34,6 +34,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.Map;
 
@@ -191,13 +193,14 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-                    final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-                    final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
-                    final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
-                    final String recurrentWeightKey, final String biasWeightKey,
-                    final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
+                                                     final IActivation gateActivationFn, final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                                     final INDArray inputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+                                                     final INDArray epsilon, final boolean truncatedBPTT, final int tbpttBackwardLength,
+                                                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
+                                                     final String recurrentWeightKey, final String biasWeightKey,
+                                                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                                     final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                                                     final LayerWorkspaceMgr workspaceMgr) {
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
@@ -209,7 +212,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
         INDArray x = toCOrder(input.permute(2, 0, 1));
         INDArray dy = toCOrder(epsilon.permute(2, 0, 1));
-        INDArray dx = Nd4j.createUninitialized(new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
+        INDArray dx = workspaceMgr.createUninitialized(NetArrayType.ACTIVATION_GRAD, new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
         INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
         INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G}
@@ -365,7 +368,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
                     final boolean training, final INDArray prevOutputActivations, final INDArray prevMemCellState,
                     boolean forBackprop, boolean forwards, final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections) { //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,   //True for GravesLSTM, false for LSTM
+                    final LayerWorkspaceMgr workspaceMgr) {
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         int timeSeriesLength = (is2dInput ? 1 : input.size(2));

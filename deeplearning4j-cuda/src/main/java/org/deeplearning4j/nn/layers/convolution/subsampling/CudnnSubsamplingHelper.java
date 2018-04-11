@@ -37,6 +37,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -106,7 +108,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
-                    int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
+                 int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
@@ -160,14 +162,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon;
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
-            }
-        } else
-            outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.create(NetArrayType.ACTIVATION_GRAD, new int[] {miniBatch, depth, inH, inW}, 'c');
 
 
         int[] dstStride = outEpsilon.stride();
@@ -205,7 +200,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad,
-                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation) {
+                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
@@ -244,13 +239,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
-            }
-        } else
-            reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
+        INDArray reduced = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[] {miniBatch, inDepth, outH, outW}, 'c');
 
         int[] dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, outH, outW,
