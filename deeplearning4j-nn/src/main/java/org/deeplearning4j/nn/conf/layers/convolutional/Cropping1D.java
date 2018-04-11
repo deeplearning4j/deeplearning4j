@@ -106,13 +106,17 @@ public class Cropping1D extends NoParamLayer {
         }
 
         /**
-         * @param cropping Cropping amount for top/bottom(in that order). Must be length 2 array.
+         * @param cropping Cropping amount for top/bottom(in that order). Must be length 1 or 2 array.
          */
         public Builder(@NonNull int[] cropping) {
-            Preconditions.checkArgument(cropping.length == 2,
-                    "Two cropping values, i.e. top and bottom must be provided. " +
-                            "Got " + cropping.length + " values: " + Arrays.toString(cropping));
-            this.cropping = cropping;
+            Preconditions.checkArgument(cropping.length == 2 || cropping.length == 1,
+                    "Two cropping values, i.e. top and bottom, or one value for bot top and bottom" +
+                            "must be provided. Got " + cropping.length + " values: " + Arrays.toString(cropping));
+            if (cropping.length == 2) {
+                this.cropping = cropping;
+            } else {
+                this.cropping = new int[] {cropping[0], cropping[0]};
+            }
         }
 
         /**
