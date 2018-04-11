@@ -86,6 +86,7 @@ import org.nd4j.util.OneTimeLogger;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -165,6 +166,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected static final WorkspaceConfiguration WS_LAYER_ACT_X_CONFIG = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyLearning(LearningPolicy.OVER_TIME)
             .policyReset(ResetPolicy.BLOCK_LEFT)
             .policySpill(SpillPolicy.REALLOCATE)
             .policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -1937,7 +1947,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * - Clear the inputs to each layer
      *
      * @param layerIndex
-     * @param input
+     * @param features
      * @param fMask
      * @return
      */
@@ -1947,7 +1957,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         setLayerMaskArrays(fMask, null);
 
         //Verify that no workspace is open externally
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerInference");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to ffToLayerInference");
 
         LayerWorkspaceMgr workspaceMgr;
         if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
@@ -2028,7 +2038,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         Map<String, INDArray> activations = new HashMap<>();
         //Do forward pass according to the topological ordering of the network
-        for (int i = 0; i < layerIndex; i++) {
+        int stopIndex = ArrayUtils.indexOf(topologicalOrder, layerIndex);
+        for (int i = 0; i <= stopIndex; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
             String vName = current.getVertexName();
             int vIdx = current.getVertexIndex();
@@ -2062,17 +2073,166 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
     /**
-     * NOTE: in general, no workspaces should be activated externally for this method!
+     * NOTE: no workspaces should be activated externally for this method!
      * This method handles the workspace activation as required
+     * The outputs of this method are not attached to any workspace, regardless of workspace configuration
      *
-     * @param layerIndex
-     * @param input
-     * @param featureMasks
+     * @param layerIndexes Indexes of the layers
+     * @param features
+     * @param fMask
      * @return
      */
-    protected INDArray outputOfLayerInference(int layerIndex, INDArray input, INDArray featureMasks){
+    protected INDArray[] outputOfLayersInference(@NonNull int[] layerIndexes, @NonNull INDArray[] features, INDArray[] fMask){
+        for( int i=0; i<layerIndexes.length; i++ ) {
+            Preconditions.checkArgument(layerIndexes[i] >= 0 && layerIndexes[i] < topologicalOrder.length,
+                    "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndexes[i]);
+        }
+        Preconditions.checkArgument(features.length == numInputArrays,
+                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
+        setLayerMaskArrays(fMask, null);
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        //Verify that no workspace is open externally
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayerInference");
+
+
+        //First: for each vertex, determine the highest index of the vertex that consumes it's output
+        //Then: for each vertex, determine the forward pass step that each vertex's output has been fully consumed on
+        //In other words, if vertex X -> Y and X -> Z, and topological sort order is X,a,Y,b,Z,
+        //Then we know X's output activations have been fully consumed by step index 4 in the topological sort
+        //thus vertexOutputsFullyConsumedByStep[X.index] = IndexOf(topologicalSort, Z.index)
+
+        //Position in array: index of vertex. Value at position: the step (in topological order) that the
+        //Put another way: the step that the
+        int[] vertexOutputsFullyConsumedByStep = new int[topologicalOrder.length];
+        for(GraphVertex gv : vertices){
+            int idx = gv.getVertexIndex();
+            int maxStepOfOutputTo = -1;
+            VertexIndices[] outputsTo = gv.getOutputVertices();
+            for(VertexIndices vi : outputsTo){
+                int posInTopoSort = ArrayUtils.indexOf(topologicalOrder, vi.getVertexIndex());
+                if(posInTopoSort == -1){
+                    throw new IllegalStateException("Did not find vertex " + vi.getVertexIndex() + " in topological sort array");
+                }
+                maxStepOfOutputTo = Math.max(maxStepOfOutputTo, posInTopoSort);
+            }
+            vertexOutputsFullyConsumedByStep[idx] = maxStepOfOutputTo;
+        }
+
+        //Given this: we need to determine what workspaces should be closed at each step...
+
+        //Do forward pass according to the topological ordering of the network
+        INDArray[] outputs = new INDArray[layerIndexes.length];
+        int stopIndex = -1;
+        for( int i=0; i<layerIndexes.length; i++ ){
+            stopIndex = Math.max(stopIndex, ArrayUtils.indexOf(topologicalOrder, layerIndexes[i]));
+        }
+        List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
+        List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
+        Map<MemoryWorkspace, LayerWorkspaceMgr> openActivationsWorkspaces = new IdentityHashMap<>();
+
+        boolean noWS = configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE;
+        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces() : null;
+        List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new Object[topologicalOrder.length];
+        try {
+            for (int i = 0; i <= stopIndex; i++) {
+                GraphVertex current = vertices[topologicalOrder[i]];
+                String vName = current.getVertexName();
+                int vIdx = current.getVertexIndex();
+
+                //First: determine what workspace manager we should use for forward pass in this vertex
+                LayerWorkspaceMgr workspaceMgr;
+                if (noWS) {
+                    workspaceMgr = allNone;
+                } else {
+                    //First: is there a free forward pass workspace we can use?
+                    if (freeWorkspaceManagers.size() > 0) {
+                        workspaceMgr = freeWorkspaceManagers.remove(freeWorkspaceManagers.size() - 1);
+                    } else {
+                        //No existing free workspace managers for forward pass - create a new one...
+                        String wsName = "WS_LAYER_ACT_" + allWorkspaceManagers.size();
+                        workspaceMgr = LayerWorkspaceMgr.builder()
+                                .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.ACTIVATIONS, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                                .build();
+
+                        allWorkspaceManagers.add(workspaceMgr);
+                        throw new UnsupportedOperationException("Not yet implemented");
+                    }
+                }
+
+                //Is this one of the
+                boolean isRequiredOutput = false;
+                String origWSAct = null;
+                WorkspaceConfiguration origWSActConf = null;
+                if (ArrayUtils.contains(layerIndexes, vIdx) && !workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS)) {
+                    //Activations/output to return: don't want this in any workspace
+                    origWSAct = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
+                    origWSActConf = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
+                    workspaceMgr.setScopedOutFor(ArrayType.ACTIVATIONS);
+                    isRequiredOutput = true;
+                }
+
+
+
+                try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    VertexIndices[] inputsTo = current.getOutputVertices();
+
+                    //Open the relevant workspace for the activations.
+                    //Note that this will be closed only once the current vertex's activations have been consumed
+                    MemoryWorkspace wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    openActivationsWorkspaces.put(wsActivations, workspaceMgr);
+                    int closeableAt = vertexOutputsFullyConsumedByStep[vIdx];
+                    if(closeAtEndIteraton[closeableAt] == null){
+                        closeAtEndIteraton[closeableAt] = new ArrayList<>();
+                    }
+                    closeAtEndIteraton[closeableAt].add(wsActivations);
+
+                    INDArray out;
+                    if (current.isInputVertex()) {
+                        out = inputs[vIdx];
+                    } else {
+                        out = current.doForward(false, workspaceMgr);
+                        validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
+                    }
+
+                    for (VertexIndices v : inputsTo) {
+                        //Note that we don't have to do anything special here: the activations are always detached in
+                        // this method
+                        int inputToIndex = v.getVertexIndex();
+                        int vIdxEdge = v.getVertexEdgeNumber();
+                        vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                    }
+
+                    current.clear();
+
+                    if(isRequiredOutput){
+                        //Reset the configuration, as we may reuse this workspace manager...
+                        workspaceMgr.setWorkspace(ArrayType.ACTIVATIONS, origWSAct, origWSActConf);
+                        outputs[ArrayUtils.indexOf(layerIndexes, vIdx)] = out;
+                    }
+                }
+
+                //Close any activations workspaces that we no longer require
+                //Note that activations workspaces can be closed only once the corresponding output activations have
+                // been fully consumed
+                if(closeAtEndIteraton[i] != null){
+                    for(MemoryWorkspace wsAct : closeAtEndIteraton[i]){
+                        wsAct.close();
+                        LayerWorkspaceMgr canNowReuse = openActivationsWorkspaces.remove(wsAct);
+                        freeWorkspaceManagers.add(canNowReuse);
+                    }
+                }
+            }
+        } finally {
+            //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
+            //Though if stopIndex < numLayers, some might still be open
+            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
+                ws.close();
+            }
+        }
+
+        return outputs;
     }
 
     /**
