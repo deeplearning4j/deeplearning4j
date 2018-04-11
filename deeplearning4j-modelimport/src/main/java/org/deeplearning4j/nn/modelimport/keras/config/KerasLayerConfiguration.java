@@ -57,11 +57,16 @@ public class KerasLayerConfiguration {
 
     private final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
     private final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
+    private final String LAYER_CLASS_NAME_MAX_POOLING_3D = "MaxPooling3D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
+    private final String LAYER_CLASS_NAME_AVERAGE_POOLING_3D = "AveragePooling3D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    private final String LAYER_CLASS_NAME_ZERO_PADDING_3D = "ZeroPadding3D";
+    private final String LAYER_CLASS_NAME_CROPPING_1D = "Cropping1D";
     private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2D";
+    private final String LAYER_CLASS_NAME_CROPPING_3D = "Cropping3D";
 
 
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
