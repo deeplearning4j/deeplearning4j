@@ -99,9 +99,6 @@ public interface GraphVertex extends Serializable {
      */
     void setInput(int inputNumber, INDArray input, LayerWorkspaceMgr workspaceMgr);
 
-    @Deprecated
-    void migrateInput();
-
     /** Set the errors (epsilon - aka dL/dActivation) for this GraphVertex */
     void setEpsilon(INDArray epsilon);
 

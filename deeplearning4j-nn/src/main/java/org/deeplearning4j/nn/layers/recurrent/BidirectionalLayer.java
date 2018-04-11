@@ -492,12 +492,6 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public void migrateInput() {
-        fwd.migrateInput();
-        bwd.migrateInput();
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {
         fwd.setInputMiniBatchSize(size);
         bwd.setInputMiniBatchSize(size);

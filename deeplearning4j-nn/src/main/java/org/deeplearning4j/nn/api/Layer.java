@@ -210,13 +210,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr);
 
-    /**
-     * For use with ND4J workspaces. If present, both input and mask arrays will migrated to the currently active workspace,
-     * or detached from any workspaces (if no workspace is currently active)
-     */
-    @Deprecated
-    void migrateInput();
-
     /** Set current/last input mini-batch size.<br>
      * Used for score and gradient calculations. Mini batch size may be different from
      * getInput().size(0) due to reshaping operations - for example, when using RNNs with

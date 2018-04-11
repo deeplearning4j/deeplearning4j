@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -66,16 +67,17 @@ public class LSTMHelpers {
      * and rnnTimeStep whilst being reasonably efficient for all
      */
     static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
-                    final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-                    final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-                    final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-                    final boolean training, final INDArray originalPrevOutputActivations,
-                    final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
-                    final LSTMHelper helper, final CacheMode cacheMode // cacheMode for layer calling this helper
-    ) {
+                                               final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
+                                               final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                               final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+                                               final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
+                                               final boolean training, final INDArray originalPrevOutputActivations,
+                                               final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
+                                               final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                               final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                                               final LSTMHelper helper, final CacheMode cacheMode, // cacheMode for layer calling this helper
+                                               final LayerWorkspaceMgr workspaceMgr
+                                               ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
         //Data has shape [m,nIn,T]. Layer activations/output has shape [m,nHiddenUnits,T]
@@ -180,7 +182,7 @@ public class LSTMHelpers {
         if (helper != null) {
             FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
                             biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards,
-                            inputWeightKey, maskArray, hasPeepholeConnections);
+                            inputWeightKey, maskArray, hasPeepholeConnections, workspaceMgr);
             if (ret != null) {
                 return ret;
             }
@@ -397,7 +399,8 @@ public class LSTMHelpers {
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
-                    final LSTMHelper helper) {
+                    final LSTMHelper helper,
+                    final LayerWorkspaceMgr workspaceMgr) {
 
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
@@ -463,7 +466,7 @@ public class LSTMHelpers {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input, recurrentWeights,
                             inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, forwards,
                             inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews, maskArray,
-                            hasPeepholeConnections);
+                            hasPeepholeConnections, workspaceMgr);
             if (ret != null) {
                 return ret;
             }

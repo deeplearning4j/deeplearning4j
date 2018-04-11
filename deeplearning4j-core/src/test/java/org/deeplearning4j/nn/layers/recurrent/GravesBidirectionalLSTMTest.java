@@ -177,7 +177,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         false, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true,
-                        null, CacheMode.NONE).fwdPassOutput;
+                        null, CacheMode.NONE, LayerWorkspaceMgr.noWorkspaces()).fwdPassOutput;
 
         final INDArray[] fwdPassTrue = LSTMHelpers.activateHelper(lstm, lstm.conf(), new ActivationSigmoid(),
                         lstm.input(),
@@ -185,7 +185,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                         lstm.getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), false, null, null,
                         true, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, null, true, null,
-                        CacheMode.NONE).fwdPassOutputAsArrays;
+                        CacheMode.NONE, LayerWorkspaceMgr.noWorkspaces()).fwdPassOutputAsArrays;
 
         //I have no idea what the heck this does --Ben
         for (int i = 0; i < timeSeriesLength; i++) {

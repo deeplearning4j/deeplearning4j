@@ -92,7 +92,7 @@ public class GravesBidirectionalLSTM
                                             + layerId());
         }
 
-        final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
+        final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true, workspaceMgr);
 
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
@@ -102,11 +102,11 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
-                        null);
+                        null, workspaceMgr);
 
 
 
-        final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false);
+        final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false, workspaceMgr);
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
@@ -116,7 +116,7 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
-                        null);
+                        null, workspaceMgr);
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -190,7 +190,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                             this.input,
@@ -199,7 +199,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
 
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
@@ -217,7 +217,7 @@ public class GravesBidirectionalLSTM
     }
 
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
-                    final INDArray prevMemCellState, boolean forBackprop, boolean forwards) {
+                    final INDArray prevMemCellState, boolean forBackprop, boolean forwards, LayerWorkspaceMgr workspaceMgr) {
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;
@@ -245,7 +245,7 @@ public class GravesBidirectionalLSTM
             return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
-                            null, forBackprop ? cacheMode : CacheMode.NONE);
+                            null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
         }
     }
 

@@ -1085,10 +1085,5 @@ public class TestOptimizers extends BaseDL4JTest {
         public void setEpochCount(int epochCount) {
 
         }
-
-        @Override
-        public void migrateInput() {
-
-        }
     }
 }

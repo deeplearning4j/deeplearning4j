@@ -28,11 +28,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         super(underlying);
     }
 
-    @Override
-    public void migrateInput() {
-        underlying.migrateInput();
-    }
-
 
     @Override
     public Type type() {

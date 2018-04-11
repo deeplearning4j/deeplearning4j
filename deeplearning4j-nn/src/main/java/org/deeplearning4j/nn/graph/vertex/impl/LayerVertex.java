@@ -266,9 +266,4 @@ public class LayerVertex extends BaseGraphVertex {
         IOutputLayer ol = (IOutputLayer)layer;
         return ol.computeScoreForExamples(l1, l2, workspaceMgr);
     }
-
-    @Override
-    public void migrateInput(){
-        layer.migrateInput();
-    }
 }

@@ -883,14 +883,6 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
-    public void migrateInput() {
-        if(input != null)
-            input = input.migrate(true);
-        if(maskArray != null)
-            maskArray = maskArray.migrate(true);
-    }
-
-    @Override
     public void setInputMiniBatchSize(int size) {
 
     }

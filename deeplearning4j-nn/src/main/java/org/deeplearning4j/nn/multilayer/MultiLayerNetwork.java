@@ -2560,20 +2560,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         throw new UnsupportedOperationException("Not supported");
     }
 
-    @Override
-    public void migrateInput(){
-        if(input != null)
-            input = input.migrate(true);
-        if(mask != null)
-            mask = mask.migrate(true);
-        if(labels != null)
-            labels = labels.migrate(true);
-        for(Layer l : layers){
-            l.migrateInput();
-        }
-    }
-
-
     /**
      * Get the output layer
      *

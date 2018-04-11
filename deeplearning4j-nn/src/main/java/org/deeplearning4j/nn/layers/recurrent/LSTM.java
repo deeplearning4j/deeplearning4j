@@ -124,7 +124,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         Pair<Gradient,INDArray> p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
+                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr);
 
         weightNoiseParams.clear();
         return p;
@@ -175,7 +175,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false, helper,
-                        forBackprop ? cacheMode : CacheMode.NONE);
+                        forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;
