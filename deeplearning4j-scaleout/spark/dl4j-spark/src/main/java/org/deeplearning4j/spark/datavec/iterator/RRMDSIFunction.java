@@ -27,7 +27,7 @@ public class RRMDSIFunction implements Function<DataVecRecords, MultiDataSet> {
         Map<String, List<List<Writable>>> nextRRVals = Collections.emptyMap();
         Map<String, List<List<List<Writable>>>> nextSeqRRVals = Collections.emptyMap();
 
-        if(records.getRecords() != null && records.getRecords().size() > 0){
+        if(records.getRecords() != null && !records.getRecords().isEmpty()){
             nextRRVals = new HashMap<>();
 
             Map<String, RecordReader> m = iterator.getRecordReaders();
@@ -38,7 +38,7 @@ public class RRMDSIFunction implements Function<DataVecRecords, MultiDataSet> {
             }
 
         }
-        if(records.getSeqRecords() != null && records.getSeqRecords().size() > 0){
+        if(records.getSeqRecords() != null && !records.getSeqRecords().isEmpty()){
             nextSeqRRVals = new HashMap<>();
 
             Map<String, SequenceRecordReader> m = iterator.getSequenceRecordReaders();

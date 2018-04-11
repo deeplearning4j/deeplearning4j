@@ -34,7 +34,7 @@ public class CompanyAttrLibrary {
 
     private static void init() {
         try (BufferedReader br = MyStaticValue.getCompanReader()) {
-            cnMap = new HashMap<String, int[]>();
+            cnMap = new HashMap<>();
             String temp = null;
             String[] strs = null;
             int[] cna = null;

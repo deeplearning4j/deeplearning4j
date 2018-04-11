@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.feedforward.dense;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.Layer;
@@ -23,7 +24,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by nyghtowl on 8/31/15.
  */
-public class DenseTest {
+public class DenseTest extends BaseDL4JTest {
 
     private int numSamples = 150;
     private int batchSize = 150;
@@ -104,10 +105,9 @@ public class DenseTest {
     private static MultiLayerNetwork getDenseMLNConfig(boolean backprop, boolean pretrain) {
         int numInputs = 4;
         int outputNum = 3;
-        int iterations = 10;
         long seed = 6;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed)
                         .updater(new Sgd(1e-3)).l1(0.3).l2(1e-3).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(numInputs).nOut(3)
                                         .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())

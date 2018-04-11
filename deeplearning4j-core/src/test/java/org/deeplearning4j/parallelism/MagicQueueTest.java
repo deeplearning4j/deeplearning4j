@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.junit.Before;
@@ -19,7 +20,7 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class MagicQueueTest {
+public class MagicQueueTest extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {
 

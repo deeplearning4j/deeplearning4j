@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -75,7 +76,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
     }
 
     @Override
-    public List<Writable> next(int num) {
+    public List<List<Writable>> next(int num) {
         int numExamples = Math.min(num, limit - counter.get());
         //counter.addAndGet(numExamples);
 
@@ -92,7 +93,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
         List<Writable> ret = RecordConverter.toRecord(features);
         ret.add(new NDArrayWritable(labels));
 
-        return ret;
+        return Collections.singletonList(ret);
     }
 
 

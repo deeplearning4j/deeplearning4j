@@ -36,13 +36,20 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 
 /**
- * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
+ * Bidirectional LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
+ *
+ * @deprecated use {@link org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional} instead. With the
+ * Bidirectional layer wrapper you can make any recurrent layer bidirectional, in particular GravesLSTM.
+ * Note that this layer adds the output of both directions, which translates into "ADD" mode in Bidirectional.
+ *
+ * Usage: {@code .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder()....build()))}
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
+@Deprecated
 public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     private double forgetGateBiasInit;

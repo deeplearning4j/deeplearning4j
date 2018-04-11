@@ -206,11 +206,11 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         INDArray output = Nd4j.create(miniBatch * outDepth * outH * outW);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outDepth, outH, outW);
 
-        Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
+        int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],
-                pad[0], pad[1], dilation[0], dilation[1], sameMode
+                pad[0], pad[1], dilation[0], dilation[1], sameMode, 0   //Last arg: 0 for nchw
         };
 
         CustomOp op;
@@ -249,9 +249,9 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();
             }
         }

@@ -70,7 +70,7 @@ public abstract class Analysis {
         this.isRealName = MyStaticValue.isRealName;
     };
 
-    private LinkedList<Term> terms = new LinkedList<Term>();
+    private LinkedList<Term> terms = new LinkedList<>();
 
     /**
      * while 循环调用.直到返回为null则分词结束
@@ -261,7 +261,7 @@ public abstract class Analysis {
      * @throws IOException
      */
     public Result parse() throws IOException {
-        List<Term> list = new ArrayList<Term>();
+        List<Term> list = new ArrayList<>();
         Term temp = null;
         while ((temp = next()) != null) {
             list.add(temp);

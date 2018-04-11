@@ -1,5 +1,6 @@
 package org.deeplearning4j.regressiontest;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
  *
  * @author Alex Black
  */
-public class RegressionTest050 {
+public class RegressionTest050 extends BaseDL4JTest {
 
     @Test
     public void regressionTestMLP1() throws Exception {
@@ -57,7 +58,6 @@ public class RegressionTest050 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertEquals("softmax", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
@@ -100,7 +100,6 @@ public class RegressionTest050 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertEquals("identity", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
@@ -153,8 +152,7 @@ public class RegressionTest050 {
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
         assertEquals("sigmoid", l2.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
-        assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
+        assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood);
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());

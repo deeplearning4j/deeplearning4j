@@ -18,7 +18,10 @@
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
@@ -33,11 +36,13 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@EqualsAndHashCode(callSuper = false)
 public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     private int[] inputShape;
     private int[] targetShape;
     private boolean hasMiniBatchDimension = false;
+    private int miniBatchSize;
 
     public ReshapePreprocessor(int[] inputShape, int[] targetShape) {
         this.inputShape = inputShape;
@@ -60,7 +65,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             if (i == 0)
                 miniBatchShape[i] = miniBatchSize;
             else
-                miniBatchShape[i] = shape[i-1];
+                miniBatchShape[i] = shape[i - 1];
         }
         return miniBatchShape;
     }
@@ -73,6 +78,12 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             targetShape = prependMiniBatchSize(targetShape, miniBatchSize);
             inputShape = prependMiniBatchSize(inputShape, miniBatchSize);
             this.hasMiniBatchDimension = true;
+            this.miniBatchSize = miniBatchSize;
+        }
+        if (this.miniBatchSize != miniBatchSize) {
+            targetShape = prependMiniBatchSize(ArrayUtils.subarray(targetShape, 1, targetShape.length), miniBatchSize);
+            inputShape = prependMiniBatchSize(ArrayUtils.subarray(inputShape, 1, targetShape.length), miniBatchSize);
+            this.miniBatchSize = miniBatchSize;
         }
         if (prod(input.shape()) == prod((targetShape))) {
             return input.reshape(this.targetShape);
@@ -84,7 +95,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize) {
-        if (targetShape != output.shape()) {
+        if (!Arrays.equals(targetShape, output.shape())) {
             throw new IllegalStateException("Unexpected output shape" + Arrays.toString(output.shape())
                     + " (expected to be " + Arrays.toString(targetShape) + ")");
         }
@@ -106,7 +117,8 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             case 3:
                 return InputType.recurrent(shape[1]);
             case 4:
-                return InputType.convolutional(shape[2], shape[3], shape[1]);
+                // TODO: make sure to cover TF/NHWC and TH/NCHW orderings
+                return InputType.convolutional(shape[1], shape[2], shape[3]);
             default:
                 throw new UnsupportedOperationException(
                         "Cannot infer input type for reshape array " + Arrays.toString(shape));

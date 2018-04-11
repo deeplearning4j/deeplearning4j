@@ -25,7 +25,7 @@ public class BookRecognition implements Recognition {
 
     private static final Nature nature = new Nature("book");
 
-    private static Map<String, String> ruleMap = new HashMap<String, String>();
+    private static Map<String, String> ruleMap = new HashMap<>();
 
     static {
         ruleMap.put("《", "》");
@@ -39,13 +39,13 @@ public class BookRecognition implements Recognition {
 
         LinkedList<Term> mergeList = null;
 
-        List<Term> list = new LinkedList<Term>();
+        List<Term> list = new LinkedList<>();
 
         for (Term term : terms) {
             name = term.getName();
             if (end == null) {
                 if ((end = ruleMap.get(name)) != null) {
-                    mergeList = new LinkedList<Term>();
+                    mergeList = new LinkedList<>();
                     mergeList.add(term);
                 } else {
                     list.add(term);

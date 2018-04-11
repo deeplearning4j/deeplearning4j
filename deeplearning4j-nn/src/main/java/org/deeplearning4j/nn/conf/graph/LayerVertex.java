@@ -107,6 +107,11 @@ public class LayerVertex extends GraphVertex {
         org.deeplearning4j.nn.api.Layer layer =
                         layerConf.getLayer().instantiate(layerConf, null, idx, paramsView, initializeParams);
 
+        if(layer == null) {
+            throw new IllegalStateException("Encountered null layer during initialization for layer:" +
+                     layerConf.getLayer().getClass().getSimpleName() + " initialization returned null layer?");
+        }
+
         return new org.deeplearning4j.nn.graph.vertex.impl.LayerVertex(graph, name, idx, layer, preProcessor, isOutput);
     }
 
@@ -129,7 +134,17 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
+        if(inputTypes.length != 1){
+            throw new IllegalArgumentException("Only one input supported for layer vertices: got "
+                    + Arrays.toString(inputTypes));
+        }
+        InputType it;
+        if(preProcessor != null){
+            it = preProcessor.getOutputType(inputTypes[0]);
+        } else {
+            it = inputTypes[0];
+        }
         //TODO preprocessor memory
-        return layerConf.getLayer().getMemoryReport(inputTypes[0]);
+        return layerConf.getLayer().getMemoryReport(it);
     }
 }

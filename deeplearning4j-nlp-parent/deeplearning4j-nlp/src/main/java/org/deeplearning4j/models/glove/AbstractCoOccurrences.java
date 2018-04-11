@@ -12,6 +12,7 @@ import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SynchronizedSentenceIterator;
+import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.slf4j.Logger;
@@ -337,22 +338,16 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                         double nWeight = 1.0 / (j - x + Nd4j.EPS_THRESHOLD);
 
                         while (getMemoryFootprint() >= getMemoryThreshold()) {
-                            try {
-                                shadowThread.invoke();
-                                /*lock.readLock().lock();
-                                int size = coOccurrenceCounts.size();
-                                lock.readLock().unlock();
-                                */
-                                if (threadId == 0) {
-                                    logger.debug("Memory consuimption > threshold: {footrpint: [" + getMemoryFootprint()
-                                                    + "], threshold: [" + getMemoryThreshold() + "] }");
-                                }
-                                Thread.sleep(10000);
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            } finally {
-
+                            shadowThread.invoke();
+                            /*lock.readLock().lock();
+                            int size = coOccurrenceCounts.size();
+                            lock.readLock().unlock();
+                            */
+                            if (threadId == 0) {
+                                logger.debug("Memory consuimption > threshold: {footrpint: [" + getMemoryFootprint()
+                                                + "], threshold: [" + getMemoryThreshold() + "] }");
                             }
+                            ThreadUtils.uncheckedSleep(10000);
                         }
                         /*
                         if (getMemoryFootprint() == 0) {
@@ -432,19 +427,15 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
                     shouldInvoke.compareAndSet(true, false);
                     invokeBlocking();
                 } else {
-                    try {
-                        /*
-                               commented and left here for future debugging purposes, if needed
-                        
-                                //lock.readLock().lock();
-                                //int size = coOccurrenceCounts.size();
-                                //lock.readLock().unlock();
-                                //logger.info("Current memory situation: {size: [" +size+ "], footprint: [" + getMemoryFootprint()+"], threshold: ["+ getMemoryThreshold() +"]}");
-                         */
-                        Thread.sleep(1000);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                    /*
+                           commented and left here for future debugging purposes, if needed
+                    
+                            //lock.readLock().lock();
+                            //int size = coOccurrenceCounts.size();
+                            //lock.readLock().unlock();
+                            //logger.info("Current memory situation: {size: [" +size+ "], footprint: [" + getMemoryFootprint()+"], threshold: ["+ getMemoryThreshold() +"]}");
+                     */
+                    ThreadUtils.uncheckedSleep(1000);
                 }
             }
         }
@@ -492,8 +483,6 @@ public class AbstractCoOccurrences<T extends SequenceElement> implements Seriali
 
                 // set new CountMap, and release write lock
                 coOccurrenceCounts = new CountMap<>();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
             } finally {
                 lock.writeLock().unlock();
             }

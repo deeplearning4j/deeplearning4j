@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.eval.EvaluationBinary;
 import org.deeplearning4j.gradientcheck.LossFunctionGradientCheck;
@@ -35,7 +36,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 20/01/2017.
  */
-public class TestMasking {
+public class TestMasking extends BaseDL4JTest {
 
     static {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
@@ -45,7 +46,7 @@ public class TestMasking {
     public void checkMaskArrayClearance() {
         for (boolean tbptt : new boolean[] {true, false}) {
             //Simple "does it throw an exception" type test...
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1).seed(12345).list()
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).list()
                             .layer(0, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                             .activation(Activation.IDENTITY).nIn(1).nOut(1).build())
                             .backpropType(tbptt ? BackpropType.TruncatedBPTT : BackpropType.Standard)

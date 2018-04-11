@@ -35,19 +35,17 @@ public class InceptionResNetV1 extends ZooModel {
 
     private int[] inputShape = new int[] {3, 160, 160};
     private long seed;
-    private int iterations;
     private int numClasses;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public InceptionResNetV1(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public InceptionResNetV1(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public InceptionResNetV1(int outputNum, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public InceptionResNetV1(int outputNum, long seed, WorkspaceMode workspaceMode) {
         this.seed = seed;
         this.numClasses = outputNum;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
@@ -103,7 +101,7 @@ public class InceptionResNetV1 extends ZooModel {
     public ComputationGraphConfiguration.GraphBuilder graphBuilder(String input) {
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
-                        .iterations(iterations).activation(Activation.RELU)
+                        .activation(Activation.RELU)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new RmsProp(0.1, 0.96, 0.001)).weightInit(WeightInit.DISTRIBUTION)
                         .dist(new NormalDistribution(0.0, 0.5)).l2(5e-5).miniBatch(true)

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -14,7 +15,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestSetGetParameters {
+public class TestSetGetParameters extends BaseDL4JTest {
 
     @Test
     public void testSetParameters() {
@@ -22,7 +23,7 @@ public class TestSetGetParameters {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
                         .layer(0, new DenseLayer.Builder().nIn(9).nOut(10).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
-                        .layer(1, new RBM.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(11).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(2, new AutoEncoder.Builder().corruptionLevel(0.5).nIn(11).nOut(12)
                                         .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1)).build())

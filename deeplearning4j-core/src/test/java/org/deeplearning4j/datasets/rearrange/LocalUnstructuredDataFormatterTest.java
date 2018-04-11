@@ -1,6 +1,7 @@
 package org.deeplearning4j.datasets.rearrange;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.junit.Test;
 
@@ -13,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 9/11/15.
  */
-public class LocalUnstructuredDataFormatterTest {
+public class LocalUnstructuredDataFormatterTest extends BaseDL4JTest {
 
     @Test
     public void testRearrange() throws Exception {

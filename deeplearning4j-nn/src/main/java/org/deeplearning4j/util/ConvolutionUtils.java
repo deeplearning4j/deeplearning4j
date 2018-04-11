@@ -23,7 +23,11 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
@@ -428,6 +432,23 @@ public class ConvolutionUtils {
         return shape[1];
     }
 
+
+    /**
+     * Check that the convolution mode is consistent with the padding specification
+     *
+     */
+    public static void validateConvolutionModePadding(ConvolutionMode mode, int[] padding) {
+        if (mode == ConvolutionMode.Same) {
+            boolean nullPadding = true;
+            for (int i : padding){
+                if (i != 0) nullPadding = false;
+            }
+            if (!nullPadding)
+                throw new IllegalArgumentException("Padding cannot be used when using the `same' convolution mode");
+        }
+    }
+
+
     /**
      * Perform validation on the CNN layer kernel/stride/padding. Expect 2d int[], with values > 0 for kernel size and
      * stride, and values >= 0 for padding.
@@ -512,5 +533,101 @@ public class ConvolutionUtils {
                     "Invalid padding configuration: values must be >= 0 for all dimensions. Got: "
                             + Arrays.toString(padding));
         }
+    }
+
+    public static INDArray reshape4dTo2d(INDArray in){
+        if (in.rank() != 4)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
+                    + " with shape " + Arrays.toString(in.shape()));
+        int[] shape = in.shape();
+
+        //Reshape: from [n,c,h,w] to [n*h*w,c]
+
+        INDArray out = in.permute(0,2,3,1);
+        if(out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
+            out = out.dup('c');
+
+        return out.reshape('c', shape[0]*shape[2]*shape[3], shape[1]);
+    }
+
+    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape){
+        if(in2d.rank() != 2)
+            throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
+        if(toShape.length != 4)
+            throw new IllegalArgumentException("Invalid input: expect toShape with 4 elements: got " + Arrays.toString(toShape));
+
+        //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
+        if(in2d.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in2d))
+            in2d = in2d.dup('c');
+
+        INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
+        return out.permute(0,3,1,2);
+    }
+
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output){
+        if(mask == null)
+            return null;
+        if(mask.rank() == 2){
+            return adapt2dMask(mask, output);
+        } else if(mask.rank() == 3){
+            return reshape3dMask(mask);
+        } else {
+            return reshape4dMask(mask);
+        }
+    }
+
+    public static INDArray adapt2dMask(INDArray mask, INDArray output){
+        //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
+        //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
+
+        //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
+
+        int[] s = output.shape();
+        INDArray bMask = Nd4j.create(new int[]{s[0], 1, s[2], s[3]}, 'c');
+        Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 1));
+
+        INDArray bMaskPermute = bMask.permute(0,2,3).dup('c');  //Not sure if dup is strictly necessary...
+
+        return bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1);
+    }
+
+    public static INDArray reshape3dMask(INDArray mask){
+        //Assume mask has shape [n,h,w] and will be broadcast along dimension
+        if(mask.ordering() != 'c' || !Shape.strideDescendingCAscendingF(mask))
+            mask = mask.dup('c');
+
+        return mask.reshape('c', mask.length(), 1);
+    }
+
+    public static INDArray reshape4dMask(INDArray mask){
+        return reshape4dTo2d(mask);
+    }
+
+    /**
+     * Get heigh/width/depth as length 3 int[] from the InputType
+     *
+     * @param inputType Input type to get
+     * @return Length
+     */
+    public static int[] getHWDFromInputType(InputType inputType){
+        int inH;
+        int inW;
+        int inDepth;
+        if (inputType instanceof InputType.InputTypeConvolutional) {
+            InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+            inH = conv.getHeight();
+            inW = conv.getWidth();
+            inDepth = conv.getDepth();
+        } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
+            InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+            inH = conv.getHeight();
+            inW = conv.getWidth();
+            inDepth = conv.getDepth();
+        } else {
+            throw new IllegalStateException(
+                    "Invalid input type: expected InputTypeConvolutional or InputTypeConvolutionalFlat."
+                            + " Got: " + inputType);
+        }
+        return new int[]{inH, inW, inDepth};
     }
 }

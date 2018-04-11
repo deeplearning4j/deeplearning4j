@@ -1,17 +1,20 @@
 package org.deeplearning4j.nn.transferlearning;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -28,7 +31,7 @@ import static org.junit.Assert.*;
  * Created by susaneraly on 2/15/17.
  */
 @Slf4j
-public class TransferLearningMLNTest {
+public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void simpleFineTune() {
@@ -213,7 +216,7 @@ public class TransferLearningMLNTest {
         MultiLayerConfiguration confForArchitecture =
                         new NeuralNetConfiguration.Builder().seed(12345).l2(0.001) //l2 regularization on all layers
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).updater(new AdaGrad(0.4)).list()
+                                        .updater(new AdaGrad(0.4)).list()
                                         .layer(0, new ConvolutionLayer.Builder(10, 10).nIn(3) //3 channels: RGB
                                                         .nOut(30).stride(4, 4).activation(Activation.RELU).weightInit(
                                                                         WeightInit.RELU).build()) //Output: (130-10+0)/4+1 = 31 -> 31*31*30
@@ -246,7 +249,7 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelToTweak =
                         new MultiLayerNetwork(
                                         new NeuralNetConfiguration.Builder().seed(12345)
-                                                        .iterations(1).updater(new RmsProp(0.1))
+                                                        .updater(new RmsProp(0.1))
                                                         .list()
                                                         .layer(0, new ConvolutionLayer.Builder(10, 10) //Only keep the first layer the same
                                                                         .nIn(3) //3 channels: RGB
@@ -498,7 +501,7 @@ public class TransferLearningMLNTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
-                                        new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                        new NeuralNetConfiguration.Builder().seed(123)
                                                         .weightInit(WeightInit.XAVIER)
                                                         .updater(new Nesterovs(0.01, 0.9))
                                                         .list()
@@ -578,5 +581,38 @@ public class TransferLearningMLNTest {
         assertEquals(expectedParams, modelNow.params());
     }
 
+    @Test
+    public void testObjectOverrides(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.5)
+                .weightNoise(new DropConnect(0.5))
+                .l2(0.5)
+                .constrainWeights(new UnitNormConstraint())
+                .list()
+                .layer(new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork orig = new MultiLayerNetwork(conf);
+        orig.init();
+
+        FineTuneConfiguration ftc = new FineTuneConfiguration.Builder()
+                .dropOut(0)
+                .weightNoise(null)
+                .constraints(null)
+                .l2(0.0)
+                .build();
+
+        MultiLayerNetwork transfer = new TransferLearning.Builder(orig)
+                .fineTuneConfiguration(ftc)
+                .build();
+
+        DenseLayer l = (DenseLayer) transfer.getLayer(0).conf().getLayer();
+
+        assertNull(l.getIDropout());
+        assertNull(l.getWeightNoise());
+        assertNull(l.getConstraints());
+        assertEquals(0.0, l.getL2(), 0.0);
+    }
 
 }

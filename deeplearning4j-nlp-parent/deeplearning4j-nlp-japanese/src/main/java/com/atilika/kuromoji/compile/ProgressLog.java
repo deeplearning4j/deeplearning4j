@@ -29,7 +29,7 @@ public class ProgressLog {
     private static int indent = 0;
     private static boolean atEOL = false;
     private static DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
-    private static Map<Integer, Long> startTimes = new HashMap<Integer, Long>();
+    private static Map<Integer, Long> startTimes = new HashMap<>();
 
     public static void begin(String message) {
         newLine();

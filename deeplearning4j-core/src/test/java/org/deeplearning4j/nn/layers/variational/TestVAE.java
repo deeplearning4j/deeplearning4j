@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.variational;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -31,7 +32,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 26/11/2016.
  */
-public class TestVAE {
+public class TestVAE extends BaseDL4JTest {
 
     @Test
     public void testInitialization() {

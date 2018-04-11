@@ -1,9 +1,10 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.datasets.iterator.tools.VariableTimeseriesGenerator;
-import org.deeplearning4j.util.TestDataSetConsumer;
+import org.deeplearning4j.nn.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -21,7 +22,7 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class AsyncDataSetIteratorTest {
+public class AsyncDataSetIteratorTest extends BaseDL4JTest {
     private ExistingDataSetIterator backIterator;
     private static final int TEST_SIZE = 100;
     private static final int ITERATIONS = 10;

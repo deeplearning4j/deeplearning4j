@@ -183,6 +183,10 @@ public class EvaluationUtils {
                 rowsToPull[usedCount++] = i;
             }
         }
+        if(usedCount == 0){
+            //Edge case: all time steps are masked -> nothing to extract
+            return null;
+        }
         rowsToPull = Arrays.copyOfRange(rowsToPull, 0, usedCount);
 
         labels2d = Nd4j.pullRows(labels2d, 1, rowsToPull);

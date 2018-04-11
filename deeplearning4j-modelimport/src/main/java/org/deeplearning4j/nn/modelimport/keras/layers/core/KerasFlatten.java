@@ -9,6 +9,8 @@ import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 
 import java.util.Map;
@@ -24,32 +26,32 @@ public class KerasFlatten extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasFlatten(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasFlatten(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
     }
 
     /**
      * Whether this Keras layer maps to a DL4J InputPreProcessor.
      *
-     * @return      true
+     * @return true
      */
     @Override
     public boolean isInputPreProcessor() {
@@ -59,16 +61,16 @@ public class KerasFlatten extends KerasLayer {
     /**
      * Gets appropriate DL4J InputPreProcessor for given InputTypes.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              DL4J InputPreProcessor
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      * @see org.deeplearning4j.nn.conf.InputPreProcessor
      */
     @Override
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputTypeConvolutional) {
             InputTypeConvolutional it = (InputTypeConvolutional) inputType[0];
@@ -79,13 +81,20 @@ public class KerasFlatten extends KerasLayer {
                     break;
                 case TENSORFLOW:
                     preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(),
-                                    it.getDepth());
+                            it.getDepth());
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
             }
         } else if (inputType[0] instanceof InputType.InputTypeRecurrent) {
             preprocessor = new RnnToFeedForwardPreProcessor();
+        } else if (inputType[0] instanceof InputType.InputTypeFeedForward) {
+            // NOTE: The output of an embedding layer in DL4J is of feed-forward type. Only if an FF to RNN input
+            // preprocessor is set or we explicitly provide 3D input data to start with, will the its output be set
+            // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
+            InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
+            int[] inputShape = new int[]{it.getSize()};
+            preprocessor = new ReshapePreprocessor(inputShape, inputShape);
         }
         return preprocessor;
     }
@@ -93,15 +102,19 @@ public class KerasFlatten extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
-        return getInputPreprocessor(inputType).getOutputType(inputType[0]);
+                    "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType);
+        if (preprocessor != null) {
+            return preprocessor.getOutputType(inputType[0]);
+        }
+        return inputType[0];
     }
 }

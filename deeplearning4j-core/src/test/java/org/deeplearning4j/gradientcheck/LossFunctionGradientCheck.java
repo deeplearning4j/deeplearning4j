@@ -1,6 +1,7 @@
 package org.deeplearning4j.gradientcheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -13,9 +14,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -37,10 +37,10 @@ import static org.junit.Assert.assertTrue;
  * Created by Alex on 12/09/2016.
  */
 @Slf4j
-public class LossFunctionGradientCheck {
+public class LossFunctionGradientCheck extends BaseDL4JTest {
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     private static final boolean PRINT_RESULTS = true;
@@ -60,7 +60,9 @@ public class LossFunctionGradientCheck {
                         new LossPoisson(), new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0),
                         new LossFMeasure(), new LossFMeasure(2.0),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                        new LossMultiLabel(),
+        };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
                         Activation.SIGMOID, //xent
@@ -92,6 +94,7 @@ public class LossFunctionGradientCheck {
                         Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
+                        Activation.TANH, // MultiLabel, doesn't require any special activation, but tanh was used in paper
         };
 
         int[] nOut = new int[] {1, //xent
@@ -124,6 +127,7 @@ public class LossFunctionGradientCheck {
                         2, //f-measure (binary, 2-label softmax output)
                         10, // Mixture Density
                         10, // Mixture Density + tanh
+                        10, // MultiLabel
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -138,7 +142,7 @@ public class LossFunctionGradientCheck {
                                 + minibatchSizes[j];
 
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -203,7 +207,9 @@ public class LossFunctionGradientCheck {
                         new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(), new LossPoisson(),
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(),
                         new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                        new LossMultiLabel()
+        };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
                         Activation.SIGMOID, //xent
@@ -234,6 +240,7 @@ public class LossFunctionGradientCheck {
                         Activation.SOFTMAX, //f-measure (binary, 2-label softmax output)
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
+                        Activation.TANH, // MultiLabel
         };
 
         int[] nOut = new int[] {1, //xent
@@ -265,6 +272,7 @@ public class LossFunctionGradientCheck {
                         2, //f-measure (binary, 2-label softmax output)
                         10, // Mixture Density
                         10, // Mixture Density + tanh
+                        10, // MultiLabel
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -283,7 +291,7 @@ public class LossFunctionGradientCheck {
                 // to ensure that we carry the parameters through
                 // the serializer.
                 try {
-                    ObjectMapper m = new ObjectMapper();
+                    ObjectMapper m = NeuralNetConfiguration.mapper();
                     String s = m.writeValueAsString(lossFunctions[i]);
                     ILossFunction lf2 = m.readValue(s, lossFunctions[i].getClass());
                     lossFunctions[i] = lf2;
@@ -292,7 +300,7 @@ public class LossFunctionGradientCheck {
                     assertEquals("Tests failed: serialization of " + lossFunctions[i], 0, 1);
                 }
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                 .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                 .dist(new UniformDistribution(-2, 2)).list()
@@ -376,7 +384,7 @@ public class LossFunctionGradientCheck {
             case "LossKLD":
                 //KL divergence: should be a probability distribution for labels??
                 ret[1] = Nd4j.rand(labelsShape);
-                Nd4j.getExecutioner().exec(new SoftMax(ret[1]), 1);
+                Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]), 1);
                 break;
             case "LossMCXENT":
             case "LossNegativeLogLikelihood":
@@ -460,6 +468,20 @@ public class LossFunctionGradientCheck {
                 int labelWidth = lmd.getLabelWidth();
                 ret[1] = Nd4j.rand(new int[] {labelsShape[0], labelWidth});
                 break;
+            case "LossMultiLabel":
+                ret[1] = Nd4j.rand(labelsShape).lti(0.3);
+                // ensure that there is no example that is all ones or all zeros
+                final INDArray sum = ret[1].sum(0);
+                for (int i = 0; i < labelsShape[0]; i++) {
+                    final int rowSum = sum.getInt(i);
+                    if (rowSum == 0) {
+                        ret[1].putScalar(i, 0, 1);
+                    } else if (rowSum == labelsShape[1]) {
+                        ret[1].putScalar(i, 0, 0);
+                    }
+                }
+
+                break;
             default:
                 throw new IllegalArgumentException("Unknown class: " + l.getClass().getSimpleName());
         }
@@ -511,7 +533,7 @@ public class LossFunctionGradientCheck {
                                     + minibatchSizes[j] + "; weights = " + w;
 
                     Nd4j.getRandom().setSeed(12345);
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
                                     .updater(new NoOp()).weightInit(WeightInit.DISTRIBUTION)
                                     .dist(new UniformDistribution(-3, 3)).list()

@@ -86,6 +86,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             queueMDS.put(dataSet);
             running.incrementAndGet();
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             // do nothing
         }
 
@@ -103,6 +104,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 queue.put(dataSet);
                 running.incrementAndGet();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
             }
         } else {

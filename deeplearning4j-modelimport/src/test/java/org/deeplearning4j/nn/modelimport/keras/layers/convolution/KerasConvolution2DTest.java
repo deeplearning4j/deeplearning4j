@@ -52,9 +52,7 @@ public class KerasConvolution2DTest {
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
     private final int[] KERNEL_SIZE = new int[]{1, 2};
     private final int[] DILATION = new int[]{2, 2};
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
     private final int[] STRIDE = new int[]{3, 4};
-    private final PoolingType POOLING_TYPE = PoolingType.MAX;
     private final int N_OUT = 13;
     private final String BORDER_MODE_VALID = "valid";
     private final int[] VALID_PADDING = new int[]{0, 0};
@@ -73,21 +71,21 @@ public class KerasConvolution2DTest {
     }
 
 
-    public void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+    private void buildConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
             throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CONVOLUTION_2D());
-        Map<String, Object> config = new HashMap<String, Object>();
-        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
+        Map<String, Object> config = new HashMap<>();
+        config.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
         } else {
-            Map<String, Object> init = new HashMap<String, Object>();
+            Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
             config.put(conf.getLAYER_FIELD_INIT(), init);
         }
-        Map<String, Object> W_reg = new HashMap<String, Object>();
+        Map<String, Object> W_reg = new HashMap<>();
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);

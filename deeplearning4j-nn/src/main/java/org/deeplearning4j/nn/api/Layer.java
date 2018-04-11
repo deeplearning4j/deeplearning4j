@@ -232,6 +232,12 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     void setInput(INDArray input);
 
+    /**
+     * For use with ND4J workspaces. If present, both input and mask arrays will migrated to the currently active workspace,
+     * or detached from any workspaces (if no workspace is currently active)
+     */
+    void migrateInput();
+
     /** Set current/last input mini-batch size.<br>
      * Used for score and gradient calculations. Mini batch size may be different from
      * getInput().size(0) due to reshaping operations - for example, when using RNNs with
@@ -255,7 +261,7 @@ public interface Layer extends Serializable, Cloneable, Model {
     INDArray getMaskArray();
 
     /**
-     * Returns true if the layer can be trained in an unsupervised/pretrain manner (VAE, RBMs etc)
+     * Returns true if the layer can be trained in an unsupervised/pretrain manner (AE, VAE, etc)
      *
      * @return true if the layer can be pretrained (using fit(INDArray), false otherwise
      */

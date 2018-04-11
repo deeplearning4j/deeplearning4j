@@ -25,8 +25,8 @@ import java.nio.charset.Charset;
  */
 public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNetwork> {
 
-    private static final String bestFileName = "bestModel.bin";
-    private static final String latestFileName = "latestModel.bin";
+    private static final String BEST_MODEL_BIN = "bestModel.bin";
+    private static final String LATEST_MODEL_BIN = "latestModel.bin";
     private String directory;
     private Charset encoding;
 
@@ -53,25 +53,25 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
 
     @Override
     public void saveBestModel(MultiLayerNetwork net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory, bestFileName);
+        String confOut = FilenameUtils.concat(directory, BEST_MODEL_BIN);
         save(net, confOut);
     }
 
     @Override
     public void saveLatestModel(MultiLayerNetwork net, double score) throws IOException {
-        String confOut = FilenameUtils.concat(directory, latestFileName);
+        String confOut = FilenameUtils.concat(directory, LATEST_MODEL_BIN);
         save(net, confOut);
     }
 
     @Override
     public MultiLayerNetwork getBestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory, bestFileName);
+        String confOut = FilenameUtils.concat(directory, BEST_MODEL_BIN);
         return load(confOut);
     }
 
     @Override
     public MultiLayerNetwork getLatestModel() throws IOException {
-        String confOut = FilenameUtils.concat(directory, latestFileName);
+        String confOut = FilenameUtils.concat(directory, LATEST_MODEL_BIN);
         return load(confOut);
     }
 

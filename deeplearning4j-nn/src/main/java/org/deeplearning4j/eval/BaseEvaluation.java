@@ -65,6 +65,10 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
         Pair<INDArray, INDArray> pair = EvaluationUtils.extractNonMaskedTimeSteps(labels, predictions, labelsMask);
+        if(pair == null){
+            //No non-masked steps
+            return;
+        }
         INDArray labels2d = pair.getFirst();
         INDArray predicted2d = pair.getSecond();
 
@@ -149,14 +153,6 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
     }
 
-
-    @Override
-   public boolean equals(Object other) {
-        if(!(other instanceof BaseEvaluation))
-            return false;
-        BaseEvaluation baseEvaluation = (BaseEvaluation) other;
-        return baseEvaluation.toJson().equals(toJson());
-   }
     @Override
     public String toString() {
         return stats();

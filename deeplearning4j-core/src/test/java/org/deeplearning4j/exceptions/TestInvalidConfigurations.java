@@ -1,5 +1,6 @@
 package org.deeplearning4j.exceptions;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -16,7 +17,7 @@ import static org.junit.Assert.fail;
 /**
  * A set of tests to ensure that useful exceptions are thrown on invalid network configurations
  */
-public class TestInvalidConfigurations {
+public class TestInvalidConfigurations extends BaseDL4JTest {
 
     public static MultiLayerNetwork getDensePlusOutput(int nIn, int nOut) {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()

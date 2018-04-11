@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
+import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -105,6 +106,10 @@ public class DropoutLayer extends FeedForwardLayer {
 
         public Builder(double dropout){
             this.dropOut(new Dropout(dropout));
+        }
+
+        public Builder(IDropout dropout){
+            this.dropOut(dropout);
         }
 
         @Override

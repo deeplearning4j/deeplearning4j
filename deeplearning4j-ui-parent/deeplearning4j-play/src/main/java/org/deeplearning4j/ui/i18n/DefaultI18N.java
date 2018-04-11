@@ -9,6 +9,7 @@ import org.reflections.util.ConfigurationBuilder;
 
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -71,7 +72,7 @@ public class DefaultI18N implements I18N {
         Map<String, String> messages = new HashMap<>();
 
         for (String s : resources) {
-            if (!s.endsWith(languageCode))
+            if (!s.endsWith("." + languageCode))
                 continue;
 
             log.trace("Attempting to parse file: {}", s);
@@ -96,7 +97,7 @@ public class DefaultI18N implements I18N {
                 path = "/" + DEFAULT_I8N_RESOURCES_DIR + "/" + filename;
             }
             InputStream is = this.getClass().getResourceAsStream(path);
-            lines = IOUtils.readLines(is);
+            lines = IOUtils.readLines(is, Charset.forName("UTF-8"));
         } catch (Exception e) {
             log.debug("Error parsing UI I18N content file; skipping: {}", filename, e.getMessage());
             return;

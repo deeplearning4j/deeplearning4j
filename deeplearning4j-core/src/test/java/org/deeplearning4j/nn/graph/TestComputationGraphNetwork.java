@@ -1,10 +1,15 @@
 package org.deeplearning4j.nn.graph;
 
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -15,6 +20,7 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -24,9 +30,13 @@ import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -34,6 +44,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
@@ -46,7 +57,8 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestComputationGraphNetwork {
+@Slf4j
+public class TestComputationGraphNetwork extends BaseDL4JTest {
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
@@ -64,29 +76,56 @@ public class TestComputationGraphNetwork {
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(3).build()).build();
     }
 
-    public ComputationGraph getRBMModel(boolean preTrain, int nIn, int nOut) {
-        ComputationGraphConfiguration rbm = new NeuralNetConfiguration.Builder().seed(42).iterations(1).graphBuilder()
-                .addInputs("input")
-                .addLayer("firstLayer",
-                        new org.deeplearning4j.nn.conf.layers.RBM.Builder()
-                                .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation(Activation.IDENTITY).nIn(nIn).nOut(nOut).build(),
-                        "input")
-                .addLayer("outputLayer",
-                        new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                                LossFunctions.LossFunction.COSINE_PROXIMITY)
-                                .activation(Activation.IDENTITY).nIn(nOut)
-                                .nOut(nOut).build(),
-                        "firstLayer")
-                .setOutputs("outputLayer").pretrain(preTrain).build();
-        ComputationGraph graph = new ComputationGraph(rbm);
-        graph.init();
-        return graph;
-    }
-
     private static int getNumParams() {
         //Number of parameters for both iris models
         return (4 * 5 + 5) + (5 * 3 + 3);
+    }
+
+    private static OpExecutioner.ProfilingMode origMode;
+
+    @BeforeClass
+    public static void beforeClass(){
+        origMode = Nd4j.getExecutioner().getProfilingMode();
+    }
+
+    @Before
+    public void before(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+    }
+
+    @AfterClass
+    public static void afterClass(){
+        Nd4j.getExecutioner().setProfilingMode(origMode);
+    }
+
+
+    @Test
+    public void testFeedForwardToLayer() {
+
+        ComputationGraphConfiguration configuration = getIrisGraphConfiguration();
+
+        ComputationGraph graph = new ComputationGraph(configuration);
+        graph.init();
+
+        MultiLayerConfiguration mlc = getIrisMLNConfiguration();
+        MultiLayerNetwork net = new MultiLayerNetwork(mlc);
+        net.init();
+
+
+        DataSetIterator iris = new IrisDataSetIterator(150, 150);
+        DataSet ds = iris.next();
+
+        graph.setInput(0, ds.getFeatureMatrix());
+        net.setParams(graph.params());
+        Map<String, INDArray> activations = graph.feedForward(false);
+
+        List<INDArray> feedForward = net.feedForward(ds.getFeatureMatrix());
+        assertEquals(activations.size(),feedForward.size());
+        assertEquals(activations.get("outputLayer"),feedForward.get(feedForward.size() - 1));
+
+        val graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
+        val networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
+        assertEquals(graphForward.get("firstLayer"),networkForward.get(1));
     }
 
     @Test
@@ -500,13 +539,12 @@ public class TestComputationGraphNetwork {
     @Test
     public void testPreTraining() {
         ComputationGraphConfiguration conf =
-                new NeuralNetConfiguration.Builder().iterations(100)
+                new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .iterations(1).updater(new Sgd(1e-6))
+                        .updater(new Sgd(1e-6))
                         .l2(2e-4).graphBuilder().addInputs("in")
                         .addLayer("layer0",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
+                                new VariationalAutoencoder.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(0,
                                                 1))
@@ -515,8 +553,7 @@ public class TestComputationGraphNetwork {
                                         .build(),
                                 "in")
                         .addLayer("layer1",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(4).nOut(3)
+                                new VariationalAutoencoder.Builder().nIn(4).nOut(3)
                                         .weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(0,
                                                 1))
@@ -525,8 +562,7 @@ public class TestComputationGraphNetwork {
                                         .build(),
                                 "in")
                         .addLayer("layer2",
-                                new RBM.Builder(RBM.HiddenUnit.GAUSSIAN,
-                                        RBM.VisibleUnit.GAUSSIAN).nIn(3).nOut(3)
+                                new VariationalAutoencoder.Builder().nIn(3).nOut(3)
                                         .weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new UniformDistribution(0,
                                                 1))
@@ -618,47 +654,108 @@ public class TestComputationGraphNetwork {
         //Simple test: same network, but in one case: one less layer (the OutputLayer), where the epsilons are passed in externally
         // instead. Should get identical results
 
-        Nd4j.getRandom().setSeed(12345);
-        INDArray inData = Nd4j.rand(3, 10);
-        INDArray outData = Nd4j.rand(3, 10);
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            log.info("Workspace mode: " + ws);
 
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
-                .seed(12345).graphBuilder().addInputs("in")
-                .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
-                        .nOut(10).build(), "l0")
-                .setOutputs("out").pretrain(false).backprop(true).build();
-        ComputationGraph s = new ComputationGraph(standard);
-        s.init();
+            Nd4j.getRandom().setSeed(12345);
+            INDArray inData = Nd4j.rand(3, 10);
+            INDArray outData = Nd4j.rand(3, 10);
+
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration standard = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws).inferenceWorkspaceMode(ws)
+                    .seed(12345).graphBuilder().addInputs("in")
+                    .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                    .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(10)
+                            .nOut(10).build(), "l0")
+                    .setOutputs("out").pretrain(false).backprop(true).build();
+            ComputationGraph s = new ComputationGraph(standard);
+            s.init();
 
 
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
-                .seed(12345).graphBuilder().addInputs("in")
-                .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("l0")
-                .pretrain(false).backprop(true).build();
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration external = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1))
+                    .trainingWorkspaceMode(ws).inferenceWorkspaceMode(ws)
+                    .seed(12345).graphBuilder().addInputs("in")
+                    .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("l0")
+                    .pretrain(false).backprop(true).build();
 
-        ComputationGraph e = new ComputationGraph(external);
-        e.init();
+            ComputationGraph e = new ComputationGraph(external);
+            e.init();
 
-        s.setInputs(inData);
-        s.setLabels(outData);
-        s.computeGradientAndScore();
-        Gradient sGrad = s.gradient();
+            s.setInputs(inData);
+            s.setLabels(outData);
+            s.computeGradientAndScore();
+            Gradient sGrad = s.gradient();
 
-        org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
-        Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
+            s.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
 
-        INDArray olEpsilon = olPairStd.getSecond();
+            org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
+            Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null);
 
-        e.feedForward(inData, true);
-        Gradient extErrorGrad = e.backpropGradient(olEpsilon);
+            INDArray olEpsilon = olPairStd.getSecond();
 
-        int nParamsDense = 10 * 10 + 10;
-        assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
-                extErrorGrad.gradient());
+            e.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
+            Gradient extErrorGrad = e.backpropGradient(olEpsilon);
 
+            int nParamsDense = 10 * 10 + 10;
+            assertEquals(sGrad.gradient().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nParamsDense)),
+                    extErrorGrad.gradient());
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+    }
+
+    @Test
+    public void testExternalErrors2(){
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
+        int nIn = 4;
+        int nOut = 3;
+
+        for(WorkspaceMode ws : WorkspaceMode.values()) {
+            System.out.println("***** WORKSPACE: " + ws);
+
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .updater(new Adam(0.01))
+                    .trainingWorkspaceMode(ws)
+                    .inferenceWorkspaceMode(ws)
+                    .graphBuilder()
+                    .addInputs("features")
+                    .addVertex("rnn2ffn", new PreprocessorVertex(new RnnToFeedForwardPreProcessor()), "features")
+                    .addLayer("predict", new DenseLayer.Builder().nIn(nIn).nOut(nOut).activation(Activation.RELU).build(), "rnn2ffn")
+                    .addVertex("ffn2rnn", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "predict")
+                    .addLayer("output", new ActivationLayer.Builder().activation(Activation.IDENTITY).build(), "ffn2rnn")
+                    .setOutputs("output")
+                    .build();
+
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            final int minibatch = 5;
+            final int seqLen = 6;
+
+            INDArray param = Nd4j.create(new double[]{0.54, 0.31, 0.98, -0.30, -0.66, -0.19, -0.29, -0.62, 0.13, -0.32, 0.01, -0.03, 0.00, 0.00, 0.00});
+            graph.setParams(param);
+
+            INDArray input = Nd4j.rand(new int[]{minibatch, nIn, seqLen}, 12);
+            INDArray expected = Nd4j.ones(minibatch, nOut, seqLen);
+
+            INDArray output = graph.outputSingle(false, false, input);
+            INDArray error = output.sub(expected);
+
+            for (org.deeplearning4j.nn.api.Layer l : graph.getLayers()) {
+                assertNotNull(l.input());
+                assertFalse(l.input().isAttached());
+            }
+
+            // Compute Gradient
+            Gradient gradient = graph.backpropGradient(error);
+            graph.getUpdater().update(gradient, 0, 0, minibatch);
+
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        }
+
+        Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.DISABLED);
     }
 
     @Test
@@ -803,45 +900,6 @@ public class TestComputationGraphNetwork {
     }
 
     @Test
-    public void testApplyingPreTrainConfigAndParams() {
-        int nIn = 10;
-        int nOut = 10;
-
-        // Test pretrain true
-        ComputationGraph rbmPre = getRBMModel(true, nIn, nOut);
-        assertTrue(rbmPre.getConfiguration().isPretrain()); // check on the graph
-        assertTrue(rbmPre.conf().isPretrain()); // check on the network
-        assertTrue(rbmPre.getLayer("firstLayer").conf().isPretrain()); // check on the layer
-        assertFalse(rbmPre.getLayer("outputLayer").conf().isPretrain()); // check on the layer
-        int actualNP = rbmPre.numParams();
-        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        INDArray params = rbmPre.params();
-        assertEquals(params.length(), actualNP);
-        Map<String, INDArray> paramTable = rbmPre.paramTable();
-        assertTrue(paramTable.containsKey("firstLayer_vb"));
-        assertFalse(paramTable.containsKey("outputLayer_vb"));
-        rbmPre.setParam("firstLayer_vb", Nd4j.ones(10));
-        params = rbmPre.getParam("firstLayer_vb");
-        assertEquals(Nd4j.ones(10), params);
-
-
-        // Test pretrain false
-        ComputationGraph rbmNoPre = getRBMModel(false, nIn, nOut);
-        assertFalse(rbmNoPre.conf().isPretrain());
-        assertFalse(rbmNoPre.getConfiguration().isPretrain());
-        assertFalse(rbmNoPre.getLayer("firstLayer").conf().isPretrain());
-        assertFalse(rbmNoPre.getLayer("outputLayer").conf().isPretrain()); // check on the layer
-        actualNP = rbmNoPre.numParams();
-        assertEquals(2 * (nIn * nOut + nOut) + nIn, actualNP);
-        params = rbmNoPre.params();
-        assertEquals(params.length(), actualNP);
-        paramTable = rbmNoPre.paramTable();
-        assertTrue(paramTable.containsKey("firstLayer_vb"));
-        assertFalse(paramTable.containsKey("outputLayer_vb"));
-
-    }
-
-    @Test
     public void testOptimizationAlgorithmsSearchBasic() {
         DataSetIterator iter = new IrisDataSetIterator(1, 1);
 
@@ -852,7 +910,7 @@ public class TestComputationGraphNetwork {
         for (OptimizationAlgorithm oa : oas) {
             System.out.println(oa);
             ComputationGraphConfiguration conf =
-                    new NeuralNetConfiguration.Builder().optimizationAlgo(oa).iterations(1).graphBuilder()
+                    new NeuralNetConfiguration.Builder().optimizationAlgo(oa).graphBuilder()
                             .addInputs("input")
                             .addLayer("first", new DenseLayer.Builder().nIn(4).nOut(5).build(), "input")
                             .addLayer("output", new OutputLayer.Builder().nIn(5).nOut(3).build(),
@@ -867,10 +925,10 @@ public class TestComputationGraphNetwork {
     }
 
     @Test
-    public void testIterationCountAndPresistence() throws IOException {
+    public void testIterationCountAndPersistence() throws IOException {
         Nd4j.getRandom().setSeed(123);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                 .graphBuilder().addInputs("in")
                 .addLayer("0", new DenseLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
                         .activation(Activation.TANH).build(), "in")
@@ -1015,6 +1073,7 @@ public class TestComputationGraphNetwork {
                         .addLayer("dense", new DenseLayer.Builder().nIn(1).nOut(1).build(), "drop")
                         .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                 .build(), "dense")
+                        .allowDisconnected(true)
                         .setOutputs("loss").build();
 
         ComputationGraph g = new ComputationGraph(c);
@@ -1186,5 +1245,131 @@ public class TestComputationGraphNetwork {
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
         System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3)));
+    }
+
+    @Test
+    public void testInputClearance() throws Exception {
+        //Activations should be cleared - if not, it's possible for out of (workspace) scope arrays to be around
+        // which can cause a crash
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new ConvolutionLayer.Builder().kernelSize(2,2).stride(1,1).nIn(1).nOut(1).build(), "in")
+                .addLayer("1", new SubsamplingLayer.Builder().kernelSize(2,2).stride(1,1).build(), "0")
+                .addLayer("2", new DenseLayer.Builder().nOut(10).build(), "1")
+                .addLayer("3", new OutputLayer.Builder().nOut(10).build(), "2")
+                .setOutputs("3")
+                .setInputTypes(InputType.convolutional(28,28,1))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        INDArray content = Nd4j.create(1,1,28,28);
+
+        //Check output:
+        net.output(content);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+
+        //Check feedForward:
+        net.feedForward(content, false);
+        for(org.deeplearning4j.nn.api.Layer l : net.getLayers()){
+            assertNull(l.input());
+        }
+    }
+
+
+    @Test
+    public void testDisconnectedVertex(){
+
+        for(boolean allowDisconnected : new boolean[]{false, true}) {
+            try {
+                ComputationGraphConfiguration.GraphBuilder b = new NeuralNetConfiguration.Builder()
+                        .graphBuilder()
+                        .addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().activation(Activation.SIGMOID).nOut(8).build(), "in")
+                        .addLayer("1", new DenseLayer.Builder().activation(Activation.SIGMOID).nOut(8).build(), "in") //Disconnected
+                        .addLayer("O", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nOut(10).build(), "0")
+                        .setOutputs("O")
+                        .setInputTypes(InputType.feedForward(8));
+
+                if(allowDisconnected){
+                    b.allowDisconnected(true).build();  //No exception
+                } else {
+                    b.build();  //Expect exception here
+                    fail("Expected exception for disconnected vertex");
+                }
+
+
+            } catch (Exception e) {
+                //e.printStackTrace();
+                if(allowDisconnected){
+                    fail("No exception expected");
+                } else {
+                    String msg = e.getMessage().toLowerCase();
+                    assertTrue(msg.contains("disconnected"));
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testLayerSize(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new ConvolutionLayer.Builder().kernelSize(2,2).nOut(6).build(), "in")
+                .layer("1", new SubsamplingLayer.Builder().kernelSize(2,2).build(), "0")
+                .layer("2", new DenseLayer.Builder().nOut(30).build(), "1")
+                .layer("3", new OutputLayer.Builder().nOut(13).build(), "2")
+                .setOutputs("3")
+                .setInputTypes(InputType.convolutional(28,28,3))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        assertEquals(6, net.layerSize(0));
+        assertEquals(0, net.layerSize(1));
+        assertEquals(30, net.layerSize(2));
+        assertEquals(13, net.layerSize(3));
+
+        assertEquals(6, net.layerSize("0"));
+        assertEquals(0, net.layerSize("1"));
+        assertEquals(30, net.layerSize("2"));
+        assertEquals(13, net.layerSize("3"));
+    }
+
+    @Test
+    public void testZeroParamNet() throws Exception {
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .layer("0", new SubsamplingLayer.Builder().kernelSize(2,2).stride(2,2).build(), "in")
+                .layer("1", new LossLayer.Builder().activation(Activation.SIGMOID).lossFunction(LossFunctions.LossFunction.MSE).build(), "0")
+                .setOutputs("1")
+                .setInputTypes(InputType.convolutionalFlat(28,28,1))
+                .build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        DataSet ds = new MnistDataSetIterator(16, true, 12345).next();
+
+        INDArray out = net.outputSingle(ds.getFeatures());
+
+        INDArray labelTemp = Nd4j.create(out.shape());
+        ds.setLabels(labelTemp);
+
+        net.fit(ds);
+
+        ComputationGraph net2 = TestUtils.testModelSerialization(net);
+        INDArray out2 = net2.outputSingle(ds.getFeatures());
+        assertEquals(out, out2);
     }
 }

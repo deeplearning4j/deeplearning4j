@@ -56,8 +56,8 @@ public class KerasPooling2DTest {
         buildPooling2DLayer(conf2, keras2);
     }
 
-    void buildPooling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        Map<String, Object> layerConfig = new HashMap<String, Object>();
+    private void buildPooling2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
+        Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_MAX_POOLING_2D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);

@@ -1,56 +1,95 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
-import lombok.NoArgsConstructor;
+import org.deeplearning4j.earlystopping.scorecalc.base.BaseScoreCalculator;
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /** Given a DataSetIterator: calculate the total loss for the model on that data set.
- * Typically used to calculate the loss on a test set.
- * Note: For early stopping on a {@link ComputationGraph} use {@link DataSetLossCalculatorCG}
+ * Can be used for both MultiLayerNetwork and ComputationGraph
+ *
+ * @author Alex Black
  */
-@NoArgsConstructor
-public class DataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork> {
+public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
 
-    private DataSetIterator dataSetIterator;
     @JsonProperty
     private boolean average;
+
+    /**
+     * Calculate the score (loss function value) on a given data set (usually a test set)
+     *
+     * @param dataSetIterator Data set to calculate the score for
+     * @param average         Whether to return the average (sum of loss / N) or just (sum of loss)
+     */
+    public DataSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
+        super(dataSetIterator);
+        this.average = average;
+    }
 
     /**Calculate the score (loss function value) on a given data set (usually a test set)
      *
      * @param dataSetIterator Data set to calculate the score for
      * @param average Whether to return the average (sum of loss / N) or just (sum of loss)
      */
-    public DataSetLossCalculator(DataSetIterator dataSetIterator, boolean average) {
-        this.dataSetIterator = dataSetIterator;
+    public DataSetLossCalculator(MultiDataSetIterator dataSetIterator, boolean average) {
+        super(dataSetIterator);
         this.average = average;
     }
 
     @Override
-    public double calculateScore(MultiLayerNetwork network) {
-        dataSetIterator.reset();
-
-        double lossSum = 0.0;
-        int exCount = 0;
-        while (dataSetIterator.hasNext()) {
-            DataSet dataSet = dataSetIterator.next();
-            if (dataSet == null)
-                break;
-            int nEx = dataSet.getFeatureMatrix().size(0);
-            lossSum += network.score(dataSet) * nEx;
-            exCount += nEx;
-        }
-
-        if (average)
-            return lossSum / exCount;
-        else
-            return lossSum;
+    public String toString() {
+        return "DataSetLossCalculator(average=" + average + ")";
     }
 
     @Override
-    public String toString() {
-        return "DataSetLossCalculator(" + dataSetIterator + ",average=" + average + ")";
+    protected void reset() {
+        scoreSum = 0;
+        minibatchCount = 0;
+        exampleCount = 0;
+    }
+
+    @Override
+    protected INDArray output(Model network, INDArray input, INDArray fMask, INDArray lMask) {
+        return output(network, arr(input), arr(fMask), arr(lMask))[0];
+    }
+
+    @Override
+    protected INDArray[] output(Model network, INDArray[] input, INDArray[] fMask, INDArray[] lMask) {
+        if(network instanceof MultiLayerNetwork){
+            INDArray out = ((MultiLayerNetwork) network).output(input[0], false, get0(fMask), get0(lMask));
+            return new INDArray[]{out};
+        } else if(network instanceof ComputationGraph){
+            return ((ComputationGraph) network).output(false, input, fMask, lMask);
+        } else {
+            throw new RuntimeException("Unknown model type: " + network.getClass());
+        }
+    }
+
+    @Override
+    protected double scoreMinibatch(Model network, INDArray[] features, INDArray[] labels, INDArray[] fMask, INDArray[] lMask, INDArray[] output) {
+        if(network instanceof MultiLayerNetwork){
+            return ((MultiLayerNetwork) network).score(new DataSet(get0(features), get0(labels), get0(fMask), get0(lMask)), false)
+                    * features[0].size(0);
+        } else if(network instanceof ComputationGraph){
+            return ((ComputationGraph) network).score(new MultiDataSet(features, labels, fMask, lMask))
+                    * features[0].size(0);
+        } else {
+            throw new RuntimeException("Unknown model type: " + network.getClass());
+        }
+    }
+
+    @Override
+    protected double finalScore(double scoreSum, int minibatchCount, int exampleCount) {
+        if(average){
+            return scoreSum / exampleCount;
+        } else {
+            return scoreSum;
+        }
     }
 }

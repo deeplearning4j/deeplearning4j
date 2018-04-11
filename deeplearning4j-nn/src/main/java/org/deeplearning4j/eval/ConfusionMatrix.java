@@ -260,22 +260,4 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         result = 31 * result + (classes == null ? 0 : classes.hashCode());
         return result;
     }
-
-    public static void main(String[] args) {
-        ConfusionMatrix<String> confusionMatrix = new ConfusionMatrix<>(Arrays.asList("a", "b", "c"));
-
-        confusionMatrix.add("a", "a", 88);
-        confusionMatrix.add("a", "b", 10);
-        confusionMatrix.add("b", "a", 14);
-        confusionMatrix.add("b", "b", 40);
-        confusionMatrix.add("b", "c", 6);
-        confusionMatrix.add("c", "a", 18);
-        confusionMatrix.add("c", "b", 10);
-        confusionMatrix.add("c", "c", 12);
-
-        ConfusionMatrix<String> confusionMatrix2 = new ConfusionMatrix<>(confusionMatrix);
-        confusionMatrix2.add(confusionMatrix);
-        System.out.println(confusionMatrix2.toHTML());
-        System.out.println(confusionMatrix2.toCSV());
-    }
 }

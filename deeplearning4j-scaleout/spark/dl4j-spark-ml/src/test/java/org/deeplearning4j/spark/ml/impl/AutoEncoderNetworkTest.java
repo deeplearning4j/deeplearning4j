@@ -11,8 +11,8 @@ import org.apache.spark.sql.SQLContext;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
@@ -82,18 +82,13 @@ public class AutoEncoderNetworkTest {
     }
 
     private MultiLayerConfiguration getNNConfiguration() {
-        return new NeuralNetConfiguration.Builder().seed(12345).iterations(5).updater(new Sgd(0.1))
+        return new NeuralNetConfiguration.Builder().seed(12345).updater(new Sgd(0.1))
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
-                        .layer(0, new RBM.Builder().nIn(10).nOut(8)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                        .layer(1, new RBM.Builder().nIn(8).nOut(5)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                        .layer(2, new RBM.Builder().nIn(5).nOut(2)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                        .layer(3, new RBM.Builder().nIn(2).nOut(5)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build())
-                        .layer(4, new RBM.Builder().nIn(5).nOut(8)
-                                        .lossFunction(LossFunctions.LossFunction.KL_DIVERGENCE).build()) //decoding starts
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(8).build())
+                        .layer(1, new DenseLayer.Builder().nIn(8).nOut(5).build())
+                        .layer(2, new DenseLayer.Builder().nIn(5).nOut(2).build())
+                        .layer(3, new DenseLayer.Builder().nIn(2).nOut(5).build())
+                        .layer(4, new DenseLayer.Builder().nIn(5).nOut(8).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.SIGMOID).nIn(8)
                                         .nOut(10).build())
                         .pretrain(true).backprop(true).build();

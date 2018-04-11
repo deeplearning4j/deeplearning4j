@@ -69,7 +69,7 @@ public class NlpAnalysis extends Analysis {
                 }
 
                 if (splitWord != null) {
-                    MapCount<String> mc = new MapCount<String>();
+                    MapCount<String> mc = new MapCount<>();
 
                     // 通过crf分词
                     List<String> words = splitWord.cut(graph.chars);
@@ -78,7 +78,7 @@ public class NlpAnalysis extends Analysis {
 
                     int tempOff = 0;
 
-                    if (words.size() > 0) {
+                    if (!words.isEmpty()) {
                         String word = words.get(0);
                         if (!isRuleWord(word)) {
                             mc.add("始##始" + TAB + word, CRF_WEIGHT);
@@ -164,7 +164,7 @@ public class NlpAnalysis extends Analysis {
 
             private List<Term> getResult() {
 
-                List<Term> result = new ArrayList<Term>();
+                List<Term> result = new ArrayList<>();
                 int length = graph.terms.length - 1;
                 for (int i = 0; i < length; i++) {
                     if (graph.terms[i] == null) {
@@ -179,7 +179,7 @@ public class NlpAnalysis extends Analysis {
     }
 
     // 临时处理新词中的特殊字符
-    private static final Set<Character> filter = new HashSet<Character>();
+    private static final Set<Character> filter = new HashSet<>();
 
     static {
         filter.add(':');

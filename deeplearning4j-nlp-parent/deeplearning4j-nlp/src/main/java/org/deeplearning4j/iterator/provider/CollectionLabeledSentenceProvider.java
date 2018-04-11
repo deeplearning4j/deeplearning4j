@@ -1,9 +1,9 @@
 package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
-import org.datavec.api.util.RandomUtils;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.util.*;
 
@@ -46,7 +46,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
                 order[i] = i;
             }
 
-            RandomUtils.shuffleInPlace(order, rng);
+            MathUtils.shuffleArray(order, rng);
         }
 
         //Collect set of unique labels for all sentences
@@ -78,7 +78,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
     public void reset() {
         cursor = 0;
         if (rng != null) {
-            RandomUtils.shuffleInPlace(order, rng);
+            MathUtils.shuffleArray(order, rng);
         }
     }
 

@@ -5,6 +5,7 @@ import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordRe
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.exception.DL4JException;
@@ -17,11 +18,12 @@ import java.util.Arrays;
 import java.util.Collection;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 14/11/2016.
  */
-public class TestRecordReaders {
+public class TestRecordReaders extends BaseDL4JTest {
 
     @Test
     public void testClassIndexOutsideOfRangeRRDSI() {
@@ -36,11 +38,8 @@ public class TestRecordReaders {
         try {
             DataSet ds = iter.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRDSI(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 
@@ -64,11 +63,8 @@ public class TestRecordReaders {
         try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRMDSI(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 
@@ -104,11 +100,8 @@ public class TestRecordReaders {
         try {
             DataSet ds = dsi.next();
             fail("Expected exception");
-        } catch (DL4JException e) {
-            System.out.println("testClassIndexOutsideOfRangeRRMDSI_MultipleReaders(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
-            fail();
+            assertTrue(e.getMessage(), e.getMessage().contains("to one-hot"));
         }
     }
 

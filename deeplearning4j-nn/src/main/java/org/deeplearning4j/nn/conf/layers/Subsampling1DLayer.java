@@ -147,6 +147,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
                 throw new IllegalStateException(
                                 "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Subsampling1DLayer(this);

@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -11,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 20/03/2017.
  */
-public class EvaluationBinaryTest {
+public class EvaluationBinaryTest extends BaseDL4JTest {
 
     @Test
     public void testEvaluationBinary() {

@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -24,10 +25,10 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 17/01/2017.
  */
-public class GlobalPoolingGradientCheckTests {
+public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     private static final boolean PRINT_RESULTS = true;
@@ -217,7 +218,7 @@ public class GlobalPoolingGradientCheckTests {
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, featuresMask, null);
 
             assertTrue(gradOK);
         }
@@ -289,8 +290,6 @@ public class GlobalPoolingGradientCheckTests {
                         labels.putScalar(i, idx, 1.0);
                     }
 
-                    mln.setLayerMaskArrays(inputMask, null);
-
                     if (PRINT_RESULTS) {
                         System.out.println("testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = "
                                         + miniBatchSize);
@@ -299,7 +298,7 @@ public class GlobalPoolingGradientCheckTests {
                     }
 
                     boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, inputMask, null);
 
                     assertTrue(gradOK);
                 }

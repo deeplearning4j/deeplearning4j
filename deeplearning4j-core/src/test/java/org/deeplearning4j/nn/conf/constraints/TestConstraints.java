@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.constraints;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -23,7 +24,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestConstraints {
+public class TestConstraints extends BaseDL4JTest {
 
     @Test
     public void testLayerRecurrentConstraints() throws Exception {

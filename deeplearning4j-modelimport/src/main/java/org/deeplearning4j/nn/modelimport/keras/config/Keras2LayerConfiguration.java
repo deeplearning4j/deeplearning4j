@@ -18,13 +18,15 @@
 package org.deeplearning4j.nn.modelimport.keras.config;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 /**
  * All relevant property fields of keras 2.x layers.
  *
  * @author Max Pumperla
  */
-@Data()
+@Data
+@EqualsAndHashCode(callSuper = false)
 public class Keras2LayerConfiguration extends KerasLayerConfiguration {
 
     /* Basic layer names */
@@ -33,13 +35,14 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = "SeparableConv2D";
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = "Conv2DTranspose";
 
-
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_OUTPUT_DIM = "units";
     private final String LAYER_FIELD_DROPOUT_RATE = "rate";
     private final String LAYER_FIELD_USE_BIAS = "use_bias";
     private final String KERAS_PARAM_NAME_W = "kernel";
     private final String KERAS_PARAM_NAME_B = "bias";
+    private final String KERAS_PARAM_NAME_RW = "recurrent_kernel";
+
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
     private final String LAYER_FIELD_DIM_ORDERING = "data_format";

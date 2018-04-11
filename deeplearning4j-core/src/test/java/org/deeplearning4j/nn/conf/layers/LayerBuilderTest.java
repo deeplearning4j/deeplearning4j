@@ -1,12 +1,11 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
-import org.deeplearning4j.nn.conf.layers.RBM.HiddenUnit;
-import org.deeplearning4j.nn.conf.layers.RBM.VisibleUnit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -25,7 +24,7 @@ import static org.junit.Assert.*;
 /**
  * @author Jeffrey Tang.
  */
-public class LayerBuilderTest {
+public class LayerBuilderTest extends BaseDL4JTest {
     final double DELTA = 1e-15;
 
     int numIn = 10;
@@ -36,8 +35,6 @@ public class LayerBuilderTest {
     int[] kernelSize = new int[] {2, 2};
     int[] stride = new int[] {2, 2};
     int[] padding = new int[] {1, 1};
-    HiddenUnit hidden = HiddenUnit.RECTIFIED;
-    VisibleUnit visible = VisibleUnit.GAUSSIAN;
     int k = 1;
     Convolution.Type convType = Convolution.Type.VALID;
     LossFunction loss = LossFunction.MCXENT;
@@ -91,18 +88,6 @@ public class LayerBuilderTest {
     }
 
     @Test
-    public void testRBM() throws Exception {
-        RBM rbm = new RBM.Builder(hidden, visible).sparsity(sparsity).k(k).build();
-
-        checkSerialization(rbm);
-
-        assertEquals(hidden, rbm.getHiddenUnit());
-        assertEquals(visible, rbm.getVisibleUnit());
-        assertEquals(k, rbm.getK());
-        assertEquals(sparsity, rbm.getSparsity(), DELTA);
-    }
-
-    @Test
     public void testSubsamplingLayer() throws Exception {
         SubsamplingLayer sample =
                         new SubsamplingLayer.Builder(poolType, stride).kernelSize(kernelSize).padding(padding).build();
@@ -120,8 +105,6 @@ public class LayerBuilderTest {
         OutputLayer out = new OutputLayer.Builder(loss).build();
 
         checkSerialization(out);
-
-        assertEquals(loss, out.getLossFunction());
     }
 
     @Test
@@ -129,8 +112,6 @@ public class LayerBuilderTest {
         RnnOutputLayer out = new RnnOutputLayer.Builder(loss).build();
 
         checkSerialization(out);
-
-        assertEquals(loss, out.getLossFunction());
     }
 
     @Test

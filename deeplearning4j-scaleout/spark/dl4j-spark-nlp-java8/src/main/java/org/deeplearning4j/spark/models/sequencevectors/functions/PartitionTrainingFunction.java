@@ -142,7 +142,7 @@ public class PartitionTrainingFunction<T extends SequenceElement> implements Voi
             }
         }
 
-        if (sequences.size() > 0) {
+        if (!sequences.isEmpty()) {
             // finishing training round, to make sure we don't have trails
             trainAllAtOnce(sequences);
             sequences.clear();

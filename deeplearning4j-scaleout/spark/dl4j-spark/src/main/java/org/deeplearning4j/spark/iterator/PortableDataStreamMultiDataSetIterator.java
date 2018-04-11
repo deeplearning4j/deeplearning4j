@@ -77,7 +77,8 @@ public class PortableDataStreamMultiDataSetIterator implements MultiDataSetItera
         try (InputStream is = pds.open()) {
             ds.load(is);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error loading MultiDataSet at path " + pds.getPath() + " - MultiDataSet may be corrupt or invalid." +
+                    " Spark MultiDataSets can be validated using org.deeplearning4j.spark.util.data.SparkDataValidation", e);
         }
 
         if (preprocessor != null)

@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Rule;
 import org.junit.Test;
@@ -16,7 +17,7 @@ import static org.junit.Assert.*;
 /**
  * Created by susaneraly on 6/8/17.
  */
-public class EarlyTerminationDataSetIteratorTest {
+public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
 
     int minibatchSize = 10;
     int numExamples = 105;

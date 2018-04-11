@@ -3,7 +3,7 @@ package org.deeplearning4j.datasets.iterator;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -14,13 +14,14 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.util.TestDataSetConsumer;
+import org.deeplearning4j.nn.util.TestDataSetConsumer;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Iterator;
@@ -29,14 +30,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.*;
 
 
-public class MultipleEpochsIteratorTest {
+public class MultipleEpochsIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testNextAndReset() throws Exception {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, iter);
 
@@ -53,7 +54,7 @@ public class MultipleEpochsIteratorTest {
         int epochs = 3;
 
         RecordReader rr = new CSVRecordReader();
-        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
+        rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         DataSet ds = iter.next(50);
 

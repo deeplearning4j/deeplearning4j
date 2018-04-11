@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TimeIterationListener implements IterationListener {
 
     private static final long serialVersionUID = 1L;
-    private boolean invoked;
     private long start;
     private int iterationCount;
     private AtomicLong iterationCounter = new AtomicLong(0);

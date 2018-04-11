@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.multilayer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -32,7 +33,7 @@ import java.util.Random;
 /**
  * Created by Kirill Lebedev (drlebedev.com) on 8/31/2015.
  */
-public class GravesLSTMOutputTest {
+public class GravesLSTMOutputTest extends BaseDL4JTest {
 
     private static int nIn = 20;
     private static int layerSize = 15;
@@ -58,22 +59,26 @@ public class GravesLSTMOutputTest {
 
     @Test
     public void testSameLabelsOutput() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40, false));
+        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(false));
         network.init();
         network.setListeners(new ScoreIterationListener(1));
-        network.fit(reshapeInput(data.dup()), data.dup());
+        for( int j=0; j<40; j++ ) {
+            network.fit(reshapeInput(data.dup()), data.dup());
+        }
         Evaluation ev = eval(network);
         Assert.assertTrue(ev.f1() > 0.90);
     }
 
     @Test
     public void testSameLabelsOutputWithTBPTT() {
-        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(40, true));
+        MultiLayerNetwork network = new MultiLayerNetwork(getNetworkConf(true));
         network.init();
         network.setListeners(new ScoreIterationListener(1));
         for (int i = 0; i < window / 100; i++) {
             INDArray d = data.get(NDArrayIndex.interval(100 * i, 100 * (i + 1)), NDArrayIndex.all());
-            network.fit(reshapeInput(d.dup()), reshapeInput(d.dup()));
+            for( int j=0; j<40; j++ ) {
+                network.fit(reshapeInput(d.dup()), reshapeInput(d.dup()));
+            }
         }
         Evaluation ev = eval(network);
     }
@@ -86,11 +91,11 @@ public class GravesLSTMOutputTest {
         return ev;
     }
 
-    private MultiLayerConfiguration getNetworkConf(int iterations, boolean useTBPTT) {
+    private MultiLayerConfiguration getNetworkConf(boolean useTBPTT) {
         MultiLayerConfiguration.Builder builder =
                         new NeuralNetConfiguration.Builder()
                                         .updater(new AdaGrad(0.1)).l2(0.0025)
-                                        .iterations(iterations).stepFunction(new NegativeDefaultStepFunction())
+                                        .stepFunction(new NegativeDefaultStepFunction())
                                         .list()
                                         .layer(0, new GravesLSTM.Builder().weightInit(WeightInit.DISTRIBUTION)
                                                         .dist(new NormalDistribution(0.0, 0.01)).nIn(nIn)

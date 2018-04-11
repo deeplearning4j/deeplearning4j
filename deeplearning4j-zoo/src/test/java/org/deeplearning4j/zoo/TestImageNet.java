@@ -5,11 +5,14 @@ import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.objdetect.DetectedObject;
+import org.deeplearning4j.nn.layers.objdetect.YoloUtils;
 import org.deeplearning4j.zoo.model.Darknet19;
 import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG19;
+import org.deeplearning4j.zoo.model.YOLO2;
 import org.deeplearning4j.zoo.util.ClassPrediction;
 import org.deeplearning4j.zoo.util.Labels;
+import org.deeplearning4j.zoo.util.darknet.COCOLabels;
 import org.deeplearning4j.zoo.util.darknet.DarknetLabels;
 import org.deeplearning4j.zoo.util.darknet.VOCLabels;
 import org.deeplearning4j.zoo.util.imagenet.ImageNetLabels;
@@ -38,7 +41,7 @@ public class TestImageNet {
     @Test
     public void testImageNetLabels() throws IOException {
         // set up model
-        ZooModel model = new VGG19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new VGG19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -62,7 +65,7 @@ public class TestImageNet {
     @Test
     public void testDarknetLabels() throws IOException {
         // set up model
-        ZooModel model = new Darknet19(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new Darknet19(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -84,7 +87,7 @@ public class TestImageNet {
         System.gc();
 
         // set up model
-        model = new TinyYOLO(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        model = new TinyYOLO(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
 
         // set up input and feedforward
@@ -93,12 +96,36 @@ public class TestImageNet {
         scaler = new ImagePreProcessingScaler(0, 1);
         scaler.transform(image);
         INDArray outputs = initializedModel.outputSingle(image);
-        org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer yout =
-                        (org.deeplearning4j.nn.layers.objdetect.Yolo2OutputLayer)initializedModel.getOutputLayer(0);
-        List<DetectedObject> objs = yout.getPredictedObjects(outputs, 0.6f);
+        List<DetectedObject> objs = YoloUtils.getPredictedObjects(Nd4j.create(TinyYOLO.priorBoxes), outputs, 0.6, 0.4);
+        assertEquals(1, objs.size());
 
         // check output labels of result
         labels = new VOCLabels();
+        for (DetectedObject obj : objs) {
+            ClassPrediction classPrediction = labels.decodePredictions(obj.getClassPredictions(), 1).get(0).get(0);
+            log.info(obj.toString() + " " + classPrediction);
+            assertEquals("dog", classPrediction.getLabel());
+        }
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        // set up model
+        model = new YOLO2(1, 123); //num labels doesn't matter since we're getting pretrained imagenet
+        initializedModel = (ComputationGraph) model.initPretrained();
+
+        // set up input and feedforward
+        loader = new NativeImageLoader(608, 608, 3, new ColorConversionTransform(COLOR_BGR2RGB));
+        image = loader.asMatrix(classloader.getResourceAsStream("goldenretriever.jpg"));
+        scaler = new ImagePreProcessingScaler(0, 1);
+        scaler.transform(image);
+        outputs = initializedModel.outputSingle(image);
+        objs = YoloUtils.getPredictedObjects(Nd4j.create(TinyYOLO.priorBoxes), outputs, 0.6, 0.4);
+        assertEquals(1, objs.size());
+
+        // check output labels of result
+        labels = new COCOLabels();
         for (DetectedObject obj : objs) {
             ClassPrediction classPrediction = labels.decodePredictions(obj.getClassPredictions(), 1).get(0).get(0);
             log.info(obj.toString() + " " + classPrediction);

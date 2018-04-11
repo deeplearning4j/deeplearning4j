@@ -40,9 +40,10 @@ public class SubsamplingLayer extends Layer {
     protected int[] dilation = new int[]{1,1};
     protected int pnorm;
     protected double eps;
+    protected boolean cudnnAllowFallback = true;
 
     public enum PoolingType {
-        MAX, AVG, SUM, PNORM, NONE;
+        MAX, AVG, SUM, PNORM;
 
         public org.deeplearning4j.nn.conf.layers.PoolingType toPoolingType() {
             switch (this) {
@@ -54,8 +55,6 @@ public class SubsamplingLayer extends Layer {
                     return org.deeplearning4j.nn.conf.layers.PoolingType.SUM;
                 case PNORM:
                     return org.deeplearning4j.nn.conf.layers.PoolingType.PNORM;
-                case NONE:
-                    return org.deeplearning4j.nn.conf.layers.PoolingType.NONE;
             }
             throw new UnsupportedOperationException("Unknown/not supported pooling type: " + this);
         }
@@ -77,6 +76,7 @@ public class SubsamplingLayer extends Layer {
         }
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
+        this.cudnnAllowFallback = builder.cudnnAllowFallback;
     }
 
     @Override
@@ -297,6 +297,7 @@ public class SubsamplingLayer extends Layer {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
                 throw new IllegalStateException(
                                 "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SubsamplingLayer(this);
@@ -314,6 +315,7 @@ public class SubsamplingLayer extends Layer {
         protected ConvolutionMode convolutionMode = null;
         protected int pnorm;
         protected double eps = 1e-8;
+        protected boolean cudnnAllowFallback = true;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.poolingType = poolingType.toPoolingType();
@@ -396,6 +398,18 @@ public class SubsamplingLayer extends Layer {
             if (eps <= 0)
                 throw new IllegalArgumentException("Invalid input: epsilon for p-norm must be greater than 0");
             this.eps = eps;
+            return (T) this;
+        }
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in (non-CuDNN)
+         * implementation for ConvolutionLayer will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public T cudnnAllowFallback(boolean allowFallback){
+            this.cudnnAllowFallback = allowFallback;
             return (T) this;
         }
     }

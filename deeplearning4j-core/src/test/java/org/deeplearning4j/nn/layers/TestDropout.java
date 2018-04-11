@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -23,7 +24,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class TestDropout {
+public class TestDropout extends BaseDL4JTest {
 
     @Test
     public void testDropoutSimple() throws Exception {
@@ -35,7 +36,7 @@ public class TestDropout {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .updater(new Sgd())
-                        .iterations(1).dropOut(0.5).list()
+                        .dropOut(0.5).list()
                         .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
                                         .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
                                         .weightInit(WeightInit.XAVIER).build())
@@ -109,7 +110,7 @@ public class TestDropout {
         int nOut = 4;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .iterations(1).dropOut(0.5).updater(new Sgd(1e-9))
+                        .dropOut(0.5).updater(new Sgd(1e-9))
                         .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(10, 11)) //Weight init to cause sigmoid saturation
                         .list()
                         .layer(0, new DenseLayer.Builder().activation(Activation.SIGMOID).nIn(nIn).nOut(layerSize)

@@ -22,6 +22,7 @@ import org.deeplearning4j.ui.module.tsne.TsneModule;
 import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
+import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.nd4j.linalg.primitives.Pair;
@@ -32,6 +33,7 @@ import play.api.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,12 +81,15 @@ public class PlayUIServer extends UIServer {
     private final AtomicBoolean shutdown = new AtomicBoolean(false);
 
     private Thread uiEventRoutingThread;
-    @Parameter(names = {"-r", "-enableRemote"}, description = "Whether to enable remote or not", arity = 1)
+
+    @Parameter(names = {"-r", "--enableRemote"}, description = "Whether to enable remote or not", arity = 1)
     private boolean enableRemote;
 
-
-    @Parameter(names = {"--uiPort"}, description = "Whether to enable remote or not", arity = 1)
+    @Parameter(names = {"-p", "--uiPort"}, description = "Custom HTTP port for UI", arity = 1)
     private int port = DEFAULT_UI_PORT;
+
+    @Parameter(names = {"-f", "--customStatsFile"}, description = "Path to create custom stats file (remote only)", arity = 1)
+    private String customStatsFile;
 
     public PlayUIServer() {
         this(DEFAULT_UI_PORT);
@@ -202,16 +207,40 @@ public class PlayUIServer extends UIServer {
         }
 
         Router router = routingDsl.build();
-        server = Server.forRouter(router, Mode.PROD, port);
-        this.port = port;
+        try {
+            server = Server.forRouter(router, Mode.PROD, port);
+        } catch (Throwable e){
+            if(e.getMessage().contains("'play.crypto.provider")){
+                //Usual cause: user's uber-jar does not include application.conf
+                log.error("Error starting UI server due to missing play.crypto.provider config: This usually occurs due to missing" +
+                        " application.conf file. DL4J's UI (based on the Play framework) requires this file in order" +
+                        " to run. File can be missing due to incorrect creation of uber-jars that do not include resource" +
+                        " files. See https://deeplearning4j.org/visualization#issues for more information", e);
+            } else {
+                log.error("Unknown error when starting UI server",e);
+            }
+            throw e;
+        }
 
         log.info("DL4J UI Server started at {}", getAddress());
 
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
-        if (enableRemote)
-            enableRemoteListener();
+        if (enableRemote && customStatsFile != null) {
+            enableRemoteListener(new FileStatsStorage(new File(customStatsFile)), true);
+        }
+        else if(enableRemote) {
+            try {
+                File tempStatsFile = File.createTempFile("dl4j", "UIstats");
+                tempStatsFile.delete();
+                tempStatsFile.deleteOnExit();
+                enableRemoteListener(new FileStatsStorage(tempStatsFile), true);
+            } catch(Exception e) {
+                log.error("Failed to create temporary file for stats storage",e);
+                System.exit(1);
+            }
+        }
     }
 
     @Override
@@ -410,6 +439,7 @@ public class PlayUIServer extends UIServer {
                 try {
                     Thread.sleep(uiProcessingDelay);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     if (!shutdown.get()) {
                         throw new RuntimeException("Unexpected interrupted exception", e);
                     }

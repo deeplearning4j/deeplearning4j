@@ -1,7 +1,7 @@
 package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;

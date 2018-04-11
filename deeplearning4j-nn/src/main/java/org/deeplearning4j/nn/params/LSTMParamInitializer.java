@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -49,6 +50,12 @@ public class LSTMParamInitializer implements ParamInitializer {
     public final static String BIAS_KEY = DefaultParamInitializer.BIAS_KEY;
     public final static String INPUT_WEIGHT_KEY = DefaultParamInitializer.WEIGHT_KEY;
 
+    private static final List<String> LAYER_PARAM_KEYS = Collections.unmodifiableList(
+            Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY, BIAS_KEY));
+    private static final List<String> WEIGHT_KEYS = Collections.unmodifiableList(
+            Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY));
+    private static final List<String> BIAS_KEYS = Collections.unmodifiableList(Collections.singletonList(BIAS_KEY));
+
     @Override
     public int numParams(NeuralNetConfiguration conf) {
         return numParams(conf.getLayer());
@@ -70,26 +77,26 @@ public class LSTMParamInitializer implements ParamInitializer {
 
     @Override
     public List<String> paramKeys(Layer layer) {
-        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY, BIAS_KEY);
+        return LAYER_PARAM_KEYS;
     }
 
     @Override
     public List<String> weightKeys(Layer layer) {
-        return Arrays.asList(INPUT_WEIGHT_KEY, RECURRENT_WEIGHT_KEY);
+        return WEIGHT_KEYS;
     }
 
     @Override
     public List<String> biasKeys(Layer layer) {
-        return Collections.singletonList(BIAS_KEY);
+        return BIAS_KEYS;
     }
 
     @Override
-    public boolean isWeightParam(String key) {
+    public boolean isWeightParam(Layer layer, String key) {
         return RECURRENT_WEIGHT_KEY.equals(key) || INPUT_WEIGHT_KEY.equals(key);
     }
 
     @Override
-    public boolean isBiasParam(String key) {
+    public boolean isBiasParam(Layer layer, String key) {
         return BIAS_KEY.equals(key);
     }
 
@@ -128,10 +135,21 @@ public class LSTMParamInitializer implements ParamInitializer {
             int[] inputWShape = new int[] {nLast, 4 * nL};
             int[] recurrentWShape = new int[] {nL, 4 * nL};
 
+            WeightInit rwInit;
+            Distribution rwDist = dist;
+            if(layerConf.getWeightInitRecurrent() != null){
+                rwInit = layerConf.getWeightInitRecurrent();
+                if(layerConf.getDistRecurrent() != null) {
+                    rwDist = Distributions.createDistribution(layerConf.getDistRecurrent());
+                }
+            } else {
+                rwInit = layerConf.getWeightInit();
+            }
+
             params.put(INPUT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, inputWShape,
                             layerConf.getWeightInit(), dist, inputWeightView));
             params.put(RECURRENT_WEIGHT_KEY, WeightInitUtil.initWeights(fanIn, fanOut, recurrentWShape,
-                            layerConf.getWeightInit(), dist, recurrentWeightView));
+                            rwInit, rwDist, recurrentWeightView));
             biasView.put(new INDArrayIndex[] {NDArrayIndex.point(0), NDArrayIndex.interval(nL, 2 * nL)},
                             Nd4j.valueArrayOf(1, nL, forgetGateInit)); //Order: input, forget, output, input modulation, i.e., IFOG}
             /*The above line initializes the forget gate biases to specified value.

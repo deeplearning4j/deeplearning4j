@@ -843,17 +843,17 @@ public class ParameterAveragingTrainingMaster
 
         if (statsStorage != null) {
             Collection<StorageMetaData> meta = tuple.getListenerMetaData();
-            if (meta != null && meta.size() > 0) {
+            if (meta != null && !meta.isEmpty()) {
                 statsStorage.putStorageMetaData(meta);
             }
 
             Collection<Persistable> staticInfo = tuple.getListenerStaticInfo();
-            if (staticInfo != null && staticInfo.size() > 0) {
+            if (staticInfo != null && !staticInfo.isEmpty()) {
                 statsStorage.putStaticInfo(staticInfo);
             }
 
             Collection<Persistable> updates = tuple.getListenerUpdates();
-            if (updates != null && updates.size() > 0) {
+            if (updates != null && !updates.isEmpty()) {
                 statsStorage.putUpdate(updates);
             }
         }
@@ -866,11 +866,11 @@ public class ParameterAveragingTrainingMaster
             //Params may be null for edge case (empty RDD)
             if (network != null) {
                 MultiLayerConfiguration conf = network.getNetwork().getLayerWiseConfigurations();
-                int numUpdates = network.getNetwork().conf().getNumIterations() * averagingFrequency;
+                int numUpdates = averagingFrequency;
                 conf.setIterationCount(conf.getIterationCount() + numUpdates);
             } else {
                 ComputationGraphConfiguration conf = graph.getNetwork().getConfiguration();
-                int numUpdates = graph.getNetwork().conf().getNumIterations() * averagingFrequency;
+                int numUpdates = averagingFrequency;
                 conf.setIterationCount(conf.getIterationCount() + numUpdates);
             }
         }

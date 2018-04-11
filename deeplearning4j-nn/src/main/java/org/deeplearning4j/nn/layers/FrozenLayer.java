@@ -9,9 +9,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.Collection;
 import java.util.Map;
@@ -397,6 +397,11 @@ public class FrozenLayer implements Layer {
     @Override
     public void setInput(INDArray input) {
         insideLayer.setInput(input);
+    }
+
+    @Override
+    public void migrateInput() {
+        insideLayer.migrateInput();
     }
 
     @Override

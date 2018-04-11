@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -21,7 +22,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -165,7 +165,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                 log.info("Master thread locks at RC");
 
             while (registered.get()) {
-                LockSupport.parkNanos(100L);
+                ThreadUtils.uncheckedSleep(1);
                 if (throwable.isTriggered())
                     throw new RuntimeException(throwable.get());
             }
@@ -209,11 +209,10 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         } else {
             // just wait, till last thread will set isDone to true
             while (!isDone.get()) {
-                LockSupport.parkNanos(1000L);
+                ThreadUtils.uncheckedSleep(1);
                 if (throwable.isTriggered())
                     throw new RuntimeException(throwable.get());
             }
-
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
@@ -224,7 +223,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             isFirst.set(true);
         } else {
             while (!isFirst.get()) {
-                LockSupport.parkNanos(1000L);
+                ThreadUtils.uncheckedSleep(1);
                 if (throwable.isTriggered())
                     throw new RuntimeException(throwable.get());
             }
@@ -456,7 +455,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
             // block until ParallelWrapper sends us message about number of threads in this cycle
             if (!bypassMode.get())
                 while (!registered.get()) {
-                    LockSupport.parkNanos(100L);
+                    ThreadUtils.uncheckedSleep(1);
                     if (throwable.isTriggered())
                         throw new RuntimeException(throwable.get());
                 }
@@ -507,6 +506,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
                     try {
                         messages.get(i).put(compressed);
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         log.info("Something bad at index_{}", i);
                         throw new RuntimeException(e);
                     }

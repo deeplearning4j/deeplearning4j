@@ -1,7 +1,7 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -139,7 +140,7 @@ public class ManualTests {
                         outputNum, useSubset, true, 1.0, new Random(seed));
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .updater(new AdaGrad(0.01)).weightNoise(new DropConnect(0.5)).list()
@@ -253,7 +254,6 @@ public class ManualTests {
         int outputNum = 10;
         int batchSize = 64;
         int nEpochs = 10;
-        int iterations = 1;
         int seed = 123;
 
         log.info("Load data....");
@@ -261,7 +261,7 @@ public class ManualTests {
         DataSetIterator mnistTest = new MnistDataSetIterator(batchSize, false, 12345);
 
         log.info("Build model....");
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Nesterovs(0.01, 0.9)).list()
@@ -320,5 +320,44 @@ public class ManualTests {
         mnistTest.reset();
 
         log.info("****************Example finished********************");
+    }
+
+    @Test
+    public void testCNNActivationsFrozen() throws Exception {
+
+        int nChannels = 1;
+        int outputNum = 10;
+        int batchSize = 64;
+        int nEpochs = 10;
+        int seed = 123;
+
+        log.info("Load data....");
+        DataSetIterator mnistTrain = new MnistDataSetIterator(batchSize, true, 12345);
+
+        log.info("Build model....");
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
+                .l2(0.0005)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Nesterovs(0.01, 0.9)).list()
+                .layer(0, new FrozenLayer(new ConvolutionLayer.Builder(5, 5)
+                        //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                        .nIn(nChannels).stride(1, 1).nOut(20).activation(Activation.IDENTITY).build()))
+                .layer(1, new FrozenLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
+                        .stride(2, 2).build()))
+                .layer(2, new FrozenLayer(new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build()))
+                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(outputNum).activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, nChannels));
+
+        MultiLayerConfiguration conf = builder.build();
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+
+        log.info("Train model....");
+        model.setListeners(new ConvolutionalIterationListener(1));
+
+        for (int i = 0; i < nEpochs; i++) {
+            model.fit(mnistTrain);
+        }
     }
 }

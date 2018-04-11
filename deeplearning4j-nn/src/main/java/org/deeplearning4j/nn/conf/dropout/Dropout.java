@@ -49,6 +49,13 @@ public class Dropout implements IDropout {
      */
     public Dropout(double activationRetainProbability) {
         this(activationRetainProbability, null);
+        if(activationRetainProbability < 0.0){
+            throw new IllegalArgumentException("Activation retain probability must be > 0. Got: " + activationRetainProbability);
+        }
+        if(activationRetainProbability == 0.0){
+            throw new IllegalArgumentException("Invalid probability value: Dropout with 0.0 probability of retaining "
+                    + "activations is not supported");
+        }
     }
 
     /**

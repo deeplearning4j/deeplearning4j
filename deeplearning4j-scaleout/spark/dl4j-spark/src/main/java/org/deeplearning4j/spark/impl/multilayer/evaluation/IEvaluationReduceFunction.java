@@ -16,8 +16,20 @@ public class IEvaluationReduceFunction<T extends IEvaluation> implements Functio
 
     @Override
     public T[] call(T[] eval1, T[] eval2) throws Exception {
+        //Shouldn't *usually* happen...
+        if(eval1 == null){
+            return eval2;
+        } else if(eval2 == null){
+            return eval1;
+        }
+
+
         for (int i = 0; i < eval1.length; i++) {
-            eval1[i].merge(eval2[i]);
+            if(eval1[i] == null){
+                eval1[i] = eval2[i];
+            } else if(eval2[i] != null){
+                eval1[i].merge(eval2[i]);
+            }
         }
         return eval1;
     }

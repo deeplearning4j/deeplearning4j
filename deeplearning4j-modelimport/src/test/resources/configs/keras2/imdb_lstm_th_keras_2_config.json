@@ -55,7 +55,7 @@
     "units": 128, 
     "unit_forget_bias": true, 
     "activity_regularizer": null, 
-    "recurrent_dropout": 0.0,
+    "recurrent_dropout": 0,
     "kernel_initializer": {
      "class_name": "VarianceScaling", 
      "config": {
@@ -74,7 +74,7 @@
     "go_backwards": false, 
     "implementation": 0, 
     "kernel_regularizer": null, 
-    "return_sequences": false, 
+    "return_sequences": true,
     "recurrent_constraint": null
    }
   }, 

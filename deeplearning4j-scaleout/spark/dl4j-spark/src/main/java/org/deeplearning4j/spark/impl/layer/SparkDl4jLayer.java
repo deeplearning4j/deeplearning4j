@@ -103,7 +103,7 @@ public class SparkDl4jLayer implements Serializable {
      * @return the fit layer
      */
     public Layer fitDataSet(JavaRDD<DataSet> rdd) {
-        int iterations = conf.getNumIterations();
+        int iterations = 1;
         long count = rdd.count();
 
 
@@ -129,7 +129,6 @@ public class SparkDl4jLayer implements Serializable {
             layer.setParams(newParams);
             this.layer = layer;
         } else {
-            conf.setNumIterations(1);
             int numParams = conf.getLayer().initializer().numParams(conf);
             final INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);

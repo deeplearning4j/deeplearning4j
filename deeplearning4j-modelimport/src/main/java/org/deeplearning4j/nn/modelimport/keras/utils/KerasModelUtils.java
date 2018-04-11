@@ -27,12 +27,13 @@ import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.util.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -54,7 +55,7 @@ public class KerasModelUtils {
      *
      * @param model DL4J Model interface
      * @return DL4J Model interface
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static Model copyWeightsToModel(Model model, Map<String, KerasLayer> layers)
             throws InvalidKerasConfigurationException {
@@ -85,11 +86,12 @@ public class KerasModelUtils {
     }
 
     /**
+     * Determine Keras major version
      *
      * @param modelConfig parsed model configuration for keras model
-     * @param config basic model configuration (KerasModelConfiguration)
+     * @param config      basic model configuration (KerasModelConfiguration)
      * @return Major Keras version (1 or 2)
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static int determineKerasMajorVersion(Map<String, Object> modelConfig, KerasModelConfiguration config)
             throws InvalidKerasConfigurationException {
@@ -106,18 +108,38 @@ public class KerasModelUtils {
                 kerasMajorVersion = Character.getNumericValue(kerasVersionString.charAt(0));
             } else {
                 throw new InvalidKerasConfigurationException(
-                        "Keras version was not readable (" +  config.getFieldKerasVersion() + " provided)"
+                        "Keras version was not readable (" + config.getFieldKerasVersion() + " provided)"
                 );
             }
         }
         return kerasMajorVersion;
     }
 
-    public static String findParameterName(String parameter, String[] fragmentList) {
+    /**
+     * Determine Keras backend
+     *
+     * @param modelConfig parsed model configuration for keras model
+     * @param config      basic model configuration (KerasModelConfiguration)
+     * @return Keras backend string
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    public static String determineKerasBackend(Map<String, Object> modelConfig, KerasModelConfiguration config)
+            throws InvalidKerasConfigurationException {
+        String kerasBackend = null;
+        if (!modelConfig.containsKey(config.getFieldBackend())) {
+            // TODO: H5 files unfortunately do not seem to have this property in keras 1.
+            log.warn("Could not read keras backend used (no "
+                    + config.getFieldBackend() + " field found) \n"
+            );
+        } else {
+            kerasBackend = (String) modelConfig.get(config.getFieldBackend());
+        }
+        return kerasBackend;
+    }
+
+    private static String findParameterName(String parameter, String[] fragmentList) {
         Matcher layerNameMatcher =
                 Pattern.compile(fragmentList[fragmentList.length - 1]).matcher(parameter);
-        if (!(layerNameMatcher.find()))
-            log.warn("Unable to match layer parameter name " + parameter + " for stored weights.");
         String parameterNameFound = layerNameMatcher.replaceFirst("");
 
         /* Usually layer name is separated from parameter name by an underscore. */
@@ -142,10 +164,11 @@ public class KerasModelUtils {
      * Store weights to import with each associated Keras layer.
      *
      * @param weightsArchive Hdf5Archive
-     * @param weightsRoot
-     * @throws InvalidKerasConfigurationException
+     * @param weightsRoot    root of weights in HDF5 archive
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
-    public static void importWeights(Hdf5Archive weightsArchive, String weightsRoot, Map<String, KerasLayer> layers)
+    public static void importWeights(Hdf5Archive weightsArchive, String weightsRoot, Map<String, KerasLayer> layers,
+                                     int kerasVersion, String backend)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         // check to ensure naming scheme doesn't include forward slash
         boolean includesSlash = false;
@@ -203,7 +226,30 @@ public class KerasModelUtils {
                 if (foundTfGroups) {
                     layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
                 } else {
-                    layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                    if (kerasVersion == 2) {
+                        if (backend.equals("theano") && layerName.contains("bidirectional")) {
+                            for (String part : attributeStr.split("/")) {
+                                if (part.contains("forward"))
+                                    baseAttributes = baseAttributes + "/" + part;
+                            }
+
+                        }
+                        // For theano in keras 2 the weights are nested, but for parameterless layers this
+                        // next line will throw an HDF5 group error. This is inessential, as the model still
+                        // runs, but might lead to confusion to end users. So we try to catch this here.
+                        // TODO: find a better way to do this
+                        if (layerName.contains("dense") || layerName.contains("conv") || layerName.contains("lstm")
+                                || layerName.contains("rnn") || layerName.contains("gru")
+                                || layerName.contains("embedding") || layerName.contains("batch")
+                                || layerName.contains("locally") || layerName.contains("bidirectional")) {
+                            layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
+                        } else {
+                            layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                        }
+
+                    } else {
+                        layerParamNames = weightsArchive.getDataSets(rootPrefix + layerName);
+                    }
 
                 }
             }
@@ -213,26 +259,45 @@ public class KerasModelUtils {
                 throw new InvalidKerasConfigurationException(
                         "Found weights for layer not in model (named " + layerName + ")");
             KerasLayer layer = layers.get(layerName);
+
+
             if (layerParamNames.size() != layer.getNumParams())
-                throw new InvalidKerasConfigurationException(
-                        "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
-                                + " trainable params (named " + layerName + ")");
-            Map<String, INDArray> weights = new HashMap<String, INDArray>();
+                if (kerasVersion == 2
+                        && layer instanceof KerasBidirectional && 2 * layerParamNames.size() != layer.getNumParams())
+                    throw new InvalidKerasConfigurationException(
+                            "Found " + layerParamNames.size() + " weights for layer with " + layer.getNumParams()
+                                    + " trainable params (named " + layerName + ")");
+            Map<String, INDArray> weights = new HashMap<>();
+
 
             for (String layerParamName : layerParamNames) {
                 String paramName = KerasModelUtils.findParameterName(layerParamName, layerFragments);
                 INDArray paramValue;
-                if (foundTfGroups) {
-                    paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+
+                if (kerasVersion == 2 && layer instanceof KerasBidirectional) {
+                    String backwardAttributes = baseAttributes.replace("forward", "backward");
+                    INDArray forwardParamValue = weightsArchive.readDataSet(layerParamName,
+                            rootPrefix + baseAttributes);
+                    INDArray backwardParamValue = weightsArchive.readDataSet(layerParamName, rootPrefix + backwardAttributes);
+                    weights.put("forward_" + paramName, forwardParamValue);
+                    weights.put("backward_" + paramName, backwardParamValue);
                 } else {
-                    if (layerFragments.length > 1) {
-                        paramValue = weightsArchive.readDataSet(
-                                layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
+                    if (foundTfGroups) {
+                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
                     } else {
-                        paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                        if (layerFragments.length > 1) {
+                            paramValue = weightsArchive.readDataSet(
+                                    layerFragments[0] + "/" + layerParamName, rootPrefix, layerName);
+                        } else {
+                            if (kerasVersion == 2) {
+                                paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix + baseAttributes);
+                            } else {
+                                paramValue = weightsArchive.readDataSet(layerParamName, rootPrefix, layerName);
+                            }
+                        }
                     }
+                    weights.put(paramName, paramValue);
                 }
-                weights.put(paramName, paramValue);
             }
             layer.setWeights(weights);
         }
@@ -252,8 +317,8 @@ public class KerasModelUtils {
      * @param modelJson JSON string representing model (potentially null)
      * @param modelYaml YAML string representing model (potentially null)
      * @return Model configuration as Map<String, Object>
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
+     * @throws IOException                        IO exception
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public static Map<String, Object> parseModelConfig(String modelJson, String modelYaml) throws IOException, InvalidKerasConfigurationException {
         Map<String, Object> modelConfig;
@@ -272,7 +337,7 @@ public class KerasModelUtils {
      *
      * @param json String containing valid JSON
      * @return Nested (key,value) map of arbitrary depth
-     * @throws IOException
+     * @throws IOException IO exception
      */
     public static Map<String, Object> parseJsonString(String json) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -286,7 +351,7 @@ public class KerasModelUtils {
      *
      * @param yaml String containing valid YAML
      * @return Nested (key,value) map of arbitrary depth
-     * @throws IOException
+     * @throws IOException IO exception
      */
     public static Map<String, Object> parseYamlString(String yaml) throws IOException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());

@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertNull;
 
 /**
  */
-public class DropoutLayerTest {
+public class DropoutLayerTest extends BaseDL4JTest {
 
     @Test
     public void testInputTypes() {
@@ -67,7 +68,7 @@ public class DropoutLayerTest {
         MultiLayerConfiguration confSeparate =
                         new NeuralNetConfiguration.Builder()
                                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .iterations(1).seed(3648)
+                                        .seed(3648)
                                         .list().layer(0,
                                                         new DropoutLayer.Builder(0.25)
                                                                         .build())
@@ -111,7 +112,7 @@ public class DropoutLayerTest {
 
         // Run without separate activation layer
         MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10)
                                         .activation(Activation.RELU).weightInit(
@@ -128,7 +129,7 @@ public class DropoutLayerTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .list()
                         .layer(0, new DenseLayer.Builder().nIn(28 * 28 * 1).nOut(10).activation(Activation.RELU)
                                         .weightInit(WeightInit.XAVIER).build())

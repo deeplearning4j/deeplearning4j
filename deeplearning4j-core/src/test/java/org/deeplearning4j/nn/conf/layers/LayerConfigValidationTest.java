@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -27,7 +28,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class LayerConfigValidationTest {
+public class LayerConfigValidationTest extends BaseDL4JTest {
 
 
     @Test
@@ -100,7 +101,7 @@ public class LayerConfigValidationTest {
     public void testCompGraphNullLayer() {
         ComputationGraphConfiguration.GraphBuilder gb = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(0.01))
-                        .iterations(3).seed(42).miniBatch(false).l1(0.2).l2(0.2)
+                        .seed(42).miniBatch(false).l1(0.2).l2(0.2)
                         /* Graph Builder */
                         .updater(Updater.RMSPROP).graphBuilder().addInputs("in")
                         .addLayer("L" + 1,

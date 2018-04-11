@@ -12,6 +12,8 @@ import org.deeplearning4j.graph.models.embeddings.GraphVectorsImpl;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threadly.concurrent.PriorityScheduler;
+import org.threadly.concurrent.future.FutureUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +39,6 @@ public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
     private double learningRate;
     private boolean initCalled = false;
     private long seed;
-    private ExecutorService executorService;
     private int nThreads = Runtime.getRuntime().availableProcessors();
     private transient AtomicLong walkCounter = new AtomicLong(0);
 
@@ -116,36 +117,25 @@ public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
             throw new UnsupportedOperationException("DeepWalk not initialized (call initialize before fit)");
         List<GraphWalkIterator<V>> iteratorList = iteratorProvider.getGraphWalkIterators(nThreads);
 
-        executorService = Executors.newFixedThreadPool(nThreads, new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                Thread t = new Thread(r);
-                t.setDaemon(true);
-                return t;
-            }
-        });
+        PriorityScheduler scheduler = new PriorityScheduler(nThreads);
 
         List<Future<Void>> list = new ArrayList<>(iteratorList.size());
         //log.info("Fitting Graph with {} threads", Math.max(nThreads,iteratorList.size()));
         for (GraphWalkIterator<V> iter : iteratorList) {
             LearningCallable c = new LearningCallable(iter);
-            list.add(executorService.submit(c));
+            list.add(scheduler.submit(c));
         }
 
-        executorService.shutdown();
+        scheduler.shutdown();   // wont shutdown till complete
+
         try {
-            executorService.awaitTermination(999, TimeUnit.DAYS);
+            FutureUtils.blockTillAllCompleteOrFirstError(list);
         } catch (InterruptedException e) {
-            throw new RuntimeException("ExecutorService interrupted", e);
-        }
-
-        //Don't need to block on futures to get a value out, but we want to re-throw any exceptions encountered
-        for (Future<Void> f : list) {
-            try {
-                f.get();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            // should not be possible with blocking till scheduler terminates
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 

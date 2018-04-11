@@ -109,7 +109,7 @@ public abstract class TokenizerBase {
 
         List<Integer> splitPositions = getSplitPositions(text);
 
-        if (splitPositions.size() == 0) {
+        if (splitPositions.isEmpty()) {
             return createTokenList(0, text);
         }
 

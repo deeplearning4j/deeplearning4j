@@ -21,9 +21,15 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.Arrays;
 
 
 /**
@@ -60,15 +66,40 @@ public class Upsampling1D extends Upsampling2D {
         INDArray originalInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
-        INDArray epsNext = gradientEpsNext.getSecond();
-        Gradient gradient = gradientEpsNext.getFirst();
+        int miniBatch = input.size(0);
+        int inDepth = input.size(1);
+        int inH = input.size(2);
+        int inW = input.size(3);
 
-        epsNext = epsNext.slice(0, 3);
+
+        INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
+        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
+
+        INDArray forwardOutput  = preOutput(true, true);
+        forwardOutput = forwardOutput.reshape(
+                forwardOutput.size(0), forwardOutput.size(1), forwardOutput.size(2), 1);
+        forwardOutput = forwardOutput.repeat(3, size);
+
+        CustomOp op = DynamicCustomOp.builder("upsampling_bp")
+                .addIntegerArguments(size)
+                .addInputs(forwardOutput, epsilon)
+                .addOutputs(reshapedEpsilon)
+                .callInplace(false)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        Gradient gradient = new DefaultGradient();
+
+        reshapedEpsilon = reshapedEpsilon.slice(0, 3);
         input = originalInput;
 
         // Since we aggregate the gradient across "size" slices, we need to normalize afterwards.
-        return new Pair<>(gradient, epsNext.divi(size));
+        return new Pair<>(gradient, reshapedEpsilon.divi(size));
+    }
+
+    @Override
+    protected int getSize(){
+        return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 
     @Override

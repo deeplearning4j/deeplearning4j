@@ -11,9 +11,9 @@ public class KerasRegularizerUtils {
     /**
      * Get weight regularization from Keras weight regularization configuration.
      *
-     * @param layerConfig Map containing Keras weight regularization configuration
-     * @param conf Keras layer configuration
-     * @param configField regularization config field to use
+     * @param layerConfig     Map containing Keras weight regularization configuration
+     * @param conf            Keras layer configuration
+     * @param configField     regularization config field to use
      * @param regularizerType type of regularization as string (e.g. "l2")
      * @return L1 or L2 regularization strength (0.0 if none)
      */
@@ -25,8 +25,23 @@ public class KerasRegularizerUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.containsKey(configField)) {
             Map<String, Object> regularizerConfig = (Map<String, Object>) innerConfig.get(configField);
-            if (regularizerConfig != null && regularizerConfig.containsKey(regularizerType))
-                return (double) regularizerConfig.get(regularizerType);
+            if (regularizerConfig != null) {
+                if (regularizerConfig.containsKey(regularizerType)) {
+                    return (double) regularizerConfig.get(regularizerType);
+                }
+                if (regularizerConfig.containsKey(conf.getLAYER_FIELD_CLASS_NAME()) &&
+                        regularizerConfig.get(conf.getLAYER_FIELD_CLASS_NAME()).equals("L1L2")) {
+                    Map<String, Object> innerRegularizerConfig =
+                            KerasLayerUtils.getInnerLayerConfigFromConfig(regularizerConfig, conf);
+                    try {
+                        return (double) innerRegularizerConfig.get(regularizerType);
+                    } catch (Exception e) {
+                        return (double) (int) innerRegularizerConfig.get(regularizerType);
+                    }
+
+
+                }
+            }
         }
         return 0.0;
     }

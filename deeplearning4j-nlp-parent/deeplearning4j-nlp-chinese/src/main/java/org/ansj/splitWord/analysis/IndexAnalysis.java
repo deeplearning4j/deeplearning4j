@@ -71,9 +71,9 @@ public class IndexAnalysis extends Analysis {
 
                 String temp = null;
 
-                Set<String> set = new HashSet<String>();
+                Set<String> set = new HashSet<>();
 
-                List<Term> result = new LinkedList<Term>();
+                List<Term> result = new LinkedList<>();
                 int length = graph.terms.length - 1;
                 for (int i = 0; i < length; i++) {
                     if (graph.terms[i] != null) {
@@ -82,7 +82,7 @@ public class IndexAnalysis extends Analysis {
                     }
                 }
 
-                LinkedList<Term> last = new LinkedList<Term>();
+                LinkedList<Term> last = new LinkedList<>();
 
                 char[] chars = graph.chars;
 

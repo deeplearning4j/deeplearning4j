@@ -2,8 +2,9 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -37,13 +38,12 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-@Ignore
-public class ConvolutionLayerSetupTest {
+public class ConvolutionLayerSetupTest extends BaseDL4JTest {
 
     @Test
     public void testConvolutionLayerSetup() {
         MultiLayerConfiguration.Builder builder = inComplete();
-        builder.setInputType(InputType.convolutional(28, 28, 1));
+        builder.setInputType(InputType.convolutionalFlat(28, 28, 1));
         MultiLayerConfiguration completed = complete().build();
         MultiLayerConfiguration test = builder.build();
         assertEquals(completed, test);
@@ -57,11 +57,10 @@ public class ConvolutionLayerSetupTest {
         final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
-        int iterations = 3;
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -226,10 +225,9 @@ public class ConvolutionLayerSetupTest {
     public MultiLayerConfiguration.Builder inComplete() {
         int nChannels = 1;
         int outputNum = 10;
-        int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -249,10 +247,9 @@ public class ConvolutionLayerSetupTest {
         final int numColumns = 28;
         int nChannels = 1;
         int outputNum = 10;
-        int iterations = 10;
         int seed = 123;
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
@@ -273,8 +270,10 @@ public class ConvolutionLayerSetupTest {
     public void testDeconvolution() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
-                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
+                .layer(0, new Deconvolution2D.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                //(56-2+2*1)/2+1 = 29 -> 29x29x3
+                .layer(1, new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -283,11 +282,11 @@ public class ConvolutionLayerSetupTest {
         assertNotNull(conf.getInputPreProcess(2));
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
         CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
-        assertEquals(8, proc.getInputHeight());
-        assertEquals(8, proc.getInputWidth());
+        assertEquals(29, proc.getInputHeight());
+        assertEquals(29, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(29 * 29 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
     @Test
@@ -332,6 +331,51 @@ public class ConvolutionLayerSetupTest {
         assertEquals(42 * 42 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
+    @Test
+    public void testSpaceToBatch() {
+
+        int[] blocks = new int[] {2, 2};
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
+                .layer(new SpaceToBatchLayer.Builder(blocks).build()) // Divide space dimensions by blocks, i.e. 14/2 = 7
+                .layer(new OutputLayer.Builder().nOut(3).build())
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(7, proc.getInputHeight());
+        assertEquals(7, proc.getInputWidth());
+        assertEquals(3, proc.getNumChannels());
+    }
+
+    @Test
+    public void testSpaceToDepth() {
+
+        int blocks = 2;
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                //(28-2+0)/2+1 = 14 -> 14x14x3 out
+                .layer(new ConvolutionLayer.Builder(2, 2).padding(0, 0).stride(2, 2).nIn(1).nOut(3).build())
+                // Divide space dimensions by blocks, i.e. 14/2 = 7 -> 7x7x12 out (3x2x2 depth)
+                .layer(new SpaceToDepthLayer.Builder(blocks, SpaceToDepthLayer.DataFormat.NCHW).build())
+                .layer(new OutputLayer.Builder().nIn(3 * 2 * 2).nOut(3).build()) // nIn of the next layer gets multiplied by 2*2.
+                .setInputType(InputType.convolutional(28, 28, 1));
+
+        MultiLayerConfiguration conf = builder.build();
+
+        assertNotNull(conf.getInputPreProcess(2));
+        assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
+        CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
+        assertEquals(7, proc.getInputHeight());
+        assertEquals(7, proc.getInputWidth());
+        assertEquals(12, proc.getNumChannels());
+
+    }
+
 
     @Test
     public void testCNNDBNMultiLayer() throws Exception {
@@ -340,7 +384,7 @@ public class ConvolutionLayerSetupTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(123)
                         .weightInit(WeightInit.XAVIER).list()
                         .layer(0, new ConvolutionLayer.Builder(new int[] {1, 1}, new int[] {1, 1}).nIn(1).nOut(6)
                                         .activation(Activation.IDENTITY).build())
@@ -352,7 +396,7 @@ public class ConvolutionLayerSetupTest {
                         .layer(5, new ActivationLayer.Builder().activation(Activation.RELU).build())
                         .layer(6, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(10).build())
-                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(28, 28, 1)).build();
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -396,10 +440,12 @@ public class ConvolutionLayerSetupTest {
     public void testDeconv2D() {
 
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().list()
+                //out = stride * (in-1) + filter - 2*pad -> 2 * (28-1) + 2 - 0 = 56 -> 56x56x3
                 .layer( new Deconvolution2D.Builder(2, 2)
                         .padding(0, 0)
-                        .stride(2, 2).nIn(1).nOut(3).build()) //(28-2+0)/2+1 = 14
-                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build()) //(14-2+2)/2+1 = 8 -> 8x8x3
+                        .stride(2, 2).nIn(1).nOut(3).build())
+                //(56-2+2*1)/2+1 = 29 -> 29x29x3
+                .layer( new SubsamplingLayer.Builder().kernelSize(2, 2).padding(1, 1).stride(2, 2).build())
                 .layer(2, new OutputLayer.Builder().nOut(3).build())
                 .setInputType(InputType.convolutional(28, 28, 1));
 
@@ -408,11 +454,11 @@ public class ConvolutionLayerSetupTest {
         assertNotNull(conf.getInputPreProcess(2));
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
         CnnToFeedForwardPreProcessor proc = (CnnToFeedForwardPreProcessor) conf.getInputPreProcess(2);
-        assertEquals(8, proc.getInputHeight());
-        assertEquals(8, proc.getInputWidth());
+        assertEquals(29, proc.getInputHeight());
+        assertEquals(29, proc.getInputWidth());
         assertEquals(3, proc.getNumChannels());
 
-        assertEquals(8 * 8 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
+        assertEquals(29 * 29 * 3, ((FeedForwardLayer) conf.getConf(2).getLayer()).getNIn());
     }
 
 }

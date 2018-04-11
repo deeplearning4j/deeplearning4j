@@ -1,6 +1,7 @@
 package org.deeplearning4j.util;
 
 import org.apache.commons.compress.utils.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -19,10 +20,7 @@ import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
+import java.io.*;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -32,11 +30,11 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * Created by agibsonccc on 12/29/16.
  */
-public class ModelGuesserTest {
+public class ModelGuesserTest extends BaseDL4JTest {
 
 
     @Test
-    public void testModelGuess() throws Exception {
+    public void testModelGuessFile() throws Exception {
         ClassPathResource sequenceResource =
                         new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
         assertTrue(sequenceResource.exists());
@@ -52,22 +50,34 @@ public class ModelGuesserTest {
 
     }
 
+    @Test
+    public void testModelGuessInputStream() throws Exception {
+        ClassPathResource sequenceResource =
+                new ClassPathResource("modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5");
+        assertTrue(sequenceResource.exists());
+        File f = getTempFile(sequenceResource);
+
+        try (InputStream inputStream = new FileInputStream(f)) {
+            Model guess1 = ModelGuesser.loadModelGuess(inputStream);
+            assumeNotNull(guess1);
+        }
+
+        ClassPathResource sequenceResource2 =
+                new ClassPathResource("modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5");
+        assertTrue(sequenceResource2.exists());
+        File f2 = getTempFile(sequenceResource);
+
+        try (InputStream inputStream = new FileInputStream(f2)) {
+            Model guess1 = ModelGuesser.loadModelGuess(inputStream);
+            assumeNotNull(guess1);
+        }
+    }
+
 
 
     @Test
-    public void testLoadNormalizers() throws Exception {
-        int nIn = 5;
-        int nOut = 6;
-
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01)
-                        .updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
-                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
-                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
-                        .build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+    public void testLoadNormalizersFile() throws Exception {
+        MultiLayerNetwork net = getNetwork();
 
         File tempFile = File.createTempFile("tsfs", "fdfsdf");
         tempFile.deleteOnExit();
@@ -86,19 +96,49 @@ public class ModelGuesserTest {
 
 
     @Test
-    public void testModelGuesserDl4jModel() throws Exception {
-        int nIn = 5;
-        int nOut = 6;
+    public void testNormalizerInPlace() throws Exception {
+        MultiLayerNetwork net = getNetwork();
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01)
-                        .l2(0.01).updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
-                        .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
-                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
-                        .build();
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+
+        NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
+        normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
+        ModelSerializer.writeModel(net, tempFile, true,normalizer);
+
+        Model model = ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
+        Normalizer<?> normalizer1 = ModelGuesser.loadNormalizer(tempFile.getAbsolutePath());
+        assertEquals(model, net);
+        assertEquals(normalizer, normalizer1);
+
+    }
+
+    @Test
+    public void testLoadNormalizersInputStream() throws Exception {
+        MultiLayerNetwork net = getNetwork();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+
+        ModelSerializer.writeModel(net, tempFile, true);
+
+        NormalizerMinMaxScaler normalizer = new NormalizerMinMaxScaler(0, 1);
+        normalizer.fit(new DataSet(Nd4j.rand(new int[] {2, 2}), Nd4j.rand(new int[] {2, 2})));
+        ModelSerializer.addNormalizerToModel(tempFile, normalizer);
+        Model model = ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
+        try (InputStream inputStream = new FileInputStream(tempFile)) {
+            Normalizer<?> normalizer1 = ModelGuesser.loadNormalizer(inputStream);
+            assertEquals(model, net);
+            assertEquals(normalizer, normalizer1);
+        }
+
+    }
+
+
+    @Test
+    public void testModelGuesserDl4jModelFile() throws Exception {
+        MultiLayerNetwork net = getNetwork();
 
         File tempFile = File.createTempFile("tsfs", "fdfsdf");
         tempFile.deleteOnExit();
@@ -112,9 +152,27 @@ public class ModelGuesserTest {
 
     }
 
+    @Test
+    public void testModelGuesserDl4jModelInputStream() throws Exception {
+        MultiLayerNetwork net = getNetwork();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+
+        ModelSerializer.writeModel(net, tempFile, true);
+
+        try (InputStream inputStream = new FileInputStream(tempFile)) {
+            MultiLayerNetwork network = (MultiLayerNetwork) ModelGuesser.loadModelGuess(inputStream);
+            assumeNotNull(network);
+            assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
+            assertEquals(net.params(), network.params());
+            assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
+        }
+    }
+
 
     @Test
-    public void testModelGuessConfig() throws Exception {
+    public void testModelGuessConfigFile() throws Exception {
         ClassPathResource resource = new ClassPathResource("modelimport/keras/configs/cnn_tf_config.json",
                         ModelGuesserTest.class.getClassLoader());
         File f = getTempFile(resource);
@@ -137,6 +195,36 @@ public class ModelGuesserTest {
 
     }
 
+    @Test
+    public void testModelGuessConfigInputStream() throws Exception {
+        ClassPathResource resource = new ClassPathResource("modelimport/keras/configs/cnn_tf_config.json",
+                ModelGuesserTest.class.getClassLoader());
+        File f = getTempFile(resource);
+
+        try (InputStream inputStream = new FileInputStream(f)) {
+            Object conf = ModelGuesser.loadConfigGuess(inputStream);
+            assertTrue(conf instanceof MultiLayerConfiguration);
+        }
+
+        ClassPathResource sequenceResource = new ClassPathResource("/keras/simple/mlp_fapi_multiloss_config.json");
+        File f2 = getTempFile(sequenceResource);
+
+        try (InputStream inputStream = new FileInputStream(f2)) {
+            Object sequenceConf = ModelGuesser.loadConfigGuess(inputStream);
+            assertTrue(sequenceConf instanceof ComputationGraphConfiguration);
+        }
+
+
+        ClassPathResource resourceDl4j = new ClassPathResource("model.json");
+        File fDl4j = getTempFile(resourceDl4j);
+
+        try (InputStream inputStream = new FileInputStream(fDl4j)) {
+            Object confDl4j = ModelGuesser.loadConfigGuess(inputStream);
+            assertTrue(confDl4j instanceof ComputationGraphConfiguration);
+        }
+
+    }
+
 
     private File getTempFile(ClassPathResource classPathResource) throws Exception {
         InputStream is = classPathResource.getInputStream();
@@ -147,6 +235,23 @@ public class ModelGuesserTest {
         bos.flush();
         bos.close();
         return f;
+    }
+
+    private MultiLayerNetwork getNetwork() {
+        int nIn = 5;
+        int nOut = 6;
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).l1(0.01).l2(0.01)
+                .updater(new Sgd(0.1)).activation(Activation.TANH).weightInit(WeightInit.XAVIER).list()
+                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(20).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build()).layer(2, new OutputLayer.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(30).nOut(nOut).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        return net;
     }
 
 }

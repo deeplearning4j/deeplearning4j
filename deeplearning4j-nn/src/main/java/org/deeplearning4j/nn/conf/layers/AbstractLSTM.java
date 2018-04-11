@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;

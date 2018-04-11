@@ -3,7 +3,7 @@
     <parent>
         <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
-        <version>0.9.2-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -53,9 +53,9 @@
         <module>deeplearning4j-ui</module>
         <module>deeplearning4j-ui-components</module>
         <module>deeplearning4j-ui-model</module>
-        <module>deeplearning4j-ui-remote-iterationlisteners</module>
         <module>deeplearning4j-ui-resources</module>
         <module>deeplearning4j-play</module>
+        <module>deeplearning4j-ui-standalone</module>
     </modules>
 
     <profiles>

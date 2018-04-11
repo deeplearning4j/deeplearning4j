@@ -22,7 +22,7 @@ import lombok.Data;
 
 /**
  * All relevant property fields of keras layers.
- *
+ * <p>
  * Empty String fields mean Keras 1 and 2 implementations differ,
  * supplied fields stand for shared properties.
  *
@@ -37,25 +37,53 @@ public class KerasLayerConfiguration {
 
     /* Basic layer names */
     // Missing Layers: Permute, RepeatVector, Lambda, ActivityRegularization, Masking
-    // Conv3D, SeparableConv2D, Deconvolution2D/Conv2DTranspose, Cropping1D-3D, UpSampling3D,
+    // Conv3D, Cropping1D-3D, UpSampling3D,
     // ZeroPadding3D, LocallyConnected1D-2D
     // Missing layers from keras 1: Highway, MaxoutDense
     private final String LAYER_CLASS_NAME_ACTIVATION = "Activation";
     private final String LAYER_CLASS_NAME_INPUT = "InputLayer";
     private final String LAYER_CLASS_NAME_DROPOUT = "Dropout";
+    private final String LAYER_CLASS_NAME_ALPHA_DROPOUT = "AlphaDropout";
+    private final String LAYER_CLASS_NAME_GAUSSIAN_DROPOUT = "GaussianDropout";
+    private final String LAYER_CLASS_NAME_GAUSSIAN_NOISE = "GaussianNoise";
     private final String LAYER_CLASS_NAME_DENSE = "Dense";
+
     private final String LAYER_CLASS_NAME_LSTM = "LSTM";
+    private final String LAYER_CLASS_NAME_SIMPLE_RNN = "SimpleRNN";
+
+    private final String LAYER_CLASS_NAME_BIDIRECTIONAL = "Bidirectional";
+    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
+
+
     private final String LAYER_CLASS_NAME_MAX_POOLING_1D = "MaxPooling1D";
     private final String LAYER_CLASS_NAME_MAX_POOLING_2D = "MaxPooling2D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_1D = "AveragePooling1D";
     private final String LAYER_CLASS_NAME_AVERAGE_POOLING_2D = "AveragePooling2D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_1D = "ZeroPadding1D";
     private final String LAYER_CLASS_NAME_ZERO_PADDING_2D = "ZeroPadding2D";
+    private final String LAYER_CLASS_NAME_CROPPING_2D = "Cropping2D";
+
+
     private final String LAYER_CLASS_NAME_FLATTEN = "Flatten";
     private final String LAYER_CLASS_NAME_RESHAPE = "Reshape";
     private final String LAYER_CLASS_NAME_MERGE = "Merge";
+    private final String LAYER_CLASS_NAME_ADD = "Add";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_ADD = "add";
+    private final String LAYER_CLASS_NAME_SUBTRACT = "Subtract";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_SUBTRACT = "subtract";
+    private final String LAYER_CLASS_NAME_MULTIPLY = "Multiply";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_MULTIPLY = "multiply";
+    private final String LAYER_CLASS_NAME_AVERAGE = "Average";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_AVERAGE = "average";
+    private final String LAYER_CLASS_NAME_MAXIMUM = "Maximum";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_MAXIMUM = "maximum";
+    private final String LAYER_CLASS_NAME_CONCATENATE = "Concatenate";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_CONCATENATE = "concatenate";
+    private final String LAYER_CLASS_NAME_DOT = "Dot";
+    private final String LAYER_CLASS_NAME_FUNCTIONAL_DOT = "dot";
+
+
     private final String LAYER_CLASS_NAME_BATCHNORMALIZATION = "BatchNormalization";
-    private final String LAYER_CLASS_NAME_TIME_DISTRIBUTED = "TimeDistributed";
     private final String LAYER_CLASS_NAME_EMBEDDING = "Embedding";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_1D = "GlobalMaxPooling1D";
     private final String LAYER_CLASS_NAME_GLOBAL_MAX_POOLING_2D = "GlobalMaxPooling2D";
@@ -72,7 +100,6 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D = ""; // 1: SeparableConvolution2D, 2: SeparableConv2D
     private final String LAYER_CLASS_NAME_DECONVOLUTION_2D = ""; // 1: Deconvolution2D, 2: Conv2DTranspose
 
-
     /* Partially shared layer configurations. */
     private final String LAYER_FIELD_INPUT_SHAPE = "input_shape";
     private final String LAYER_FIELD_CONFIG = "config";
@@ -88,8 +115,11 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_USE_BIAS = ""; // 1: bias, 2: use_bias
     private final String KERAS_PARAM_NAME_W = ""; // 1: W, 2: kernel
     private final String KERAS_PARAM_NAME_B = ""; // 1: b, 2: bias
+    private final String KERAS_PARAM_NAME_RW = ""; // 1: U, 2: recurrent_kernel
+
 
     /* Keras dimension ordering for, e.g., convolutional layersOrdered. */
+    private final String LAYER_FIELD_BACKEND = "backend"; // not available in keras 1, caught in code
     private final String LAYER_FIELD_DIM_ORDERING = ""; // 1: dim_ordering, 2: data_format
     private final String DIM_ORDERING_THEANO = ""; // 1: th, 2: channels_first
     private final String DIM_ORDERING_TENSORFLOW = ""; // 1: tf, 2: channels_last
@@ -104,6 +134,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_FORGET_BIAS_INIT = "forget_bias_init"; // keras 1 only: string
     private final String LAYER_FIELD_UNIT_FORGET_BIAS = "unit_forget_bias"; // keras 1 only: bool
     private final String LAYER_FIELD_RETURN_SEQUENCES = "return_sequences";
+    private final String LAYER_FIELD_UNROLL = "unroll";
 
     /* Embedding layer properties */
     private final String LAYER_FIELD_INPUT_DIM = "input_dim";
@@ -152,6 +183,8 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_SUBSAMPLE_LENGTH = ""; // 1: subsample_length, 2: strides
     private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
     private final String LAYER_FIELD_ZERO_PADDING = "padding";
+    private final String LAYER_FIELD_CROPPING = "cropping";
+
 
     /* Pooling / Upsampling layer properties */
     private final String LAYER_FIELD_POOL_STRIDES = "strides";
@@ -168,11 +201,12 @@ public class KerasLayerConfiguration {
     private final String LAYER_BORDER_MODE_FULL = "full";
 
     /* Noise layers */
-    // Missing: GaussianNoise, GaussianDropout, AlphaDropout
+    private final String LAYER_FIELD_RATE = "rate";
     private final String LAYER_FIELD_GAUSSIAN_VARIANCE = ""; // 1: sigma, 2: stddev
 
     /* Layer wrappers */
-    // Missing: TimeDistributed, Bidirectional
+    // Missing: TimeDistributed
+
 
     /* Keras weight regularizers. */
     private final String LAYER_FIELD_W_REGULARIZER = ""; // 1: W_regularizer, 2: kernel_regularizer

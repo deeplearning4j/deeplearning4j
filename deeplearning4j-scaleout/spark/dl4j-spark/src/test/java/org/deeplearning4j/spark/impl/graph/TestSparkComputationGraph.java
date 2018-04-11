@@ -191,7 +191,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
     public void testSeedRepeatability() throws Exception {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.RMSPROP)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
                         .addLayer("0", new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(4).nOut(4)
                                         .activation(Activation.TANH).build(), "in")

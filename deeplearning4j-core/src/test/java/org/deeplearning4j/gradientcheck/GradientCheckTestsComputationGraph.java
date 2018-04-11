@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -11,6 +12,7 @@ import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -22,7 +24,6 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,7 +38,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class GradientCheckTestsComputationGraph {
+public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
     public static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -46,7 +47,7 @@ public class GradientCheckTestsComputationGraph {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -510,6 +511,68 @@ public class GradientCheckTestsComputationGraph {
         assertTrue(msg, gradOK);
     }
 
+    @Test
+    public void testLSTMWithReverseTimeSeriesVertex() {
+
+        Nd4j.getRandom().setSeed(12345);
+        ComputationGraphConfiguration conf =
+                new NeuralNetConfiguration.Builder().seed(12345)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .updater(new NoOp()).graphBuilder()
+                        .addInputs("input").setOutputs("out")
+                        .addLayer("lstm_a",
+                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                        .activation(Activation.TANH).build(),
+                                "input")
+                        .addVertex("input_rev", new ReverseTimeSeriesVertex("input"), "input")
+                        .addLayer("lstm_b",
+                                new GravesLSTM.Builder().nIn(3).nOut(4)
+                                        .activation(Activation.TANH).build(),
+                                "input_rev")
+                        .addVertex("lstm_b_rev", new ReverseTimeSeriesVertex("input"), "lstm_b")
+                        .addLayer("out", new RnnOutputLayer.Builder().nIn(4 + 4).nOut(3)
+                                        .activation(Activation.SOFTMAX)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
+                                "lstm_a", "lstm_b_rev")
+                        .pretrain(false).backprop(true).build();
+
+        ComputationGraph graph = new ComputationGraph(conf);
+        graph.init();
+
+        Random r = new Random(12345);
+        INDArray input  = Nd4j.rand(new int[] {3, 3, 5});
+        INDArray labels = Nd4j.zeros(3, 3, 5);
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 5; j++) {
+                labels.putScalar(new int[] {i, r.nextInt(3), j}, 1.0);
+            }
+        }
+
+        if (PRINT_RESULTS) {
+            System.out.println("testLSTMWithReverseTimeSeriesVertex()");
+            for (int j = 0; j < graph.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
+                new INDArray[] {labels});
+
+        String msg = "testLSTMWithDuplicateToTimeSeries()";
+        assertTrue(msg, gradOK);
+
+        //Second: test with input mask arrays.
+        INDArray inMask = Nd4j.zeros(3, 5);
+        inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0}));
+        inMask.putRow(1, Nd4j.create(new double[] {1, 1, 0, 1, 0}));
+        inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
+        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
+        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+
+        assertTrue(msg, gradOK);
+    }
 
     @Test
     public void testMultipleInputsLayer() {
@@ -658,7 +721,8 @@ public class GradientCheckTestsComputationGraph {
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
                         .addLayer("l4", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
                                         .nIn(4).nOut(2).activation(Activation.TANH).build(), "m")
-                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nOut(2)
+                        .addLayer("out", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                                .activation(Activation.IDENTITY).nOut(2)
                                         .build(), "l3", "l4")
                         .setOutputs("out").setInputTypes(InputType.convolutional(inH, inW, 2)).pretrain(false)
                         .backprop(true).build();
@@ -668,7 +732,7 @@ public class GradientCheckTestsComputationGraph {
 
         int[] minibatchSizes = {1, 3};
         for (int mb : minibatchSizes) {
-            INDArray input = Nd4j.rand(new int[] {mb, 2, inH, inW}); //Order: examples, channels, height, width
+            INDArray input = Nd4j.rand(new int[] {mb, 2, inH, inW}).muli(4); //Order: examples, channels, height, width
             INDArray out = Nd4j.rand(mb, 2);
 
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
@@ -1096,7 +1160,7 @@ public class GradientCheckTestsComputationGraph {
 
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                             DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+                            new INDArray[] {labels1, labels2}, new INDArray[] {inMask1, inMask2}, null);
 
             assertTrue(testName, gradOK);
         }

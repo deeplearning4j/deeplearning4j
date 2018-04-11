@@ -1,5 +1,6 @@
 package org.deeplearning4j.gradientcheck;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Alex Black 14 Aug 2015
  */
-public class LSTMGradientCheckTests {
+public class LSTMGradientCheckTests extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -35,7 +36,7 @@ public class LSTMGradientCheckTests {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -119,9 +120,6 @@ public class LSTMGradientCheckTests {
 
     @Test
     public void testGradientLSTMFull() {
-        Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN};
-        LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
 
         int timeSeriesLength = 8;
         int nIn = 7;
@@ -134,14 +132,7 @@ public class LSTMGradientCheckTests {
         for (boolean graves : gravesLSTM) {
 
             Random r = new Random(12345L);
-            INDArray input = Nd4j.zeros(miniBatchSize, nIn, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    for (int k = 0; k < timeSeriesLength; k++) {
-                        input.putScalar(new int[] {i, j, k}, r.nextDouble() - 0.5);
-                    }
-                }
-            }
+            INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
 
             INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
             for (int i = 0; i < miniBatchSize; i++) {
@@ -157,59 +148,60 @@ public class LSTMGradientCheckTests {
             double[] l1vals = {0.0, 0.0, 0.5, 0.0};
             double[] biasL2 = {0.0, 0.0, 0.0, 0.2};
             double[] biasL1 = {0.0, 0.0, 0.6, 0.0};
+            Activation[] activFns = {Activation.TANH, Activation.SOFTSIGN, Activation.TANH, Activation.TANH};
+            LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE, LossFunction.MSE, LossFunction.MCXENT};
+            Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH, Activation.IDENTITY, Activation.SOFTMAX};
 
-            for (Activation afn : activFns) {
-                for (int i = 0; i < lossFunctions.length; i++) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        LossFunction lf = lossFunctions[i];
-                        Activation outputActivation = outputActivations[i];
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
+            for (int i = 0; i < l2vals.length; i++) {
 
-                        NeuralNetConfiguration.Builder conf =
-                                        new NeuralNetConfiguration.Builder()
-                                                        .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
-                                                        .dist(new NormalDistribution(0, 1)).updater(new NoOp());
+                LossFunction lf = lossFunctions[i];
+                Activation outputActivation = outputActivations[i];
+                double l2 = l2vals[i];
+                double l1 = l1vals[i];
+                Activation afn = activFns[i];
 
-                        if (l1 > 0.0)
-                            conf.l1(l1);
-                        if (l2 > 0.0)
-                            conf.l2(l2);
-                        if (biasL2[k] > 0)
-                            conf.l2Bias(biasL2[k]);
-                        if (biasL1[k] > 0)
-                            conf.l1Bias(biasL1[k]);
+                NeuralNetConfiguration.Builder conf =
+                        new NeuralNetConfiguration.Builder()
+                                .seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                                .dist(new NormalDistribution(0, 1)).updater(new NoOp());
 
-                        Layer layer;
-                        if (graves) {
-                            layer = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
-                        } else {
-                            layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
-                        }
+                if (l1 > 0.0)
+                    conf.l1(l1);
+                if (l2 > 0.0)
+                    conf.l2(l2);
+                if (biasL2[i] > 0)
+                    conf.l2Bias(biasL2[i]);
+                if (biasL1[i] > 0)
+                    conf.l1Bias(biasL1[i]);
 
-                        NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
-                                        .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation)
-                                                        .nIn(layerSize).nOut(nOut).build())
-                                        .pretrain(false).backprop(true);
-
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf2.build());
-                        mln.init();
-
-                        String testName = "testGradientLSTMFull(" + (graves ? "GravesLSTM" : "LSTM")
-                                        + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation="
-                                        + outputActivation + ", l2=" + l2 + ", l1=" + l1;
-                        if (PRINT_RESULTS) {
-                            System.out.println(testName);
-                            for (int j = 0; j < mln.getnLayers(); j++)
-                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                        }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        assertTrue(testName, gradOK);
-                    }
+                Layer layer;
+                if (graves) {
+                    layer = new GravesLSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
+                } else {
+                    layer = new LSTM.Builder().nIn(nIn).nOut(layerSize).activation(afn).build();
                 }
+
+                NeuralNetConfiguration.ListBuilder conf2 = conf.list().layer(0, layer)
+                        .layer(1, new RnnOutputLayer.Builder(lf).activation(outputActivation)
+                                .nIn(layerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true);
+
+                MultiLayerNetwork mln = new MultiLayerNetwork(conf2.build());
+                mln.init();
+
+                String testName = "testGradientLSTMFull(" + (graves ? "GravesLSTM" : "LSTM")
+                        + " - activationFn=" + afn + ", lossFn=" + lf + ", outputActivation="
+                        + outputActivation + ", l2=" + l2 + ", l1=" + l1;
+                if (PRINT_RESULTS) {
+                    System.out.println(testName);
+                    for (int j = 0; j < mln.getnLayers(); j++)
+                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                assertTrue(testName, gradOK);
             }
         }
     }

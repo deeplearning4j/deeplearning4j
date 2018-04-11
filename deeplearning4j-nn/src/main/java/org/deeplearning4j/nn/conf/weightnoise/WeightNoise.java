@@ -6,8 +6,8 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldAddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -60,16 +60,17 @@ public class WeightNoise implements IWeightNoise {
 
         ParamInitializer init = layer.conf().getLayer().initializer();
         INDArray param = layer.getParam(paramKey);
-        if (train && init.isWeightParam(paramKey) || (applyToBias && init.isBiasParam(paramKey))) {
+        if (train && init.isWeightParam(layer.conf().getLayer(), paramKey) ||
+                (applyToBias && init.isBiasParam(layer.conf().getLayer(), paramKey))) {
 
             org.nd4j.linalg.api.rng.distribution.Distribution dist = Distributions.createDistribution(distribution);
             INDArray noise = dist.sample(param.shape());
             INDArray out = Nd4j.createUninitialized(param.shape(), param.ordering());
 
             if (additive) {
-                Nd4j.getExecutioner().exec(new AddOp(param, noise, out));
+                Nd4j.getExecutioner().exec(new OldAddOp(param, noise,out));
             } else {
-                Nd4j.getExecutioner().exec(new MulOp(param, noise, out));
+                Nd4j.getExecutioner().exec(new OldMulOp(param, noise, out));
             }
             return out;
         }

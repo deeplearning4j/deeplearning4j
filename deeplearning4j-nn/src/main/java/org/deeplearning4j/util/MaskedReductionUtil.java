@@ -25,6 +25,7 @@ public class MaskedReductionUtil {
     private static final int[] CNN_DIM_MASK_H = new int[] {0, 2};
     private static final int[] CNN_DIM_MASK_W = new int[] {0, 3};
 
+    private MaskedReductionUtil(){ }
 
     public static INDArray maskedPoolingTimeSeries(PoolingType poolingType, INDArray toReduce, INDArray mask,
                     int pnorm) {
@@ -72,8 +73,6 @@ public class MaskedReductionUtil {
                 INDArray pNorm = abs.sum(2);
 
                 return Transforms.pow(pNorm, 1.0 / pnorm);
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -152,8 +151,6 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, 0, 2)); //Apply mask
 
                 return numerator;
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -204,8 +201,6 @@ public class MaskedReductionUtil {
                 INDArray pNorm = abs.sum(2, 3);
 
                 return Transforms.pow(pNorm, 1.0 / pnorm);
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
         }
@@ -281,8 +276,6 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(numerator, mask, numerator, dimensions)); //Apply mask
 
                 return numerator;
-            case NONE:
-                throw new UnsupportedOperationException("NONE pooling type not supported");
             default:
                 throw new UnsupportedOperationException("Unknown or not supported pooling type: " + poolingType);
 

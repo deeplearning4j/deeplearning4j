@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.normalization;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -24,6 +25,7 @@ import java.util.Set;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class KerasBatchNormalization extends KerasLayer {
 
     /* Keras layer configuration fields. */
@@ -45,8 +47,9 @@ public class KerasBatchNormalization extends KerasLayer {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBatchNormalization(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -55,26 +58,28 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBatchNormalization(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasBatchNormalization(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+
+        // TODO: these helper functions should return regularizers that we in constructor
         getGammaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         getBetaRegularizerFromConfig(layerConfig, enforceTrainingConfig);
         int batchNormMode = getBatchNormMode(layerConfig, enforceTrainingConfig);
@@ -82,18 +87,20 @@ public class KerasBatchNormalization extends KerasLayer {
             throw new UnsupportedKerasConfigurationException("Unsupported batch normalization mode " + batchNormMode +
                     "Keras modes 1 and 2 have been removed from keras 2.x altogether." +
                     "Try running with mode 0.");
-        int batchNormAxis = getBatchNormAxis(layerConfig, enforceTrainingConfig);
-        if (!(batchNormAxis == 3 || batchNormAxis == -1 ))
-            throw new UnsupportedKerasConfigurationException("Unsupported batch normalization axis " + batchNormAxis +
-                    "DL4J currently supports axis=3 only. Consider reshaping your input.");
+        int batchNormAxis = getBatchNormAxis(layerConfig);
+        if (!(batchNormAxis == 3 || batchNormAxis == -1))
+            log.warn("Warning: batch normalization axis " + batchNormAxis +
+                    "DL4J currently picks batch norm dimensions for you, according to industry" +
+                    "standard conventions. If your results do not match, please file an issue.");
 
+        //TODO: momentum not used
         LayerConstraint betaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_BETA_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint gammaConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_BATCHNORMALIZATION_GAMMA_CONSTRAINT(), conf, kerasMajorVersion);
 
         BatchNormalization.Builder builder = new BatchNormalization.Builder().name(this.layerName).dropOut(this.dropout).minibatch(true)
-                        .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig));
+                .lockGammaBeta(false).eps(getEpsFromConfig(layerConfig));
         if (betaConstraint != null)
             builder.constrainBeta(betaConstraint);
         if (gammaConstraint != null)
@@ -104,7 +111,7 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Get DL4J BatchNormalizationLayer.
      *
-     * @return  BatchNormalizationLayer
+     * @return BatchNormalizationLayer
      */
     public BatchNormalization getBatchNormalizationLayer() {
         return (BatchNormalization) this.layer;
@@ -113,21 +120,21 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras BatchNorm layer accepts only one input (received " + inputType.length + ")");
+                    "Keras BatchNorm layer accepts only one input (received " + inputType.length + ")");
         return this.getBatchNormalizationLayer().getOutputType(-1, inputType[0]);
     }
 
     /**
      * Returns number of trainable parameters in layer.
      *
-     * @return          number of trainable parameters (4)
+     * @return number of trainable parameters (4)
      */
     @Override
     public int getNumParams() {
@@ -137,11 +144,11 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Set weights for layer.
      *
-     * @param weights   Map from parameter name to INDArray.
+     * @param weights Map from parameter name to INDArray.
      */
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
-        this.weights = new HashMap<String, INDArray>();
+        this.weights = new HashMap<>();
         if (weights.containsKey(PARAM_NAME_BETA))
             this.weights.put(BatchNormalizationParamInitializer.BETA, weights.get(PARAM_NAME_BETA));
         else
@@ -150,17 +157,17 @@ public class KerasBatchNormalization extends KerasLayer {
             this.weights.put(BatchNormalizationParamInitializer.GAMMA, weights.get(PARAM_NAME_GAMMA));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
+                    "Parameter " + PARAM_NAME_GAMMA + " does not exist in weights");
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()))
             this.weights.put(BatchNormalizationParamInitializer.GLOBAL_MEAN, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN() + " does not exist in weights");
+                    "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_MEAN() + " does not exist in weights");
         if (weights.containsKey(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()))
             this.weights.put(BatchNormalizationParamInitializer.GLOBAL_VAR, weights.get(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE()));
         else
             throw new InvalidKerasConfigurationException(
-                            "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE() + " does not exist in weights");
+                    "Parameter " + conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE() + " does not exist in weights");
         if (weights.size() > 4) {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(PARAM_NAME_BETA);
@@ -169,54 +176,54 @@ public class KerasBatchNormalization extends KerasLayer {
             paramNames.remove(conf.getLAYER_FIELD_BATCHNORMALIZATION_MOVING_VARIANCE());
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
-                            + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
 
     /**
      * Get BatchNormalization epsilon parameter from Keras layer configuration.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @return                  epsilon
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return epsilon
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected double getEpsFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+    private double getEpsFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_EPSILON))
             throw new InvalidKerasConfigurationException(
-                            "Keras BatchNorm layer config missing " + LAYER_FIELD_EPSILON + " field");
+                    "Keras BatchNorm layer config missing " + LAYER_FIELD_EPSILON + " field");
         return (double) innerConfig.get(LAYER_FIELD_EPSILON);
     }
 
     /**
      * Get BatchNormalization momentum parameter from Keras layer configuration.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @return                  momentum
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return momentum
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected double getMomentumFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+    private double getMomentumFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(LAYER_FIELD_MOMENTUM))
             throw new InvalidKerasConfigurationException(
-                            "Keras BatchNorm layer config missing " + LAYER_FIELD_MOMENTUM + " field");
+                    "Keras BatchNorm layer config missing " + LAYER_FIELD_MOMENTUM + " field");
         return (double) innerConfig.get(LAYER_FIELD_MOMENTUM);
     }
 
     /**
      * Get BatchNormalization gamma regularizer from Keras layer configuration. Currently unsupported.
      *
-     * @param layerConfig          dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return Batchnormalization gamma regularizer
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected void getGammaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+    private void getGammaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_GAMMA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
-                                "Regularization for BatchNormalization gamma parameter not supported");
+                        "Regularization for BatchNormalization gamma parameter not supported");
             else
                 log.warn("Regularization for BatchNormalization gamma parameter not supported...ignoring.");
         }
@@ -225,17 +232,17 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Get BatchNormalization beta regularizer from Keras layer configuration. Currently unsupported.
      *
-     * @param layerConfig          dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return Batchnormalization beta regularizer
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected void getBetaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+    private void getBetaRegularizerFromConfig(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (innerConfig.get(LAYER_FIELD_BETA_REGULARIZER) != null) {
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
-                                "Regularization for BatchNormalization beta parameter not supported");
+                        "Regularization for BatchNormalization beta parameter not supported");
             else
                 log.warn("Regularization for BatchNormalization beta parameter not supported...ignoring.");
         }
@@ -244,27 +251,27 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Get BatchNormalization "mode" from Keras layer configuration. Most modes currently unsupported.
      *
-     * @param layerConfig          dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return batchnormalization mode
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected int getBatchNormMode(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private int getBatchNormMode(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int batchNormMode = 0;
         if (this.kerasMajorVersion == 1 & !innerConfig.containsKey(LAYER_FIELD_MODE))
             throw new InvalidKerasConfigurationException(
-                            "Keras BatchNorm layer config missing " + LAYER_FIELD_MODE + " field");
+                    "Keras BatchNorm layer config missing " + LAYER_FIELD_MODE + " field");
         if (this.kerasMajorVersion == 1)
             batchNormMode = (int) innerConfig.get(LAYER_FIELD_MODE);
         switch (batchNormMode) {
             case LAYER_BATCHNORM_MODE_1:
                 throw new UnsupportedKerasConfigurationException("Keras BatchNormalization mode "
-                                + LAYER_BATCHNORM_MODE_1 + " (sample-wise) not supported");
+                        + LAYER_BATCHNORM_MODE_1 + " (sample-wise) not supported");
             case LAYER_BATCHNORM_MODE_2:
                 throw new UnsupportedKerasConfigurationException(
-                                "Keras BatchNormalization (per-batch statistics during testing) "
-                                                + LAYER_BATCHNORM_MODE_2 + " not supported");
+                        "Keras BatchNormalization (per-batch statistics during testing) "
+                                + LAYER_BATCHNORM_MODE_2 + " not supported");
         }
         return batchNormMode;
     }
@@ -272,12 +279,12 @@ public class KerasBatchNormalization extends KerasLayer {
     /**
      * Get BatchNormalization axis from Keras layer configuration. Currently unused.
      *
-     * @param layerConfig          dictionary containing Keras layer configuration
-     * @return
-     * @throws InvalidKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return batchnorm axis
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
-    protected int getBatchNormAxis(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException {
+    private int getBatchNormAxis(Map<String, Object> layerConfig)
+            throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         return (int) innerConfig.get(LAYER_FIELD_AXIS);
     }

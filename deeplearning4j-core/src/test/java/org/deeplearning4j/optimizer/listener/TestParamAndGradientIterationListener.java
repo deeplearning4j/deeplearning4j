@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimizer.listener;
 
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -17,7 +18,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
-public class TestParamAndGradientIterationListener {
+public class TestParamAndGradientIterationListener extends BaseDL4JTest {
 
     @Test
     public void test() {
@@ -26,7 +27,7 @@ public class TestParamAndGradientIterationListener {
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new Sgd(1e-5))
-                        .iterations(1).list().layer(0, new DenseLayer.Builder().nIn(4).nOut(20).build())
+                        .list().layer(0, new DenseLayer.Builder().nIn(4).nOut(20).build())
                         .layer(1, new DenseLayer.Builder().nIn(20).nOut(30).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nIn(30).nOut(3).build())

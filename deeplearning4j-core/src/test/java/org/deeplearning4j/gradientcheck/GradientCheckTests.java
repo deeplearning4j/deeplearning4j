@@ -1,11 +1,18 @@
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -20,16 +27,19 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Random;
 
+import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
 import static org.junit.Assert.assertTrue;
 
 /**
  * @author Alex Black 14 Aug 2015
  */
-public class GradientCheckTests {
+@Slf4j
+public class GradientCheckTests extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
@@ -38,8 +48,7 @@ public class GradientCheckTests {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
-        Nd4j.zeros(1);
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
     }
 
     @Test
@@ -259,95 +268,6 @@ public class GradientCheckTests {
     }
 
     @Test
-    public void testRbm() {
-        //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
-        //Need to run gradient through updater, so that L2 can be applied
-
-        RBM.HiddenUnit[] hiddenFunc = {RBM.HiddenUnit.BINARY, RBM.HiddenUnit.RECTIFIED};
-        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
-
-        LossFunction[] lossFunctions = {LossFunction.MSE, LossFunction.KL_DIVERGENCE};
-        Activation[] outputActivations = {Activation.SOFTMAX, Activation.TANH}; //i.e., lossFunctions[i] used with outputActivations[i] here
-
-        DataNormalization scaler = new NormalizerMinMaxScaler();
-        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        scaler.fit(iter);
-        iter.setPreProcessor(scaler);
-        DataSet ds = iter.next();
-
-        INDArray input = ds.getFeatureMatrix();
-        INDArray labels = ds.getLabels();
-
-        double[] l2vals = {0.4, 0.0, 0.4};
-        double[] l1vals = {0.0, 0.5, 0.5}; //i.e., use l2vals[i] with l1vals[i]
-
-        for (RBM.HiddenUnit hidunit : hiddenFunc) {
-            for (boolean doLearningFirst : characteristic) {
-                for (int i = 0; i < lossFunctions.length; i++) {
-                    for (int k = 0; k < l2vals.length; k++) {
-                        LossFunction lf = lossFunctions[i];
-                        Activation outputActivation = outputActivations[i];
-                        double l2 = l2vals[k];
-                        double l1 = l1vals[k];
-
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().l2(l2).l1(l1).updater(new NoOp())
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .updater(new NoOp())
-                                        .seed(12345L)
-                                        .list().layer(0,
-                                                        new RBM.Builder(hidunit, RBM.VisibleUnit.BINARY).nIn(4).nOut(3)
-                                                                        .weightInit(WeightInit.UNIFORM)
-                                                                        .build())
-                                        .layer(1, new OutputLayer.Builder(lf).nIn(3).nOut(3)
-                                                        .weightInit(WeightInit.XAVIER)
-                                                        .activation(outputActivation).build())
-                                        .pretrain(false).backprop(true).build();
-
-                        MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                        mln.init();
-
-                        if (doLearningFirst) {
-                            //Run a number of iterations of learning
-                            mln.setInput(ds.getFeatures());
-                            mln.setLabels(ds.getLabels());
-                            mln.computeGradientAndScore();
-                            double scoreBefore = mln.score();
-                            for (int j = 0; j < 10; j++)
-                                mln.fit(ds);
-                            mln.computeGradientAndScore();
-                            double scoreAfter = mln.score();
-                            //Can't test in 'characteristic mode of operation' if not learning
-                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
-                                            + hidunit.toString() + ", lossFn=" + lf + ", outputActivation="
-                                            + outputActivation + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2
-                                            + ", l1=" + l1 + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter
-                                            + ")";
-                            assertTrue(msg, scoreAfter < scoreBefore);
-                        }
-
-                        if (PRINT_RESULTS) {
-                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn="
-                                            + hidunit.toString() + ", lossFn=" + lf + ", outputActivation="
-                                            + outputActivation + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2
-                                            + ", l1=" + l1);
-                            for (int j = 0; j < mln.getnLayers(); j++)
-                                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-                        }
-
-                        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + hidunit.toString() + ", lossFn="
-                                        + lf + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
-                        assertTrue(msg, gradOK);
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
     public void testAutoEncoder() {
         //As above (testGradientMLP2LayerIrisSimple()) but with L2, L1, and both L2/L1 applied
         //Need to run gradient through updater, so that L2 can be applied
@@ -434,6 +354,72 @@ public class GradientCheckTests {
                     }
                 }
             }
+        }
+    }
+
+
+    @Test
+    public void elementWiseMultiplicationLayerTest(){
+
+        for(Activation a : new Activation[]{Activation.IDENTITY, Activation.TANH}) {
+
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).updater(new NoOp())
+                    .seed(12345L)
+                    .weightInit(new UniformDistribution(0, 1))
+                    .graphBuilder()
+                    .addInputs("features")
+                    .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(4)
+                            .activation(Activation.TANH)
+                            .build(), "features")
+                    .addLayer("elementWiseMul", new ElementWiseMultiplicationLayer.Builder().nIn(4).nOut(4)
+                            .activation(a)
+                            .build(), "dense")
+                    .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.COSINE_PROXIMITY)
+                            .activation(Activation.IDENTITY).build(), "elementWiseMul")
+                    .setOutputs("loss")
+                    .pretrain(false).backprop(true).build();
+
+            ComputationGraph netGraph = new ComputationGraph(conf);
+            netGraph.init();
+
+            log.info("params before learning: " + netGraph.getLayer(1).paramTable());
+
+            //Run a number of iterations of learning manually make some pseudo data
+            //the ides is simple: since we do a element wise multiplication layer (just a scaling), we want the cos sim
+            // is mainly decided by the fourth value, if everything runs well, we will get a large weight for the fourth value
+
+            INDArray features = Nd4j.create(new double[][]{{1, 2, 3, 4}, {1, 2, 3, 1}, {1, 2, 3, 0}});
+            INDArray labels = Nd4j.create(new double[][]{{1, 1, 1, 8}, {1, 1, 1, 2}, {1, 1, 1, 1}});
+
+            netGraph.setInputs(features);
+            netGraph.setLabels(labels);
+            netGraph.computeGradientAndScore();
+            double scoreBefore = netGraph.score();
+
+            String msg;
+            for (int epoch = 0; epoch < 5; epoch++)
+                netGraph.fit(new INDArray[]{features}, new INDArray[]{labels});
+            netGraph.computeGradientAndScore();
+            double scoreAfter = netGraph.score();
+            //Can't test in 'characteristic mode of operation' if not learning
+            msg = "elementWiseMultiplicationLayerTest() - score did not (sufficiently) decrease during learning - activationFn="
+                    + "Id" + ", lossFn=" + "Cos-sim" + ", outputActivation=" + "Id"
+                    + ", doLearningFirst=" + "true" + " (before=" + scoreBefore
+                    + ", scoreAfter=" + scoreAfter + ")";
+            assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
+
+//        expectation in case linear regression(with only element wise multiplication layer): large weight for the fourth weight
+            log.info("params after learning: " + netGraph.getLayer(1).paramTable());
+
+            boolean gradOK = checkGradients(netGraph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{features}, new INDArray[]{labels});
+
+            msg = "elementWiseMultiplicationLayerTest() - activationFn=" + "ID" + ", lossFn=" + "Cos-sim"
+                    + ", outputActivation=" + "Id" + ", doLearningFirst=" + "true";
+            assertTrue(msg, gradOK);
+
+            TestUtils.testModelSerialization(netGraph);
         }
     }
 }

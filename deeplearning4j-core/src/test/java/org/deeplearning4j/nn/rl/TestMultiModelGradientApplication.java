@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.rl;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertNotEquals;
  *
  * @author Alex Black
  */
-public class TestMultiModelGradientApplication {
+public class TestMultiModelGradientApplication extends BaseDL4JTest {
 
     @Test
     public void testGradientApplyMultiLayerNetwork() {

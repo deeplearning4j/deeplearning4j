@@ -39,26 +39,25 @@ public class KerasPooling2D extends KerasLayer {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig   dictionary containing Keras layer configuration.
-     *
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration.
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasPooling2D(Map<String, Object> layerConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
 
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasPooling2D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
-                    throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
@@ -76,7 +75,7 @@ public class KerasPooling2D extends KerasLayer {
     /**
      * Get DL4J SubsamplingLayer.
      *
-     * @return  SubsamplingLayer
+     * @return SubsamplingLayer
      */
     public SubsamplingLayer getSubsampling2DLayer() {
         return (SubsamplingLayer) this.layer;
@@ -85,15 +84,15 @@ public class KerasPooling2D extends KerasLayer {
     /**
      * Get layer output type.
      *
-     * @param  inputType    Array of InputTypes
-     * @return              output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                            "Keras Subsampling layer accepts only one input (received " + inputType.length + ")");
+                    "Keras Subsampling 2D layer accepts only one input (received " + inputType.length + ")");
         return this.getSubsampling2DLayer().getOutputType(-1, inputType[0]);
     }
 }

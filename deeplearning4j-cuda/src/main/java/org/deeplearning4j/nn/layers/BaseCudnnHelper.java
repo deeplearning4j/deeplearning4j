@@ -142,12 +142,14 @@ public abstract class BaseCudnnHelper {
 
             @Override
             public void deallocate() {
-                for (int i = 0; i < capacity; i++) {
+                for (int i = 0; !isNull() && i < capacity; i++) {
                     cudnnTensorStruct t = this.get(cudnnTensorStruct.class, i);
                     checkCudnn(cudnnDestroyTensorDescriptor(t));
                 }
-                owner.deallocate();
-                owner = null;
+                if (owner != null) {
+                    owner.deallocate();
+                    owner = null;
+                }
                 setNull();
             }
         }
@@ -174,7 +176,7 @@ public abstract class BaseCudnnHelper {
         }
     }
 
-    protected static final int tensorFormat = CUDNN_TENSOR_NCHW;
+    protected static final int TENSOR_FORMAT = CUDNN_TENSOR_NCHW;
 
     protected int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
                     : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;

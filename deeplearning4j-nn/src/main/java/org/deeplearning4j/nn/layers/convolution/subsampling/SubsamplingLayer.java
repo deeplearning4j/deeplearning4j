@@ -28,9 +28,10 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -38,6 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
 import java.util.Properties;
@@ -54,6 +56,7 @@ import java.util.Properties;
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
     protected SubsamplingHelper helper = null;
+    protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
 
     public SubsamplingLayer(NeuralNetConfiguration conf) {
@@ -105,7 +108,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         return Type.SUBSAMPLING;
     }
 
-
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         int miniBatch = input.size(0);
@@ -130,9 +132,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outW = outSize[1];
 
 
-        if (helper != null) {
-            Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                            layerConf().getPoolingType(), convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            Pair<Gradient, INDArray> ret = null;
+            try{
+                ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
+                        layerConf().getPoolingType(), convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -190,12 +202,18 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray col2d = col6d.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
 
-
         switch (layerConf().getPoolingType()) {
             case MAX:
                 //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                DynamicCustomOp op = DynamicCustomOp.builder("im2col")
+                        .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+                                ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same))
+                        .addFloatingPointArguments(minValue())
+                        .addInputs(input)
+                        .addOutputs(col6dPermuted)
+                        .build();
+                Nd4j.getExecutioner().exec(op);
+
                 INDArray isMax = Nd4j.getExecutioner().execAndReturn(new IsMax(col2d, 1));
                 isMax.muliColumnVector(epsilon1d);
                 break;
@@ -209,7 +227,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
                 //First: do forward pass to get pNorm array
                 Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                convolutionMode == ConvolutionMode.Same, col6dPermuted);
+                        convolutionMode == ConvolutionMode.Same, col6dPermuted);
                 INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
                 Transforms.pow(pNorm, pnorm, false);
                 pNorm = pNorm.sum(1);
@@ -230,11 +248,9 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 Transforms.max(denom, eps, false); // in case of 0
                 numerator.muliColumnVector(denom.rdivi(epsilon1d));
                 break;
-            case NONE:
-                return new Pair<>(retGradient, epsilon);
             default:
                 throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
-                                + " " + layerId());
+                        + " " + layerId());
         }
 
         //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
@@ -249,6 +265,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if (layerConf().getPoolingType() == PoolingType.AVG)
             outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
         return new Pair<>(retGradient, outEpsilon);
+    }
+
+    private static double minValue(){
+        switch (Nd4j.dataType()){
+            case DOUBLE:
+                return -Double.MAX_VALUE;
+            case FLOAT:
+                return -Float.MAX_VALUE;
+            case HALF:
+                return -65504.0;
+            default:
+                throw new IllegalStateException("Unexpected data type: " + Nd4j.dataType());
+        }
     }
 
 
@@ -286,9 +315,19 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int outH = outSize[0];
         int outW = outSize[1];
 
-        if (helper != null) {
-            INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                            convolutionMode, dilation);
+        if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            INDArray ret = null;
+            try {
+                ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
+                        convolutionMode, dilation);
+            } catch (Exception e){
+                if(layerConf().isCudnnAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException(e);
+                }
+            }
             if (ret != null) {
                 return ret;
             }
@@ -299,48 +338,26 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray output = Nd4j.create(miniBatch, inDepth, outH, outW);
 
-
-        switch (layerConf().getPoolingType()) {
-            case AVG:
-                //                reduced = col2d.mean(1);
-                //                time2 = System.nanoTime();
-
-                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.AVG, 0.0, outH, outW,
-                                output);
-
-                break;
+        LegacyPooling2D.Pooling2DType pt;
+        double extra = 0.0;
+        switch (layerConf().getPoolingType()){
             case MAX:
-                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.MAX, 0.0, outH, outW,
-                                output);
-
+                pt = LegacyPooling2D.Pooling2DType.MAX;
+                break;
+            case AVG:
+                pt = LegacyPooling2D.Pooling2DType.AVG;
+                extra = 1.0;    //Divide by kH*kW not "number present" to match backward pass
                 break;
             case PNORM:
-                // pnorm pooling is used for signal loss recovery it is mixed with avg pooling,
-                // applying the exponent to the input and recovering the signal by multiplying the kernel of
-                // the pooling layer and then applying the same inverse exponent
-                int pnorm = layerConf().getPnorm();
-                /*
-                
-                Transforms.abs(col2d, false);
-                Transforms.pow(col2d, pnorm, false);
-                reduced = col2d.sum(1);
-                Transforms.pow(reduced, (1.0 / pnorm), false);
-                time2 = System.nanoTime();
-                */
-
-                Convolution.pooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                convolutionMode == ConvolutionMode.Same, Pooling2D.Pooling2DType.PNORM, (double) pnorm,
-                                outH, outW, output);
-
+                pt = LegacyPooling2D.Pooling2DType.PNORM;
+                extra = layerConf().getPnorm();
                 break;
-            case NONE:
-                return input;
             default:
-                throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
-                                + " " + layerId());
+                throw new UnsupportedOperationException("Not supported: " + layerConf().getPoolingType());
         }
+        Op op = new LegacyPooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+                convolutionMode == ConvolutionMode.Same, pt, extra, output);
+        Nd4j.getExecutioner().exec(op);
 
         return output;
     }

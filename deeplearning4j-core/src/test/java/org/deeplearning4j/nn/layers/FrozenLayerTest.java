@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertEquals;
  * Created by susaneraly on 2/5/17.
  */
 @Slf4j
-public class FrozenLayerTest {
+public class FrozenLayerTest extends BaseDL4JTest {
 
     /*
         A model with a few frozen layers ==

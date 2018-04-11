@@ -187,7 +187,7 @@ public class DM<T extends SequenceElement> implements SequenceLearningAlgorithm<
 
     @Override
     public void finish() {
-        if (cbow != null && cbow.getBatch() != null && cbow.getBatch().size() > 0) {
+        if (cbow != null && cbow.getBatch() != null && !cbow.getBatch().isEmpty()) {
             Nd4j.getExecutioner().exec(cbow.getBatch());
             cbow.getBatch().clear();
         }

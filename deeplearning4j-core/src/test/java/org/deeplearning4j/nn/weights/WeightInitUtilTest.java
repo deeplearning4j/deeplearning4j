@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.weights;
 
 import org.apache.commons.math3.util.FastMath;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.junit.Before;
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by nyghtowl on 11/14/15.
  */
-public class WeightInitUtilTest {
+public class WeightInitUtilTest extends BaseDL4JTest {
     protected int fanIn = 3;
     protected int fanOut = 2;
     protected int[] shape = new int[] {fanIn, fanOut};
@@ -32,7 +33,7 @@ public class WeightInitUtilTest {
 
         // expected calculation
         Nd4j.getRandom().setSeed(123);
-        INDArray weightsExpected = dist.sample(shape);
+        INDArray weightsExpected = dist.sample(params);
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -59,7 +60,7 @@ public class WeightInitUtilTest {
         Nd4j.getRandom().setSeed(123);
         double min = -4.0 * Math.sqrt(6.0 / (double) (shape[0] + shape[1]));
         double max = 4.0 * Math.sqrt(6.0 / (double) (shape[0] + shape[1]));
-        INDArray weightsExpected = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(min, max));
+        INDArray weightsExpected = Nd4j.getDistributions().createUniform(min, max).sample(Nd4j.createUninitialized(shape, 'f'));
 
         assertEquals(weightsExpected, weightsActual);
     }
@@ -72,7 +73,7 @@ public class WeightInitUtilTest {
         // expected calculation
         Nd4j.getRandom().setSeed(123);
         double a = 1.0 / Math.sqrt(fanIn);
-        INDArray weightsExpected = Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
+        INDArray weightsExpected = Nd4j.getDistributions().createUniform(-a, a).sample(Nd4j.create(shape, 'f'));
 
         assertEquals(weightsExpected, weightsActual);
     }

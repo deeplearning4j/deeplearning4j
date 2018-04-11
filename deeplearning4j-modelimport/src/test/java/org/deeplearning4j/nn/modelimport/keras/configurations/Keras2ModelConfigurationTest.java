@@ -21,7 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -39,6 +41,32 @@ public class Keras2ModelConfigurationTest {
     ClassLoader classLoader = getClass().getClassLoader();
 
     @Test
+    public void yolo9000ConfigTest() throws Exception {
+        KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
+        runModelConfigTest("configs/keras2/yolo9000_tf_keras_2.json");
+    }
+
+    @Test
+    public void l1l2RegularizerDenseTfConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/l1l2_regularizer_dense_tf_keras_2_config.json");
+    }
+
+    @Test
+    public void dgaClassifierTfConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/keras2_dga_classifier_tf_config.json");
+    }
+
+    @Test
+    public void convPooling1dTfConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/keras2_conv1d_pooling1d_tf_config.json");
+    }
+
+    @Test
+    public void bidirectionalLstmConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/bidirectional_lstm_tf_keras_2_config.json");
+    }
+
+    @Test
     public void imdbLstmTfSequentialConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/imdb_lstm_tf_keras_2_config.json");
     }
@@ -47,6 +75,12 @@ public class Keras2ModelConfigurationTest {
     public void imdbLstmThSequentialConfigTest() throws Exception {
         runSequentialConfigTest("configs/keras2/imdb_lstm_th_keras_2_config.json");
     }
+
+    @Test
+    public void simpleRnnConfigTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/simple_rnn_tf_keras_2_config.json");
+    }
+
 
     @Test
     public void mnistMlpTfSequentialConfigTest() throws Exception {
@@ -85,6 +119,10 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/mnist_mlp_constraint_tf_keras_2_config.json");
     }
 
+    @Test
+    public void embeddingFlattenThTest() throws Exception {
+        runModelConfigTest("configs/keras2/embedding_flatten_graph_th_keras_2.json");
+    }
 
     @Test
     public void mlpFapiConfigTest() throws Exception {
@@ -116,7 +154,17 @@ public class Keras2ModelConfigurationTest {
         runSequentialConfigTest("configs/keras2/keras2_mnist_mlp_tf_config.json");
     }
 
-    void runSequentialConfigTest(String path) throws Exception {
+    @Test
+    public void embeddingConv1DTfTest() throws Exception {
+        runSequentialConfigTest("configs/keras2/keras2_tf_embedding_conv1d_config.json");
+    }
+
+    @Test
+    public void embeddingLSTMMaskZeroTest() throws Exception {
+        runModelConfigTest("configs/keras2/embedding_lstm_calculator.json");
+    }
+
+    private void runSequentialConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         MultiLayerConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())
@@ -125,7 +173,7 @@ public class Keras2ModelConfigurationTest {
         model.init();
     }
 
-    void runModelConfigTest(String path) throws Exception {
+    private void runModelConfigTest(String path) throws Exception {
         ClassPathResource configResource = new ClassPathResource(path, classLoader);
         ComputationGraphConfiguration config =
                 new KerasModel().modelBuilder().modelJsonInputStream(configResource.getInputStream())

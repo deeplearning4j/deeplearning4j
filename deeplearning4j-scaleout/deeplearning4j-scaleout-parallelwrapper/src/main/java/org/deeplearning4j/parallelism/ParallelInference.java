@@ -15,7 +15,10 @@ import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObserv
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Observer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -108,9 +111,19 @@ public class ParallelInference {
     }
 
     public INDArray output(INDArray input) {
+        return output(input, null);
+    }
+
+    public INDArray output(INDArray input, INDArray inputMask){
+        INDArray[] out = output(new INDArray[]{input}, (inputMask == null ? null : new INDArray[]{inputMask}));
         // basically, depending on model type we either
         // throw stuff to specific model, or wait for batch
-        return output(new INDArray[] {input})[0];
+        if(out.length != 1){
+            throw new IllegalArgumentException("Network has multiple (" + out.length + ") output arrays, but only a" +
+                    " single output can be returned using this method. Use for output(INDArray[] input, INDArray[] " +
+                    "inputMasks) for multi-output nets");
+        }
+        return out[0];
     }
 
     /**
@@ -119,38 +132,47 @@ public class ParallelInference {
      * @return
      */
     public INDArray output(DataSet dataSet) {
-        return output(dataSet.getFeatureMatrix());
+        return output(dataSet.getFeatures(), dataSet.getFeaturesMaskArray());
     }
 
     /**
+     * Generate predictions/output from the netwonk
      *
-     * @param input
-     * @return
+     * @param input Input to the network
+     * @return Output from the network
      */
     public INDArray[] output(INDArray... input) {
+        return output(input, null);
+    }
+
+    /**
+     * Generate predictions/outputs from the network, optionally using input masks for predictions
+     *
+     * @param input      Input to the network
+     * @param inputMasks Input masks for the network. May be null.
+     * @return Output from the network
+     */
+    public INDArray[] output(INDArray[] input, INDArray[] inputMasks){
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
         BasicInferenceObserver observer = new BasicInferenceObserver();
         InferenceObservable observable;
 
         if (inferenceMode == InferenceMode.SEQUENTIAL) {
-            observable = new BasicInferenceObservable(input);
+            observable = new BasicInferenceObservable(input, inputMasks);
             observable.addObserver(observer);
             try {
                 observables.put(observable);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
         } else {
-            observable = provider.setInput(observer, input);
+            observable = provider.setInput(observer, input, inputMasks);
         }
-
-
 
         try {
             // submit query to processing
-
-
             // and block until Observable returns
             //observer.wait();
 
@@ -331,11 +353,31 @@ public class ParallelInference {
 
                         // FIXME: get rid of instanceof here, model won't change during runtime anyway
                         if (replicatedModel instanceof ComputationGraph) {
-                            INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
-                            request.setOutput(output);
+                            List<Pair<INDArray[],INDArray[]>> batches = request.getInputBatches();
+                            List<INDArray[]> out = new ArrayList<>(batches.size());
+                            try {
+                                for (Pair<INDArray[],INDArray[]> inBatch : batches) {
+                                    INDArray[] output = ((ComputationGraph) replicatedModel).output(false, inBatch.getFirst(), inBatch.getSecond());
+                                    out.add(output);
+                                }
+                                request.setOutputBatches(out);
+                            } catch (Exception e){
+                                request.setOutputException(e);
+                            }
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
-                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
-                            request.setOutput(output);
+                            List<Pair<INDArray[],INDArray[]>> batches = request.getInputBatches();
+                            List<INDArray[]> out = new ArrayList<>(batches.size());
+                            try {
+                                for (Pair<INDArray[],INDArray[]> inBatch : batches) {
+                                    INDArray f = inBatch.getFirst()[0];
+                                    INDArray fm = (inBatch.getSecond() == null ? null : inBatch.getSecond()[0]);
+                                    INDArray output = ((MultiLayerNetwork) replicatedModel).output(f, false, fm, null);
+                                    out.add(new INDArray[]{output});
+                                }
+                                request.setOutputBatches(out);
+                            } catch (Exception e){
+                                request.setOutputException(e);
+                            }
                         }
 
 
@@ -344,6 +386,7 @@ public class ParallelInference {
                     }
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // do nothing
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -374,8 +417,15 @@ public class ParallelInference {
             this.batchLimit = batchLimit;
         }
 
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray input){
+            return setInput(observer, new INDArray[]{input}, null);
+        }
 
-        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input){
+            return setInput(observer, input, null);
+        }
+
+        protected InferenceObservable setInput(@NonNull Observer observer, INDArray[] input, INDArray[] inputMask) {
             synchronized (locker) {
                 boolean isNew = false;
                 if (currentObservable == null || currentObservable.getCounter() >= batchLimit
@@ -384,13 +434,14 @@ public class ParallelInference {
                     currentObservable = new BatchedInferenceObservable();
                 }
 
-                currentObservable.setInput(input);
+                currentObservable.addInput(input, inputMask);
                 currentObservable.addObserver(observer);
 
                 try {
                     if (isNew)
                         targetQueue.put(currentObservable);
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     throw new RuntimeException(e);
                 }
 

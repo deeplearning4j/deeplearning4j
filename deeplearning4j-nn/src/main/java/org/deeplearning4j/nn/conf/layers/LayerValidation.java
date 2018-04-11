@@ -7,8 +7,9 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.util.OneTimeLogger;
+import org.nd4j.util.OneTimeLogger;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -62,11 +63,17 @@ public class LayerValidation {
             } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
                 BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
                 configureBaseLayer(layerName, bLayer, iDropout, l2, l2Bias, l1, l1Bias, dist);
+            } else if (layer instanceof Bidirectional){
+                Bidirectional l = (Bidirectional)layer;
+                generalValidation(layerName, l.getFwd(), iDropout, l2, l2Bias, l1, l1Bias, dist, allParamConstraints,
+                        weightConstraints, biasConstraints);
+                generalValidation(layerName, l.getBwd(), iDropout, l2, l2Bias, l1, l1Bias, dist, allParamConstraints,
+                        weightConstraints, biasConstraints);
             }
 
             if(layer.getConstraints() == null || layer.constraints.isEmpty()) {
                 List<LayerConstraint> allConstraints = new ArrayList<>();
-                if (allParamConstraints != null && layer.initializer().paramKeys(layer).size() > 0) {
+                if (allParamConstraints != null && !layer.initializer().paramKeys(layer).isEmpty()) {
                     for (LayerConstraint c : allConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().paramKeys(layer)));
@@ -74,7 +81,7 @@ public class LayerValidation {
                     }
                 }
 
-                if (weightConstraints != null && layer.initializer().weightKeys(layer).size() > 0) {
+                if (weightConstraints != null && !layer.initializer().weightKeys(layer).isEmpty()) {
                     for (LayerConstraint c : weightConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().weightKeys(layer)));
@@ -82,15 +89,15 @@ public class LayerValidation {
                     }
                 }
 
-                if (weightConstraints != null && layer.initializer().biasKeys(layer).size() > 0) {
-                    for (LayerConstraint c : weightConstraints) {
+                if (biasConstraints != null && !layer.initializer().biasKeys(layer).isEmpty()) {
+                    for (LayerConstraint c : biasConstraints) {
                         LayerConstraint c2 = c.clone();
                         c2.setParams(new HashSet<>(layer.initializer().biasKeys(layer)));
                         allConstraints.add(c2);
                     }
                 }
 
-                if(allConstraints.size() > 0){
+                if(!allConstraints.isEmpty()){
                     layer.setConstraints(allConstraints);
                 } else {
                     layer.setConstraints(null);

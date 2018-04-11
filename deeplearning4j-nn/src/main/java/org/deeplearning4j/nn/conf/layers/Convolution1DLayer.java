@@ -64,7 +64,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
                             + inputType);
         }
-
+        
         return InputType.recurrent(nOut);
     }
 
@@ -134,6 +134,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         @Override
         @SuppressWarnings("unchecked")
         public Convolution1DLayer build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Convolution1DLayer(this);

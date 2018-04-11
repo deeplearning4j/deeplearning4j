@@ -18,18 +18,27 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import static org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils.*;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getActivationFromConfig;
@@ -44,6 +53,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class KerasConvolution1D extends KerasConvolution {
 
     /**
@@ -126,6 +136,7 @@ public class KerasConvolution1D extends KerasConvolution {
         return (Convolution1DLayer) this.layer;
     }
 
+
     /**
      * Get layer output type.
      *
@@ -138,6 +149,83 @@ public class KerasConvolution1D extends KerasConvolution {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Convolution layer accepts only one input (received " + inputType.length + ")");
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
+        if (preprocessor != null) {
+            return this.getConvolution1DLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
         return this.getConvolution1DLayer().getOutputType(-1, inputType[0]);
+    }
+
+
+    /**
+     * Gets appropriate DL4J InputPreProcessor for given InputTypes.
+     *
+     * @param inputType Array of InputTypes
+     * @return DL4J InputPreProcessor
+     * @throws InvalidKerasConfigurationException Invalid Keras configuration exception
+     * @see org.deeplearning4j.nn.conf.InputPreProcessor
+     */
+    @Override
+    public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
+        if (inputType.length > 1)
+            throw new InvalidKerasConfigurationException(
+                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+    }
+
+
+    /**
+     * Set weights for layer.
+     *
+     * @param weights   Map from parameter name to INDArray.
+     */
+    @Override
+    public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
+        this.weights = new HashMap<>();
+        if (weights.containsKey(conf.getKERAS_PARAM_NAME_W())) {
+            INDArray kerasParamValue = weights.get(conf.getKERAS_PARAM_NAME_W());
+            INDArray paramValue;
+            switch (this.getDimOrder()) {
+                case TENSORFLOW:
+                    paramValue = kerasParamValue.permute(2, 1, 0);
+                    paramValue = paramValue.reshape(
+                            paramValue.size(0), paramValue.size(1), paramValue.size(2), 1);
+                    break;
+                case THEANO:
+                    paramValue = kerasParamValue.reshape(
+                            kerasParamValue.size(0), kerasParamValue.size(1),
+                            kerasParamValue.size(2), 1).dup();
+                    for (int i = 0; i < paramValue.tensorssAlongDimension(2, 3); i++) {
+                        INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
+                        double[] flattenedFilter = copyFilter.ravel().data().asDouble();
+                        ArrayUtils.reverse(flattenedFilter);
+                        INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
+                        INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
+                        inPlaceFilter.muli(0).addi(newFilter);
+                    }
+                    break;
+                default:
+                    throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());
+            }
+            this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
+        } else
+            throw new InvalidKerasConfigurationException(
+                    "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");
+
+        if (hasBias) {
+            if (weights.containsKey(conf.getKERAS_PARAM_NAME_B()))
+                this.weights.put(ConvolutionParamInitializer.BIAS_KEY, weights.get(conf.getKERAS_PARAM_NAME_B()));
+            else
+                throw new InvalidKerasConfigurationException(
+                        "Parameter " + conf.getKERAS_PARAM_NAME_B() + " does not exist in weights");
+        }
+        if (weights.size() > 2) {
+            Set<String> paramNames = weights.keySet();
+            paramNames.remove(conf.getKERAS_PARAM_NAME_W());
+            paramNames.remove(conf.getKERAS_PARAM_NAME_B());
+            String unknownParamNames = paramNames.toString();
+            log.warn("Attemping to set weights for unknown parameters: "
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
     }
 }

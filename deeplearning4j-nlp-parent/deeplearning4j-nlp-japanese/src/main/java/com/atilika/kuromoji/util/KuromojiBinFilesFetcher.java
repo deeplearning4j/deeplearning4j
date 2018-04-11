@@ -1,7 +1,8 @@
 package com.atilika.kuromoji.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
-import org.deeplearning4j.util.ArchiveUtils;
+import org.nd4j.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,16 +15,18 @@ import java.util.List;
 /**
  * Created by kepricon on 16. 11. 24.
  */
+@Slf4j
 public class KuromojiBinFilesFetcher {
-    protected static final Logger log = LoggerFactory.getLogger(KuromojiBinFilesFetcher.class);
     protected static final String TEMP_ROOT = System.getProperty("user.home");
     protected static final String KUROMOJI_BIN_ROOT;
     static {
         KUROMOJI_BIN_ROOT = TEMP_ROOT + File.separator + ".dl4j-kuromoji" + File.separator;
     }
 
+    private KuromojiBinFilesFetcher(){ }
+
     public static boolean kuromojiExist() {
-        List<File> binFileList = new ArrayList<File>();
+        List<File> binFileList = new ArrayList<>();
 
         binFileList.add(new File(KUROMOJI_BIN_ROOT));
         binFileList.add(new File(KUROMOJI_BIN_ROOT, "characterDefinitions.bin"));
@@ -61,7 +64,6 @@ public class KuromojiBinFilesFetcher {
             }
             ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootFile.getAbsolutePath());
         }
-
 
         return null;
     }

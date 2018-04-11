@@ -31,7 +31,6 @@ import java.util.Collection;
  */
 public class ComposableIterationListener implements IterationListener {
     private Collection<IterationListener> listeners = new ArrayList<>();
-    private boolean invoked = false;
 
     public ComposableIterationListener(IterationListener... iterationListener) {
         listeners.addAll(Arrays.asList(iterationListener));

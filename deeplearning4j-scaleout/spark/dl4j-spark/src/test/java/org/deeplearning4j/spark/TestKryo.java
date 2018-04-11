@@ -26,7 +26,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 04/07/2017.
@@ -37,7 +37,8 @@ public class TestKryo extends BaseSparkKryoTest {
         ByteBuffer bb = si.serialize(in, null);
         T deserialized = (T)si.deserialize(bb, null);
 
-        assertEquals(in, deserialized);
+        boolean equals = in.equals(deserialized);
+        assertTrue(in.getClass() + "\t" + in.toString(), equals);
     }
 
     @Test
@@ -94,7 +95,6 @@ public class TestKryo extends BaseSparkKryoTest {
             testSerialization(gv, si);
         }
     }
-
 
     @Test
     public void testSerializationEvaluation() {

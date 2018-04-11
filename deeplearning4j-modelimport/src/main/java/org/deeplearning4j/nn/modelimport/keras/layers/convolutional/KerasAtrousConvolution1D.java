@@ -38,15 +38,16 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 /**
  * Keras 1D atrous / dilated convolution layer. Note that in keras 2 this layer has been
  * removed and dilations are now available through the "dilated" argument in regular Conv1D layers
- *
+ * <p>
  * author: Max Pumperla
  */
 public class KerasAtrousConvolution1D extends KerasConvolution {
 
     /**
      * Pass-through constructor from KerasLayer
+     *
      * @param kerasVersion major keras version
-     * @throws UnsupportedKerasConfigurationException
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAtrousConvolution1D(Integer kerasVersion) throws UnsupportedKerasConfigurationException {
         super(kerasVersion);
@@ -55,9 +56,9 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig       dictionary containing Keras layer configuration
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAtrousConvolution1D(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -67,10 +68,10 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
-     * @param layerConfig               dictionary containing Keras layer configuration
-     * @param enforceTrainingConfig     whether to enforce training-related configuration options
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasAtrousConvolution1D(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -95,7 +96,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
                 .dilation(getDilationRate(layerConfig, 1, conf, true))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
-                .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
+                .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
@@ -115,7 +116,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
     /**
      * Get DL4J ConvolutionLayer.
      *
-     * @return  ConvolutionLayer
+     * @return ConvolutionLayer
      */
     public Convolution1DLayer getAtrousConvolution1D() {
         return (Convolution1DLayer) this.layer;
@@ -126,7 +127,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
      *
      * @param inputType Array of InputTypes
      * @return output type as InputType
-     * @throws InvalidKerasConfigurationException
+     * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     @Override
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {

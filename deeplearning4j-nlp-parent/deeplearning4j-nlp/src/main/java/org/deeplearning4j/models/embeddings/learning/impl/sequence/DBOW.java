@@ -166,7 +166,7 @@ public class DBOW<T extends SequenceElement> implements SequenceLearningAlgorith
 
     @Override
     public void finish() {
-        if (skipGram != null && skipGram.getBatch() != null && skipGram.getBatch().size() > 0) {
+        if (skipGram != null && skipGram.getBatch() != null && !skipGram.getBatch().isEmpty()) {
             Nd4j.getExecutioner().exec(skipGram.getBatch());
             skipGram.getBatch().clear();
         }

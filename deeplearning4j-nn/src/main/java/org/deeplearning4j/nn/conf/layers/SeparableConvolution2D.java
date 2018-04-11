@@ -153,7 +153,6 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         ret.setParamTable(paramTable);
         ret.setConf(conf);
 
-        System.out.println(layerParamsView);
         return ret;
     }
 
@@ -221,178 +220,6 @@ public class SeparableConvolution2D extends ConvolutionLayer {
             return this;
         }
 
-
-
-        /**
-         * Set the convolution mode for the Convolution layer.
-         * See {@link ConvolutionMode} for more details
-         *
-         * @param convolutionMode Convolution mode for layer
-         */
-        @Override
-        public Builder convolutionMode(ConvolutionMode convolutionMode) {
-            this.convolutionMode = convolutionMode;
-            return this;
-        }
-
-        @Override
-        public Builder nIn(int nIn) {
-            super.nIn(nIn);
-            return this;
-        }
-
-        @Override
-        public Builder nOut(int nOut) {
-            super.nOut(nOut);
-            return this;
-        }
-
-        /**
-         * Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory.
-         *
-         * @param cudnnAlgoMode
-         */
-        @Override
-        public Builder cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
-            super.cudnnAlgoMode(cudnnAlgoMode);
-            return this;
-        }
-
-        /**
-         * Layer name assigns layer string name.
-         * Allows easier differentiation between layers.
-         *
-         * @param layerName
-         */
-        @Override
-        public Builder name(String layerName) {
-            super.name(layerName);
-            return this;
-        }
-
-        @Override
-        public Builder activation(IActivation activationFunction) {
-            super.activation(activationFunction);
-            return this;
-        }
-
-        @Override
-        public Builder activation(Activation activation) {
-            super.activation(activation);
-            return this;
-        }
-
-        /**
-         * Weight initialization scheme.
-         *
-         * @param weightInit
-         * @see WeightInit
-         */
-        @Override
-        public Builder weightInit(WeightInit weightInit) {
-            super.weightInit(weightInit);
-            return this;
-        }
-
-        @Override
-        public Builder biasInit(double biasInit) {
-            super.biasInit(biasInit);
-            return this;
-        }
-
-        /**
-         * Distribution to sample initial weights from. Used in conjunction with
-         * .weightInit(WeightInit.DISTRIBUTION).
-         *
-         * @param dist
-         */
-        @Override
-        public Builder dist(Distribution dist) {
-            super.dist(dist);
-            return this;
-        }
-
-        /**
-         * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
-         * coefficient for the bias.
-         *
-         * @param l1 L1 regularization coefficient
-         */
-        @Override
-        public Builder l1(double l1) {
-            return super.l1(l1);
-        }
-
-        /**
-         * L2 regularization coefficient (weights only). Use {@link #l2Bias(double)} to configure the l2 regularization
-         * coefficient for the bias.
-         *
-         * @param l2 L2 regularization coefficient
-         */
-        @Override
-        public Builder l2(double l2) {
-            return super.l2(l2);
-        }
-
-        /**
-         * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
-         *
-         * @param l1Bias L1 regularization coefficient (bias)
-         */
-        @Override
-        public Builder l1Bias(double l1Bias) {
-            return super.l1Bias(l1Bias);
-        }
-
-        /**
-         * L2 regularization coefficient for the bias. Default: 0. See also {@link #l2(double)}
-         *
-         * @param l2Bias
-         */
-        @Override
-        public Builder l2Bias(double l2Bias) {
-            return super.l2Bias(l2Bias);
-        }
-
-        /**
-         * Gradient updater. For example, SGD for standard stochastic gradient descent, NESTEROV for Nesterov momentum,
-         * RSMPROP for RMSProp, etc.
-         *
-         * @param updater
-         * @see Updater
-         */
-        @Override
-        @Deprecated
-        public Builder updater(Updater updater) {
-            return super.updater(updater);
-        }
-
-        /**
-         * Gradient normalization strategy. Used to specify gradient renormalization, gradient clipping etc.
-         *
-         * @param gradientNormalization Type of normalization to use. Defaults to None.
-         * @see GradientNormalization
-         */
-        @Override
-        public Builder gradientNormalization(GradientNormalization gradientNormalization) {
-            super.gradientNormalization(gradientNormalization);
-            return this;
-        }
-
-        /**
-         * Threshold for gradient normalization, only used for GradientNormalization.ClipL2PerLayer,
-         * GradientNormalization.ClipL2PerParamType, and GradientNormalization.ClipElementWiseAbsoluteValue<br>
-         * Not used otherwise.<br>
-         * L2 threshold for first two types of clipping, or absolute value threshold for last type of clipping.
-         *
-         * @param threshold
-         */
-        @Override
-        public Builder gradientNormalizationThreshold(double threshold) {
-            super.gradientNormalizationThreshold(threshold);
-            return this;
-        }
-
         /**
          * Size of the convolution
          * rows/columns
@@ -418,6 +245,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         @Override
         @SuppressWarnings("unchecked")
         public SeparableConvolution2D build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new SeparableConvolution2D(this);

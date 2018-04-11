@@ -21,7 +21,8 @@ import java.util.List;
  * - MAE: mean absolute error<br>
  * - RMSE: root mean squared error<br>
  * - RSE: relative squared error<br>
- * - correlation coefficient<br>
+ * - PC: pearson correlation coefficient<br>
+ * - R^2: coefficient of determination
  * See for example: http://www.saedsayad.com/model_evaluation_r.htm
  * For classification, see {@link Evaluation}
  *
@@ -30,6 +31,8 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
+
+    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2 }
 
     public static final int DEFAULT_PRECISION = 5;
 
@@ -63,6 +66,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     @JsonSerialize(using = RowVectorSerializer.class)
     @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredPredicted;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    private INDArray sumLabels;
 
     public RegressionEvaluation() {
         this(null, DEFAULT_PRECISION);
@@ -104,7 +110,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     public RegressionEvaluation(List<String> columnNames, int precision) {
         this.precision = precision;
 
-        if (columnNames == null || columnNames.size() == 0) {
+        if (columnNames == null || columnNames.isEmpty()) {
             initialized = false;
         } else {
             this.columnNames = columnNames;
@@ -131,6 +137,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumOfProducts = Nd4j.zeros(n);
         sumSquaredLabels = Nd4j.zeros(n);
         sumSquaredPredicted = Nd4j.zeros(n);
+        sumLabels = Nd4j.zeros(n);
 
         initialized = true;
     }
@@ -198,6 +205,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumSquaredLabels.addi(labels.mul(labels).sum(0));
         sumSquaredPredicted.addi(predictions.mul(predictions).sum(0));
 
+
         int nRows = labels.size(0);
 
         INDArray newExampleCountPerColumn;
@@ -210,6 +218,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0))
                         .divi(newExampleCountPerColumn);
         exampleCountPerColumn = newExampleCountPerColumn;
+
+        sumLabels.addi(labels.sum(0));
     }
 
     @Override
@@ -266,29 +276,38 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             int labelWidth = maxLabelLength + 5;
             int columnWidth = precision + 10;
 
-            String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
-                            + "%-" + columnWidth + "." + precision + "e" //MAE
-                            + "%-" + columnWidth + "." + precision + "e" //RMSE
-                            + "%-" + columnWidth + "." + precision + "e" //RSE
-                            + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
-
+            String resultFormat = "%-" + labelWidth + "s" +
+                "%-" + columnWidth + "." + precision + "e" + //MSE
+                "%-" + columnWidth + "." + precision + "e" + //MAE
+                "%-" + columnWidth + "." + precision + "e" + //RMSE
+                "%-" + columnWidth + "." + precision + "e" + //RSE
+                "%-" + columnWidth + "." + precision + "e" + //PC
+                "%-" + columnWidth + "." + precision + "e";  //R2
 
             //Print header:
             StringBuilder sb = new StringBuilder();
-            String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
-                            + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
-            sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
+            String headerFormat = "%-" + labelWidth + "s" +
+                "%-" + columnWidth + "s" + // MSE
+                "%-" + columnWidth + "s" + // MAE
+                "%-" + columnWidth + "s" + // RMSE
+                "%-" + columnWidth + "s" + // RSE
+                "%-" + columnWidth + "s" + // PC
+                "%-" + columnWidth + "s";  // R2
+
+            sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "PC", "R^2"));
             sb.append("\n");
 
             //Print results for each column:
             for (int i = 0; i < columnNames.size(); i++) {
+                String name = columnNames.get(i);
                 double mse = meanSquaredError(i);
                 double mae = meanAbsoluteError(i);
                 double rmse = rootMeanSquaredError(i);
                 double rse = relativeSquaredError(i);
-                double corr = correlationR2(i);
+                double corr = pearsonCorrelation(i);
+                double r2 = rSquared(i);
 
-                sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
+                sb.append(String.format(resultFormat, name, mse, mae, rmse, rse, corr, r2));
                 sb.append("\n");
             }
 
@@ -321,22 +340,60 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         return Math.sqrt(sumSquaredErrorsPerColumn.getDouble(column) / exampleCountPerColumn.getDouble(column));
     }
 
+    /**
+     * Legacy method for the correlation score.
+     *
+     * @param column Column to evaluate
+     * @return Pearson Correlation for the given column
+     * @see {@link #pearsonCorrelation(int)}
+     * @deprecated Use {@link #pearsonCorrelation(int)} instead.
+     * For the R2 score use {@link #rSquared(int)}.
+     */
+    @Deprecated
     public double correlationR2(int column) {
-        //r^2 Correlation coefficient
+        return pearsonCorrelation(column);
+    }
 
+    /**
+     * Pearson Correlation Coefficient for samples
+     *
+     * @param column Column to evaluate
+     * @return Pearson Correlation Coefficient for column with index {@code column}
+     * @see <a href="https://en.wikipedia.org/wiki/Pearson_correlation_coefficient#For_a_sample">Wikipedia</a>
+     */
+    public double pearsonCorrelation(int column) {
         double sumxiyi = sumOfProducts.getDouble(column);
-        double predictionMean = this.currentPredictionMean.getDouble(column);
-        double labelMean = this.currentMean.getDouble(column);
+        double predictionMean = currentPredictionMean.getDouble(column);
+        double labelMean = currentMean.getDouble(column);
 
         double sumSquaredLabels = this.sumSquaredLabels.getDouble(column);
         double sumSquaredPredicted = this.sumSquaredPredicted.getDouble(column);
 
         double exampleCount = exampleCountPerColumn.getDouble(column);
-        double r2 = sumxiyi - exampleCount * predictionMean * labelMean;
-        r2 /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
-                        * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
+        double r = sumxiyi - exampleCount * predictionMean * labelMean;
+        r /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
+            * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
 
-        return r2;
+        return r;
+    }
+
+    /**
+     * Coefficient of Determination (R^2 Score)
+     *
+     * @param column Column to evaluate
+     * @return R^2 score for column with index {@code column}
+     * @see <a href="https://en.wikipedia.org/wiki/Coefficient_of_determination">Wikipedia</a>
+     */
+    public double rSquared(int column) {
+        //ss_tot = sum_i (label_i - mean(labels))^2
+        //       = (sum_i label_i^2) + mean(labels) * (n * mean(labels) - 2 * sum_i label_i)
+        double sumLabelSquared = sumSquaredLabels.getDouble(column);
+        double meanLabel = currentMean.getDouble(column);
+        double sumLabel = sumLabels.getDouble(column);
+        double n = exampleCountPerColumn.getDouble(column);
+        double sstot = sumLabelSquared + meanLabel * (n * meanLabel - 2 * sumLabel);
+        double ssres = sumSquaredErrorsPerColumn.getDouble(column);
+        return (sstot - ssres) / sstot;
     }
 
     public double relativeSquaredError(int column) {
@@ -410,15 +467,62 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
 
     /**
-     * Average R2 across all columns
-     * @return
+     * Legacy method for the correlation average across all columns.
+     *
+     * @return Pearson Correlation averaged over all columns
+     * @see {@link #averagePearsonCorrelation()}
+     * @deprecated Use {@link #averagePearsonCorrelation()} instead.
+     * For the R2 score use {@link #averageRSquared()}.
      */
+    @Deprecated
     public double averagecorrelationR2() {
+        return averagePearsonCorrelation();
+    }
+
+    /**
+     * Average Pearson Correlation Coefficient across all columns
+     *
+     * @return Pearson Correlation Coefficient across all columns
+     */
+    public double averagePearsonCorrelation() {
         double ret = 0.0;
         for (int i = 0; i < numColumns(); i++) {
-            ret += correlationR2(i);
+            ret += pearsonCorrelation(i);
         }
 
         return ret / (double) numColumns();
+    }
+
+    /**
+     * Average R2 across all columns
+     *
+     * @return R2 score accross all columns
+     */
+    public double averageRSquared() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += rSquared(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+    public double scoreForMetric(Metric metric){
+        switch (metric){
+            case MSE:
+                return averageMeanSquaredError();
+            case MAE:
+                return averageMeanAbsoluteError();
+            case RMSE:
+                return averagerootMeanSquaredError();
+            case RSE:
+                return averagerelativeSquaredError();
+            case PC:
+                return averagePearsonCorrelation();
+            case R2:
+                return averageRSquared();
+            default:
+                throw new IllegalStateException("Unknown metric: " + metric);
+        }
     }
 }

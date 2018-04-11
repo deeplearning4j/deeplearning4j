@@ -141,7 +141,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
 
         //First: loop over classes, determine positive count and total count - for each bin
-        double binSize = 1.0 / reliabilityDiagNumBins;
+        double histogramBinSize = 1.0 / histogramNumBins;
+        double reliabilityBinSize = 1.0 / reliabilityDiagNumBins;
 
         INDArray p = networkPredictions;
         INDArray l = labels;
@@ -157,13 +158,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         }
 
         for (int j = 0; j < reliabilityDiagNumBins; j++) {
-            INDArray geqBinLower = p.gte(j * binSize);
+            INDArray geqBinLower = p.gte(j * reliabilityBinSize);
             INDArray ltBinUpper;
             if (j == reliabilityDiagNumBins - 1) {
                 //Handle edge case
                 ltBinUpper = p.lte(1.0);
             } else {
-                ltBinUpper = p.lt((j + 1) * binSize);
+                ltBinUpper = p.lt((j + 1) * reliabilityBinSize);
             }
 
             //Calculate bit-mask over each entry - whether that entry is in the current bin or not
@@ -220,17 +221,17 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         INDArray notLabels = Transforms.not(labels);
         for (int j = 0; j < histogramNumBins; j++) {
-            INDArray geqBinLower = labelsSubPredicted.gte(j * binSize);
+            INDArray geqBinLower = labelsSubPredicted.gte(j * histogramBinSize);
             INDArray ltBinUpper;
-            INDArray geqBinLowerProbs = maskedProbs.gte(j * binSize);
+            INDArray geqBinLowerProbs = maskedProbs.gte(j * histogramBinSize);
             INDArray ltBinUpperProbs;
             if (j == histogramNumBins - 1) {
                 //Handle edge case
                 ltBinUpper = labelsSubPredicted.lte(1.0);
                 ltBinUpperProbs = maskedProbs.lte(1.0);
             } else {
-                ltBinUpper = labelsSubPredicted.lt((j + 1) * binSize);
-                ltBinUpperProbs = maskedProbs.lt((j + 1) * binSize);
+                ltBinUpper = labelsSubPredicted.lt((j + 1) * histogramBinSize);
+                ltBinUpperProbs = maskedProbs.lt((j + 1) * histogramBinSize);
             }
 
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
@@ -248,7 +249,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             probHistogramOverall.putScalar(0, j, probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
-            probHistogramByLabelClass.getRow(j).addi(isPosLabelForBinProbs.sum(0));
+            INDArray temp = isPosLabelForBinProbs.sum(0);
+            probHistogramByLabelClass.getRow(j).addi(temp);
         }
     }
 

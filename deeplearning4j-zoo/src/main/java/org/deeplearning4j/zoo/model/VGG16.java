@@ -39,18 +39,16 @@ public class VGG16 extends ZooModel {
     private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels;
     private long seed;
-    private int iterations;
     private WorkspaceMode workspaceMode;
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public VGG16(int numLabels, long seed, int iterations) {
-        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    public VGG16(int numLabels, long seed) {
+        this(numLabels, seed, WorkspaceMode.SEPARATE);
     }
 
-    public VGG16(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
+    public VGG16(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
-        this.iterations = iterations;
         this.workspaceMode = workspaceMode;
         this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;

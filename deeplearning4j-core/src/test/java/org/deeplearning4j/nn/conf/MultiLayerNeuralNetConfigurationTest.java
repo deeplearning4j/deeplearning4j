@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
@@ -46,12 +47,12 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 11/27/14.
  */
-public class MultiLayerNeuralNetConfigurationTest {
+public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void testJson() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
 
         String json = conf.toJson();
@@ -85,11 +86,10 @@ public class MultiLayerNeuralNetConfigurationTest {
         final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
-        int iterations = 10;
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                         .l1(1e-1).l2(2e-4).weightNoise(new DropConnect(0.5)).miniBatch(true)
                         .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                         .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -119,11 +119,10 @@ public class MultiLayerNeuralNetConfigurationTest {
         final int numColumns = 76;
         int nChannels = 3;
         int outputNum = 6;
-        int iterations = 10;
         int seed = 123;
 
         //setup the network
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed)
                 .l1(1e-1).l2(2e-4).dropOut(0.5).miniBatch(true)
                 .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT).list()
                 .layer(new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
@@ -165,7 +164,7 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testYaml() throws Exception {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new RBM.Builder().dist(new NormalDistribution(1, 1e-1)).build())
+                        .layer(0, new DenseLayer.Builder().dist(new NormalDistribution(1, 1e-1)).build())
                         .inputPreProcessor(0, new CnnToFeedForwardPreProcessor()).build();
         String json = conf.toYaml();
         MultiLayerConfiguration from = MultiLayerConfiguration.fromYaml(json);
@@ -194,7 +193,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     @Test
     public void testClone() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new RBM.Builder().build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list().layer(0, new DenseLayer.Builder().build())
                         .layer(1, new OutputLayer.Builder().build())
                         .inputPreProcessor(1, new CnnToFeedForwardPreProcessor()).build();
 
@@ -251,7 +250,7 @@ public class MultiLayerNeuralNetConfigurationTest {
 
     private static MultiLayerConfiguration getConf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345l).list()
-                        .layer(0, new RBM.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
+                        .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())
                         .layer(1, new OutputLayer.Builder().nIn(2).nOut(1).weightInit(WeightInit.DISTRIBUTION)
                                         .dist(new NormalDistribution(0, 1)).build())

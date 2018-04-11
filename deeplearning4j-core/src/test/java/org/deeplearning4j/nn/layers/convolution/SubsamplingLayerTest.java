@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
@@ -28,7 +29,7 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
-public class SubsamplingLayerTest {
+public class SubsamplingLayerTest extends BaseDL4JTest {
 
     private int nExamples = 1;
     private int depth = 20; //depth & nOut
@@ -77,33 +78,6 @@ public class SubsamplingLayerTest {
         assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, featureMapWidth, featureMapHeight},
                         output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
-    }
-
-
-    @Test
-    public void testSubSampleNoneActivate() throws Exception {
-        INDArray containedExpectedOut = Nd4j.create(new double[] {1., 1., 3., 7., 5., 1., 3., 3., 2., 2., 8., 4., 2.,
-                        6., 4., 4., 3., 3., 6., 7., 4., 4., 6., 7., 5., 5., 9., 8., 4., 4., 9., 8.},
-                        new int[] {1, 2, 4, 4});
-        INDArray containedInput = getContainedData();
-        INDArray input = getData();
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
-
-        INDArray containedOutput = layer.activate(containedInput);
-        assertEquals(containedExpectedOut, containedOutput);
-        assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
-
-        INDArray output = layer.activate(input);
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, inputWidth, inputHeight}, output.shape()));
-        assertEquals(nChannelsIn, output.size(1), 1e-4); // depth retained
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testSubSampleSumActivate() throws Exception {
-        INDArray input = getData();
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
-
-        layer.activate(input);
     }
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -156,30 +130,6 @@ public class SubsamplingLayerTest {
         assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
         assertArrayEquals(expectedContainedEpsilonResult.shape(), containedOutput.getSecond().shape());
 
-    }
-
-    @Test
-    public void testSubSampleLayerNoneBackprop() throws Exception {
-        INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1.}, new int[] {1, 2, 2, 2});
-
-        INDArray expectedContainedEpsilonResult =
-                        Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1.}, new int[] {1, 2, 2, 2});
-        INDArray input = getContainedData();
-
-        Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.NONE);
-        layer.setInput(input);
-
-        Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
-        assertEquals(expectedContainedEpsilonResult, containedOutput.getSecond());
-        assertEquals(null, containedOutput.getFirst().getGradientFor("W"));
-        assertEquals(expectedContainedEpsilonResult.shape().length, containedOutput.getSecond().shape().length);
-
-        INDArray input2 = getData();
-        layer.activate(input2);
-
-        Pair<Gradient, INDArray> out = layer.backpropGradient(epsilon);
-        assertEquals(depth, out.getSecond().size(1)); // depth retained
     }
 
 
@@ -238,7 +188,7 @@ public class SubsamplingLayerTest {
 
         DataSet trainInput;
         MultiLayerConfiguration.Builder builder =
-                        new NeuralNetConfiguration.Builder().seed(123).iterations(1).list()
+                        new NeuralNetConfiguration.Builder().seed(123).list()
                                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(
                                                         kernelHeight, kernelWidth).stride(1, 1).nOut(2)
                                                                         .activation(Activation.RELU).weightInit(

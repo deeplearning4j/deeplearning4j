@@ -75,7 +75,7 @@ public class KerasSeparableConvolution2DTest {
     }
 
 
-    public void buildSeparableConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
+    private void buildSeparableConvolution2DLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean withDilation)
             throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_SEPARABLE_CONVOLUTION_2D());

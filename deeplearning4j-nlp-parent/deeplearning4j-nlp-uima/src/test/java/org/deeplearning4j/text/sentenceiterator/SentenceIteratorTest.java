@@ -19,21 +19,14 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.apache.commons.io.FileUtils;
-import org.datavec.api.util.ClassPathResource;
-import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareListSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -76,36 +69,6 @@ public class SentenceIteratorTest {
         SentenceIterator multiIter = new FileSentenceIterator(new File("multidir"));
         testSingle(iter);
         testMulti(multiIter, 3);
-
-    }
-
-    @Test
-    public void testLabelAware() throws Exception {
-        String s = "1; hello";
-        ByteArrayInputStream bis = new ByteArrayInputStream(s.getBytes());
-        LabelAwareSentenceIterator labelAwareSentenceIterator = new LabelAwareListSentenceIterator(bis, ";", 0, 1);
-        assertTrue(labelAwareSentenceIterator.hasNext());
-        labelAwareSentenceIterator.nextSentence();
-        assertEquals("1", labelAwareSentenceIterator.currentLabel());
-
-        InputStream is2 = new ClassPathResource("labelawaresentenceiterator.txt").getInputStream();
-        LabelAwareSentenceIterator labelAwareSentenceIterator2 = new LabelAwareListSentenceIterator(is2, ";", 0, 1);
-        int count = 0;
-        Map<Integer, String> labels = new HashMap<>();
-        while (labelAwareSentenceIterator2.hasNext()) {
-            String sentence = labelAwareSentenceIterator2.nextSentence();
-            labels.put(count, labelAwareSentenceIterator2.currentLabel());
-            count++;
-        }
-
-        assertEquals("SENT37", labels.get(0));
-        assertEquals("SENT38", labels.get(1));
-        assertEquals("SENT39", labels.get(2));
-        assertEquals("SENT42", labels.get(3));
-
-        assertEquals(4, count);
-
-
 
     }
 

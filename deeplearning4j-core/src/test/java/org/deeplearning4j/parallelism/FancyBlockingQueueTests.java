@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.junit.Test;
 
@@ -14,7 +15,7 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class FancyBlockingQueueTests {
+public class FancyBlockingQueueTests extends BaseDL4JTest {
 
     @Test
     public void testFancyQueue1() throws Exception {

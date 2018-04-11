@@ -27,6 +27,7 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.VocabConstructor;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
+import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1085,17 +1086,14 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             try {
                                 buffer.put(newSequence);
                             } catch (InterruptedException e) {
-                                //
+                                Thread.currentThread().interrupt();
+                                throw new RuntimeException(e);
                             }
 
                         linesLoaded.incrementAndGet();
                     }
                 } else {
-                    try {
-                        Thread.sleep(50);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    ThreadUtils.uncheckedSleep(50);
                 }
             }
             isRunning.set(false);
@@ -1109,7 +1107,8 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         public Sequence<T> nextSentence() {
             try {
                 return buffer.poll(3L, TimeUnit.SECONDS);
-            } catch (Exception e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 return null;
             }
         }
@@ -1218,7 +1217,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
 
-                        if (eventListeners != null && eventListeners.size() > 0) {
+                        if (eventListeners != null && !eventListeners.isEmpty()) {
                             for (VectorsListener listener : eventListeners) {
                                 if (listener.validateEvent(ListenerEvent.ITERATION, i))
                                     listener.processEvent(ListenerEvent.ITERATION, SequenceVectors.this, i);

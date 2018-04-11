@@ -84,7 +84,7 @@ class IterativeReduceFlatMapAdapter implements FlatMapFunctionAdapter<Iterator<D
             collect.add(dataSetIterator.next());
         }
 
-        DataSet data = DataSet.merge(collect, false);
+        DataSet data = DataSet.merge(collect);
         log.debug("Training on " + data.labelCounts());
         NeuralNetConfiguration conf = NeuralNetConfiguration.fromJson(json);
         int numParams = conf.getLayer().initializer().numParams(conf);

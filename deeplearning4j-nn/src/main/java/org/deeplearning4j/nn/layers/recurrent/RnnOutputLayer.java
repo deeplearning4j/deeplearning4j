@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.SoftMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -135,9 +136,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
                             "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray preOutput2d = preOutput2d(training);
 
-        //if(conf.getLayer().getActivationFunction().equals("softmax")) {
         if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
-            INDArray out2d = Nd4j.getExecutioner().execAndReturn(new SoftMax(preOutput2d));
+            INDArray out2d = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(preOutput2d));
             if (maskArray != null) {
                 out2d.muliColumnVector(maskArray);
             }
@@ -169,7 +169,13 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //        input2d.mmul(W).addiRowVector(b)));
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
         if (maskArray != null) {
-            act2d.muliColumnVector(maskArray);
+            if(!maskArray.isColumnVector() || Arrays.equals(maskArray.shape(), act2d.shape())){
+                //Per output masking
+                act2d.muli(maskArray);
+            } else {
+                //Per time step masking
+                act2d.muliColumnVector(maskArray);
+            }
         }
         return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0));
     }

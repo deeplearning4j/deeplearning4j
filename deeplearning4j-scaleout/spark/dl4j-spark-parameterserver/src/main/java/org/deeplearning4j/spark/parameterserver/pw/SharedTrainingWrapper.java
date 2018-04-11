@@ -218,7 +218,7 @@ public class SharedTrainingWrapper {
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
-                    String localIP = System.getenv("SPARK_PUBLIC_DNS");
+                    String localIP = null;
 
                     // picking IP address based on network mask
                     if (localIP == null && voidConfiguration.getNetworkMask() != null) {
@@ -351,6 +351,7 @@ public class SharedTrainingWrapper {
                 //  nothing to do here, just give away empty result
                 return new SharedTrainingResult();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes
                 throw new RuntimeException(e);
             }

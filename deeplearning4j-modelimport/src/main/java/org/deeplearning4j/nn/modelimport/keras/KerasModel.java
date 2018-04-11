@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLstm;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
@@ -44,20 +45,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.DimOrder;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
 
 /**
  * Build ComputationGraph from Keras (Functional API) Model or
  * Sequential model configuration.
  *
- * @author dave@skymind.io
+ * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
 public class KerasModel {
 
     protected static KerasModelConfiguration config = new KerasModelConfiguration();
-    protected KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
+    KerasModelBuilder modelBuilder = new KerasModelBuilder(config);
 
     protected String className; // Keras model class name
     protected boolean enforceTrainingConfig; // whether to build model in training mode
@@ -69,6 +69,7 @@ public class KerasModel {
     boolean useTruncatedBPTT = false; // whether to use truncated BPTT
     int truncatedBPTT = 0; // truncated BPTT value
     int kerasMajorVersion;
+    String kerasBackend;
 
     public KerasModel() {
     }
@@ -81,9 +82,9 @@ public class KerasModel {
      * (Recommended) Builder-pattern constructor for (Functional API) Model.
      *
      * @param modelBuilder builder object
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     public KerasModel(KerasModelBuilder modelBuilder)
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
@@ -102,9 +103,9 @@ public class KerasModel {
      * @param modelJson             model configuration JSON string
      * @param modelYaml             model configuration YAML string
      * @param enforceTrainingConfig whether to enforce training-related configurations
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
     protected KerasModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
                          String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
@@ -112,6 +113,7 @@ public class KerasModel {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
         this.kerasMajorVersion = KerasModelUtils.determineKerasMajorVersion(modelConfig, config);
+        this.kerasBackend = KerasModelUtils.determineKerasBackend(modelConfig, config);
         this.enforceTrainingConfig = enforceTrainingConfig;
 
         /* Determine model configuration type. */
@@ -135,7 +137,7 @@ public class KerasModel {
         if (!layerLists.containsKey(config.getModelFieldInputLayers()))
             throw new InvalidKerasConfigurationException("Could not find list of input layers (no "
                     + config.getModelFieldInputLayers() + " field found)");
-        this.inputLayerNames = new ArrayList<String>();
+        this.inputLayerNames = new ArrayList<>();
         for (Object inputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldInputLayers()))
             this.inputLayerNames.add((String) ((List<Object>) inputLayerNameObj).get(0));
 
@@ -144,7 +146,7 @@ public class KerasModel {
             throw new InvalidKerasConfigurationException("Could not find list of output layers (no "
                     + config.getModelFieldOutputLayers() + " field found)");
 
-        this.outputLayerNames = new ArrayList<String>();
+        this.outputLayerNames = new ArrayList<>();
         for (Object outputLayerNameObj : (List<Object>) layerLists.get(config.getModelFieldOutputLayers()))
             this.outputLayerNames.add((String) ((List<Object>) outputLayerNameObj).get(0));
 
@@ -163,7 +165,7 @@ public class KerasModel {
 
         /* Store weights in layers. */
         if (weightsArchive != null)
-            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers);
+            KerasModelUtils.importWeights(weightsArchive, weightsRoot, layers, kerasMajorVersion, kerasBackend);
     }
 
     /**
@@ -172,32 +174,26 @@ public class KerasModel {
      *
      * @param layerConfigs List of Keras layer configurations
      */
-     void prepareLayers(List<Object> layerConfigs)
+    void prepareLayers(List<Object> layerConfigs)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.layersOrdered = new ArrayList<>();
         this.layers = new HashMap<>();
-        DimOrder dimOrder = DimOrder.NONE;
         for (Object layerConfig : layerConfigs) {
             Map<String, Object> layerConfigMap = (Map<String, Object>) layerConfig;
-            // Append major keras version to each layer config.
+            // Append major keras version and backend to each layer config.
             layerConfigMap.put(config.getFieldKerasVersion(), this.kerasMajorVersion);
+            if (kerasMajorVersion == 2 && this.kerasBackend != null)
+                layerConfigMap.put(config.getFieldBackend(), this.kerasBackend);
+
             KerasLayerConfiguration kerasLayerConf = new KerasLayer(this.kerasMajorVersion).conf;
             KerasLayer layer = KerasLayerUtils.getKerasLayerFromConfig(layerConfigMap, this.enforceTrainingConfig,
-                    kerasLayerConf, customLayers);
-            if (dimOrder == DimOrder.NONE && layer.getDimOrder() != DimOrder.NONE)
-                dimOrder = layer.getDimOrder();
+                    kerasLayerConf, customLayers, this.layers);
             this.layersOrdered.add(layer);
             this.layers.put(layer.getLayerName(), layer);
             if (layer instanceof KerasLstm)
                 this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasLstm) layer).getUnroll();
-        }
-
-        for (KerasLayer layer : this.layersOrdered) {
-            if (layer.getDimOrder() == DimOrder.NONE)
-                layer.setDimOrder(dimOrder);
-            else if (layer.getDimOrder() != dimOrder)
-                throw new UnsupportedKerasConfigurationException("Keras layer " + layer.getLayerName()
-                        + " has conflicting dim_ordering " + layer.getDimOrder() + " (vs. dimOrder)");
+            if (layer instanceof KerasSimpleRnn)
+                this.useTruncatedBPTT = this.useTruncatedBPTT || ((KerasSimpleRnn) layer).getUnroll();
         }
     }
 
@@ -206,11 +202,11 @@ public class KerasModel {
      * Includes loss function, optimization details, etc.
      *
      * @param trainingConfigJson JSON containing Keras training configuration
-     * @throws IOException
-     * @throws InvalidKerasConfigurationException
-     * @throws UnsupportedKerasConfigurationException
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    protected void importTrainingConfiguration(String trainingConfigJson)
+    void importTrainingConfiguration(String trainingConfigJson)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> trainingConfig = KerasModelUtils.parseJsonString(trainingConfigJson);
 
@@ -249,9 +245,9 @@ public class KerasModel {
      * Helper method called from constructor. Infers and records output type
      * for every layer.
      */
-    protected void inferOutputTypes()
+    void inferOutputTypes()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        this.outputTypes = new HashMap<String, InputType>();
+        this.outputTypes = new HashMap<>();
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
@@ -262,7 +258,7 @@ public class KerasModel {
                 int i = 0;
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = this.outputTypes.get(inboundLayerName);
-                    outputType = layer.getOutputType(inputTypes);
+                outputType = layer.getOutputType(inputTypes);
             }
             this.outputTypes.put(layer.getLayerName(), outputType);
         }
@@ -289,7 +285,7 @@ public class KerasModel {
         graphBuilder.addInputs(inputLayerNameArray);
 
         /* Build InputType array of input layer types, add to ComputationGraph. */
-        List<InputType> inputTypeList = new ArrayList<InputType>();
+        List<InputType> inputTypeList = new ArrayList<>();
         for (String inputLayerName : this.inputLayerNames)
             inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
         InputType[] inputTypes = new InputType[inputTypeList.size()];
@@ -301,7 +297,7 @@ public class KerasModel {
         this.outputLayerNames.toArray(outputLayerNameArray);
         graphBuilder.setOutputs(outputLayerNameArray);
 
-        Map<String, InputPreProcessor> preprocessors = new HashMap<String, InputPreProcessor>();
+        Map<String, InputPreProcessor> preprocessors = new HashMap<>();
 
         /* Add layersOrdered one at a time. */
         for (KerasLayer layer : this.layersOrdered) {
@@ -311,7 +307,7 @@ public class KerasModel {
             inboundLayerNames.toArray(inboundLayerNamesArray);
 
             /* Get inbound InputTypes and InputPreProcessor, if necessary. */
-            List<InputType> inboundTypeList = new ArrayList<InputType>();
+            List<InputType> inboundTypeList = new ArrayList<>();
             for (String layerName : inboundLayerNames)
                 inboundTypeList.add(this.outputTypes.get(layerName));
             InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];

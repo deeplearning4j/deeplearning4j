@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,7 +27,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 
-public class GravesLSTMTest {
+public class GravesLSTMTest extends BaseDL4JTest {
 
     @Test
     public void testLSTMGravesForwardBasic() {
@@ -176,7 +177,7 @@ public class GravesLSTMTest {
         Nd4j.getRandom().setSeed(12345);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd(0.1)).seed(12345).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().activation(Activation.TANH)
                                         .nIn(2).nOut(2).build())
@@ -233,7 +234,7 @@ public class GravesLSTMTest {
         for (String gateAfn : new String[] {"sigmoid", "hardsigmoid"}) {
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .seed(12345).list()
                             .layer(0, new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder()
                                             .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2)

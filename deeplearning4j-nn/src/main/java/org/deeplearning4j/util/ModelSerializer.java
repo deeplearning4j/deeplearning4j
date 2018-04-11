@@ -10,7 +10,6 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.layers.RBM;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -21,6 +20,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.reports.Task;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
 import java.util.Enumeration;
@@ -36,7 +36,6 @@ import java.util.zip.ZipOutputStream;
 @Slf4j
 public class ModelSerializer {
 
-    public static final String OLD_UPDATER_BIN = "updater.bin";
     public static final String UPDATER_BIN = "updaterState.bin";
     public static final String NORMALIZER_BIN = "normalizer.bin";
 
@@ -50,10 +49,25 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater) throws IOException {
+        writeModel(model,file,saveUpdater,null);
+    }
+
+
+
+    /**
+     * Write a model to a file
+     * @param model the model to write
+     * @param file the file to write to
+     * @param saveUpdater whether to save the updater or not
+     * @param dataNormalization the normalizer to save (optional)
+     * @throws IOException
+     */
+    public static void writeModel(@NonNull Model model, @NonNull File file, boolean saveUpdater,DataNormalization dataNormalization) throws IOException {
         try (BufferedOutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
-            writeModel(model, stream, saveUpdater);
+            writeModel(model, stream, saveUpdater,dataNormalization);
         }
     }
+
 
     /**
      * Write a model to a file path
@@ -77,7 +91,23 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater)
-                    throws IOException {
+            throws IOException {
+        writeModel(model,stream,saveUpdater,null);
+    }
+
+
+
+
+    /**
+     * Write a model to an output stream
+     * @param model the model to save
+     * @param stream the output stream to write to
+     * @param saveUpdater whether to save the updater for the model or not
+     * @param dataNormalization the normalizer ot save (may be null)
+     * @throws IOException
+     */
+    public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater,DataNormalization dataNormalization)
+            throws IOException {
         ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
 
         // Save configuration as JSON
@@ -95,12 +125,16 @@ public class ModelSerializer {
         ZipEntry coefficients = new ZipEntry("coefficients.bin");
         zipfile.putNextEntry(coefficients);
         DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(zipfile));
-        try {
-            Nd4j.write(model.params(), dos);
-        } finally {
-            dos.flush();
-            if (!saveUpdater)
-                dos.close();
+        INDArray params = model.params();
+        if(params != null) {
+            try {
+                Nd4j.write(model.params(), dos);
+            } finally {
+                dos.flush();
+            }
+        } else {
+            ZipEntry noParamsMarker = new ZipEntry("noParams.marker");
+            zipfile.putNextEntry(noParamsMarker);
         }
 
         if (saveUpdater) {
@@ -119,11 +153,19 @@ public class ModelSerializer {
                     Nd4j.write(updaterState, dos);
                 } finally {
                     dos.flush();
-                    dos.close();
                 }
             }
         }
 
+
+        if(dataNormalization != null) {
+            // now, add our normalizer as additional entry
+            ZipEntry nEntry = new ZipEntry(NORMALIZER_BIN);
+            zipfile.putNextEntry(nEntry);
+            NormalizerSerializer.getDefault().write(dataNormalization, zipfile);
+        }
+
+        dos.close();
         zipfile.close();
     }
 
@@ -138,6 +180,7 @@ public class ModelSerializer {
         return restoreMultiLayerNetwork(file, true);
     }
 
+
     /**
      * Load a multi layer network from a file
      *
@@ -146,12 +189,11 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file, boolean loadUpdater)
-                    throws IOException {
+            throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotOldUpdater = false;
         boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
@@ -182,31 +224,21 @@ public class ModelSerializer {
 
 
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
-        if (coefficients != null) {
-            InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
-            params = Nd4j.read(dis);
+        if (coefficients != null ) {
+            if(coefficients.getSize() > 0) {
+                InputStream stream = zipFile.getInputStream(coefficients);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
+                params = Nd4j.read(dis);
 
-            dis.close();
-            gotCoefficients = true;
+                dis.close();
+                gotCoefficients = true;
+            } else {
+                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                gotCoefficients = (noParamsMarker != null);
+            }
         }
 
         if (loadUpdater) {
-            //This can be removed a few releases after 0.4.1...
-            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-            if (oldUpdaters != null) {
-                InputStream stream = zipFile.getInputStream(oldUpdaters);
-                ObjectInputStream ois = new ObjectInputStream(stream);
-
-                try {
-                    updater = (Updater) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-
-                gotOldUpdater = true;
-            }
-
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
@@ -236,40 +268,67 @@ public class ModelSerializer {
         zipFile.close();
 
         if (gotConfig && gotCoefficients) {
-            MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
+            MultiLayerConfiguration confFromJson;
+            try{
+               confFromJson = MultiLayerConfiguration.fromJson(json);
+            } catch (Exception e){
+                try{
+                    ComputationGraphConfiguration.fromJson(json);
+                } catch (Exception e2){
+                    //Invalid, and not a compgraph
+                    throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model JSON is" +
+                            " not a valid MultiLayerConfiguration");
+                }
+                throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model appears to be " +
+                        "a ComputationGraph - use ModelSerializer.restoreComputationGraph instead");
+            }
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
             network.init(params, false);
 
             if (gotUpdaterState && updaterState != null) {
                 network.getUpdater().setStateViewArray(network, updaterState, false);
-            } else if (gotOldUpdater && updater != null) {
-                network.setUpdater(updater);
             }
             return network;
         } else
             throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig
-                            + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
+                    + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
     }
 
 
     /**
-     * Load a MultiLayerNetwork from InputStream from a file
+     * Load a MultiLayerNetwork from InputStream from an input stream<br>
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
      *
      * @param is the inputstream to load from
      * @return the loaded multi layer network
      * @throws IOException
+     * @see #restoreMultiLayerNetworkAndNormalizer(InputStream, boolean)
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater)
-                    throws IOException {
-        File tmpFile = File.createTempFile("restore", "multiLayer");
-        tmpFile.deleteOnExit();
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is, bos);
-        bos.flush();
-        IOUtils.closeQuietly(bos);
-        return restoreMultiLayerNetwork(tmpFile, loadUpdater);
+            throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try{
+            tmpFile = tempFileFromStream(is);
+            return restoreMultiLayerNetwork(tmpFile, loadUpdater);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+        }
     }
 
+    /**
+     * Restore a multi layer network from an input stream<br>
+     * * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     *
+     * @param is the input stream to restore from
+     * @return the loaded multi layer network
+     * @throws IOException
+     * @see #restoreMultiLayerNetworkAndNormalizer(InputStream, boolean)
+     */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is) throws IOException {
         return restoreMultiLayerNetwork(is, true);
     }
@@ -294,8 +353,47 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path, boolean loadUpdater)
-                    throws IOException {
+            throws IOException {
         return restoreMultiLayerNetwork(new File(path), loadUpdater);
+    }
+
+    /**
+     * Restore a MultiLayerNetwork and Normalizer (if present - null if not) from the InputStream.
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     * @param is          Input stream to read from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the stream
+     */
+    public static Pair<MultiLayerNetwork, Normalizer> restoreMultiLayerNetworkAndNormalizer(
+            @NonNull InputStream is, boolean loadUpdater) throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try {
+            tmpFile = tempFileFromStream(is);
+            return restoreMultiLayerNetworkAndNormalizer(tmpFile, loadUpdater);
+        } finally {
+            if (tmpFile != null) {
+                tmpFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Restore a MultiLayerNetwork and Normalizer (if present - null if not) from a File
+     *
+     * @param file        File to read the model and normalizer from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the File
+     */
+    public static Pair<MultiLayerNetwork, Normalizer> restoreMultiLayerNetworkAndNormalizer(@NonNull File file, boolean loadUpdater)
+            throws IOException {
+        MultiLayerNetwork net = restoreMultiLayerNetwork(file, loadUpdater);
+        Normalizer norm = restoreNormalizerFromFile(file);
+        return new Pair<>(net, norm);
     }
 
     /**
@@ -317,7 +415,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull String path, boolean loadUpdater)
-                    throws IOException {
+            throws IOException {
         return restoreComputationGraph(new File(path), loadUpdater);
     }
 
@@ -330,14 +428,18 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater)
-                    throws IOException {
-        File tmpFile = File.createTempFile("restore", "compGraph");
-        tmpFile.deleteOnExit();
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is, bos);
-        bos.flush();
-        IOUtils.closeQuietly(bos);
-        return restoreComputationGraph(tmpFile, loadUpdater);
+            throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try{
+            tmpFile = tempFileFromStream(is);
+            return restoreComputationGraph(tmpFile, loadUpdater);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+        }
     }
 
     /**
@@ -363,6 +465,45 @@ public class ModelSerializer {
     }
 
     /**
+     * Restore a ComputationGraph and Normalizer (if present - null if not) from the InputStream.
+     * Note: the input stream is read fully and closed by this method. Consequently, the input stream cannot be re-used.
+     *
+     * @param is          Input stream to read from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the stream
+     */
+    public static Pair<ComputationGraph, Normalizer> restoreComputationGraphAndNormalizer(
+            @NonNull InputStream is, boolean loadUpdater) throws IOException {
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try {
+            tmpFile = tempFileFromStream(is);
+            return restoreComputationGraphAndNormalizer(tmpFile, loadUpdater);
+        } finally {
+            if (tmpFile != null) {
+                tmpFile.delete();
+            }
+        }
+    }
+
+    /**
+     * Restore a ComputationGraph and Normalizer (if present - null if not) from a File
+     *
+     * @param file        File to read the model and normalizer from
+     * @param loadUpdater Whether to load the updater from the model or not
+     * @return Model and normalizer, if present
+     * @throws IOException If an error occurs when reading from the File
+     */
+    public static Pair<ComputationGraph, Normalizer> restoreComputationGraphAndNormalizer(@NonNull File file, boolean loadUpdater)
+            throws IOException {
+        ComputationGraph net = restoreComputationGraph(file, loadUpdater);
+        Normalizer norm = restoreNormalizerFromFile(file);
+        return new Pair<>(net, norm);
+    }
+
+    /**
      * Load a computation graph from a file
      * @param file the file to get the computation graph from
      * @return the loaded computation graph
@@ -374,7 +515,6 @@ public class ModelSerializer {
 
         boolean gotConfig = false;
         boolean gotCoefficients = false;
-        boolean gotOldUpdater = false;
         boolean gotUpdaterState = false;
         boolean gotPreProcessor = false;
 
@@ -406,30 +546,21 @@ public class ModelSerializer {
 
         ZipEntry coefficients = zipFile.getEntry("coefficients.bin");
         if (coefficients != null) {
-            InputStream stream = zipFile.getInputStream(coefficients);
-            DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
-            params = Nd4j.read(dis);
+            if(coefficients.getSize() > 0) {
+                InputStream stream = zipFile.getInputStream(coefficients);
+                DataInputStream dis = new DataInputStream(new BufferedInputStream(stream));
+                params = Nd4j.read(dis);
 
-            dis.close();
-            gotCoefficients = true;
+                dis.close();
+                gotCoefficients = true;
+            } else {
+                ZipEntry noParamsMarker = zipFile.getEntry("noParams.marker");
+                gotCoefficients = (noParamsMarker != null);
+            }
         }
 
 
         if (loadUpdater) {
-            ZipEntry oldUpdaters = zipFile.getEntry(OLD_UPDATER_BIN);
-            if (oldUpdaters != null) {
-                InputStream stream = zipFile.getInputStream(oldUpdaters);
-                ObjectInputStream ois = new ObjectInputStream(stream);
-
-                try {
-                    updater = (ComputationGraphUpdater) ois.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-
-                gotOldUpdater = true;
-            }
-
             ZipEntry updaterStateEntry = zipFile.getEntry(UPDATER_BIN);
             if (updaterStateEntry != null) {
                 InputStream stream = zipFile.getInputStream(updaterStateEntry);
@@ -459,20 +590,35 @@ public class ModelSerializer {
         zipFile.close();
 
         if (gotConfig && gotCoefficients) {
-            ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
+            ComputationGraphConfiguration confFromJson;
+            try{
+                confFromJson = ComputationGraphConfiguration.fromJson(json);
+                if(confFromJson.getNetworkInputs() == null && (confFromJson.getVertices() == null || confFromJson.getVertices().size() == 0)){
+                    //May be deserialized correctly, but mostly with null fields
+                    throw new RuntimeException("Invalid JSON - not a ComputationGraphConfiguration");
+                }
+            } catch (Throwable e){
+                try{
+                    MultiLayerConfiguration.fromJson(json);
+                } catch (Exception e2){
+                    //Invalid, and not a compgraph
+                    throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model JSON is" +
+                            " not a valid ComputationGraphConfiguration");
+                }
+                throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model appears to be " +
+                        "a MultiLayerNetwork - use ModelSerializer.restoreMultiLayerNetwork instead");
+            }
             ComputationGraph cg = new ComputationGraph(confFromJson);
             cg.init(params, false);
 
 
             if (gotUpdaterState && updaterState != null) {
                 cg.getUpdater().setStateViewArray(updaterState);
-            } else if (gotOldUpdater && updater != null) {
-                cg.setUpdater(updater);
             }
             return cg;
         } else
             throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig
-                            + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
+                    + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
     }
 
     /**
@@ -490,16 +636,11 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
                             } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
                                 task.setArchitectureType(Task.ArchitectureType.RECURRENT);
                                 break;
                             }
@@ -515,16 +656,11 @@ public class ModelSerializer {
                 try {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
-                            if (layer instanceof RBM
-                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
-                                task.setArchitectureType(Task.ArchitectureType.RBM);
-                                break;
-                            }
                             if (layer.type().equals(Layer.Type.CONVOLUTIONAL)) {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
                             } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
                                 task.setArchitectureType(Task.ArchitectureType.RECURRENT);
                                 break;
                             }
@@ -552,14 +688,15 @@ public class ModelSerializer {
      * @param normalizer
      */
     public static void addNormalizerToModel(File f, Normalizer<?> normalizer) {
+        File tempFile = null;
         try {
             // copy existing model to temporary file
-            File tempFile = File.createTempFile("tempcopy", "temp");
+            tempFile = File.createTempFile("tempcopy", "temp");
             tempFile.deleteOnExit();
             Files.copy(f, tempFile);
             try (ZipFile zipFile = new ZipFile(tempFile);
-                            ZipOutputStream writeFile =
-                                            new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
+                 ZipOutputStream writeFile =
+                         new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
                 // roll over existing files within model, and copy them one by one
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
                 while (entries.hasMoreElements()) {
@@ -586,8 +723,14 @@ public class ModelSerializer {
             }
         } catch (Exception ex) {
             throw new RuntimeException(ex);
+        } finally {
+            if (tempFile != null) {
+                tempFile.delete();
+            }
         }
     }
+
+
 
     /**
      * This method restores normalizer from a given persisted model file
@@ -625,13 +768,17 @@ public class ModelSerializer {
      * @return the loaded normalizer
      */
     public static <T extends Normalizer> T restoreNormalizerFromInputStream(InputStream is) throws IOException {
-        File tmpFile = File.createTempFile("restore", "normalizer");
-        tmpFile.deleteOnExit();
-        BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is, bufferedOutputStream);
-        bufferedOutputStream.flush();
-        IOUtils.closeQuietly(bufferedOutputStream);
-        return restoreNormalizerFromFile(tmpFile);
+        checkInputStream(is);
+
+        File tmpFile = null;
+        try {
+            tmpFile = tempFileFromStream(is);
+            return restoreNormalizerFromFile(tmpFile);
+        } finally {
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+        }
     }
 
     /**
@@ -661,6 +808,54 @@ public class ModelSerializer {
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
+        }
+    }
+
+
+    private static void checkInputStream(InputStream inputStream) throws IOException {
+
+        /*
+        //available method can return 0 in some cases: https://github.com/deeplearning4j/deeplearning4j/issues/4887
+        int available;
+        try{
+            //InputStream.available(): A subclass' implementation of this method may choose to throw an IOException
+            // if this input stream has been closed by invoking the close() method.
+            available = inputStream.available();
+        } catch (IOException e){
+            throw new IOException("Cannot read from stream: stream may have been closed or is attempting to be read from" +
+                    "multiple times?", e);
+        }
+        if(available <= 0){
+            throw new IOException("Cannot read from stream: stream may have been closed or is attempting to be read from" +
+                    "multiple times?");
+        }
+        */
+    }
+
+    private static void checkTempFileFromInputStream(File f) throws IOException {
+        if (f.length() <= 0) {
+            throw new IOException("Error reading from input stream: temporary file is empty after copying entire stream." +
+                    " Stream may have been closed before reading, is attempting to be used multiple times, or does not" +
+                    " point to a model file?");
+        }
+    }
+
+    private static File tempFileFromStream(InputStream is) throws IOException{
+        checkInputStream(is);
+        File tmpFile = File.createTempFile("dl4jModelSerializer", "bin");
+        try {
+            tmpFile.deleteOnExit();
+            BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
+            IOUtils.copy(is, bufferedOutputStream);
+            bufferedOutputStream.flush();
+            IOUtils.closeQuietly(bufferedOutputStream);
+            checkTempFileFromInputStream(tmpFile);
+            return tmpFile;
+        } catch (IOException e){
+            if(tmpFile != null){
+                tmpFile.delete();
+            }
+            throw e;
         }
     }
 }

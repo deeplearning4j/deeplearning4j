@@ -1,12 +1,16 @@
 package org.deeplearning4j.nn.transferlearning;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
+import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -23,11 +27,12 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Created by susaneraly on 2/17/17.
  */
-public class TransferLearningCompGraphTest {
+public class TransferLearningCompGraphTest extends BaseDL4JTest {
 
     @Test
     public void simpleFineTune() {
@@ -224,7 +229,7 @@ public class TransferLearningCompGraphTest {
         DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
         ComputationGraph modelToFineTune =
                         new ComputationGraph(
-                                new NeuralNetConfiguration.Builder().seed(123).iterations(1)
+                                new NeuralNetConfiguration.Builder().seed(123)
                                         .weightInit(WeightInit.XAVIER)
                                         .updater(new Nesterovs(0.01, 0.9)).graphBuilder()
                                         .addInputs("layer0In")
@@ -273,7 +278,7 @@ public class TransferLearningCompGraphTest {
                                                         .activation(Activation.SOFTMAX)
                                                         .build(),
                                                 "layer5")
-                                        .setOutputs("layer5").backprop(true).pretrain(false).build());
+                                        .setOutputs("layer6").backprop(true).pretrain(false).build());
         modelToFineTune.init();
 
         //this will override the learning configuration set in the model
@@ -420,5 +425,42 @@ public class TransferLearningCompGraphTest {
 
 //        assertEquals(confExpected, graph.getConfiguration());
         assertEquals(confExpected.toJson(), graph.getConfiguration().toJson());
+    }
+
+
+    @Test
+    public void testObjectOverrides(){
+        //https://github.com/deeplearning4j/deeplearning4j/issues/4368
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dropOut(0.5)
+                .weightNoise(new DropConnect(0.5))
+                .l2(0.5)
+                .constrainWeights(new UnitNormConstraint())
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("layer", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .setOutputs("layer")
+                .build();
+
+        ComputationGraph orig = new ComputationGraph(conf);
+        orig.init();
+
+        FineTuneConfiguration ftc = new FineTuneConfiguration.Builder()
+                .dropOut(0)
+                .weightNoise(null)
+                .constraints(null)
+                .l2(0.0)
+                .build();
+
+        ComputationGraph transfer = new TransferLearning.GraphBuilder(orig)
+                .fineTuneConfiguration(ftc)
+                .build();
+
+        DenseLayer l = (DenseLayer) transfer.getLayer(0).conf().getLayer();
+
+        assertNull(l.getIDropout());
+        assertNull(l.getWeightNoise());
+        assertNull(l.getConstraints());
+        assertEquals(0.0, l.getL2(), 0.0);
     }
 }
