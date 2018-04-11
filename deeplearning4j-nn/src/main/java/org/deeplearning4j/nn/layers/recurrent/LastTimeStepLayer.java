@@ -59,16 +59,6 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        return getLastStep(underlying.activate(training));
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return getLastStep(underlying.activate(input, training));
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return getLastStep(underlying.activate(training, workspaceMgr));
     }
@@ -77,16 +67,6 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray a = underlying.activate(input, training, workspaceMgr);
         return getLastStep(a);
-    }
-
-    @Override
-    public INDArray activate() {
-        return getLastStep(underlying.activate());
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return getLastStep(underlying.activate(input));
     }
 
 

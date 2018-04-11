@@ -719,49 +719,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
     }
 
-
     /**
-     * Triggers the activation of the last hidden layer ie: not logistic regression
-     *
-     * @return the activation of the last hidden layer given the last input to the network
+     * @deprecated Use {@link #output(INDArray)}
      */
-    @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
+    @Deprecated
     public INDArray activate(INDArray input) {
         return output(input);
     }
-
-//    /**
-//     * Calculate activation from previous layer including pre processing where necessary
-//     *
-//     * @param curr  the current layer
-//     * @param input the input
-//     * @return the activation from the previous layer
-//     */
-//    @Deprecated
-//    public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training) {
-//        if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
-//            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL)
-//                    && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL)) {
-//                //WS single, or FF as part of backprop
-//                //NOTE: we *could* leverage instead (less memory, worse performance), but most preprocessors will only
-//                //allocate 1 array (i.e., the new output), so this is usually preferable in practice
-//                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-//                        .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-//                    input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize(), null); //TODO
-//                }
-//            } else {
-//                input = getLayerWiseConfigurations().getInputPreProcess(curr).preProcess(input, getInputMiniBatchSize(), null);     //TODO
-//            }
-//        }
-//
-//        INDArray ret = layers[curr].activate(input, training, null);
-//        return ret;
-//    }
 
     public INDArray activationFromPrevLayer(int curr, INDArray input, boolean training, LayerWorkspaceMgr mgr) {
         if (getLayerWiseConfigurations().getInputPreProcess(curr) != null) {
@@ -2706,16 +2670,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         return Type.MULTILAYER;
     }
 
-    @Override
+
     public INDArray activate(TrainingMode training) {
-//        return activate(training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
+        return output(input, training == TrainingMode.TRAIN);
     }
 
-    @Override
     public INDArray activate(INDArray input, TrainingMode training) {
-//        return activate(input, training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
+        return output(input, training == TrainingMode.TRAIN);
     }
 
     @Override

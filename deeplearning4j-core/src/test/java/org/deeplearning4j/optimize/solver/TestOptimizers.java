@@ -817,16 +817,6 @@ public class TestOptimizers extends BaseDL4JTest {
         }
 
         @Override
-        public INDArray activate(TrainingMode training) {
-            return null;
-        }
-
-        @Override
-        public INDArray activate(INDArray input, TrainingMode training) {
-            return null;
-        }
-
-        @Override
         public int getIndex() {
             return 0;
         }
@@ -996,16 +986,6 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr mgr) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate() {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public INDArray activate(INDArray input) {
             throw new UnsupportedOperationException();
         }
 

@@ -97,7 +97,7 @@ public class LocalResponseTest extends BaseDL4JTest {
                         .build();
 
         layer = new LocalResponseNormalization().instantiate(conf, null, 0, null, false);
-        activationsActual = layer.activate(x);
+        activationsActual = layer.activate(x, false, LayerWorkspaceMgr.noWorkspaces());
     }
 
     @Test

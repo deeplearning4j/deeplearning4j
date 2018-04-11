@@ -58,16 +58,6 @@ public abstract class BaseWrapperLayer implements Layer {
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        return underlying.activate(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return underlying.activate(input, training);
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return underlying.activate(training, workspaceMgr);
     }
@@ -75,16 +65,6 @@ public abstract class BaseWrapperLayer implements Layer {
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         return underlying.activate(input, training, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-        return underlying.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return underlying.activate(input);
     }
 
     @Override

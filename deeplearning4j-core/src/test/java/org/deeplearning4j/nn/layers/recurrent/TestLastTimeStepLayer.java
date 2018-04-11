@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,12 +34,12 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         Layer l = graph.getLayer("lastTS");
         INDArray in = Nd4j.rand(new int[]{3, 5, 6});
-        INDArray outUnderlying = ((LastTimeStepLayer)l).getUnderlying().activate(in);
+        INDArray outUnderlying = ((LastTimeStepLayer)l).getUnderlying().activate(in, false, LayerWorkspaceMgr.noWorkspaces());
         INDArray expOut = outUnderlying.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
 
 
         //Forward pass:
-        INDArray outFwd = l.activate(in);
+        INDArray outFwd = l.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
 
         //Second: test with input mask array
@@ -53,7 +54,7 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         expOut.putRow(1, outUnderlying.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.point(3)));
         expOut.putRow(2, outUnderlying.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
 
-        outFwd = l.activate(in);
+        outFwd = l.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
 
         TestUtils.testModelSerialization(graph);

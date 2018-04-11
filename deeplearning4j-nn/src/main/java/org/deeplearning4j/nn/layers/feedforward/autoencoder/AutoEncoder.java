@@ -83,13 +83,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-//        setInput(input);
-//        return encode(input, true);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public boolean isPretrainLayer() {
         return true;
     }
@@ -97,11 +90,6 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return decode(encode(input, training, workspaceMgr));
-    }
-
-    @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

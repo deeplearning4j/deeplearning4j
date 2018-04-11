@@ -81,7 +81,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
         assertNotNull(out);
         assertArrayEquals(input.shape(), out.shape());
 
@@ -159,7 +159,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
         INDArray input = Nd4j.rand(new int[]{mb, depth, h, w});
 
-        INDArray out = y2impl.activate(input);
+        INDArray out = y2impl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(4, out.rank());
 

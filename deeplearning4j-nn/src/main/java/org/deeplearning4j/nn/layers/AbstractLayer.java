@@ -156,18 +156,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-//        return activate(training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-//        return activate(input, training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public void update(Gradient gradient) {
         throw new UnsupportedOperationException();
     }
@@ -263,22 +251,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-//        setInput(input);
-//        return activate(true);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-//        return activate(false, null);
-        throw new UnsupportedOperationException("To be removed");
     }
 
     @Override

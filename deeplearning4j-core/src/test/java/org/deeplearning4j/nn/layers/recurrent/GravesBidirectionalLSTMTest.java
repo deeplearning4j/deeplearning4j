@@ -58,19 +58,19 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
 
         final INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
-        final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1);
+        final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(activations1.shape(), new int[] {1, nHiddenUnits, 1});
 
         final INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
-        final INDArray activations2 = layer.activate(dataMultiExampleLength1);
+        final INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(activations2.shape(), new int[] {10, nHiddenUnits, 1});
 
         final INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
-        final INDArray activations3 = layer.activate(dataSingleExampleLength12);
+        final INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(activations3.shape(), new int[] {1, nHiddenUnits, 12});
 
         final INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
-        final INDArray activations4 = layer.activate(dataMultiExampleLength15);
+        final INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
         assertArrayEquals(activations4.shape(), new int[] {10, nHiddenUnits, 15});
     }
 
@@ -102,7 +102,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         (GravesBidirectionalLSTM) conf.getLayer().instantiate(conf, null, 0, params, true);
         lstm.setBackpropGradientsViewArray(Nd4j.create(1, conf.getLayer().initializer().numParams(conf)));
         //Set input, do a forward pass:
-        lstm.activate(inputData);
+        lstm.activate(inputData, false, LayerWorkspaceMgr.noWorkspaces());
         assertNotNull(lstm.input());
 
         INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
@@ -230,13 +230,13 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final INDArray sig = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
 
-        final INDArray act1 = bidirectionalLSTM.activate(sig);
+        final INDArray act1 = bidirectionalLSTM.activate(sig, false, LayerWorkspaceMgr.noWorkspaces());
 
         params = bidirectionalLSTM.params();
 
         bidirectionalLSTM.setParams(params);
 
-        final INDArray act2 = bidirectionalLSTM.activate(sig);
+        final INDArray act2 = bidirectionalLSTM.activate(sig, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertArrayEquals(act2.data().asDouble(), act1.data().asDouble(), 1e-8);
 
@@ -331,8 +331,8 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         forwardsLSTM.setInput(sig, LayerWorkspaceMgr.noWorkspaces());
 
         //compare activations
-        final INDArray activation1 = forwardsLSTM.activate(sig).slice(0);
-        final INDArray activation2 = bidirectionalLSTM.activate(sig).slice(0);
+        final INDArray activation1 = forwardsLSTM.activate(sig, false, LayerWorkspaceMgr.noWorkspaces()).slice(0);
+        final INDArray activation2 = bidirectionalLSTM.activate(sig, false, LayerWorkspaceMgr.noWorkspaces()).slice(0);
 
         assertArrayEquals(activation1.data().asFloat(), activation2.data().asFloat(), 1e-5f);
 
@@ -387,7 +387,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         Nd4j.zeros(biasWeightsB.shape()));
 
         //run on reversed signal
-        final INDArray activation3 = bidirectionalLSTM.activate(sigb).slice(0);
+        final INDArray activation3 = bidirectionalLSTM.activate(sigb, false, LayerWorkspaceMgr.noWorkspaces()).slice(0);
 
         final INDArray activation3Reverse = activation3.dup();
         reverseColumnsInPlace(activation3Reverse);

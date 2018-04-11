@@ -81,18 +81,6 @@ public class FrozenLayer implements Layer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         return new Pair<>(zeroGradient, null);
     }
-
-    @Override
-    public INDArray activate(TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(TrainingMode.TEST);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        logTestMode(training);
-        return insideLayer.activate(input, TrainingMode.TEST);
-    }
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
@@ -103,16 +91,6 @@ public class FrozenLayer implements Layer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         logTestMode(training);
         return insideLayer.activate(input, false, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-        return insideLayer.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        return insideLayer.activate(input);
     }
 
     @Override

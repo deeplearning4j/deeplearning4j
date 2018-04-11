@@ -29,6 +29,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.workspace.NetArrayType;
 
 import java.util.*;
 
@@ -168,7 +169,7 @@ public class VariationalAutoencoder implements Layer {
     @Override
     public void computeGradientAndScore(LayerWorkspaceMgr workspaceMgr) {
         //Forward pass through the encoder and mean for P(Z|X)
-        VAEFwdHelper fwd = doForward(true, true);
+        VAEFwdHelper fwd = doForward(true, true, workspaceMgr);
         IActivation afn = layerConf().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
@@ -669,7 +670,7 @@ public class VariationalAutoencoder implements Layer {
 
         Gradient gradient = new DefaultGradient();
 
-        VAEFwdHelper fwd = doForward(true, true);
+        VAEFwdHelper fwd = doForward(true, true, workspaceMgr);
         INDArray currentDelta = pzxActivationFn.backprop(fwd.pzxMeanPreOut, epsilon).getFirst();
 
         //Finally, calculate mean value:
@@ -719,8 +720,8 @@ public class VariationalAutoencoder implements Layer {
         return new Pair<>(gradient, epsilon);
     }
 
-    public INDArray preOutput(boolean training) {
-        VAEFwdHelper f = doForward(training, false);
+    public INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        VAEFwdHelper f = doForward(training, false, workspaceMgr);
         return f.pzxMeanPreOut;
     }
 
@@ -733,7 +734,7 @@ public class VariationalAutoencoder implements Layer {
     }
 
 
-    private VAEFwdHelper doForward(boolean training, boolean forBackprop) {
+    private VAEFwdHelper doForward(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         if (input == null) {
             throw new IllegalStateException("Cannot do forward pass with null input " + layerId());
         }
@@ -764,26 +765,16 @@ public class VariationalAutoencoder implements Layer {
         INDArray mW = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_W, training);
         INDArray mB = getParamWithNoise(VariationalAutoencoderParamInitializer.PZX_MEAN_B, training);
 
-        INDArray pzxMean = current.mmul(mW).addiRowVector(mB);
+        INDArray pzxMean = workspaceMgr.createUninitialized(NetArrayType.ACTIVATIONS, new int[]{current.size(0), mW.size(1)}, 'f');
+        pzxMean = current.mmuli(mW, pzxMean).addiRowVector(mB);
 
 
         return new VAEFwdHelper(encoderPreOuts, pzxMean, encoderActivations);
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-//        return activate(training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        return null;
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray output = preOutput(training); //Mean values for p(z|x)
+        INDArray output = preOutput(training, workspaceMgr); //Mean values for p(z|x)
         pzxActivationFn.getActivation(output, training);
 
         return output;
@@ -793,18 +784,6 @@ public class VariationalAutoencoder implements Layer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-//        return activate(false);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input, null);
-        return activate();
     }
 
     @Override
@@ -982,8 +961,9 @@ public class VariationalAutoencoder implements Layer {
         }
 
         //Forward pass through the encoder and mean for P(Z|X)
-        setInput(data, null);   //TODO
-        VAEFwdHelper fwd = doForward(true, true);
+        LayerWorkspaceMgr workspaceMgr = LayerWorkspaceMgr.noWorkspaces();  //TODO add workspace support to this method
+        setInput(data, workspaceMgr);
+        VAEFwdHelper fwd = doForward(true, true, workspaceMgr);
         IActivation afn = layerConf().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
@@ -1040,7 +1020,7 @@ public class VariationalAutoencoder implements Layer {
             }
         }
 
-        setInput(null, null);   //TODO
+        setInput(null, workspaceMgr);
         return sumReconstructionNegLogProbability.divi(-numSamples);
     }
 

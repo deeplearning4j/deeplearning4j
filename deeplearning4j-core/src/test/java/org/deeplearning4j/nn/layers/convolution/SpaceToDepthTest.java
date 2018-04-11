@@ -53,7 +53,7 @@ public class SpaceToDepthTest extends BaseDL4JTest {
         INDArray containedInput = getContainedData();
         INDArray containedExpectedOut = getContainedOutput();
         Layer std = getSpaceToDepthLayer();
-        INDArray containedOutput = std.activate(containedInput);
+        INDArray containedOutput = std.activate(containedInput, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);

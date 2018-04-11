@@ -88,25 +88,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      */
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr);
 
-    /**
-     * Trigger an activation with the last specified input
-     * @param training  training or test mode
-     * @return the activation of the last specified input
-     */
-    @Deprecated
-    INDArray activate(TrainingMode training);
-
-    /**
-     * Initialize the layer with the given input
-     * and return the activation for this layer
-     * given this input
-     * @param input the input to use
-     * @param training  train or test mode
-     * @return
-     */
-    @Deprecated
-    INDArray activate(INDArray input, TrainingMode training);
-
 
     /**
      * Trigger an activation with the last specified input
@@ -124,23 +105,6 @@ public interface Layer extends Serializable, Cloneable, Model {
      * @return
      */
     INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr);
-
-    /**
-     * Trigger an activation with the last specified input
-     * @return the activation of the last specified input
-     */
-    @Deprecated
-    INDArray activate();
-
-    /**
-     * Initialize the layer with the given input
-     * and return the activation for this layer
-     * given this input
-     * @param input the input to use
-     * @return
-     */
-    @Deprecated
-    INDArray activate(INDArray input);
 
     /**
      * Return a transposed copy of the weights/bias

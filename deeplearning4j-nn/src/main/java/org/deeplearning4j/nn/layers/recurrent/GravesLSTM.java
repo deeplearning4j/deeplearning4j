@@ -113,21 +113,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-//        setInput(input);
-//        return activateHelper(true, null, null, false).fwdPassOutput;
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return activateHelper(training, null, null, false, workspaceMgr).fwdPassOutput;
-    }
-
-    @Override
-    public INDArray activate() {
-//        return activateHelper(false, null, null, false).fwdPassOutput;
-        throw new UnsupportedOperationException("To be removed");
     }
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,

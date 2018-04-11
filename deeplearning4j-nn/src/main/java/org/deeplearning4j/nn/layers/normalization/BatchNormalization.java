@@ -398,16 +398,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException(layerId());
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public Layer transpose() {
         throw new UnsupportedOperationException(layerId());
 

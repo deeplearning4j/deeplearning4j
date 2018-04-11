@@ -31,6 +31,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 
@@ -236,7 +237,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
     public void testCNNInputSetupMNIST() throws Exception {
         INDArray input = getMnistData();
         Layer layer = getMNISTConfig();
-        layer.activate(input);
+        layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(input, layer.input());
         assertArrayEquals(input.shape(), layer.input().shape());
@@ -255,7 +256,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         INDArray input = getMnistData();
 
         Layer layer = getCNNConfig(nChannelsIn, depth, kernelSize, stride, padding);
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertEquals(featureMapWidth, convActivations.size(2));
         assertEquals(depth, convActivations.size(1));
@@ -271,7 +272,7 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
                         0.99966465, 0.99966465, 0.99966465, 0.98201379, 0.98201379, 0.98201379, 0.98201379, 0.99966465,
                         0.99966465, 0.99966465, 0.99966465}, new int[] {1, 2, 4, 4});
 
-        INDArray convActivations = layer.activate(input);
+        INDArray convActivations = layer.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
 
         assertArrayEquals(expectedOutput.shape(), convActivations.shape());
         assertEquals(expectedOutput, convActivations);

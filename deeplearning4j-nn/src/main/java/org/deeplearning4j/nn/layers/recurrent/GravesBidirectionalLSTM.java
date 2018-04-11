@@ -155,20 +155,8 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public INDArray activate(INDArray input) {
-//        setInput(input);
-//        return activateOutput(true, false);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         return activateOutput(training, false, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-        throw new UnsupportedOperationException("To be removed");
     }
 
     private INDArray activateOutput(final boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {

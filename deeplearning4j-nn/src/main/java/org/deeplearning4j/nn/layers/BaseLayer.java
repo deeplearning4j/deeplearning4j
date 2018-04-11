@@ -119,18 +119,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     protected void setScoreWithZ(INDArray z) {}
 
-    @Override
-    public INDArray activate(TrainingMode training) {
-//        return activate(training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-//        return activate(input, training == TrainingMode.TRAIN);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
     /**
      * Objective function:  the specified objective
      * @return the score for the objective

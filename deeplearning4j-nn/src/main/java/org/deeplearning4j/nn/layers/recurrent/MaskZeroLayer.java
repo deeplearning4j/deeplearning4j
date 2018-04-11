@@ -39,19 +39,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
         return underlying.backpropGradient(epsilon, workspaceMgr);
     }
 
-    @Override
-    public INDArray activate(TrainingMode training) {
-        INDArray input = input();
-        setMaskFromInput(input);
-        return underlying.activate(training);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, TrainingMode training) {
-        setMaskFromInput(input);
-        return underlying.activate(input, training);
-    }
-
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
@@ -64,19 +51,6 @@ public class MaskZeroLayer extends BaseWrapperLayer {
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setMaskFromInput(input);
         return underlying.activate(input, training, workspaceMgr);
-    }
-
-    @Override
-    public INDArray activate() {
-        INDArray input = input();
-        setMaskFromInput(input);
-        return underlying.activate();
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setMaskFromInput(input);
-        return underlying.activate(input);
     }
 
     private void setMaskFromInput(INDArray input) {

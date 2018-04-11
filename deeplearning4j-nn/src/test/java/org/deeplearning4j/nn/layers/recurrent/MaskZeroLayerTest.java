@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 
 public class MaskZeroLayerTest {
@@ -47,7 +48,7 @@ public class MaskZeroLayerTest {
       MaskZeroLayer l = new MaskZeroLayer(lstm);
       INDArray input = Nd4j.create( Arrays.asList(ex1, ex2), new int[] {2, 2, 3});
       //WHEN
-      INDArray out = l.activate(input);
+      INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
 
       //THEN output should only be incremented for the non-zero timesteps
       INDArray firstExampleOutput = out.getRow(0);

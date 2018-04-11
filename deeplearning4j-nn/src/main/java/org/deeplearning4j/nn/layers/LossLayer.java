@@ -203,18 +203,6 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
         return output(training);
     }
 
-    @Override
-    public INDArray activate(INDArray input) {
-//        setInput(input);
-//        return output(true);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray activate() {
-        return output(false);
-    }
-
     public INDArray output(INDArray input, boolean training) {
 //        setInput(input);
 //        return output(training);

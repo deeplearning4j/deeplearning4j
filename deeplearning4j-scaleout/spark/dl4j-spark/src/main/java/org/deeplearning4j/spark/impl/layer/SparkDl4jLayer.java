@@ -35,6 +35,7 @@ import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import parquet.org.slf4j.Logger;
 import parquet.org.slf4j.LoggerFactory;
 
@@ -166,7 +167,7 @@ public class SparkDl4jLayer implements Serializable {
      * @return the predictions
      */
     public Matrix predict(Matrix features) {
-        return MLLibUtil.toMatrix(layer.activate(MLLibUtil.toMatrix(features)));
+        return MLLibUtil.toMatrix(layer.activate(MLLibUtil.toMatrix(features), false, LayerWorkspaceMgr.noWorkspaces()));
     }
 
 
@@ -176,7 +177,7 @@ public class SparkDl4jLayer implements Serializable {
      * @return the predicted vector
      */
     public Vector predict(Vector point) {
-        return MLLibUtil.toVector(layer.activate(MLLibUtil.toVector(point)));
+        return MLLibUtil.toVector(layer.activate(MLLibUtil.toVector(point), false, LayerWorkspaceMgr.noWorkspaces()));
     }
 
 
