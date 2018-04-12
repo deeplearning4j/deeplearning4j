@@ -376,7 +376,13 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 
     local_def float16 operator*(const float16& a, const float16& b) { return __hmul(a.data, b.data); }
 
-    local_def float16 operator/(const float16& a, const float16& b) { return __hdiv(a.data, b.data); }
+    local_def float16 operator/(const float16& a, const float16& b) { 
+        #ifdef CUDA_8
+            return hdiv(a.data, b.data); 
+        #else
+            return __hdiv(a.data, b.data); 
+        #endif
+    }
 #else
     local_def float16 operator+(const float16& a, const float16& b) { return float16((float)a + (float)b); }
     local_def float16 operator-(const float16& a, const float16& b) { return float16((float)a - (float)b); }
