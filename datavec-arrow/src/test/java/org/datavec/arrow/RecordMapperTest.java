@@ -3,9 +3,11 @@ package org.datavec.arrow;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.mapper.RecordMapper;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.IntWritable;
@@ -24,6 +26,48 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class RecordMapperTest {
+
+    @Test
+    public void testMultiWrite() throws Exception {
+        val recordsPair = records();
+
+        Path p = Files.createTempFile("arrowwritetest", ".arrow");
+        FileUtils.write(p.toFile(),recordsPair.getFirst());
+        p.toFile().deleteOnExit();
+
+        int numReaders = 2;
+        RecordReader[] readers = new RecordReader[numReaders];
+        InputSplit[] splits = new InputSplit[numReaders];
+        for(int i = 0; i < readers.length; i++) {
+            FileSplit split = new FileSplit(p.toFile());
+            ArrowRecordReader arrowRecordReader = new ArrowRecordReader();
+            readers[i] = arrowRecordReader;
+            splits[i] = split;
+        }
+
+        ArrowRecordWriter arrowRecordWriter = new ArrowRecordWriter(recordsPair.getMiddle());
+        FileSplit split = new FileSplit(p.toFile());
+        arrowRecordWriter.initialize(split,new NumberOfRecordsPartitioner());
+        arrowRecordWriter.writeBatch(recordsPair.getRight());
+
+
+        CSVRecordWriter csvRecordWriter = new CSVRecordWriter();
+        Path p2 = Files.createTempFile("arrowwritetest", ".csv");
+        FileUtils.write(p2.toFile(),recordsPair.getFirst());
+        p.toFile().deleteOnExit();
+        FileSplit outputCsv = new FileSplit(p2.toFile());
+
+        RecordMapper mapper = RecordMapper.builder().batchSize(10).inputUrl(split)
+                .outputUrl(outputCsv)
+                .partitioner(new NumberOfRecordsPartitioner()).readersToConcat(readers)
+                .splitPerReader(splits)
+                .recordWriter(csvRecordWriter)
+                .build();
+        mapper.copy();
+
+
+    }
+
 
     @Test
     public void testCopyFromArrowToCsv() throws Exception {

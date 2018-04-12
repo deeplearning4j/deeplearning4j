@@ -28,6 +28,12 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     private InputSplit inputSplit;
     private OutputStream current;
     private boolean doneWithCurrentLocation = false;
+    private int totalRecordsWritten;
+
+    @Override
+    public int totalRecordsWritten() {
+        return totalRecordsWritten;
+    }
 
     @Override
     public int numRecordsWritten() {
@@ -68,6 +74,7 @@ public class NumberOfRecordsPartitioner implements Partitioner {
     @Override
     public void updatePartitionInfo(PartitionMetaData metadata) {
         this.numRecordsSoFar += metadata.getNumRecordsUpdated();
+        this.totalRecordsWritten += metadata.getNumRecordsUpdated();
         if(numRecordsSoFar >= recordsPerFile && recordsPerFile > 0)  {
             doneWithCurrentLocation = true;
         }
@@ -90,7 +97,7 @@ public class NumberOfRecordsPartitioner implements Partitioner {
         if(currLocation >= locations.length - 1 && locations.length >= 1 && needsNewPartition() || inputSplit.needsBootstrapForWrite() ||
                 locations.length < 1 ||
                 currLocation >= locations.length || !inputSplit.canWriteToLocation(locations[currLocation])
-                        && needsNewPartition()) {
+                && needsNewPartition()) {
 
             String newInput = inputSplit.addNewLocation();
             try {
