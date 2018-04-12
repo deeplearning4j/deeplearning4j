@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -68,7 +69,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
 
         INDArray strippedInput = inputs[0].get(NDArrayIndex.all(), NDArrayIndex.all(),
                         NDArrayIndex.interval(1, inputs[0].size(2)), NDArrayIndex.interval(1, inputs[0].size(3)));
-        return strippedInput;
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, strippedInput);
     }
 
     @Override
@@ -76,7 +77,7 @@ public class PoolHelperVertex extends BaseGraphVertex {
         if (!canDoBackward())
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
-        return new Pair<>(null, new INDArray[] {epsilon});
+        return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
     }
 
     @Override

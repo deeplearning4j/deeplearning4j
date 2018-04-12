@@ -24,11 +24,13 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -92,11 +94,13 @@ public class StackVertex extends BaseGraphVertex {
             variableLengthTS = (minLength != maxLength);
 
             if (!variableLengthTS) {
-                return Nd4j.concat(0, inputs);
+                try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+                    return Nd4j.concat(0, inputs);
+                }
             }
 
             outShape[2] = maxLength;
-            INDArray out = Nd4j.create(outShape);
+            INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape);
             int numExamples = inputs[0].size(0);
             lastInputShapes = new int[inputs.length][0];
             for (int i = 0; i < inputs.length; i++) {
@@ -107,7 +111,9 @@ public class StackVertex extends BaseGraphVertex {
 
             return out;
         } else {
-            return Nd4j.concat(0, inputs);
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+                return Nd4j.concat(0, inputs);
+            }
         }
     }
 
@@ -151,6 +157,10 @@ public class StackVertex extends BaseGraphVertex {
                     throw new UnsupportedOperationException(
                                     "Cannot get subset for activations of rank " + inputs[0].rank());
             }
+        }
+
+        for( int i=0; i<nStack; i++ ){
+            out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, out[i]);
         }
 
         return new Pair<>(null, out);

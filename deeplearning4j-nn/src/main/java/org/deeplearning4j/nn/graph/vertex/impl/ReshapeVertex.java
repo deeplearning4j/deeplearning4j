@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -73,7 +74,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
-        return inputs[0].reshape(order, newShape);
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0].reshape(order, newShape));
     }
 
     @Override
@@ -82,7 +83,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set");
 
         INDArray[] out = new INDArray[1];
-        out[0] = epsilon.reshape(order, inputs[0].shape());
+        out[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon.reshape(order, inputs[0].shape()));
         return new Pair<>(null, out);
     }
 

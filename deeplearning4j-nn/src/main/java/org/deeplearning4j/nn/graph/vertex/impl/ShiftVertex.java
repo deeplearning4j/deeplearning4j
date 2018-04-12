@@ -24,8 +24,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -78,10 +80,9 @@ public class ShiftVertex extends BaseGraphVertex {
             throw new IllegalArgumentException(
                             "ShiftVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
 
-        INDArray shifted = inputs[0].dup();
-        shifted.addi(shiftFactor);
-
-        return shifted;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
+            return inputs[0].add(shiftFactor);
+        }
     }
 
     @Override
@@ -90,7 +91,7 @@ public class ShiftVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set (ShiftVertex " + vertexName
                             + " idx " + vertexIndex + ")");
 
-        return new Pair<>(null, new INDArray[] {epsilon.addi(0)});
+        return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
     }
 
     @Override

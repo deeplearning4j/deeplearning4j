@@ -1610,9 +1610,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             String clazz;
             GraphVertex v = verticesMap.get(vertexName);
             if(v instanceof LayerVertex){
-                clazz = v.getClass().getSimpleName();
-            } else {
                 clazz = v.getLayer().getClass().getSimpleName();
+            } else {
+                clazz = v.getClass().getSimpleName();
             }
             throw new IllegalStateException(op + ": array (" + arrayType + ") workspace validation failed (" +
                     vertexName + " - class: " + clazz + ") - array is defined in incorrect workspace", e);

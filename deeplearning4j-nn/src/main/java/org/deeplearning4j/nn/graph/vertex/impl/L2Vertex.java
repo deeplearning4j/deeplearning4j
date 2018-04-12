@@ -24,12 +24,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -76,7 +78,9 @@ public class L2Vertex extends BaseGraphVertex {
             dimensions[i - 1] = i;
         }
 
-        return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+            return Nd4j.getExecutioner().exec(new EuclideanDistance(a, b), dimensions);
+        }
     }
 
     @Override
@@ -93,7 +97,10 @@ public class L2Vertex extends BaseGraphVertex {
 
         INDArray sNegHalf = out.rdiv(1.0); //s^(-1/2) = 1.0 / s^(1/2) = 1.0 / out
 
-        INDArray diff = a.sub(b);
+        INDArray diff;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+            diff = a.sub(b);
+        }
 
         INDArray first = dLdlambda.mul(sNegHalf); //Column vector for all cases
 
@@ -102,11 +109,15 @@ public class L2Vertex extends BaseGraphVertex {
         if (a.rank() == 2) {
             //2d case (MLPs etc)
             dLda = diff.muliColumnVector(first);
-            dLdb = dLda.neg();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                dLdb = dLda.neg();
+            }
         } else {
             //RNN and CNN case - Broadcast along dimension 0
             dLda = Nd4j.getExecutioner().execAndReturn(new BroadcastMulOp(diff, first, diff, 0));
-            dLdb = dLda.neg();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                dLdb = dLda.neg();
+            }
         }
 
         return new Pair<>(null, new INDArray[] {dLda, dLdb});

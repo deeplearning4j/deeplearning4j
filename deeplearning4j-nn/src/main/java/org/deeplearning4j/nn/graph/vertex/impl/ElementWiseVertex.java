@@ -24,14 +24,18 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.Or;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldDivOp;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldSubOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
@@ -80,13 +84,13 @@ public class ElementWiseVertex extends BaseGraphVertex {
 
         switch (op) {
             case Add:
-                INDArray sum = inputs[0].dup(inputs[0].ordering());
+                INDArray sum = workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
                     sum.addi(inputs[i]);
                 }
                 return sum;
             case Average:
-                INDArray average = inputs[0].dup(inputs[0].ordering());
+                INDArray average =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
                     average.addi(inputs[i]);
                 }
@@ -94,15 +98,16 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return inputs[0].sub(inputs[1]);
+                return Nd4j.getExecutioner().execAndReturn(
+                        new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape())));
             case Product:
-                INDArray product = inputs[0].dup(inputs[0].ordering());
+                INDArray product =  workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
                 for (int i = 1; i < inputs.length; i++) {
                     product.muli(inputs[i]);
                 }
                 return product;
             case Max:
-                INDArray max =  Nd4j.createUninitialized(inputs[0].shape(), inputs[0].ordering());
+                INDArray max =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].shape(), inputs[0].ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemax")
                         .addInputs(inputs)
                         .addOutputs(max)
@@ -128,22 +133,24 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
                 INDArray[] out = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++)
-                    out[i] = epsilon.dup();
+                    out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                 return new Pair<>(null, out);
             case Average:
                 INDArray[] outAverage = new INDArray[nInForwardPass];
-                for (int i = 0; i < nInForwardPass; i++)
-                    outAverage[i] = epsilon.div(nInForwardPass);
+                try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+                    for (int i = 0; i < nInForwardPass; i++)
+                        outAverage[i] = epsilon.div(nInForwardPass);
+                }
                 return new Pair<>(null, outAverage);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
-                out2[0] = epsilon;
-                out2[1] = epsilon.neg();
+                out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                out2[1] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon).negi();
                 return new Pair<>(null, out2);
             case Product:
                 INDArray[] out_product = new INDArray[nInForwardPass];
                 for (int i = 0; i < nInForwardPass; i++) {
-                    out_product[i] = epsilon.dup();
+                    out_product[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                     for (int j = 0; j < nInForwardPass; ++j) {
                         if (i != j)
                             out_product[i].muli(inputs[j]);
@@ -152,7 +159,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return new Pair<>(null, out_product);
             case Max:
                 INDArray[] outMax = new INDArray[nInForwardPass];
-                INDArray maxIndices = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
+                INDArray maxIndices = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, epsilon.shape(), epsilon.ordering());
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
                         .addInputs(inputs)
                         .addOutputs(maxIndices)
@@ -161,7 +168,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 Nd4j.getExecutioner().exec(op);
                 for (int i = 0; i < nInForwardPass; i++) {
                     //gradient is epsilon where the max index is the same as i and zero elsewhere
-                    outMax[i] = maxIndices.dup();
+                    outMax[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, maxIndices);
                     //generate a mask with 1s and 0s in the right places and muli with epsilon
                     MatchConditionTransform nd4jop = new MatchConditionTransform(outMax[i], outMax[i], Conditions.equals(i));
                     Nd4j.getExecutioner().exec(nd4jop);

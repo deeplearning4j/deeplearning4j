@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -68,7 +69,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         final INDArray input = inputs[0];
 
         // Compute the output
-        return revertTimeSeries(input, mask);
+        return revertTimeSeries(input, mask, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
@@ -79,7 +80,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
 
         // Backpropagate the output error (epsilon) to the input variables:
         //      Just undo the revert (which can be done by another revert)
-        INDArray epsilonsOut = revertTimeSeries(epsilon, mask);
+        INDArray epsilonsOut = revertTimeSeries(epsilon, mask, workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         return new Pair<>(null, new INDArray[] {epsilonsOut});
     }
@@ -110,7 +111,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
      * @param mask The masking tensor (1 for meaningful entries, 0 for padding)
      * @return The reverted mask.
      */
-    private static INDArray revertTimeSeries(INDArray input, INDArray mask) {
+    private static INDArray revertTimeSeries(INDArray input, INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type) {
         // Get number of samples
         int n = input.size(0);
 
@@ -118,7 +119,7 @@ public class ReverseTimeSeriesVertex extends BaseGraphVertex {
         int m = input.size(2);
 
         // Create empty output
-        INDArray out = input.dup();
+        INDArray out = workspaceMgr.create(type, input.shape(), 'f');
 
         // Iterate over all samples
         for (int s = 0; s < n; s++) {

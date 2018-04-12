@@ -24,8 +24,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -69,10 +71,9 @@ public class ScaleVertex extends BaseGraphVertex {
             throw new IllegalArgumentException(
                             "ScaleVertex (name " + vertexName + " idx " + vertexIndex + ") only supports 1 input.");
 
-        INDArray prod = inputs[0].dup();
-        prod.muli(scaleFactor);
-
-        return prod;
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
+            return inputs[0].mul(scaleFactor);
+        }
     }
 
     @Override
@@ -81,7 +82,9 @@ public class ScaleVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: errors not set (ScaleVertex " + vertexName
                             + " idx " + vertexIndex + ")");
 
-        return new Pair<>(null, new INDArray[] {epsilon.muli(scaleFactor)});
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+            return new Pair<>(null, new INDArray[] {epsilon.mul(scaleFactor)});
+        }
     }
 
     @Override

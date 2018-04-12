@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
@@ -82,7 +83,7 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
         int tsLength = graph.getInput(inputVertexIndex).size(2);
         int[] outShape = new int[] {inputs[0].size(0), inputs[0].size(1), tsLength};
 
-        INDArray out = Nd4j.create(outShape);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, outShape, 'f');
         for (int i = 0; i < tsLength; i++) {
             out.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i)}, inputs[0]);
         }
@@ -92,7 +93,8 @@ public class DuplicateToTimeSeriesVertex extends BaseGraphVertex {
     @Override
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         //Because we duplicated for each time step: simply need to sum along time for errors/epsilons
-        return new Pair<>(null, new INDArray[] {epsilon.sum(2)});
+        INDArray ret = epsilon.sum(workspaceMgr.create(ArrayType.ACTIVATION_GRAD, epsilon.size(0), epsilon.size(1)), 2);
+        return new Pair<>(null, new INDArray[] {ret});
     }
 
     @Override

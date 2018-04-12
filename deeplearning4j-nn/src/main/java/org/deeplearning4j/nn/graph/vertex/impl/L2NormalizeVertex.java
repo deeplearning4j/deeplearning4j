@@ -24,12 +24,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.BaseGraphVertex;
 import org.deeplearning4j.nn.graph.vertex.VertexIndices;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -81,12 +83,13 @@ public class L2NormalizeVertex extends BaseGraphVertex {
 
         INDArray xNorm2 = x.norm2(dimensions);
         Transforms.max(xNorm2, eps, false);
-
-        if (x.rank() == 2) {
-            return x.divColumnVector(xNorm2);
-        } else {
-            INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
-            return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
+            if (x.rank() == 2) {
+                return x.divColumnVector(xNorm2);
+            } else {
+                INDArray out = Nd4j.createUninitialized(x.shape(), x.ordering());
+                return Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(x, xNorm2, out, 0));
+            }
         }
     }
 
@@ -107,7 +110,9 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         INDArray dLdx;
         if (x.rank() == 2) {
             // 2D case
-            dLdx = epsilon.divColumnVector(norm);
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                dLdx = epsilon.divColumnVector(norm);
+            }
             INDArray xDivNorm3 = x.divColumnVector(norm3);
             dLdx.subi(xDivNorm3.muliColumnVector(epsilon.mul(x).sum(1)));
         } else {
@@ -120,7 +125,7 @@ public class L2NormalizeVertex extends BaseGraphVertex {
             Nd4j.getExecutioner().exec(new BroadcastMulOp(xDivNorm3, dx, xDivNorm3, 0));
 
             //1/|x|_2 * dLda - above
-            dLdx = Nd4j.createUninitialized(epsilon.shape(), epsilon.ordering());
+            dLdx = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.shape(), epsilon.ordering());
             Nd4j.getExecutioner().exec(new BroadcastDivOp(epsilon, norm, dLdx, 0));
             dLdx.subi(xDivNorm3);
         }
