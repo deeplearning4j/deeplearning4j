@@ -16,6 +16,9 @@ namespace functions {
 		class Transform;
 	}
 
+	namespace scalar {
+	}
+
 	namespace reduce {
 		template <typename T>
 		class ReduceFunction;
@@ -292,13 +295,13 @@ namespace simdOps {
 											sum = ptr_input[ky * strideIn[2] + kx * strideIn[3]];
 								}
 							} else if (poolingMode == 1) {
-#pragma omp simd reduction(sumT:sum)
+#pragma omp simd reduction(sumT:sum) collapse(2)
 								for (ky = hstart; ky < hend; ky += dH) {
 									for (kx = wstart; kx < wend; kx += dW)
 										sum += ptr_input[ky * strideIn[2] + kx * strideIn[3]];
 								}
 							} else if (poolingMode == 2) {
-#pragma omp simd reduction(sumT:sum)
+#pragma omp simd reduction(sumT:sum) collapse (2)
 								for (ky = hstart; ky < hend; ky += dH) {
 									for (kx = wstart; kx < wend; kx += dW)
 										sum += nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_abs<T>(ptr_input[ky * strideIn[2] + kx * strideIn[3]]), extraParam0);
@@ -1317,21 +1320,21 @@ namespace simdOps {
 
 			int length = shape::length(xShapeBuffer);
 
-			if (threadIdx.x == 0) {
-				maxResult = (T) 0.0;
-			}
-			__syncthreads();
-
 			int *stride = shape::stride(xShapeBuffer);
 			//compute the row wise maxes
 
-			int maxShape[2] = { shape[0], 1 };
+			__shared__ int maxShape[2];
 
 			// it's always 2d here
 			__shared__ int tempBuffer[8];
 
-			if (threadIdx.x == 0)
+			if (threadIdx.x == 0) {
+			    maxResult = (T) 0.0;
+			    maxShape[0] = shape[0];
+			    maxShape[1] = 1;
 				maxResultShapeBuffer = shape::shapeBuffer(2, maxShape, tempBuffer);
+			}
+			__syncthreads();
 
 			functions::reduce::ReduceFunction<T>::template execScalarCuda<simdOps::Max<T>>(dx, xShapeBuffer, extraParams, &maxResult, maxResultShapeBuffer, reductionPointer, manager, nullptr);
 			__syncthreads();
@@ -1829,7 +1832,8 @@ namespace simdOps {
 			int *resultShapeBuffer,
 			T *extraParams,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-
+// this code is safe to delete, it's never used
+/*
 			__shared__ int maxIdx;
 			__shared__ int length;
 			if (threadIdx.x == 0) {
@@ -1859,7 +1863,7 @@ namespace simdOps {
 			if (threadIdx.x == 0) {
 				result[maxIdx] = 1.0;
 			}
-
+			*/
 		}
 #endif
 

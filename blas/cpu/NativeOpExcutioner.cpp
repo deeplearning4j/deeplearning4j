@@ -343,8 +343,9 @@ void NativeOpExcutioner<T>::execTransform(int opNum, T *dx, int *xShapeInfo, T *
 */
 template<typename T>
 void NativeOpExcutioner<T>::execTransform(int opNum, T *dx, int *xShapeInfo, T *result, int *resultShapeInfo, T *extraParams, int *xIndexes, int *resultIndexes, int *tadShapeInfo, Nd4jIndex *tadOffsets) {
-    functions::transform::Transform<T>::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, xIndexes, resultIndexes, tadShapeInfo, tadOffsets);
+//    functions::transform::Transform<T>::exec(opNum, dx, xShapeInfo, result, resultShapeInfo, extraParams, xIndexes, resultIndexes, tadShapeInfo, tadOffsets);
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>

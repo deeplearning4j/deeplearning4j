@@ -370,16 +370,12 @@ local_def ihalf cpu_float2ihalf_rn(float f)
 #endif
 
 #ifdef NATIVE_HALFS
-    template <>
     local_def float16 operator+(const float16& a, const float16& b) { return __hadd(a.data, b.data); }
 
-    template <>
     local_def float16 operator-(const float16& a, const float16& b) { return __hsub(a.data, b.data); }
 
-    template <>
     local_def float16 operator*(const float16& a, const float16& b) { return __hmul(a.data, b.data); }
 
-    template <>
     local_def float16 operator/(const float16& a, const float16& b) { return __hdiv(a.data, b.data); }
 #else
     local_def float16 operator+(const float16& a, const float16& b) { return float16((float)a + (float)b); }

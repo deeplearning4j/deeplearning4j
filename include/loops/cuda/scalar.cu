@@ -5,8 +5,6 @@
 #ifndef SCALAR_CU
 #define SCALAR_CU
 
-#ifdef __CUDACC__
-
 #include "../scalar.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -501,10 +499,13 @@ namespace functions {
                     DISPATCH_BY_OPNUM(transformCuda, PARAMS(n, dx, dy, incy, params, result, resultStride, allocationBuffer, manager), SCALAR_OPS);
         }
         */
+
+        BUILD_CALL_1(template __device__ void ScalarTransform<float>::transformCuda, float, (float, float*, int *, float*, float*, int*, int*, UnifiedSharedMemory *), SCALAR_OPS)
+        BUILD_CALL_1(template __device__ void ScalarTransform<float16>::transformCuda, float16, (float16, float16*, int *, float16*, float16*, int*, int*, UnifiedSharedMemory *), SCALAR_OPS)
+        BUILD_CALL_1(template __device__ void ScalarTransform<double>::transformCuda, double, (double, double*, int *, double*, double*, int*, int*, UnifiedSharedMemory *), SCALAR_OPS)
     }
 }
 
 
 
-#endif // CUDA_CC
 #endif // SCALAR_CU

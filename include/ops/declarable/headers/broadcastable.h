@@ -169,6 +169,14 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(realdiv, 2, 1, true, 0, 0);
         DECLARE_CUSTOM_OP(realdiv_bp, 3, 2, false, 0, 0);
 
+
+        /**
+         *
+         *
+         * @tparam T
+         */
+        DECLARE_CUSTOM_OP(truncatediv, 2, 1, true, 0, 0);
+
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
          * 1) if shapes are equal that's pairwise operation, result will have the same shape.

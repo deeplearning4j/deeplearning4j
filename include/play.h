@@ -7,6 +7,7 @@
 
 #include "op_boilerplate.h"
 
+/*
 #define ACTIVATIONS \
         (0, simdOps::Identity) ,\
         (1, simdOps::ReLU)
@@ -21,7 +22,7 @@
         (0, float) ,\
         (1, double) ,\
         (2, float16)
-
+*/
 #define PAIRWISE_TRANSFORM_OPS \
         (0, simdOps::Add),\
         (1, simdOps::Copy),\
@@ -51,12 +52,12 @@
         (60,simdOps::FMod),\
         (69,simdOps::Atan2)
 
-
+EXECUTE_NOE((x, y, extras), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyTransform, float16, (NDArray<float16>* a, float16* b), TRANSFORM_OPS)
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyPairwiseTransform, float16, (NDArray<float16>* other, float16* extraParams), PAIRWISE_TRANSFORM_OPS)
-BUILD_TRACKER(TRANSFORM, ACTIVATIONS)
+//BUILD_TRACKER(TRANSFORM, ACTIVATIONS)
 
 //BUILD_CALL_1(template void nd4j::NDArray<float16>::applyScalar, float16, (float16 scalar, NDArray<float16>* target, float16 *extraParams) , ACTIVATIONS);
 
