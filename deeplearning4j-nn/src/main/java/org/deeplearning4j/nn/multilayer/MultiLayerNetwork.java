@@ -982,6 +982,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         MemoryWorkspace wsActCloseNext = null;
         MemoryWorkspace temp = null;
+        MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try {
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
@@ -991,6 +992,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     //So mgrEven (WS_LAYER_ACT_1) open at start of 0, 2, 4, 8; closed at end of 1, 3, 5, 7 etc
                     //and mgrOdd (WS_LAYER_ACT_2) opened at start of 1, 3, 5, 7; closed at end of 2, 4, 6, 8 etc
                     temp = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+
+                    //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
+                    // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
+                    // workspace may be set to the incorrect one
+                    temp.setPreviousWorkspace(initialWorkspace);
 
                     if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                         input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
@@ -1024,6 +1030,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 temp.close();
             }
         }
+
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerInference");
 
         return input;
     }
@@ -1447,22 +1455,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
-        Layer currLayer;
-
 
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
 
-        if(layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE){
+        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
             mgrEven = LayerWorkspaceMgr.noWorkspaces();
             mgrOdd = mgrEven;
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in calcBackpropGradients when " +
+                    "training workspace is set to none");
         } else {
             /*
             Workspaces for backprop in MLN share some features with outputOfLayerInference, in terms of the
             "two alternating workspaces" idea (but for activation gradients here, instead of activations there).
 
             Workspace design for backprop:
-            First: we calculate all activations, and ensure they are in WS_ALL_LAYERS_ACT
+            First: we calculate all activations, and ensure they are in WS_ALL_LAYERS_ACT. We assume this is done
+                   EXTERNALLY to this method
             Then: we iterate backwards over layers.
 
             Activations gradient workspaces: opened/closed every second layer.
@@ -1472,17 +1481,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
              */
 
             mgrEven = LayerWorkspaceMgr.builder()
+                    //Activations in context of backprop (preOut methods etc) are not used outside of the layer itself
+                    .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_1, WS_LAYER_ACT_X_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
             mgrOdd = LayerWorkspaceMgr.builder()
+                    //Activations in context of backprop (preOut methods etc) are not used outside of the layer itself
+                    .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.ACTIVATION_GRAD, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .build();
 
+            WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients method requires workspace WS_ALL_LAYERS_ACT" +
+                    " to be open when workspaces are used");
         }
 
         //calculate and apply the backward gradient for every layer
@@ -1503,6 +1518,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Pair<Gradient, INDArray> currPair = null;
         MemoryWorkspace wsActGradCloseNext = null;
         MemoryWorkspace wsActGradTemp = null;
+        MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try {
             for (int i = layers.length - 1; i >= 0; i--) {
                 LayerWorkspaceMgr workspaceMgr = (i % 2 == 0 ? mgrEven : mgrOdd);
@@ -1521,6 +1537,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)){
                     wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
+
+                    //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
+                    // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
+                    // workspace may be set to the incorrect one
+                    wsActGradTemp.setPreviousWorkspace(initialWorkspace);
+
                     INDArray eps = (i == layers.length-1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
                     currPair = layers[i].backpropGradient(eps, workspaceMgr);
 
@@ -1561,6 +1583,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
+        if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in calcBackpropGradients when " +
+                    "training workspace is set to none");
+        } else {
+            WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients: WS_ALL_LAYERS_ACT is no" +
+                    " longer the currently open/active workspace");
+        }
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {

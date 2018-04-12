@@ -31,6 +31,8 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     void assertNotOpen(T arrayType, String msg);
 
+    void assertCurrentWorkspace(T arrayType, String msg);
+
     /**
      * If the array is not attached (not defined in a workspace) - array is returned unmodified
      *

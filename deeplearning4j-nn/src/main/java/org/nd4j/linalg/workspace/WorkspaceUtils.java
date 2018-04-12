@@ -1,5 +1,6 @@
 package org.nd4j.linalg.workspace;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -21,9 +22,20 @@ public class WorkspaceUtils {
         }
     }
 
-    public static void assertOpenAndActive(String ws, String errorMsg){
+    public static void assertOpenAndActive(@NonNull String ws, @NonNull String errorMsg){
         if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ws)){
             throw new IllegalStateException(errorMsg);
+        }
+    }
+
+    public static void assertOpenActiveAndCurrent(@NonNull String ws, @NonNull String errorMsg){
+        if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ws)){
+            throw new IllegalStateException(errorMsg + " - not open and active");
+        }
+        MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if(currWs == null || !ws.equals(currWs.getId())){
+            throw new IllegalStateException(errorMsg + " - not the current workspace (current workspace: "
+                    + (currWs == null ? null : currWs.getId()));
         }
     }
 

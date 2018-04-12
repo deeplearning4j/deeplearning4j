@@ -2,6 +2,8 @@ package org.nd4j.linalg.workspace;
 
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -12,6 +14,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+@Slf4j
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     private static final boolean DISABLE_LEVERAGE = true;  //Mainly for debugging/optimization purposes
 
@@ -110,6 +113,17 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
             throw new ND4JWorkspaceException("Assertion failed: expected workspace for array type " + arrayType
                     + " to not be open: " + msg);
         }
+    }
+
+    @Override
+    public void assertCurrentWorkspace(@NonNull T arrayType, String msg) {
+        validateConfig(arrayType);
+        MemoryWorkspace curr = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if(!scopeOutOfWs.contains(arrayType) && (curr == null || !getWorkspaceName(arrayType).equals(curr.getId()))){
+            throw new ND4JWorkspaceException("Assertion failed: expected current workspace to be \"" + getWorkspaceName(arrayType)
+                    + "\" (for array type " + arrayType + ") - actual current workspace is " + (curr == null ? null : curr.getId())
+                    + (msg == null ? "" : ": " + msg));
+        };
     }
 
     @Override
