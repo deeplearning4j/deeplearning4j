@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ArrayType;
@@ -343,6 +344,18 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
+        System.out.println("----- All Workspaces -----");
+        for(MemoryWorkspace ws : Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread()){
+            System.out.println("WORKSPACE: " + ws.getId() + " - scope active: " + ws.isScopeActive());
+        }
+        System.out.println("----- Current Workspaces -----");
+        MemoryWorkspace ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+        System.out.println("CURRENT WS: " + ws.getId() + " - scope active: " + ws.isScopeActive());
+        System.out.println("------------------------------");
+
+        MemoryManager mm = Nd4j.getMemoryManager();
+        System.out.println();
+
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());
