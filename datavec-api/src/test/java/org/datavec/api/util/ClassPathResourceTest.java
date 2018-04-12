@@ -26,6 +26,9 @@ import java.io.InputStreamReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.AnyOf.anyOf;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
  * @author raver119@gmail.com
@@ -48,7 +51,7 @@ public class ClassPathResourceTest {
 
         assertTrue(intFile.exists());
         if (isWindows) {
-            assertEquals(2850, intFile.length());
+            assertThat(intFile.length(), anyOf(equalTo(2700L), equalTo(2850L)));
         } else {
             assertEquals(2700, intFile.length());
         }
@@ -60,7 +63,7 @@ public class ClassPathResourceTest {
 
         assertTrue(intFile.exists());
         if (isWindows) {
-            assertEquals(2850, intFile.length());
+            assertThat(intFile.length(), anyOf(equalTo(2700L), equalTo(2850L)));
         } else {
             assertEquals(2700, intFile.length());
         }
@@ -73,7 +76,7 @@ public class ClassPathResourceTest {
         assertTrue(intFile.exists());
 
         if (isWindows) {
-            assertEquals(64, intFile.length());
+            assertThat(intFile.length(), anyOf(equalTo(60L), equalTo(64L)));
         } else {
             assertEquals(60, intFile.length());
         }
@@ -85,7 +88,7 @@ public class ClassPathResourceTest {
         File intFile = resource.getFile();
 
         if (isWindows) {
-            assertEquals(64, intFile.length());
+            assertThat(intFile.length(), anyOf(equalTo(60L), equalTo(64L)));
         } else {
             assertEquals(60, intFile.length());
         }
@@ -107,7 +110,7 @@ public class ClassPathResourceTest {
         File intFile = resource.getFile();
 
         if (isWindows) {
-            assertEquals(64, intFile.length());
+            assertThat(intFile.length(), anyOf(equalTo(60L), equalTo(64L)));
         } else {
             assertEquals(60, intFile.length());
         }
