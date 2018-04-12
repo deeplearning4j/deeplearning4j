@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
+    private static final boolean DISABLE_LEVERAGE = true;  //Mainly for debugging/optimization purposes
 
     protected final Set<T> scopeOutOfWs = new HashSet<>();
     protected final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
@@ -95,13 +96,40 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     }
 
     @Override
-    public INDArray leverageTo(T arrayType, INDArray array) {
+    public boolean isWorkspaceOpen(@NonNull T arrayType) {
+        validateConfig(arrayType);
+        if(!scopeOutOfWs.contains(arrayType)) {
+            return Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(getWorkspaceName(arrayType));
+        }
+        return true;
+    }
+
+    @Override
+    public void assertNotOpen(@NonNull T arrayType, @NonNull String msg) {
+        if(!scopeOutOfWs.contains(arrayType) && isWorkspaceOpen(arrayType)){
+            throw new ND4JWorkspaceException("Assertion failed: expected workspace for array type " + arrayType
+                    + " to not be open: " + msg);
+        }
+    }
+
+    @Override
+    public INDArray leverageTo(@NonNull T arrayType, @NonNull INDArray array) {
         if(array == null || !array.isAttached()){
             return array;
         }
         validateConfig(arrayType);
         enforceExistsAndActive(arrayType);
-        return array.leverageTo(getWorkspaceName(arrayType));
+
+        if(!DISABLE_LEVERAGE){
+            return array.leverageTo(getWorkspaceName(arrayType));
+        } else {
+            if(array.isAttached()){
+                if(!array.data().getParentWorkspace().getId().equals(getWorkspaceName(arrayType))){
+                    throw new IllegalStateException("LEVERAGED");
+                }
+            }
+            return array;
+        }
     }
 
     @Override

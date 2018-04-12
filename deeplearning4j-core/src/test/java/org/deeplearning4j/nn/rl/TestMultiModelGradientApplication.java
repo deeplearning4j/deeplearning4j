@@ -19,6 +19,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -85,7 +86,7 @@ public class TestMultiModelGradientApplication extends BaseDL4JTest {
                 Gradient g = net1GradCalc.gradient();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
                 INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
-                net2GradUpd.getUpdater().update(net2GradUpd, g, 0, 0, minibatch);
+                net2GradUpd.getUpdater().update(net2GradUpd, g, 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
 
@@ -177,7 +178,7 @@ public class TestMultiModelGradientApplication extends BaseDL4JTest {
                 Gradient g = net1GradCalc.gradient();
                 INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
                 INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
-                net2GradUpd.getUpdater().update(g, 0, 0, minibatch);
+                net2GradUpd.getUpdater().update(g, 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
 

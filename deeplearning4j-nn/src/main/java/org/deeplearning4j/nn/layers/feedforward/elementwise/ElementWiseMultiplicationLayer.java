@@ -60,7 +60,7 @@ public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j
 
 //      epsilonNext is a 2d matrix
         INDArray epsilonNext = delta.mulRowVector(params.get(ElementWiseParamInitializer.WEIGHT_KEY));
-        epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilon);
+        epsilonNext = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilonNext);
 
         return new Pair<>(ret, epsilonNext);
     }

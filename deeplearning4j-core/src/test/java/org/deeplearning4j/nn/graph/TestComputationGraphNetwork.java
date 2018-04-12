@@ -751,7 +751,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
             // Compute Gradient
             Gradient gradient = graph.backpropGradient(error);
-            graph.getUpdater().update(gradient, 0, 0, minibatch);
+            graph.getUpdater().update(gradient, 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }

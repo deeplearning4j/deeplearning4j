@@ -117,8 +117,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             MultiLayerUpdater u1 = (MultiLayerUpdater) net1.getUpdater();
             MultiLayerUpdater u2 = (MultiLayerUpdater) net2.getUpdater();
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-            u1.update(net1, g1, 0, 0, 3);
-            u2.update(net2, g2, 0, 0, 3);
+            u1.update(net1, g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+            u2.update(net2, g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(g1.gradient(), g2.gradient());
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
 
@@ -216,8 +216,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             ComputationGraphUpdater u1 = (ComputationGraphUpdater) net1.getUpdater();
             ComputationGraphUpdater u2 = (ComputationGraphUpdater) net2.getUpdater();
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
-            u1.update(g1, 0, 0, 3);
-            u2.update(g2, 0, 0, 3);
+            u1.update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+            u2.update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(g1.gradient(), g2.gradient());
             assertEquals(u1.getUpdaterStateViewArray(), u2.getUpdaterStateViewArray());
 
@@ -457,9 +457,9 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                     for (boolean updates : new boolean[]{false, true}) {
                         if (updates) {
-                            net1.getUpdater().update(net1, g1, 0, 0, 3);
-                            net2.getUpdater().update(net2, g2, 0, 0, 3);
-                            net3.getUpdater().update(net3, g3, 0, 0, 3);
+                            net1.getUpdater().update(net1, g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net2.getUpdater().update(net2, g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net3.getUpdater().update(net3, g3, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
                         }
 
                         assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));
@@ -577,9 +577,9 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                     for (boolean updates : new boolean[]{false, true}) {
                         if (updates) {
-                            net1.getUpdater().update(g1, 0, 0, 3);
-                            net2.getUpdater().update(g2, 0, 0, 3);
-                            net3.getUpdater().update(g3, 0, 0, 3);
+                            net1.getUpdater().update(g1, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net2.getUpdater().update(g2, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
+                            net3.getUpdater().update(g3, 0, 0, 3, LayerWorkspaceMgr.noWorkspaces());
                         }
 
                         assertEquals(g2.gradientForVariable().get("0_W"), g1.gradientForVariable().get("0_fW"));

@@ -27,6 +27,10 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     void setWorkspace(T arrayType, String wsName, WorkspaceConfiguration configuration);
 
+    boolean isWorkspaceOpen(T arrayType);
+
+    void assertNotOpen(T arrayType, String msg);
+
     /**
      * If the array is not attached (not defined in a workspace) - array is returned unmodified
      *

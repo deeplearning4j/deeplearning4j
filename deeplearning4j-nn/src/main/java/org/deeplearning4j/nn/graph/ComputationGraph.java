@@ -1098,6 +1098,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    //Note for updater working memory, we have the option to re-use WS_ALL_LAYERS_ACT or FF/BP_WORKING_MEM
+                    // as these should be closed by the time updaters are executed
+                    //Generally, WS_ALL_LAYERS_ACT will be the larger of the two, so we'll use this
+                    .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
 
@@ -1254,20 +1258,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    //Note for updater working memory, we have the option to re-use WS_ALL_LAYERS_ACT or FF/BP_WORKING_MEM
+                    // as these should be closed by the time updaters are executed
+                    //Generally, WS_ALL_LAYERS_ACT will be the larger of the two, so we'll use this
+                    .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
-            if (!trainingListeners.isEmpty()) {
-                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
+            try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+                Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
+                if (!trainingListeners.isEmpty()) {
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        for (TrainingListener tl : trainingListeners) {
+                            tl.onForwardPass(this, activations);
+                        }
                     }
                 }
+                calcBackpropGradients(true);
             }
-            calcBackpropGradients(true);
         } else {
             int[] outputLayerIdxs = new int[numOutputArrays];
             int i=0;
@@ -1284,29 +1294,32 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
                 calcBackpropGradients(false);
-            }
-        }
 
-        //Score: sum of the scores for the various output layers...
-        double l1 = calcL1();
-        double l2 = calcL2();
 
-        score = 0.0;
-        for (String s : configuration.getNetworkOutputs()) {
-            GraphVertex gv = verticesMap.get(s);
+                //Score: sum of the scores for the various output layers...
+                double l1 = calcL1();
+                double l2 = calcL2();
 
-            score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
+                score = 0.0;
+                for (String s : configuration.getNetworkOutputs()) {
+                    GraphVertex gv = verticesMap.get(s);
 
-            //Only want to add l1/l2 once...
-            l1 = 0.0;
-            l2 = 0.0;
-        }
+                    try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                        score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
+                    }
 
-        //Listeners
-        if (!trainingListeners.isEmpty()) {
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onBackwardPass(this);
+                    //Only want to add l1/l2 once...
+                    l1 = 0.0;
+                    l2 = 0.0;
+                }
+
+                //Listeners
+                if (!trainingListeners.isEmpty()) {
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        for (TrainingListener tl : trainingListeners) {
+                            tl.onBackwardPass(this);
+                        }
+                    }
                 }
             }
         }
@@ -2048,12 +2061,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             int idx = gv.getVertexIndex();
             int minStepOfInputFrom = -1;
             VertexIndices[] inputsFrom = gv.getInputVertices();
-            for(VertexIndices vi : inputsFrom){
-                int posInTopoSort = ArrayUtils.indexOf(topologicalOrder, vi.getVertexIndex());
-                if(posInTopoSort == -1){
-                    throw new IllegalStateException("Did not find vertex " + vi.getVertexIndex() + " in topological sort array");
+            if(inputsFrom != null) {
+                //inputsFrom may be null for input vertex
+                for (VertexIndices vi : inputsFrom) {
+                    int posInTopoSort = ArrayUtils.indexOf(topologicalOrder, vi.getVertexIndex());
+                    if (posInTopoSort == -1) {
+                        throw new IllegalStateException("Did not find vertex " + vi.getVertexIndex() + " in topological sort array");
+                    }
+                    minStepOfInputFrom = Math.min(minStepOfInputFrom, posInTopoSort);
                 }
-                minStepOfInputFrom = Math.min(minStepOfInputFrom, posInTopoSort);
             }
             vertexActGradsFullyConsumedByStep[idx] = minStepOfInputFrom;
         }
@@ -2065,14 +2081,14 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
         List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
         Map<MemoryWorkspace, LayerWorkspaceMgr> openActivationsWorkspaces = new IdentityHashMap<>();
-        List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new Object[topologicalOrder.length];
+        List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new List[topologicalOrder.length];
 
         //Do backprop, in reverse topological order
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         try{
 
-            for(int i=topologicalOrder.length; i>= 0; i--){
+            for(int i=topologicalOrder.length-1; i>= 0; i--){
                 GraphVertex current = vertices[topologicalOrder[i]];
                 int vIdx = current.getVertexIndex();
                 String vertexName = current.getVertexName();
@@ -2088,7 +2104,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (noWS) {
                     workspaceMgr = allNone;
                 } else {
-                    //First: is there a free forward pass workspace we can use?
+                    //First: is there a free activation gradient workspace we can use?
                     if (freeWorkspaceManagers.size() > 0) {
                         workspaceMgr = freeWorkspaceManagers.remove(freeWorkspaceManagers.size() - 1);
                     } else {
@@ -2096,8 +2112,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         String wsName = "WS_LAYER_ACT_" + allWorkspaceManagers.size();
                         workspaceMgr = LayerWorkspaceMgr.builder()
                                 .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
-                                .with(ArrayType.ACTIVATIONS, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.ACTIVATION_GRAD, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG) //For forward pass in the context of BP
                                 .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                                .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                                 .build();
 
                         allWorkspaceManagers.add(workspaceMgr);
@@ -2132,17 +2150,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 //Actually execute backprop for the specified vertex
                 Pair<Gradient, INDArray[]> pair;
                 INDArray[] epsilons;
-                try(MemoryWorkspace wsWorkingMem = workspaceMgr.notifyScopeBorrowed(ArrayType.BP_WORKING_MEM)){
+                try(MemoryWorkspace wsWorkingMem = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)){
 
                     //First: Open the relevant workspace for the activations.
                     //Note that this will be closed only once the current vertex's activations have been consumed
-                    MemoryWorkspace wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    MemoryWorkspace wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
                     openActivationsWorkspaces.put(wsActivations, workspaceMgr);
-                    int closeableAt = vertexActGradsFullyConsumedByStep[vIdx];
-                    if(closeAtEndIteraton[closeableAt] == null){
-                        closeAtEndIteraton[closeableAt] = new ArrayList<>();
+                    int closeableAt = vertexActGradsFullyConsumedByStep[vIdx];  //May be -1 for input vertices
+                    if(closeableAt > 0) {
+                        if (closeAtEndIteraton[closeableAt] == null) {
+                            closeAtEndIteraton[closeableAt] = new ArrayList<>();
+                        }
+                        closeAtEndIteraton[closeableAt].add(wsActivations);
                     }
-                    closeAtEndIteraton[closeableAt].add(wsActivations);
 
                     pair = current.doBackward(truncatedBPTT, workspaceMgr);
                     epsilons = pair.getSecond();

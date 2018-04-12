@@ -30,6 +30,7 @@ import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
@@ -91,7 +92,7 @@ public class TestUpdaters extends BaseDL4JTest {
 
         int count = 0;
         for (int i = 0; i < 2; i++) {
-            updater.update(layer, gradient, i, 0, 1);
+            updater.update(layer, gradient, i, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
             // calculations for one iteration / update
 
@@ -155,7 +156,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
@@ -192,7 +193,7 @@ public class TestUpdaters extends BaseDL4JTest {
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
-        updater.update(layer, gradient, iteration, 0, 1);
+        updater.update(layer, gradient, iteration, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
         double beta2t = FastMath.pow(beta2, iteration + 1);
@@ -259,7 +260,7 @@ public class TestUpdaters extends BaseDL4JTest {
         /*
         * Making update for layer
         * */
-        updater.update(layer, gradient, iteration, 0,1);
+        updater.update(layer, gradient, iteration, 0,1, LayerWorkspaceMgr.noWorkspaces());
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
 
@@ -345,7 +346,7 @@ public class TestUpdaters extends BaseDL4JTest {
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
-        updater.update(layer, gradient, iteration, 0, 1);
+        updater.update(layer, gradient, iteration, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
         double beta2t = FastMath.pow(beta2, iteration + 1);
@@ -408,7 +409,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         int count = 0;
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
@@ -456,7 +457,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         double epsilon = 1e-8;
 
@@ -499,7 +500,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -537,7 +538,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         INDArray weightGradActual = gradient.getGradientFor(DefaultParamInitializer.WEIGHT_KEY);
         INDArray biasGradActual = gradient.getGradientFor(DefaultParamInitializer.BIAS_KEY);
@@ -638,7 +639,7 @@ public class TestUpdaters extends BaseDL4JTest {
                 }
             }
 
-            updater.update(net, gradient, i, 0, 1);
+            updater.update(net, gradient, i, 0, 1, LayerWorkspaceMgr.noWorkspaces());
             assertEquals(gradient.gradientForVariable(), expectedGradient);
         }
     }
@@ -742,7 +743,7 @@ public class TestUpdaters extends BaseDL4JTest {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
@@ -779,7 +780,7 @@ public class TestUpdaters extends BaseDL4JTest {
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
 
-        updater.update(layer, gradient, -1, 0, 1);
+        updater.update(layer, gradient, -1, 0, 1, LayerWorkspaceMgr.noWorkspaces());
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             //            System.out.println(entry.getKey());

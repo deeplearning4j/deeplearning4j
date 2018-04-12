@@ -1191,7 +1191,7 @@ public class MultiLayerTest extends BaseDL4JTest {
 
             // Compute Gradient
             Pair<Gradient,INDArray> gradient = graph.backpropGradient(error, LayerWorkspaceMgr.noWorkspaces());
-            graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch);
+            graph.getUpdater().update(graph, gradient.getFirst(), 0, 0, minibatch, LayerWorkspaceMgr.noWorkspaces());
 
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         }

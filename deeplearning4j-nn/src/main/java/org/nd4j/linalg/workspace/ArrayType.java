@@ -5,5 +5,6 @@ public enum ArrayType {
     ACTIVATIONS,
     ACTIVATION_GRAD,
     FF_WORKING_MEM,
-    BP_WORKING_MEM
+    BP_WORKING_MEM,
+    UPDATER_WORKING_MEM
 }

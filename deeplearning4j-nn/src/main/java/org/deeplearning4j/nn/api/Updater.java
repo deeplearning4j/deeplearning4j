@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 
@@ -33,5 +34,5 @@ public interface Updater extends Serializable {
      * @param gradient
      * @param iteration
      */
-    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize);
+    void update(Layer layer, Gradient gradient, int iteration, int epoch, int miniBatchSize, LayerWorkspaceMgr workspaceMgr);
 }

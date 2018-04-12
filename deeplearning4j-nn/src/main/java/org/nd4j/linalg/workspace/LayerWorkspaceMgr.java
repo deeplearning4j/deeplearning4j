@@ -6,7 +6,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     
     public LayerWorkspaceMgr(){
-        INDArray arr = null;
 
     }
 

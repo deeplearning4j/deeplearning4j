@@ -1975,6 +1975,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             workspaceMgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    //Note for updater working memory, we have the option to re-use WS_ALL_LAYERS_ACT or FF/BP_WORKING_MEM
+                    // these should be closed by the time updaters are executed
+                    //Generally, WS_ALL_LAYERS_ACT will be the larger of the two, so we'll use this
+                    .with(ArrayType.UPDATER_WORKING_MEM, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
         }
 

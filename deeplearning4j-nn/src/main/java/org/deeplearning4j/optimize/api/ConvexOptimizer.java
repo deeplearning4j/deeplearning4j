@@ -126,7 +126,7 @@ public interface ConvexOptimizer extends Serializable {
      * @param batchSize batchSize for update
      * @paramType paramType to update
      */
-    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize);
+    void updateGradientAccordingToParams(Gradient gradient, Model model, int batchSize, LayerWorkspaceMgr workspaceMgr);
 
     /**
      * Check termination conditions
