@@ -1817,8 +1817,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Then we know X's output activations have been fully consumed by step index 4 in the topological sort
         //thus vertexOutputsFullyConsumedByStep[X.index] = IndexOf(topologicalSort, Z.index)
 
-        //Position in array: index of vertex. Value at position: the step (in topological order) that the
-        //Put another way: this is the step that it's safe to deallocate the layer's activations in
+        //Position in array: index of vertex. Value at position: the step (in topological order) that the activations
+        // have been consumed by
+        //Put another way: this is the step that it's safe to deallocate the layer's activations by closing the
+        // corresponding workspace
         int[] vertexOutputsFullyConsumedByStep = new int[topologicalOrder.length];
         for(GraphVertex gv : vertices){
             int idx = gv.getVertexIndex();
@@ -1833,8 +1835,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             vertexOutputsFullyConsumedByStep[idx] = maxStepOfOutputTo;
         }
-
-        //Given this: we need to determine what workspaces should be closed at each step...
 
         //Do forward pass according to the topological ordering of the network
         INDArray[] outputs = new INDArray[layerIndexes.length];
@@ -2057,45 +2057,87 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initGradientsView();
         }
 
-        throw new UnsupportedOperationException("Not yet reimplemented");
-
         /*
-        WorkspaceMode wsm = configuration.getTrainingWorkspaceMode();
-        MemoryWorkspace workspace;
-        switch (wsm){
-            case NONE:
-                workspace = new DummyWorkspace();
-                break;
-            case SINGLE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
-                break;
-            case SEPARATE:
-                workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, WORKSPACE_FEED_FORWARD);
-                break;
-            default:
-                throw new RuntimeException();
+         Design for workspaces use in backprop for ComputationGraph is similar to MultiLayerNetwork and shares some
+         features with outputOfLayersInference
+
+         Specifically:
+         1. We assume forward pass has already been done, and hence layer input fields are set (with all arrays/activations in
+            workspace WS_ALL_LAYERS_ACT if appropriate)
+         2. We use a set of small workspaces to contain the activation gradients for a single layer
+            These are opened once per layer, and are closed only once the corresponding activation gradients have been
+            consumed by all layers
+         */
+
+        if(externalEpsilons == null || externalEpsilons.length == 0 && configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE){
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "Expected workspace WS_ALL_LAYERS_ACT to be active and open" +
+                    " in calcBackpropGradients when workspace mode is not set to NONE");
         }
 
-        LayerWorkspaceMgr workspaceMgr = null;      //TODO
+        //Position in array: index of vertex. Value at position: the step (in topological order) that the activation
+        // gradients of the specified vertex have been consumed by
+        //Put another way: this is the step that it's safe to deallocate the layer's activation gradients by closing the
+        // corresponding workspace
+        int[] vertexActGradsFullyConsumedByStep = new int[topologicalOrder.length];
+        for(GraphVertex gv : vertices){
+            int idx = gv.getVertexIndex();
+            int minStepOfInputFrom = -1;
+            VertexIndices[] inputsFrom = gv.getInputVertices();
+            for(VertexIndices vi : inputsFrom){
+                int posInTopoSort = ArrayUtils.indexOf(topologicalOrder, vi.getVertexIndex());
+                if(posInTopoSort == -1){
+                    throw new IllegalStateException("Did not find vertex " + vi.getVertexIndex() + " in topological sort array");
+                }
+                minStepOfInputFrom = Math.min(minStepOfInputFrom, posInTopoSort);
+            }
+            vertexActGradsFullyConsumedByStep[idx] = minStepOfInputFrom;
+        }
 
+
+        boolean noWS = configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE;
+        LayerWorkspaceMgr allNone = noWS ? LayerWorkspaceMgr.noWorkspaces() : null;
+
+        List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
+        List<LayerWorkspaceMgr> freeWorkspaceManagers = new ArrayList<>();  //Basically used as a stack
+        Map<MemoryWorkspace, LayerWorkspaceMgr> openActivationsWorkspaces = new IdentityHashMap<>();
+        List<MemoryWorkspace>[] closeAtEndIteraton = (List<MemoryWorkspace>[])new Object[topologicalOrder.length];
+
+        //Do backprop, in reverse topological order
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
-
-        boolean wsExternalActive = false;
-        if (wsm == WorkspaceMode.SINGLE) {
-            wsExternalActive = Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WORKSPACE_EXTERNAL);
-        }
-
-        //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
-        for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try{
+
+            for(int i=topologicalOrder.length; i>= 0; i--){
                 GraphVertex current = vertices[topologicalOrder[i]];
+                String vName = current.getVertexName();
+                int vIdx = current.getVertexIndex();
 
                 if (current.isInputVertex())
                     continue; //No op
                 //FIXME: make the frozen vertex feature extraction more flexible
                 if (current.hasLayer() && current.getLayer() instanceof FrozenLayer)
                     break;
+
+                //First: determine what workspace manager we should use for the activation gradients from this vertex
+                LayerWorkspaceMgr workspaceMgr;
+                if (noWS) {
+                    workspaceMgr = allNone;
+                } else {
+                    //First: is there a free forward pass workspace we can use?
+                    if (freeWorkspaceManagers.size() > 0) {
+                        workspaceMgr = freeWorkspaceManagers.remove(freeWorkspaceManagers.size() - 1);
+                    } else {
+                        //No existing free workspace managers for forward pass - create a new one...
+                        String wsName = "WS_LAYER_ACT_" + allWorkspaceManagers.size();
+                        workspaceMgr = LayerWorkspaceMgr.builder()
+                                .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.ACTIVATIONS, wsName, WS_LAYER_ACT_X_CONFIG)
+                                .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                                .build();
+
+                        allWorkspaceManagers.add(workspaceMgr);
+                    }
+                }
 
                 if (current.isOutputVertex()) {
                     //Two reasons for a vertex to be an output vertex:
@@ -2122,28 +2164,25 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                 }
 
-                Pair<Gradient, INDArray[]> pair = current.doBackward(truncatedBPTT, workspaceMgr);
-                INDArray[] epsilons = pair.getSecond();
+                //Actually execute backprop for the specified vertex
+                Pair<Gradient, INDArray[]> pair;
+                INDArray[] epsilons;
+                try(MemoryWorkspace wsWorkingMem = workspaceMgr.notifyScopeBorrowed(ArrayType.BP_WORKING_MEM)){
 
-                for (int x = 0; x < epsilons.length; x++) {
-                    if (epsilons[x] == null) {
-                        continue;
+                    //First: Open the relevant workspace for the activations.
+                    //Note that this will be closed only once the current vertex's activations have been consumed
+                    MemoryWorkspace wsActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS);
+                    openActivationsWorkspaces.put(wsActivations, workspaceMgr);
+                    int closeableAt = vertexActGradsFullyConsumedByStep[vIdx];
+                    if(closeAtEndIteraton[closeableAt] == null){
+                        closeAtEndIteraton[closeableAt] = new ArrayList<>();
                     }
+                    closeAtEndIteraton[closeableAt].add(wsActivations);
 
-                    if(wsm == WorkspaceMode.SEPARATE) {
-                        epsilons[x] = epsilons[x].leverageOrDetach(WORKSPACE_EXTERNAL);
-                    } else if(wsm == WorkspaceMode.SINGLE){
-                        if(wsExternalActive){
-                            //Standard fit() training case: workspace external is active (beyond just the current for loop)
-                            // hence it's safe to leverage here
-                            epsilons[x] = epsilons[x].leverageTo(WORKSPACE_EXTERNAL);
-                        } else {
-                            //"External errors" backprop case: workspace external is already (and only) active in the
-                            // current loop, and hence the epsilons will be invalidated at the end of the current vertex
-                            // for loop
-                            epsilons[x] = epsilons[x].detach();
-                        }
-                    }
+                    pair = current.doBackward(truncatedBPTT, workspaceMgr);
+                    epsilons = pair.getSecond();
+
+                    //Validate workspace location for the activation gradients:
                 }
 
                 //Inputs to the current GraphVertex:
@@ -2156,29 +2195,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         GraphVertex gv = vertices[v.getVertexIndex()];
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
-                            INDArray currentEps = gv.getEpsilon().leverageOrDetach(WORKSPACE_EXTERNAL);
-
-                            if (wsm == WorkspaceMode.NONE ) {
-                                gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
-                            } else if(wsm == WorkspaceMode.SINGLE && !wsExternalActive){
-                                //"External errors" backprop case: workspace external is already (and only) active in the
-                                // current loop, and hence the epsilons will be invalidated at the end of the current vertex
-                                // for loop. Leveraging or scoping to workspaceExternal in this case isn't sufficient
-                                try (MemoryWorkspace wsOut = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                }
-                            } else {
-                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                                        .getWorkspaceForCurrentThread(WORKSPACE_EXTERNAL)
-                                        .notifyScopeBorrowed()) {
-                                    gv.setEpsilon(currentEps.add(epsilons[j++]));
-                                }
-                            }
+                            INDArray currentEps = gv.getEpsilon();
+                            gv.setEpsilon(currentEps.addi(epsilons[j++]));  //TODO is this always safe?
                         } else {
                             gv.setEpsilon(epsilons[j++]);
                         }
                         setVertexEpsilon[gv.getVertexIndex()] = true;
-
                     }
                 }
 
@@ -2195,6 +2217,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     for (Triple<String, INDArray, Character> t : tempList)
                         gradients.addFirst(t);
                 }
+
+                //Close any activation gradient workspaces that we no longer require
+                //Note that activation gradient workspaces can be closed only once the corresponding activations
+                // gradients have been fully consumed
+                if(closeAtEndIteraton[i] != null){
+                    for(MemoryWorkspace wsAct : closeAtEndIteraton[i]){
+                        wsAct.close();
+                        LayerWorkspaceMgr canNowReuse = openActivationsWorkspaces.remove(wsAct);
+                        freeWorkspaceManagers.add(canNowReuse);
+                    }
+                }
+            }
+
+        } finally {
+            //Close all open workspaces... usually this list will be empty, but not if an exception is thrown
+            for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
+                ws.close();
             }
         }
 
@@ -2203,9 +2242,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (Triple<String, INDArray, Character> t : gradients) {
             gradient.setGradientFor(t.getFirst(), t.getSecond(), t.getThird());
         }
-
-        if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(WORKSPACE_FEED_FORWARD).initializeWorkspace();
 
         this.gradient = gradient;
 
@@ -2217,7 +2253,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(GraphVertex gv : vertices){
             gv.clear();
         }
-        */
     }
 
     @Override
