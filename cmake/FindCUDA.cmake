@@ -547,6 +547,7 @@ macro(cuda_unset_include_and_libraries)
     unset(CUDA_CUDARTEMU_LIBRARY CACHE)
   endif()
   unset(CUDA_cudart_static_LIBRARY CACHE)
+  unset(CUDA_cudadevrt_LIBRARY CACHE)
   unset(CUDA_cublas_LIBRARY CACHE)
   unset(CUDA_cublasemu_LIBRARY CACHE)
   unset(CUDA_cufft_LIBRARY CACHE)
@@ -808,6 +809,13 @@ elseif(CUDA_USE_STATIC_CUDA_RUNTIME AND CUDA_cudart_static_LIBRARY)
 else()
   list(APPEND CUDA_LIBRARIES ${CUDA_CUDART_LIBRARY})
 endif()
+
+
+if(NOT CUDA_VERSION VERSION_LESS "5.0")
+  cuda_find_library_local_first(CUDA_cudadevrt_LIBRARY cudadevrt "\"cudadevrt\" library")
+  mark_as_advanced(CUDA_cudadevrt_LIBRARY)
+endif()
+
 
 # 1.1 toolkit on linux doesn't appear to have a separate library on
 # some platforms.
@@ -1648,6 +1656,13 @@ macro(CUDA_ADD_LIBRARY cuda_target)
   target_link_libraries(${cuda_target}
     ${CUDA_LIBRARIES}
     )
+
+  if(CUDA_SEPARABLE_COMPILATION)
+    target_link_libraries(${cuda_target}
+      ${CUDA_cudadevrt_LIBRARY}
+      )
+  endif()
+
 
   # We need to set the linker language based on what the expected generated file
   # would be. CUDA_C_OR_CXX is computed based on CUDA_HOST_COMPILATION_CPP.
