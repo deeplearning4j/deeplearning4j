@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.util;
 
+import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -33,13 +34,25 @@ import java.util.Arrays;
 public class LinAlgExceptions {
     /**
      * Asserts both arrays be the same length
-     * @param n
-     * @param n2
+     * @param x
+     * @param z
      */
-    public static void assertSameLength(INDArray n, INDArray n2) {
-        if (n.length() != n2.length() && n.length() != 1 && n2.length() != 1)
-            throw new IllegalStateException("Mis matched lengths: [" + n.length() + "] != [" + n2.length() + "] - " +
-                    "Array 1 shape: " + Arrays.toString(n.shape()) + ", array 2 shape: " + Arrays.toString(n2.shape()));
+    public static void assertSameLength(INDArray x, INDArray z) {
+        val lengthX = x.length();
+        val lengthZ = z.length();
+        if (lengthX != lengthZ && lengthX != 1 && lengthZ != 1)
+            throw new IllegalStateException("Mis matched lengths: [" + x.length() + "] != [" + z.length() + "] - " +
+                    "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(z.shape()));
+    }
+
+    public static void assertSameLength(INDArray x, INDArray y, INDArray z) {
+        val lengthX = x.length();
+        val lengthY = y.length();
+        val lengthZ = z.length();
+
+        if (lengthX != lengthY && lengthX != lengthZ && lengthX != 1 && lengthY != 1 && lengthZ != 1)
+            throw new IllegalStateException("Mis matched lengths: [" + lengthX + "] != [" + lengthY + "] != [" + lengthZ + "] - " +
+                    "Array 1 shape: " + Arrays.toString(x.shape()) + ", array 2 shape: " + Arrays.toString(y.shape()) + ", array 3 shape: " + Arrays.toString(z.shape()));
     }
 
     public static void assertSameShape(INDArray n, INDArray n2) {

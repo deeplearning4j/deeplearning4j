@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.blas;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,6 +15,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author Audrey Loeffel
  */
+@Ignore // temporary ignored
 @RunWith(Parameterized.class)
 public class SparseCOOLevel2Test extends BaseNd4jTest {
 

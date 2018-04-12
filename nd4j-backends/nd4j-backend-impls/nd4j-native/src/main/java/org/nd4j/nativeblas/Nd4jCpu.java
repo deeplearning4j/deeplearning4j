@@ -101,6 +101,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_floordiv_bp.class,
         float_realdiv.class,
         float_realdiv_bp.class,
+        float_truncatediv.class,
         float_assign.class,
         float_assign_bp.class,
         float_equals.class,
@@ -283,6 +284,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         float_lstm.class,
         float_gru.class,
         float_static_rnn.class,
+        float_static_bidirectional_rnn.class,
         float_permute.class,
         float_reshapeas.class,
         float_transpose.class,
@@ -418,6 +420,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_floordiv_bp.class,
         half_realdiv.class,
         half_realdiv_bp.class,
+        half_truncatediv.class,
         half_assign.class,
         half_assign_bp.class,
         half_equals.class,
@@ -600,6 +603,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         half_lstm.class,
         half_gru.class,
         half_static_rnn.class,
+        half_static_bidirectional_rnn.class,
         half_permute.class,
         half_reshapeas.class,
         half_transpose.class,
@@ -735,6 +739,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_floordiv_bp.class,
         double_realdiv.class,
         double_realdiv_bp.class,
+        double_truncatediv.class,
         double_assign.class,
         double_assign_bp.class,
         double_equals.class,
@@ -917,6 +922,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuPresets {
         double_lstm.class,
         double_gru.class,
         double_static_rnn.class,
+        double_static_bidirectional_rnn.class,
         double_permute.class,
         double_reshapeas.class,
         double_transpose.class,
@@ -15448,6 +15454,24 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include <helpers/OpTracker.h>
 
+// #ifdef __CUDACC__
+
+// #elif __JAVACPP_HACK__
+// #define meta_def
+// #define op_def
+// #define op_def_special
+// #elif _MSC_VER
+// #elif __clang__
+// #define op_def inline
+// #define op_def_special inline
+// #define meta_def inline
+// #elif __GNUC__
+// #define meta_def _Pragma("omp declare simd") inline __attribute__((always_inline))
+// #define op_def _Pragma("omp declare simd") inline __attribute__((always_inline))
+// #define op_def_special _Pragma("omp declare simd") inline __attribute__((always_inline))
+// #endif
+
+
 public static native @MemberGetter int ELEMENT_THRESHOLD();
 public static final int ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
 public static native @MemberGetter int TAD_THRESHOLD();
@@ -15493,7 +15517,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define OBSTRUCT(...) __VA_ARGS__ DEFER(EMPTY)()
 // #define EXPAND(...) __VA_ARGS__
 
-// #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ FN<TYPE<T>>SIG; }
+// #define _EXPAND_OP_CALL(FN, SIG, NUM, TYPE) case NUM: { FN<TYPE<T>>SIG; break; };
 // #define _EXPAND_RETURNING_OP_CALL(FN, SIG, NUM, TYPE) else if(opNum == NUM){ return FN<TYPE<T>>SIG; }
 // #define _EXPAND_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
 // #define _EXPAND_RETURNING_PACKED_OP_CALL(FN, SIG, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _RETURNING_OP_CALL (FN, SIG, UNPAREN(OPNUM_PAIR)))
@@ -15799,6 +15823,106 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define TR_97(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_96(WHAT, TYPE, __VA_ARGS__))
 // #define TR_98(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_97(WHAT, TYPE, __VA_ARGS__))
 // #define TR_99(WHAT, TYPE, OPNUM_PAIR, ...) WHAT(TYPE, OPNUM_PAIR)EVAL(TR_98(WHAT, TYPE, __VA_ARGS__))
+
+// #define DIR_1(WHAT, PARAMS, OPNUM_PAIR) WHAT(PARAMS, OPNUM_PAIR)
+// #define DIR_2(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_1(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_3(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_2(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_4(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_3(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_5(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_4(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_6(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_5(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_7(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_6(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_8(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_7(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_9(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_8(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_10(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_9(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_11(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_10(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_12(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_11(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_13(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_12(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_14(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_13(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_15(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_14(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_16(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_15(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_17(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_16(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_18(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_17(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_19(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_18(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_20(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_19(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_21(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_20(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_22(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_21(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_23(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_22(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_24(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_23(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_25(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_24(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_26(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_25(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_27(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_26(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_28(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_27(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_29(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_28(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_30(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_29(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_31(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_30(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_32(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_31(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_33(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_32(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_34(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_33(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_35(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_34(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_36(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_35(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_37(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_36(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_38(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_37(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_39(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_38(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_40(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_39(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_41(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_40(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_42(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_41(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_43(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_42(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_44(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_43(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_45(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_44(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_46(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_45(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_47(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_46(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_48(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_47(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_49(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_48(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_50(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_49(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_51(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_50(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_52(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_51(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_53(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_52(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_54(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_53(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_55(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_54(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_56(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_55(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_57(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_56(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_58(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_57(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_59(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_58(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_60(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_59(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_61(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_60(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_62(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_61(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_63(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_62(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_64(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_63(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_65(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_64(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_66(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_65(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_67(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_66(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_68(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_67(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_69(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_68(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_70(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_69(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_71(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_70(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_72(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_71(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_73(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_72(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_74(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_73(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_75(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_74(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_76(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_75(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_77(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_76(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_78(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_77(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_79(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_78(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_80(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_79(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_81(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_80(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_82(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_81(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_83(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_82(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_84(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_83(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_85(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_84(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_86(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_85(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_87(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_86(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_88(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_87(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_89(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_88(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_90(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_89(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_91(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_90(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_92(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_91(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_93(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_92(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_94(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_93(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_95(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_94(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_96(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_95(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_97(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_96(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_98(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_97(WHAT, PARAMS, __VA_ARGS__))
+// #define DIR_99(WHAT, PARAMS, OPNUM_PAIR, ...) WHAT(PARAMS, OPNUM_PAIR)EVAL(DIR_98(WHAT, PARAMS, __VA_ARGS__))
 
 
 // #define FZ_1(WHAT, NAME, TYPE, SIGNATURE, OPNUM_PAIR) WHAT(NAME, TYPE, SIGNATURE, OPNUM_PAIR)
@@ -16335,21 +16459,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 //////////////////////////////
 // #ifdef __clang__
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; };
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 1024, *stream) SIG; };
 // #elif _MSC_VER
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; };
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 1024, *stream) SIG; };
 // #elif __GNUC__
-// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 256, 1024, *stream) SIG; }
+// #define _EXPAND_META_CALL(FN, SIG, OPCLASS, NUM_A, TYPE_A, NUM_B, TYPE_B) else if(opNumA == NUM_A && opNumB == NUM_B){ MIX4(FN,NUM_A,NUM_B,OPCLASS) LAUNCH(256, 512, 2048, *stream) SIG; }
 // #elif __CUDACC__
 // #endif
 // #define _EXPAND_OP_SIMPLE(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) case NUM_A: {MIX3(NAME, NUM_A, TYPE) LAUNCH(launchDims.x, launchDims.y, launchDims.z, *stream) PARAMZ;} break;
 
 // #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
+// #define _EXPAND_OP_DIRECT(PARAMZ, NUM_A, TYPE_A)  case NUM_A: { z = TYPE_A<T>::op PARAMZ; break; }
 // #define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance()->storeOperation(TYPE, #TYPE_A, NUM_A);
 
 // #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
 
 // #define _EXPAND_PACKED_CALL_1(NAME, TYPE, PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_1(NAME, TYPE, PARAMZ, UNPAREN(OPNUM_PAIR)))
+// #define _EXPAND_PACKED_DIRECT(PARAMZ, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_DIRECT(PARAMZ, UNPAREN(OPNUM_PAIR)))
 // #define _EXPAND_PACKED_CALL_T(TYPE, OPNUM_PAIR) EVALUATING_PASTE(_EXPAND, _OP_CALL_T(TYPE, UNPAREN(OPNUM_PAIR)))
 
 // #define _EXPAND_KERNEL_CALL(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, NUM_A, TYPE_A, NUM_B, TYPE_B) extern "C" __global__ void ARGMIX4(NAME, NUM_A, NUM_B, TYPE)INPUTZ {KERNEL<TYPE, OPCLASS<TYPE, TYPE_A<TYPE>, TYPE_B<TYPE>>>PARAMZ ;};
@@ -16363,6 +16489,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //////////////////////////////
 
 // #define GET_MACROS_1(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
+// #define GET_MACROS_D(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 // #define GET_MACROS_T(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
 
 // #define  GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54, _55, _56, _57, _58, _59, _60, _61, _62, _63, _64, _65, _66, _67, _68, _69, _70, _71, _72, _73, _74, _75, _76, _77, _78, _79, _80, _81, _82, _83, _84, _85, _86, _87, _88, _89, _90, _91, _92, _93, _94, _95, _96, _97, _98, _99, NAME,...) NAME
@@ -16378,6 +16505,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, ...) EXPAND(GET_MACROE(__VA_ARGS__, FX_70, FX_69, FX_68, FX_67, FX_66, FX_65, FX_64, FX_63, FX_62, FX_61, FX_60, FX_59, FX_58, FX_57, FX_56, FX_55, FX_54, FX_53, FX_52, FX_51, FX_50, FX_49, FX_48, FX_47, FX_46, FX_45, FX_44, FX_43, FX_42, FX_41, FX_40, FX_39, FX_38, FX_37, FX_36, FX_35, FX_34, FX_33, FX_32, FX_31, FX_30, FX_29, FX_28, FX_27, FX_26, FX_25, FX_24, FX_23, FX_22, FX_21, FX_20, FX_19, FX_18, FX_17, FX_16, FX_15, FX_14, FX_13, FX_12, FX_11, FX_10, FX_9, FX_8, FX_7, FX_6, FX_5, FX_4, FX_3, FX_2, FX_1)(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR, __VA_ARGS__))
 
 // #define FOR_EACH_CALL_1(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS_1(__VA_ARGS__,  CL1_99, CL1_98, CL1_97, CL1_96, CL1_95, CL1_94, CL1_93, CL1_92, CL1_91, CL1_90, CL1_89, CL1_88, CL1_87, CL1_86, CL1_85, CL1_84, CL1_83, CL1_82, CL1_81, CL1_80, CL1_79, CL1_78, CL1_77, CL1_76, CL1_75, CL1_74, CL1_73, CL1_72, CL1_71, CL1_70, CL1_69, CL1_68, CL1_67, CL1_66, CL1_65, CL1_64, CL1_63, CL1_62, CL1_61, CL1_60, CL1_59, CL1_58, CL1_57, CL1_56, CL1_55, CL1_54, CL1_53, CL1_52, CL1_51, CL1_50, CL1_49, CL1_48, CL1_47, CL1_46, CL1_45, CL1_44, CL1_43, CL1_42, CL1_41, CL1_40, CL1_39, CL1_38, CL1_37, CL1_36, CL1_35, CL1_34, CL1_33, CL1_32, CL1_31, CL1_30, CL1_29, CL1_28, CL1_27, CL1_26, CL1_25, CL1_24, CL1_23, CL1_22, CL1_21, CL1_20, CL1_19, CL1_18, CL1_17, CL1_16, CL1_15, CL1_14, CL1_13, CL1_12, CL1_11, CL1_10, CL1_9, CL1_8, CL1_7, CL1_6, CL1_5, CL1_4, CL1_3, CL1_2, CL1_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
+// #define FOR_EACH_DIRECT(WHAT, PARAMZ, ...) EXPAND(GET_MACROS_D(__VA_ARGS__,  DIR_99, DIR_98, DIR_97, DIR_96, DIR_95, DIR_94, DIR_93, DIR_92, DIR_91, DIR_90, DIR_89, DIR_88, DIR_87, DIR_86, DIR_85, DIR_84, DIR_83, DIR_82, DIR_81, DIR_80, DIR_79, DIR_78, DIR_77, DIR_76, DIR_75, DIR_74, DIR_73, DIR_72, DIR_71, DIR_70, DIR_69, DIR_68, DIR_67, DIR_66, DIR_65, DIR_64, DIR_63, DIR_62, DIR_61, DIR_60, DIR_59, DIR_58, DIR_57, DIR_56, DIR_55, DIR_54, DIR_53, DIR_52, DIR_51, DIR_50, DIR_49, DIR_48, DIR_47, DIR_46, DIR_45, DIR_44, DIR_43, DIR_42, DIR_41, DIR_40, DIR_39, DIR_38, DIR_37, DIR_36, DIR_35, DIR_34, DIR_33, DIR_32, DIR_31, DIR_30, DIR_29, DIR_28, DIR_27, DIR_26, DIR_25, DIR_24, DIR_23, DIR_22, DIR_21, DIR_20, DIR_19, DIR_18, DIR_17, DIR_16, DIR_15, DIR_14, DIR_13, DIR_12, DIR_11, DIR_10, DIR_9, DIR_8, DIR_7, DIR_6, DIR_5, DIR_4, DIR_3, DIR_2, DIR_1)(WHAT, PARAMZ, __VA_ARGS__))
 // #define FOR_EACH_TRACKER(WHAT, TYPE, ...) EXPAND(GET_MACROS_T(__VA_ARGS__,  TR_99, TR_98, TR_97, TR_96, TR_95, TR_94, TR_93, TR_92, TR_91, TR_90, TR_89, TR_88, TR_87, TR_86, TR_85, TR_84, TR_83, TR_82, TR_81, TR_80, TR_79, TR_78, TR_77, TR_76, TR_75, TR_74, TR_73, TR_72, TR_71, TR_70, TR_69, TR_68, TR_67, TR_66, TR_65, TR_64, TR_63, TR_62, TR_61, TR_60, TR_59, TR_58, TR_57, TR_56, TR_55, TR_54, TR_53, TR_52, TR_51, TR_50, TR_49, TR_48, TR_47, TR_46, TR_45, TR_44, TR_43, TR_42, TR_41, TR_40, TR_39, TR_38, TR_37, TR_36, TR_35, TR_34, TR_33, TR_32, TR_31, TR_30, TR_29, TR_28, TR_27, TR_26, TR_25, TR_24, TR_23, TR_22, TR_21, TR_20, TR_19, TR_18, TR_17, TR_16, TR_15, TR_14, TR_13, TR_12, TR_11, TR_10, TR_9, TR_8, TR_7, TR_6, TR_5, TR_4, TR_3, TR_2, TR_1)(WHAT, TYPE, __VA_ARGS__))
 
 // #define FOR_EACH_Z(WHAT, NAME, TYPE, PARAMZ, ...) EXPAND(GET_MACROS(__VA_ARGS__,  FZ_99, FZ_98, FZ_97, FZ_96, FZ_95, FZ_94, FZ_93, FZ_92, FZ_91, FZ_90, FZ_89, FZ_88, FZ_87, FZ_86, FZ_85, FZ_84, FZ_83, FZ_82, FZ_81, FZ_80, FZ_79, FZ_78, FZ_77, FZ_76, FZ_75, FZ_74, FZ_73, FZ_72, FZ_71, FZ_70, FZ_69, FZ_68, FZ_67, FZ_66, FZ_65, FZ_64, FZ_63, FZ_62, FZ_61, FZ_60, FZ_59, FZ_58, FZ_57, FZ_56, FZ_55, FZ_54, FZ_53, FZ_52, FZ_51, FZ_50, FZ_49, FZ_48, FZ_47, FZ_46, FZ_45, FZ_44, FZ_43, FZ_42, FZ_41, FZ_40, FZ_39, FZ_38, FZ_37, FZ_36, FZ_35, FZ_34, FZ_33, FZ_32, FZ_31, FZ_30, FZ_29, FZ_28, FZ_27, FZ_26, FZ_25, FZ_24, FZ_23, FZ_22, FZ_21, FZ_20, FZ_19, FZ_18, FZ_17, FZ_16, FZ_15, FZ_14, FZ_13, FZ_12, FZ_11, FZ_10, FZ_9, FZ_8, FZ_7, FZ_6, FZ_5, FZ_4, FZ_3, FZ_2, FZ_1)(WHAT, NAME, TYPE, PARAMZ, __VA_ARGS__))
@@ -16393,6 +16521,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define _EXEC_OP_SIMPLE(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_Z(THETA, NAME, TYPE, SIGNATURE, __VA_ARGS__))
 
 // #define _EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, ...) EVAL(FOR_EACH_CALL_1(CALL_1, NAME, TYPE, SIGNATURE, __VA_ARGS__))
+// #define _EXEC_OP_DIRECT(SIGNATURE, ...) EVAL(FOR_EACH_DIRECT(DIRECT, SIGNATURE, __VA_ARGS__))
 // #define _EXEC_TRACKER(TYPE, ...) EVAL(FOR_EACH_TRACKER(CALL_T, TYPE, __VA_ARGS__))
 
 // #define _EXEC_META_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, ...) EVAL(FOR_EACH_X(WHAT, NAME, SIGNATURE, OPCLASS, OPNUM_PAIR_A, __VA_ARGS__))
@@ -16404,7 +16533,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define _EXEC_KERNEL_M(NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, LIST_A, ...) EVAL(FOR_EACH_K(BETA, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPS_A(LIST_A), __VA_ARGS__ ))
 // #define _EXEC_KERNEL_X(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ,  OPNUM_PAIR_A, ...) EVAL(FOR_EACH_I(WHAT, NAME, KERNEL, TYPE, OPCLASS, INPUTZ, PARAMZ, OPNUM_PAIR_A, __VA_ARGS__))
 //_EXPAND_PACKED_OP_CALL
-// #define DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }
+// #define DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) switch(opNum) { EVAL(_EXEC_OPS(_EXPAND_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }}
 
 // #ifdef __clang__
 // #define DISPATCH_METAOP(NAME, SIGNATURE, OPCLASS, LIST_A, LIST_B) EVAL(_EXEC_META_M(RANDOMWHAT, NAME, (SIGNATURE), OPCLASS, (LIST_A), LIST_B))
@@ -16430,6 +16559,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define BUILD_CALL_1(NAME, TYPE, SIGNATURE, OPS) EVAL(_EXEC_BUILDER_1(NAME, TYPE, SIGNATURE, OPS))
 // #define BUILD_TRACKER(TYPE, OPS) EVAL(_EXEC_TRACKER(TYPE, OPS))
 
+// #define EXECUTE_NOE(SIGNATURE, LIST_A) switch(opNum) {EVAL(_EXEC_OP_DIRECT(SIGNATURE, LIST_A)) default: { printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); }};
+
 // #define RETURNING_DISPATCH_BY_OPNUM(NAME, SIGNATURE, ...) if(false){} EVAL(_EXEC_OPS(_EXPAND_RETURNING_PACKED_OP_CALL, NAME, (SIGNATURE), __VA_ARGS__)) else{ printf("[ERROR] Unknown opNum=%d on %s:%d", opNum, __FILE__, __LINE__); return 0; }
 // #define PARAMS(...) __VA_ARGS__
 // #define INPUT(...) __VA_ARGS__
@@ -16444,6 +16575,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define CALL_1(A, B, C, D) EXPAND(_EXPAND_PACKED_CALL_1(A, B, C, D))
 // #define CALL_T(A, B) EXPAND(_EXPAND_PACKED_CALL_T(A, B))
+// #define DIRECT(A, B) EXPAND(_EXPAND_PACKED_DIRECT(A, B))
 
 
 
@@ -21911,6 +22043,58 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
+
+        /**
+         *
+         *
+         * \tparam T
+         */
+        @Name("nd4j::ops::truncatediv<float>") public static class float_truncatediv extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_truncatediv(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_truncatediv(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_truncatediv position(long position) {
+                return (float_truncatediv)super.position(position);
+            }
+        
+                                                                                    public float_truncatediv() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }
+        @Name("nd4j::ops::truncatediv<float16>") public static class half_truncatediv extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_truncatediv(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_truncatediv(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_truncatediv position(long position) {
+                return (half_truncatediv)super.position(position);
+            }
+        
+                                                                                    public half_truncatediv() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }
+        @Name("nd4j::ops::truncatediv<double>") public static class double_truncatediv extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_truncatediv(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_truncatediv(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_truncatediv position(long position) {
+                return (double_truncatediv)super.position(position);
+            }
+        
+                                                                                    public double_truncatediv() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
          * 1) if shapes are equal that's pairwise operation, result will have the same shape.
@@ -25675,7 +25859,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }
 
-           //////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:
        *
@@ -25733,6 +25917,73 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public double_static_rnn() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
+                                                                                }
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation "static RNN time sequences" with peep hole connections:
+       *
+       * Input arrays: 
+       *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features       
+       *    1: input-to-hidden  weights for forward RNN, [inSize   x numUnitsFW] 
+       *    2: hidden-to-hidden weights for forward RNN, [numUnitsFW x numUnitsFW] 
+       *    3: biases for forward RNN, [2*numUnitsFW] 
+       *    4: input-to-hidden  weights for backward RNN, [inSize   x numUnitsBW] 
+       *    5: hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW] 
+       *    6: biases for backward RNN, [2*numUnitsBW] 
+       *    7: (optional) initial cell output for forward RNN [batchSize x numUnitsFW], that is at time step = 0       
+       *    8: (optional) initial cell output for backward RNN [batchSize x numUnitsBW], that is at time step = 0       
+       *    9: (optional) vector with shape [batchSize] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep       
+       *  
+       * Output arrays: 
+       *    0: cell outputs [time x batchSize x (numUnitsFW + numUnitsBW)]
+       *    1: cell final non-zero output for forward RNN [batchSize x numUnitsFW]
+       *    2: cell final non-zero output for backward RNN [batchSize x numUnitsFW]
+       */                  
+        @Name("nd4j::ops::static_bidirectional_rnn<float>") public static class float_static_bidirectional_rnn extends FloatDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public float_static_bidirectional_rnn(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public float_static_bidirectional_rnn(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public float_static_bidirectional_rnn position(long position) {
+                return (float_static_bidirectional_rnn)super.position(position);
+            }
+        
+                                                                                    public float_static_bidirectional_rnn() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef FloatContext block);
+                                                                                }                  
+        @Name("nd4j::ops::static_bidirectional_rnn<float16>") public static class half_static_bidirectional_rnn extends HalfDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public half_static_bidirectional_rnn(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public half_static_bidirectional_rnn(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public half_static_bidirectional_rnn position(long position) {
+                return (half_static_bidirectional_rnn)super.position(position);
+            }
+        
+                                                                                    public half_static_bidirectional_rnn() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef HalfContext block);
+                                                                                }                  
+        @Name("nd4j::ops::static_bidirectional_rnn<double>") public static class double_static_bidirectional_rnn extends DoubleDeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public double_static_bidirectional_rnn(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public double_static_bidirectional_rnn(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public double_static_bidirectional_rnn position(long position) {
+                return (double_static_bidirectional_rnn)super.position(position);
+            }
+        
+                                                                                    public double_static_bidirectional_rnn() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef DoubleContext block);
                                                                                 }

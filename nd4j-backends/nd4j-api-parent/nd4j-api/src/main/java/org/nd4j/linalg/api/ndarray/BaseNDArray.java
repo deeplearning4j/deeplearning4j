@@ -4909,7 +4909,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public int length() {
-        return Shape.length(shapeInformation);
+        return (int) Shape.length(javaShapeInformation);
     }
 
     /**
@@ -4919,7 +4919,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public long lengthLong() {
-        return Shape.length(shapeInformation);
+        return Shape.length(javaShapeInformation);
     }
 
     /**

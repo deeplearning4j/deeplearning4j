@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,40 +34,23 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
-public class TruncateDivOp extends BaseTransformOp {
+public class TruncateDivOp extends BaseDynamicTransformOp {
     public TruncateDivOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
-        super(sameDiff, i_v1, i_v2);
+        super(sameDiff, new SDVariable[] {i_v1, i_v2 }, false);
     }
 
     public TruncateDivOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, boolean inPlace) {
-        super(sameDiff, i_v1, i_v2, inPlace);
+        super(sameDiff, new SDVariable[] {i_v1, i_v2}, inPlace);
     }
 
     public TruncateDivOp() {}
 
     public TruncateDivOp(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public TruncateDivOp(INDArray x) {
-        super(x);
-    }
-
-    public TruncateDivOp(INDArray x, INDArray z) {
-        super(x, z);
-    }
-
-    public TruncateDivOp(INDArray x, INDArray z, long n) {
-        super(x, z, n);
+        super(new INDArray[]{x, y}, new INDArray[]{z});
     }
 
     public TruncateDivOp(INDArray x, INDArray y, INDArray z) {
-        super(x, y, z, x.lengthLong());
-    }
-
-    @Override
-    public int opNum() {
-        return 19;
+        super(new INDArray[]{x, y}, new INDArray[]{z});
     }
 
     @Override
@@ -83,15 +67,6 @@ public class TruncateDivOp extends BaseTransformOp {
     public String tensorflowName() {
         return "TruncateDiv";
     }
-
-    @Override
-    public void init(INDArray x, INDArray y, INDArray z, long n) {
-        super.init(x, y, z, n);
-        if (y == null)
-            throw new IllegalArgumentException("No components to divide");
-    }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

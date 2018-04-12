@@ -1,5 +1,6 @@
 package org.nd4j.linalg;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
@@ -13,6 +14,7 @@ import static org.junit.Assert.*;
 /**
  * @author Audrey Loeffel
  */
+@Ignore // temporary ignored
 public class SparseNDArrayCSRTest {
 
     /*

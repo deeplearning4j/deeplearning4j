@@ -1,5 +1,6 @@
 package org.nd4j.linalg;
 
+import org.junit.Ignore;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -7,6 +8,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 /**
  * TODO !! TO REMOVE : only for getting a better understanding of indexes !!
  */
+@Ignore // temporary ignored
 public class TempNdArrayIndexTest {
 
     public static void main(String[] args) {
