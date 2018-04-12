@@ -110,18 +110,7 @@ public class LayerVertex extends BaseGraphVertex {
         //Apply preprocessor
         INDArray currInput = inputs[0];
         if (layerPreProcessor != null) {
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_EXTERNAL)
-                    && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL)) {
-                //WS single, or FF as part of backprop
-                //NOTE: we *could* leverage instead (less memory, worse performance), but most preprocessors will only
-                //allocate 1 array (i.e., the new output), so this is usually preferable in practice
-                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                        .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_EXTERNAL).notifyScopeBorrowed()) {
-                    currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), workspaceMgr);
-                }
-            } else {
-                currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), workspaceMgr);
-            }
+            currInput = layerPreProcessor.preProcess(currInput, graph.batchSize(), workspaceMgr);
         }
         layer.setInput(currInput, workspaceMgr);
         setLayerInput = true;

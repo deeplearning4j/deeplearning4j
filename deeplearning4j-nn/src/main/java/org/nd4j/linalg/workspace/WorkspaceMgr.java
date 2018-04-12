@@ -1,5 +1,6 @@
 package org.nd4j.linalg.workspace;
 
+import lombok.NonNull;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,6 +58,7 @@ public interface WorkspaceMgr<T extends Enum<T>> {
 
     INDArray dup(T arrayType, INDArray toDup, char order);
 
+    INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup);
 
 
 }

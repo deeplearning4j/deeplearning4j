@@ -24,6 +24,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JException;
@@ -296,16 +297,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             iter.reset();
         }
 
-        MemoryWorkspace workspace =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        ComputationGraph.workspaceConfigurationExternal,
-                                                        ComputationGraph.WORKSPACE_EXTERNAL);
-        MemoryWorkspace cache =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        ComputationGraph.workspaceConfigurationCache,
-                                                        ComputationGraph.WORKSPACE_CACHE);
+        MemoryWorkspace workspace = null;   //TODO
+        MemoryWorkspace cache = null;   //TODO
 
         log.info("Starting unsupervised training on layer " + layerIdx);
         while (iter.hasNext()) {
@@ -1350,8 +1343,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator Training data (DataSetIterator)
      */
     public void fit(DataSetIterator iterator) {
-        throw new UnsupportedOperationException("Not yet reimplemented");
-        /*
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
         boolean destructable = false;
@@ -1367,15 +1358,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             tl.onEpochStart(this);
         }
 
-        MemoryWorkspace workspace =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
-        MemoryWorkspace cache =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        ComputationGraph.workspaceConfigurationCache,
-                                                        ComputationGraph.WORKSPACE_CACHE);
+//        MemoryWorkspace workspace =
+//                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+//                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+//                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
+//        MemoryWorkspace cache =
+//                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+//                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+//                                                        ComputationGraph.workspaceConfigurationCache,
+//                                                        ComputationGraph.WORKSPACE_CACHE);
+
+        LayerWorkspaceMgr workspaceMgr;
+        if(getLayerWiseConfigurations().getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
+        } else {
+            workspaceMgr = LayerWorkspaceMgr.builder()
+                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .build();
+        }
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1415,11 +1418,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         }
                     }
 
-                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                            solver.optimize();
-                        }
-                    }
+//                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+//                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+//                            solver.optimize();
+//                        }
+//                    }
+                    //TODO CACHE
+                    solver.optimize(workspaceMgr);
                 }
 
                 if (hasMaskArrays)
@@ -1443,7 +1448,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             ((AsyncDataSetIterator) iter).shutdown();
 
         incrementEpochCount();
-        */
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/

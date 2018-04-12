@@ -277,7 +277,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
-        std = Transforms.sqrt(var, true).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+        std = Transforms.sqrt(workspaceMgr.dup(ArrayType.INPUT, var), false);
 
         INDArray gamma = null;
         INDArray beta = null;
@@ -307,8 +307,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
-            xMu = x.subRowVector(mean).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
-            xHat = xMu.divRowVector(std).leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+            xMu = workspaceMgr.leverageTo(ArrayType.INPUT, x.subRowVector(mean));
+            xHat = workspaceMgr.leverageTo(ArrayType.INPUT, xMu.divRowVector(std));
+
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -328,14 +329,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else if (x.rank() == 4) {
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-            xMu = Nd4j.getExecutioner()
-                            .execAndReturn(new BroadcastSubOp(x, mean,
-                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
-            xHat = Nd4j.getExecutioner()
-                            .execAndReturn(new BroadcastDivOp(xMu, std,
-                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
-                            .leverageTo(ComputationGraph.WORKSPACE_EXTERNAL);
+            xMu = workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
+            xMu = Nd4j.getExecutioner().execAndReturn(new BroadcastSubOp(x, mean,xMu, 1));
+            xHat =  workspaceMgr.createUninitialized(ArrayType.INPUT, x.shape(), x.ordering());
+            xHat = Nd4j.getExecutioner().execAndReturn(new BroadcastDivOp(xMu, std,xHat, 1));
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs

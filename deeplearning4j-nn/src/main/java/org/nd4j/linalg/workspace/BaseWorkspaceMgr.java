@@ -178,10 +178,15 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     }
 
     @Override
-    public INDArray dup(@NonNull T arrayType, INDArray toDup, char order){
+    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order){
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return toDup.dup(order);
         }
+    }
+
+    @Override
+    public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup){
+        return dup(arrayType, toDup, toDup.ordering());
     }
 
 

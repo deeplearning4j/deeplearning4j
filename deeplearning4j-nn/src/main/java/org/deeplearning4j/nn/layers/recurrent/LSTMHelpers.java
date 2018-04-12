@@ -476,12 +476,13 @@ public class LSTMHelpers {
         IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()
-                        .getCurrentWorkspace().getId().equals(ComputationGraph.WORKSPACE_EXTERNAL)
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        ComputationGraph.workspaceConfigurationLSTM,
-                                                        ComputationGraph.WORKSPACE_LSTM)
-                                        : null;
+        MemoryWorkspace workspace = null;   //TODO
+//                Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()
+//                        .getCurrentWorkspace().getId().equals(ComputationGraph.WORKSPACE_EXTERNAL)
+//                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+//                                                        ComputationGraph.workspaceConfigurationLSTM,
+//                                                        ComputationGraph.WORKSPACE_LSTM)
+//                                        : null;
 
         INDArray timeStepMaskColumn = null;
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
