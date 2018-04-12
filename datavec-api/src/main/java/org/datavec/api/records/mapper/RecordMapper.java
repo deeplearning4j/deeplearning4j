@@ -6,6 +6,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.split.partition.Partitioner;
 import org.datavec.api.writable.Writable;
 
@@ -21,7 +22,7 @@ import java.util.List;
  * Specify a {@link RecordWriter} as the destination.
  *
  * When setting up the locations, use 2 different {@link InputSplit}
- * calling {@link RecordWriter#initialize(InputSplit, Partitioner)}
+ * callling {@link RecordWriter#initialize(InputSplit, Partitioner)}
  * and {@link RecordReader#initialize(InputSplit)}
  * respectively to configure the locations of where the data will be
  * read from and written to.
@@ -54,18 +55,19 @@ public class RecordMapper {
 
     private InputSplit outputUrl;
     @Builder.Default
-    private boolean calInitRecordReader = true;
+    private boolean callInitRecordReader = true;
     @Builder.Default
-    private boolean calInitRecordWriter = true;
+    private boolean callInitRecordWriter = true;
     @Builder.Default
-    private boolean calInitPartitioner = true;
+    private boolean callInitPartitioner = true;
     @Builder.Default
     private Configuration configuration = new Configuration();
 
     private Configuration[] configurationsPerReader;
 
     @Getter
-    private Partitioner partitioner;
+    @Builder.Default
+    private Partitioner partitioner = new NumberOfRecordsPartitioner();
     private int batchSize;
 
     /**
@@ -79,7 +81,7 @@ public class RecordMapper {
      * @throws Exception
      */
     public void copy() throws Exception {
-        if(calInitRecordReader) {
+        if(callInitRecordReader) {
             if(recordReader != null) {
                 recordReader.initialize(configuration, inputUrl);
             }
@@ -110,11 +112,11 @@ public class RecordMapper {
             }
         }
 
-        if(calInitPartitioner) {
+        if(callInitPartitioner) {
             partitioner.init(configuration, outputUrl);
         }
 
-        if(calInitRecordWriter) {
+        if(callInitRecordWriter) {
             recordWriter.initialize(configuration, outputUrl, partitioner);
         }
 
