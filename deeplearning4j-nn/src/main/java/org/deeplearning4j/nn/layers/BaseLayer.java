@@ -344,17 +344,20 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        System.out.println("----- All Workspaces -----");
-        for(MemoryWorkspace ws : Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread()){
-            System.out.println("WORKSPACE: " + ws.getId() + " - scope active: " + ws.isScopeActive());
-        }
-        System.out.println("----- Current Workspaces -----");
-        MemoryWorkspace ws = Nd4j.getMemoryManager().getCurrentWorkspace();
-        System.out.println("CURRENT WS: " + ws.getId() + " - scope active: " + ws.isScopeActive());
-        System.out.println("------------------------------");
-
-        MemoryManager mm = Nd4j.getMemoryManager();
-        System.out.println();
+//        System.out.println("----- All Workspaces -----");
+//        for(MemoryWorkspace ws : Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread()){
+//            System.out.println("WORKSPACE: " + ws.getId() + " - scope active: " + ws.isScopeActive());
+//        }
+//        System.out.println("----- Current Workspaces -----");
+//        MemoryWorkspace ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+//        if(ws != null) {
+//            System.out.println("CURRENT WS: " + ws.getId() + " - scope active: " + ws.isScopeActive());
+//        } else {
+//            System.out.println("CURRENT WS: NONE");
+//        }
+//        System.out.println("------------------------------");
+//        MemoryManager mm = Nd4j.getMemoryManager();
+//        System.out.println();
 
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
