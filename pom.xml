@@ -529,7 +529,7 @@
     </modules>
 
     <properties>
-        <dl4j-test-resources.version>1.0.0-alpha</dl4j-test-resources.version>
+        <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
         <commons-io.version>2.4</commons-io.version>
