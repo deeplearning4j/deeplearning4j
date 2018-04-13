@@ -1761,7 +1761,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 current.clear();
             }
         }
-
         return activations;
     }
 

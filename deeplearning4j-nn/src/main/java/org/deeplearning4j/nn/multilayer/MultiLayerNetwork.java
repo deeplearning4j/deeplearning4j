@@ -67,7 +67,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -312,6 +311,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param features Training data array
      */
     public void pretrainLayer(int layerIdx, INDArray features) {
+        setInput(features);
+        setLayerMaskArrays(null, null);
+
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -341,7 +343,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if(layerIdx == 0) {
             outputOfPrevLayer = input;
         } else {
-            outputOfPrevLayer = outputOfLayerInference(layerIndex-1, input, null);
+            //Yes, this part of training - but we'll do forward psas as inference mode when doing layerwise training
+            // to effectively freeze earlier layers and not apply dropout etc
+            outputOfPrevLayer = outputOfLayerDetached(false, layerIndex-1, features, null, null);
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
@@ -929,6 +933,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
+     * Provide the output of the specified layers.
+     * Note that the layer states will be cleared in this method
+     *
      * NOTE: in general, no workspaces should be activated externally for this method!
      * This method handles the workspace activation as required
      *
@@ -937,8 +944,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param featureMasks
      * @return
      */
-    protected INDArray outputOfLayerInference(int layerIndex, INDArray input, INDArray featureMasks){
-        setLayerMaskArrays(featureMasks, null);
+    protected INDArray outputOfLayerDetached(boolean train, int layerIndex, INDArray input, INDArray featureMasks, INDArray labelsMask){
+        setLayerMaskArrays(featureMasks, labelsMask);
 
         //TODO Destroy training workspaces, if present??
 
@@ -958,12 +965,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         Additionally, we'll reconfigure the workspace manager for the *final* layer, so that we don't have to detach
          */
 
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerInference");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerDetached");
 
         LayerWorkspaceMgr mgrEven;
         LayerWorkspaceMgr mgrOdd;
 
-        if(layerWiseConfigurations.getInferenceWorkspaceMode() == WorkspaceMode.NONE){
+        WorkspaceMode wsm = train ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode();
+        if(wsm == WorkspaceMode.NONE){
             mgrEven = LayerWorkspaceMgr.noWorkspaces();
             mgrOdd = mgrEven;
         } else {
@@ -1009,10 +1017,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
                     }
 
-                    input = layers[i].activate(input, false, mgr);
+                    input = layers[i].activate(input, train, mgr);
+                    layers[i].clear();
                     //Validation: Exception if invalid (bad layer implementation)
                     validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
-                    validateArrayWorkspaces(mgr, layers[i].input(), ArrayType.INPUT, i, true, "Output of layer (inference)");
 
                     if(wsActCloseNext != null){
                         wsActCloseNext.close();
@@ -1031,7 +1039,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
 
-        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerInference");
+        WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
 
         return input;
     }
@@ -1466,7 +1474,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     "training workspace is set to none");
         } else {
             /*
-            Workspaces for backprop in MLN share some features with outputOfLayerInference, in terms of the
+            Workspaces for backprop in MLN share some features with outputOfLayerDetached, in terms of the
             "two alternating workspaces" idea (but for activation gradients here, instead of activations there).
 
             Workspace design for backprop:
@@ -2086,12 +2094,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        if(train){
-            return outputOfLayerInference(layers.length-1, input, null);
-        } else {
-            return outputOfLayerTraining(layers.length-1, input, null);
-        }
-
+        return outputOfLayerDetached(train,layers.length-1, input, null, null);
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -2099,11 +2102,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        if(train){
-            return outputOfLayerTraining(layers.length-1, input, featuresMask);
-        } else {
-            return outputOfLayerInference(layers.length-1, input, featuresMask);
-        }
+        return outputOfLayerDetached(train, layers.length-1, input, featuresMask, labelsMask);
     }
 
     /**
@@ -2274,34 +2273,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     "Final layer is of type: " + getOutputLayer().getClass());
         }
 
+        WorkspaceMode wsm = (training ? layerWiseConfigurations.getTrainingWorkspaceMode() : layerWiseConfigurations.getInferenceWorkspaceMode());
         LayerWorkspaceMgr mgr;
-
-        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
+        if(wsm == WorkspaceMode.NONE){
             mgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             mgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .noWorkspaceFor(ArrayType.ACTIVATIONS)
                     .build();
-
-            if(training){
-                //TODO does this make sense? We require this to use outputOfLayerTraining, but there's no point
-                // using this workspace as all arrays will be invalidated...
-                mgr.setWorkspace(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
-            }
         }
 
-        INDArray inputToOutputLayer;
-        if(training){
-            try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-                //TODO does this make sense? We require this to use outputOfLayerTraining, but there's no point
-                // using this workspace as all arrays will be invalidated...
-                inputToOutputLayer = outputOfLayerTraining(layers.length - 2, data.getFeatures(), data.getFeaturesMaskArray());
-            }
-        } else {
-            inputToOutputLayer = outputOfLayerInference(layers.length-2, data.getFeatures(), data.getFeaturesMaskArray());
-        }
-
+        INDArray inputToOutputLayer = outputOfLayerDetached(training, layers.length-2, data.getFeatures(),
+                data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
         if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null) {
@@ -2340,7 +2324,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
      */
     public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
-        INDArray inputLast = outputOfLayerInference(layers.length-2, data.getFeatures(), data.getFeaturesMaskArray());
+        INDArray inputLast = outputOfLayerDetached(false, layers.length-2, data.getFeatures(),
+                data.getFeaturesMaskArray(), data.getLabelsMaskArray());
         setLabels(data.getLabels());
         setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
@@ -3098,7 +3083,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 if(!useRnnSegments){
                     //Standard/non-RNN case:
-                    INDArray out = outputOfLayerInference(layers.length-1, features, fMask);
+                    INDArray out = outputOfLayerDetached(layers.length-1, features, fMask);
 
                     try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                         for (T evaluation : evaluations)

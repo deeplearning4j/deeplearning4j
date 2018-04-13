@@ -138,7 +138,7 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
             if(scopeOutOfWs.contains(arrayType)){
                 return array.detach();
             }
-            return array.leverageTo(getWorkspaceName(arrayType));
+            return array.leverageTo(getWorkspaceName(arrayType), true);
         } else {
             if(array.isAttached()){
                 if(!array.data().getParentWorkspace().getId().equals(getWorkspaceName(arrayType))){
