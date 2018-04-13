@@ -127,7 +127,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             return;
 
         INDArray preOut = preOutput2d(true, workspaceMgr);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
@@ -145,7 +145,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
         INDArray w = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
@@ -168,7 +168,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
@@ -186,6 +186,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGradView);
         }
 
+        delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);
         return new Pair<>(gradient, delta);
     }
 

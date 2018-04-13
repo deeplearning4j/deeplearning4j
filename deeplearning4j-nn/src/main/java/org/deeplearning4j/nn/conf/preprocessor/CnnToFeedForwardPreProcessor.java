@@ -104,7 +104,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
             //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
             if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
                 epsilons = epsilons.dup('c');
@@ -117,7 +117,8 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
                         + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
                         + Arrays.toString(epsilons.shape()));
 
-            return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+            INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
         }
     }
 

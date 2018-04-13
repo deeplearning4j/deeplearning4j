@@ -31,10 +31,9 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.workspace.ArrayType;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -97,7 +96,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
-        INDArray epsilonNext = W.mmul(delta.transpose()).transpose();
+        INDArray epsilonNext = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{W.size(0), delta.size(0)}, 'f');
+        epsilonNext = W.mmuli(delta.transpose(),epsilonNext).transpose();   //W.mmul(delta.transpose()).transpose();
 
         weightNoiseParams.clear();
 
@@ -344,21 +344,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-//        System.out.println("----- All Workspaces -----");
-//        for(MemoryWorkspace ws : Nd4j.getWorkspaceManager().getAllWorkspacesForCurrentThread()){
-//            System.out.println("WORKSPACE: " + ws.getId() + " - scope active: " + ws.isScopeActive());
-//        }
-//        System.out.println("----- Current Workspaces -----");
-//        MemoryWorkspace ws = Nd4j.getMemoryManager().getCurrentWorkspace();
-//        if(ws != null) {
-//            System.out.println("CURRENT WS: " + ws.getId() + " - scope active: " + ws.isScopeActive());
-//        } else {
-//            System.out.println("CURRENT WS: NONE");
-//        }
-//        System.out.println("------------------------------");
-//        MemoryManager mm = Nd4j.getMemoryManager();
-//        System.out.println();
-
         double l1Sum = 0.0;
         for (Map.Entry<String, INDArray> entry : paramTable().entrySet()) {
             double l1 = conf.getL1ByParam(entry.getKey());

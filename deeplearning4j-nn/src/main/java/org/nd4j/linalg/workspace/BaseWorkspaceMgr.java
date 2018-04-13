@@ -16,7 +16,7 @@ import java.util.Set;
 
 @Slf4j
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
-    private static final boolean DISABLE_LEVERAGE = true;  //Mainly for debugging/optimization purposes
+    private static final boolean DISABLE_LEVERAGE = false;  //Mainly for debugging/optimization purposes
 
     protected final Set<T> scopeOutOfWs = new HashSet<>();
     protected final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
@@ -135,11 +135,15 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
         enforceExistsAndActive(arrayType);
 
         if(!DISABLE_LEVERAGE){
+            if(scopeOutOfWs.contains(arrayType)){
+                return array.detach();
+            }
             return array.leverageTo(getWorkspaceName(arrayType));
         } else {
             if(array.isAttached()){
                 if(!array.data().getParentWorkspace().getId().equals(getWorkspaceName(arrayType))){
-                    throw new IllegalStateException("LEVERAGED");
+                    throw new IllegalStateException("Array of type " + arrayType + " is leveraged from " + array.data().getParentWorkspace().getId()
+                            + " to " + getWorkspaceName(arrayType) + " but WorkspaceMgn.leverageTo() is currently disabled");
                 }
             }
             return array;
