@@ -151,7 +151,7 @@ public class BidirectionalLayer implements RecurrentLayer {
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
 
-        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd);
+        eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd, workspaceMgr, ArrayType.BP_WORKING_MEM);
 
         Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
         Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
@@ -164,7 +164,7 @@ public class BidirectionalLayer implements RecurrentLayer {
             g.gradientForVariable().put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight());
+        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight(), workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray epsOut = g1.getRight().addi(g2Reversed);
 
         return new Pair<>(g, epsOut);
@@ -174,7 +174,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
-        out2 = TimeSeriesUtils.reverseTimeSeries(out2);
+        out2 = TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         switch (layerConf.getMode()){
             case ADD:
@@ -464,7 +464,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         fwd.setInput(input, layerWorkspaceMgr);
         INDArray reversed;
         try(MemoryWorkspace ws = layerWorkspaceMgr.notifyScopeEntered(ArrayType.INPUT)){
-            reversed = TimeSeriesUtils.reverseTimeSeries(input);
+            reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
         }
         bwd.setInput(reversed, layerWorkspaceMgr);
     }
@@ -483,7 +483,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public void setMaskArray(INDArray maskArray) {
         fwd.setMaskArray(maskArray);
-        bwd.setMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray));
+        bwd.setMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));  //TODO
     }
 
     @Override
@@ -505,7 +505,8 @@ public class BidirectionalLayer implements RecurrentLayer {
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
         Pair<INDArray,MaskState> ret = fwd.feedForwardMaskArray(maskArray, currentMaskState, minibatchSize);
-        bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray), currentMaskState, minibatchSize);
+        bwd.feedForwardMaskArray(TimeSeriesUtils.reverseTimeSeriesMask(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),   //TODO
+                currentMaskState, minibatchSize);
         return ret;
     }
 }

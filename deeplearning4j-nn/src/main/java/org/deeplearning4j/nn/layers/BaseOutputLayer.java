@@ -88,9 +88,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        //double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFunction(), maskArray, false);
-        double score = lossFunction.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray,
-                        false);
+        double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+                layerConf().getActivationFn(), maskArray,false);
         score += fullNetworkL1 + fullNetworkL2;
         score /= getInputMiniBatchSize();
 
@@ -113,7 +112,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray scoreArray =
-                        lossFunction.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(), maskArray);
+                        lossFunction.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM),
+                                preOut, layerConf().getActivationFn(), maskArray);
         double l1l2 = fullNetworkL1 + fullNetworkL2;
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
@@ -170,7 +170,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
     private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray labels2d = getLabels2d();
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
 
@@ -397,9 +397,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     }
 
 
-    protected INDArray getLabels2d() {
+    protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (labels.rank() > 2) {
-            return labels.reshape(labels.size(2), labels.size(1));
+            return workspaceMgr.leverageTo(arrayType, labels.reshape(labels.size(2), labels.size(1)));
         }
         return labels;
     }

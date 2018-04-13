@@ -55,12 +55,17 @@ public class FeedForwardToRnnPreProcessor implements InputPreProcessor {
         if (output.ordering() != 'f' || !Shape.hasDefaultStridesForShape(output))
             output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'f');
         int[] shape = output.shape();
-        if (shape[0] == 1)
-            return output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
+
+        INDArray ret;
+        if (shape[0] == 1) {
+            ret = output.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
             return output.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-        INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        } else {
+            INDArray permuted = output.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret);
     }
 
     @Override

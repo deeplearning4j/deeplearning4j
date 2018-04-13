@@ -10,6 +10,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -60,13 +61,13 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        return getLastStep(underlying.activate(training, workspaceMgr));
+        return getLastStep(underlying.activate(training, workspaceMgr), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray a = underlying.activate(input, training, workspaceMgr);
-        return getLastStep(a);
+        return getLastStep(a, workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
 
@@ -79,7 +80,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     }
 
 
-    private INDArray getLastStep(INDArray in){
+    private INDArray getLastStep(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
         if(in.rank() != 3){
             throw new IllegalArgumentException("Expected rank 3 input with shape [minibatch, layerSize, tsLength]. Got " +
                     "rank " + in.rank() + " with shape " + Arrays.toString(in.shape()));
@@ -87,7 +88,7 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
         origOutputShape = in.shape();
 
         INDArray mask = underlying.getMaskArray();
-        Pair<INDArray,int[]> p = TimeSeriesUtils.pullLastTimeSteps(in, mask);
+        Pair<INDArray,int[]> p = TimeSeriesUtils.pullLastTimeSteps(in, mask, workspaceMgr, arrayType);
         lastTimeStepIdxs = p.getSecond();
         return p.getFirst();
     }

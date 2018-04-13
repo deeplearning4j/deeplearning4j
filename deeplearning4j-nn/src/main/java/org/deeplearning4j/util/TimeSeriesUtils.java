@@ -28,6 +28,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -60,14 +62,14 @@ public class TimeSeriesUtils {
      * @param timeSeriesMask    Mask array to reshape to a column vector
      * @return                  Mask array as a column vector
      */
-    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask) {
+    public static INDArray reshapeTimeSeriesMaskToVector(INDArray timeSeriesMask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (timeSeriesMask.rank() != 2)
             throw new IllegalArgumentException("Cannot reshape mask: rank is not 2");
 
-        if (timeSeriesMask.ordering() != 'f')
-            timeSeriesMask = timeSeriesMask.dup('f');
+        if (timeSeriesMask.ordering() != 'f' || !Shape.hasDefaultStridesForShape(timeSeriesMask))
+            timeSeriesMask = workspaceMgr.dup(arrayType, timeSeriesMask, 'f');
 
-        return timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1});
+        return workspaceMgr.leverageTo(arrayType, timeSeriesMask.reshape('f', new int[] {timeSeriesMask.length(), 1}));
     }
 
 
@@ -85,37 +87,42 @@ public class TimeSeriesUtils {
         return timeSeriesMaskAsVector.reshape('f', new int[] {minibatchSize, timeSeriesLength});
     }
 
-    public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask) {
+    public static INDArray reshapePerOutputTimeSeriesMaskTo2d(INDArray perOutputTimeSeriesMask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (perOutputTimeSeriesMask.rank() != 3) {
             throw new IllegalArgumentException(
                             "Cannot reshape per output mask: rank is not 3 (is: " + perOutputTimeSeriesMask.rank()
                                             + ", shape = " + Arrays.toString(perOutputTimeSeriesMask.shape()) + ")");
         }
 
-        return reshape3dTo2d(perOutputTimeSeriesMask);
+        return reshape3dTo2d(perOutputTimeSeriesMask, workspaceMgr, arrayType);
     }
 
-    public static INDArray reshape3dTo2d(INDArray in) {
+    public static INDArray reshape3dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (in.rank() != 3)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 3");
         int[] shape = in.shape();
-        if (shape[0] == 1)
-            return in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
-            return in.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-        INDArray permuted = in.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        INDArray ret;
+        if (shape[0] == 1) {
+            ret = in.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
+            ret = in.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        } else {
+            INDArray permuted = in.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return workspaceMgr.leverageTo(arrayType, ret);
     }
 
-    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize) {
+    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
         int[] shape = in.shape();
-        if (in.ordering() != 'f')
-            in = Shape.toOffsetZeroCopy(in, 'f');
+        if (in.ordering() != 'f') {
+            in = workspaceMgr.dup(arrayType, in, 'f');
+        }
         INDArray reshaped = in.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return reshaped.permute(0, 2, 1);
+        return workspaceMgr.leverageTo(arrayType, reshaped.permute(0, 2, 1));
     }
 
     /**
@@ -124,13 +131,13 @@ public class TimeSeriesUtils {
      * @param in Input activations to reverse, with shape [minibatch, size, timeSeriesLength]
      * @return Reversed activations
      */
-    public static INDArray reverseTimeSeries(INDArray in){
+    public static INDArray reverseTimeSeries(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
         if(in == null){
             return null;
         }
 
         if(in.ordering() != 'f' || in.isView() || !Shape.strideDescendingCAscendingF(in)){
-            in = in.dup('f');
+            in = workspaceMgr.dup(arrayType, in, 'f');
         }
 
         int[] idxs = new int[in.size(2)];
@@ -141,8 +148,9 @@ public class TimeSeriesUtils {
 
         INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
 
-        INDArray outReshape = Nd4j.pullRows(inReshape, 0, idxs, 'f');
-        return outReshape.reshape('f', in.size(0), in.size(1), in.size(2));
+        INDArray outReshape = workspaceMgr.create(arrayType, new int[]{idxs.length, in.size(1)}, 'f');
+        Nd4j.pullRows(inReshape, outReshape, 0, idxs);
+        return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
 
         /*
         INDArray out = Nd4j.createUninitialized(in.shape(), 'f');
@@ -162,13 +170,13 @@ public class TimeSeriesUtils {
      * @param mask Mask to reverse along time dimension
      * @return Mask after reversing
      */
-    public static INDArray reverseTimeSeriesMask(INDArray mask){
+    public static INDArray reverseTimeSeriesMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
         if(mask == null){
             return null;
         }
         if(mask.rank() == 3){
             //Should normally not be used - but handle the per-output masking case
-            return reverseTimeSeries(mask);
+            return reverseTimeSeries(mask, workspaceMgr, arrayType);
         } else if(mask.rank() != 2){
             throw new IllegalArgumentException("Invalid mask rank: must be rank 2 or 3. Got rank " + mask.rank()
                     + " with shape " + Arrays.toString(mask.shape()));
@@ -180,7 +188,9 @@ public class TimeSeriesUtils {
             idxs[j++] = i;
         }
 
-        return Nd4j.pullRows(mask, 0, idxs);
+        INDArray ret = workspaceMgr.createUninitialized(arrayType, new int[]{idxs.length, mask.size(1)}, 'f');
+
+        return Nd4j.pullRows(mask, ret, 0, idxs);
 
         /*
         //Assume input mask is 2d: [minibatch, tsLength]
@@ -203,7 +213,7 @@ public class TimeSeriesUtils {
      * @param mask     Mask array (rank 2). May be null
      * @return         2d array of the last time steps
      */
-    public static Pair<INDArray,int[]> pullLastTimeSteps(INDArray pullFrom, INDArray mask){
+    public static Pair<INDArray,int[]> pullLastTimeSteps(INDArray pullFrom, INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType){
         //Then: work out, from the mask array, which time step of activations we want, extract activations
         //Also: record where they came from (so we can do errors later)
         int[] fwdPassTimeSteps;
@@ -229,6 +239,6 @@ public class TimeSeriesUtils {
             }
         }
 
-        return new Pair<>(out, fwdPassTimeSteps);
+        return new Pair<>(workspaceMgr.leverageTo(arrayType, out), fwdPassTimeSteps);
     }
 }

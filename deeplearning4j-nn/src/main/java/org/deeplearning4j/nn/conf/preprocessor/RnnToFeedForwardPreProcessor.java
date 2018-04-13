@@ -43,13 +43,16 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         int[] shape = input.shape();
-        if (shape[0] == 1)
-            return input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
-        if (shape[2] == 1)
-            return input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
-
-        INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
-        return permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        INDArray ret;
+        if (shape[0] == 1) {
+            ret = input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+        } else if (shape[2] == 1) {
+            ret = input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
+        } else {
+            INDArray permuted = input.permute(0, 2, 1); //Permute, so we get correct order after reshaping
+            ret = permuted.reshape('f', shape[0] * shape[2], shape[1]);
+        }
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override
@@ -65,7 +68,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         int[] shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return reshaped.permute(0, 2, 1);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, reshaped.permute(0, 2, 1));
     }
 
     @Override
@@ -96,7 +99,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
             return new Pair<>(maskArray, currentMaskState);
         } else if (maskArray.rank() == 2) {
             //Need to reshape mask array from [minibatch,timeSeriesLength] to [minibatch*timeSeriesLength, 1]
-            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray), currentMaskState);
+            return new Pair<>(TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT),  //TODO
+                    currentMaskState);
         } else {
             throw new IllegalArgumentException("Received mask array of rank " + maskArray.rank()
                             + "; expected rank 2 mask array. Mask array shape: " + Arrays.toString(maskArray.shape()));

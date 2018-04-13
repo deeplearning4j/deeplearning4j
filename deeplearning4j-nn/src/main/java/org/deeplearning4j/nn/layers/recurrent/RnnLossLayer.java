@@ -38,6 +38,7 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -69,14 +70,14 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         if (labels == null)
             throw new IllegalStateException("Labels are not set (null)");
 
-        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
+        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.BP_WORKING_MEM);
+        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, ArrayType.BP_WORKING_MEM);
         INDArray maskReshaped;
         if(this.maskArray != null){
             if(this.maskArray.rank() == 3){
-                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray, workspaceMgr, ArrayType.BP_WORKING_MEM);
             } else {
-                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray, workspaceMgr, ArrayType.BP_WORKING_MEM);
             }
         } else {
             maskReshaped = null;
@@ -86,7 +87,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
 
-        INDArray delta3d = TimeSeriesUtils.reshape2dTo3d(delta2d, input.size(0));
+        INDArray delta3d = TimeSeriesUtils.reshape2dTo3d(delta2d, input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -185,7 +186,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                     int minibatchSize) {
-        this.maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray);
+        this.maskArray = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);   //TODO
         this.maskState = currentMaskState;
 
         return null; //Last layer in network
@@ -193,14 +194,14 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
+        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray maskReshaped;
         if(this.maskArray != null){
             if(this.maskArray.rank() == 3){
-                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);
             } else {
-                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);
             }
         } else {
             maskReshaped = null;
@@ -230,15 +231,15 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
         if (input == null || labels == null)
             throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
 
-        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input);
-        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels);
+        INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray labels2d = TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         INDArray maskReshaped;
         if(this.maskArray != null){
             if(this.maskArray.rank() == 3){
-                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapePerOutputTimeSeriesMaskTo2d(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);
             } else {
-                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray);
+                maskReshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(this.maskArray, workspaceMgr, ArrayType.FF_WORKING_MEM);
             }
         } else {
             maskReshaped = null;

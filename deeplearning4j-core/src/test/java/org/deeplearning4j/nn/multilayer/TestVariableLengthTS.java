@@ -23,6 +23,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -565,8 +566,8 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                 inMaskReverseExp.putColumn(i, inMask.getColumn(inMask.size(1) - i - 1));
             }
 
-            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in);
-            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask);
+            INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+            INDArray inMaskReverse = TimeSeriesUtils.reverseTimeSeriesMask(inMask, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
 
             assertEquals(inReverseExp, inReverse);
             assertEquals(inMaskReverseExp, inMaskReverse);

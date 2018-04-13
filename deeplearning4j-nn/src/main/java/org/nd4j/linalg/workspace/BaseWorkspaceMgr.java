@@ -1,5 +1,6 @@
 package org.nd4j.linalg.workspace;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -18,9 +19,22 @@ import java.util.Set;
 public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     private static final boolean DISABLE_LEVERAGE = false;  //Mainly for debugging/optimization purposes
 
-    protected final Set<T> scopeOutOfWs = new HashSet<>();
-    protected final Map<T, WorkspaceConfiguration> configMap = new HashMap<>();
-    protected final Map<T, String> workspaceNames = new HashMap<>();
+    protected final Set<T> scopeOutOfWs;
+    protected final Map<T, WorkspaceConfiguration> configMap;
+    protected final Map<T, String> workspaceNames;
+
+    protected BaseWorkspaceMgr(Set<T> scopeOutOfWs, Map<T, WorkspaceConfiguration> configMap,
+                               Map<T, String> workspaceNames){
+        this.scopeOutOfWs = scopeOutOfWs;
+        this.configMap = configMap;
+        this.workspaceNames = workspaceNames;
+    }
+
+    protected BaseWorkspaceMgr(){
+        scopeOutOfWs = new HashSet<>();
+        configMap = new HashMap<>();
+        workspaceNames = new HashMap<>();
+    }
 
     @Override
     public void setConfiguration(@NonNull T arrayType, WorkspaceConfiguration configuration) {

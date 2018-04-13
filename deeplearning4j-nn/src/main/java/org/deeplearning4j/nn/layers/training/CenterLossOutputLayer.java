@@ -94,7 +94,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
 
         // now calculate the inter-class score component
-        double interClassScore = interClassLoss.computeScore(getLabels2d(), preOut, layerConf().getActivationFn(),
+        double interClassScore = interClassLoss.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut, layerConf().getActivationFn(),
                         maskArray, false);
 
         double score = interClassScore + intraClassScore;
@@ -126,7 +126,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // calculate the inter-class score component
         ILossFunction interClassLoss = layerConf().getLossFn();
-        INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(), preOut, layerConf().getActivationFn(),
+        INDArray scoreArray = interClassLoss.computeScoreArray(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut, layerConf().getActivationFn(),
                         maskArray);
         scoreArray.addi(intraClassScoreArray.muli(layerConf().getLambda() / 2));
 
@@ -144,7 +144,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
             return;
 
         INDArray preOut = preOutput2d(true, workspaceMgr);
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut);
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOut, workspaceMgr);
         this.gradient = pair.getFirst();
 
         score = computeScore(fullNetworkL1, fullNetworkL2, true, workspaceMgr);
@@ -162,7 +162,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr)); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
+        Pair<Gradient, INDArray> pair = getGradientsAndDelta(preOutput2d(true, workspaceMgr), workspaceMgr); //Returns Gradient and delta^(this), not Gradient and epsilon^(this-1)
         INDArray delta = pair.getSecond();
 
         // centers
@@ -192,9 +192,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     }
 
     /** Returns tuple: {Gradient,Delta,Output} given preOut */
-    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut) {
+    private Pair<Gradient, INDArray> getGradientsAndDelta(INDArray preOut, LayerWorkspaceMgr workspaceMgr) {
         ILossFunction lossFunction = layerConf().getLossFn();
-        INDArray labels2d = getLabels2d();
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.BP_WORKING_MEM);
         if (labels2d.size(1) != preOut.size(1)) {
             throw new DL4JInvalidInputException(
                             "Labels array numColumns (size(1) = " + labels2d.size(1) + ") does not match output layer"

@@ -99,27 +99,25 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         int[] inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         int[] outShape = new int[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
 
-        return input.reshape('c', outShape);    //Should be zero copy reshape
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape('c', outShape));    //Should be zero copy reshape
     }
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
-            //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
-            if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
-                epsilons = epsilons.dup('c');
+        //Epsilons from layer above should be 2d, with shape [miniBatchSize, depthOut*outH*outW]
+        if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
-            if (epsilons.rank() == 4)
-                return epsilons; //Should never happen
+        if (epsilons.rank() == 4)
+            return epsilons; //Should never happen
 
-            if (epsilons.columns() != inputWidth * inputHeight * numChannels)
-                throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                        + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
-                        + Arrays.toString(epsilons.shape()));
+        if (epsilons.columns() != inputWidth * inputHeight * numChannels)
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
+                    + inputHeight + " x columns " + inputWidth + " x depth " + numChannels + " but was instead "
+                    + Arrays.toString(epsilons.shape()));
 
-            INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
-            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
-        }
+        INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
     }
 
     @Override

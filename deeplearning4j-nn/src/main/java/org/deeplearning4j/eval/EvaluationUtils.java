@@ -4,6 +4,8 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -174,7 +176,7 @@ public class EvaluationUtils {
             return new Pair<>(labels2d, predicted2d);
         }
 
-        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask);
+        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);  //TODO
         float[] f = oneDMask.dup().data().asFloat();
         int[] rowsToPull = new int[f.length];
         int usedCount = 0;
