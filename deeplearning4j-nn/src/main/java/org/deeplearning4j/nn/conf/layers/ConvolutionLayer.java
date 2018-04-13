@@ -89,14 +89,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.hasBias = builder.hasBias;
         this.convolutionMode = builder.convolutionMode;
         this.dilation = builder.dilation;
-        if (builder.kernelSize.length != 2)
-            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
+//        if (builder.kernelSize.length != 2)
+//            throw new IllegalArgumentException("Kernel size of should be rows x columns (a 2d array)");
         this.kernelSize = builder.kernelSize;
-        if (builder.stride.length != 2)
-            throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
+//        if (builder.stride.length != 2)
+//            throw new IllegalArgumentException("Stride should include stride for rows and columns (a 2d array)");
         this.stride = builder.stride;
-        if (builder.padding.length != 2)
-            throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
+//        if (builder.padding.length != 2)
+//            throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
         this.cudnnAlgoMode = builder.cudnnAlgoMode;
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
@@ -316,6 +316,13 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected BwdDataAlgo cudnnBwdDataAlgo;
         protected boolean cudnnAllowFallback = true;
 
+
+        protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding, int[] dilation) {
+            this.kernelSize = kernelSize;
+            this.stride = stride;
+            this.padding = padding;
+            this.dilation = dilation;
+        }
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
             this.kernelSize = kernelSize;

@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -24,16 +25,16 @@ import static org.junit.Assert.assertTrue;
 public class Convolution3DTest {
 
     private int nExamples = 1;
-    private int nChannelsOut = 20;
+    private int nChannelsOut = 1;
     private int nChannelsIn = 1;
     private int inputWidth = 28;
     private int inputHeight = 28;
     private int inputDepth = 28;
 
-    private int[] kernelSize = new int[] {2, 1, 2};
-    private int outputHeight = inputHeight / kernelSize[0];
-    private int outputWidth = inputWidth / kernelSize[1];
-    private int outputDepth = inputDepth / kernelSize[2];
+    private int[] kernelSize = new int[]{2, 2, 2};
+    private int outputHeight = inputHeight - kernelSize[0] + 1;
+    private int outputWidth = inputWidth - kernelSize[1] + 1;
+    private int outputDepth = inputDepth - kernelSize[2] + 1;
 
     private INDArray epsilon = Nd4j.ones(nExamples, nChannelsOut, outputHeight, outputWidth, outputDepth);
 
@@ -41,19 +42,27 @@ public class Convolution3DTest {
     @Test
     public void testConvolution3dForward() throws Exception {
 
-        double[] outArray = new double[] {1., 1., 2., 2., 1., 1., 2., 2., 3., 3., 4., 4., 3., 3., 4., 4.};
-        INDArray containedExpectedOut = Nd4j.create(outArray, new int[] {1, 1, 4, 4});
+        double[] outArray = new double[]{36.};
+        INDArray containedExpectedOut = Nd4j.create(outArray, new int[]{1, 1, 1, 1, 1});
         INDArray containedInput = getContainedData();
         Layer layer = getConvolution3DLayer();
 
         INDArray containedOutput = layer.activate(containedInput);
+
+        System.out.println(Arrays.toString(containedInput.shape()));
+        System.out.println(Arrays.toString(containedOutput.shape()));
+        System.out.println(Arrays.toString(containedExpectedOut.shape()));
+
+        System.out.println(containedInput);
+        System.out.println(containedOutput);
+
         assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
         assertEquals(containedExpectedOut, containedOutput);
 
         INDArray input = getData();
         INDArray output = layer.activate(input);
-        assertTrue(Arrays.equals(new int[] {nExamples, nChannelsIn, outputWidth, outputHeight},
-                        output.shape()));
+        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, outputWidth, outputHeight, outputDepth},
+                output.shape()));
         assertEquals(nChannelsIn, output.size(1), 1e-4);
     }
 
@@ -61,11 +70,13 @@ public class Convolution3DTest {
     @Test
     public void testConvolution3DBackprop() throws Exception {
         INDArray expectedContainedEpsilonInput =
-                        Nd4j.create(new double[] {1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1.},
-                                new int[] {1, 1, 4, 4});
+                Nd4j.create(
+                        new double[]{1.},
+                        new int[]{1, 1, 1, 1, 1});
 
-        INDArray expectedContainedEpsilonResult = Nd4j.create(new double[] {4., 4., 4., 4.},
-                        new int[] {1, 1, 2, 2});
+        INDArray expectedContainedEpsilonResult = Nd4j.create(
+                new double[]{1., 1., 1., 1., 1., 1., 1., 1.},
+                new int[]{1, 1, 2, 2, 2});
 
         INDArray input = getContainedData();
 
@@ -92,11 +103,13 @@ public class Convolution3DTest {
 
     private Layer getConvolution3DLayer() {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
-                        .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                                .build())
+                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
+                .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
+                        .build())
                 .build();
-        return conf.getLayer().instantiate(conf, null, 0, null, true);
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.ones(1, numParams);
+        return conf.getLayer().instantiate(conf, null, 0, params, true);
     }
 
     public INDArray getData() throws Exception {
@@ -107,10 +120,9 @@ public class Convolution3DTest {
     }
 
     private INDArray getContainedData() {
-        INDArray ret = Nd4j.create
-                (new double[] {1., 2., 3., 4., 5., 6., 7., 8.},
-                        new int[] {1, 1, 2, 2, 2});
-        return ret;
+        return Nd4j.create
+                (new double[]{1., 2., 3., 4., 5., 6., 7., 8},
+                        new int[]{1, 1, 2, 2, 2});
     }
 
 }

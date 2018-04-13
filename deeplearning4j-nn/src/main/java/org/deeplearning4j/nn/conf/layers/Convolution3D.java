@@ -11,13 +11,14 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
- * 3D deconvolution layer configuration
+ * 3D convolution layer configuration
  *
  * @author Max Pumperla
  */
@@ -27,7 +28,6 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Convolution3D extends ConvolutionLayer {
 
-    protected int dilation[] = new int[]{1, 1, 1};
 
     /**
      * 3-dimensional convolutional layer configuration
@@ -36,9 +36,8 @@ public class Convolution3D extends ConvolutionLayer {
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
-    protected Convolution3D(BaseConvBuilder<?> builder) {
+    protected Convolution3D(Builder builder) {
         super(builder);
-        initializeConstraints(builder);
     }
 
     public boolean hasBias() {
@@ -87,5 +86,50 @@ public class Convolution3D extends ConvolutionLayer {
                 convolutionMode, nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
+    public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+
+        public Builder(int[] kernelSize, int[] stride, int[] padding) {
+            super(kernelSize, stride, padding);
+        }
+
+        public Builder(int[] kernelSize, int[] stride) {
+            super(kernelSize, stride);
+        }
+
+        public Builder(int... kernelSize) {
+            super(kernelSize);
+        }
+
+        public Builder() {
+            super(new int[]{1, 1, 1}, new int[]{1, 1, 1},
+                    new int[]{0, 0, 0}, new int[]{0, 0, 0});
+        }
+
+
+        public Builder kernelSize(int... kernelSize) {
+            this.kernelSize = kernelSize;
+            return this;
+        }
+
+        public Builder stride(int... stride) {
+            this.stride = stride;
+            return this;
+        }
+
+        public Builder padding(int... padding) {
+            this.padding = padding;
+            return this;
+        }
+
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Convolution3D build() {
+            ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
+            ConvolutionUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
+
+            return new Convolution3D(this);
+        }
+    }
 
 }

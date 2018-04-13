@@ -202,29 +202,19 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray output = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outChannels, outH, outW, outD);
 
-        Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
-
         int[] args = new int[]{
-                kH, kW, kD, strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode
+                layerConfig.hasBias() ? 1 : 0,
+                strides[0], strides[1], strides[2],
+                pad[0], pad[1], pad[2]
         };
 
         CustomOp op;
-        if (layerConfig.hasBias()) {
-            op = DynamicCustomOp.builder("conv3d")
-                    .addInputs(input, weights, bias)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedOutput)
-                    .callInplace(false)
-                    .build();
-        } else {
-            op = DynamicCustomOp.builder("conv3d")
-                    .addInputs(input, weights)
-                    .addIntegerArguments(args)
-                    .addOutputs(reshapedOutput)
-                    .callInplace(false)
-                    .build();
-        }
+        op = DynamicCustomOp.builder("conv3d")
+                .addInputs(input, weights, bias)
+                .addIntegerArguments(args)
+                .addOutputs(reshapedOutput)
+                .callInplace(false)
+                .build();
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(reshapedOutput, null);
