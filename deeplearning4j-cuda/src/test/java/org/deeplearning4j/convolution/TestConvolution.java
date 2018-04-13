@@ -18,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -121,16 +122,16 @@ public class TestConvolution {
 
                 INDArray in = Nd4j.rand(new int[] {1, 1, 20, 20}); //(20-4+0)/2 +1 = 9
 
-                INDArray outCudnn = layerCudnn.activate(in);
-                INDArray outStd = layerStandard.activate(in);
+                INDArray outCudnn = layerCudnn.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
+                INDArray outStd = layerStandard.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
 
                 assertEquals(outStd, outCudnn);
 
 
                 //Check backprop:
                 INDArray epsilon = Nd4j.rand(outStd.shape());
-                Pair<Gradient, INDArray> pCudnn = layerCudnn.backpropGradient(epsilon);
-                Pair<Gradient, INDArray> pStd = layerStandard.backpropGradient(epsilon);
+                Pair<Gradient, INDArray> pCudnn = layerCudnn.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
+                Pair<Gradient, INDArray> pStd = layerStandard.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
 
                 System.out.println(Arrays.toString(pStd.getSecond().data().asFloat()));
                 System.out.println(Arrays.toString(pCudnn.getSecond().data().asFloat()));

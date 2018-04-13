@@ -16,6 +16,7 @@ import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +117,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 MultiLayerNetwork l = (MultiLayerNetwork) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();
@@ -141,7 +142,7 @@ public class ConvolutionalIterationListener implements IterationListener {
                 ComputationGraph l = (ComputationGraph) model;
                 for (Layer layer : l.getLayers()) {
                     if (layer.type() == Layer.Type.CONVOLUTIONAL) {
-                        INDArray output = layer.activate();
+                        INDArray output = layer.activate(layer.input(), true, LayerWorkspaceMgr.noWorkspaces());
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt(output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layer.input();

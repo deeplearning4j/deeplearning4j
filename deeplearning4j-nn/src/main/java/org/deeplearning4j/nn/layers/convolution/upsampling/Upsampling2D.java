@@ -89,7 +89,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, new int[]{miniBatch, inDepth, inH, inW}, 'c');
 
-        INDArray forwardOutput  = preOutput(true, true, null);
+        INDArray forwardOutput  = preOutput(true, true, workspaceMgr);
 
         Gradient gradient = new DefaultGradient();
 

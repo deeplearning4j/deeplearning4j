@@ -1007,7 +1007,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     temp.setPreviousWorkspace(initialWorkspace);
 
                     if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
+                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, input.size(0), mgr);
                         //Validation: Exception if invalid (bad preprocessor implementation)
                         validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }

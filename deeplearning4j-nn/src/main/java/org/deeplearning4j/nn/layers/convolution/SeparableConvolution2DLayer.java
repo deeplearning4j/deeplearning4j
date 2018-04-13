@@ -110,7 +110,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray delta;
         IActivation afn = layerConf().getActivationFn();
-        Pair<INDArray, INDArray> p = preOutput4d(true, true, null); //TODO
+        Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
         CustomOp op;
@@ -241,7 +241,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training, workspaceMgr);
+        INDArray z = preOutput(training, false, workspaceMgr).getFirst();
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE

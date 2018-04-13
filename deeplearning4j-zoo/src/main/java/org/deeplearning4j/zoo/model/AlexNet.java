@@ -128,7 +128,7 @@ public class AlexNet extends ZooModel {
                         .layer(10, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .name("output").nOut(numLabels).activation(Activation.SOFTMAX).build())
                         .backprop(true).pretrain(false)
-                        .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0])).build();
+                        .setInputType(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0])).build();
 
         return conf;
     }

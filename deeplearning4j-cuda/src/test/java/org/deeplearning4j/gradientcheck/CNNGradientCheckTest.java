@@ -22,6 +22,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
@@ -798,7 +799,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             (org.deeplearning4j.nn.layers.convolution.ZeroPaddingLayer) net.getLayer(1);
                     int[] expShape = new int[]{minibatchSize, inputDepth, height + zeroPad[0] + zeroPad[1],
                             width + zeroPad[2] + zeroPad[3]};
-                    INDArray out = zpl.activate(input);
+                    INDArray out = zpl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());
 
                     String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "
@@ -852,7 +853,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.getLayer(0).activate(Nd4j.rand(10, 7 * 7 * 3));
+        net.getLayer(0).activate(Nd4j.rand(10, 7 * 7 * 3), false, LayerWorkspaceMgr.noWorkspaces());
     }
 
     @Test
@@ -1136,7 +1137,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             (org.deeplearning4j.nn.layers.convolution.Cropping2DLayer) net.getLayer(1);
                     int[] expShape = new int[]{minibatchSize, inputDepth, height - crop[0] - crop[1],
                             width - crop[2] - crop[3]};
-                    INDArray out = cl.activate(input);
+                    INDArray out = cl.activate(input, false, LayerWorkspaceMgr.noWorkspaces());
                     assertArrayEquals(expShape, out.shape());
 
                     String msg = "minibatch=" + minibatchSize + ", depth=" + inputDepth + ", zeroPad = "
