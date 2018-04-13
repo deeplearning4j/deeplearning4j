@@ -147,7 +147,7 @@ public class LocalResponseNormalization
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
-        INDArray nextEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, epsilon.shape(), epsilon.ordering());
+        INDArray nextEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.shape(), epsilon.ordering());
         Nd4j.getExecutioner().exec(new OldMulOp(epsilon, scale, nextEpsilon));
         nextEpsilon.subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
         return new Pair<>(retGradient, nextEpsilon);
@@ -192,7 +192,7 @@ public class LocalResponseNormalization
         unitScale = sumPart.mul(alpha).addi(k).detach();
         // y = x * unitScale**-beta
         scale = Transforms.pow(unitScale, -beta).detach();
-        INDArray activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), input.ordering());
+        activations = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.shape(), input.ordering());
         Nd4j.getExecutioner().exec(new OldMulOp(input, scale, activations));
         return activations;
     }

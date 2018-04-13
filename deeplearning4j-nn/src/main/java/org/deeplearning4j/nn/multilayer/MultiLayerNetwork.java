@@ -2295,7 +2295,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         ol.setInput(inputToOutputLayer, mgr); //Feedforward doesn't include output layer for efficiency
         ol.setLabels(data.getLabels());
         double score;
-        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+        try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
             score = ol.computeScore(calcL1(true), calcL2(true), training, mgr);
         }
 
@@ -2445,7 +2445,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 throw new DL4JException(
                         "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
             }
-            score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true, mgr);
+            try(MemoryWorkspace wsFF = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true, mgr);
+            }
 
             //Listeners
             if (!trainingListeners.isEmpty()) {
@@ -2796,6 +2798,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
      */
     public INDArray rnnTimeStep(INDArray input) {
+        LayerWorkspaceMgr workspaceMgr = null;
+
         this.setInputMiniBatchSize(input.size(0)); //Necessary for preprocessors/reshaping
         this.input = input;
         boolean inputIs2d = input.rank() == 2;
@@ -2803,7 +2807,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
                 input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), null);    //TODO
             if (layers[i] instanceof RecurrentLayer) {
-                input = ((RecurrentLayer) layers[i]).rnnTimeStep(input);
+                input = ((RecurrentLayer) layers[i]).rnnTimeStep(input, workspaceMgr);
             } else if (layers[i] instanceof MultiLayerNetwork) {
                 input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
             } else {
@@ -2871,6 +2875,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+        LayerWorkspaceMgr workspaceMgr = null;
+
         INDArray currInput = input;
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
@@ -2880,7 +2886,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 currInput = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(currInput, input.size(0), null);  //TODO
             if (layers[i] instanceof RecurrentLayer) {
                 currInput = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(currInput, training,
-                                storeLastForTBPTT);
+                                storeLastForTBPTT, workspaceMgr);
             } else if (layers[i] instanceof MultiLayerNetwork) {
                 List<INDArray> temp = ((MultiLayerNetwork) layers[i]).rnnActivateUsingStoredState(currInput, training,
                                 storeLastForTBPTT);

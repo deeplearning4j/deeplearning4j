@@ -84,12 +84,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray epsOut = computeBackpropGradientAndScore(workspaceMgr);
+        INDArray epsOut = computeBackpropGradientAndScore(workspaceMgr, false);
 
         return new Pair<>(EMPTY_GRADIENT, epsOut);
     }
 
-    private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr){
+    private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr, boolean scoreOnly){
 
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
@@ -230,6 +230,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         this.score /= getInputMiniBatchSize();
 
+        if(scoreOnly)
+            return null;
+
 
         //==============================================================
         // ----- Gradient Calculation (specifically: return dL/dIn -----
@@ -338,8 +341,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
 
-        //TODO optimize?
-        computeBackpropGradientAndScore(workspaceMgr);
+        computeBackpropGradientAndScore(workspaceMgr, true);
         return score();
     }
 

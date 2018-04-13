@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -153,7 +154,7 @@ public class LSTMHelpers {
                 }
             }
         } else {
-            outputActivations = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
+            outputActivations = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
             toReturn.fwdPassOutput = outputActivations;
         }
 
@@ -189,196 +190,208 @@ public class LSTMHelpers {
         }
 
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
-            int time = iTimeIndex;
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.RNN_FF_LOOP_WORKING_MEM)) {
+                int time = iTimeIndex;
 
-            if (!forwards) {
-                time = timeSeriesLength - iTimeIndex - 1;
-            }
+                if (!forwards) {
+                    time = timeSeriesLength - iTimeIndex - 1;
+                }
 
 
-            INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(time, 1, 0)); //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
-            miniBatchData = Shape.toMmulCompatible(miniBatchData);
+                INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(time, 1, 0)); //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
+                miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
-            // if we're using cache here - let's create ifogActivations within cache workspace, so all views from this array will be valid in cache
-            if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                // if we're using cache here - let's create ifogActivations within cache workspace, so all views from this array will be valid in cache
+                if (cacheMode != CacheMode.NONE)
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                            .notifyScopeBorrowed();
+
+                //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
+                INDArray ifogActivations = miniBatchData.mmul(inputWeights); //Shape: [miniBatch,4*layerSize]
+
+                if (cacheMode != CacheMode.NONE)
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                            .notifyScopeLeft();
+
+                Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
+                ifogActivations.addiRowVector(biases);
+
+                INDArray inputActivations =
+                        ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
+                if (forBackprop) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
                                 .notifyScopeBorrowed();
 
-            //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
-            INDArray ifogActivations = miniBatchData.mmul(inputWeights); //Shape: [miniBatch,4*layerSize]
+                    toReturn.iz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, inputActivations, 'f');
 
-            if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
                                 .notifyScopeLeft();
+                }
+                layer.layerConf().getActivationFn().getActivation(inputActivations, training);
+                if (forBackprop)
+                    toReturn.ia[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputActivations);
 
-            Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
-            ifogActivations.addiRowVector(biases);
-
-            INDArray inputActivations =
-                            ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
-            if (forBackprop) {
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
-
-                toReturn.iz[time] = inputActivations.dup('f');
-
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-            }
-            layer.layerConf().getActivationFn().getActivation(inputActivations, training);
-            if (forBackprop)
-                toReturn.ia[time] = inputActivations;
-
-            INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(),
-                            NDArrayIndex.interval(hiddenLayerSize, 2 * hiddenLayerSize));
-            if (hasPeepholeConnections) {
-                INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
-                l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations); //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
-            }
-            //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
-            if (forBackprop && !sigmoidGates) {
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
-
-                toReturn.fz[time] = forgetGateActivations.dup('f'); //Forget gate pre-out (z)
-
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-            }
-            gateActivationFn.getActivation(forgetGateActivations, training);
-
-            if (forBackprop)
-                toReturn.fa[time] = forgetGateActivations;
-
-
-            INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(),
-                            NDArrayIndex.interval(3 * hiddenLayerSize, 4 * hiddenLayerSize));
-            if (hasPeepholeConnections) {
-                INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
-                l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations); //inputModGateActivations.addi(pmcellWGG)
-            }
-            if (forBackprop && !sigmoidGates) {
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
-
-                toReturn.gz[time] = inputModGateActivations.dup('f'); //Input modulation gate pre-out (z)
-
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-            }
-            gateActivationFn.getActivation(inputModGateActivations, training);
-            if (forBackprop)
-                toReturn.ga[time] = inputModGateActivations;
-
-            //Memory cell state
-            INDArray currentMemoryCellState;
-            INDArray inputModMulInput;
-            if (forBackprop) {
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
-
-                currentMemoryCellState = prevMemCellState.dup('f').muli(forgetGateActivations);
-
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-
-                // this variable isn't stored in cache
-                inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
-            } else {
-                currentMemoryCellState = forgetGateActivations.muli(prevMemCellState);
-                inputModMulInput = inputModGateActivations.muli(inputActivations);
-            }
-            l1BLAS.axpy(currentMemoryCellState.length(), 1.0, inputModMulInput, currentMemoryCellState); //currentMemoryCellState.addi(inputModMulInput)
-
-            INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(),
-                            NDArrayIndex.interval(2 * hiddenLayerSize, 3 * hiddenLayerSize));
-            if (hasPeepholeConnections) {
-                INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
-                l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations); //outputGateActivations.addi(pmcellWOO)
-            }
-            if (forBackprop && !sigmoidGates) {
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
-
-                toReturn.oz[time] = outputGateActivations.dup('f'); //Output gate activations
-
-                if (cacheMode != CacheMode.NONE)
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-            }
-            gateActivationFn.getActivation(outputGateActivations, training);
-            if (forBackprop)
-                toReturn.oa[time] = outputGateActivations;
-
-
-            ////////////// same as with iFogActivations - if we use cache, let's create this array right there
-            if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(),
+                        NDArrayIndex.interval(hiddenLayerSize, 2 * hiddenLayerSize));
+                if (hasPeepholeConnections) {
+                    INDArray pmcellWFF = prevMemCellState.dup('f').muliRowVector(wFFTranspose);
+                    l1BLAS.axpy(pmcellWFF.length(), 1.0, pmcellWFF, forgetGateActivations); //y = a*x + y i.e., forgetGateActivations.addi(pmcellWFF)
+                }
+                //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
+                if (forBackprop && !sigmoidGates) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
                                 .notifyScopeBorrowed();
 
-            //LSTM unit outputs:
-            INDArray currMemoryCellActivation = afn.getActivation(currentMemoryCellState.dup('f'), training);
+                    toReturn.fz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, forgetGateActivations, 'f'); //Forget gate pre-out (z)
 
-
-            if (cacheMode != CacheMode.NONE)
-                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
                                 .notifyScopeLeft();
-            ///////////////////
+                }
+                gateActivationFn.getActivation(forgetGateActivations, training);
 
-            INDArray currHiddenUnitActivations;
-            if (forBackprop) {
+                if (forBackprop)
+                    toReturn.fa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, forgetGateActivations);
+
+
+                INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(),
+                        NDArrayIndex.interval(3 * hiddenLayerSize, 4 * hiddenLayerSize));
+                if (hasPeepholeConnections) {
+                    INDArray pmcellWGG = prevMemCellState.dup('f').muliRowVector(wGGTranspose);
+                    l1BLAS.axpy(pmcellWGG.length(), 1.0, pmcellWGG, inputModGateActivations); //inputModGateActivations.addi(pmcellWGG)
+                }
+                if (forBackprop && !sigmoidGates) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeBorrowed();
+
+                    toReturn.gz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, inputModGateActivations, 'f'); //Input modulation gate pre-out (z)
+
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeLeft();
+                }
+                gateActivationFn.getActivation(inputModGateActivations, training);
+                if (forBackprop)
+                    toReturn.ga[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputModGateActivations);
+
+                //Memory cell state
+                INDArray currentMemoryCellState;
+                INDArray inputModMulInput;
+                if (forBackprop) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeBorrowed();
+
+                    currentMemoryCellState = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, prevMemCellState, 'f').muli(forgetGateActivations);
+
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeLeft();
+
+                    // this variable isn't stored in cache
+                    inputModMulInput = inputModGateActivations.dup('f').muli(inputActivations);
+                } else {
+                    currentMemoryCellState = workspaceMgr.leverageTo(ArrayType.FF_WORKING_MEM, forgetGateActivations.muli(prevMemCellState));       //TODO optimize without the copy
+                    inputModMulInput = inputModGateActivations.muli(inputActivations);
+                }
+                l1BLAS.axpy(currentMemoryCellState.length(), 1.0, inputModMulInput, currentMemoryCellState); //currentMemoryCellState.addi(inputModMulInput)
+
+                INDArray outputGateActivations = ifogActivations.get(NDArrayIndex.all(),
+                        NDArrayIndex.interval(2 * hiddenLayerSize, 3 * hiddenLayerSize));
+                if (hasPeepholeConnections) {
+                    INDArray pmcellWOO = currentMemoryCellState.dup('f').muliRowVector(wOOTranspose);
+                    l1BLAS.axpy(pmcellWOO.length(), 1.0, pmcellWOO, outputGateActivations); //outputGateActivations.addi(pmcellWOO)
+                }
+                if (forBackprop && !sigmoidGates) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeBorrowed();
+
+                    toReturn.oz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, outputGateActivations, 'f'); //Output gate activations
+
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeLeft();
+                }
+                gateActivationFn.getActivation(outputGateActivations, training);
+                if (forBackprop)
+                    toReturn.oa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, outputGateActivations);   //TODO optimize without leverage
+
+
+                ////////////// same as with iFogActivations - if we use cache, let's create this array right there
                 if (cacheMode != CacheMode.NONE)
                     Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeBorrowed();
+                            .notifyScopeBorrowed();
 
-                currHiddenUnitActivations = currMemoryCellActivation.dup('f').muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
+                //LSTM unit outputs:
+                INDArray currMemoryCellActivation ;
+//                if(forBackprop){
+//                    currMemoryCellActivation = afn.getActivation(currentMemoryCellState.dup('f'), training);
+//                } else {
+//                    //if not for backprop: becomes currHiddenUnitActivations
+//                    currMemoryCellActivation = workspaceMgr.dup(ArrayType.FF_WORKING_MEM, currentMemoryCellState, 'f');
+//                    currMemoryCellActivation = afn.getActivation(currMemoryCellActivation, training);
+//                }
+                currMemoryCellActivation = workspaceMgr.dup(ArrayType.FF_WORKING_MEM, currentMemoryCellState, 'f');
+                currMemoryCellActivation = afn.getActivation(currMemoryCellActivation, training);
+
 
                 if (cacheMode != CacheMode.NONE)
                     Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
-                                    .notifyScopeLeft();
-            } else {
-                currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
-            }
+                            .notifyScopeLeft();
+                ///////////////////
 
-            if (maskArray != null) {
-                //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
-                // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
-                //We *also* need to apply this to the memory cells, as they are carried forward
-                //Mask array has shape [minibatch, timeSeriesLength] -> get column
-                INDArray timeStepMaskColumn = maskArray.getColumn(time);
-                currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
-                currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
-            }
+                INDArray currHiddenUnitActivations;
+                if (forBackprop) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeBorrowed();
 
-            if (forBackprop) {
-                toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
-                toReturn.memCellState[time] = currentMemoryCellState;
-                toReturn.memCellActivations[time] = currMemoryCellActivation;
+                    currHiddenUnitActivations = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, currMemoryCellActivation, 'f').muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
 
-                if (cacheMode != CacheMode.NONE) {
+                    if (cacheMode != CacheMode.NONE)
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE)
+                                .notifyScopeLeft();
+                } else {
+                    currHiddenUnitActivations = currMemoryCellActivation.muli(outputGateActivations); //Expected shape: [m,hiddenLayerSize]
+                }
+
+                if (maskArray != null) {
+                    //Mask array is present: bidirectional RNN -> need to zero out these activations to avoid
+                    // incorrectly using activations from masked time steps (i.e., want 0 initialization in both directions)
+                    //We *also* need to apply this to the memory cells, as they are carried forward
+                    //Mask array has shape [minibatch, timeSeriesLength] -> get column
+                    INDArray timeStepMaskColumn = maskArray.getColumn(time);
+                    currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
+                    currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
+                }
+
+                currentMemoryCellState = workspaceMgr.leverageTo(ArrayType.FF_WORKING_MEM, currentMemoryCellState); //TODO optimize, without the leverage
+                if (forBackprop) {
+                    toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
+                    toReturn.memCellState[time] = currentMemoryCellState;
+                    toReturn.memCellActivations[time] = currMemoryCellActivation;
+
+                    if (cacheMode != CacheMode.NONE) {
+                        outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
+                    }
+                } else {
                     outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
                 }
-            } else {
-                outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
+
+                prevOutputActivations = currHiddenUnitActivations;
+                prevMemCellState = currentMemoryCellState;
+
+                // no need to dup here, if that's cache - it's already within Cache workspace
+                toReturn.lastAct = currHiddenUnitActivations;
+
+                // the same as above, already in cache
+                toReturn.lastMemCell = currentMemoryCellState;
             }
-
-            prevOutputActivations = currHiddenUnitActivations;
-            prevMemCellState = currentMemoryCellState;
-
-            // no need to dup here, if that's cache - it's already within Cache workspace
-            toReturn.lastAct = currHiddenUnitActivations;
-
-            // the same as above, already in cache
-            toReturn.lastMemCell = currentMemoryCellState;
         }
 
 
@@ -422,7 +435,7 @@ public class LSTMHelpers {
 
         INDArray wIFOG = recurrentWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4 * hiddenLayerSize));
         //F order here so that content for time steps are together
-        INDArray epsilonNext = Nd4j.create(new int[] {miniBatchSize, prevLayerSize, timeSeriesLength}, 'f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+        INDArray epsilonNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, new int[] {miniBatchSize, prevLayerSize, timeSeriesLength}, 'f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         INDArray nablaCellStateNext = null;
 
@@ -475,219 +488,205 @@ public class LSTMHelpers {
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getLayer()).getActivationFn();
 
-        // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
-        MemoryWorkspace workspace = null;   //TODO
-//                Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()
-//                        .getCurrentWorkspace().getId().equals(ComputationGraph.WORKSPACE_EXTERNAL)
-//                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-//                                                        ComputationGraph.workspaceConfigurationLSTM,
-//                                                        ComputationGraph.WORKSPACE_LSTM)
-//                                        : null;
-
         INDArray timeStepMaskColumn = null;
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
-
-            // we're emulating try block here
-            if (workspace != null)
-                workspace.notifyScopeEntered();
+            try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.RNN_BP_LOOP_WORKING_MEM)) {
 
 
-            int time = iTimeIndex;
-            int inext = 1;
+                int time = iTimeIndex;
+                int inext = 1;
 
-            if (!forwards) {
-                time = timeSeriesLength - iTimeIndex - 1;
-                inext = -1;
-            }
-
-
-            //First: calclate the components of nablaCellState that relies on the next time step deltas, so we can overwrite the deltas
-            INDArray nablaCellState;
-            if (iTimeIndex != timeSeriesLength - 1 && hasPeepholeConnections) {
-                nablaCellState = deltafNext.dup('f').muliRowVector(wFFTranspose);
-                l1BLAS.axpy(nablaCellState.length(), 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose),
-                                nablaCellState);
-            } else {
-                nablaCellState = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize}, 'f');
-            }
-
-            INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
-            INDArray prevHiddenUnitActivation =
-                            (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
-            INDArray currMemCellState = fwdPass.memCellState[time];
+                if (!forwards) {
+                    time = timeSeriesLength - iTimeIndex - 1;
+                    inext = -1;
+                }
 
 
-            //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
-            INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
-
-            INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
-            if (iTimeIndex != timeSeriesLength - 1) {
-                //if t == timeSeriesLength-1 then deltaiNext etc are zeros
-                Nd4j.gemm(deltaifogNext, wIFOG, nablaOut, false, true, 1.0, 1.0);
-            }
-
-            //Output gate deltas:
-            INDArray sigmahOfS = fwdPass.memCellActivations[time];
-            INDArray ao = fwdPass.oa[time];
-
-            //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
-            INDArray deltao = deltaoNext;
-            Nd4j.getExecutioner().exec(new OldMulOp(nablaOut, sigmahOfS, deltao));
-            if (sigmoidGates) {
-                INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
-                deltao.muli(sigmaoPrimeOfZo);
-            } else {
-                deltao.assign(gateActivationFn.backprop(fwdPass.oz[time], deltao).getFirst()); //Deltao needs to be modified in-place
-                //TODO: optimize (no assign)
-            }
-
-            //Memory cell error:
-            INDArray temp = afn.backprop(currMemCellState.dup('f'), ao.muli(nablaOut)).getFirst(); //TODO activation functions with params
-            l1BLAS.axpy(nablaCellState.length(), 1.0, temp, nablaCellState);
-            if (hasPeepholeConnections) {
-                INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
-                l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
-            }
-            if (iTimeIndex != timeSeriesLength - 1) {
-                INDArray nextForgetGateAs = fwdPass.fa[time + inext];
-                int length = nablaCellState.length();
-                l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState); //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
-            }
-
-
-            //Store for use in next iteration, and IF we're in workspace, we need to push it out of current workspace
-            nablaCellStateNext = workspace == null ? nablaCellState : nablaCellState.leverage();
-
-
-            //Forget gate delta:
-            INDArray af = fwdPass.fa[time];
-            INDArray deltaf = null;
-            if (iTimeIndex > 0 || prevMemCellState != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
-                //Note that prevMemCellState may be non-null at t=0 for TBPTT
-                deltaf = deltafNext;
-                if (sigmoidGates) {
-                    Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
-                    deltaf.muli(nablaCellState);
-                    deltaf.muli(prevMemCellState);
+                //First: calclate the components of nablaCellState that relies on the next time step deltas, so we can overwrite the deltas
+                INDArray nablaCellState;
+                if (iTimeIndex != timeSeriesLength - 1 && hasPeepholeConnections) {
+                    nablaCellState = deltafNext.dup('f').muliRowVector(wFFTranspose);
+                    l1BLAS.axpy(nablaCellState.length(), 1.0, deltagNext.dup('f').muliRowVector(wGGTranspose),
+                            nablaCellState);
                 } else {
-                    INDArray temp2 = nablaCellState.mul(prevMemCellState);
-                    deltaf.assign(gateActivationFn.backprop(fwdPass.fz[time].dup('f'), temp2).getFirst()); //deltaf needs to be modified in-place
-                    //TODO activation functions with params
+                    nablaCellState = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize}, 'f');
                 }
-            }
-            //Shape: [m,n^L]
 
-            //Input modulation gate delta:
-            INDArray ag = fwdPass.ga[time];
-            INDArray ai = fwdPass.ia[time];
-            INDArray deltag = deltagNext;
-            if (sigmoidGates) {
-                Nd4j.getExecutioner().exec(new TimesOneMinus(ag, deltag)); //Equivalent to sigmoid deriv on zg
-                deltag.muli(ai);
-                deltag.muli(nablaCellState);
-            } else {
-                INDArray temp2 = Nd4j.getExecutioner().execAndReturn(
-                                new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
-                deltag.assign(gateActivationFn.backprop(fwdPass.gz[time], temp2).getFirst());
-                //TODO activation functions with params; optimize (no assign)
-            }
-            //Shape: [m,n^L]
-
-            //Network input delta:
-            INDArray zi = fwdPass.iz[time];
-            INDArray deltai = deltaiNext;
-            temp = Nd4j.getExecutioner().execAndReturn(
-                            new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
-            deltai.assign(afn.backprop(zi, temp).getFirst());
-            //TODO activation functions with params; also: optimize this (no assign)
-            //Shape: [m,n^L]
+                INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[time - inext]);
+                INDArray prevHiddenUnitActivation =
+                        (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[time - inext]);
+                INDArray currMemCellState = fwdPass.memCellState[time];
 
 
-            //Handle masking
-            if (maskArray != null) {
-                //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid using errors from a masked time step
-                // to calculate the parameter gradients.  Mask array has shape [minibatch, timeSeriesLength] -> get column(this time step)
-                timeStepMaskColumn = maskArray.getColumn(time);
-                deltaifogNext.muliColumnVector(timeStepMaskColumn);
-                //Later, the deltaifogNext is used to calculate: input weight gradients, recurrent weight gradients, bias gradients
-            }
+                //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
+                INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 
-            INDArray prevLayerActivationSlice =
-                            Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
-                //Note that prevHiddenUnitActivations may be non-null at t=0 for TBPTT
-                //Again, deltaifog_current == deltaifogNext at this point... same array
-                Nd4j.gemm(prevLayerActivationSlice, deltaifogNext, iwGradientsOut, true, false, 1.0, 1.0);
-            } else {
-                INDArray iwGradients_i =
-                                iwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
-                Nd4j.gemm(prevLayerActivationSlice, deltai, iwGradients_i, true, false, 1.0, 1.0);
-                INDArray iwGradients_og = iwGradientsOut.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                INDArray deltaog = deltaifogNext.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                Nd4j.gemm(prevLayerActivationSlice, deltaog, iwGradients_og, true, false, 1.0, 1.0);
-            }
+                INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
+                if (iTimeIndex != timeSeriesLength - 1) {
+                    //if t == timeSeriesLength-1 then deltaiNext etc are zeros
+                    Nd4j.gemm(deltaifogNext, wIFOG, nablaOut, false, true, 1.0, 1.0);
+                }
 
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
-                //If t==0 and prevHiddenUnitActivation==null, equiv. to zeros(n^L,n^L), so dL/dW for recurrent weights
-                // will end up as 0 anyway
-                //At this point: deltaifog and deltaifogNext are the same thing...
-                //So what we are actually doing here is sum of (prevAct^transpose * deltaifog_current)
-                Nd4j.gemm(prevHiddenUnitActivation, deltaifogNext, rwGradientsIFOG, true, false, 1.0, 1.0);
+                //Output gate deltas:
+                INDArray sigmahOfS = fwdPass.memCellActivations[time];
+                INDArray ao = fwdPass.oa[time];
 
-                //Shape: [1,n^L]. sum(0) is sum over examples in mini-batch.
-                //Can use axpy here because result of sum and rwGradients[4 to 6] have order Nd4j.order(), via Nd4j.create()
+                //Normally would use zo.dup() in above line, but won't be using zo again (for this time step). Ditto for zf, zg, zi
+                INDArray deltao = deltaoNext;
+                Nd4j.getExecutioner().exec(new OldMulOp(nablaOut, sigmahOfS, deltao));
+                if (sigmoidGates) {
+                    INDArray sigmaoPrimeOfZo = Nd4j.getExecutioner().execAndReturn(new TimesOneMinus(ao.dup('f'))); //Equivalent to sigmoid deriv on zo
+                    deltao.muli(sigmaoPrimeOfZo);
+                } else {
+                    deltao.assign(gateActivationFn.backprop(fwdPass.oz[time], deltao).getFirst()); //Deltao needs to be modified in-place
+                    //TODO: optimize (no assign)
+                }
+
+                //Memory cell error:
+                INDArray temp = afn.backprop(currMemCellState.dup('f'), ao.muli(nablaOut)).getFirst(); //TODO activation functions with params
+                l1BLAS.axpy(nablaCellState.length(), 1.0, temp, nablaCellState);
                 if (hasPeepholeConnections) {
-                    INDArray dLdwFF = deltaf.dup('f').muli(prevMemCellState).sum(0); //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
-                    l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwFF, rwGradientsFF); //rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
-                    INDArray dLdwGG = deltag.dup('f').muli(prevMemCellState).sum(0);
-                    l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwGG, rwGradientsGG); //rwGradients[6].addi(dLdwGG);
+                    INDArray deltaMulRowWOO = deltao.dup('f').muliRowVector(wOOTranspose);
+                    l1BLAS.axpy(nablaCellState.length(), 1.0, deltaMulRowWOO, nablaCellState); //nablaCellState.addi(deltao.mulRowVector(wOOTranspose));
+                }
+                if (iTimeIndex != timeSeriesLength - 1) {
+                    INDArray nextForgetGateAs = fwdPass.fa[time + inext];
+                    int length = nablaCellState.length();
+                    l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState); //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
+                }
+
+
+                //Store for use in next iteration, and IF we're in workspace, we need to push it out of current workspace
+                nablaCellStateNext = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, nablaCellState); //TODO optimize without leverage
+
+
+                //Forget gate delta:
+                INDArray af = fwdPass.fa[time];
+                INDArray deltaf = null;
+                if (iTimeIndex > 0 || prevMemCellState != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                    //Note that prevMemCellState may be non-null at t=0 for TBPTT
+                    deltaf = deltafNext;
+                    if (sigmoidGates) {
+                        Nd4j.getExecutioner().exec(new TimesOneMinus(af, deltaf));
+                        deltaf.muli(nablaCellState);
+                        deltaf.muli(prevMemCellState);
+                    } else {
+                        INDArray temp2 = nablaCellState.mul(prevMemCellState);
+                        deltaf.assign(gateActivationFn.backprop(fwdPass.fz[time].dup('f'), temp2).getFirst()); //deltaf needs to be modified in-place
+                        //TODO activation functions with params
+                    }
+                }
+                //Shape: [m,n^L]
+
+                //Input modulation gate delta:
+                INDArray ag = fwdPass.ga[time];
+                INDArray ai = fwdPass.ia[time];
+                INDArray deltag = deltagNext;
+                if (sigmoidGates) {
+                    Nd4j.getExecutioner().exec(new TimesOneMinus(ag, deltag)); //Equivalent to sigmoid deriv on zg
+                    deltag.muli(ai);
+                    deltag.muli(nablaCellState);
+                } else {
+                    INDArray temp2 = Nd4j.getExecutioner().execAndReturn(
+                            new OldMulOp(ai, nablaCellState, Nd4j.createUninitialized(ai.shape(), 'f')));
+                    deltag.assign(gateActivationFn.backprop(fwdPass.gz[time], temp2).getFirst());
+                    //TODO activation functions with params; optimize (no assign)
+                }
+                //Shape: [m,n^L]
+
+                //Network input delta:
+                INDArray zi = fwdPass.iz[time];
+                INDArray deltai = deltaiNext;
+                temp = Nd4j.getExecutioner().execAndReturn(
+                        new OldMulOp(ag, nablaCellState, Nd4j.createUninitialized(deltai.shape(), 'f')));
+                deltai.assign(afn.backprop(zi, temp).getFirst());
+                //TODO activation functions with params; also: optimize this (no assign)
+                //Shape: [m,n^L]
+
+
+                //Handle masking
+                if (maskArray != null) {
+                    //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid using errors from a masked time step
+                    // to calculate the parameter gradients.  Mask array has shape [minibatch, timeSeriesLength] -> get column(this time step)
+                    timeStepMaskColumn = maskArray.getColumn(time);
+                    deltaifogNext.muliColumnVector(timeStepMaskColumn);
+                    //Later, the deltaifogNext is used to calculate: input weight gradients, recurrent weight gradients, bias gradients
+                }
+
+                INDArray prevLayerActivationSlice =
+                        Shape.toMmulCompatible(is2dInput ? input : input.tensorAlongDimension(time, 1, 0));
+                if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                    //Note that prevHiddenUnitActivations may be non-null at t=0 for TBPTT
+                    //Again, deltaifog_current == deltaifogNext at this point... same array
+                    Nd4j.gemm(prevLayerActivationSlice, deltaifogNext, iwGradientsOut, true, false, 1.0, 1.0);
+                } else {
+                    INDArray iwGradients_i =
+                            iwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
+                    Nd4j.gemm(prevLayerActivationSlice, deltai, iwGradients_i, true, false, 1.0, 1.0);
+                    INDArray iwGradients_og = iwGradientsOut.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    INDArray deltaog = deltaifogNext.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    Nd4j.gemm(prevLayerActivationSlice, deltaog, iwGradients_og, true, false, 1.0, 1.0);
+                }
+
+                if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                    //If t==0 and prevHiddenUnitActivation==null, equiv. to zeros(n^L,n^L), so dL/dW for recurrent weights
+                    // will end up as 0 anyway
+                    //At this point: deltaifog and deltaifogNext are the same thing...
+                    //So what we are actually doing here is sum of (prevAct^transpose * deltaifog_current)
+                    Nd4j.gemm(prevHiddenUnitActivation, deltaifogNext, rwGradientsIFOG, true, false, 1.0, 1.0);
+
+                    //Shape: [1,n^L]. sum(0) is sum over examples in mini-batch.
+                    //Can use axpy here because result of sum and rwGradients[4 to 6] have order Nd4j.order(), via Nd4j.create()
+                    if (hasPeepholeConnections) {
+                        INDArray dLdwFF = deltaf.dup('f').muli(prevMemCellState).sum(0); //mul not mmul because these weights are from unit j->j only (whereas other recurrent weights are i->j for all i,j)
+                        l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwFF, rwGradientsFF); //rwGradients[4].addi(dLdwFF);    //dL/dw_{FF}
+                        INDArray dLdwGG = deltag.dup('f').muli(prevMemCellState).sum(0);
+                        l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwGG, rwGradientsGG); //rwGradients[6].addi(dLdwGG);
+                    }
+                }
+
+                if (hasPeepholeConnections) {
+                    INDArray dLdwOO = deltao.dup('f').muli(currMemCellState).sum(0); //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
+                    l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
+                }
+
+                if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
+                    //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
+                    l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
+                } else {
+                    l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut); //Sneaky way to do bGradients_i += deltai.sum(0)
+                    INDArray ogBiasToAdd = deltaifogNext.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(0);
+                    INDArray ogBiasGrad = bGradientsOut.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    l1BLAS.axpy(2 * hiddenLayerSize, 1.0, ogBiasToAdd, ogBiasGrad);
+                }
+
+                //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
+                //But here, need to add 4 weights * deltas for the IFOG gates
+                INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0); //This slice: f order and contiguous, due to epsilonNext being defined as f order.
+                if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
+                    //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
+                    Nd4j.gemm(deltaifogNext, inputWeights, epsilonNextSlice, false, true, 1.0, 1.0);
+                } else {
+                    //No contribution from forget gate at t=0
+                    INDArray wi = inputWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
+                    Nd4j.gemm(deltai, wi, epsilonNextSlice, false, true, 1.0, 1.0);
+                    INDArray deltaog = deltaifogNext.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    INDArray wog = inputWeights.get(NDArrayIndex.all(),
+                            NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
+                    Nd4j.gemm(deltaog, wog, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltao.mmul(woTranspose)).addi(deltag.mmul(wgTranspose));
+                }
+
+                if (maskArray != null) {
+                    //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid sending anything
+                    // but 0s to the layer below at this time step (for the given example)
+                    epsilonNextSlice.muliColumnVector(timeStepMaskColumn);
                 }
             }
-
-            if (hasPeepholeConnections) {
-                INDArray dLdwOO = deltao.dup('f').muli(currMemCellState).sum(0); //Expected shape: [n^L,1]. sum(0) is sum over examples in mini-batch.
-                l1BLAS.axpy(hiddenLayerSize, 1.0, dLdwOO, rwGradientsOO); //rwGradients[5].addi(dLdwOO);    //dL/dw_{OOxy}
-            }
-
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) { //For time == 0 && no prevMemCellState, equivalent to muli by 0
-                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
-                l1BLAS.axpy(4 * hiddenLayerSize, 1.0, deltaifogNext.sum(0), bGradientsOut);
-            } else {
-                l1BLAS.axpy(hiddenLayerSize, 1.0, deltai.sum(0), bGradientsOut); //Sneaky way to do bGradients_i += deltai.sum(0)
-                INDArray ogBiasToAdd = deltaifogNext.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize)).sum(0);
-                INDArray ogBiasGrad = bGradientsOut.get(NDArrayIndex.point(0),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                l1BLAS.axpy(2 * hiddenLayerSize, 1.0, ogBiasToAdd, ogBiasGrad);
-            }
-
-            //Calculate epsilonNext - i.e., equiv. to what would be (w^L*(d^(Lt))^T)^T in a normal network
-            //But here, need to add 4 weights * deltas for the IFOG gates
-            INDArray epsilonNextSlice = epsilonNext.tensorAlongDimension(time, 1, 0); //This slice: f order and contiguous, due to epsilonNext being defined as f order.
-            if (iTimeIndex > 0 || prevHiddenUnitActivation != null) {
-                //Note that prevHiddenUnitActivation may be non-null at t=0 for TBPTT
-                Nd4j.gemm(deltaifogNext, inputWeights, epsilonNextSlice, false, true, 1.0, 1.0);
-            } else {
-                //No contribution from forget gate at t=0
-                INDArray wi = inputWeights.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
-                Nd4j.gemm(deltai, wi, epsilonNextSlice, false, true, 1.0, 1.0);
-                INDArray deltaog = deltaifogNext.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                INDArray wog = inputWeights.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(2 * hiddenLayerSize, 4 * hiddenLayerSize));
-                Nd4j.gemm(deltaog, wog, epsilonNextSlice, false, true, 1.0, 1.0); //epsilonNextSlice.addi(deltao.mmul(woTranspose)).addi(deltag.mmul(wgTranspose));
-            }
-
-            if (maskArray != null) {
-                //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid sending anything
-                // but 0s to the layer below at this time step (for the given example)
-                epsilonNextSlice.muliColumnVector(timeStepMaskColumn);
-            }
-
-            if (workspace != null)
-                workspace.close();
         }
 
         Gradient retGradient = new DefaultGradient();

@@ -225,6 +225,7 @@ public class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
 
     @Override
     public INDArray dup(@NonNull T arrayType, @NonNull INDArray toDup, char order){
+        enforceExistsAndActive(arrayType);
         try(MemoryWorkspace ws = notifyScopeBorrowed(arrayType)){
             return toDup.dup(order);
         }

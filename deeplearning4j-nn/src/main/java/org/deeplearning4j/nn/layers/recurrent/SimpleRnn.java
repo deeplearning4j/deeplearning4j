@@ -34,10 +34,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
-        setInput(input, null);  //TODO
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         INDArray last = stateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, false, false, null).getFirst();     //TODO
+        INDArray out = activateHelper(last, false, false, workspaceMgr).getFirst();
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             stateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
         }
@@ -45,10 +45,10 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input, null);  //TODO
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         INDArray last = tBpttStateMap.get(STATE_KEY_PREV_ACTIVATION);
-        INDArray out = activateHelper(last, training, false, null).getFirst();      //TODO
+        INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
         if(storeLastForTBPTT){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
                 tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));

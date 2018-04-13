@@ -53,7 +53,7 @@ public class MaskLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.u
 
     private static INDArray applyMask(INDArray input, INDArray maskArray, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(maskArray == null){
-            return input;
+            return workspaceMgr.leverageTo(type, input);
         }
         switch (input.rank()){
             case 2:

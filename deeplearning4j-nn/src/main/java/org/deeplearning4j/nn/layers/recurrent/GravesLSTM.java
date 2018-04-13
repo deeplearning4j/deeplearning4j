@@ -86,12 +86,12 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         FwdPassReturn fwdPass;
         if (truncatedBPTT) {
             fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION),
-                            stateMap.get(STATE_KEY_PREV_MEMCELL), true, null);      //TODO
+                            stateMap.get(STATE_KEY_PREV_MEMCELL), true, workspaceMgr);
             //Store last time step of output activations and memory cell state in tBpttStateMap
             tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.WORKSPACE_TBPTT));
             tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.WORKSPACE_TBPTT));
         } else {
-            fwdPass = activateHelper(true, null, null, true, null); //TODO
+            fwdPass = activateHelper(true, null, null, true, workspaceMgr);
         }
 
 
@@ -177,10 +177,10 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
-        setInput(input, null);      //TODO
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         FwdPassReturn fwdPass = activateHelper(false, stateMap.get(STATE_KEY_PREV_ACTIVATION),
-                        stateMap.get(STATE_KEY_PREV_MEMCELL), false, null);         //TODO
+                        stateMap.get(STATE_KEY_PREV_MEMCELL), false, workspaceMgr);
         INDArray outAct = fwdPass.fwdPassOutput;
         //Store last time step of output activations and memory cell state for later use:
         stateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.detach());
@@ -192,10 +192,10 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        setInput(input, null);      //TODO
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
+        setInput(input, workspaceMgr);
         FwdPassReturn fwdPass = activateHelper(training, stateMap.get(STATE_KEY_PREV_ACTIVATION),
-                        stateMap.get(STATE_KEY_PREV_MEMCELL), false, null);         //TODO
+                        stateMap.get(STATE_KEY_PREV_MEMCELL), false, workspaceMgr);
         INDArray outAct = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap

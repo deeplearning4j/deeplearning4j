@@ -67,6 +67,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         INDArray temp = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, input, input.ordering());
         INDArray delta = layerConf().getActivationFn().backprop(temp, epsilon).getFirst(); //TODO handle activation function params
 
+        delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);  //Usually a no-op (except for perhaps identity)
         Gradient ret = new DefaultGradient();
         return new Pair<>(ret, delta);
     }
@@ -83,9 +84,9 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
             //dup required: need to keep original input for backprop
             in = mgr.dup(ArrayType.ACTIVATIONS, input, input.ordering());
         } else {
-            in = input;
+            in = mgr.leverageTo(ArrayType.ACTIVATIONS, input);
         }
-        //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
+
         return layerConf().getActivationFn().getActivation(in, training);
 
     }

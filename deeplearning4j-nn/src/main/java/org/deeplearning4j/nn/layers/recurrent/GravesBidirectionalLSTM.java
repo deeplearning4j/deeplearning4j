@@ -253,7 +253,7 @@ public class GravesBidirectionalLSTM
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException(
                         "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
                                         + layerId());
@@ -262,7 +262,7 @@ public class GravesBidirectionalLSTM
 
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException(
                         "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }

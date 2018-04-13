@@ -62,7 +62,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public INDArray rnnTimeStep(INDArray input) {
+    public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Cannot RnnTimeStep bidirectional layers");
     }
 
@@ -84,7 +84,7 @@ public class BidirectionalLayer implements RecurrentLayer {
     }
 
     @Override
-    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
+    public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Not supported: cannot use this method (or truncated BPTT) with bidirectional layers");
     }
 

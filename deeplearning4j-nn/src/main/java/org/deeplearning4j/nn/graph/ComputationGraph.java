@@ -137,6 +137,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected static final String WS_ALL_LAYERS_ACT = "WS_ALL_LAYERS_ACT";
 
+    protected static final String WS_RNN_LOOP_WORKING_MEM = "WS_RNN_LOOP_WORKING_MEM";
+
 
     protected static final WorkspaceConfiguration WS_LAYER_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -164,6 +166,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             .policySpill(SpillPolicy.REALLOCATE)
             .policyAllocation(AllocationPolicy.OVERALLOCATE)
             .build();
+
+    protected static final WorkspaceConfiguration WS_RNN_LOOP_WORKING_MEM_CONFIG = WorkspaceConfiguration.builder()
+            .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP).build();
 
 
     protected transient ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
@@ -1650,6 +1657,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .noWorkspaceFor(ArrayType.ACTIVATIONS)
                     .with(ArrayType.INPUT, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
 
@@ -1966,6 +1974,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             workspaceMgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .build();
@@ -2145,6 +2154,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 .with(ArrayType.ACTIVATIONS, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG) //For forward pass in the context of BP
                                 .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                                 .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                                .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                                .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                                 .build();
 
                         allWorkspaceManagers.add(workspaceMgr);
@@ -2965,7 +2976,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     //Layer
                     Layer l = current.getLayer();
                     if (l instanceof RecurrentLayer) {
-                        out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0]);
+                        out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0], workspaceMgr);
                     } else if (l instanceof MultiLayerNetwork) {
                         out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
                     } else {
@@ -3269,7 +3280,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     Layer l = current.getLayer();
                     if (l instanceof RecurrentLayer) {
                         out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], training,
-                                storeLastForTBPTT);
+                                storeLastForTBPTT, workspaceMgr);
                     } else if (l instanceof MultiLayerNetwork) {
                         List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
                                 current.getInputs()[0], training, storeLastForTBPTT);
