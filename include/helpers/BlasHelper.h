@@ -409,6 +409,9 @@ namespace nd4j {
 
         LapackeSgesdd sgesdd();
         LapackeDgesdd dgesdd();
+        
+        // destructor
+        ~BlasHelper() noexcept; 
     };
 }
 

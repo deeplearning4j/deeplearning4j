@@ -1354,7 +1354,7 @@ TEST_F(HelpersTests1, rnnCell_test1) {
 
     NDArray<double> expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
-    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+    ops::helpers::rnnCell<double>({&xt, &Wx, &Wh, &b, &ht_1}, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1383,7 +1383,7 @@ TEST_F(HelpersTests1, rnnCell_test2) {
 
     NDArray<double> expHt('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
 
-    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+    ops::helpers::rnnCell<double>({&xt, &Wx, &Wh, &b, &ht_1}, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1411,7 +1411,7 @@ TEST_F(HelpersTests1, rnnCell_test3) {
 
     NDArray<double> expHt('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
 
-    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+    ops::helpers::rnnCell<double>({&xt, &Wx, &Wh, &b, &ht_1}, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1440,7 +1440,7 @@ TEST_F(HelpersTests1, rnnCell_test4) {
 
     NDArray<double> expHt('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
 
-    ops::helpers::rnnCell<double>({&xt, &ht_1, &Wx, &Wh, &b}, &ht);
+    ops::helpers::rnnCell<double>({&xt, &Wx, &Wh, &b, &ht_1}, &ht);
     
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));

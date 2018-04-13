@@ -151,5 +151,8 @@ namespace nd4j {
         return this->lapackeDgesdd;
     }
 
+    // destructor
+    BlasHelper::~BlasHelper() noexcept { }
+
     BlasHelper* BlasHelper::_instance = 0;
 }

@@ -3,7 +3,6 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/lstmCell.h>
 
 namespace nd4j {
 namespace ops  {
@@ -49,13 +48,13 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     NDArray<T>* hFW = resultsFW->at(0);							// [time x bS x numUnitsFW]
     hFWFinal->assign(resultsFW->at(1));
 
-    // reverse x 
     NDArray<T>* seqLen = maxTimeStep;
     if(seqLen == nullptr) {    	
     	seqLen = new NDArray<T>(x->ordering(), {x->sizeAt(1)}, block.getWorkspace());	// [bS]
     	*seqLen = (T)x->sizeAt(0);														// set each element of seqLen to be equal to time
     }
 
+    // reverse x 
     nd4j::ops::reverse_sequense<T> reverse;
     ResultSet<T>* resultsIn = reverse.execute({x, seqLen}, {}, {0,1});
     NDArray<T>* revInput = resultsIn->at(0);

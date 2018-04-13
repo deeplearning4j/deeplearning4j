@@ -24,12 +24,12 @@ static FORCEINLINE NDArray<T> activation(const NDArray<T>& arr) {
 template <typename T>
 void rnnCell(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* ht) {
 
-    NDArray<T>* xt   = inArrs[0];                   // input [bS x inSize]
-    NDArray<T>* ht_1 = inArrs[1];                   // previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!     
+    NDArray<T>* xt   = inArrs[0];                   // input [bS x inSize]    
+    NDArray<T>* Wx   = inArrs[1];                   // input-to-hidden weights, [inSize  x numUnits] 
+    NDArray<T>* Wh   = inArrs[2];                   // hidden-to-hidden weights, [numUnits x numUnits] 
+    NDArray<T>* b    = inArrs[3];                   // biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases    
 
-    NDArray<T>* Wx   = inArrs[2];                   // input-to-hidden weights, [inSize  x numUnits] 
-    NDArray<T>* Wh   = inArrs[3];                   // hidden-to-hidden weights, [numUnits x numUnits] 
-    NDArray<T>* b    = inArrs[4];                   // biases, [2*numUnits]: {0, numUnits} are input-to-hidden biases and {numUnits, 2*numUnits} are hidden-to-hidden biases    
+    NDArray<T>* ht_1 = inArrs[4];                   // previous cell output [bS x numUnits],  that is at previous time step t-1, in case of projection=false -> numUnits=numUnits!!!     
 
     const int numUnits  = ht_1->sizeAt(1);
     
