@@ -209,12 +209,21 @@ public class Convolution3DLayer extends ConvolutionLayer {
         };
 
         CustomOp op;
-        op = DynamicCustomOp.builder("conv3d")
-                .addInputs(input, weights, bias)
-                .addIntegerArguments(args)
-                .addOutputs(reshapedOutput)
-                .callInplace(false)
-                .build();
+        if (layerConfig.hasBias()) {
+            op = DynamicCustomOp.builder("conv3d")
+                    .addInputs(input, weights, bias)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedOutput)
+                    .callInplace(false)
+                    .build();
+        } else {
+            op = DynamicCustomOp.builder("conv3d")
+                    .addInputs(input, weights)
+                    .addIntegerArguments(args)
+                    .addOutputs(reshapedOutput)
+                    .callInplace(false)
+                    .build();
+        }
         Nd4j.getExecutioner().exec(op);
 
         return new Pair<>(reshapedOutput, null);
