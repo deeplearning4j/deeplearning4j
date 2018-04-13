@@ -70,6 +70,7 @@ git commit -s -a -m "Update to version $RELEASE_VERSION"
 git tag -s -a -m "nd4j-$RELEASE_VERSION" "nd4j-$RELEASE_VERSION"
 git tag -s -a -f -m "nd4j-$RELEASE_VERSION" "latest_release"
 
+sed -i "s/<dl4j-test-resources.version>.*<\/dl4j-test-resources.version>/<dl4j-test-resources.version>$SNAPSHOT_VERSION<\/dl4j-test-resources.version>/" pom.xml
 mvn versions:set -DallowSnapshots=true -DgenerateBackupPoms=false -DnewVersion=$SNAPSHOT_VERSION
 git commit -s -a -m "Update to version $SNAPSHOT_VERSION"
 
