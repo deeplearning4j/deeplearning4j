@@ -64,10 +64,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
-        epsilon = epsilon.dup('f');
+        if(epsilon.ordering() != 'f' || !Shape.hasDefaultStridesForShape(epsilon))
+            epsilon = epsilon.dup('f');
 
         //First: Do forward pass to get gate activations and Zs
-        Pair<INDArray,INDArray> p = activateHelper(null, true, true, null); //TODO
+        Pair<INDArray,INDArray> p = activateHelper(null, true, true, workspaceMgr);
 
         INDArray w = getParamWithNoise(SimpleRnnParamInitializer.WEIGHT_KEY, true, workspaceMgr);
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, true, workspaceMgr);
@@ -165,11 +166,11 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray rw = getParamWithNoise(SimpleRnnParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr);
         INDArray b = getParamWithNoise(SimpleRnnParamInitializer.BIAS_KEY, training, workspaceMgr);
 
-        INDArray out = Nd4j.createUninitialized(new int[]{m, nOut, tsLength}, 'f');
-        INDArray outZ = (forBackprop ? Nd4j.createUninitialized(out.shape()) : null);
+        INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, new int[]{m, nOut, tsLength}, 'f');
+        INDArray outZ = (forBackprop ? workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, out.shape()) : null);
 
         if(input.ordering() != 'f' || Shape.strideDescendingCAscendingF(input))
-            input = input.dup('f');
+            input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
         //TODO implement 'mmul across time' optimization
 

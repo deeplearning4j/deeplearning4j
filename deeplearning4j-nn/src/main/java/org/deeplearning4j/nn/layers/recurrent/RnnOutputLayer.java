@@ -61,7 +61,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray inputTemp = input;
-        this.input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.INPUT);
+        this.input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.BP_WORKING_MEM);
         Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon, workspaceMgr);
         this.input = inputTemp;
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
@@ -97,7 +97,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
-            input = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+            input = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.FF_WORKING_MEM);
             INDArray out = super.preOutput(training, workspaceMgr);
             this.input = inputTemp;
             return out;
@@ -143,7 +143,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         applyDropOutIfNecessary(training, workspaceMgr);
         INDArray origInput = input;
-        this.input = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+        this.input = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.FF_WORKING_MEM);
         INDArray out = super.activate(true, workspaceMgr);
         this.input = origInput;
         if (maskArray != null) {

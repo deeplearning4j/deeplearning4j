@@ -69,7 +69,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's activate method
-        INDArray preOutput = super.preOutput(training, workspaceMgr);
+        INDArray preOutput = super.preOutput(training, false, workspaceMgr).getFirst();
 
         // remove singleton fourth dimension from output activations
         input = origInput;

@@ -136,7 +136,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Not used for inference
      */
     protected static final String WS_ALL_LAYERS_ACT = "WS_ALL_LAYERS_ACT";
-
+    /**
+     * Workspace for working memory in RNNs - opened and closed once per RNN time step
+     */
     protected static final String WS_RNN_LOOP_WORKING_MEM = "WS_RNN_LOOP_WORKING_MEM";
 
 
@@ -986,80 +988,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             fit(mds.getFeatures(),mds.getLabels(), mds.getFeaturesMaskArrays(), mds.getLabelsMaskArrays());
         }
 
-////        MemoryWorkspace workspace =
-////                configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-////                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-////                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
-////
-////        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-////                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
-////                WORKSPACE_CACHE);
-//
-//        LayerWorkspaceMgr workspaceMgr;
-//        if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
-//            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
-//        } else {
-//            workspaceMgr = LayerWorkspaceMgr.builder()
-//                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-//                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-//                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-//                    .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-//                    .build();
-//        }
-//
-//        if (configuration.isBackprop()) {
-//
-//            long time1 = System.currentTimeMillis();
-//            while (multiDataSetIterator.hasNext()) {
-//                MultiDataSet next = multiDataSetIterator.next();
-//                long time2 = System.currentTimeMillis();
-//
-//                lastEtlTime.set((time2 - time1));
-//
-//                if (next.getFeatures() == null || next.getLabels() == null)
-//                    continue;
-//
-//
-//                //migrate(next);
-//
-//                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-//                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
-//                            next.getLabelsMaskArrays());
-//                } else {
-//                    boolean hasMaskArrays = next.hasMaskArrays();
-//                    if (hasMaskArrays) {
-//                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
-//                    }
-//
-//                    setInputs(next.getFeatures());
-//                    setLabels(next.getLabels());
-//                    if (solver == null) {
-//                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-//                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners)
-//                                    .model(this).build();
-//                        }
-//                    }
-//
-////                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-////                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-////                            solver.optimize(workspaceMgr);
-////                        }
-////                    }
-//                    //TODO CACHE
-//                    solver.optimize(workspaceMgr);
-//
-//                    if (hasMaskArrays) {
-//                        clearLayerMaskArrays();
-//                    }
-//                }
-//
-//                Nd4j.getMemoryManager().invokeGcOccasionally();
-//                time1 = System.currentTimeMillis();
-//            }
-//        }
-//
-//        clearLayersStates();
-
         if (destructable)
             ((AsyncMultiDataSetIterator) multiDataSetIterator).shutdown();
         incrementEpochCount();
@@ -1105,6 +1033,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     //Note for updater working memory, we have the option to re-use WS_ALL_LAYERS_ACT or FF/BP_WORKING_MEM
                     // as these should be closed by the time updaters are executed
                     //Generally, WS_ALL_LAYERS_ACT will be the larger of the two, so we'll use this
@@ -1265,6 +1195,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
                     .with(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     //Note for updater working memory, we have the option to re-use WS_ALL_LAYERS_ACT or FF/BP_WORKING_MEM
                     // as these should be closed by the time updaters are executed
                     //Generally, WS_ALL_LAYERS_ACT will be the larger of the two, so we'll use this
@@ -1731,6 +1663,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
 
@@ -1858,6 +1791,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                 .with(ArrayType.INPUT, wsName, WS_LAYER_ACT_X_CONFIG)
                                 .with(ArrayType.ACTIVATIONS, wsName, WS_LAYER_ACT_X_CONFIG)
                                 .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                                .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                                 .build();
 
                         allWorkspaceManagers.add(workspaceMgr);
@@ -2516,26 +2450,16 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public double score(MultiDataSet dataSet, boolean training) {
         LayerWorkspaceMgr mgr;
-        if(training){
-            if(configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
-                mgr = LayerWorkspaceMgr.noWorkspaces();
-            } else {
-                mgr = LayerWorkspaceMgr.builder()
-                        .noWorkspaceFor(ArrayType.ACTIVATIONS)
-                        .noWorkspaceFor(ArrayType.INPUT)
-                        .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                        .build();
-            }
+        WorkspaceMode wsm = (training ? configuration.getTrainingWorkspaceMode() : configuration.getInferenceWorkspaceMode());
+        if(wsm == WorkspaceMode.NONE){
+            mgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
-            if(configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE){
-                mgr = LayerWorkspaceMgr.noWorkspaces();
-            } else {
-                mgr = LayerWorkspaceMgr.builder()
-                        .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                        .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                        .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                        .build();
-            }
+            mgr = LayerWorkspaceMgr.builder()
+                    .noWorkspaceFor(ArrayType.ACTIVATIONS)
+                    .noWorkspaceFor(ArrayType.INPUT)
+                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
+                    .build();
         }
 
         boolean hasMaskArrays = dataSet.hasMaskArrays();
@@ -2618,6 +2542,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
                     .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
+                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
         }
 

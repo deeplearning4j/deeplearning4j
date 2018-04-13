@@ -390,7 +390,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        INDArray z = preOutput(training, false, workspaceMgr).getFirst();
+//        INDArray z = preOutput(training, false, workspaceMgr).getFirst();
+        INDArray z = preOutput(training, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
         if (training && cacheMode != CacheMode.NONE
