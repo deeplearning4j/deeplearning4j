@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -76,7 +77,7 @@ public class Upsampling1D extends Upsampling2D {
         INDArray outEpsilon = Nd4j.create(miniBatch * inDepth * inH * inW);
         INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, inDepth, inH, inW);
 
-        INDArray forwardOutput  = preOutput(true, true);
+        INDArray forwardOutput  = preOutput(true, true, LayerWorkspaceMgr.noWorkspaces());
         forwardOutput = forwardOutput.reshape(
                 forwardOutput.size(0), forwardOutput.size(1), forwardOutput.size(2), 1);
         forwardOutput = forwardOutput.repeat(3, size);
@@ -103,18 +104,38 @@ public class Upsampling1D extends Upsampling2D {
         return ((org.deeplearning4j.nn.conf.layers.Upsampling1D)conf.getLayer()).getSize();
     }
 
+    @Override
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        if (input.rank() != 3)
+            throw new DL4JInvalidInputException("Got rank " + input.rank()
+                    + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
+                    + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
-    protected INDArray preOutput(boolean training, boolean forBackprop) {
-//        INDArray originalInput = input;
-//        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
-//
-//        INDArray preOutput = super.preOutput(training, forBackprop);
-//
-//        input = originalInput;
-//        preOutput = preOutput.slice(0, 3);
-//
-//        return preOutput;
-        throw new UnsupportedOperationException("Not yet re-implemented");
+        // add singleton fourth dimension to input
+        INDArray origInput = input;
+        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+
+        // call 2D SubsamplingLayer's activate method
+        INDArray acts = super.activate(training, workspaceMgr);
+
+        // remove singleton fourth dimension from input and output activations
+        input = origInput;
+        acts = acts.reshape(acts.size(0), acts.size(1), acts.size(2));
+
+        return acts;
+    }
+
+    @Override
+    protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        INDArray originalInput = input;
+        input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
+
+        INDArray preOutput = super.preOutput(training, forBackprop, workspaceMgr);
+
+        input = originalInput;
+        preOutput = preOutput.slice(0, 3);
+
+        return preOutput;
     }
 
 
