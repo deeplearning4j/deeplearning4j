@@ -546,12 +546,17 @@ public class TransformProcess implements Serializable {
         Map<Integer,List<String>> categoryMap = new HashMap<>();
         Map<Integer,Set<String>> categories = new HashMap<>();
         for(int i = 0; i < columnIndices.length; i++) {
-            categoryMap.put(i,new ArrayList<String>());
-            categories.put(i,new HashSet<String>());
+            categoryMap.put(columnIndices[i],new ArrayList<String>());
+            categories.put(columnIndices[i],new HashSet<String>());
         }
         while(recordReader.hasNext()) {
             List<Writable> next = recordReader.next();
             for(int i = 0; i < columnIndices.length; i++) {
+                if(columnIndices[i] >= next.size()) {
+                    log.warn("Filtering out example: Invalid length of columns");
+                    continue;
+                }
+
                 categories.get(columnIndices[i]).add(next.get(columnIndices[i]).toString());
             }
 

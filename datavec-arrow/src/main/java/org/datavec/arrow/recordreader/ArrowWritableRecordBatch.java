@@ -129,10 +129,15 @@ public class ArrowWritableRecordBatch extends AbstractWritableRecordBatch implem
     public List<Writable> get(int i) {
         List<Writable> ret = new ArrayList<>(schema.numColumns());
         for(int column = 0; column < schema.numColumns(); column++) {
-            if(!list.get(column).isNull(offset + i))
-                ret.add(ArrowConverter.fromEntry(offset + i,list.get(column),schema.getType(column)));
-            else {
+            try {
+                if (!list.get(column).isNull(offset + i))
+                    ret.add(ArrowConverter.fromEntry(offset + i, list.get(column), schema.getType(column)));
+                else {
+                    ret.add(NullWritable.INSTANCE);
+                }
+            }catch (Exception e) {
                 ret.add(NullWritable.INSTANCE);
+
             }
         }
         return ret;

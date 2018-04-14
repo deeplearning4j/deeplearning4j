@@ -590,21 +590,32 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
 
     @Override
     public double toDouble() {
+        if(toString().startsWith("0x"))
+            return Long.decode(toString());
+
         return Double.parseDouble(toString());
     }
 
     @Override
     public float toFloat() {
+        if(toString().startsWith("0x"))
+            return Integer.decode(toString());
         return Float.parseFloat(toString());
     }
 
     @Override
     public int toInt() {
+        if(toString().startsWith("0x"))
+            return Integer.decode(toString());
+
         return Integer.parseInt(toString());
     }
 
     @Override
     public long toLong() {
+        if(toString().startsWith("0x"))
+            return Long.decode(toString());
+
         return Long.parseLong(toString());
     }
 

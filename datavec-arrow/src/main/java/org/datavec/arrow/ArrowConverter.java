@@ -1,5 +1,6 @@
 package org.datavec.arrow;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -49,6 +50,7 @@ import static java.nio.channels.Channels.newChannel;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class ArrowConverter {
 
 
@@ -708,59 +710,58 @@ public class ArrowConverter {
         if(value instanceof NullWritable) {
             return;
         }
+        try {
+            switch (columnType) {
+                case Integer:
+                    if (fieldVector instanceof IntVector) {
+                        IntVector intVector = (IntVector) fieldVector;
+                        int set = TypeConversion.getInstance().convertInt(value);
+                        intVector.set(row, set);
+                    } else if (fieldVector instanceof UInt4Vector) {
+                        UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
+                        int set = TypeConversion.getInstance().convertInt(value);
+                        uInt4Vector.set(row, set);
+                    } else {
+                        throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for int type");
+                    }
+                    break;
+                case Float:
+                    Float4Vector float4Vector = (Float4Vector) fieldVector;
+                    float set2 = TypeConversion.getInstance().convertFloat(value);
+                    float4Vector.set(row, set2);
+                    break;
+                case Double:
+                    double set3 = TypeConversion.getInstance().convertDouble(value);
+                    Float8Vector float8Vector = (Float8Vector) fieldVector;
+                    float8Vector.set(row, set3);
+                    break;
+                case Long:
+                    if (fieldVector instanceof BigIntVector) {
+                        BigIntVector largeIntVector = (BigIntVector) fieldVector;
+                        largeIntVector.set(row, TypeConversion.getInstance().convertLong(value));
 
-        switch (columnType) {
-            case Integer:
-                if(fieldVector instanceof IntVector) {
-                    IntVector intVector = (IntVector) fieldVector;
-                    int set = TypeConversion.getInstance().convertInt(value);
-                    intVector.set(row,set);
-                }
-                else if(fieldVector instanceof UInt4Vector) {
-                    UInt4Vector uInt4Vector = (UInt4Vector) fieldVector;
-                    int set = TypeConversion.getInstance().convertInt(value);
-                    uInt4Vector.set(row,set);
-                }
-                else {
-                    throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for int type");
-                }
-                break;
-            case Float:
-                Float4Vector float4Vector = (Float4Vector) fieldVector;
-                float set2 = TypeConversion.getInstance().convertFloat(value);
-                float4Vector.set(row,set2);
-                break;
-            case Double:
-                double set3 = TypeConversion.getInstance().convertDouble(value);
-                Float8Vector float8Vector = (Float8Vector) fieldVector;
-                float8Vector.set(row,set3);
-                break;
-            case Long:
-                if(fieldVector instanceof BigIntVector) {
-                    BigIntVector largeIntVector = (BigIntVector) fieldVector;
-                    largeIntVector.set(row,TypeConversion.getInstance().convertLong(value));
+                    } else if (fieldVector instanceof UInt8Vector) {
+                        UInt8Vector uInt8Vector = (UInt8Vector) fieldVector;
+                        uInt8Vector.set(row, TypeConversion.getInstance().convertLong(value));
+                    } else {
+                        throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for long type");
+                    }
+                    break;
+                case Categorical:
+                case String:
+                    String stringSet = TypeConversion.getInstance().convertString(value);
+                    VarCharVector textVector = (VarCharVector) fieldVector;
+                    textVector.set(row, stringSet.getBytes());
+                    break;
+                case Time:
+                    //all timestamps are long based, just directly convert it to the super type
+                    long timeSet = TypeConversion.getInstance().convertLong(value);
+                    setLongInTime(fieldVector, row, timeSet);
+                    break;
 
-                }
-                else if(fieldVector instanceof UInt8Vector) {
-                    UInt8Vector uInt8Vector = (UInt8Vector) fieldVector;
-                    uInt8Vector.set(row,TypeConversion.getInstance().convertLong(value));
-                }
-                else {
-                    throw new UnsupportedOperationException("Illegal type " + fieldVector.getClass() + " for long type");
-                }
-                break;
-            case Categorical:
-            case String:
-                String stringSet = TypeConversion.getInstance().convertString(value);
-                VarCharVector textVector = (VarCharVector) fieldVector;
-                textVector.set(row,stringSet.getBytes());
-                break;
-            case Time:
-                //all timestamps are long based, just directly convert it to the super type
-                long timeSet = TypeConversion.getInstance().convertLong(value);
-                setLongInTime(fieldVector,row,timeSet);
-                break;
-
+            }
+        }catch(Exception e) {
+            log.warn("Unable to set value at row " + row);
         }
     }
 

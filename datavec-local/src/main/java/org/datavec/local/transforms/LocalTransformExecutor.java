@@ -2,6 +2,7 @@ package org.datavec.local.transforms;
 
 import com.codepoetics.protonpack.Indexed;
 import com.codepoetics.protonpack.StreamUtils;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -43,6 +44,7 @@ import static java.util.stream.Collectors.toList;
 /**
  * Local transform executor
  */
+@Slf4j
 public class LocalTransformExecutor {
     //a boolean jvm argument that when the system property is true
     //will cause some functions to invoke a try catch block and just log errors
@@ -67,7 +69,12 @@ public class LocalTransformExecutor {
 
         }
 
-        return execute(inputWritables, null, transformProcess).getFirst();
+        List<List<Writable>> filteredSequence = inputWritables.parallelStream()
+                .filter(input -> input.size() == transformProcess.getInitialSchema().numColumns()).collect(toList());
+        if(filteredSequence.size() != inputWritables.size()) {
+            log.warn("Filtered out " + (inputWritables.size() - filteredSequence.size()) + " values");
+        }
+        return execute(filteredSequence, null, transformProcess).getFirst();
     }
 
     /**
@@ -302,7 +309,6 @@ public class LocalTransformExecutor {
         }
 
 
-        int count = 1;
         for (DataAction d : dataActions) {
             //log.info("Starting execution of stage {} of {}", count, dataActions.size());     //
 
@@ -311,17 +317,21 @@ public class LocalTransformExecutor {
                 if (currentWritables != null) {
                     Function<List<Writable>, List<Writable>> function = new LocalTransformFunction(t);
                     if (isTryCatch())
-                        currentWritables = currentWritables.stream().map(input -> function.apply(input)).filter(input -> new EmptyRecordFunction().apply(input)).collect(toList());
+                        currentWritables = currentWritables.stream()
+                                .map(input -> function.apply(input)).filter(input -> new EmptyRecordFunction().apply(input)).collect(toList());
                     else
-                        currentWritables = currentWritables.stream().map(input -> function.apply(input)).collect(toList());
+                        currentWritables = currentWritables.stream()
+                                .map(input -> function.apply(input)).collect(toList());
                 } else {
                     Function<List<List<Writable>>, List<List<Writable>>> function =
                             new LocalSequenceTransformFunction(t);
                     if (isTryCatch())
-                        currentSequence = currentSequence.stream().map(input -> function.apply(input)).filter(input ->
+                        currentSequence = currentSequence.stream()
+                                .map(input -> function.apply(input)).filter(input ->
                                 new SequenceEmptyRecordFunction().apply(input)).collect(toList());
                     else
-                        currentSequence = currentSequence.stream().map(input -> function.apply(input)).collect(toList());
+                        currentSequence = currentSequence.stream()
+                                .map(input -> function.apply(input)).collect(toList());
 
 
                 }
@@ -330,7 +340,8 @@ public class LocalTransformExecutor {
                 Filter f = d.getFilter();
                 if (currentWritables != null) {
                     LocalFilterFunction localFilterFunction = new LocalFilterFunction(f);
-                    currentWritables = currentWritables.stream().filter(input -> localFilterFunction.apply(input)).collect(toList());
+                    currentWritables = currentWritables.stream()
+                            .filter(input -> localFilterFunction.apply(input)).collect(toList());
                 } else {
                     LocalSequenceFilterFunction localSequenceFilterFunction = new LocalSequenceFilterFunction(f);
                     currentSequence = currentSequence.stream().filter(input -> localSequenceFilterFunction.apply(input)).collect(toList());
@@ -363,7 +374,8 @@ public class LocalTransformExecutor {
                     Map<List<Writable>, List<List<Writable>>> collect = FunctionalUtils.groupByKey(withKey);
                     LocalGroupToSequenceFunction localGroupToSequenceFunction = new LocalGroupToSequenceFunction(cts.getComparator());
                     //Now: convert to a sequence...
-                    currentSequence = collect.entrySet().stream().map(input -> input.getValue())
+                    currentSequence = collect.entrySet().stream()
+                            .map(input -> input.getValue())
                             .map(input -> localGroupToSequenceFunction.apply(input))
                             .collect(toList());
 
@@ -473,7 +485,6 @@ public class LocalTransformExecutor {
                 throw new RuntimeException("Unknown/not implemented action: " + d);
             }
 
-            count++;
         }
 
         //log.info("Completed {} of {} execution steps", count - 1, dataActions.size());       //Lazy execution means this can be printed before anything has actually happened...
@@ -543,7 +554,8 @@ public class LocalTransformExecutor {
         }
         ExtractKeysFunction extractKeysFunction1 = new ExtractKeysFunction(leftColumnIndexes);
 
-        List<Pair<List<Writable>, List<Writable>>> leftJV = left.stream().map(input ->
+        List<Pair<List<Writable>, List<Writable>>> leftJV = left.stream()
+                .filter(input -> input.size() != leftColumnNames.length).map(input ->
                 extractKeysFunction1.apply(input)).collect(toList());
 
         String[] rightColumnNames = join.getJoinColumnsRight();
@@ -554,7 +566,8 @@ public class LocalTransformExecutor {
 
         ExtractKeysFunction extractKeysFunction = new ExtractKeysFunction(rightColumnIndexes);
         List<Pair<List<Writable>, List<Writable>>> rightJV =
-                right.stream().map(input -> extractKeysFunction.apply(input))
+                right.stream().filter(input -> input.size() != rightColumnNames.length)
+                        .map(input -> extractKeysFunction.apply(input))
                         .collect(toList());
 
         Map<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>> cogroupedJV = FunctionalUtils.cogroup(leftJV, rightJV);
