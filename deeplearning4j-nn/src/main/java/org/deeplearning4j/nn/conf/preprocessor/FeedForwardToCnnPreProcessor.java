@@ -82,6 +82,10 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+        this.shape = input.shape();
+        if (input.rank() == 4)
+            return input;
+
         if (input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
                     + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
@@ -89,10 +93,6 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
-
-        this.shape = input.shape();
-        if (input.rank() == 4)
-            return input;
 
         return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
     }

@@ -195,7 +195,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
             ret.muliColumnVector(maskArray);
         }
 
-        return ret;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
     @Override

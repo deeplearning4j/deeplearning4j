@@ -109,7 +109,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
             epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (epsilons.rank() == 4)
-            return epsilons; //Should never happen
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons); //Should never happen
 
         if (epsilons.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "

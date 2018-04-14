@@ -44,7 +44,7 @@ import java.util.*;
 @NoArgsConstructor
 public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    @Setter(AccessLevel.PRIVATE)
+    @Setter(AccessLevel.NONE)
     protected INDArray input;
     protected INDArray preOutput;
     protected NeuralNetConfiguration conf;
@@ -252,7 +252,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
-        setInput(input);
+        setInput(input, workspaceMgr);
         return activate(training, workspaceMgr);
     }
 

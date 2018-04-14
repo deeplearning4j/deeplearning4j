@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import com.google.common.base.Preconditions;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -344,7 +345,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     public void fit(INDArray examples, int[] labels) {
         INDArray outcomeMatrix = FeatureUtil.toOutcomeMatrix(labels, numLabels());
         fit(examples, outcomeMatrix);
-
     }
 
     @Override
@@ -398,6 +398,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
 
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+        Preconditions.checkArgument(labels != null, "Labels are null");
         if (labels.rank() > 2) {
             return workspaceMgr.leverageTo(arrayType, labels.reshape(labels.size(2), labels.size(1)));
         }

@@ -143,6 +143,9 @@ public abstract class BaseGraphVertex implements GraphVertex {
             inputs[i] = null;
         }
         epsilon = null;
+        if(getLayer() != null){
+            getLayer().clear();
+        }
     }
 
     @Override
@@ -183,6 +186,5 @@ public abstract class BaseGraphVertex implements GraphVertex {
     @Override
     public void clearVertex() {
         clear();
-        epsilon = null;
     }
 }

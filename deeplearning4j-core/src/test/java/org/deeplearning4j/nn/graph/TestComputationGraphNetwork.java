@@ -124,8 +124,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(activations.size(),feedForward.size());
         assertEquals(activations.get("outputLayer"),feedForward.get(feedForward.size() - 1));
 
-        val graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
-        val networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
+        Map<String,INDArray> graphForward = graph.feedForward(ds.getFeatureMatrix(),0,false);
+        List<INDArray> networkForward =  net.feedForwardToLayer(0,ds.getFeatureMatrix(),false);
         assertEquals(graphForward.get("firstLayer"),networkForward.get(1));
     }
 
@@ -692,6 +692,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
             s.feedForward(new INDArray[]{inData}, true, false); //FF without clearing inputs as we need them later
 
             org.deeplearning4j.nn.layers.OutputLayer ol = (org.deeplearning4j.nn.layers.OutputLayer) s.getLayer(1);
+            ol.setLabels(outData);
             Pair<Gradient, INDArray> olPairStd = ol.backpropGradient(null, LayerWorkspaceMgr.noWorkspaces());
 
             INDArray olEpsilon = olPairStd.getSecond();
