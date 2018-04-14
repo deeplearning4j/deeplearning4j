@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 /**
@@ -75,13 +76,24 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
-        applyDropOutIfNecessary(training, workspaceMgr);
 
-        if (maskArray != null) {
-            input.muliColumnVector(maskArray);
+        INDArray ret;
+        if(!training){
+            ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+        } else {
+            if(layerConf().getIDropout() != null){
+                ret = layerConf().getIDropout().applyDropout(workspaceMgr.dup(ArrayType.ACTIVATIONS, input, input.ordering()),
+                        getIterationCount(), getEpochCount(), true);
+            } else {
+                ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
+            }
         }
 
-        return input;
+        if (maskArray != null) {
+            ret.muliColumnVector(maskArray);
+        }
+
+        return ret;
     }
 
     @Override

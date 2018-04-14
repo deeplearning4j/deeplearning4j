@@ -1,5 +1,6 @@
 package org.deeplearning4j;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -8,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertNull;
 
+@Slf4j
 public class BaseDL4JTest {
 
     public OpExecutioner.ProfilingMode getProfilingMode(){
@@ -25,10 +27,12 @@ public class BaseDL4JTest {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         MemoryWorkspace currWS = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        assertNull(currWS);
         if(currWS != null){
+            //Not sure it's safe to continue testing under this situation?
+            log.error("Open workspace leaked from test! Exiting");
             System.exit(1);
         }
+        assertNull(currWS);
     }
 
 }
