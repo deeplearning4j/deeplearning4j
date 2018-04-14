@@ -64,7 +64,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         layer.computeGradientAndScore(LayerWorkspaceMgr.noWorkspaces());
 
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -84,7 +84,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         BackTrackLineSearch lineSearch =
                         new BackTrackLineSearch(layer, new NegativeDefaultStepFunction(), layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         assertEquals(1.0, step, 1e-3);
     }
@@ -106,7 +106,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         NegativeDefaultStepFunction sf = new NegativeDefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
-        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient());
+        double step = lineSearch.optimize(layer.params(), layer.gradient().gradient(), layer.gradient().gradient(), LayerWorkspaceMgr.noWorkspacesImmutable());
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);
         layer.setParams(currParams);
@@ -135,7 +135,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         DefaultStepFunction sf = new DefaultStepFunction();
         BackTrackLineSearch lineSearch = new BackTrackLineSearch(layer, sf, layer.getOptimizer());
         double step = lineSearch.optimize(layer.params().dup(), layer.gradient().gradient().dup(),
-                        layer.gradient().gradient().dup());
+                        layer.gradient().gradient().dup(), LayerWorkspaceMgr.noWorkspacesImmutable());
 
         INDArray currParams = layer.params();
         sf.step(currParams, origGradient, step);

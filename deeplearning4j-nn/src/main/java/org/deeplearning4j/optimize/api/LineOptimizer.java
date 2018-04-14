@@ -20,6 +20,7 @@ package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.exception.InvalidStepException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 
@@ -37,7 +38,7 @@ public interface LineOptimizer extends Serializable {
      * @return the last step size used
      * @throws InvalidStepException
      */
-    double optimize(INDArray parameters, INDArray gradient, INDArray searchDirection) throws InvalidStepException;
+    double optimize(INDArray parameters, INDArray gradient, INDArray searchDirection, LayerWorkspaceMgr workspaceMgr) throws InvalidStepException;
 
 
 

@@ -233,7 +233,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
         //perform one line search optimization
         try {
-            step = lineMaximizer.optimize(parameters, gradient, searchDirection);
+            step = lineMaximizer.optimize(parameters, gradient, searchDirection, workspaceMgr);
         } catch (InvalidStepException e) {
             log.warn("Invalid step...continuing another iteration: {}", e.getMessage());
             step = 0.0;

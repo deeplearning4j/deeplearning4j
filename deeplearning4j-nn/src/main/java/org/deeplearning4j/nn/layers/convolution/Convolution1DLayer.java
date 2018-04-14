@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -60,21 +61,34 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        return super.preOutput(true, forBackprop, workspaceMgr);
+        Pair<INDArray,INDArray> preOutput = super.preOutput(true, forBackprop, workspaceMgr);
+        INDArray p3d = preOutput.getFirst();
+        INDArray p = preOutput.getFirst().reshape(p3d.size(0), p3d.size(1), p3d.size(2), 1);
+        preOutput.setFirst(p);
+        return preOutput;
     }
 
     @Override
-    protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
+    protected Pair<INDArray,INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 
         // call 2D ConvolutionLayer's activate method
-        INDArray preOutput = super.preOutput(training, false, workspaceMgr).getFirst();
+        Pair<INDArray,INDArray> preOutput = super.preOutput(training, forBackprop, workspaceMgr);
 
         // remove singleton fourth dimension from output activations
         input = origInput;
-        preOutput = preOutput.reshape(preOutput.size(0), preOutput.size(1), preOutput.size(2));
+        INDArray p4d = preOutput.getFirst();
+        INDArray p = preOutput.getFirst().reshape(p4d.size(0), p4d.size(1), p4d.size(2));
+        preOutput.setFirst(p);
 
         return preOutput;
+    }
+
+    @Override
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+        INDArray act4d = super.activate(training, workspaceMgr);
+        INDArray act3d = act4d.reshape(act4d.size(0), act4d.size(1), act4d.size(2));
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, act3d);   //Should be zero copy most of the time
     }
 }
