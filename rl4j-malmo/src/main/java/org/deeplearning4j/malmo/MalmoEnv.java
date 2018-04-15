@@ -34,9 +34,17 @@ public class MalmoEnv implements MDP<MalmoBox, Integer, DiscreteSpace> {
             throw new RuntimeException("MALMO_HOME must be set to your Malmo environement.");
 
         try {
-        	System.load(malmoHome + "/Java_Examples/libMalmoJava.jnilib");
+            if (Files.exists(Paths.get(malmoHome + "/Java_Examples/libMalmoJava.jnilib"))) {
+            	System.load(malmoHome + "/Java_Examples/libMalmoJava.jnilib");
+            } else if (Files.exists(Paths.get(malmoHome + "/Java_Examples/MalmoJava.dll"))) {
+            	System.load(malmoHome + "/Java_Examples/MalmoJava.dll");
+            } else if (Files.exists(Paths.get(malmoHome + "/Java_Examples/libMalmoJava.so"))) {
+            	System.load(malmoHome + "/Java_Examples/libMalmoJava.so");
+            } else {
+                System.load("MalmoJava");
+            }
         } catch( UnsatisfiedLinkError e ) {
-        	throw new RuntimeException("MALMO_HOME must be set to your Malmo environement. Could not load '" + malmoHome + "/Java_Examples/libMalmoJava.jnilib'", e );
+        	throw new RuntimeException("MALMO_HOME must be set to your Malmo environement. Could not load native library at '" + malmoHome + "/Java_Examples/'", e );
         }
     }
 
