@@ -1,89 +1,85 @@
 //
-// implementation of operations for Simple Recurrent Unit: arXiv:1709.02755v2 [cs.CL] 12 Sep 2017
-//
-//  created by Yurii Shyrma on 05.12.2017
+//  @author Yurii Shyrma, created on 05.12.2017
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/sru.h>
 
 
 namespace nd4j {
-    namespace ops {
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-static NDArray<T> activation(const NDArray<T>& arr) {    
-    
-    return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();    
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-static NDArray<T> _sigmoid(const NDArray<T>& arr) {    
-    
-    return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Sigmoid<T>>();    
-}
-
+namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
-    NDArray<T>* xt   = INPUT_VARIABLE(0);               // input [batchSize x inSize], batchSize - batch size, inSize - number of features
-    NDArray<T>* ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [batchSize x inSize], that is at previous time step t-1   
+    NDArray<T>* xt   = INPUT_VARIABLE(0);               // input [bS x inSize], bS - batch size, inSize - number of features
+    NDArray<T>* ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
     NDArray<T>* w    = INPUT_VARIABLE(2);               // weights [inSize x 3*inSize]
     NDArray<T>* b    = INPUT_VARIABLE(3);               // biases [1 × 2*inSize]
 
-    NDArray<T>* ht   = OUTPUT_VARIABLE(0);              // current cell output [batchSize x inSize], that is at current time step t
-    NDArray<T>* ct   = OUTPUT_VARIABLE(1);              // current cell state  [batchSize x inSize], that is at current time step t
+    NDArray<T>* ht   = OUTPUT_VARIABLE(0);              // current cell output [bS x inSize], that is at current time step t
+    NDArray<T>* ct   = OUTPUT_VARIABLE(1);              // current cell state  [bS x inSize], that is at current time step t
 
-    const int batchSize = (INPUT_VARIABLE(0))->sizeAt(0);    
-    const int inSize    = xt->sizeAt(1);                // inSize - number of features
+    const int rank   = xt->rankOf();
+    const int bS     = xt->sizeAt(0);    
+    const int inSize = xt->sizeAt(1);                   // inSize - number of features
 
-    // input validation
-    // check shape of previous cell state    
-    REQUIRE_TRUE(!((INPUT_VARIABLE(1))->sizeAt(0) != batchSize || (INPUT_VARIABLE(1))->sizeAt(1) != inSize),0, "CUSTOM_OP sruCell: the shape of previous cell state is wrong !");    
-    // check shape of weights
-    REQUIRE_TRUE(!((INPUT_VARIABLE(2))->sizeAt(0) != inSize || (INPUT_VARIABLE(2))->sizeAt(1) != 3*inSize), 0, "CUSTOM_OP sruCell: the shape of weights is wrong !");
-    // check shape of biases
-    REQUIRE_TRUE(!((INPUT_VARIABLE(3))->sizeAt(0) != 1 || (INPUT_VARIABLE(3))->sizeAt(1) != 2*inSize),0, "CUSTOM_OP sruCell: the shape of biases is wrong !");    
+    // input shapes validation
+    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1); 
+    const std::string correctCt_1Shape = ShapeUtils<T>::shapeAsString({bS, inSize});
+    const std::string WShape           = ShapeUtils<T>::shapeAsString(w); 
+    const std::string correctWShape    = ShapeUtils<T>::shapeAsString({inSize, 3*inSize});
+    const std::string bShape           = ShapeUtils<T>::shapeAsString(b); 
+    const std::string correctBShape    = ShapeUtils<T>::shapeAsString({2*inSize});
+
+    REQUIRE_TRUE(correctCt_1Shape == ct_1Shape, 0, "SRUCELL operation: wrong shape of previous cell state, expected is %s, but got %s instead !", correctCt_1Shape.c_str(), ct_1Shape.c_str()); 
+    REQUIRE_TRUE(correctWShape    == WShape,    0, "SRUCELL operation: wrong shape of weights, expected is %s, but got %s instead !", correctWShape.c_str(), WShape.c_str()); 
+    REQUIRE_TRUE(correctBShape    == bShape,    0, "SRUCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str()); 
+
             
-    NDArray<T> z = mmul(*xt, *w);                 //  [batchSize x 3*inSize]    
-
-    // forget gate = sigmoid(xt*Wf + bf)
-    NDArray<T> ft = _sigmoid<T>(z({{},{inSize,   2*inSize}}) + (*b)({{},{0, inSize}}));
+    helpers::sruCell<T>({xt, ct_1, w, b}, {ht, ct});
     
-    // reset gate = sigmoid(xt*Wr + br)
-    NDArray<T> rt = _sigmoid<T>(z({{},{2*inSize, 3*inSize}}) + (*b)({{},{inSize, 2*inSize}}));
-
-    // current sell state = ft(*)ct_1 + (1 - ft)(*)(*)(xt*Wc)
-    *ct = ft*(*ct_1) + ((T)1. - ft)*z({{},{0, inSize}});
-    // *ct = ft*(*ct_1 - z({},{0, inSize})) + z({{},{0, inSize}});
-
-    // current cell output = rt(*)activation(ct) + (1 - rt)(*)xt
-    *ht = rt*activation<T>(*ct) + ((T)1. - rt)*(*xt);
-    // *ht = rt * (activation<T>(ct) - *xt) + *xt;
-    
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 
 DECLARE_SHAPE_FN(sruCell) {
+
+    NDArray<T>* xt   = INPUT_VARIABLE(0);               // input [bS x inSize], bS - batch size, inSize - number of features
+    NDArray<T>* ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
+    NDArray<T>* w    = INPUT_VARIABLE(2);               // weights [inSize x 3*inSize]
+    NDArray<T>* b    = INPUT_VARIABLE(3);               // biases [2*inSize]
+
+    const int rank   = xt->rankOf();
+    const int bS     = xt->sizeAt(0);    
+    const int inSize = xt->sizeAt(1);                   // inSize - number of features
+
+    // input shapes validation
+    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1); 
+    const std::string correctCt_1Shape = ShapeUtils<T>::shapeAsString({bS, inSize});
+    const std::string WShape           = ShapeUtils<T>::shapeAsString(w); 
+    const std::string correctWShape    = ShapeUtils<T>::shapeAsString({inSize, 3*inSize});
+    const std::string bShape           = ShapeUtils<T>::shapeAsString(b); 
+    const std::string correctBShape    = ShapeUtils<T>::shapeAsString({2*inSize});
+
+    REQUIRE_TRUE(correctCt_1Shape == ct_1Shape, 0, "SRUCELL operation: wrong shape of previous cell state, expected is %s, but got %s instead !", correctCt_1Shape.c_str(), ct_1Shape.c_str()); 
+    REQUIRE_TRUE(correctWShape    == WShape,    0, "SRUCELL operation: wrong shape of weights, expected is %s, but got %s instead !", correctWShape.c_str(), WShape.c_str()); 
+    REQUIRE_TRUE(correctBShape    == bShape,    0, "SRUCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str()); 
     
     // evaluate output shapeInfos
-    int *outShapeInfo1(nullptr), *outShapeInfo2(nullptr);
-    ALLOCATE(outShapeInfo1, block.getWorkspace(), 8, int);
-    ALLOCATE(outShapeInfo2, block.getWorkspace(), 8, int);
+    int *hShapeInfo(nullptr), *cShapeInfo(nullptr);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numProj]
+    ALLOCATE(cShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);      // [bS x numUnits]
             
-    outShapeInfo1[0] = outShapeInfo2[0] = 2;
-    outShapeInfo1[1] = outShapeInfo2[1] = (INPUT_VARIABLE(0))->sizeAt(0);;
-    outShapeInfo1[2] = outShapeInfo2[2] = (INPUT_VARIABLE(0))->sizeAt(1);
+    hShapeInfo[0] = cShapeInfo[0] = rank;
+    hShapeInfo[1] = cShapeInfo[1] = bS;
+    hShapeInfo[2] = cShapeInfo[2] = inSize;
     
-    shape::updateStrides(outShapeInfo1, (INPUT_VARIABLE(0))->ordering());
-    shape::updateStrides(outShapeInfo2, (INPUT_VARIABLE(0))->ordering());
+    shape::updateStrides(hShapeInfo, ct_1->ordering());
+    shape::updateStrides(cShapeInfo, ct_1->ordering());
          
-    return SHAPELIST(outShapeInfo1, outShapeInfo2);
+    return SHAPELIST(hShapeInfo, cShapeInfo);
 }   
 
 

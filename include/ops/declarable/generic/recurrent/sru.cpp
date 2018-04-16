@@ -1,16 +1,15 @@
 //
 // implementation of operations for Simple Recurrent Unit: arXiv:1709.02755v2 [cs.CL] 12 Sep 2017
 //
-// @author yurii@gmail.com
+//@author Yurii Shyrma
 //
 
-#include <op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <ops/declarable/helpers/sru.h>
 
 
 namespace nd4j {
-    namespace ops {
+namespace ops  {
 
 // return 2d array evaluated though last dimension interval t1-t2
 template <typename T>
@@ -31,108 +30,8 @@ NDArray<T> _sigmoid(const NDArray<T>& arr) {
     return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
-    NDArray<T>* input   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* weights = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    NDArray<T>* bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
-    NDArray<T>* init    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
-    NDArray<T>* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
-
-    bool applyMask = false;        
-    if (block.width() > 4) {
-        mask = INPUT_VARIABLE(4);   
-        applyMask = true;
-    }
-
-    NDArray<T>* output = OUTPUT_VARIABLE(0);                // h_t, [bS x K x N]
-    NDArray<T>* state  = OUTPUT_VARIABLE(1);                // c_t, [bS x K x N]
-    
-    const int bS     = input->shapeOf()[0];                     // bS - batch size
-    const int K      = input->shapeOf()[1];                     // K - number of features
-    const int N      = input->shapeOf()[2];                     // N - number of time steps
-    
-    // multiplication matrix = matmul(weights,input)
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(weights, input, nullptr, (T)1., (T)0.);      //       U [bS x 3K x N]    
-    // wi.printShapeInfo();
-    NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
-    NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
-    NDArray<T>* wiR = wi->subarray( { NDIndex::all(), NDIndex::interval(2*K,3*K), NDIndex::all() } );       // reset gate [bS x K x N]
-    NDArray<T>* bF  = bias->subarray( { NDIndex::all(), NDIndex::interval(0,K)  } );                        // biases for forget gate [1 x K]
-    NDArray<T>* bR  = bias->subarray( { NDIndex::all(), NDIndex::interval(K,2*K)} );                        // biases for reset gate [1 x K]
-
-    NDArray<T>* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *ht(nullptr);
-    NDArray<T>* ct_1 = init->dup(init->ordering());
-    NDArray<T>* gct  = new NDArray<T>(state->ordering(), {bS, K});
-    NDArray<T>* xmt  = input->dup(input->ordering());          
-    //  input = input * mask
-    if(applyMask)
-        xmt->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xmt, nullptr);            // apply mask    
-        
-    for (int t = 0; t < N; ++t) {
-        xt = timestep(xmt, t, t+1);         // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        zt = timestep(wiZ, t, t+1);         // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        ft = timestep(wiF, t, t+1);         // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        rt = timestep(wiR, t, t+1);         // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        ct = timestep(state, t, t+1);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        ht = timestep(output, t, t+1);      // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-       
-        // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
-        ft->addRowVector(bF, ft);
-        rt->addRowVector(bR, rt);
-        ft->template applyTransform<simdOps::Sigmoid<T>>();
-        rt->template applyTransform<simdOps::Sigmoid<T>>();        
-        // ct = ft * c_t-1 + (1 - ft) * zt,  
-        ft->template applyPairwiseTransform<simdOps::Multiply<T>>(ct_1, ct, nullptr);
-        ft->template applyTransform<simdOps::OneMinus<T>>(ft);
-        ft->template applyPairwiseTransform<simdOps::Multiply<T>>(zt, nullptr);
-        ct->template applyPairwiseTransform<simdOps::Add<T>>(ft, nullptr);
-        // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
-        ct->template applyTransform<simdOps::Tanh<T>>(gct);        
-
-        // ht = rt * gct + (1 - rt) * xt
-        rt->template applyPairwiseTransform<simdOps::Multiply<T>>(gct, ht, nullptr);
-        rt->template applyTransform<simdOps::OneMinus<T>>(rt);
-        rt->template applyPairwiseTransform<simdOps::Multiply<T>>(xt, nullptr);
-        ht->template applyPairwiseTransform<simdOps::Add<T>>(rt, nullptr);
-
-        delete xt; delete zt; delete ft; delete rt; delete ht; delete ct_1;
-        ct_1 = ct;
-    }
-    
-    delete wiZ; delete wiF; delete wiR; delete wi; delete bF; delete bR; delete ct_1; delete gct; delete xmt;
-    
-    return ND4J_STATUS_OK;
-}
-
-DECLARE_SHAPE_FN(sru) {
-
-    int* inShape = inputShape->at(0);   // [bS x K x N]
-    int rank = inShape[0];              // = 3
-    int size = rank*2 + 4;
-    int bS   = inShape[1];
-    int K    = inShape[2];
-    int N    = inShape[3];
-    char order = (char)(inShape[size-1]);
-
-    int* newShapeInfo1 = nullptr;
-    int* newShapeInfo2 = nullptr;
-    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
-    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
-    
-    newShapeInfo1[0] = rank;        
-    newShapeInfo1[1] = bS;
-    newShapeInfo1[2] = K;
-    newShapeInfo1[3] = N;
-    
-    shape::updateStrides(newShapeInfo1, order);
-    memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
-    
-    return SHAPELIST(newShapeInfo1, newShapeInfo2);
-}   
-
-//////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
 
     NDArray<T>* input   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
@@ -218,14 +117,222 @@ DECLARE_SHAPE_FN(sru_logic) {
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
 }   
 
+
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
+
+    NDArray<T>* x   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x inSize]
+    NDArray<T>* b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*inSize]
+    NDArray<T>* c0    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
+    NDArray<T>* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
+
+    bool applyMask = false;        
+    if (block.width() > 4) {
+        mask = INPUT_VARIABLE(4);   
+        applyMask = true;
+    }
+
+    NDArray<T>* h = OUTPUT_VARIABLE(0);                // h_t, [bS x inSize x time]
+    NDArray<T>* state  = OUTPUT_VARIABLE(1);                // c_t, [bS x inSize x time]
+    
+    const int bS     = x->shapeOf()[0];                     // bS - batch size
+    const int inSize      = x->shapeOf()[1];                     // inSize - number of features
+    const int time      = x->shapeOf()[2];                     // time - number of time steps
+    
+    // multiplication matrix = matmul(w,x)
+    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]    
+    // wi.printShapeInfo();
+    NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,inSize),     NDIndex::all() } );       // [bS x inSize x time]
+    NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize),   NDIndex::all() } );       // forget gate [bS x inSize x time]
+    NDArray<T>* wiR = wi->subarray( { NDIndex::all(), NDIndex::interval(2*inSize,3*inSize), NDIndex::all() } );       // reset gate [bS x inSize x time]
+    NDArray<T>* bF  = b->subarray( { NDIndex::all(), NDIndex::interval(0,inSize)  } );                        // biases for forget gate [1 x inSize]
+    NDArray<T>* bR  = b->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize)} );                        // biases for reset gate [1 x inSize]
+
+    NDArray<T>* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *ht(nullptr);
+    NDArray<T>* ct_1 = c0->dup(c0->ordering());
+    NDArray<T>* gct  = new NDArray<T>(state->ordering(), {bS, inSize});
+    NDArray<T>* xmt  = x->dup(x->ordering());          
+    //  x = x * mask
+    if(applyMask)
+        xmt->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xmt, nullptr);            // apply mask    
+        
+    for (int t = 0; t < time; ++t) {
+        xt = timestep(xmt, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        zt = timestep(wiZ, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        ft = timestep(wiF, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        rt = timestep(wiR, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        ct = timestep(state, t, t+1);       // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+        ht = timestep(h, t, t+1);      // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
+       
+        // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
+        ft->addRowVector(bF, ft);
+        rt->addRowVector(bR, rt);
+        ft->template applyTransform<simdOps::Sigmoid<T>>();
+        rt->template applyTransform<simdOps::Sigmoid<T>>();        
+        // ct = ft * c_t-1 + (1 - ft) * zt,  
+        ft->template applyPairwiseTransform<simdOps::Multiply<T>>(ct_1, ct, nullptr);
+        ft->template applyTransform<simdOps::OneMinus<T>>(ft);
+        ft->template applyPairwiseTransform<simdOps::Multiply<T>>(zt, nullptr);
+        ct->template applyPairwiseTransform<simdOps::Add<T>>(ft, nullptr);
+        // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
+        ct->template applyTransform<simdOps::Tanh<T>>(gct);        
+
+        // ht = rt * gct + (1 - rt) * xt
+        rt->template applyPairwiseTransform<simdOps::Multiply<T>>(gct, ht, nullptr);
+        rt->template applyTransform<simdOps::OneMinus<T>>(rt);
+        rt->template applyPairwiseTransform<simdOps::Multiply<T>>(xt, nullptr);
+        ht->template applyPairwiseTransform<simdOps::Add<T>>(rt, nullptr);
+
+        delete xt; delete zt; delete ft; delete rt; delete ht; delete ct_1;
+        ct_1 = ct;
+    }
+    
+    delete wiZ; delete wiF; delete wiR; delete wi; delete bF; delete bR; delete ct_1; delete gct; delete xmt;
+    
+    return ND4J_STATUS_OK;
+}
+
+DECLARE_SHAPE_FN(sru_old) {
+
+    int* inShape = inputShape->at(0);   // [bS x inSize x time]
+    int rank = inShape[0];              // = 3
+    int size = rank*2 + 4;
+    int bS   = inShape[1];
+    int inSize    = inShape[2];
+    int time    = inShape[3];
+    char order = (char)(inShape[size-1]);
+
+    int* newShapeInfo1 = nullptr;
+    int* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
+    
+    newShapeInfo1[0] = rank;        
+    newShapeInfo1[1] = bS;
+    newShapeInfo1[2] = inSize;
+    newShapeInfo1[3] = time;
+    
+    shape::updateStrides(newShapeInfo1, order);
+    memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
+    
+    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+}   
+
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
+
+    NDArray<T>* x    = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w    = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
+    NDArray<T>* b    = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [2*inSize]
+    NDArray<T>* c0   = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
+    NDArray<T>* mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+
+    NDArray<T>* h = OUTPUT_VARIABLE(0);                                     // cell outputs, [bS x inSize x time]
+    NDArray<T>* c = OUTPUT_VARIABLE(1);                                     // cell states,  [bS x inSize x time]
+
+    const int rank   = x->rankOf();              // = 3
+    const int bS     = x->sizeAt(0);
+    const int inSize = x->sizeAt(1);
+    const int time   = x->sizeAt(2);    
+
+    // input shapes validation
+    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
+    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, b->rankOf()); 
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
+    if(mask)
+        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+
+    const std::string wShape         = ShapeUtils<T>::shapeAsString(w); 
+    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({2*inSize});
+    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0CorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
+    
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
+    if(mask) {
+        const std::string maskShape         = ShapeUtils<T>::shapeAsString(mask); 
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+    }
+        
+    //  xm = x * mask
+    NDArray<T>* xm = x;         
+    if(mask) {
+        xm = new NDArray<T>(x->getShapeInfo(), true, block.getWorkspace());
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xm, nullptr);            
+    }
+   
+    // time loop
+    helpers::sruTimeLoop<T>({xm, c0, w, b}, {h, c});
+
+    if(mask)
+        delete xm;
+    
+    return Status::OK();
+}
+
+DECLARE_SHAPE_FN(sru) {
+
+    NDArray<T>* x    = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w    = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
+    NDArray<T>* b    = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [2*inSize]
+    NDArray<T>* c0   = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
+    NDArray<T>* mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+
+    const int rank   = x->rankOf();              // = 3
+    const int bS     = x->sizeAt(0);
+    const int inSize = x->sizeAt(1);
+    const int time   = x->sizeAt(2);    
+
+    // input shapes validation
+    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
+    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, b->rankOf()); 
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
+    if(mask)
+        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+
+    const std::string wShape         = ShapeUtils<T>::shapeAsString(w); 
+    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({2*inSize});
+    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0CorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
+    
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
+    if(mask) {
+        const std::string maskShape         = ShapeUtils<T>::shapeAsString(mask); 
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+    }
+        
+    int* newShapeInfo1 = nullptr;
+    int* newShapeInfo2 = nullptr;
+    ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
+    ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
+    
+    newShapeInfo1[0] = rank;        
+    newShapeInfo1[1] = bS;
+    newShapeInfo1[2] = inSize;
+    newShapeInfo1[3] = time;
+    
+    shape::updateStrides(newShapeInfo1, x->ordering());
+    memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
+    
+    return SHAPELIST(newShapeInfo1, newShapeInfo2);
+}   
+
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     
-    NDArray<T>* input    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* weights  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    NDArray<T>* bias     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
-    NDArray<T>* init     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
-    NDArray<T>* state    = INPUT_VARIABLE(4);                // C, [bS x K x N]
+    NDArray<T>* x    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
+    NDArray<T>* w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
+    NDArray<T>* b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+    NDArray<T>* c0     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
+    NDArray<T>* c    = INPUT_VARIABLE(4);                // C, [bS x K x N]
     NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x K]
     NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
@@ -241,32 +348,32 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [1 x 2K]
     NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x K]
 
-    const int bS      = input->shapeOf()[0];                     
-    const int K       = input->shapeOf()[1];                     
-    const int N       = input->shapeOf()[2];                     // N - number of time steps
+    const int bS      = x->shapeOf()[0];                     
+    const int K       = x->shapeOf()[1];                     
+    const int N       = x->shapeOf()[2];                     // N - number of time steps
     
-    NDArray<T>* gradBias = new NDArray<T>(input->ordering(), {bS, 2*K, N});
-    NDArray<T>* gradU    = new NDArray<T>(input->ordering(), {bS, 3*K, N});
-    NDArray<T>* gradHX   = new NDArray<T>(input->ordering(), {bS, K, N});
-    NDArray<T>* gct      = new NDArray<T>(state->ordering(), {bS, K});    
-    NDArray<T>* gradTanh = new NDArray<T>(state->ordering(), {bS, K});
-    NDArray<T>* gradCt   = new NDArray<T>(state->ordering(), {bS, K});
-    NDArray<T>* ftMinus  = new NDArray<T>(state->ordering(), {bS, K});
-    NDArray<T>* rtMinus  = new NDArray<T>(state->ordering(), {bS, K});
-    NDArray<T>* temp1    = new NDArray<T>(state->ordering(), {bS, K});    
-    NDArray<T>* temp2    = new NDArray<T>(state->ordering(), {bS, K});       
+    NDArray<T>* gradBias = new NDArray<T>(x->ordering(), {bS, 2*K, N});
+    NDArray<T>* gradU    = new NDArray<T>(x->ordering(), {bS, 3*K, N});
+    NDArray<T>* gradHX   = new NDArray<T>(x->ordering(), {bS, K, N});
+    NDArray<T>* gct      = new NDArray<T>(c->ordering(), {bS, K});    
+    NDArray<T>* gradTanh = new NDArray<T>(c->ordering(), {bS, K});
+    NDArray<T>* gradCt   = new NDArray<T>(c->ordering(), {bS, K});
+    NDArray<T>* ftMinus  = new NDArray<T>(c->ordering(), {bS, K});
+    NDArray<T>* rtMinus  = new NDArray<T>(c->ordering(), {bS, K});
+    NDArray<T>* temp1    = new NDArray<T>(c->ordering(), {bS, K});    
+    NDArray<T>* temp2    = new NDArray<T>(c->ordering(), {bS, K});       
 
-    //  input = input * mask
+    //  x = x * mask
     if(applyMask)
-        input->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, input, nullptr);            // apply mask    
-    // multiplication matrix wi = matmul(weights,input), U = WX
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(weights, input, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]    
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);            // apply mask    
+    // multiplication matrix wi = matmul(w,x), U = WX
+    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]    
 
     NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
     NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
     NDArray<T>* wiR = wi->subarray( { NDIndex::all(), NDIndex::interval(2*K,3*K), NDIndex::all() } );       // reset gate [bS x K x N]
-    NDArray<T>* bF  = bias->subarray( { NDIndex::all(), NDIndex::interval(0,K)  } );                        // biases for forget gate [1 x K]
-    NDArray<T>* bR  = bias->subarray( { NDIndex::all(), NDIndex::interval(K,2*K)} );                        // biases for reset gate [1 x K]
+    NDArray<T>* bF  = b->subarray( { NDIndex::all(), NDIndex::interval(0,K)  } );                        // biases for forget gate [1 x K]
+    NDArray<T>* bR  = b->subarray( { NDIndex::all(), NDIndex::interval(K,2*K)} );                        // biases for reset gate [1 x K]
     NDArray<T>* gradBF = gradBias->subarray( { NDIndex::all(), NDIndex::interval(0,K),   NDIndex::all() } );   // [bS x K x N]
     NDArray<T>* gradBR = gradBias->subarray( { NDIndex::all(), NDIndex::interval(K,2*K), NDIndex::all() } );   // [bS x K x N]
     NDArray<T>* gradUZ = gradU->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } ); // [bS x K x N]
@@ -279,11 +386,11 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     for (int t = N-1; t >=0 ; --t) {           
         // initialization
-        xt = timestep(input, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        xt = timestep(x, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         zt = timestep(wiZ, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         ft = timestep(wiF, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         rt = timestep(wiR, t, t+1);                 // [bS x K x N] -> [bS x K x 1] -> [bS x K]
-        ct = timestep(state, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
+        ct = timestep(c, t, t+1);               // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         inGradHt = timestep(inGradH, t, t+1);       // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         gradBRt  = timestep(gradBR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
         gradBFt  = timestep(gradBF, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]
@@ -293,9 +400,9 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gradURt  = timestep(gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]                        
 
         if(t != 0)
-            ct_1  = timestep(state, t-1, t);        // previous c_{t-1} 
+            ct_1  = timestep(c, t-1, t);        // previous c_{t-1} 
         else
-            ct_1 = init->dup(init->ordering());
+            ct_1 = c0->dup(c0->ordering());
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
@@ -354,7 +461,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     gradInit->assign(inGradCt);
 
     // gradX 
-    NDArray<T>* weightsT = weights->transpose();                                            // [K x 3K]
+    NDArray<T>* weightsT = w->transpose();                                            // [K x 3K]
     NDArrayFactory<T>::mmulHelper(weightsT, gradU, gradX, (T)1., (T)0.);                    // [bS x K x N]    
     gradX->template applyPairwiseTransform<simdOps::Add<T>>(gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
@@ -365,8 +472,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     gradB->assign(temp3);
 
     // gradW [bS x 3K x K]
-    input->permutei({0, 2, 1});                                               // [bS x N x K]
-    NDArrayFactory<T>::mmulHelper(gradU, input, gradW, (T)1., (T)0.);          // [bS x 3K x K]
+    x->permutei({0, 2, 1});                                               // [bS x N x K]
+    NDArrayFactory<T>::mmulHelper(gradU, x, gradW, (T)1., (T)0.);          // [bS x 3K x K]
 
     delete gradUR; delete gradBF; delete gradUZ; delete gradUF; delete gradBR;
 
@@ -379,10 +486,10 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bp) {
 
-    int* inShape = inputShape->at(0);   // [bS x K x N]
+    int* inShape = inputShape->at(0);   // [bS x inSize x time]
     int bS   = inShape[1];
-    int K    = inShape[2];
-    int N    = inShape[3];
+    int inSize    = inShape[2];
+    int time    = inShape[3];
     char order = (char)(inShape[9]);
 
     int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
@@ -393,24 +500,24 @@ DECLARE_SHAPE_FN(sru_bp) {
     
     newShapeInfo1[0] = 3;
     newShapeInfo1[1] = bS;
-    newShapeInfo1[2] = K;
-    newShapeInfo1[3] = N;
+    newShapeInfo1[2] = inSize;
+    newShapeInfo1[3] = time;
     shape::updateStrides(newShapeInfo1, order);
 
     newShapeInfo2[0] = 3;        
     newShapeInfo2[1] = bS;
-    newShapeInfo2[2] = 3*K;
-    newShapeInfo2[3] = K;
+    newShapeInfo2[2] = 3*inSize;
+    newShapeInfo2[3] = inSize;
     shape::updateStrides(newShapeInfo2, order);
 
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*K;    
+    newShapeInfo3[2] = 2*inSize;    
     shape::updateStrides(newShapeInfo3, order);
 
     newShapeInfo4[0] = 2;        
     newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = K;    
+    newShapeInfo4[2] = inSize;    
     shape::updateStrides(newShapeInfo4, order);
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
@@ -420,14 +527,14 @@ DECLARE_SHAPE_FN(sru_bp) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     
-    NDArray<T>* input    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* weights  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    NDArray<T>* bias     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
-    NDArray<T>* init     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
-    NDArray<T>* state    = INPUT_VARIABLE(4);                // C, [bS x K x N]
-    NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x K]
-    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
-    NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
+    NDArray<T>* x    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3*inSize x inSize]
+    NDArray<T>* b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*inSize]
+    NDArray<T>* c0     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0    
+    NDArray<T>* c    = INPUT_VARIABLE(4);                // C, [bS x inSize x time]
+    NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x inSize]
+    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x inSize x time]
+    NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
 
     bool applyMask = false;        
     if (block.width() > 7) {
@@ -435,39 +542,39 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         applyMask = true;
     }
 
-    NDArray<T>* gradX    = OUTPUT_VARIABLE(0);              // [bS x K x N]
-    NDArray<T>* gradW    = OUTPUT_VARIABLE(1);              // [bS x 3K x K]
-    NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [1 x 2K]
-    NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x K]
+    NDArray<T>* gradX    = OUTPUT_VARIABLE(0);              // [bS x inSize x time]
+    NDArray<T>* gradW    = OUTPUT_VARIABLE(1);              // [bS x 3*inSize x inSize]
+    NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [2*inSize]
+    NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x inSize]
 
-    const int bS      = input->shapeOf()[0];                     
-    const int K       = input->shapeOf()[1];                     
-    const int N       = input->shapeOf()[2];                     // N - number of time steps
+    const int bS      = x->shapeOf()[0];                     
+    const int inSize       = x->shapeOf()[1];                     
+    const int time       = x->shapeOf()[2];                     // time - number of time steps
     
-    const NDArray<T> bF = (*bias)({ {}, {0,  K} });                                 // biases for forget gate [1 x K]
-    const NDArray<T> bR = (*bias)({ {}, {K,2*K} });                                 // biases for reset  gate [1 x K]    
-    NDArray<T> gradBias(input->ordering(),   {bS, 2*K, N}, block.getWorkspace());
-    NDArray<T> gradU   (input->ordering(),   {bS, 3*K, N}, block.getWorkspace());
-    NDArray<T> gradHX  (input->ordering(),   {bS,   K, N}, block.getWorkspace());
-    NDArray<T> gct     (state->ordering(),   {bS, K},      block.getWorkspace());    
+    const NDArray<T> bF = (*b)({ {}, {0,  inSize} });                                 // biases for forget gate [1 x inSize]
+    const NDArray<T> bR = (*b)({ {}, {inSize,2*inSize} });                                 // biases for reset  gate [1 x inSize]    
+    NDArray<T> gradBias(x->ordering(),   {bS, 2*inSize, time}, block.getWorkspace());
+    NDArray<T> gradU   (x->ordering(),   {bS, 3*inSize, time}, block.getWorkspace());
+    NDArray<T> gradHX  (x->ordering(),   {bS,   inSize, time}, block.getWorkspace());
+    NDArray<T> gct     (c->ordering(),   {bS, inSize},      block.getWorkspace());    
     
-    //  input = input * mask    
+    //  x = x * mask    
     if(applyMask)
-        input->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, input, nullptr);             // apply mask    
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);             // apply mask    
     
-    // multiplication matrix wi = matmul(weights,input), U = WX
-    const NDArray<T> wi = mmul(*weights, *input);                                                   //  U [bS x 3K x N]            
+    // multiplication matrix wi = matmul(w,x), U = WX
+    const NDArray<T> wi = mmul(*w, *x);                                                   //  U [bS x 3K x time]            
 
-    for (int t = N-1; t >=0 ; --t) {           
+    for (int t = time-1; t >=0 ; --t) {           
         // initialization
-        NDArray<T> xt =         (*input)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, K});          // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
-        NDArray<T> zt =               wi({ {}, {0,    K}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        NDArray<T> ft =               wi({ {}, {K,  2*K}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        NDArray<T> rt =               wi({ {}, {2*K,3*K}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, K});          // [bS x 3K x N] -> [bS x K x 1] -> [bS x K]
-        NDArray<T> ct =         (*state)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, K});          // [bS x K  x N] -> [bS x K x 1] -> [bS x K]        
-        NDArray<T> inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, K});    // [bS x K  x N] -> [bS x K x 1] -> [bS x K]
+        NDArray<T> xt =         (*x)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> zt =               wi({ {}, {0,    inSize}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> ft =               wi({ {}, {inSize,  2*inSize}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> rt =               wi({ {}, {2*inSize,3*inSize}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
+        NDArray<T> ct =         (*c)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]        
+        NDArray<T> inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, inSize});    // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
 
-        NDArray<T> ct_1 = t ? (*state)({ {}, {}, {t-1,t} }) : *init;                                                // previous c_{t-1} 
+        NDArray<T> ct_1 = t ? (*c)({ {}, {}, {t-1,t} }) : *c0;                                                // previous c_{t-1} 
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
@@ -496,38 +603,38 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         *inGradCt = (gradCt + *inGradCt) * ft;
         
         // save results        
-        gradBias.assign(gradBFt, {{}, {0,     K}, {t,t+1}} );
-        gradBias.assign(gradBRt, {{}, {K,   2*K}, {t,t+1}} );
-        gradU.assign(gradUZt,    {{}, {0,     K}, {t,t+1}} );
-        gradU.assign(gradBFt,    {{}, {K,   2*K}, {t,t+1}} );
-        gradU.assign(gradBRt,    {{}, {2*K, 3*K}, {t,t+1}} );       
+        gradBias.assign(gradBFt, {{}, {0,     inSize}, {t,t+1}} );
+        gradBias.assign(gradBRt, {{}, {inSize,   2*inSize}, {t,t+1}} );
+        gradU.assign(gradUZt,    {{}, {0,     inSize}, {t,t+1}} );
+        gradU.assign(gradBFt,    {{}, {inSize,   2*inSize}, {t,t+1}} );
+        gradU.assign(gradBRt,    {{}, {2*inSize, 3*inSize}, {t,t+1}} );       
         gradHX.assign(gradHXt,   {{}, {        }, {t,t+1}} );              
     }
 
     // gradInit
     gradInit->assign(inGradCt);
     // gradX 
-    weights->transposei();                                                               // [K x 3K]
-    gradX->assign( mmul(*weights, gradU) + gradHX);
+    w->transposei();                                                               // [inSize x 3K]
+    gradX->assign( mmul(*w, gradU) + gradHX);
     if(applyMask)
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);       // apply mask
 
     // gradB    
     gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0,2}, false, true);    // [1 x 2K]    
 
-    // gradW [bS x 3K x K]
-    input->permutei({0, 2, 1});                                               // [bS x N x K]
-    gradW->assign( mmul(gradU, *input) );    
+    // gradW [bS x 3K x inSize]
+    x->permutei({0, 2, 1});                                               // [bS x time x inSize]
+    gradW->assign( mmul(gradU, *x) );    
     
     return ND4J_STATUS_OK;
 }
 
 DECLARE_SHAPE_FN(sru_bp_logic) {
 
-    int* inShape = inputShape->at(0);   // [bS x K x N]
+    int* inShape = inputShape->at(0);   // [bS x inSize x time]
     int bS   = inShape[1];
-    int K    = inShape[2];
-    int N    = inShape[3];
+    int inSize    = inShape[2];
+    int time    = inShape[3];
     char order = (char)(inShape[9]);
 
     int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
@@ -538,24 +645,24 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
     
     newShapeInfo1[0] = 3;
     newShapeInfo1[1] = bS;
-    newShapeInfo1[2] = K;
-    newShapeInfo1[3] = N;
+    newShapeInfo1[2] = inSize;
+    newShapeInfo1[3] = time;
     shape::updateStrides(newShapeInfo1, order);
 
     newShapeInfo2[0] = 3;        
     newShapeInfo2[1] = bS;
-    newShapeInfo2[2] = 3*K;
-    newShapeInfo2[3] = K;
+    newShapeInfo2[2] = 3*inSize;
+    newShapeInfo2[3] = inSize;
     shape::updateStrides(newShapeInfo2, order);
 
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*K;    
+    newShapeInfo3[2] = 2*inSize;    
     shape::updateStrides(newShapeInfo3, order);
 
     newShapeInfo4[0] = 2;        
     newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = K;    
+    newShapeInfo4[2] = inSize;    
     shape::updateStrides(newShapeInfo4, order);
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
@@ -564,10 +671,10 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
-    NDArray<T>* input   = INPUT_VARIABLE(0);                // X, input 3d tensor [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* weights = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
-    NDArray<T>* bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
-    NDArray<T>* init    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2K] at time t=0
+    NDArray<T>* x   = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2K], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
+    NDArray<T>* b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
+    NDArray<T>* c0    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2K] at time t=0
     NDArray<T>* mask    = nullptr;                          // optional, 2d tensor of dropout mask [bS x 2K]
 
     bool applyMask = false;        
@@ -576,29 +683,29 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
         applyMask = true;
     }
 
-    NDArray<T>* output = OUTPUT_VARIABLE(0);                // h_t, [N x bS x 2K]
-    NDArray<T>* state  = OUTPUT_VARIABLE(1);                // c_t, [N x bS x 2K]
+    NDArray<T>* ht = OUTPUT_VARIABLE(0);                // h_t, [time x bS x 2K]
+    NDArray<T>* state  = OUTPUT_VARIABLE(1);                // c_t, [time x bS x 2K]
     
-    const int N      = input->shapeOf()[0];                     // N - number of time steps
-    const int bS     = input->shapeOf()[1];                     // bS - batch size
-    const int K      = input->shapeOf()[2] / 2;                 // K - number of features
+    const int time   = x->shapeOf()[0];                     // time - number of time steps
+    const int bS     = x->shapeOf()[1];                     // bS - batch size
+    const int inSize = x->shapeOf()[2] / 2;                 // inSize - number of features
   
-    //  input = input * mask    
+    //  x = x * mask    
     if(applyMask)
-        input->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, input, nullptr);             // apply mask    
-    // U = input * weights 
-    NDArray<T> wi = mmul(*input, *weights);                    //  U [N x bS x 6K]                
+        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask    
+    // U = x * w 
+    NDArray<T> wi = mmul(*x, *w);                    //  U [time x bS x 6K]                
 
-    const int d2      = 2*K;
+    const int d2      = 2*inSize;
     const int ncols   = bS*d2;     
     const int ncolsWi = 3*ncols;    
 
-    T* const pInput  = input->getBuffer();
+    T* const pInput  = x->getBuffer();
     T* const pWi     = wi.getBuffer();
-    T* const pBias   = bias->getBuffer();
-    T* const pInit   = init->getBuffer();
+    T* const pBias   = b->getBuffer();
+    T* const pInit   = c0->getBuffer();
     T* const pMask   = mask->getBuffer();
-    T* const pOutput = output->getBuffer();
+    T* const pOutput = ht->getBuffer();
     T* const pState  = state->getBuffer();
 
     int ncolsRev, ncolsWiRev;                   // for reverse direction
@@ -608,7 +715,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
     for (int col = 0; col < ncols; ++col) {           
         
-        flip       = (col%d2) >= K;
+        flip       = (col%d2) >= inSize;
         maskVal    = applyMask ? *(pMask + col) : (T)1.;
         cur        = *(pInit + col);
         bF         = *(pBias + col%d2);
@@ -619,16 +726,16 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
         pStateVal  = pState  + col;
 
         if (flip) {
-            pInputVal  += (N-1)*ncols;
-            pWiVal     += (N-1)*ncolsWi;
-            pOutputVal += (N-1)*ncols;
-            pStateVal  += (N-1)*ncols;
+            pInputVal  += (time-1)*ncols;
+            pWiVal     += (time-1)*ncolsWi;
+            pOutputVal += (time-1)*ncols;
+            pStateVal  += (time-1)*ncols;
         }
 
         ncolsRev   = flip ? -ncols   : ncols;
         ncolsWiRev = flip ? -ncolsWi : ncolsWi;
         
-        for (int t = 0; t < N; ++t) {
+        for (int t = 0; t < time; ++t) {
             // evaluate sigmoids 
             ft = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T>(-(*(pWiVal + 1) + bF)));
             rt = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T>(-(*(pWiVal + 2) + bR)));
@@ -649,12 +756,12 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
 DECLARE_SHAPE_FN(sru_bi) {
 
-    int* inShape = inputShape->at(0);   // [N x bS x 2K ]
+    int* inShape = inputShape->at(0);   // [time x bS x 2K ]
     int rank = inShape[0];              // = 3
     int size = rank*2 + 4;        
-    int N    = inShape[1];
+    int time    = inShape[1];
     int bS   = inShape[2];
-    int K    = inShape[3] / 2;
+    int inSize    = inShape[3] / 2;
     
     char order = (char)(inShape[size-1]);
 
@@ -664,9 +771,9 @@ DECLARE_SHAPE_FN(sru_bi) {
     ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
     
     newShapeInfo1[0] = rank;        
-    newShapeInfo1[1] = N;
+    newShapeInfo1[1] = time;
     newShapeInfo1[2] = bS;
-    newShapeInfo1[3] = 2*K;
+    newShapeInfo1[3] = 2*inSize;
     
     // FIXME: remove memcpy
     shape::updateStrides(newShapeInfo1, order);
@@ -679,13 +786,13 @@ DECLARE_SHAPE_FN(sru_bi) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     
-    NDArray<T>* input    = INPUT_VARIABLE(0);                // X, input 3d tensor [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* weights  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
-    NDArray<T>* bias     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
-    NDArray<T>* init     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2K] at time t=0
-    NDArray<T>* state    = INPUT_VARIABLE(4);                // C, [N x bS x 2K]
+    NDArray<T>* x    = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2K], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2K x 6K]
+    NDArray<T>* b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4K]
+    NDArray<T>* c0     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2K] at time t=0
+    NDArray<T>* state    = INPUT_VARIABLE(4);                // C, [time x bS x 2K]
     NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x 2K]
-    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [N x bS x 2K]
+    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [time x bS x 2K]
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x 2K]
 
     bool applyMask = false;        
@@ -694,32 +801,32 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
         applyMask = true;
     }
 
-    NDArray<T>* gradInput   = OUTPUT_VARIABLE(0);              // [N x bS x 2K]
-    NDArray<T>* gradWeights = OUTPUT_VARIABLE(1);              // [N x 2K x 6K]
+    NDArray<T>* gradInput   = OUTPUT_VARIABLE(0);              // [time x bS x 2K]
+    NDArray<T>* gradWeights = OUTPUT_VARIABLE(1);              // [time x 2K x 6K]
     NDArray<T>* gradB       = OUTPUT_VARIABLE(2);              // [1 x 4K]
     NDArray<T>* gradInit    = OUTPUT_VARIABLE(3);              // [bS x 2K]
 
-    const int N       = input->shapeOf()[0];                     // N - number of time steps
-    const int bS      = input->shapeOf()[1];                     
-    const int K       = input->shapeOf()[2] / 2;                     
+    const int time       = x->shapeOf()[0];                     // time - number of time steps
+    const int bS      = x->shapeOf()[1];                     
+    const int inSize       = x->shapeOf()[2] / 2;                     
 
-    //  input = input * mask    
+    //  x = x * mask    
     if(applyMask)
-        input->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, input, nullptr);             // apply mask    
-    // U = input * weights 
-    NDArray<T> wi = mmul(*input, *weights);                    //  [N x bS x 2K] * [2K x 6K] = [N x bS x 6K]                
+        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask    
+    // U = x * w 
+    NDArray<T> wi = mmul(*x, *w);                    //  [time x bS x 2K] * [2K x 6K] = [time x bS x 6K]                
 
-    NDArray<T> gradBias(input->ordering(), {bS, 4*K},    block.getWorkspace());
-    NDArray<T> gradWi  (input->ordering(), {N, bS, 6*K}, block.getWorkspace());
+    NDArray<T> gradBias(x->ordering(), {bS, 4*inSize},    block.getWorkspace());
+    NDArray<T> gradWi  (x->ordering(), {time, bS, 6*inSize}, block.getWorkspace());
     
-    const int d2      = 2*K;
+    const int d2      = 2*inSize;
     const int ncols   = bS*d2;     
     const int ncolsWi = 3*ncols;    
 
-    T* const pInput     = input->getBuffer();
+    T* const pInput     = x->getBuffer();
     T* const pWi        = wi.getBuffer();
-    T* const pBias      = bias->getBuffer();
-    T* const pInit      = init->getBuffer();
+    T* const pBias      = b->getBuffer();
+    T* const pInit      = c0->getBuffer();
     T* const pMask      = mask->getBuffer();    
     T* const pState     = state->getBuffer();
     T* const pInGradCt  = inGradCt->getBuffer();
@@ -738,7 +845,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 
         gbF = gbR = (T)0.;
 
-        flip          = (col%d2) >= K;
+        flip          = (col%d2) >= inSize;
         maskVal       = applyMask ? *(pMask + col) : (T)1.;
         cur           = *(pInGradCt + col);
         bF            = *(pBias     + col%d2);
@@ -751,24 +858,24 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
         pGradInputVal = pGradInput  + col;                    
 
         if (!flip) {
-            pInputVal     += (N-1)*ncols;
-            pWiVal        += (N-1)*ncolsWi;
-            pStateVal     += (N-1)*ncols;
-            pInGradHVal   += (N-1)*ncols;
-            pGradWiVal    += (N-1)*ncolsWi;
-            pGradInputVal += (N-1)*ncols;
+            pInputVal     += (time-1)*ncols;
+            pWiVal        += (time-1)*ncolsWi;
+            pStateVal     += (time-1)*ncols;
+            pInGradHVal   += (time-1)*ncols;
+            pGradWiVal    += (time-1)*ncolsWi;
+            pGradInputVal += (time-1)*ncols;
         }
 
         ncolsRev   = flip ? -ncols   : ncols;
         ncolsWiRev = flip ? -ncolsWi : ncolsWi;
         
-        for (int t = 0; t < N; ++t) {
+        for (int t = 0; t < time; ++t) {
             // evaluate sigmoids 
             ft = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T>(-(*(pWiVal + 1) + bF)));
             rt = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T>(-(*(pWiVal + 2) + bR)));
             
             val     = nd4j::math::nd4j_tanh<T>(*pStateVal);            
-            prevVal = (t < N-1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
+            prevVal = (t < time-1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
             // grad wrt input
             *pGradInputVal = *pInGradHVal - (*pInGradHVal)*rt ;
             // grad wrt rt, wiR and bR
@@ -802,18 +909,18 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0}, false, true);    // [1 x 4K]    
 
     // gradWeights     
-    input->permutei({0, 2, 1});                                             // [N x bS x 2K] -> [N x 2K x bS]    
-    *gradWeights = mmul(*input, gradWi);                                    // [N x 2K x bS ] * [N x bS x 6K] = [N x 2K x 6K]    
+    x->permutei({0, 2, 1});                                             // [time x bS x 2K] -> [time x 2K x bS]    
+    *gradWeights = mmul(*x, gradWi);                                    // [time x 2K x bS ] * [time x bS x 6K] = [time x 2K x 6K]    
 
     return ND4J_STATUS_OK;
 }
 
 DECLARE_SHAPE_FN(sru_bi_bp) {
 
-    int* inShape = inputShape->at(0);   // [N x bS x 2K]
-    int N    = inShape[1];
+    int* inShape = inputShape->at(0);   // [time x bS x 2K]
+    int time    = inShape[1];
     int bS   = inShape[2];
-    int K    = inShape[3] / 2;    
+    int inSize    = inShape[3] / 2;    
     char order = (char)(inShape[9]);
 
     int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
@@ -824,25 +931,25 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     
     // gradInput
     newShapeInfo1[0] = 3;
-    newShapeInfo1[1] = N;
+    newShapeInfo1[1] = time;
     newShapeInfo1[2] = bS;
-    newShapeInfo1[3] = 2*K;
+    newShapeInfo1[3] = 2*inSize;
     shape::updateStrides(newShapeInfo1, order);
     // gradWeights
     newShapeInfo2[0] = 3;        
-    newShapeInfo2[1] = N;
-    newShapeInfo2[2] = 2*K;
-    newShapeInfo2[3] = 6*K;
+    newShapeInfo2[1] = time;
+    newShapeInfo2[2] = 2*inSize;
+    newShapeInfo2[3] = 6*inSize;
     shape::updateStrides(newShapeInfo2, order);
     // gradB
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 4*K;    
+    newShapeInfo3[2] = 4*inSize;    
     shape::updateStrides(newShapeInfo3, order);
     // gradInit
     newShapeInfo4[0] = 2;        
     newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = 2*K;
+    newShapeInfo4[2] = 2*inSize;
     shape::updateStrides(newShapeInfo4, order);
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);

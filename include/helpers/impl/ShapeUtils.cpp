@@ -579,6 +579,25 @@ int* ShapeUtils<T>::evalTileShapeInfo(const NDArray<T>& arr, const std::vector<i
         return result;
     }
 
+    template<typename T>
+    std::string ShapeUtils<T>::shapeAsString(const int* shapeInfo) {
+        
+        if(!shapeInfo)
+            throw "ShapeUtils<T>::shapeAsString method: input shapeInfo must not be nullptr !";
+        
+        std::string result;
+
+        result.append("[");
+        for (int e = 0; e < shapeInfo[0]; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e+1]);
+            if (e < shapeInfo[0] - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal

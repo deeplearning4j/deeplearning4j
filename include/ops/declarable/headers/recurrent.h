@@ -22,7 +22,24 @@ namespace nd4j {
        *    0: 3d tensor of cell output [bS x K x N]
        *    1: 3d tensor of cell state [bS x K x N]
        */                  
-        DECLARE_CUSTOM_OP(sru,         5, 2, false, 0, 0);
+        DECLARE_CUSTOM_OP(sru_old,       5, 2, false, 0, 0);
+
+    //////////////////////////////////////////////////////////////////////////
+    /**
+       * Implementation of operation for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
+       * 
+       * Input arrays: 
+       *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
+       *    1: 2d tensor of weights [3K x K]
+       *    2: row of biases with twice length [1 × 2K]
+       *    3: 2d tensor of previous cell state [bS x K]
+       *    4: optional, 2d tensor of dropout mask [bS x K]
+       *  
+       * Output arrays: 
+       *    0: 3d tensor of cell output [bS x K x N]
+       *    1: 3d tensor of cell state [bS x K x N]
+       */                  
+        DECLARE_CUSTOM_OP(sru,   5, 2, false, 0, 0);
 
     //////////////////////////////////////////////////////////////////////////
     /**

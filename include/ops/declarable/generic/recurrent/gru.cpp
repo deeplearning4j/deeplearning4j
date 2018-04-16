@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/gruCell.h>
+#include<ops/declarable/helpers/gru.h>
 
 namespace nd4j {
 namespace ops {
@@ -12,45 +12,38 @@ namespace ops {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 
-    NDArray<T>* x  = INPUT_VARIABLE(0);                    // input [time x batchSize x inSize]
-    NDArray<T>* h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [batchSize x numUnits], in case of projection=false -> numUnits=numUnits!!! 
+    NDArray<T>* x  = INPUT_VARIABLE(0);                    // input [time x bS x inSize]
+    NDArray<T>* h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS x numUnits] 
     
     NDArray<T>* Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [inSize x 3*numUnits] 
     NDArray<T>* Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [numUnits x 3*numUnits] 
     NDArray<T>* b   = INPUT_VARIABLE(4);                   // biases, [3*numUnits] 
     
-    NDArray<T>* h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time x batchSize x numUnits], that is per each time step            
+    NDArray<T>* h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time x bS x numUnits], that is per each time step            
 
-    int time      = x->sizeAt(0);
-    int batchSize = x->sizeAt(1);
-    int inSize    = x->sizeAt(2);
-    int numUnits  = h0->sizeAt(1);    
+    const int rank     = x->rankOf();              // = 3    
+    const int time     = x->sizeAt(0);
+    const int bS       = x->sizeAt(1);
+    const int inSize   = x->sizeAt(2);
+    const int numUnits = h0->sizeAt(1);    
 
-    // inputs validation
-    // check shapes of initial cell output 
-    REQUIRE_TRUE(h0->sizeAt(0) == batchSize, 0, "CUSTOM_OP gruCell: the shape of previous cell output is wrong !");    
-    // check shape of input-to-hidden weights
-    REQUIRE_TRUE(Wx->isSameShape({inSize, 3*numUnits}), 0, "CUSTOM_OP gruCell: the shape of input-to-hidden weights is wrong !");
-    // check shape of hidden-to-hidden weights
-    REQUIRE_TRUE(Wh->isSameShape({numUnits, 3*numUnits}), 0, "CUSTOM_OP gruCell: the shape of hidden-to-hidden weights is wrong !");    
-    // check shape of biases
-    REQUIRE_TRUE(b->isSameShape({3*numUnits}), 0, "CUSTOM_OP gruCell: the shape of biases is wrong !");
-
-    NDArray<T> currentH(h0);
-
-    ResultSet<T>* xSubArrs = NDArrayFactory<T>::allExamples(x);
-    ResultSet<T>* hSubArrs = NDArrayFactory<T>::allExamples(h);
+    const std::string h0Shape        = ShapeUtils<T>::shapeAsString(h0); 
+    const std::string h0CorrectShape = ShapeUtils<T>::shapeAsString({bS, numUnits});
+    const std::string wxShape        = ShapeUtils<T>::shapeAsString(Wx); 
+    const std::string wxCorrectShape = ShapeUtils<T>::shapeAsString({inSize, 3*numUnits}); 
+    const std::string whShape        = ShapeUtils<T>::shapeAsString(Wh); 
+    const std::string whCorrectShape = ShapeUtils<T>::shapeAsString({numUnits, 3*numUnits}); 
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({3*numUnits});    
     
-    // loop through time steps
-    for (int t = 0; t < time; ++t) {
+    REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str()); 
+    REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str()); 
+    REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());     
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());     
 
-        helpers::gruCell<T>({xSubArrs->at(t),&currentH, Wx,Wh,b}, hSubArrs->at(t));
-        currentH.assign(hSubArrs->at(t));    
-    }
+
+    helpers::gruTimeLoop<T>({x, h0, Wx, Wh, b}, h);      
     
-    delete xSubArrs;
-    delete hSubArrs;    
-
     return Status::OK();
 }
 
@@ -58,16 +51,43 @@ CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(gru) {    
 
+    const NDArray<T>* x  = INPUT_VARIABLE(0);                     // input [time x bS x inSize]
+    const NDArray<T>* h0 = INPUT_VARIABLE(1);                     // initial cell output [bS x numUnits], that is at time step t=0
+    const NDArray<T>* Wx = INPUT_VARIABLE(2);                     // input-to-hidden weights, [inSize   x 3*numUnits] 
+    const NDArray<T>* Wh = INPUT_VARIABLE(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]     
+    const NDArray<T>* b  = INPUT_VARIABLE(4);                     // biases, [3*numUnits] 
+
+    const int rank     = x->rankOf();              // = 3    
+    const int time     = x->sizeAt(0);
+    const int bS       = x->sizeAt(1);
+    const int inSize   = x->sizeAt(2);
+    const int numUnits = h0->sizeAt(1);    
+
+    const std::string h0Shape        = ShapeUtils<T>::shapeAsString(h0); 
+    const std::string h0CorrectShape = ShapeUtils<T>::shapeAsString({bS, numUnits});
+    const std::string wxShape        = ShapeUtils<T>::shapeAsString(Wx); 
+    const std::string wxCorrectShape = ShapeUtils<T>::shapeAsString({inSize, 3*numUnits}); 
+    const std::string whShape        = ShapeUtils<T>::shapeAsString(Wh); 
+    const std::string whCorrectShape = ShapeUtils<T>::shapeAsString({numUnits, 3*numUnits}); 
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({3*numUnits});    
+    
+    REQUIRE_TRUE(h0Shape == h0CorrectShape, 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", h0CorrectShape.c_str(), h0Shape.c_str()); 
+    REQUIRE_TRUE(wxShape == wxCorrectShape, 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", wxCorrectShape.c_str(), wxShape.c_str()); 
+    REQUIRE_TRUE(whShape == whCorrectShape, 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", whCorrectShape.c_str(), whShape.c_str());     
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());     
+
+
     // evaluate output shapeInfos
     int *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShape->at(0)), int);
+    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
             
-    hShapeInfo[0] = 3;
-    hShapeInfo[1] = inputShape->at(0)[1];
-    hShapeInfo[2] = inputShape->at(0)[2];
-    hShapeInfo[3] = inputShape->at(1)[2];
+    hShapeInfo[0] = rank;
+    hShapeInfo[1] = time;
+    hShapeInfo[2] = bS;
+    hShapeInfo[3] = numUnits;
     
-    shape::updateStrides(hShapeInfo, shape::order(inputShape->at(1)));        
+    shape::updateStrides(hShapeInfo, h0->ordering());
          
     return SHAPELIST(hShapeInfo);
 }   

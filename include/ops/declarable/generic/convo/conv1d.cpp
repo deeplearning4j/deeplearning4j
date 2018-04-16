@@ -1,5 +1,5 @@
 //
-//  @author raver119@gmail.com and Yurii Shyrma
+//  @author raver119@gmail.com 
 //  @author Yurii Shyrma
 
 
@@ -15,16 +15,36 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
     NDArray<T> *input   = INPUT_VARIABLE(0);                                    // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
     NDArray<T> *weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
     NDArray<T> *bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
-    NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
     
-    REQUIRE_TRUE(input->rankOf()   == 3, 0, "CUSTOM CONV1D OP: rank of input array must be equal to 3, but got %i instead !", input->rankOf());
-    REQUIRE_TRUE(weights->rankOf() == 3, 0, "CUSTOM CONV1D OP: rank of weights array must be equal to 3, but got %i instead !", weights->rankOf());
-                                         
+    NDArray<T> *output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)        
+
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
     int isNCW      = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;       // 0-NCH,  1-NHC
+    
+    const int rank = 3;
+    REQUIRE_TRUE(input->rankOf()   == rank, 0, "CUSTOM CONV1D OP: rank of input array must be equal to %i, but got %i instead !", rank, input->rankOf());
+    REQUIRE_TRUE(weights->rankOf() == rank, 0, "CUSTOM CONV1D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weights->rankOf());    
+
+    int indIOioC, indIiW, indWkW, indWoC, indWiC;
+    if(!isNCW) {
+        indIOioC = 2; indIiW = 1; indWkW = 0; indWoC = 2;
+    }
+    else {        
+        indIOioC = 1; indIiW = 2; indWkW = 2; indWoC = 0;
+    }    
+
+    int bS = input->sizeAt(0);                        // batch size
+    int iW = input->sizeAt(indIiW);                   // input width
+    int iC = input->sizeAt(indIOioC);                 // input channels        
+    int oC = weights->sizeAt(indWoC);                 // output channels
+
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kW,  1,indWoC,indWkW}));        
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());    
+    if (bias) 
+        REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());     
     
     std::vector<int> reshapeForInput, reshapeForOutput, reshapeForWeights;
     if(!isNCW) {
@@ -42,49 +62,60 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 4) {
     NDArray<T>* outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput);
     NDArray<T>* weightsReshaped = weights->reshape(weights->ordering(), reshapeForWeights);
 
-    nd4j::ops::conv2d<T> conv2d;
-    const Nd4jStatus status = conv2d.execute({inputReshaped, weightsReshaped, bias}, {outputReshaped}, {}, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  !isNCW});             
-    if (status != ND4J_STATUS_OK)
-        return status;
+    ConvolutionUtils<T>::conv2d({inputReshaped, weightsReshaped, bias}, outputReshaped, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});    
 
     delete inputReshaped;
     delete outputReshaped;
     delete weightsReshaped;
 
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
         
 
 DECLARE_SHAPE_FN(conv1d) {
 
+    int* inputShapeInfo   = inputShape->at(0);
+    int* weightsShapeInfo = inputShape->at(1);
+    int* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;   
+
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
-    int isNCH  = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;           // 0-NWC, 1-NCW
+    int isNCW  = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;           // 0-NWC, 1-NCW
 
-    int indIW = isNCH == 1 ? 2 : 1;
-    int indIC = isNCH == 1 ? 1 : 2;
-    int indOC = isNCH == 1 ? 0 : 2;
+    int indIOioC, indIiW, indWkW, indWoC, indWiC;
+    if(!isNCW) {
+        indIOioC = 2; indIiW = 1; indWkW = 0; indWoC = 2;
+    }
+    else {        
+        indIOioC = 1; indIiW = 2; indWkW = 2; indWoC = 0;
+    }    
 
-    int* inputShapeInfo   = inputShape->at(0);
-    int* weightsShapeInfo = inputShape->at(1);
+    const int rank = 3;
+    REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV1D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo);
+    REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV1D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo);
 
     int bS = inputShapeInfo[1];                         // batch size
-    int iW = inputShapeInfo[indIW+1];                   // input width
-    int iC = inputShapeInfo[indIC+1];                   // input channels        
-    int oC = weightsShapeInfo[indOC+1];                 // output channels
+    int iW = inputShapeInfo[indIiW+1];                   // input width
+    int iC = inputShapeInfo[indIOioC+1];                   // input channels        
+    int oC = weightsShapeInfo[indWoC+1];                 // output channels
+
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,oC,kW,  1,indWoC,indWkW}));        
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());    
+    if (biasShapeInfo) 
+        REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));     
 
     int oH, oW;                                         // output height, width
     ConvolutionUtils<T>::calcOutSizePool2D(oH,oW,  1,kW,  1,sW,  0,pW,  1,1,  1,iW, isSameMode);    
     
     int* outputShapeInfo = nullptr;
-    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inputShapeInfo), int);
+    ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
 
     outputShapeInfo[0] = 3;
     outputShapeInfo[1] = bS;
 
-    if (isNCH) {
+    if (isNCW) {
         outputShapeInfo[2] = oC;
         outputShapeInfo[3] = oW;
     } else {
@@ -110,16 +141,40 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
     NDArray<T> *gradW = OUTPUT_VARIABLE(1);                                                 // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
     NDArray<T> *gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
-    
-    REQUIRE_TRUE(input->rankOf()   == 3, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to 3, but got %i instead !", input->rankOf());
-    REQUIRE_TRUE(weights->rankOf() == 3, 0, "CUSTOM CONV1D_BP OP: rank of weights array must be equal to 3, but got %i instead !", weights->rankOf());
-    REQUIRE_TRUE(gradO->rankOf()   == 3, 0, "CUSTOM CONV1D_BP OP: rank of gradO array must be equal to 3, but got %i instead !", gradO->rankOf());
-                                     
+                                         
     int kW = INT_ARG(0);                                                        // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
     int pW = INT_ARG(2);                                                        // paddings width
     int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
-    int isNCW  = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;          // 0-NWC, 1-NCW    
+    int isNCW  = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;           // 0-NWC, 1-NCW    
+
+    const int rank = 3;
+    REQUIRE_TRUE(input->rankOf()   == rank, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, input->rankOf());
+    REQUIRE_TRUE(weights->rankOf() == rank, 0, "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank, weights->rankOf());
+    REQUIRE_TRUE(gradO->rankOf()   == rank, 0, "CUSTOM CONV1D_BP OP: rank of gradO array must be equal to %i, but got %i instead !", rank, gradO->rankOf());
+    
+    int indIOioC, indIiW, indWkW, indWoC;
+    if(!isNCW) {
+        indIOioC = 2; indIiW = 1; indWkW = 0; indWoC = 2;
+    }
+    else {        
+        indIOioC = 1; indIiW = 2; indWkW = 2; indWoC = 0; 
+    }    
+
+    const int bS = input->sizeAt(0);                          // batch size
+    const int iW = input->sizeAt(indIiW);                     // input width
+    const int iC = input->sizeAt(indIOioC);                   // input channels        
+    const int oC = weights->sizeAt(indWoC);                    // output channels
+
+    int trueoH, trueoW;          // true output height, width
+    ConvolutionUtils<T>::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,1, 1,iW, isSameMode);
+
+    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));            
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradO), 0,  "CUSTOM CONV1D_BP OP: wrong shape of gradient_output (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradO).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weights), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weights).c_str());
+    if(bias)
+        REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
     std::vector<int> reshapeForInput, reshapeForGradO, reshapeForWeights;
     if(!isNCW) {
@@ -139,10 +194,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     NDArray<T>* weightsReshaped = weights->reshape(weights->ordering(),reshapeForWeights);
     NDArray<T>* gradWReshaped   = gradW  ->reshape(gradW->ordering(),  reshapeForWeights);
 
-    nd4j::ops::conv2d_bp<T> conv2d_bp;    
-    const Nd4jStatus status = conv2d_bp.execute({inputReshaped, weightsReshaped, bias, gradOReshaped}, {gradIReshaped, gradWReshaped, gradB}, {}, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  !isNCW});    
-    if (status != ND4J_STATUS_OK)
-        return status;
+    ConvolutionUtils<T>::conv2dBP({inputReshaped, weightsReshaped, bias, gradOReshaped}, {gradIReshaped, gradWReshaped, gradB}, {1,kW,  1,sW,  0,pW,  1,1,  isSameMode,  isNCW});
 
     delete inputReshaped;  
     delete gradIReshaped;  
@@ -150,15 +202,51 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 4) {
     delete weightsReshaped;
     delete gradWReshaped;  
 
-    return ND4J_STATUS_OK;
+    return Status::OK();    
 }
+
 
 DECLARE_SHAPE_FN(conv1d_bp) {
 
+    int* inputShapeInfo   = inputShape->at(0);                                               // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
+    int* weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC] (NWC) or [oC, iC, kW] (NCW)
+    int* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;                 // [oC] 
+    int* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);       // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
-    int* inputShapeInfo   = inputShape->at(0);
-    int* weightsShapeInfo = inputShape->at(1);
-    int* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;  
+    const int rank = 3;
+    REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
+    REQUIRE_TRUE(weightsShapeInfo[0] == rank, 0, "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank, weightsShapeInfo[0]);
+    REQUIRE_TRUE(gradOShapeInfo[0]   == rank, 0, "CUSTOM CONV1D_BP OP: rank of gradO array must be equal to %i, but got %i instead !", rank, gradOShapeInfo[0]);
+
+    int kW = INT_ARG(0);                                                        // filter(kernel) width
+    int sW = INT_ARG(1);                                                        // strides width
+    int pW = INT_ARG(2);                                                        // paddings width
+    int isSameMode = INT_ARG(3);                                                // 0-VALID, 1-SAME
+    int isNCW  = block.getIArguments()->size() > 4 ? !INT_ARG(4) : 1;          // 0-NWC, 1-NCW    
+    
+    int indIOioC, indIiW, indWkW, indWoC;
+    if(!isNCW) {
+        indIOioC = 2; indIiW = 1; indWkW = 0; indWoC = 2;
+    }
+    else {        
+        indIOioC = 1; indIiW = 2; indWkW = 2; indWoC = 0; 
+    }    
+
+    const int bS = inputShapeInfo[1];                            // batch size
+    const int iW = inputShapeInfo[indIiW+1];                     // input width
+    const int iC = inputShapeInfo[indIOioC+1];                   // input channels        
+    const int oC = weightsShapeInfo[indWoC+1];                   // output channels
+
+    int trueoH, trueoW;          // true output height, width
+    ConvolutionUtils<T>::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,1, 1,iW, isSameMode);
+
+    std::string expectedGradOShape   = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW}));            
+    std::string expectedWeightsShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({oC,iC,kW,  indWoC,1,indWkW}));
+    REQUIRE_TRUE(expectedGradOShape == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0,  "CUSTOM CONV1D_BP OP: wrong shape of gradient_output (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
+    REQUIRE_TRUE(expectedWeightsShape == ShapeUtils<T>::shapeAsString(weightsShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", expectedWeightsShape.c_str(), ShapeUtils<T>::shapeAsString(weightsShapeInfo).c_str());
+    if(biasShapeInfo)
+        REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
+
 
     int* gradIshapeInfo(nullptr), *gradWshapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, gradIshapeInfo);
@@ -172,6 +260,8 @@ DECLARE_SHAPE_FN(conv1d_bp) {
 
     return SHAPELIST(gradIshapeInfo, gradWshapeInfo);        
 }
+
+
 
 
 }

@@ -2581,7 +2581,7 @@ TEST_F(DeclarableOpsTests1, batchnorm_test4) {
 
 
 ////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, sru1) {
+TEST_F(DeclarableOpsTests1, sru_old_test1) {
 
     const int bS = 2;
     const int K = 3;    
@@ -2605,7 +2605,7 @@ TEST_F(DeclarableOpsTests1, sru1) {
     expState.setBuffer(expStateBuff);
     expOut.setBuffer(expOutputBuff);    
 
-    nd4j::ops::sru<double> op;
+    nd4j::ops::sru_old<double> op;
     nd4j::ResultSet<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
     ASSERT_TRUE(results->size() == 2);    
 
@@ -2620,13 +2620,51 @@ TEST_F(DeclarableOpsTests1, sru1) {
 }
 
 //////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, sru_logic1) {
+TEST_F(DeclarableOpsTests1, sru_test1) {
 
     const int bS = 2;
     const int K = 3;    
     const int N = 4;
-    double expStateBuff[] =  {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
-    double expOutputBuff[] = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
+    double expOutputBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
+    double expStateBuff[]  = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
+
+    NDArray<double> input('c', {bS,K,N});
+    NDArray<double> weights('c', {3*K,K});
+    NDArray<double> bias('c', {2*K});
+    NDArray<double> init('c', {bS,K});
+    NDArray<double> mask('c', {bS,K});
+    NDArray<double> expState('c', {bS,K,N});
+    NDArray<double> expOut('c', {bS,K,N});
+   
+    input.assign(1.5);
+    weights.assign(0.5); 
+    bias.assign(0.3) ;
+    init.assign(1.);
+    mask.assign(1.);
+    expState.setBuffer(expStateBuff);
+    expOut.setBuffer(expOutputBuff);    
+
+    nd4j::ops::sru<double> op;
+    nd4j::ResultSet<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
+    ASSERT_TRUE(results->size() == 2);    
+
+    NDArray<double>* output = results->at(0);
+    NDArray<double>* state  = results->at(1);        
+
+    ASSERT_TRUE(expState.equalsTo(state));
+    ASSERT_TRUE(expOut.equalsTo(output));
+    
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, sru_logic_test1) {
+
+    const int bS = 2;
+    const int K = 3;    
+    const int N = 4;
+    double expOutputBuff[] = {0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715, 0.847983, 0.874549, 0.896109, 0.913715};
+    double expStateBuff[]  = {1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656, 1.090533, 1.174509, 1.252403, 1.324656};
 
     NDArray<double> input('c', {bS,K,N});
     NDArray<double> weights('c', {3*K,K});
@@ -2648,9 +2686,8 @@ TEST_F(DeclarableOpsTests1, sru_logic1) {
     nd4j::ResultSet<double>*  results = op.execute({&input, &weights, &bias, &init, &mask}, {}, {});
     ASSERT_TRUE(results->size() == 2);    
 
-    NDArray<double>* state  = results->at(0);
-    NDArray<double>* output = results->at(1);
-    // state->printBuffer();
+    NDArray<double>* output = results->at(0);
+    NDArray<double>* state  = results->at(1);        
 
     ASSERT_TRUE(expState.equalsTo(state));
     ASSERT_TRUE(expOut.equalsTo(output));

@@ -881,7 +881,7 @@ TEST_F(DeclarableOpsTests3, sruCell_test1) {
     NDArray<double> xt  ('c', {batchSize, inSize});
     NDArray<double> ct_1('c', {batchSize, inSize});
     NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {1, 2*inSize});
+    NDArray<double> b   ('c', {2*inSize});
 
     xt.assign(1.);
     ct_1.assign(2.);
@@ -917,7 +917,7 @@ TEST_F(DeclarableOpsTests3, sruCell_test2) {
     NDArray<double> xt  ('c', {batchSize, inSize});
     NDArray<double> ct_1('c', {batchSize, inSize});
     NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {1, 2*inSize});
+    NDArray<double> b   ('c', {2*inSize});
 
     xt.assign(1.);
     ct_1.assign(2.);
@@ -952,7 +952,7 @@ TEST_F(DeclarableOpsTests3, sruCell_test3) {
     NDArray<double> xt  ('c', {batchSize, inSize});
     NDArray<double> ct_1('c', {batchSize, inSize});
     NDArray<double> w   ('c', {inSize, 3*inSize});
-    NDArray<double> b   ('c', {1, 2*inSize});
+    NDArray<double> b   ('c', {2*inSize});
 
     xt.assign(10.);
     ct_1.assign(1.);

@@ -1732,6 +1732,53 @@ TEST_F(ConvolutionTests, conv3d_test9) {
     delete result;
 }
 
+TEST_F(ConvolutionTests, conv3d_test10) {
+    NDArray<float> x('c', {4, 2, 28, 28, 3});
+    NDArray<float> w('c', {2, 5, 5, 3, 4});
+    NDArray<float> exp('c', {4, 1, 7, 10, 4});
+
+    nd4j::ops::conv3dnew<float> op;
+    auto result = op.execute({&x, &w}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ShapeList shapeList({x.shapeInfo(), w.shapeInfo()});
+    ContextPrototype<float> proto;
+    Context<float> ctx(1);
+    ctx.getIArguments()->push_back(2);
+    ctx.getIArguments()->push_back(5);
+    ctx.getIArguments()->push_back(5);
+
+    ctx.getIArguments()->push_back(5);
+    ctx.getIArguments()->push_back(4);
+    ctx.getIArguments()->push_back(3);
+
+    ctx.getIArguments()->push_back(0);
+    ctx.getIArguments()->push_back(0);
+    ctx.getIArguments()->push_back(0);
+
+    ctx.getIArguments()->push_back(1);
+    ctx.getIArguments()->push_back(1);
+    ctx.getIArguments()->push_back(1);
+
+    ctx.getIArguments()->push_back(0);
+    ctx.getIArguments()->push_back(1);  // previous variant was "ctx.getIArguments()->push_back(0)" and this caused fail
+
+    auto shapes = op.calculateOutputShape(&shapeList, ctx);
+    ASSERT_EQ(1, shapes->size());
+
+    auto s = shapes->at(0);
+
+    auto z = result->at(0);
+    z->printShapeInfo("z shape");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+
+    shapes->destroy();
+    delete shapes;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests, pointwise_conv2d_test1) {
 
