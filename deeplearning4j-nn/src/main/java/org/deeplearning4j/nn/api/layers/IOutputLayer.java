@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.api.layers;
 import org.deeplearning4j.nn.api.Classifier;
 import org.deeplearning4j.nn.api.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Interface for output layers (those that calculate gradients with respect to a labels array)

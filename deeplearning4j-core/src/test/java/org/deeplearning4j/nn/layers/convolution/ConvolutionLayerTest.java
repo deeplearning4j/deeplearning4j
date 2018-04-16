@@ -31,7 +31,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 

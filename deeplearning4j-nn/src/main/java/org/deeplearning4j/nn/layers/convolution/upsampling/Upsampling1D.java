@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 

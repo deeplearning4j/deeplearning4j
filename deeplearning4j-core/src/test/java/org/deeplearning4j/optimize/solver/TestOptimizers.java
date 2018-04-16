@@ -38,7 +38,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.Collection;

@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 

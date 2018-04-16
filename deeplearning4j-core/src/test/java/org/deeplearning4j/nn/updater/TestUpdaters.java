@@ -30,7 +30,7 @@ import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 

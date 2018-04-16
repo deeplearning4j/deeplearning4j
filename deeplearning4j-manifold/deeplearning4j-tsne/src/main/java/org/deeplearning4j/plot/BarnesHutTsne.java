@@ -44,7 +44,7 @@ import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.BufferedWriter;
 import java.io.File;

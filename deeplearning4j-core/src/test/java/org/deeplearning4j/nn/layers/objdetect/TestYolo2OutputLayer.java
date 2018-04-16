@@ -1,12 +1,9 @@
 package org.deeplearning4j.nn.layers.objdetect;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.deeplearning4j.BaseDL4JTest;
@@ -28,11 +25,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
-import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.File;
 import java.io.FileOutputStream;

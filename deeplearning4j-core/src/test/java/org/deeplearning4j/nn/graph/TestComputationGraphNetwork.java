@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
@@ -48,7 +47,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

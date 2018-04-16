@@ -24,7 +24,7 @@ import lombok.Setter;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.impl.LayerVertex;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
  */

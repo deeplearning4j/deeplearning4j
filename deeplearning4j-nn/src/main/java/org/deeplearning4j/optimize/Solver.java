@@ -30,7 +30,7 @@ import org.deeplearning4j.optimize.solvers.StochasticGradientDescent;
 import org.deeplearning4j.optimize.stepfunctions.StepFunctions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;

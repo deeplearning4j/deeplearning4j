@@ -4,15 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.shade.jackson.annotation.JsonCreator;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-
-import java.util.Arrays;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Preprocessor to flatten input of RNN type

@@ -35,7 +35,7 @@ import org.deeplearning4j.spark.util.MLLibUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import parquet.org.slf4j.Logger;
 import parquet.org.slf4j.LoggerFactory;
 

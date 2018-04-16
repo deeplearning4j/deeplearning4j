@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -16,8 +15,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.workspace.ArrayType;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.HashMap;

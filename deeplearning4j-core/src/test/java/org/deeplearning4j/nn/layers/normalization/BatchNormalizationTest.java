@@ -37,7 +37,7 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;

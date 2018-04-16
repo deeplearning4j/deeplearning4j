@@ -23,8 +23,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.workspace.ArrayType;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 import java.util.List;

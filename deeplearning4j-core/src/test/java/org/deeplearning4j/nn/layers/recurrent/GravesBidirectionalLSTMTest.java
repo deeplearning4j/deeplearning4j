@@ -27,9 +27,7 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.*;
 

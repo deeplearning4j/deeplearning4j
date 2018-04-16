@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -22,7 +21,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 import java.util.Random;

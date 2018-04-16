@@ -13,12 +13,11 @@ import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.TimeSeriesUtils;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;

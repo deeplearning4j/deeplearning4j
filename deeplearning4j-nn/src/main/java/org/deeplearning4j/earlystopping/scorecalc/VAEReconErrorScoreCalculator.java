@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Score function for variational autoencoder reconstruction error for a MultiLayerNetwork or ComputationGraph.<br>

@@ -24,7 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.linalg.schedule.SigmoidSchedule;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.ArrayList;
 import java.util.Arrays;

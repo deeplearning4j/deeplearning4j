@@ -34,8 +34,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cudnn.*;

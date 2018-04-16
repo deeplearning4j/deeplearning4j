@@ -32,10 +32,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarSetValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

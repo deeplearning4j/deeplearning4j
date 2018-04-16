@@ -24,8 +24,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.ArrayType;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

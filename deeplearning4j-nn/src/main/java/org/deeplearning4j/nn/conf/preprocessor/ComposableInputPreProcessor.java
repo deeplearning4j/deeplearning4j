@@ -25,7 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 

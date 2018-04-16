@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 

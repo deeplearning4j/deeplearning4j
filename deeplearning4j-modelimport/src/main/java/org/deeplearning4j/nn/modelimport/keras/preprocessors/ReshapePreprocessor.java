@@ -26,7 +26,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 

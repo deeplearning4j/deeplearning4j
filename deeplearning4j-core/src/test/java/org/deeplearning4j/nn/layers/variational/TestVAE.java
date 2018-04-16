@@ -21,7 +21,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.HashMap;
 import java.util.Iterator;

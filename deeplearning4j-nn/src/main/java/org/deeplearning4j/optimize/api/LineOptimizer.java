@@ -20,7 +20,7 @@ package org.deeplearning4j.optimize.api;
 
 import org.deeplearning4j.exception.InvalidStepException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 

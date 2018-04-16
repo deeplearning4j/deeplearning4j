@@ -19,7 +19,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;

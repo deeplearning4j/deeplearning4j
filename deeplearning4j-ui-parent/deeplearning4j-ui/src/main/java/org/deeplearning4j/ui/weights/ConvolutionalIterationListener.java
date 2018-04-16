@@ -16,7 +16,7 @@ import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

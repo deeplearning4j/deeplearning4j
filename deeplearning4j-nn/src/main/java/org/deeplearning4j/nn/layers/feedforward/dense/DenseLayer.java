@@ -3,7 +3,7 @@ package org.deeplearning4j.nn.layers.feedforward.dense;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * @author Adam Gibson

@@ -9,7 +9,7 @@ import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Score function for a MultiLayerNetwork or ComputationGraph with a single

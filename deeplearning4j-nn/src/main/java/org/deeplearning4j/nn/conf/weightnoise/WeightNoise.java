@@ -9,8 +9,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldAddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.OldMulOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**

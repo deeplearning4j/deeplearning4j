@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.layers.normalization;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 /**
  * Helper for the local response normalization layer.

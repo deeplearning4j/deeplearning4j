@@ -7,8 +7,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;

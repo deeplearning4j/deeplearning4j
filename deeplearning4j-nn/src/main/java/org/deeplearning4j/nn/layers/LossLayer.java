@@ -33,8 +33,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
-import org.nd4j.linalg.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.io.Serializable;
 import java.util.ArrayList;

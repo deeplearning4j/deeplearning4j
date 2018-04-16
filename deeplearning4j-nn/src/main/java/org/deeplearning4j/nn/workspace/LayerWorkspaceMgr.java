@@ -1,16 +1,23 @@
-package org.nd4j.linalg.workspace;
+package org.deeplearning4j.nn.workspace;
 
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.workspace.BaseWorkspaceMgr;
+import org.nd4j.linalg.workspace.WorkspaceMgr;
 
-import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * {@link WorkspaceMgr} for DL4J layers.
+ * Used to flexibly specify which workspaces a given array type (defined by {@link ArrayType}) should be placed in
+ *
+ * @author Alex Black
+ */
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
 
     private static LayerWorkspaceMgr NO_WS_IMMUTABLE;
