@@ -4,6 +4,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
@@ -482,7 +483,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         net.init();
         net.setListeners(new ScoreIterationListener(100));
 
-        int nEpochs = 1500;
+        int nEpochs = 1600;
         DataSet ds = iter.next();
         URI[] uris = fileSplit.locations();
         if (!uris[0].getPath().contains("2007_009346")) {
