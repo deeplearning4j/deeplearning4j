@@ -393,7 +393,6 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
     @Test
     public void testYoloOverfitting() throws Exception {
-        fail();
         Nd4j.getRandom().setSeed(12345);
 
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();
@@ -427,6 +426,9 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         try(FileOutputStream fos = new FileOutputStream(annotationOut)){
             IOUtils.copy(is4, fos);
         } finally { is4.close(); }
+
+        assertEquals(2, jpg.listFiles().length);
+        assertEquals(2, annot.listFiles().length);
 
         INDArray bbPriors = Nd4j.create(new double[][]{
                 {2,2},

@@ -63,7 +63,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
-        INDArray bias;
         INDArray weights = getParamWithNoise(DeconvolutionParamInitializer.WEIGHT_KEY, true, workspaceMgr);
 
         int miniBatch = input.size(0);
@@ -105,21 +104,24 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
-        CustomOp op;
         INDArray[] opInputs;
+        INDArray[] opOutputs;
         if(layerConf().hasBias()){
-            bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
+            INDArray bias = getParamWithNoise(DeconvolutionParamInitializer.BIAS_KEY, true, workspaceMgr);
             opInputs = new INDArray[]{input, weights, bias, delta};
+            opOutputs = new INDArray[]{outEps, weightGradView, biasGradView};
         } else {
             opInputs = new INDArray[]{input, weights, delta};
+            opOutputs = new INDArray[]{outEps, weightGradView};
         }
-        op = DynamicCustomOp.builder("deconv2d_bp")
+        CustomOp op = DynamicCustomOp.builder("deconv2d_bp")
                 .addInputs(opInputs)
                 .addIntegerArguments(args)
-                .addOutputs(outEps, weightGradView)
+                .addOutputs(opOutputs)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
+
 
         Gradient retGradient = new DefaultGradient();
         if(layerConf().hasBias()){

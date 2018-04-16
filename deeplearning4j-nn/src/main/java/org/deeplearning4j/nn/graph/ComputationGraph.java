@@ -3638,7 +3638,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray labelMask = next.getLabelsMaskArray(0);
 
                 //TODO in principle, we could keep these output arrays in a workspace...
-                INDArray[] out = outputOfLayersDetached(false, FwdPassType.RNN_TIMESTEP, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
+                INDArray[] out = outputOfLayersDetached(false, FwdPassType.STANDARD, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
 
                 for (T evaluation : evaluations)
                     evaluation.eval(labels, out[0], labelMask);
