@@ -463,9 +463,7 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.input = input;
         fwd.setInput(input, layerWorkspaceMgr);
         INDArray reversed;
-        try(MemoryWorkspace ws = layerWorkspaceMgr.notifyScopeEntered(ArrayType.INPUT)){
-            reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
-        }
+        reversed = TimeSeriesUtils.reverseTimeSeries(input, layerWorkspaceMgr, ArrayType.INPUT);
         bwd.setInput(reversed, layerWorkspaceMgr);
     }
 

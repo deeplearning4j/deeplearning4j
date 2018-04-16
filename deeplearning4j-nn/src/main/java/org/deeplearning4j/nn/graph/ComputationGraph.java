@@ -1925,6 +1925,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
                 ws.close();
             }
+            Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
         }
 
         return outputs;
@@ -2258,6 +2259,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             for(MemoryWorkspace ws : openActivationsWorkspaces.keySet()){
                 ws.close();
             }
+            Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
         }
 
         //Now, add the gradients in the order we need them in for flattening (same as params order)

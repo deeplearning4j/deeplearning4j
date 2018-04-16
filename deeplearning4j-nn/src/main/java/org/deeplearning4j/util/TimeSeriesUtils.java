@@ -224,7 +224,7 @@ public class TimeSeriesUtils {
 
         INDArray inReshape = in.reshape('f', in.size(0)*in.size(1), in.size(2));
 
-        INDArray outReshape = workspaceMgr.create(arrayType, new int[]{idxs.length, in.size(1)}, 'f');
+        INDArray outReshape = workspaceMgr.create(arrayType, new int[]{inReshape.size(0), idxs.length}, 'f');
         Nd4j.pullRows(inReshape, outReshape, 0, idxs);
         return workspaceMgr.leverageTo(arrayType, outReshape.reshape('f', in.size(0), in.size(1), in.size(2)));
 

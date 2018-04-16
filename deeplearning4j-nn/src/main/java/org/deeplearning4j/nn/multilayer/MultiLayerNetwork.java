@@ -1048,6 +1048,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //Should only be non-null on exception
                 temp.close();
             }
+
+            Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
         }
 
         WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
@@ -1621,6 +1623,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //Should only be non-null on exception
                 wsActGradTemp.close();
             }
+            Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
         }
 
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
