@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
@@ -84,6 +85,7 @@ import java.util.*;
                 @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
                 @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
                 @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
+                @JsonSubTypes.Type(value = Cropping1D.class, name = "Cropping1D"),
                 @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
 )
 @Data
