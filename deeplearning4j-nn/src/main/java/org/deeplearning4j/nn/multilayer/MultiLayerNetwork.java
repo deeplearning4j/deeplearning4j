@@ -738,7 +738,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return the list of activations for each layer
      */
     public List<INDArray> feedForward(boolean train) {
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, true);
+        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1,
+                input, mask, null, true);
     }
 
     /**
@@ -753,7 +754,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Activations from feed-forward
      */
     public List<INDArray> feedForward(boolean train, boolean clearInputs){
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, clearInputs);
+        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layers.length-1, input, mask, null, clearInputs);
     }
 
     /** Compute the activations from the input to the specified layer.<br>
@@ -766,7 +767,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input) {
-        return ffToLayerActivationsDetached(false, FwdPassType.STANDARD, false, layerNum, input, null, true);
+        return ffToLayerActivationsDetached(false, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
     }
 
     /** Compute the activations from the input to the specified layer.<br>
@@ -781,7 +782,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public List<INDArray> feedForwardToLayer(int layerNum, INDArray input, boolean train) {
         int layerVertexIdx = layers[layerNum].getIndex();
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerVertexIdx, input, null, true);
+        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerVertexIdx, input, mask, null, true);
     }
 
     /** Compute the activations from the input to the specified layer, using the currently set input for the network.<br>
@@ -794,7 +795,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
-        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerNum, input, mask, true);
+        return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, layerNum, input, mask, null, true);
     }
 
 
@@ -829,10 +830,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return
      */
     protected List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
-                                                          boolean storeLastForTBPTT,
-                                                          int layerIndex, @NonNull INDArray input, INDArray fMask, boolean clearInputs){
+                                                          boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
+                                                          INDArray fMask, INDArray lMask, boolean clearInputs){
         setInput(input);
-        setLayerMaskArrays(fMask, null);
+        setLayerMaskArrays(fMask, lMask);
 
         //Verify that no workspace is open externally
         WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerActivationsDetached");
@@ -865,7 +866,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for( int i=0; i<=layerIndex; i++ ){
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, input.size(0), workspaceMgr);
+                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (inference)");
                 }
@@ -912,8 +913,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return
      */
     protected List<INDArray> ffToLayerTrain(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                            @NonNull INDArray input, INDArray fMask){
-        setLayerMaskArrays(fMask, null);
+                                            @NonNull INDArray input, INDArray fMask, INDArray lMask){
+        setInput(input);
+        setLayerMaskArrays(fMask, lMask);
 
         LayerWorkspaceMgr workspaceMgr;
         if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
@@ -985,6 +987,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     protected INDArray outputOfLayerDetached(boolean train, @NonNull FwdPassType fwdPassType, int layerIndex, @NonNull INDArray input,
                                              INDArray featureMasks, INDArray labelsMask){
+        setInput(input);
         setLayerMaskArrays(featureMasks, labelsMask);
 
         //TODO Destroy training workspaces, if present??
@@ -1133,8 +1136,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param fMask
      * @return
      */
-    protected INDArray outputOfLayerTraining(int layerIndex, INDArray input, INDArray fMask){
-        setLayerMaskArrays(fMask, null);
+    protected INDArray outputOfLayerTraining(int layerIndex, INDArray input, INDArray fMask, INDArray lMask){
+        setInput(input);
+        setLayerMaskArrays(fMask, lMask);
 
         //TODO Destroy inference workspaces, if present??
 
@@ -1599,8 +1603,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
 
-            WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients method requires workspace WS_ALL_LAYERS_ACT" +
-                    " to be open when workspaces are used");
+            if(epsilon == null) {
+                //If epsilon is non-null: external errors use case -> inputs are already detached
+                WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients method requires workspace WS_ALL_LAYERS_ACT" +
+                        " to be open when workspaces are used");
+            }
         }
 
         //calculate and apply the backward gradient for every layer
@@ -1697,8 +1704,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in calcBackpropGradients when " +
                     "training workspace is set to none");
         } else {
-            WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients: WS_ALL_LAYERS_ACT is no" +
-                    " longer the currently open/active workspace");
+            if(epsilon == null) {
+                //If epsilon != null: external errors use case (inputs are detached instead)
+                WorkspaceUtils.assertOpenActiveAndCurrent(WS_ALL_LAYERS_ACT, "calcBackpropGradients: WS_ALL_LAYERS_ACT is no" +
+                        " longer the currently open/active workspace");
+            }
         }
 
         //Add gradients to Gradients (map), in correct order
@@ -2514,7 +2524,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                List<INDArray> activations = ffToLayerTrain(layers.length-2, FwdPassType.RNN_ACT_STORED, true, input, mask);
+                List<INDArray> activations = ffToLayerTrain(layers.length-2, FwdPassType.RNN_ACT_STORED, true, input, mask, null);
                 if (!trainingListeners.isEmpty()) {
                     for (TrainingListener tl : trainingListeners) {
                         tl.onForwardPass(this, activations);
@@ -2530,7 +2540,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 //First: do a feed-forward through the network
                 //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
                 // need the input to the output layer to be set (such that backprop can be done)
-                List<INDArray> activations = ffToLayerTrain(layers.length - 2, FwdPassType.STANDARD, false, input, mask);
+                List<INDArray> activations = ffToLayerTrain(layers.length - 2, FwdPassType.STANDARD, false, input, mask, null);
                 if (!trainingListeners.isEmpty()) {
                     //TODO: We possibly do want output layer activations in some cases here...
                     for (TrainingListener tl : trainingListeners) {
@@ -2967,7 +2977,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACT_STORED, storeLastForTBPTT, layers.length-1, input, mask, false);
+        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACT_STORED, storeLastForTBPTT, layers.length-1, input, mask, null, false);
     }
 
     /** Get the updater for this MultiLayerNetwork

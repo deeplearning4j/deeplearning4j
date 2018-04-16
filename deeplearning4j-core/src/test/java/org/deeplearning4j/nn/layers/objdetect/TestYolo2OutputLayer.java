@@ -393,6 +393,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
 
     @Test
     public void testYoloOverfitting() throws Exception {
+        fail();
         Nd4j.getRandom().setSeed(12345);
 
         InputStream is1 = new ClassPathResource("yolo/VOC_TwoImage/JPEGImages/2007_009346.jpg").getInputStream();

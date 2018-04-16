@@ -183,11 +183,12 @@ public class BidirectionalLayer implements RecurrentLayer {
                 //TODO may be more efficient ways than this...
                 this.outFwd = out1.detach();
                 this.outBwd = out2.detach();
-                return out1.mul(out2);
+                return workspaceMgr.dup(ArrayType.ACTIVATIONS, out1).muli(out2);
             case AVERAGE:
                 return out1.addi(out2).muli(0.5);
             case CONCAT:
-                return Nd4j.concat(1, out1, out2);
+                INDArray ret = Nd4j.concat(1, out1, out2);
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }

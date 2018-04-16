@@ -30,7 +30,7 @@ public class WorkspaceUtils {
 
     public static void assertOpenActiveAndCurrent(@NonNull String ws, @NonNull String errorMsg){
         if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ws)){
-            throw new IllegalStateException(errorMsg + " - not open and active");
+            throw new IllegalStateException(errorMsg + " - workspace is not open and active");
         }
         MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
         if(currWs == null || !ws.equals(currWs.getId())){

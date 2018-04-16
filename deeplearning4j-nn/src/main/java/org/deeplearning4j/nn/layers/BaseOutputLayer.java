@@ -195,35 +195,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr workspaceMgr) {
         setInput(input, workspaceMgr);
-        return output(training, workspaceMgr);
-    }
-
-    public INDArray output(INDArray input, boolean training) {
-//        setInput(input);
-//        return output(training);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    public INDArray output(INDArray input) {
-//        setInput(input);
-//        return output(false);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    /**
-     * Classify input
-     * @param training determines if its training
-     * the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    public INDArray output(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
-        }
-        return super.activate(training, workspaceMgr);
+        return activate(training, workspaceMgr);
     }
 
 
@@ -279,7 +251,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public int[] predict(INDArray input) {
-        INDArray output = output(input);
+        INDArray output = activate(input, false, LayerWorkspaceMgr.noWorkspacesImmutable());
         int[] ret = new int[input.rows()];
         for (int i = 0; i < ret.length; i++)
             ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
@@ -311,7 +283,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public INDArray labelProbabilities(INDArray examples) {
-        return output(examples);
+        return activate(examples, false, LayerWorkspaceMgr.noWorkspacesImmutable());
     }
 
     /**

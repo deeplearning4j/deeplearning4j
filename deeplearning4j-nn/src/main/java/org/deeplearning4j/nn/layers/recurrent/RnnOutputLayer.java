@@ -116,43 +116,6 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     }
 
     @Override
-    public INDArray output(INDArray input) {
-//        if (input.rank() != 3)
-//            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
-//        //Returns 3d activations from 3d input
-//        setInput(input);
-//        return output(false);
-        throw new UnsupportedOperationException("To be removed");
-    }
-
-    @Override
-    public INDArray output(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        //Assume that input is 3d
-        if (input.rank() != 3)
-            throw new IllegalArgumentException(
-                            "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
-        INDArray preOutput2d = preOutput2d(training, workspaceMgr);
-
-        if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
-            INDArray out2d = Nd4j.getExecutioner().execAndReturn(new OldSoftMax(preOutput2d));
-            if (maskArray != null) {
-                out2d.muliColumnVector(maskArray);
-            }
-            return TimeSeriesUtils.reshape2dTo3d(out2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
-        }
-
-        applyDropOutIfNecessary(training, workspaceMgr);
-        INDArray origInput = input;
-        this.input = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.FF_WORKING_MEM);
-        INDArray out = super.activate(true, workspaceMgr);
-        this.input = origInput;
-        if (maskArray != null) {
-            out.muliColumnVector(maskArray);
-        }
-        return TimeSeriesUtils.reshape2dTo3d(out, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
-    }
-
-    @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
@@ -160,6 +123,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray b = getParamWithNoise(DefaultParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
+        applyDropOutIfNecessary(training, workspaceMgr);
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input, LayerWorkspaceMgr.noWorkspaces(), ArrayType.FF_WORKING_MEM);
 
         //INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),

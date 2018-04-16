@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.workspace.ArrayType;
 import org.nd4j.linalg.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
@@ -60,7 +61,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             INDArray result = sameDiff.execAndEndResult();
-            return result;
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, result);
         }
     }
 

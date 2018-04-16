@@ -66,6 +66,10 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray temp = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, input, input.ordering());
         INDArray delta = layerConf().getActivationFn().backprop(temp, epsilon).getFirst(); //TODO handle activation function params
+        if(delta == epsilon ){
+            //Edge case: identity activation + external errors -> no-op
+            delta = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, delta);
+        }
 
         delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);  //Usually a no-op (except for perhaps identity)
         Gradient ret = new DefaultGradient();

@@ -170,7 +170,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
 
-        return layerConf().getActivationFn().getActivation(input.dup(input.ordering()), training);
+        return layerConf().getActivationFn().getActivation(workspaceMgr.dup(ArrayType.ACTIVATIONS, input), training);
     }
 
     @Override
