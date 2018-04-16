@@ -1202,71 +1202,54 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     .build();
         }
 
+        boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
+        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
+        synchronizeIterEpochCounts();
+
         //Calculate activations (which are stored in each layer, and used in backprop)
-        if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-            try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-                Map<String, INDArray> activations = ffToLayerActivationsInWS(true, vertices.length, null,  FwdPassType.RNN_ACT_STORED,
-                        true, inputs, inputMaskArrays, labelMaskArrays, false);  //rnnActivateUsingStoredState(inputs, true, true);
-                if (!trainingListeners.isEmpty()) {
-                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        for (TrainingListener tl : trainingListeners) {
-                            tl.onForwardPass(this, activations);
-                        }
+        try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
+            Map<String, INDArray> activations = feedForwardTraining(fwdType, tbptt, getOutputLayerIndices(), inputs, inputMaskArrays, labelMaskArrays);
+            if (!trainingListeners.isEmpty()) {
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
                     }
                 }
-                calcBackpropGradients(false,true);
-
-                throw new IllegalStateException("Not yet reimplemented");
             }
-        } else {
-            try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-                Map<String, INDArray> activations = feedForwardTraining(getOutputLayerIndices(), inputs, inputMaskArrays, labelMaskArrays);
-                if (!trainingListeners.isEmpty()) {
-                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        for (TrainingListener tl : trainingListeners) {
-                            tl.onForwardPass(this, activations);
-                        }
-                    }
-                }
-                calcBackpropGradients(false,false);
+            calcBackpropGradients(false,false);
 
-                workspaceMgr.assertCurrentWorkspace(ArrayType.ACTIVATIONS, null);
+            workspaceMgr.assertCurrentWorkspace(ArrayType.ACTIVATIONS, null);
 
-                //Score: sum of the scores for the various output layers...
-                double l1 = calcL1();
-                double l2 = calcL2();
+            //Score: sum of the scores for the various output layers...
+            double l1 = calcL1();
+            double l2 = calcL2();
 
-                score = 0.0;
-                int outNum = 0;
-                for (String s : configuration.getNetworkOutputs()) {
-                    GraphVertex gv = verticesMap.get(s);
-                    gv.getLayer().setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum++]);
+            score = 0.0;
+            int outNum = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                GraphVertex gv = verticesMap.get(s);
+                gv.getLayer().setMaskArray((labelMaskArrays == null) ? null : labelMaskArrays[outNum++]);
 
-                    try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                        score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
-                    }
-
-                    //Only want to add l1/l2 once...
-                    l1 = 0.0;
-                    l2 = 0.0;
-                    outNum++;
+                try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
+                    score += ((IOutputLayer) gv.getLayer()).computeScore(l1, l2, true, workspaceMgr);
                 }
 
-                //Listeners
-                if (!trainingListeners.isEmpty()) {
-                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        for (TrainingListener tl : trainingListeners) {
-                            tl.onBackwardPass(this);
-                        }
+                //Only want to add l1/l2 once...
+                l1 = 0.0;
+                l2 = 0.0;
+                outNum++;
+            }
+
+            //Listeners
+            if (!trainingListeners.isEmpty()) {
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onBackwardPass(this);
                     }
                 }
             }
         }
 
-        //Clear the fields (inc. post noise/dropconnect parameters) on the output layers
-//        for (int i = 0; i < numOutputArrays; i++) {
-//            getOutputLayer(i).clearNoiseWeightParams();
-//        }
         for(GraphVertex gv : vertices){
             gv.clear();
         }
@@ -1786,12 +1769,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
                 activations.put(current.getVertexName(), out);
 
-                for(VertexIndices v : inputsTo){
-                    //Note that we don't have to do anything special here: the activations are always detached in
-                    // this method
-                    int inputToIndex = v.getVertexIndex();
-                    int vIdxEdge = v.getVertexEdgeNumber();
-                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                if(inputsTo != null) {
+                    //Can be null for output layers
+                    for (VertexIndices v : inputsTo) {
+                        //Note that we don't have to do anything special here: the activations are always detached in
+                        // this method
+                        int inputToIndex = v.getVertexIndex();
+                        int vIdxEdge = v.getVertexEdgeNumber();
+                        vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
+                    }
                 }
 
                 if(clearInputs) {
@@ -2037,7 +2023,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param fMask
      * @return
      */
-    protected Map<String,INDArray> feedForwardTraining(int[] excludeLayerIndexes, @NonNull INDArray[] features, INDArray[] fMask, INDArray[] lMask){
+    protected Map<String,INDArray> feedForwardTraining(@NonNull FwdPassType fwdPassType, boolean storeLastForTbptt, int[] excludeLayerIndexes,
+                                                       @NonNull INDArray[] features, INDArray[] fMask, INDArray[] lMask){
         Preconditions.checkArgument(features.length == numInputArrays,
                 "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
         setLayerMaskArrays(fMask, lMask);
@@ -2077,7 +2064,31 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if (current.isInputVertex()) {
                     out = inputs[vIdx];
                 } else {
-                    out = current.doForward(true, workspaceMgr);
+
+                    if (fwdPassType == FwdPassType.STANDARD) {
+                        out = current.doForward(true, workspaceMgr);
+                    } else if( fwdPassType == FwdPassType.RNN_ACT_STORED ){
+                        //TBPTT use case
+                        if (current.hasLayer()) {
+                            Layer l = current.getLayer();
+                            if (l instanceof RecurrentLayer) {
+                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], true,
+                                        storeLastForTbptt, workspaceMgr);
+                            } else if (l instanceof MultiLayerNetwork) {
+                                List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
+                                        current.getInputs()[0], true, storeLastForTbptt);
+                                out = temp.get(temp.size() - 1);
+                            } else {
+                                //non-recurrent layer
+                                out = current.doForward(true, workspaceMgr);
+                            }
+                        } else {
+                            out = current.doForward(true, workspaceMgr);
+                        }
+                    } else {
+                        throw new IllegalStateException("FwdPassType not supported for this method: " + fwdPassType);
+                    }
+
                     validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (training)");
                 }
 
@@ -3202,7 +3213,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             rnnUpdateStateWithTBPTTState();
         }
 
-        rnnClearPreviousState();
+        if(clearTbpttState) {
+            rnnClearPreviousState();
+        }
         clearLayerMaskArrays();
     }
 
@@ -3666,6 +3679,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             evaluation.eval(subset.get(1)[0], outSub[0], maskSub);
                     }
                 }
+
+                rnnClearPreviousState();
             }
 
             //Clear inputs, masks etc. Important to avoid leaking invalidated/out of scope arrays between iterations

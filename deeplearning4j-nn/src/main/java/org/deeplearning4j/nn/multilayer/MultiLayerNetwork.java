@@ -2367,14 +2367,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .build();
         }
 
+        boolean tbptt = layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT;
+        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
+        synchronizeIterEpochCounts();
+
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-
-            boolean tbptt = layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT;
-            FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
-
-            synchronizeIterEpochCounts();
-
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
