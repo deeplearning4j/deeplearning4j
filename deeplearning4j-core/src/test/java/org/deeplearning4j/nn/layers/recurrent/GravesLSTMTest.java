@@ -148,14 +148,14 @@ public class GravesLSTMTest extends BaseDL4JTest {
         lstm.setInput(input, LayerWorkspaceMgr.noWorkspaces());
 
         Method actHelper = GravesLSTM.class.getDeclaredMethod("activateHelper", boolean.class, INDArray.class,
-                        INDArray.class, boolean.class);
+                        INDArray.class, boolean.class, LayerWorkspaceMgr.class);
         actHelper.setAccessible(true);
 
         //Call activateHelper with both forBackprop == true, and forBackprop == false and compare
         Class<?> innerClass = Class.forName("org.deeplearning4j.nn.layers.recurrent.FwdPassReturn");
 
-        Object oFalse = actHelper.invoke(lstm, false, null, null, false); //GravesLSTM.FwdPassReturn object; want fwdPassOutput INDArray
-        Object oTrue = actHelper.invoke(lstm, false, null, null, true); //want fwdPassOutputAsArrays object
+        Object oFalse = actHelper.invoke(lstm, false, null, null, false, LayerWorkspaceMgr.noWorkspacesImmutable()); //GravesLSTM.FwdPassReturn object; want fwdPassOutput INDArray
+        Object oTrue = actHelper.invoke(lstm, false, null, null, true, LayerWorkspaceMgr.noWorkspacesImmutable()); //want fwdPassOutputAsArrays object
 
         Field fwdPassOutput = innerClass.getDeclaredField("fwdPassOutput");
         fwdPassOutput.setAccessible(true);

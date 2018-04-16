@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.multilayer;
 
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
@@ -351,7 +352,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         } else {
             //Yes, this part of training - but we'll do forward psas as inference mode when doing layerwise training
             // to effectively freeze earlier layers and not apply dropout etc
-            outputOfPrevLayer = outputOfLayerDetached(false, layerIndex-1, features, null, null);
+            outputOfPrevLayer = outputOfLayerDetached(false, false, layerIndex-1, features, null, null);
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
@@ -826,7 +827,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param fMask
      * @return
      */
-    protected List<INDArray> ffToLayerDetached(boolean train, int layerIndex, INDArray input, INDArray fMask, boolean clearInputs){
+    protected List<INDArray> ffToLayerDetached(boolean train, int layerIndex, @NonNull INDArray input, INDArray fMask, boolean clearInputs){
+        setInput(input);
         setLayerMaskArrays(fMask, null);
 
         //Verify that no workspace is open externally
@@ -860,7 +862,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         for( int i=0; i<=layerIndex; i++ ){
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
+                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, input.size(0), workspaceMgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (inference)");
                 }
@@ -948,7 +950,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param featureMasks
      * @return
      */
-    protected INDArray outputOfLayerDetached(boolean train, int layerIndex, INDArray input, INDArray featureMasks, INDArray labelsMask){
+    protected INDArray outputOfLayerDetached(boolean train, boolean rnnTimeStep, int layerIndex, @NonNull INDArray input,
+                                             INDArray featureMasks, INDArray labelsMask){
         setLayerMaskArrays(featureMasks, labelsMask);
 
         //TODO Destroy training workspaces, if present??
@@ -1001,6 +1004,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
 
+                //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
+                //Hence: put inputs in working memory
+                if(i == 0 && wsm != WorkspaceMode.NONE){
+                    mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG);
+                }
+
                 try (MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) { //Working memory: opened/closed once per layer
                     //Activations workspaces: opened/closed every second layer.
                     //So mgrEven (WS_LAYER_ACT_1) open at start of 0, 2, 4, 8; closed at end of 1, 3, 5, 7 etc
@@ -1028,7 +1037,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
                     }
 
-                    input = layers[i].activate(input, train, mgr);
+                    if(rnnTimeStep){
+                        //rnnTimeStep case
+                        if (layers[i] instanceof RecurrentLayer) {
+                            input = ((RecurrentLayer) layers[i]).rnnTimeStep(input, mgr);
+                        } else if (layers[i] instanceof MultiLayerNetwork) {
+                            input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
+                        } else {
+                            input = layers[i].activate(input, false, mgr);
+                        }
+                    } else {
+                        //Standard feed-forward case
+                        input = layers[i].activate(input, train, mgr);
+                    }
                     layers[i].clear();
                     //Validation: Exception if invalid (bad layer implementation)
                     validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
@@ -1039,7 +1060,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     wsActCloseNext = temp;
                     temp = null;
                 }
+
+                //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
+                //Hence: put inputs in working memory -> set back to default for next use of workspace mgr
+                if(i == 0 && wsm != WorkspaceMode.NONE){
+                    mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG);            //Inputs should always be in the previous WS
+                }
             }
+
         } finally {
             if(wsActCloseNext != null){
                 wsActCloseNext.close();
@@ -1561,6 +1589,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         try {
             for (int i = layers.length - 1; i >= 0; i--) {
+                if (layers[i] instanceof FrozenLayer) {
+                    break;
+                }
+
                 LayerWorkspaceMgr workspaceMgr = (i % 2 == 0 ? mgrEven : mgrOdd);
 
                 if (withOutputLayer && i == layers.length - 1) {
@@ -2129,7 +2161,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        return outputOfLayerDetached(train,layers.length-1, input, null, null);
+        return outputOfLayerDetached(train, false,layers.length-1, input, null, null);
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -2137,7 +2169,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        return outputOfLayerDetached(train, layers.length-1, input, featuresMask, labelsMask);
+        return outputOfLayerDetached(train, false, layers.length-1, input, featuresMask, labelsMask);
     }
 
     /**
@@ -2320,7 +2352,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .build();
         }
 
-        INDArray inputToOutputLayer = outputOfLayerDetached(training, layers.length-2, data.getFeatures(),
+        INDArray inputToOutputLayer = outputOfLayerDetached(training, false,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
@@ -2360,7 +2392,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return An INDArray (column vector) of size input.numRows(); the ith entry is the score (loss value) of the ith example
      */
     public INDArray scoreExamples(DataSet data, boolean addRegularizationTerms) {
-        INDArray inputLast = outputOfLayerDetached(false, layers.length-2, data.getFeatures(),
+        INDArray inputLast = outputOfLayerDetached(false, false,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray());
         setLabels(data.getLabels());
         setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
@@ -2836,30 +2868,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer.
      */
     public INDArray rnnTimeStep(INDArray input) {
-        LayerWorkspaceMgr workspaceMgr = null;
-
-        this.setInputMiniBatchSize(input.size(0)); //Necessary for preprocessors/reshaping
-        this.input = input;
         boolean inputIs2d = input.rank() == 2;
-        for (int i = 0; i < layers.length; i++) {
-            if (getLayerWiseConfigurations().getInputPreProcess(i) != null)
-                input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), null);    //TODO
-            if (layers[i] instanceof RecurrentLayer) {
-                input = ((RecurrentLayer) layers[i]).rnnTimeStep(input, workspaceMgr);
-            } else if (layers[i] instanceof MultiLayerNetwork) {
-                input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(input);
-            } else {
-                input = layers[i].activate(input, false, null); //TODO
-            }
-        }
-        if (inputIs2d && input.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
+        INDArray out = outputOfLayerDetached(false, true, layers.length-1, input, null, null);
+        if (inputIs2d && out.rank() == 3 && layers[layers.length - 1].type() == Type.RECURRENT) {
             //Return 2d output with shape [miniBatchSize,nOut]
             // instead of 3d output with shape [miniBatchSize,nOut,1]
-            return input.tensorAlongDimension(0, 1, 0);
+            return out.tensorAlongDimension(0, 1, 0);
         }
-
-        this.input = null;
-        return input;
+        return out;
     }
 
     /**Get the state of the RNN layer, as used in rnnTimeStep().
@@ -3113,7 +3129,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             if (!useRnnSegments) {
                 //Standard/non-RNN case:
-                INDArray out = outputOfLayerDetached(false,layers.length - 1, features, fMask, lMask);
+                INDArray out = outputOfLayerDetached(false, false,layers.length - 1, features, fMask, lMask);
 
                 try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     for (T evaluation : evaluations)

@@ -291,7 +291,7 @@ public class TimeSeriesUtils {
             idxs[j++] = i;
         }
 
-        INDArray ret = workspaceMgr.createUninitialized(arrayType, new int[]{idxs.length, mask.size(1)}, 'f');
+        INDArray ret = workspaceMgr.createUninitialized(arrayType, new int[]{mask.size(0), idxs.length}, 'f');
 
         return Nd4j.pullRows(mask, ret, 0, idxs);
 

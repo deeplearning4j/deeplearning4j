@@ -1499,7 +1499,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public INDArray[] output(boolean train, @NonNull INDArray[] input, INDArray[] inputMasks, INDArray[] labelMasks){
         setLayerMaskArrays(inputMasks, labelMasks);
-        INDArray[] out = outputOfLayersDetached(train, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false);
+        INDArray[] out = outputOfLayersDetached(train, false, getOutputLayerIndices(), input, inputMasks, labelMasks, true, false);
         clearLayerMaskArrays();
         clearLayersStates();
         return out;
@@ -1546,7 +1546,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public INDArray[] output(boolean train, boolean clearInputs, INDArray... input){
         boolean detachedInputs = !clearInputs;  //If !clearInputs, then inputs should be detached (otherwise: will be out of scope)
-        return outputOfLayersDetached(train, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs);
+        return outputOfLayersDetached(train, false, getOutputLayerIndices(), input, null, null, clearInputs, detachedInputs);
     }
 
 
@@ -1743,7 +1743,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param fMask
      * @return
      */
-    protected INDArray[] outputOfLayersDetached(boolean train, @NonNull int[] layerIndexes, @NonNull INDArray[] features,
+    protected INDArray[] outputOfLayersDetached(boolean train, boolean rnnTimeStep, @NonNull int[] layerIndexes, @NonNull INDArray[] features,
                                                 INDArray[] fMask, INDArray[] lMasks, boolean clearLayerInputs, boolean detachedInputs){
         Preconditions.checkArgument(features.length == numInputArrays,
                 "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
@@ -1881,7 +1881,27 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     if (current.isInputVertex()) {
                         out = features[vIdx];
                     } else {
-                        out = current.doForward(false, workspaceMgr);
+
+                        if(rnnTimeStep){
+                            if (current.hasLayer()) {
+                                //Layer
+                                Layer l = current.getLayer();
+                                if (l instanceof RecurrentLayer) {
+                                    out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0], workspaceMgr);
+                                } else if (l instanceof MultiLayerNetwork) {
+                                    out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
+                                } else {
+                                    //non-recurrent layer
+                                    out = current.doForward(train, workspaceMgr);
+                                }
+                            } else {
+                                //GraphNode
+                                out = current.doForward(train, workspaceMgr);
+                            }
+                        } else {
+                            //Standard feed-forward case
+                            out = current.doForward(train, workspaceMgr);
+                        }
                         validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (inference)");
                     }
 
@@ -2922,7 +2942,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Otherwise output is 3d [miniBatchSize,outputSize,inputTimeSeriesLength] when using RnnOutputLayer (or unmodified otherwise).
      */
     public INDArray[] rnnTimeStep(INDArray... inputs) {
-        this.inputs = inputs;
+
+//        this.inputs = inputs;
         //Idea: if 2d in, want 2d out
         boolean inputIs2d = true;
         for (INDArray i : inputs) {
@@ -2932,68 +2953,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
         }
 
-        LayerWorkspaceMgr workspaceMgr;
-        if(configuration.getInferenceWorkspaceMode() == WorkspaceMode.NONE){
-            workspaceMgr = LayerWorkspaceMgr.noWorkspacesImmutable();
-        } else {
-//            workspaceMgr = LayerWorkspaceMgr.builder()
-//                    .with(ArrayType.ACTIVATIONS, WS_)
-//                    .build();
-            throw new IllegalStateException("Not yet supported");
-        }
-
-        INDArray[] outputs = new INDArray[this.numOutputArrays];
-
-        //Based on: feedForward()
-        for (int currVertexIdx : topologicalOrder) {
-            GraphVertex current = vertices[currVertexIdx];
-            if (current.isInputVertex()) {
-                VertexIndices[] inputsTo = current.getOutputVertices();
-                INDArray input = inputs[current.getVertexIndex()];
-
-                for (VertexIndices v : inputsTo) {
-                    int vIdx = v.getVertexIndex();
-                    int vIdxInputNum = v.getVertexEdgeNumber();
-                    //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
-                    vertices[vIdx].setInput(vIdxInputNum, input.dup(), workspaceMgr); //TODO When to dup?
-                }
-
-            } else {
-                INDArray out;
-                if (current.hasLayer()) {
-                    //Layer
-                    Layer l = current.getLayer();
-                    if (l instanceof RecurrentLayer) {
-                        out = ((RecurrentLayer) l).rnnTimeStep(current.getInputs()[0], workspaceMgr);
-                    } else if (l instanceof MultiLayerNetwork) {
-                        out = ((MultiLayerNetwork) l).rnnTimeStep(current.getInputs()[0]);
-                    } else {
-                        //non-recurrent layer
-                        out = current.doForward(false, workspaceMgr);
-                    }
-                } else {
-                    //GraphNode
-                    out = current.doForward(false, workspaceMgr);
-                }
-
-                if (current.isOutputVertex()) {
-                    //Get the index of this output vertex...
-                    int idx = configuration.getNetworkOutputs().indexOf(current.getVertexName());
-                    outputs[idx] = out;
-                }
-
-                //Now, set the inputs for the next vertices:
-                VertexIndices[] outputsTo = current.getOutputVertices();
-                if (outputsTo != null) {
-                    for (VertexIndices v : outputsTo) {
-                        int vIdx = v.getVertexIndex();
-                        int inputNum = v.getVertexEdgeNumber();
-                        //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                        vertices[vIdx].setInput(inputNum, out, workspaceMgr);
-                    }
-                }
-            }
-        }
+        INDArray[] outputs = outputOfLayersDetached(false, true, getOutputLayerIndices(), inputs, null, null, true, false);
 
         //As per MultiLayerNetwork.rnnTimeStep(): if inputs are all 2d, then outputs are all 2d
         if (inputIs2d) {
@@ -3656,7 +3616,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 INDArray labelMask = next.getLabelsMaskArray(0);
 
                 //TODO in principle, we could keep these output arrays in a workspace...
-                INDArray[] out = outputOfLayersDetached(false, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
+                INDArray[] out = outputOfLayersDetached(false, false, getOutputLayerIndices(), features, featuresMasks, labelMasks, true, false);
 
                 for (T evaluation : evaluations)
                     evaluation.eval(labels, out[0], labelMask);
