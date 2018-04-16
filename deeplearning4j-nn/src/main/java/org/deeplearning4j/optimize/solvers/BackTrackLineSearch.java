@@ -136,10 +136,6 @@ public class BackTrackLineSearch implements LineOptimizer {
     }
 
     public double setScoreFor(INDArray parameters, LayerWorkspaceMgr workspaceMgr) {
-        if (Nd4j.ENFORCE_NUMERICAL_STABILITY) {
-            BooleanIndexing.applyWhere(parameters, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
-        }
-
         layer.setParams(parameters);
         layer.computeGradientAndScore(workspaceMgr);
         return layer.score();
