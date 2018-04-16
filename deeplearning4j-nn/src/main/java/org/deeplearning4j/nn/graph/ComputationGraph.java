@@ -1042,7 +1042,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays, workspaceMgr);
             } else {
                 if (solver == null) {
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -3143,7 +3143,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Fit the network using truncated BPTT
      */
     protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks,
-                                   INDArray[] labelMasks) {
+                                   INDArray[] labelMasks, LayerWorkspaceMgr workspaceMgr) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -3178,48 +3178,32 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         rnnClearPreviousState();
 
-        LayerWorkspaceMgr workspaceMgr = null;  //TODO
+        for (int i = 0; i < nSubsets; i++) {
+            int startTimeIdx = i * fwdLen;
+            int endTimeIdx = startTimeIdx + fwdLen;
+            if (endTimeIdx > timeSeriesLength)
+                endTimeIdx = timeSeriesLength;
 
-        throw new IllegalStateException("Not yet reimplemented");
-        /*
-        try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
-            for (int i = 0; i < nSubsets; i++) {
-                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-                    int startTimeIdx = i * fwdLen;
-                    int endTimeIdx = startTimeIdx + fwdLen;
-                    if (endTimeIdx > timeSeriesLength)
-                        endTimeIdx = timeSeriesLength;
+            List<INDArray[]> list = getSubsetsForTbptt(startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
 
-                    List<INDArray[]> list = getSubsetsForTbptt(startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
+            setInputs(list.get(0));
+            setLabels(list.get(1));
+            setLayerMaskArrays(list.get(2), list.get(3));
 
-                    setInputs(list.get(0));
-                    setLabels(list.get(1));
-                    setLayerMaskArrays(list.get(2), list.get(3));
-
-                    if (solver == null) {
-                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
-                                    .build();
-                        }
-                    }
-                    solver.optimize(workspaceMgr);
-
-                    //Finally, update the state of the RNN layers:
-                    rnnUpdateStateWithTBPTTState();
+            if (solver == null) {
+                try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                            .build();
                 }
             }
-        }
+            solver.optimize(workspaceMgr);
 
-        if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            workspace.initializeWorkspace();
-            workspaceT.initializeWorkspace();
+            //Finally, update the state of the RNN layers:
+            rnnUpdateStateWithTBPTTState();
         }
 
         rnnClearPreviousState();
-
-        if (featureMasks != null || labelMasks != null) {
-            clearLayerMaskArrays();
-        }*/
+        clearLayerMaskArrays();
     }
 
     private List<INDArray[]> getSubsetsForTbptt(int startTimeIdx, int endTimeIdx, INDArray[] inputs, INDArray[] labels,

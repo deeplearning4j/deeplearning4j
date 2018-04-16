@@ -401,7 +401,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public INDArray getParam(String param) {
         //Get params for MultiLayerNetwork sub layers.
-        //Parameter keys here: same as MultiLayerNetwork.backprop().
         int idx = param.indexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + param + "\"");
@@ -463,7 +462,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     @Override
     public void setParam(String key, INDArray val) {
         //Set params for MultiLayerNetwork sub layers.
-        //Parameter keys here: same as MultiLayerNetwork.backprop().
         int idx = key.indexOf('_');
         if (idx == -1)
             throw new IllegalStateException("Invalid param key: not have layer separator: \"" + key + "\"");
@@ -581,7 +579,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         //Set parameters in MultiLayerNetwork.defaultConfiguration for later use in BaseOptimizer.setupSearchState() etc
-        //Keyed as per backprop()
         defaultConfiguration.clearVariables();
         List<String> variables = defaultConfiguration.variables(false);
         for (int i = 0; i < layers.length; i++) {
@@ -1416,16 +1413,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             tl.onEpochStart(this);
         }
 
-//        MemoryWorkspace workspace =
-//                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-//                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-//                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
-//        MemoryWorkspace cache =
-//                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-//                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-//                                                        ComputationGraph.workspaceConfigurationCache,
-//                                                        ComputationGraph.WORKSPACE_CACHE);
-
         LayerWorkspaceMgr workspaceMgr;
         if(getLayerWiseConfigurations().getTrainingWorkspaceMode() == WorkspaceMode.NONE){
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
@@ -1467,7 +1454,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
-                                    next.getLabelsMaskArray());
+                                    next.getLabelsMaskArray(), workspaceMgr);
                 } else {
                     if (hasMaskArrays)
                         setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
@@ -1482,11 +1469,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         }
                     }
 
-//                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
-//                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-//                            solver.optimize();
-//                        }
-//                    }
                     //TODO CACHE
                     solver.optimize(workspaceMgr);
                 }
@@ -1514,13 +1496,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         incrementEpochCount();
     }
 
-    /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
-    protected void backprop() {
-        Pair<Gradient, INDArray> pair = calcBackpropGradients(null, true);
-        this.gradient = (pair == null ? null : pair.getFirst());
-        this.epsilon = (pair == null ? null : pair.getSecond());
-    }
-
     /** Calculate gradients and errors. Used in two places:
      * (a) backprop (for standard multi layer network learning)
      * (b) backpropGradient (layer method, for when MultiLayerNetwork is used as a layer)
@@ -1530,7 +1505,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      *                        If false: calculate backprop gradients
      * @return Gradients and the error (epsilon) at the input
      */
-    protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
+    protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer, boolean tbptt) {
         if (flattenedGradients == null) {
             initGradientsView();
         }
@@ -1638,7 +1613,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     wsActGradTemp.setPreviousWorkspace(initialWorkspace);
 
                     INDArray eps = (i == layers.length-1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
-                    currPair = layers[i].backpropGradient(eps, workspaceMgr);
+
+                    if(!tbptt){
+                        //Standard case
+                        currPair = layers[i].backpropGradient(eps, workspaceMgr);
+                    } else {
+                        //TBPTT gradient
+                        if (layers[i] instanceof RecurrentLayer) {
+                            currPair = ((RecurrentLayer) layers[i]).tbpttBackpropGradient(currPair.getSecond(),
+                                    layerWiseConfigurations.getTbpttBackLength(), workspaceMgr);
+                        } else {
+                            currPair = layers[i].backpropGradient(currPair.getSecond(), workspaceMgr);
+                        }
+                    }
 
                     if(currPair.getSecond() != null) {
                         //Edge case: may be null for Embedding layer, for example
@@ -1700,9 +1687,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     protected void doTruncatedBPTT(INDArray input, INDArray labels, INDArray featuresMaskArray,
-                    INDArray labelsMaskArray) {
-        throw new UnsupportedOperationException("Not yet reimplemented");
-        /*
+                    INDArray labelsMaskArray, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() != 3 || labels.rank() != 3) {
             log.warn("Cannot do truncated BPTT with non-3d inputs or labels. Expect input with shape [miniBatchSize,nIn,timeSeriesLength], got "
                             + Arrays.toString(input.shape()) + "\tand labels with shape "
@@ -1724,56 +1709,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         rnnClearPreviousState();
 
-        workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
-        workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
+        for (int i = 0; i < nSubsets; i++) {
+            int startTimeIdx = i * fwdLen;
+            int endTimeIdx = startTimeIdx + fwdLen;
+            if (endTimeIdx > timeSeriesLength)
+                endTimeIdx = timeSeriesLength;
 
-        MemoryWorkspace workspaceT =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationTBPTT, WORKSPACE_TBPTT);
-        MemoryWorkspace workspace =
-                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, WORKSPACE_EXTERNAL);
+            INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, input, labels,
+                    featuresMaskArray, labelsMaskArray);
 
-        try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
-            for (int i = 0; i < nSubsets; i++) {
-                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-                    int startTimeIdx = i * fwdLen;
-                    int endTimeIdx = startTimeIdx + fwdLen;
-                    if (endTimeIdx > timeSeriesLength)
-                        endTimeIdx = timeSeriesLength;
+            setInput(subsets[0]);
+            setLabels(subsets[1]);
+            setLayerMaskArrays(subsets[2], subsets[3]);
 
-                    INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, endTimeIdx, input, labels,
-                            featuresMaskArray, labelsMaskArray);
-
-                    setInput(subsets[0]);
-                    setLabels(subsets[1]);
-                    setLayerMaskArrays(subsets[2], subsets[3]);
-
-                    if (solver == null) {
-                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
-                                            .build();
-                        }
-                    }
-                    solver.optimize();
-
-                    //Finally, update the state of the RNN layers:
-                    updateRnnStateWithTBPTTState();
+            if (solver == null) {
+                try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                            .build();
                 }
             }
-        }
+            solver.optimize(workspaceMgr);
 
-        if (layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            workspace.initializeWorkspace();
-            workspaceT.initializeWorkspace();
+            //Finally, update the state of the RNN layers:
+            updateRnnStateWithTBPTTState();
         }
 
         rnnClearPreviousState();
-        if (featuresMaskArray != null || labelsMaskArray != null)
-            clearLayerMaskArrays();
-            */
+        clearLayerMaskArrays();
     }
 
     private INDArray[] getSubsetsForTbptt(int startTimeIdx, int endTimeIdx, INDArray input, INDArray labels,
@@ -1806,83 +1768,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
     }
-
-    /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
-    protected void truncatedBPTTGradient() {
-        throw new UnsupportedOperationException("Not yet reimplemented");
-        /*
-        LayerWorkspaceMgr workspaceMgr = null;  //TODO
-
-        synchronizeIterEpochCounts();
-        if (flattenedGradients == null) {
-            initGradientsView();
-        }
-        String multiGradientKey;
-        gradient = new DefaultGradient(flattenedGradients);
-        Layer currLayer;
-
-        if (!(getOutputLayer() instanceof IOutputLayer)) {
-            log.warn("Warning: final layer isn't output layer. You cannot use backprop (truncated BPTT) without an output layer.");
-            return;
-        }
-
-        IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
-        if (labels == null)
-            throw new IllegalStateException("No labels found");
-        if (outputLayer instanceof BaseLayer
-                        && ((BaseLayer) outputLayer.conf().getLayer()).getWeightInit() == WeightInit.ZERO) {
-            throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
-        }
-
-        outputLayer.setLabels(labels);
-
-        //calculate and apply the backward gradient for every layer
-        int numLayers = getnLayers();
-        //Store gradients is a list; used to ensure iteration order in DefaultGradient linked hash map. i.e., layer 0 first instead of output layer
-        LinkedList<Pair<String, INDArray>> gradientList = new LinkedList<>();
-
-        Pair<Gradient, INDArray> currPair = outputLayer.backpropGradient(null, workspaceMgr);
-
-        for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-            multiGradientKey = String.valueOf(numLayers - 1) + "_" + entry.getKey();
-            gradientList.addLast(new Pair<>(multiGradientKey, entry.getValue()));
-        }
-
-        if (getLayerWiseConfigurations().getInputPreProcess(numLayers - 1) != null)
-            currPair = new Pair<>(currPair.getFirst(), this.layerWiseConfigurations.getInputPreProcess(numLayers - 1)
-                            .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
-
-        // Calculate gradients for previous layers & drops output layer in count
-        for (int j = numLayers - 2; j >= 0; j--) {
-            currLayer = getLayer(j);
-            if (currLayer instanceof RecurrentLayer) {
-                currPair = ((RecurrentLayer) currLayer).tbpttBackpropGradient(currPair.getSecond(),
-                                layerWiseConfigurations.getTbpttBackLength(), workspaceMgr);
-            } else {
-                currPair = currLayer.backpropGradient(currPair.getSecond(), workspaceMgr);
-            }
-
-            LinkedList<Pair<String, INDArray>> tempList = new LinkedList<>();
-            for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {
-                multiGradientKey = String.valueOf(j) + "_" + entry.getKey();
-                tempList.addFirst(new Pair<>(multiGradientKey, entry.getValue()));
-            }
-
-            for (Pair<String, INDArray> pair : tempList)
-                gradientList.addFirst(pair);
-
-            //Pass epsilon through input processor before passing to next layer (if applicable)
-            if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
-                currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                                .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
-        }
-
-        //Add gradients to Gradients, in correct order
-        for (Pair<String, INDArray> pair : gradientList)
-            gradient.setGradientFor(pair.getFirst(), pair.getSecond());
-            */
-    }
-
 
     /**
      *
@@ -2091,14 +1976,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                doTruncatedBPTT(features, labels, featuresMask, labelsMask);
+                doTruncatedBPTT(features, labels, featuresMask, labelsMask, workspaceMgr);
             } else {
                 if (solver == null) {
                     try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                     }
                 }
-
                 //TODO CACHE WORKSPACE, IF USED???
                 solver.optimize(workspaceMgr);
             }
@@ -2121,23 +2005,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-
-            doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
-                            data.getLabelsMaskArray());
-
-        } else {
-            //Standard training
-            boolean hasMaskArrays = data.hasMaskArrays();
-            if (hasMaskArrays)
-                setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-            fit(data.getFeatures(), data.getLabels());
-            if (hasMaskArrays)
-                clearLayerMaskArrays();
-
-        }
-
-        clearLayersStates();
+        fit(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(), data.getLabelsMaskArray());
     }
 
     /**
@@ -2483,8 +2351,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     public void computeGradientAndScore() {
-
-
         //Note: Workspace manager is only ose here for score calculation... other workspace managers are used in the
         // various FF/backprop methds
         LayerWorkspaceMgr mgr;
@@ -2503,40 +2369,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace ws = mgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                List<INDArray> activations = ffToLayerTrain(layers.length-2, FwdPassType.RNN_ACT_STORED, true, input, mask, null);
-                if (!trainingListeners.isEmpty()) {
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
-                    }
-                }
-                truncatedBPTTGradient();
-                if (clearTbpttState) {
-                    rnnClearPreviousState();
-                }
-            } else {
-                synchronizeIterEpochCounts();
 
-                //First: do a feed-forward through the network
-                //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
-                // need the input to the output layer to be set (such that backprop can be done)
-                List<INDArray> activations = ffToLayerTrain(layers.length - 2, FwdPassType.STANDARD, false, input, mask, null);
-                if (!trainingListeners.isEmpty()) {
-                    //TODO: We possibly do want output layer activations in some cases here...
-                    for (TrainingListener tl : trainingListeners) {
-                        tl.onForwardPass(this, activations);
-                    }
+            boolean tbptt = layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT;
+            FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
+
+            synchronizeIterEpochCounts();
+
+            //First: do a feed-forward through the network
+            //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
+            // need the input to the output layer to be set (such that backprop can be done)
+            List<INDArray> activations = ffToLayerTrain(layers.length - 2, fwdType, tbptt, input, mask, null);
+            if (!trainingListeners.isEmpty()) {
+                //TODO: We possibly do want output layer activations in some cases here...
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onForwardPass(this, activations);
                 }
-                INDArray inputToOutputLayer = activations.get(activations.size() - 1);
-                if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
-                    inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
-                            .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
-                    //Validate activations location
-                }
-                getOutputLayer().setInput(inputToOutputLayer, mgr);
-                //Then: compute gradients
-                backprop();
             }
+            INDArray inputToOutputLayer = activations.get(activations.size() - 1);
+            if (layerWiseConfigurations.getInputPreProcess(layers.length - 1) != null) {
+                inputToOutputLayer = layerWiseConfigurations.getInputPreProcess(layers.length - 1)
+                        .preProcess(inputToOutputLayer, getInputMiniBatchSize(), mgr);
+                //Validate activations location
+            }
+            getOutputLayer().setInput(inputToOutputLayer, mgr);
+            //Then: compute gradients
+            Pair<Gradient, INDArray> pair = calcBackpropGradients(null, true, false);
+            this.gradient = (pair == null ? null : pair.getFirst());
+            this.epsilon = (pair == null ? null : pair.getSecond());
 
             //Calculate score
             if (!(getOutputLayer() instanceof IOutputLayer)) {
@@ -2776,7 +2635,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (getOutputLayer() instanceof IOutputLayer)
             throw new UnsupportedOperationException("Cannot calculate gradients based on epsilon with OutputLayer");
 
-        return calcBackpropGradients(epsilon, false);
+        return calcBackpropGradients(epsilon, false, false);
     }
 
     @Override
