@@ -164,12 +164,21 @@ public class KerasConvolutionUtils {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] kernelSize;
         if (kerasMajorVersion != 2) {
-            if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension >= 2
+            if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
-            /* 2D/3D Convolutional layers. */
+            /* 2D Convolutional layers. */
                 List<Integer> kernelSizeList = new ArrayList<>();
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
+                kernelSize = ArrayUtil.toArray(kernelSizeList);
+            } else if (innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_1()) && dimension == 3
+                    && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_2())
+                    && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_3())) {
+            /* 3D Convolutional layers. */
+                List<Integer> kernelSizeList = new ArrayList<>();
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_1()));
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_2()));
+                kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_3()));
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
             /* 1D Convolutional layers. */

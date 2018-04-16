@@ -185,6 +185,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_FIELD_DILATION_RATE = ""; // 1: atrous_rate, 2: dilation_rate
     private final String LAYER_FIELD_ZERO_PADDING = "padding";
     private final String LAYER_FIELD_CROPPING = "cropping";
+    private final String LAYER_FIELD_3D_KERNEL_1 = "kernel_dim1"; // keras 1 only
+    private final String LAYER_FIELD_3D_KERNEL_2 = "kernel_dim2"; // keras 1 only
+    private final String LAYER_FIELD_3D_KERNEL_3 = "kernel_dim3"; // keras 1 only
 
 
     /* Pooling / Upsampling layer properties */
