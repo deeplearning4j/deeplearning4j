@@ -104,9 +104,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
 
     public final static String WORKSPACE_CACHE = "LOOP_CACHE";
-    public final static String WORKSPACE_PRETRAIN = "LOOP_PTR";
-    public final static String WORKSPACE_TBPTT = "LOOP_TBPTT";
-    public final static String WORKSPACE_LSTM = "LOOP_LSTM";
 
     public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)

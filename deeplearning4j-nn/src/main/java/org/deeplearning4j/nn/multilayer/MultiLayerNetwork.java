@@ -483,23 +483,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Base class for initializing the neuralNets based on the input.
-     * This is meant for capturing numbers such as input columns or other things.
-     *
-     * @param input the input matrix for training
-     */
-    public void initializeLayers(INDArray input) {
-        if (input == null)
-            throw new IllegalArgumentException("Unable to initialize neuralNets with empty input");
-
-        this.input = input;
-        setInputMiniBatchSize(input.size(0));
-
-        if (!initCalled)
-            init();
-    }
-
-    /**
      * Initialize the MultiLayerNetwork. This should be called once before the network is used.
      * This is functionally equivalent to calling
      * {@code init(null, false)}.
@@ -1058,7 +1041,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     temp.setPreviousWorkspace(initialWorkspace);
 
                     if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, input.size(0), mgr);
+                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
                         //Validation: Exception if invalid (bad preprocessor implementation)
                         validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }
@@ -1212,10 +1195,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public List<INDArray> feedForward(INDArray input) {
         if (input == null)
             throw new IllegalStateException("Unable to perform feed forward; no input found");
-        else if (this.getLayerWiseConfigurations().getInputPreProcess(0) != null)
-            setInput(getLayerWiseConfigurations().getInputPreProcess(0).preProcess(input, input.size(0), null));    //TODO
-        else
-            setInput(input);
+        setInput(input);
         return feedForward();
     }
 
@@ -2406,7 +2386,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
         if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null) {
             inputToOutputLayer = getLayerWiseConfigurations().getInputPreProcess(layers.length - 1)
-                    .preProcess(inputToOutputLayer, input.size(0), mgr);
+                    .preProcess(inputToOutputLayer, data.getFeatures().size(0), mgr);
         }
         ol.setInput(inputToOutputLayer, mgr); //Feedforward doesn't include output layer for efficiency
         ol.setLabels(data.getLabels());
@@ -2616,8 +2596,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void setInput(INDArray input) {
         this.input = input;
         if (this.layers == null) {
-            log.info("setInput: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
-            this.initializeLayers(getInput());
+            init();
         }
         if (input != null) {
             if (input.length() == 0)
