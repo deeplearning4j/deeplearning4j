@@ -834,16 +834,16 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-    v->printShapeInfo("topK_1: shape v");
-    expV.printShapeInfo("topK_1: shape expV");
+//    v->printShapeInfo("topK_1: shape v");
+//    expV.printShapeInfo("topK_1: shape expV");
 
-    i->printShapeInfo("topK_1: shape I");
-    expI.printShapeInfo("topK_1: shape expI");
+//    i->printShapeInfo("topK_1: shape I");
+//    expI.printShapeInfo("topK_1: shape expI");
 
-    v->printIndexedBuffer("topK_1: v");
-    expV.printIndexedBuffer("topK_1: expV");
-    i->printIndexedBuffer("topK_1: i");
-    expI.printIndexedBuffer("topK_1: expI");
+//    v->printIndexedBuffer("topK_1: v");
+//    expV.printIndexedBuffer("topK_1: expV");
+//    i->printIndexedBuffer("topK_1: i");
+//    expI.printIndexedBuffer("topK_1: expI");
 
 
     ASSERT_TRUE(expV.isSameShape(v));
@@ -884,16 +884,16 @@ TEST_F(DeclarableOpsTests5, Test_TopK_2) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-    v->printShapeInfo("shape v");
-    expV.printShapeInfo("shape expV");
+//    v->printShapeInfo("shape v");
+//    expV.printShapeInfo("shape expV");
 
-    i->printShapeInfo("shape I");
-    expI.printShapeInfo("shape expI");
+//    i->printShapeInfo("shape I");
+//    expI.printShapeInfo("shape expI");
 
-    v->printIndexedBuffer("v");
-    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-    expI.printIndexedBuffer("expI");
+//    v->printIndexedBuffer("v");
+//    expV.printIndexedBuffer("expV");
+//    i->printIndexedBuffer("i");
+//    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -932,16 +932,16 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-    v->printShapeInfo("shape v");
-    expV.printShapeInfo("shape expV");
+//    v->printShapeInfo("shape v");
+//    expV.printShapeInfo("shape expV");
 
-    i->printShapeInfo("shape I");
-    expI.printShapeInfo("shape expI");
+//    i->printShapeInfo("shape I");
+//    expI.printShapeInfo("shape expI");
 
-    v->printIndexedBuffer("v");
-    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-    expI.printIndexedBuffer("expI");
+//    v->printIndexedBuffer("v");
+//    expV.printIndexedBuffer("expV");
+//    i->printIndexedBuffer("i");
+//    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -967,16 +967,16 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-    v->printShapeInfo("shape v");
-    expV.printShapeInfo("shape expV");
+//    v->printShapeInfo("shape v");
+//    expV.printShapeInfo("shape expV");
 
-    i->printShapeInfo("shape I");
-    expI.printShapeInfo("shape expI");
+//    i->printShapeInfo("shape I");
+//    expI.printShapeInfo("shape expI");
 
-    v->printIndexedBuffer("v");
-    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-    expI.printIndexedBuffer("expI");
+//    v->printIndexedBuffer("v");
+//    expV.printIndexedBuffer("expV");
+//    i->printIndexedBuffer("i");
+//    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -1002,17 +1002,17 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
     NDArray<float>* v = result->at(0);
     NDArray<float>* i = result->at(1);
 
-    x.printShapeInfo("shape of the source X");
-    v->printShapeInfo("shape v");
-    expV.printShapeInfo("shape expV");
+//    x.printShapeInfo("shape of the source X");
+//    v->printShapeInfo("shape v");
+//    expV.printShapeInfo("shape expV");
 
-    i->printShapeInfo("shape I");
-    expI.printShapeInfo("shape expI");
+//    i->printShapeInfo("shape I");
+//    expI.printShapeInfo("shape expI");
 
-    v->printIndexedBuffer("v");
-    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-    expI.printIndexedBuffer("expI");
+//    v->printIndexedBuffer("v");
+//    expV.printIndexedBuffer("expV");
+//    i->printIndexedBuffer("i");
+//    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));

@@ -19,18 +19,33 @@ void matrixSetDiag(const NDArray<T>* input, const NDArray<T>* diagonal, NDArray<
 
     *output = *input;
 
-    ResultSet<T>* listOut  = NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf()-2, output->rankOf()-1});
-    ResultSet<T>* listDiag = NDArrayFactory<T>::allTensorsAlongDimension(diagonal,{diagonal->rankOf()-1});
+//    ResultSet<T>* listOut  = NDArrayFactory<T>::allTensorsAlongDimension(output,  {output->rankOf()-2, output->rankOf()-1});
+//    ResultSet<T>* listDiag = NDArrayFactory<T>::allTensorsAlongDimension(diagonal,{diagonal->rankOf()-1});
 
     // TODO: tune this properlys
-#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
+//#pragma omp parallel for if(listOut->size() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
     // condition is hold: listOut->size() == listDiag->size()
-    for(int i = 0; i < listOut->size(); ++i)       
-    	for(int j = 0; j < diagonal->sizeAt(-1); ++j)
-        	(*listOut->at(i))(j,j) = (*listDiag->at(i))(j);            
+//    for(int i = 0; i < listOut->size(); ++i)       
+//    	for(int j = 0; j < diagonal->sizeAt(-1); ++j)
+//        	(*listOut->at(i))(j,j) = (*listDiag->at(i))(j);            
+//    
+//    delete listOut;
+//    delete listDiag;
+
+            *output = *input;
+
+            const int lastDimSize = input->sizeAt(-1);
+            const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);
+            const int lastSmallDim = diagonal->sizeAt(-1);
+            const int batchSize = input->lengthOf()/last2DimSize;
     
-    delete listOut;
-    delete listDiag;
+// #pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static) 
+            for(int i = 0; i < batchSize; ++i )
+                for(int j = 0; j < lastSmallDim; ++j) {
+                    (*output)(i*last2DimSize + j*(lastDimSize + 1)) = (*diagonal)(i*lastSmallDim + j);            
+                }
+             
+
 }
 
 

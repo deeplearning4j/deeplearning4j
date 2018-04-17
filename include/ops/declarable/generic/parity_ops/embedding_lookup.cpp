@@ -28,15 +28,10 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
     
     nd4j::ops::gather<T> op;
 
-    ResultSet<T>* result = op.execute({input, indeces}, {}, {0});
+    std::unique_ptr<ResultSet<T>> result(op.execute({input, indeces}, {}, {0}));
     REQUIRE_TRUE(result->status() == ND4J_STATUS_OK, 0, "embedding_lookup: cannot retrieve results from gather op.");
     REQUIRE_TRUE(result->at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
-    
-    //if (partition_mode) {
-        for (int e = 0; e < output->lengthOf(); e++)
-            (*output)(e) = result->at(0)->getScalar(e);
-    //}
-    delete result;
+    output->assign(result->at(0));
     return ND4J_STATUS_OK;
 }
 

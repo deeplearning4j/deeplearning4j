@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/diag.h>
 
 namespace nd4j {
     namespace ops {
@@ -14,14 +14,7 @@ namespace nd4j {
             // input validation
             REQUIRE_TRUE(input->rankOf() <= 3, 0, "CUSTOM_OP diag: rank of input array must be <= 3 !");
 
-            const int inLength = input->lengthOf();    
-
-            output->assign((T)0.);
-
-            // #pragma omp parallel for if(inLength > Environment::getInstance()->elementwiseThreshold()) schedule(static)         
-            for(int i = 0; i < inLength; ++i)
-    	        (*output)(i*(inLength+1)) = (*input)(i);
-    
+            helpers::diagFunctor(input, output);    
             return ND4J_STATUS_OK;
         }
         DECLARE_SYN(MatrixDiag, diag);

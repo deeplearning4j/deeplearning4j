@@ -80,7 +80,8 @@ namespace helpers {
         std::unique_ptr<NDArray<T>> compoundMatrix(new NDArray<T>(*input)); // copy
         std::unique_ptr<NDArray<T>> permutationMatrix(NDArrayFactory<T>::createUninitialized(input)); //put identity
         permutationMatrix->setIdentity();
-        
+
+//#pragma omp parallel for if(rowNum > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for(int i = 0; i < rowNum; i++ ) {
             T pivotValue = T(0.0);
             int pivot = -1;
@@ -127,9 +128,8 @@ namespace helpers {
         int n2 = n * n;
 
         std::unique_ptr<NDArray<T>> matrix(new NDArray<T>({n, n})); //, block.getWorkspace());
-
+//#pragma omp parallel for if(output->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
         for (int e = 0; e < output->lengthOf(); e++) {
-
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 (*matrix)(row++) = (*input)(k);
             }

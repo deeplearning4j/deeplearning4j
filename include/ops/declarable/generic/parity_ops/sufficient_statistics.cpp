@@ -1,9 +1,9 @@
 //
 // Created by george@skymind.io on 2/21/2018.
-//
+// Modified by sgazeos@gmail.com on 4/4/2018
 
 #include <ops/declarable/CustomOperations.h>
-
+#include <ops/declarable/helpers/axis.h>
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(sufficient_statistics, 2, 3, false, 0, 0) {
@@ -17,13 +17,7 @@ namespace nd4j {
             std::vector<int> axis(axisVector->lengthOf());//*block.getIArguments();
 
             // axis might be dynamic (i.e. tf mode)
-            for (int e = 0; e < axisVector->lengthOf(); e++) {
-                    int ca = (int) (*axisVector)(e);
-                    if (ca < 0)
-                        ca += input->rankOf();
-
-                    axis[e] = ca;
-            }
+            helpers::adjustAxis(input, axisVector, axis);
 
             input->template reduceAlongDimension<simdOps::SquaredNorm<T>>(squares, axis);
             input->template reduceAlongDimension<simdOps::Sum<T>>(sum, axis);

@@ -4,6 +4,7 @@
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/top_k.h>
 
 namespace nd4j {
     namespace ops {
@@ -18,27 +19,7 @@ namespace nd4j {
             REQUIRE_TRUE(target->rankOf() == 1, 0, "in_top_k: The target should be a vector");
 
             int k = INT_ARG(0);
-
-            nd4j::ops::top_k<T> op;
-            auto topKResult = op.execute({predictions}, {}, {k, 1}); // with sorting
-            if (topKResult->status() != ND4J_STATUS_OK)
-                return topKResult->status();
-            auto topKIndeces = topKResult->at(1);
-            for (int e = 0; e < target->lengthOf(); e++) {
-                bool found = false;
-                for (int j = 0; j < k; j++) {
-                    if (target->getScalar(e) == topKIndeces->getScalar(e * k + j)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                    result->putScalar(e, 1);
-                else
-                    result->putScalar(e, 0);
-            }
-            delete topKResult; // free memory from called operation
-            return ND4J_STATUS_OK;
+            return helpers::inTopKFunctor(predictions, target, result, k);
         }
 
         DECLARE_SHAPE_FN(in_top_k) {

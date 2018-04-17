@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-//#include <array>
+#include <ops/declarable/helpers/dynamic.h>
 
 namespace nd4j {
 namespace ops {
@@ -15,53 +15,17 @@ namespace ops {
             " both indeces and data lists with same length.");
         numOfData /= 2;
 
-        NDArray<T>* output = OUTPUT_VARIABLE(0); 
-        if (output->isVector()) {
-            for (int e = 0; e < numOfData; e++) {
-                NDArray<T>* data = INPUT_VARIABLE(numOfData + e);
-                NDArray<T>* index = INPUT_VARIABLE(e);
-                for (int i = 0; i < index->lengthOf(); i++) {
-                    int pos = (*index)(i);
-                    REQUIRE_TRUE(pos >= 0, 0, "dynamic_stitch: Index value should be non-negative."
-                        " But %i was given", pos);
-                    REQUIRE_TRUE(pos < output->lengthOf(), 0,
-                        "dynamic_stitch: Index should be less than %i. But %i was given",
-                        output->lengthOf(), pos);
-                    (*output)(pos) = (*data)(i);
-                }
-            }
-        }
-        else {
-        std::vector<int> restDims(output->rankOf() - 1);
-        for (int i = restDims.size(); i > 0;  i--)
-            restDims[restDims.size() - i] = output->rankOf() - i;
-
-        ResultSet<T>* listOfOutTensors = NDArrayFactory<T>::allTensorsAlongDimension(output, restDims);
-
+        NDArray<T>* output = OUTPUT_VARIABLE(0);
+        std::vector<NDArray<T>*> inputs(numOfData);
+        std::vector<NDArray<T>*> indices(numOfData);
         for (int e = 0; e < numOfData; e++) {
-            NDArray<T>* data = INPUT_VARIABLE(numOfData + e);
-            NDArray<T>* index = INPUT_VARIABLE(e);
-            std::vector<int> sourceDims(data->rankOf() - index->rankOf());
-            for (int i = sourceDims.size(); i > 0;  i--)
-                sourceDims[sourceDims.size() - i] = data->rankOf() - i;
-
-            ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(data, sourceDims);
-
-            for (int i = 0; i < index->lengthOf(); i++) {
-                int pos = (*index)(i);
-                REQUIRE_TRUE(pos >= 0, 0, "dynamic_stitch: Index value should be non-negative."
-                    " But %i was given", pos);
-                REQUIRE_TRUE(pos < output->lengthOf(), 0, 
-                    "dynamic_stitch: Index should be less than %i. But %i was given", 
-                    output->lengthOf(), pos);
-
-                listOfOutTensors->at(pos)->assign(listOfTensors->at(i));
-            }
-            delete listOfTensors;
+            NDArray<T> *data = INPUT_VARIABLE(numOfData + e);
+            NDArray<T> *index = INPUT_VARIABLE(e);
+            inputs[e] = data;
+            indices[e] = index;
         }
-        delete listOfOutTensors;
-        }
-        return ND4J_STATUS_OK;
+
+        return helpers::dynamicStitchFunctor(inputs, indices, output);
     }
 
     DECLARE_SHAPE_FN(dynamic_stitch) {

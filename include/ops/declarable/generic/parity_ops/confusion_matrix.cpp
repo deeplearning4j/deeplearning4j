@@ -7,6 +7,7 @@
 #include <NDArray.h>
 #include <array/NDArrayList.h>
 #include <array>
+#include <ops/declarable/helpers/confusion.h>
 
 namespace nd4j {
     namespace ops {
@@ -30,17 +31,7 @@ namespace nd4j {
             REQUIRE_TRUE(predictions->isVector(), 0, "CONFUSION_MATRIX: Predictions input should be Vector, but got %iD instead", predictions->rankOf());
             REQUIRE_TRUE(labels->isSameShape(predictions),0, "CONFUSION_MATRIX: Labels and predictions should have equal shape");
 
-            ResultSet<T>* arrs = NDArrayFactory<T>::allTensorsAlongDimension(output, {1});
-
-
-            for (int j = 0; j < labels->lengthOf(); ++j){
-                Nd4jIndex label = (*labels)(j);
-                Nd4jIndex pred = (*predictions)(j);
-                T value = (weights==nullptr) ? (T)1.0 : (*weights)(j);
-                (*arrs->at(label))(pred) = value;
-            }
-
-            delete arrs;
+            helpers::confusionFunctor(labels, predictions, weights, output);
 
             return ND4J_STATUS_OK;
         }

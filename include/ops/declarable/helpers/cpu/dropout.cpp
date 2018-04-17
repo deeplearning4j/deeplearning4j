@@ -30,7 +30,7 @@ namespace helpers {
             std::vector<int> dims(reduceShape->lengthOf());
         
             bool fit = true;
-        
+
             for( int i = 0; i < dims.size(); i++ ) {
                 dims[i] = (*reduceShape)(i);
                 for (int e = 0; e < input->rankOf(); ++e)

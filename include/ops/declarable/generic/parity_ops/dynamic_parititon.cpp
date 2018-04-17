@@ -1,9 +1,10 @@
 //
-//  @author @shugeo
+//  @author @shugeo <sgazeos@gmail.com>
 //
 
 #include <ops/declarable/CustomOperations.h>
 #include <array>
+#include <ops/declarable/helpers/dynamic.h>
 
 namespace nd4j {
 namespace ops {
@@ -11,46 +12,20 @@ namespace ops {
         NDArray<T>* input = INPUT_VARIABLE(0);
         NDArray<T>* indices = INPUT_VARIABLE(1);
 
-        //NDArray<T>* indexVector = ; // linearize to actualize
         REQUIRE_TRUE(input->rankOf() >= indices->rankOf(), 0, "dynamic_partition: data tensor rank should be non-lesser than indices\' tensor, but %i < %i given,",
             input->rankOf(), indices->rankOf());
         for (int dim = 0; dim < indices->rankOf(); dim++) {
             REQUIRE_TRUE(input->sizeAt(dim) == indices->sizeAt(dim), 0, "dynamic_partition: dimensions should be equals for data and indices tensors, but at %i %i != %i given", 
                 dim, input->sizeAt(dim), indices->sizeAt(dim));
         }
+
         int numPartition = INT_ARG(0);
-        std::vector<std::pair<NDArray<T>*, int>> outputs(numPartition);
-        if (input->rankOf() != indices->rankOf()) {
-            std::vector<int> sourceDims(input->rankOf() - indices->rankOf());
-
-            for (int i = sourceDims.size(); i > 0;  i--)
-                sourceDims[sourceDims.size() - i] = input->rankOf() - i;
-
-            std::unique_ptr<ResultSet<T>> listOfTensors(NDArrayFactory<T>::allTensorsAlongDimension(input, sourceDims));
-            for (int i = 0; i < numPartition; i++)
-            {
-                outputs[i].first = OUTPUT_VARIABLE(i);
-                std::vector<int> outDims(outputs[i].first->rankOf() - 1);
-                for (int k = 1; k < outputs[i].first->rankOf(); k++)
-                    outDims[k - 1] = k;
-                std::unique_ptr<ResultSet<T>> listOutForCurrent(NDArrayFactory<T>::allTensorsAlongDimension(outputs[i].first, outDims));
-                outputs[i].second = 0;
-                for (int e = 0; e < indices->lengthOf(); ++e)
-                    if ((*indices)(e) == T(i))
-                        listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
-            }
-            
+        std::vector<NDArray<T>*> outputList(numPartition);
+        for(int o = 0; o < numPartition; ++o) {
+            outputList[o] = OUTPUT_VARIABLE(o);
         }
-        else
-        for (int i = 0; i < numPartition; i++)
-        {
-            outputs[i].first = OUTPUT_VARIABLE(i);
-            outputs[i].second = 0;
-            for (int e = 0; e < indices->lengthOf(); ++e)
-                if ((*indices)(e) == T(i))
-                    outputs[i].first->putScalar(outputs[i].second++, (*input)(e));
-        }
-        
+        helpers::dynamicPartitionFunctor(input, indices, outputList);
+
         return ND4J_STATUS_OK;
     }
 

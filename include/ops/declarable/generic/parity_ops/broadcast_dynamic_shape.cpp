@@ -2,8 +2,8 @@
 //  @author raver119@gmail.com
 //
 
-//#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/bds.h>
 
 namespace nd4j {
     namespace ops {
@@ -17,26 +17,7 @@ namespace nd4j {
 
             NDArray<T>* output = OUTPUT_VARIABLE(0);
      
-            for (int e = 0, x = 0, y = 0; e < output->lengthOf(); e++) {
-                T val;
-                if (x < x_shape->lengthOf() && y < y_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max((*x_shape)(x++), (*y_shape)(y++));
-                }
-                else if (x < x_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max((*x_shape)(x++), (*y_shape)(y - 1));
-                }
-                else if (y < y_shape->lengthOf()) {
-                    val = nd4j::math::nd4j_max((*x_shape)(x - 1), (*y_shape)(y++));
-                }
-                else {
-                    //REQUIRE_TRUE(e < 0, 0, "broadcast_dynamic_shape: Wrong value in a shape vector");
-                    return ND4J_STATUS_OK;
-                }
-                if (e)
-                    REQUIRE_TRUE(val == (*output)(e - 1), 0, "broadcast_dynamic_shape: Input shapes should be compatible");
-                (*output)(e) = val;
-            }
-            return ND4J_STATUS_OK;
+            return helpers::bdsFunctor(x_shape, y_shape, output);
         }
 
         DECLARE_SHAPE_FN(broadcast_dynamic_shape) {

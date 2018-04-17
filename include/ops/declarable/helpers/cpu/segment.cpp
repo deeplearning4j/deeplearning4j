@@ -17,6 +17,7 @@ namespace helpers {
         int idx = static_cast<int>((*indices)(0));
         if (input->isVector()) {
             T val = (*input)(0);
+//#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == static_cast<int>((*indices)(e))) {
                    // max 
@@ -31,6 +32,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -44,6 +46,7 @@ namespace helpers {
             maxT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (static_cast<int>((*indices)(i)) == idx) {
+#pragma omp parallel for
                     for (int e = 0; e < maxT->lengthOf(); e++) {
                        (*maxT)(e) = nd4j::math::nd4j_max((*maxT)(e), (*listOfTensors->at(i))(e));
                     }
@@ -68,6 +71,7 @@ namespace helpers {
         int idx = static_cast<int>((*indices)(0));
         if (input->isVector()) {
             T val = (*input)(0);
+//#pragma omp parallel for
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == static_cast<int>((*indices)(e))) {
                    // min 
@@ -82,6 +86,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for 
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -95,6 +100,7 @@ namespace helpers {
             minT->assign(listOfTensors->at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (static_cast<int>((*indices)(i)) == idx) {
+#pragma omp parallel for if(minT->lengthOf() > Environment::getInstance()->elementwiseThreshold()) schedule(static)
                     for (int e = 0; e < minT->lengthOf(); e++) {
                        (*minT)(e) = nd4j::math::nd4j_min((*minT)(e), (*listOfTensors->at(i))(e));
                     }
@@ -136,6 +142,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -147,6 +154,7 @@ namespace helpers {
             T count = T(1.f);
             NDArray<T>* meanV = meanT->dup();
             meanV->assign(listOfTensors->at(0));
+//#pragma omp parallel for
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (static_cast<int>((*indices)(i)) == idx) {
                     for (int e = 0; e < meanT->lengthOf(); e++) {
@@ -192,6 +200,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
@@ -240,6 +249,7 @@ namespace helpers {
         }
         else {
             std::vector<int> restDims(input->rankOf() - 1);
+#pragma omp parallel for
             for (int e = 1; e < input->rankOf(); e++)
                 restDims[e - 1] = e;
             ResultSet<T>* listOfTensors = NDArrayFactory<T>::allTensorsAlongDimension(input, restDims);
