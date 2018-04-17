@@ -128,6 +128,28 @@ public class TestImageLoader {
 
     }
 
+    @Test
+    public void testToBufferedImageRGB() {
+        BufferedImage img = makeRandomBufferedImage(false);
+        int w = img.getWidth();
+        int h = img.getHeight();
+        int ch = 3;
+
+        ImageLoader loader = new ImageLoader(0, 0, ch);
+        INDArray arr = loader.toINDArrayBGR(img);
+        BufferedImage img2 = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
+        loader.toBufferedImageRGB(arr, img2);
+
+        for (int i = 0; i < h; ++i) {
+            for (int j = 0; j < w; ++j) {
+                int srcColor = img.getRGB(j, i);
+                int restoredColor = img2.getRGB(j, i);
+                assertEquals(srcColor, restoredColor);
+            }
+        }
+
+    }
+
     private BufferedImage makeRandomBufferedImage(boolean alpha) {
         int w = rng.nextInt() % 100 + 100;
         int h = rng.nextInt() % 100 + 100;

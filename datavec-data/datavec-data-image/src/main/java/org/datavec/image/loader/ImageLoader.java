@@ -399,14 +399,14 @@ public class ImageLoader extends BaseImageLoader {
             throw new IllegalArgumentException("Arr must be 3d");
 
         image = scalingIfNeed(image, arr.size(-2), arr.size(-1), true);
-        for (int i = 0; i < image.getWidth(); i++) {
-            for (int j = 0; j < image.getHeight(); j++) {
-                int r = arr.slice(0).getInt(i, j);
+        for (int i = 0; i < image.getHeight(); i++) {
+            for (int j = 0; j < image.getWidth(); j++) {
+                int r = arr.slice(2).getInt(i, j);
                 int g = arr.slice(1).getInt(i, j);
-                int b = arr.slice(2).getInt(i, j);
+                int b = arr.slice(0).getInt(i, j);
                 int a = 1;
                 int col = (a << 24) | (r << 16) | (g << 8) | b;
-                image.setRGB(i, j, col);
+                image.setRGB(j, i, col);
             }
         }
     }
