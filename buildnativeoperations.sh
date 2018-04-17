@@ -386,7 +386,7 @@ mkbuilddir() {
     if [ -n "$CHIP_EXTENSION" ]; then
         CHIP_DIR="$CHIP_DIR-$CHIP_EXTENSION"
     fi
-    if [ -n "$CHIP_VERSION" ]; then
+    if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
         CHIP_DIR="$CHIP_DIR-$CHIP_VERSION"
     fi
 

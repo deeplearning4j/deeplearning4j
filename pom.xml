@@ -198,9 +198,49 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.chip>cuda</libnd4j.chip>
+                <!-- Leave libnd4j.chip as is to build CPU version as well. -->
+                <!-- <libnd4j.chip>cuda</libnd4j.chip> -->
                 <libnd4j.classifier>${libnd4j.platform}-cuda-${libnd4j.cuda}</libnd4j.classifier>
             </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp.cppbuild.compile.cuda</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${compile.skip}</skip>
+                                    <buildCommand>
+                                        <program>bash</program>
+                                        <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                        <argument>--chip</argument>
+                                        <argument>cuda</argument>
+                                        <argument>--platform</argument>
+                                        <argument>${libnd4j.platform}</argument>
+                                        <argument>--chip-extension</argument>
+                                        <argument>${libnd4j.extension}</argument>
+                                        <argument>--chip-version</argument>
+                                        <argument>${libnd4j.cuda}</argument>
+                                        <argument>--compute</argument>
+                                        <argument>${libnd4j.compute}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
 
         <!-- If someone knows a better way to do this, please do let me know! -->
