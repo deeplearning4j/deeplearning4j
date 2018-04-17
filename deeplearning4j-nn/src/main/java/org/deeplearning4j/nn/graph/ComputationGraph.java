@@ -1208,7 +1208,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, vertices.length, getOutputLayerIndices(),
+            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, vertices.length-1, getOutputLayerIndices(),
                     fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
             if (!trainingListeners.isEmpty()) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
