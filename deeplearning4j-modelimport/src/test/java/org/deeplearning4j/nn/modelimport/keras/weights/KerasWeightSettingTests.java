@@ -48,6 +48,13 @@ public class KerasWeightSettingTests {
                 importEmbeddingLstm(embeddingLstmPath);
                 log.info("***** Successfully imported " + embeddingLstmPath);
 
+
+                if (version == 2) {
+                    String embeddingConv1dExtendedPath = "weights/embedding_conv1d_extended_" + backend + "_" + version + ".h5";
+                    importEmbeddingConv1DExtended(embeddingConv1dExtendedPath);
+                    log.info("***** Successfully imported " + embeddingConv1dExtendedPath);
+                }
+
                 if (version == 2) {
                     String embeddingConv1dPath = "weights/embedding_conv1d_" + backend + "_" + version + ".h5";
                     importEmbeddingConv1D(embeddingConv1dPath);
@@ -110,6 +117,15 @@ public class KerasWeightSettingTests {
 
     private static void importConv1DFlatten(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        int nOut = 6;
+        int inputLength = 10;
+        int mb = 42;
+        int kernel = 3;
+
+        INDArray input = Nd4j.zeros(mb, 1, inputLength);
+        INDArray output = model.output(input);
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
 
     private static void importBatchNormToConv2D(String modelPath) throws Exception {
@@ -160,6 +176,10 @@ public class KerasWeightSettingTests {
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
 
+    }
+
+    private static void importEmbeddingConv1DExtended(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
     }
 
     private static void importEmbeddingConv1D(String modelPath) throws Exception {
