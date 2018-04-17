@@ -6,12 +6,17 @@ package org.deeplearning4j.nn.workspace;
  * Array types:<br>
  * INPUT: The array set to the input field of a layer (i.e., input activations)<br>
  * ACTIVATIONS: The output activations for a layer's feed-forward method<br>
- * ACTIVATION_GRAD
- * FF_WORKING_MEM
- * BP_WORKING_MEM
- * RNN_FF_LOOP_WORKING_MEM
- * RNN_BP_LOOP_WORKING_MEM
- * UPDATER_WORKING_MEM
+ * ACTIVATION_GRAD: Activation gradient arrays - aka "epsilons" - output from a layer's backprop method<br>
+ * FF_WORKING_MEM: Working memory during feed-forward. Arrays allocated here will be invalidated once a layer's
+ *                 feed-forward method returns.<br>
+ * BP_WORKING_MEM: Working memory during backprop. Arrays allocated here will be invalidated once a layer's backprop
+ *                 method returns<br>
+ * RNN_FF_LOOP_WORKING_MEM: Working memory during a single time step of RNN forward pass. Opened/closed once per timestep
+ *                 for RNN layers only.<br>
+ * RNN_BP_LOOP_WORKING_MEM Working memory during a single time step of RNN backward pass. Opened/closed once per timestep
+ *                 for RNN layers only.
+ * UPDATER_WORKING_MEM: Working memory for updaters (like {@link org.nd4j.linalg.learning.config.Adam},
+ *                 {@link org.nd4j.linalg.learning.config.Nesterovs} etc.
  *
  * @author Alex Black
  */

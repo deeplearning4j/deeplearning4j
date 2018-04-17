@@ -86,6 +86,11 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
             mgr = new LayerWorkspaceMgr();
         }
 
+        /**
+         * Set the default to be scoped out for all array types.
+         * NOTE: Will not override the configuration for any array types that have already been configured
+         * @return Builder
+         */
         public Builder defaultNoWorkspace(){
             for(ArrayType t : ArrayType.values()){
                 if(!mgr.configMap.containsKey(t)){
@@ -95,20 +100,43 @@ public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
             return this;
         }
 
+        /**
+         * Specify that no workspace should be used for array of the specified type - i.e., these arrays should all
+         * be scoped out.
+         *
+         * @param type Array type to set scoped out for
+         * @return Builder
+         */
         public Builder noWorkspaceFor(ArrayType type){
             mgr.setScopedOutFor(type);
             return this;
         }
 
+        /**
+         * Set the default workspace for all array types to the specified workspace name/configuration
+         * NOTE: This will NOT override any settings previously set.
+         *
+         * @param workspaceName Name of the workspace to use for all (not set) arrray types
+         * @param configuration Configuration to use for all (not set) arrray types
+         * @return Builder
+         */
         public Builder defaultWorkspace(String workspaceName, WorkspaceConfiguration configuration){
             for(ArrayType t : ArrayType.values()){
-                if(!mgr.configMap.containsKey(t)){
+                if(!mgr.configMap.containsKey(t) && !mgr.isScopedOut(t)){
                     with(t, workspaceName, configuration);
                 }
             }
             return this;
         }
 
+        /**
+         * Configure the workspace (name, configuration) for the specified array type
+         *
+         * @param type          Array type
+         * @param workspaceName Workspace name for the specified array type
+         * @param configuration Configuration for the specified array type
+         * @return Builder
+         */
         public Builder with(ArrayType type, String workspaceName, WorkspaceConfiguration configuration){
             mgr.setConfiguration(type, configuration);
             mgr.setWorkspaceName(type, workspaceName);

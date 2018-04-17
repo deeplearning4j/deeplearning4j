@@ -804,7 +804,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param layerIndex
      * @param input
      * @param fMask
-     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACT_STORED
+     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
      * @return
      */
     protected List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
@@ -851,7 +851,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 if(fwdPassType == FwdPassType.STANDARD){
                     input = layers[i].activate(input, train, workspaceMgr);
-                } else if (fwdPassType == FwdPassType.RNN_ACT_STORED) {
+                } else if (fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, train,
                                 storeLastForTBPTT, workspaceMgr);
@@ -887,7 +887,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param layerIndex
      * @param input
      * @param fMask
-     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACT_STORED
+     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
      * @return
      */
     protected List<INDArray> ffToLayerTrain(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
@@ -928,7 +928,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 if(fwdPassType == FwdPassType.STANDARD){
                     input = layers[i].activate(input, true, workspaceMgr);
-                } else if(fwdPassType == FwdPassType.RNN_ACT_STORED){
+                } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
                     if (layers[i] instanceof RecurrentLayer) {
                         input = ((RecurrentLayer) layers[i]).rnnActivateUsingStoredState(input, true, storeLastForTBPTT, workspaceMgr);
                     } else if (layers[i] instanceof MultiLayerNetwork) {
@@ -2366,7 +2366,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         boolean tbptt = layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT;
-        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
+        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE : FwdPassType.STANDARD);
         synchronizeIterEpochCounts();
 
         //Calculate activations (which are stored in each layer, and used in backprop)
@@ -2811,7 +2811,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return Activations for each layer (including input, as per feedforward() etc)
      */
     public List<INDArray> rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACT_STORED, storeLastForTBPTT, layers.length-1, input, mask, null, false);
+        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE, storeLastForTBPTT, layers.length-1, input, mask, null, false);
     }
 
     /** Get the updater for this MultiLayerNetwork

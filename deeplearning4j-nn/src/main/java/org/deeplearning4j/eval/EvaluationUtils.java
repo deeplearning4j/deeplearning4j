@@ -176,7 +176,7 @@ public class EvaluationUtils {
             return new Pair<>(labels2d, predicted2d);
         }
 
-        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);  //TODO
+        INDArray oneDMask = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(outputMask, LayerWorkspaceMgr.noWorkspacesImmutable(), ArrayType.INPUT);
         float[] f = oneDMask.dup().data().asFloat();
         int[] rowsToPull = new int[f.length];
         int usedCount = 0;

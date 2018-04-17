@@ -1203,7 +1203,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         boolean tbptt = configuration.getBackpropType() == BackpropType.TruncatedBPTT;
-        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACT_STORED : FwdPassType.STANDARD);
+        FwdPassType fwdType = (tbptt ? FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE : FwdPassType.STANDARD);
         synchronizeIterEpochCounts();
 
         //Calculate activations (which are stored in each layer, and used in backprop)
@@ -1561,7 +1561,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param layerIndex
      * @param features
      * @param fMask
-     * @param storeLastForTBPTT ONLY used when fwdPassType == FwdPassType.RNN_ACT_STORED
+     * @param storeLastForTBPTT ONLY used when fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
      * @return
      */
     protected Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
@@ -1637,7 +1637,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                             //GraphNode
                             out = current.doForward(train, workspaceMgr);
                         }
-                    } else if(fwdPassType == FwdPassType.RNN_ACT_STORED ) {
+                    } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
@@ -1744,7 +1744,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     if(fwdPassType == FwdPassType.STANDARD){
                         out = current.doForward(false, workspaceMgr);
-                    } else if(fwdPassType == FwdPassType.RNN_ACT_STORED) {
+                    } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
                             if (l instanceof RecurrentLayer) {
@@ -2067,7 +2067,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
                     if (fwdPassType == FwdPassType.STANDARD) {
                         out = current.doForward(true, workspaceMgr);
-                    } else if( fwdPassType == FwdPassType.RNN_ACT_STORED ){
+                    } else if( fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
                         //TBPTT use case
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
@@ -3276,7 +3276,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     public Map<String, INDArray> rnnActivateUsingStoredState(INDArray[] inputs, boolean training,
                                                              boolean storeLastForTBPTT) {
-        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACT_STORED, storeLastForTBPTT, vertices.length-1,
+        return ffToLayerActivationsDetached(training, FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE, storeLastForTBPTT, vertices.length-1,
                 null, inputs, inputMaskArrays, labelMaskArrays, true);
     }
 
