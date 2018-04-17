@@ -1770,7 +1770,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 } else {
 
                     if(fwdPassType == FwdPassType.STANDARD){
-                        out = current.doForward(false, workspaceMgr);
+                        out = current.doForward(train, workspaceMgr);
                     } else if(fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE) {
                         if (current.hasLayer()) {
                             Layer l = current.getLayer();
