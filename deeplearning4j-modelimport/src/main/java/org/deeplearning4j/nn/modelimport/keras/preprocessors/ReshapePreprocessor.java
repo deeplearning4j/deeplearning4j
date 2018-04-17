@@ -25,8 +25,10 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
+import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.Arrays;
 
@@ -87,7 +89,10 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             this.miniBatchSize = miniBatchSize;
         }
         if (prod(input.shape()) == prod((targetShape))) {
-            return input.reshape(this.targetShape);
+            if(input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input)){
+                input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
+            }
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape(this.targetShape));
         } else {
             throw new IllegalStateException("Input shape " + Arrays.toString(input.shape())
                     + " and output shape" + Arrays.toString(inputShape) + " do not match");
@@ -101,7 +106,10 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                     + " (expected to be " + Arrays.toString(targetShape) + ")");
         }
         if (prod(output.shape()) == prod((targetShape))) {
-            return output.reshape(this.inputShape);
+            if(output.ordering() != 'c' || !Shape.hasDefaultStridesForShape(output)){
+                output = workspaceMgr.dup(ArrayType.ACTIVATIONS, output, 'c');
+            }
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, output.reshape(this.inputShape));
         } else {
             throw new IllegalStateException("Output shape" + Arrays.toString(output.shape())
                     + " and input shape" + Arrays.toString(targetShape) + " do not match");

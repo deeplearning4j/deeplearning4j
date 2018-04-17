@@ -82,27 +82,32 @@ public interface Layer extends Serializable, Cloneable, Model {
     /**Calculate the gradient relative to the error in the next layer
      * @param epsilon w^(L+1)*delta^(L+1). Or, equiv: dC/da, i.e., (dC/dz)*(dz/da) = dC/da, where C 
      * 	is cost function a=sigma(z) is activation.
-     * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is epsilon needed by next
-     *  layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
-     *  L, then return.getSecond() == (w^(L)*(delta^(L))^T)^T
+     * @param workspaceMgr Workspace manager
+     * @return Pair<Gradient,INDArray> where Gradient is gradient for this layer, INDArray is epsilon (activation gradient)
+     *   needed by next layer, but before element-wise multiply by sigmaPrime(z). So for standard feed-forward layer, if this layer is
+     *  L, then return.getSecond() == dL/dIn = (w^(L)*(delta^(L))^T)^T. Note that the returned array should be placed in the
+     *         {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATION_GRAD} workspace via the workspace manager
      */
     Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr);
 
 
     /**
-     * Trigger an activation with the last specified input
+     * Perform forward pass and return the activations array with the last set input
      * @param training  training or test mode
-     * @return the activation of the last specified input
+     * @param workspaceMgr Workspace manager
+     * @return the activation (layer output) of the last specified input. Note that the returned array should be placed
+     *         in the {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATIONS} workspace via the workspace manager
      */
     INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr);
 
     /**
-     * Initialize the layer with the given input
-     * and return the activation for this layer
-     * given this input
+     * Perform forward pass and return the activations array with the specified input
+     *
      * @param input the input to use
      * @param training  train or test mode
-     * @return
+     * @param mgr Workspace manager.
+     * @return Activations array. Note that the returned array should be placed in the
+     *         {@link org.deeplearning4j.nn.workspace.ArrayType#ACTIVATIONS} workspace via the workspace manager
      */
     INDArray activate(INDArray input, boolean training, LayerWorkspaceMgr mgr);
 
@@ -170,7 +175,7 @@ public interface Layer extends Serializable, Cloneable, Model {
     void setEpochCount(int epochCount);
 
     /**
-     * Get the layer input.
+     * Set the layer input.
      */
     void setInput(INDArray input, LayerWorkspaceMgr workspaceMgr);
 
