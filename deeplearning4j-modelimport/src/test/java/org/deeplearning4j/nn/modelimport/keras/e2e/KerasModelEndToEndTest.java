@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
@@ -272,6 +273,28 @@ public class KerasModelEndToEndTest {
         importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
     }
 
+    /**
+     * Reshape flat input into 3D to fit into an LSTM model
+     */
+    @Test
+    public void importFlatIntoLSTM() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
+    }
+
+
+
+    private void importFunctionalModelH5Test(String modelPath) throws Exception {
+        ClassPathResource modelResource =
+                new ClassPathResource(modelPath,
+                        KerasModelEndToEndTest.class.getClassLoader());
+        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false);
+        KerasModel model = builder.buildModel();
+        ComputationGraph graph = model.getComputationGraph();
+        System.out.println(graph.summary());
+    }
 
     private void importSequentialModelH5Test(String modelPath) throws Exception {
         ClassPathResource modelResource =
