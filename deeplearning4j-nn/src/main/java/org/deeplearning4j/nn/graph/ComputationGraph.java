@@ -1208,7 +1208,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, vertices.length-1, getOutputLayerIndices(),
+            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, -1, getOutputLayerIndices(),
                     fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
             if (!trainingListeners.isEmpty()) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -1706,7 +1706,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * If using NO workspaces, requires that no external workspace is open
      *
      * @param train             Training mode (true) or test/inference mode (false)
-     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use -1
      * @param excludeIdxs       Layers (vertices) to exclude from forward pass. These layers will be skipped, and hence
      *                          are usually output layers or at the end of the network. May be null.
      * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_ACTIVATE_WITH_STORED_STATE only)
@@ -1721,7 +1721,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
                                                             FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                             INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
-        Preconditions.checkArgument(layerIndex >= 0 && layerIndex < topologicalOrder.length,
+        Preconditions.checkArgument(layerIndex == -1 || (layerIndex >= 0 && layerIndex < topologicalOrder.length),
                 "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
         setInputs(input);
         setLayerMaskArrays(fMask, lMask);
@@ -1751,7 +1751,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         Map<String, INDArray> activations = new HashMap<>();
         //Do forward pass according to the topological ordering of the network
-        int stopIndex = ArrayUtils.indexOf(topologicalOrder, layerIndex);
+        int stopIndex;
+        if (layerIndex > 0) {
+            stopIndex = ArrayUtils.indexOf(topologicalOrder, layerIndex);
+        } else {
+            stopIndex = topologicalOrder.length -1;
+        }
         for (int i = 0; i <= stopIndex; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
             String vName = current.getVertexName();

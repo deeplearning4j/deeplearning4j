@@ -118,11 +118,11 @@ public class LayerVertex extends BaseGraphVertex {
     public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
         if (!canDoBackward()) {
             if(inputs == null || inputs[0] == null){
-                throw new IllegalStateException("Cannot do backward pass: inputs not set. Layer " + vertexName
-                        + " (idx " + vertexIndex + ") numInputs " + getNumInputArrays());
+                throw new IllegalStateException("Cannot do backward pass: inputs not set. Layer: \"" + vertexName
+                        + "\" (idx " + vertexIndex + "), numInputs: " + getNumInputArrays());
             } else {
-                throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer " + vertexName
-                        + " (idx " + vertexIndex + ") numInputs " + getNumInputArrays() + "; numOutputs "
+                throw new IllegalStateException("Cannot do backward pass: all epsilons not set. Layer \"" + vertexName
+                        + "\" (idx " + vertexIndex + "), numInputs :" + getNumInputArrays() + "; numOutputs: "
                         + getNumOutputConnections());
             }
         }
