@@ -15,11 +15,11 @@ public class NDArrayUtil {
     public static INDArray toNDArray(int[][] nums) {
         if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
-            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {nums[0].length, nums.length});
             return create;
         } else {
             float[] doubles = ArrayUtil.toFloats(nums);
-            INDArray create = Nd4j.create(doubles, new int[] {1, nums.length});
+            INDArray create = Nd4j.create(doubles, new int[] {nums[0].length, nums.length});
             return create;
         }
 
