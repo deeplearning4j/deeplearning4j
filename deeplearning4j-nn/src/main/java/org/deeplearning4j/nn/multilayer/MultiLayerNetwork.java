@@ -796,16 +796,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * FF - inference/test time, returning all array activations detached from any workspace.
-     * Note that no workspace should be active externally when calling this method
-     * Also:
-     * - Clear the inputs to each layer
+     * Feed-forward through the network - returning all array activations in a list, detached from any workspace.
+     * Note that no workspace should be active externally when calling this method (an exception will be thrown
+     * if a workspace is open externally)
      *
-     * @param layerIndex
-     * @param input
-     * @param fMask
+     * @param train             Training mode (true) or test/inference mode (false)
+     * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_ACTIVATE_WITH_STORED_STATE only)
      * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
-     * @return
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param input             Input to the network
+     * @param fMask             Feature mask array. May be null.
+     * @param lMask             Label mask array. May be null.
+     * @param clearInputs       Whether the layer inputs should be cleared
+     * @return List of activations (including the input), detached from any workspace
      */
     protected List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
                                                           boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
@@ -879,25 +882,29 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * FF - training time
-     * Note: if using workspaces for training, requires that WS_ALL_LAYERS_ACT is open externally.
-     * If using NO workspaces, requires that no external workspace is open
-     * - Don't clear the inputs to each layer - ensure they are in the WS_ALL_LAYERS_ACT workspace (for use in backprop, for example)
+     * Feed-forward through the network at training time - returning a list of all activations in a workspace (WS_ALL_LAYERS_ACT)
+     * if workspaces are enabled for training; or detached if no workspaces are used.<br>
+     * Note: if using workspaces for training, this method requires that WS_ALL_LAYERS_ACT is open externally.<br>
+     * If using NO workspaces, requires that no external workspace is open<br>
+     * Note that this method does NOT clear the inputs to each layer - instead, they are in the WS_ALL_LAYERS_ACT workspace
+     * for use in later backprop.
      *
-     * @param layerIndex
-     * @param input
-     * @param fMask
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_ACTIVATE_WITH_STORED_STATE only)
      * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
+     * @param input             Input to network
+     * @param fMask             Feature mask array. May be null
+     * @param lMask             Label mask aray. May be null.
      * @return
      */
-    protected List<INDArray> ffToLayerTrain(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                            @NonNull INDArray input, INDArray fMask, INDArray lMask){
+    protected List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
+                                                      @NonNull INDArray input, INDArray fMask, INDArray lMask){
         setInput(input);
         setLayerMaskArrays(fMask, lMask);
 
         LayerWorkspaceMgr workspaceMgr;
         if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerTrain when training workspace is set to NONE");
+            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in ffToLayerActivationsInWs when training workspace is set to NONE");
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
             workspaceMgr = LayerWorkspaceMgr.builder()
@@ -912,7 +919,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 workspaceMgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
             }
 
-            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerTrain method requires workspace WS_ALL_LAYERS_ACT to be open");
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
         }
 
         List<INDArray> out = new ArrayList<>();
@@ -952,26 +959,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     /**
-     * Provide the output of the specified layers.
-     * Note that the layer states will be cleared in this method
+     * Provide the output of the specified layer, detached from any workspace. This is most commonly used at inference/test
+     * time, and is more memory efficient than {@link #ffToLayerActivationsDetached(boolean, FwdPassType, boolean, int, INDArray, INDArray, INDArray, boolean)}
+     * and {@link #ffToLayerActivationsInWs(int, FwdPassType, boolean, INDArray, INDArray, INDArray)}.<br>
+     * This method clears all layer inputs.
      *
      * NOTE: in general, no workspaces should be activated externally for this method!
      * This method handles the workspace activation as required
      *
-     * @param layerIndex
-     * @param input
-     * @param featureMasks
-     * @return
+     * @param train             Training mode (true) or test/inference mode (false)
+     * @param fwdPassType       Type of forward pass to perform (STANDARD, RNN_TIMESTEP or RNN_ACTIVATE_WITH_STORED_STATE)
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param input             Input to the network
+     * @param featureMask       Input/feature mask array. May be null.
+     * @param labelsMask        Labels mask array. May be null
+     * @return                  Output of the specified layer, detached from any workspace
      */
     protected INDArray outputOfLayerDetached(boolean train, @NonNull FwdPassType fwdPassType, int layerIndex, @NonNull INDArray input,
-                                             INDArray featureMasks, INDArray labelsMask){
+                                             INDArray featureMask, INDArray labelsMask){
         setInput(input);
-        setLayerMaskArrays(featureMasks, labelsMask);
-
-        //TODO Destroy training workspaces, if present??
-
-        //TODO: allow flexibility to specify where the final output should be placed?
-        // But for now, just detach
+        setLayerMaskArrays(featureMask, labelsMask);
 
         /*
         Idea here: we want to minimize memory, and return only the final array
@@ -1097,78 +1104,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
 
         WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
-
-        return input;
-    }
-
-    /**
-     * Note: In general, workspace WS_ALL_LAYERS_ACT MUST be open outside of this method, if workspaces are used.
-     * This is because the layer inputs/activations will be stored there.
-     * Specifically, for training workspace mode:
-     * NONE: No workspace should be open
-     * Otherwise: WS_ALL_LAYERS_ACT must be open
-     *
-     *
-     * @param layerIndex
-     * @param input
-     * @param fMask
-     * @return
-     */
-    protected INDArray outputOfLayerTraining(int layerIndex, INDArray input, INDArray fMask, INDArray lMask){
-        setInput(input);
-        setLayerMaskArrays(fMask, lMask);
-
-        //TODO Destroy inference workspaces, if present??
-
-        //TODO: allow flexibility to specify where the final output should be placed?
-        // But for now, just detach
-
-        /*
-        Idea here: during training, we need to keep the layer input activations set, as we want to re-use them during backprop.
-        Need to ensure that the appropriate workspace is actually open
-         */
-        LayerWorkspaceMgr mgr;
-        if(layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE){
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active in outputOfLayerTraining when training workspace is set to NONE");
-            mgr = LayerWorkspaceMgr.noWorkspaces();
-        } else {
-            mgr = LayerWorkspaceMgr.builder()
-                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
-                    .build();
-
-            if(input.isAttached()){
-                //Don't leverage out of async DataSetIterator workspaces
-                mgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
-            }
-
-            //Require that WS_ALL_LAYERS_ACT is open:
-            if(!Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(WS_ALL_LAYERS_ACT)){
-                throw new IllegalStateException("outputOfLayerTraining requires workspace WS_ALL_LAYERS_ACT to be open");
-            }
-        }
-
-        for( int i=0; i<=layerIndex; i++ ){
-            try(MemoryWorkspace wsFFWorking = mgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
-                if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                    input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
-                    //Validation: Exception if invalid (bad preprocessor implementation)
-                    validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (training)");
-                }
-
-                if ( i == layerIndex ) {
-                    //Final activations: should be detached
-                    mgr.setScopedOutFor(ArrayType.ACTIVATIONS);
-                }
-
-                input = layers[i].activate(input, false, mgr);
-                //Validation: Exception if invalid (bad layer implementation)
-                validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (training)");
-                validateArrayWorkspaces(mgr, layers[i].input(), ArrayType.INPUT, i, false, "Output of layer (training)");
-            }
-        }
 
         return input;
     }
@@ -2374,7 +2309,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             //First: do a feed-forward through the network
             //Note that we don't actually need to do the full forward pass through the output layer right now; but we do
             // need the input to the output layer to be set (such that backprop can be done)
-            List<INDArray> activations = ffToLayerTrain(layers.length - 2, fwdType, tbptt, input, mask, null);
+            List<INDArray> activations = ffToLayerActivationsInWs(layers.length - 2, fwdType, tbptt, input, mask, null);
             if (!trainingListeners.isEmpty()) {
                 //TODO: We possibly do want output layer activations in some cases here...
                 for (TrainingListener tl : trainingListeners) {

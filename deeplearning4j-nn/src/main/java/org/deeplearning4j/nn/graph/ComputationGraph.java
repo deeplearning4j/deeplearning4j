@@ -1208,7 +1208,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         //Calculate activations (which are stored in each layer, and used in backprop)
         try(MemoryWorkspace wsAllActivations = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATIONS)) {
-            Map<String, INDArray> activations = feedForwardTraining(fwdType, tbptt, getOutputLayerIndices(), inputs, inputMaskArrays, labelMaskArrays);
+            Map<String, INDArray> activations = ffToLayerActivationsInWS(true, vertices.length, getOutputLayerIndices(),
+                    fwdType, tbptt, inputs, inputMaskArrays, labelMaskArrays, false);
             if (!trainingListeners.isEmpty()) {
                 try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                     for (TrainingListener tl : trainingListeners) {
@@ -1564,8 +1565,26 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param storeLastForTBPTT ONLY used when fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
      * @return
      */
+
+    /**
+     * Feed-forward through the network - returning all array activations detached from any workspace.
+     * Note that no workspace should be active externally when calling this method (an exception will be thrown
+     * if a workspace is open externally)
+     *
+     * @param train             Training mode (true) or test/inference mode (false)
+     * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_ACTIVATE_WITH_STORED_STATE only)
+     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param excludeIdxs       Layers (vertices) to exclude from forward pass. These layers will be skipped, and hence
+     *                          are usually output layers or at the end of the network. May be null.
+     * @param features          Input feature arrays
+     * @param fMask             Feature mask arrays. May be null.
+     * @param lMask             Label mask array. May be null.
+     * @param clearLayers       Whether the layer inputs should be cleared
+     * @return Map of activations (including the input), detached from any workspace
+     */
     protected Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                                int layerIndex, int[] excludeIdxs, INDArray[] features,
+                                                                int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
                                                                 INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
         Preconditions.checkArgument(layerIndex >= 0 && layerIndex < topologicalOrder.length,
                 "Invalid layer index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
@@ -1681,15 +1700,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * FF - training time
+     * Feed-forward through the network - if workspaces are used, all returned activations will be present in workspace
+     * WS_ALL_LAYERS_ACT.<br>
      * Note: if using workspaces for training, requires that WS_ALL_LAYERS_ACT is open externally.
      * If using NO workspaces, requires that no external workspace is open
-     * - Don't clear the inputs to each layer - ensure they are in the WS_ALL_LAYERS_ACT workspace (for use in backprop, for example)
      *
-     * @param layerIndex
-     * @param input
-     * @param fMask
-     * @return
+     * @param train             Training mode (true) or test/inference mode (false)
+     * @param layerIndex        Index (inclusive) to stop forward pass at. For all layers, use numLayers-1
+     * @param excludeIdxs       Layers (vertices) to exclude from forward pass. These layers will be skipped, and hence
+     *                          are usually output layers or at the end of the network. May be null.
+     * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_ACTIVATE_WITH_STORED_STATE only)
+     * @param storeLastForTBPTT ONLY used if fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE
+     * @param input             Input feature arrays
+     * @param fMask             Feature mask arrays. May be null.
+     * @param lMask             Label mask array. May be null.
+     * @param clearInputs       Whether the layer inputs should be cleared
+     * @return Map of activations (including the input), in workspace WS_ALL_LAYERS_ACT if workspaces are used (detached
+     * otherwise)
      */
     protected Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
                                                             FwdPassType fwdPassType, boolean storeLastForTBPTT,
@@ -1707,7 +1734,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
         } else {
-            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerTrain method requires workspace WS_ALL_LAYERS_ACT to be open");
+            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
 
             workspaceMgr = LayerWorkspaceMgr.builder()
                     .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
@@ -1790,14 +1817,23 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
 
     /**
-     * NOTE: no workspaces should be activated externally for this method!
-     * This method handles the workspace activation as required
-     * The outputs of this method are not attached to any workspace, regardless of workspace configuration
+     * Provide the output of the specified layers, detached from any workspace. This is most commonly used at inference/test
+     * time, and is more memory efficient than {@link #ffToLayerActivationsDetached(boolean, FwdPassType, boolean, int, int[], INDArray[], INDArray[], INDArray[], boolean)}
+     * and {@link #ffToLayerActivationsInWS(boolean, int, int[], FwdPassType, boolean, INDArray[], INDArray[], INDArray[], boolean)}.<br>
+     * This method clears all layer inputs.
      *
-     * @param layerIndexes Indexes of the layers
-     * @param features
-     * @param fMask
-     * @return
+     * NOTE: in general, no workspaces should be activated externally for this method!
+     * This method handles the workspace activation as required
+     *
+     * @param train             Training mode (true) or test/inference mode (false)
+     * @param fwdPassType       Type of forward pass to perform (STANDARD or RNN_TIMESTEP only)
+     * @param layerIndexes      Indexes of the layers to get the activations for
+     * @param features          Input features for the network
+     * @param fMask             Input/feature mask array. May be null.
+     * @param lMasks            Labels mask array. May be null
+     * @param clearLayerInputs  If true: the layer input fields will be cleared
+     * @param detachedInputs    If true: the layer input fields will be detached. Usually used for external errors cases
+     * @return                  Output of the specified layers, detached from any workspace
      */
     protected INDArray[] outputOfLayersDetached(boolean train, @NonNull FwdPassType fwdPassType, @NonNull int[] layerIndexes, @NonNull INDArray[] features,
                                                 INDArray[] fMask, INDArray[] lMasks, boolean clearLayerInputs, boolean detachedInputs){
