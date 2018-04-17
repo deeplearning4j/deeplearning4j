@@ -110,6 +110,15 @@ public class KerasWeightSettingTests {
 
     private static void importConv1DFlatten(String modelPath) throws Exception {
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
+
+        int nOut = 6;
+        int inputLength = 10;
+        int mb = 42;
+        int kernel = 3;
+
+        INDArray input = Nd4j.zeros(mb, 1, inputLength);
+        INDArray output = model.output(input);
+        assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength - kernel + 1});
     }
 
     private static void importBatchNormToConv2D(String modelPath) throws Exception {
