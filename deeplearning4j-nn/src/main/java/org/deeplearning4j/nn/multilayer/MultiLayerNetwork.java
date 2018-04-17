@@ -1042,15 +1042,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     // workspace may be set to the incorrect one
                     temp.setPreviousWorkspace(initialWorkspace);
 
-                    if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
-                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
-                        //Validation: Exception if invalid (bad preprocessor implementation)
-                        validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
-                    }
 
                     if(i == 0 && input.isAttached()){
                         //Don't leverage out of async DataSetIterator workspaces
                         mgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
+                    }
+
+                    if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
+                        input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), mgr);
+                        //Validation: Exception if invalid (bad preprocessor implementation)
+                        validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }
 
                     if ( i == layerIndex ) {

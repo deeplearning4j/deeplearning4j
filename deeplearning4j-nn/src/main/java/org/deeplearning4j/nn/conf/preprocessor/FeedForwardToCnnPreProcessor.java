@@ -84,7 +84,7 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         this.shape = input.shape();
         if (input.rank() == 4)
-            return input;
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
 
         if (input.columns() != inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
