@@ -20,6 +20,8 @@ KERAS_BACKEND=tensorflow python3 batchnorm_conv2d.py
 KERAS_BACKEND=theano python3 batchnorm_conv2d.py
 KERAS_BACKEND=tensorflow python3 space_to_depth_simple.py
 KERAS_BACKEND=tensorflow python3 space_to_depth_graph.py
+KERAS_BACKEND=tensorflow python3 conv1d_flatten.py
+KERAS_BACKEND=theano python3 conv1d_flatten.py
 
 pip3 install keras==2.1.3
 
@@ -41,3 +43,5 @@ KERAS_BACKEND=tensorflow python3 batchnorm_conv2d.py
 KERAS_BACKEND=theano python3 batchnorm_conv2d.py
 KERAS_BACKEND=tensorflow python3 space_to_depth_simple.py
 KERAS_BACKEND=tensorflow python3 space_to_depth_graph.py
+KERAS_BACKEND=tensorflow python3 conv1d_flatten.py
+KERAS_BACKEND=theano python3 conv1d_flatten.py
