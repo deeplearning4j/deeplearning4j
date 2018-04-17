@@ -260,6 +260,10 @@ public class KerasModelEndToEndTest {
         importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_generator.h5");
     }
 
+    @Test
+    public  void importCnn1d() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/cnn1d/cnn1d_flatten_tf_keras2.h5");
+    }
 
     /**
      * DGA classifier test
@@ -269,6 +273,8 @@ public class KerasModelEndToEndTest {
 //    public void importDgaClassifier() throws Exception {
 //        importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
 //    }
+
+
     private void importSequentialModelH5Test(String modelPath) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
