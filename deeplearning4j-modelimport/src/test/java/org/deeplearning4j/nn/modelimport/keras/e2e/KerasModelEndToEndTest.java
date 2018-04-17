@@ -225,11 +225,10 @@ public class KerasModelEndToEndTest {
     public void importDcganMnistDiscriminator() throws Exception {
         importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
     }
-    // TODO: here reshaping goes wrong!
-//    @Test
-//    public void importDcganMnistGenerator() throws Exception {
-//        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
-//    }
+    @Test
+    public void importDcganMnistGenerator() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
+    }
 
     /**
      * Deep convolutional GAN import test
@@ -268,11 +267,10 @@ public class KerasModelEndToEndTest {
     /**
      * DGA classifier test
      */
-    //   TODO: need to fix issue #4433 (3D output for Embedding layers) for this to work.
-//    @Test
-//    public void importDgaClassifier() throws Exception {
-//        importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
-//    }
+    @Test
+    public void importDgaClassifier() throws Exception {
+        importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
+    }
 
 
     private void importSequentialModelH5Test(String modelPath) throws Exception {
