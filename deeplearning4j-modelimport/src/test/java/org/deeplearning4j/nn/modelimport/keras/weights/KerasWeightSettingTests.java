@@ -48,6 +48,13 @@ public class KerasWeightSettingTests {
                 importEmbeddingLstm(embeddingLstmPath);
                 log.info("***** Successfully imported " + embeddingLstmPath);
 
+
+                if (version == 2) {
+                    String embeddingConv1dExtendedPath = "weights/embedding_conv1d_extended_" + backend + "_" + version + ".h5";
+                    importEmbeddingConv1DExtended(embeddingConv1dExtendedPath);
+                    log.info("***** Successfully imported " + embeddingConv1dExtendedPath);
+                }
+
                 if (version == 2) {
                     String embeddingConv1dPath = "weights/embedding_conv1d_" + backend + "_" + version + ".h5";
                     importEmbeddingConv1D(embeddingConv1dPath);
@@ -169,6 +176,10 @@ public class KerasWeightSettingTests {
         INDArray output = model.output(inEmbedding);
         assert Arrays.equals(output.shape(), new int[]{mb, nOut, inputLength});
 
+    }
+
+    private static void importEmbeddingConv1DExtended(String modelPath) throws Exception {
+        MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
     }
 
     private static void importEmbeddingConv1D(String modelPath) throws Exception {
