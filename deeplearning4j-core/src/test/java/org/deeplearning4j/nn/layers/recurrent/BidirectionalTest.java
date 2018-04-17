@@ -136,7 +136,7 @@ public class BidirectionalTest extends BaseDL4JTest {
     @Test
     public void compareImplementationsCompGraph(){
 //        for(WorkspaceMode wsm : WorkspaceMode.values()) {
-        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.SEPARATE}) {
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
             log.info("*** Starting workspace mode: " + wsm);
 
             //Bidirectional(GravesLSTM) and GravesBidirectionalLSTM should be equivalent, given equivalent params

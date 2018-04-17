@@ -46,7 +46,7 @@ public class WorkspaceTests extends BaseDL4JTest {
     @Test
     public void checkScopesTestCGAS() throws Exception {
         ComputationGraph c = createNet();
-        for (WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.SEPARATE, WorkspaceMode.SINGLE}) {
+        for (WorkspaceMode wm : new WorkspaceMode[]{WorkspaceMode.NONE, WorkspaceMode.ENABLED}) {
             log.info("Starting test: {}", wm);
             c.getConfiguration().setTrainingWorkspaceMode(wm);
             c.getConfiguration().setInferenceWorkspaceMode(wm);
@@ -79,8 +79,8 @@ public class WorkspaceTests extends BaseDL4JTest {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf.clone());
         net.init();
-        net.getLayerWiseConfigurations().setInferenceWorkspaceMode(WorkspaceMode.SEPARATE);
-        net.getLayerWiseConfigurations().setTrainingWorkspaceMode(WorkspaceMode.SEPARATE);
+        net.getLayerWiseConfigurations().setInferenceWorkspaceMode(WorkspaceMode.ENABLED);
+        net.getLayerWiseConfigurations().setTrainingWorkspaceMode(WorkspaceMode.ENABLED);
 
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf.clone());
         net2.init();

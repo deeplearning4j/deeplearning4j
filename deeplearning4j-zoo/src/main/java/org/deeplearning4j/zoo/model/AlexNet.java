@@ -48,14 +48,14 @@ public class AlexNet extends ZooModel {
     private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public AlexNet(int numLabels, long seed) {
-        this(numLabels, seed, WorkspaceMode.SEPARATE);
+        this(numLabels, seed, WorkspaceMode.ENABLED);
     }
 
     public AlexNet(int numLabels, long seed, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.ENABLED ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
@@ -90,7 +90,7 @@ public class AlexNet extends ZooModel {
                         .biasUpdater(new Nesterovs(2e-2, 0.9))
                         .convolutionMode(ConvolutionMode.Same)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
-                        .trainingWorkspaceMode(WorkspaceMode.SINGLE).inferenceWorkspaceMode(WorkspaceMode.SINGLE)
+                        .trainingWorkspaceMode(WorkspaceMode.ENABLED).inferenceWorkspaceMode(WorkspaceMode.ENABLED)
                         .dropOut(0.5).l2(5 * 1e-4).miniBatch(false)
                         .list().layer(0,
                                         new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
