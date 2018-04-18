@@ -922,6 +922,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if(layerWiseConfigurations.getCacheMode() != CacheMode.NONE){
                 //For now: store cache mode activations in activations workspace
                 workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
+                workspaceMgr.setWorkspace(ArrayType.BP_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG);
             }
 
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
@@ -952,6 +953,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 } else {
                     throw new IllegalStateException("FwdPassType not supported for this method: " + fwdPassType);
                 }
+
+                if(input == null){
+                    throw new IllegalStateException("Layer " + i + " returned null activations");
+                }
+
                 //Validation: Exception if invalid (bad layer implementation)
                 validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, false, "Feed forward to layer (training)");
                 validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (training)");

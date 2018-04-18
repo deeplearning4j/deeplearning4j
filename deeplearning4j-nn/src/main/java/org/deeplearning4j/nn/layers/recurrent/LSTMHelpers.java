@@ -152,6 +152,9 @@ public class LSTMHelpers {
                     outputActivations = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
                     toReturn.fwdPassOutput = outputActivations;
                 }
+            } else {
+                outputActivations = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
+                toReturn.fwdPassOutput = outputActivations;
             }
         } else {
             outputActivations = workspaceMgr.create(ArrayType.ACTIVATIONS, new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
@@ -214,13 +217,24 @@ public class LSTMHelpers {
                 INDArray inputActivations =
                         ifogActivations.get(NDArrayIndex.all(), NDArrayIndex.interval(0, hiddenLayerSize));
                 if (forBackprop) {
-                    cacheEnter(training, cacheMode, workspaceMgr);
-                    toReturn.iz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, inputActivations, 'f');
-                    cacheExit(training, cacheMode, workspaceMgr);
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.iz[time] = inputActivations.dup('f');
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.iz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, inputActivations, 'f');
+                    }
                 }
                 layer.layerConf().getActivationFn().getActivation(inputActivations, training);
-                if (forBackprop)
-                    toReturn.ia[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputActivations);
+                if (forBackprop){
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.ia[time] = inputActivations.dup('f');
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.ia[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputActivations);
+                    }
+                }
 
                 INDArray forgetGateActivations = ifogActivations.get(NDArrayIndex.all(),
                         NDArrayIndex.interval(hiddenLayerSize, 2 * hiddenLayerSize));
@@ -230,14 +244,25 @@ public class LSTMHelpers {
                 }
                 //Above line: treats matrix as a vector. Can only do this because we're sure both pwcelWFF and forgetGateACtivations are f order, offset 0 and have same strides
                 if (forBackprop && !sigmoidGates) {
-                    cacheEnter(training, cacheMode, workspaceMgr);
-                    toReturn.fz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, forgetGateActivations, 'f'); //Forget gate pre-out (z)
-                    cacheExit(training, cacheMode, workspaceMgr);
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.fz[time] = forgetGateActivations.dup('f'); //Forget gate pre-out (z)
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.fz[time] = workspaceMgr.dup(ArrayType.BP_WORKING_MEM, forgetGateActivations, 'f'); //Forget gate pre-out (z)
+                    }
                 }
                 gateActivationFn.getActivation(forgetGateActivations, training);
 
-                if (forBackprop)
-                    toReturn.fa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, forgetGateActivations);
+                if (forBackprop) {
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.fa[time] = forgetGateActivations.dup('f');
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.fa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, forgetGateActivations);
+                    }
+                }
 
 
                 INDArray inputModGateActivations = ifogActivations.get(NDArrayIndex.all(),
@@ -252,8 +277,15 @@ public class LSTMHelpers {
                     cacheExit(training, cacheMode, workspaceMgr);
                 }
                 gateActivationFn.getActivation(inputModGateActivations, training);
-                if (forBackprop)
-                    toReturn.ga[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputModGateActivations);
+                if (forBackprop){
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.ga[time] = inputModGateActivations.dup('f');
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.ga[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, inputModGateActivations);
+                    }
+                }
 
                 //Memory cell state
                 INDArray currentMemoryCellState;
@@ -282,8 +314,15 @@ public class LSTMHelpers {
                     cacheExit(training, cacheMode, workspaceMgr);
                 }
                 gateActivationFn.getActivation(outputGateActivations, training);
-                if (forBackprop)
-                    toReturn.oa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, outputGateActivations);   //TODO optimize without leverage
+                if (forBackprop) {
+                    if(shouldCache(training, cacheMode, workspaceMgr)){
+                        cacheEnter(training, cacheMode, workspaceMgr);
+                        toReturn.oa[time] = outputGateActivations.dup('f');
+                        cacheExit(training, cacheMode, workspaceMgr);
+                    } else {
+                        toReturn.oa[time] = workspaceMgr.leverageTo(ArrayType.BP_WORKING_MEM, outputGateActivations);   //TODO optimize without leverage
+                    }
+                }
 
 
                 ////////////// same as with iFogActivations - if we use cache, let's create this array right there
@@ -320,6 +359,11 @@ public class LSTMHelpers {
                     toReturn.memCellState[time] = currentMemoryCellState;
                     toReturn.memCellActivations[time] = currMemoryCellActivation;
 
+                    if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+                        toReturn.memCellActivations[time] = workspaceMgr.leverageTo(ArrayType.FF_CACHE, toReturn.memCellActivations[time]);
+                        toReturn.memCellState[time] = workspaceMgr.leverageTo(ArrayType.FF_CACHE, toReturn.memCellState[time]);
+                    }
+
                     if (cacheMode != CacheMode.NONE) {
                         outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
                     }
@@ -348,14 +392,18 @@ public class LSTMHelpers {
         return toReturn;
     }
 
+    private static boolean shouldCache(boolean training, CacheMode cacheMode, LayerWorkspaceMgr workspaceMgr){
+        return training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE);
+    }
+
     private static void cacheEnter(boolean training, CacheMode cacheMode, LayerWorkspaceMgr workspaceMgr){
-        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+        if (shouldCache(training, cacheMode, workspaceMgr)) {
             workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE);
         }
     }
 
     private static void cacheExit(boolean training, CacheMode cacheMode, LayerWorkspaceMgr workspaceMgr){
-        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+        if (shouldCache(training, cacheMode, workspaceMgr)) {
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceMgr.getWorkspaceName(ArrayType.FF_CACHE))
                     .notifyScopeLeft();
         }

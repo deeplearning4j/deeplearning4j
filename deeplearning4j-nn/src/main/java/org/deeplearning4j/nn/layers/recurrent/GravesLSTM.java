@@ -118,8 +118,11 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        if (cacheMode == null)
-            cacheMode = CacheMode.NONE;
+//        if (cacheMode == null)
+//            cacheMode = CacheMode.NONE;
+
+        //TODO LSTM cache mode is disabled for now - not passing all tests
+        cacheMode = CacheMode.NONE;
 
         if (forBackprop && cachedFwdPass != null) {
             FwdPassReturn ret = cachedFwdPass;
@@ -135,7 +138,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
-                        forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
+                        cacheMode, workspaceMgr);
 
 
         if (training && cacheMode != CacheMode.NONE) {

@@ -142,8 +142,11 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         applyDropOutIfNecessary(training, workspaceMgr);
 
-        if (cacheMode == null)
-            cacheMode = CacheMode.NONE;
+//        if (cacheMode == null)
+//            cacheMode = CacheMode.NONE;
+
+        //TODO LSTM cache mode is disabled for now - not passing all tests
+        cacheMode = CacheMode.NONE;
 
         if (forBackprop && cachedFwdPass != null) {
             FwdPassReturn ret = cachedFwdPass;

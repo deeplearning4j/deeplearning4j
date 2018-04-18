@@ -4,7 +4,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -54,6 +54,53 @@ public class CacheModeTest extends BaseDL4JTest {
                 .layer(new ConvolutionLayer.Builder().nOut(3).build())
                 .layer(new OutputLayer.Builder().nOut(10).build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+
+        return conf;
+    }
+
+    @Test
+    public void testLSTMCacheModeSimple(){
+
+        for(boolean graves : new boolean[]{true, false}) {
+
+            MultiLayerConfiguration conf1 = getConfLSTM(CacheMode.NONE, graves);
+            MultiLayerConfiguration conf2 = getConfLSTM(CacheMode.DEVICE, graves);
+
+            MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+            net1.init();
+            MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+            net2.init();
+
+            INDArray in = Nd4j.rand(new int[]{3, 3, 10});
+            INDArray labels = TestUtils.randomOneHotTimeSeries(3, 10, 10);
+
+            INDArray out1 = net1.output(in);
+            INDArray out2 = net2.output(in);
+            assertEquals(out1, out2);
+
+            assertEquals(net1.params(), net2.params());
+            net1.fit(in, labels);
+            net2.fit(in, labels);
+            assertEquals(net1.params(), net2.params());
+        }
+    }
+
+    private static MultiLayerConfiguration getConfLSTM(CacheMode cacheMode, boolean graves){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .activation(Activation.TANH)
+                .inferenceWorkspaceMode(WorkspaceMode.ENABLED)
+                .trainingWorkspaceMode(WorkspaceMode.ENABLED)
+                .seed(12345)
+                .cacheMode(cacheMode)
+                .list()
+                .layer(graves ?
+                        new GravesLSTM.Builder().nIn(3).nOut(3).build() :
+                        new LSTM.Builder().nIn(3).nOut(3).build())
+                .layer(graves ?
+                        new GravesLSTM.Builder().nIn(3).nOut(3).build() :
+                        new LSTM.Builder().nIn(3).nOut(3).build())
+                .layer(new RnnOutputLayer.Builder().nOut(10).build())
                 .build();
 
         return conf;
