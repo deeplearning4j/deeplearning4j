@@ -10,9 +10,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Unstack op conversion
@@ -93,5 +91,25 @@ public class Unstack extends DynamicCustomOp {
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
         throw new UnsupportedOperationException("No analog found for onnx for " + opName());
+    }
+
+    /*
+    This is required because number of outputs depends on the input shape.
+     */
+    @Override
+    public List<int[]> calculateOutputShape() {
+        List<int[]> ret = new ArrayList<int[]>();
+        int[] inputShape = arg().getShape();
+        int[] outputShape = new int[inputShape.length - 1];
+        for (int i = 0; i < axis; i++) {
+            outputShape[i] = inputShape[i];
+        }
+        for (int i = axis + 1; i < inputShape.length; i++) {
+            outputShape[i - 1] = inputShape[i];
+        }
+        for (int i = 0; i < inputShape[axis]; i++) {
+            ret.add(outputShape);
+        }
+        return ret;
     }
 }
