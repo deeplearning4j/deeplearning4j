@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -27,10 +29,6 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
         super(conf);
         this.cropping = ((org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D) conf.getLayer()).getCropping();
     }
-    @Override
-    public INDArray preOutput(boolean training) {
-        return activate(training);
-    }
 
     @Override
     public boolean isPretrainLayer() {
@@ -48,18 +46,18 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         int[] inShape = input.shape();
-        INDArray epsNext = Nd4j.create(inShape, 'c');
-        INDArray epsNextSubset = inputSubset(epsNext);
+        INDArray epsNext = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inShape, 'c');
+        INDArray epsNextSubset = inputSubset(epsNext, ArrayType.ACTIVATION_GRAD, workspaceMgr);
         epsNextSubset.assign(epsilon);
         return new Pair<>((Gradient) new DefaultGradient(), epsNext);
     }
 
 
     @Override
-    public INDArray activate(boolean training) {
-        return inputSubset(input);
+    public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        return inputSubset(input, ArrayType.ACTIVATIONS, workspaceMgr);
     }
 
     @Override
@@ -77,7 +75,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
         return 0;
     }
 
-    private INDArray inputSubset(INDArray from){
-        return from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1]));
+    private INDArray inputSubset(INDArray from, ArrayType arrayType, LayerWorkspaceMgr workspaceMgr){
+        return workspaceMgr.leverageTo(arrayType, from.get(all(), all(), interval(cropping[0], from.size(2)-cropping[1])));
     }
 }
