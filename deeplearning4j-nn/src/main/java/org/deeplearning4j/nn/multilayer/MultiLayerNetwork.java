@@ -81,8 +81,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfigurationCache;
-
 
 /**
  * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.
@@ -507,9 +505,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         layerWiseConfigurations.getInferenceWorkspaceMode(),
                         layerWiseConfigurations.getCacheMode());
 
-        if (layerWiseConfigurations.getCacheMode() == CacheMode.HOST) {
-            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
-        }
+        //TODO
+//        if (layerWiseConfigurations.getCacheMode() == CacheMode.HOST) {
+//            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
+//        }
 
         int nLayers = getnLayers();
 
@@ -918,6 +917,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if(input.isAttached()){
                 //Don't leverage out of async DataSetIterator workspaces
                 workspaceMgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
+            }
+
+            if(layerWiseConfigurations.getCacheMode() != CacheMode.NONE){
+                //For now: store cache mode activations in activations workspace
+                workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
 
             WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "ffToLayerActivationsInWs method requires workspace WS_ALL_LAYERS_ACT to be open");
@@ -2300,6 +2304,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .with(ArrayType.RNN_BP_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
                     .build();
+
+            if(layerWiseConfigurations.getCacheMode() != null){
+                //For now: store cache mode activations in activations workspace
+                mgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
+            }
         }
 
         boolean tbptt = layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT;

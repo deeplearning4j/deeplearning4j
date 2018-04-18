@@ -103,23 +103,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     private boolean initDone = false;
     protected boolean clearTbpttState = true;  //Mainly for unit testing (should be enabled otherwise)
 
-    public final static String WORKSPACE_CACHE = "LOOP_CACHE";
-
-    public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
-            .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME).build();
-
-    public final static WorkspaceConfiguration workspaceConfigurationLSTM = WorkspaceConfiguration.builder()
-            .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.FIRST_LOOP).build();
-
-    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
-            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
-            .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME).build();
-
     /**
      * Workspace for working memory for a single layer: forward pass and backward pass
      * Note that this is opened/closed once per op (activate/backpropGradient call)
@@ -429,9 +412,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         OneTimeLogger.info(log, "Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}], cacheMode set to [{}]",
                 configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode(), configuration.getCacheMode());
 
-        if (configuration.getCacheMode() == CacheMode.HOST) {
-            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
-        }
+        //TODO
+//        if (configuration.getCacheMode() == CacheMode.HOST) {
+//            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
+//        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
@@ -1547,7 +1531,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             } else {
                 clazz = v.getClass().getSimpleName();
             }
-            throw new IllegalStateException(op + ": array (" + arrayType + ") workspace validation failed (" +
+            throw new IllegalStateException(op + ": array (" + arrayType + ") workspace validation failed (vertex " +
                     vertexName + " - class: " + clazz + ") - array is defined in incorrect workspace", e);
         }
     }
@@ -1746,6 +1730,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if(input[0].isAttached()){
                 //Don't leverage out of async DataMultiSetIterator workspaces
                 workspaceMgr.setNoLeverageOverride(input[0].data().getParentWorkspace().getId());
+            }
+
+            if(configuration.getCacheMode() != CacheMode.NONE){
+                //For now: store cache mode activations in activations workspace
+                workspaceMgr.setWorkspace(ArrayType.FF_CACHE, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG);
             }
         }
 

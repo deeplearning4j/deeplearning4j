@@ -155,10 +155,8 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         INDArray z = preOutput(training, false, workspaceMgr);
 
         // we do cache only if cache workspace exists. Skip otherwise
-        if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
+        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+            try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
                 preOutput = z.unsafeDuplication();
             }
         }

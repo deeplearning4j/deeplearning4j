@@ -101,16 +101,16 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
     // return 4 dimensions
     public INDArray backprop(INDArray epsilons, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (epsilons.ordering() != 'c' || !Shape.hasDefaultStridesForShape(epsilons))
-            epsilons = workspaceMgr.dup(ArrayType.ACTIVATIONS, epsilons, 'c');
+            epsilons = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilons, 'c');
 
         if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
             if (epsilons.rank() == 2)
-                return epsilons; //should never happen
+                return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons); //should never happen
 
             return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
         }
 
-        return epsilons.reshape('c', shape);
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, epsilons.reshape('c', shape));
     }
 
 

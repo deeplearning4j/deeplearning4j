@@ -367,11 +367,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
-        if (cacheMode != CacheMode.NONE
-                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
-
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
+        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+            try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
                 i2d = im2col2d.unsafeDuplication();
             }
         }
@@ -393,10 +390,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray z = preOutput(training, false, workspaceMgr).getFirst();
 
         // we do cache only if cache workspace exists. Skip otherwise
-        if (training && cacheMode != CacheMode.NONE
-                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                            .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
+        if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {
+            try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
                 preOutput = z.unsafeDuplication();
             }
         }

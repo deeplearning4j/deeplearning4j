@@ -235,15 +235,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
         INDArray z = preOutput(training, false, workspaceMgr).getFirst();
 
-        // we do cache only if cache workspace exists. Skip otherwise
-        if (training && cacheMode != CacheMode.NONE
-                && Nd4j.getWorkspaceManager().checkIfWorkspaceExistsAndActive(ComputationGraph.WORKSPACE_CACHE)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.WORKSPACE_CACHE).notifyScopeBorrowed()) {
-                preOutput = z.unsafeDuplication();
-            }
-        }
-
         IActivation afn = layerConf().getActivationFn();
 
         if (helper != null && Shape.strideDescendingCAscendingF(z)) {
