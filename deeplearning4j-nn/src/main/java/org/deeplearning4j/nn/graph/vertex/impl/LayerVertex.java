@@ -247,7 +247,7 @@ public class LayerVertex extends BaseGraphVertex {
         }
         //Edge case: output layer - never did forward pass hence layer.setInput was never called...
         if(!setLayerInput){
-            applyPreprocessorAndSetInput(LayerWorkspaceMgr.noWorkspaces()); //TODO
+            applyPreprocessorAndSetInput(workspaceMgr);
         }
 
         IOutputLayer ol = (IOutputLayer)layer;

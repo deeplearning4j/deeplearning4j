@@ -119,7 +119,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         if (l1l2 != 0.0) {
             scoreArray.addi(l1l2);
         }
-        return scoreArray;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, scoreArray);
     }
 
     @Override

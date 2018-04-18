@@ -241,6 +241,6 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
             summedScores.addi(l1l2);
         }
 
-        return summedScores;
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, summedScores);
     }
 }
