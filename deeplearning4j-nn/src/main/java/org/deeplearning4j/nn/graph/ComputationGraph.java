@@ -1570,8 +1570,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                                 int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
                                                                 INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
-        Preconditions.checkArgument(layerIndex >= 0 && layerIndex < topologicalOrder.length,
-                "Invalid layer index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
+        if(layerIndex < 0 || layerIndex >= topologicalOrder.length){
+            throw new IllegalArgumentException("Invalid layer index - index must be >= 0 and < " + topologicalOrder.length
+                    + ", got index " + layerIndex);
+        }
+
         setInputs(features);
         setLayerMaskArrays(fMask, lMask);
 
@@ -1705,8 +1708,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     protected Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
                                                             FwdPassType fwdPassType, boolean storeLastForTBPTT,
                                                             INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
-        Preconditions.checkArgument(layerIndex == -1 || (layerIndex >= 0 && layerIndex < topologicalOrder.length),
-                "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndex);
+        if(layerIndex != -1 && (layerIndex < 0 || layerIndex >= topologicalOrder.length)){
+            throw new IllegalArgumentException("Invalid input index - index must be >= 0 and < " + topologicalOrder.length
+                    + ", got index " + layerIndex);
+        }
         setInputs(input);
         setLayerMaskArrays(fMask, lMask);
 
@@ -1831,11 +1836,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected INDArray[] outputOfLayersDetached(boolean train, @NonNull FwdPassType fwdPassType, @NonNull int[] layerIndexes, @NonNull INDArray[] features,
                                                 INDArray[] fMask, INDArray[] lMasks, boolean clearLayerInputs, boolean detachedInputs){
-        Preconditions.checkArgument(features.length == numInputArrays,
-                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
+        if(features.length != numInputArrays){
+            throw new IllegalArgumentException("Invalid number of input arrays: network has " + numInputArrays
+                    + " inputs, got " + features.length + " input arrays");
+        }
         for( int i=0; i<layerIndexes.length; i++ ) {
-            Preconditions.checkArgument(layerIndexes[i] >= 0 && layerIndexes[i] < topologicalOrder.length,
-                    "Invalid input index - index must be >= 0 and < %s, got index %s", topologicalOrder.length, layerIndexes[i]);
+            if(layerIndexes[i] < 0 || layerIndexes[i] >= topologicalOrder.length) {
+                throw new IllegalArgumentException("Invalid input index - index must be >= 0 and < " + topologicalOrder.length
+                        + ", got index " + layerIndexes[i]);
+            }
         }
         setInputs(features);
         setLayerMaskArrays(fMask, lMasks);
@@ -2037,104 +2046,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
 
         return outputs;
-    }
-
-    /**
-     * Note: In general, workspace WS_ALL_LAYERS_ACT MUST be open outside of this method, if workspaces are used.
-     * This is because the layer inputs/activations will be stored there.
-     * Specifically, for training workspace mode:
-     * NONE: No workspace should be open
-     * Otherwise: WS_ALL_LAYERS_ACT must be open
-     *
-     * After this method completes, all
-     *
-     * @param excludeLayerIndexes
-     * @param features
-     * @param fMask
-     * @return
-     */
-    protected Map<String,INDArray> feedForwardTraining(@NonNull FwdPassType fwdPassType, boolean storeLastForTbptt, int[] excludeLayerIndexes,
-                                                       @NonNull INDArray[] features, INDArray[] fMask, INDArray[] lMask){
-        Preconditions.checkArgument(features.length == numInputArrays,
-                "Invalid number of input arrays: network has %s inputs, got %s input arrays", numInputArrays, features.length);
-        setLayerMaskArrays(fMask, lMask);
-
-        LayerWorkspaceMgr workspaceMgr;
-        if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
-            WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active before call to outputOfLayersTraining");
-            workspaceMgr = LayerWorkspaceMgr.noWorkspaces();
-            //Verify that no workspace is open externally
-        } else {
-            WorkspaceUtils.assertOpenAndActive(WS_ALL_LAYERS_ACT, "outputOfLayersTraining method requires workspace WS_ALL_LAYERS_ACT to be open");
-
-            workspaceMgr = LayerWorkspaceMgr.builder()
-                    .with(ArrayType.FF_WORKING_MEM, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG)
-                    .with(ArrayType.RNN_FF_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM, WS_RNN_LOOP_WORKING_MEM_CONFIG)
-                    .with(ArrayType.INPUT, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .with(ArrayType.ACTIVATIONS, WS_ALL_LAYERS_ACT, WS_ALL_LAYERS_ACT_CONFIG)
-                    .build();
-        }
-
-        //Do forward pass according to the topological ordering of the network
-        Map<String,INDArray> activations = new HashMap<>();
-        for (int i = 0; i < topologicalOrder.length; i++) {
-            GraphVertex current = vertices[topologicalOrder[i]];
-            String vName = current.getVertexName();
-            int vIdx = current.getVertexIndex();
-
-            if(excludeLayerIndexes != null && ArrayUtils.contains(excludeLayerIndexes, vIdx)){
-                //Skip forward pass on the specified layer
-                continue;
-            }
-
-            try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
-                VertexIndices[] inputsTo = current.getOutputVertices();
-
-                INDArray out;
-                if (current.isInputVertex()) {
-                    out = inputs[vIdx];
-                } else {
-
-                    if (fwdPassType == FwdPassType.STANDARD) {
-                        out = current.doForward(true, workspaceMgr);
-                    } else if( fwdPassType == FwdPassType.RNN_ACTIVATE_WITH_STORED_STATE){
-                        //TBPTT use case
-                        if (current.hasLayer()) {
-                            Layer l = current.getLayer();
-                            if (l instanceof RecurrentLayer) {
-                                out = ((RecurrentLayer) l).rnnActivateUsingStoredState(current.getInputs()[0], true,
-                                        storeLastForTbptt, workspaceMgr);
-                            } else if (l instanceof MultiLayerNetwork) {
-                                List<INDArray> temp = ((MultiLayerNetwork) l).rnnActivateUsingStoredState(
-                                        current.getInputs()[0], true, storeLastForTbptt);
-                                out = temp.get(temp.size() - 1);
-                            } else {
-                                //non-recurrent layer
-                                out = current.doForward(true, workspaceMgr);
-                            }
-                        } else {
-                            out = current.doForward(true, workspaceMgr);
-                        }
-                    } else {
-                        throw new IllegalStateException("FwdPassType not supported for this method: " + fwdPassType);
-                    }
-
-                    validateArrayWorkspaces(workspaceMgr, out, ArrayType.ACTIVATIONS, vName, false, "Feed forward (training)");
-                }
-
-                activations.put(vName, out);
-
-                for (VertexIndices v : inputsTo) {
-                    //Note that we don't have to do anything special here: the activations are always detached in
-                    // this method
-                    int inputToIndex = v.getVertexIndex();
-                    int vIdxEdge = v.getVertexEdgeNumber();
-                    vertices[inputToIndex].setInput(vIdxEdge, out, workspaceMgr);
-                }
-            }
-        }
-
-        return activations;
     }
 
 
