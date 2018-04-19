@@ -68,6 +68,7 @@ public class KerasMerge extends KerasLayer {
     public KerasMerge(Map<String, Object> layerConfig, ElementWiseVertex.Op mergeMode, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
+        this.mergeMode = mergeMode;
         if (this.mergeMode == null)
             this.vertex = new MergeVertex();
         else
