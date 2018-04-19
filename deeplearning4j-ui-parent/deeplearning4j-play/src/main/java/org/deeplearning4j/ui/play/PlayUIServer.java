@@ -131,8 +131,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(remoteReceiverModule);
 
         //Check service loader mechanism (Arbiter UI, etc) for modules
-        //TODO AVOID DUPLICATES
-        uiModules.addAll(modulesViaServiceLoader());
+        modulesViaServiceLoader(uiModules);
 
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
@@ -235,23 +234,31 @@ public class PlayUIServer extends UIServer {
         return addr;
     }
 
-    private List<UIModule> modulesViaServiceLoader() {
+    private void modulesViaServiceLoader(List<UIModule> uiModules) {
 
         ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
         Iterator<UIModule> iter = sl.iterator();
 
         if (!iter.hasNext()) {
-            return Collections.emptyList();
+            return;
         }
 
-        List<UIModule> l = new ArrayList<>();
         while (iter.hasNext()) {
             UIModule m = iter.next();
-            log.debug("Loaded UI module via service loader: {}", m.getClass());
-            l.add(m);
-        }
+            Class<?> c = m.getClass();
+            boolean foundExisting = false;
+            for(UIModule mExisting : uiModules){
+                if(mExisting.getClass() == c){
+                    foundExisting = true;
+                    break;
+                }
+            }
 
-        return l;
+            if(!foundExisting) {
+                log.debug("Loaded UI module via service loader: {}", m.getClass());
+                uiModules.add(m);
+            }
+        }
     }
 
 
