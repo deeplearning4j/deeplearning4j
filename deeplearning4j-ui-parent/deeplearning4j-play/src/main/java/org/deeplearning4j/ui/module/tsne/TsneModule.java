@@ -66,6 +66,11 @@ public class TsneModule implements UIModule {
 
     }
 
+    @Override
+    public List<File> getInternationalizationResources() {
+        return Collections.emptyList();
+    }
+
     private Result listSessions() {
         List<String> list = new ArrayList<>(knownSessionIDs.keySet());
         if (uploadedFileLines != null) {

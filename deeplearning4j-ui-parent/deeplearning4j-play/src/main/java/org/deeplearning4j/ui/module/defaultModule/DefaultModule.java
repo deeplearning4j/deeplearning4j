@@ -7,6 +7,7 @@ import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -45,5 +46,10 @@ public class DefaultModule implements UIModule {
     @Override
     public void onDetach(StatsStorage statsStorage) {
 
+    }
+
+    @Override
+    public List<File> getInternationalizationResources() {
+        return Collections.emptyList();
     }
 }

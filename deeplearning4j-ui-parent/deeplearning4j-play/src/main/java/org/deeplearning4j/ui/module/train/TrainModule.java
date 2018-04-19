@@ -34,6 +34,7 @@ import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
 
+import java.io.File;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -1510,6 +1511,24 @@ public class TrainModule implements UIModule {
             return JSON.writeValueAsString(o);
         } catch (Exception e){
             throw new RuntimeException(e);
+        }
+    }
+
+
+    @Override
+    public List<File> getInternationalizationResources() {
+        List<File> files = new ArrayList<>();
+        String[] langs = new String[]{"de", "en", "ja", "ko", "ru", "zh"};
+        addAll(files, "train", langs);
+        addAll(files, "train.model", langs);
+        addAll(files, "train.overview", langs);
+        addAll(files, "train.system", langs);
+        return files;
+    }
+
+    private static void addAll(List<File> to, String prefix, String... suffixes){
+        for(String s : suffixes){
+            to.add(new File("/dl4j_i18n/" + prefix + "." + s));
         }
     }
 }

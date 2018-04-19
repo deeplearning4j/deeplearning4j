@@ -11,6 +11,7 @@ import play.mvc.Result;
 import play.mvc.Results;
 
 import javax.xml.bind.DatatypeConverter;
+import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -73,6 +74,11 @@ public class RemoteReceiverModule implements UIModule {
     @Override
     public void onDetach(StatsStorage statsStorage) {
         //No op
+    }
+
+    @Override
+    public List<File> getInternationalizationResources() {
+        return Collections.emptyList();
     }
 
     private Result receiveData() {

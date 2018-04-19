@@ -131,6 +131,7 @@ public class PlayUIServer extends UIServer {
         uiModules.add(remoteReceiverModule);
 
         //Check service loader mechanism (Arbiter UI, etc) for modules
+        //TODO AVOID DUPLICATES
         uiModules.addAll(modulesViaServiceLoader());
 
         for (UIModule m : uiModules) {

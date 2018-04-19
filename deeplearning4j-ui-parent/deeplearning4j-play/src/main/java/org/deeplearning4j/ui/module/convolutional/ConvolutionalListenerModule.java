@@ -15,6 +15,7 @@ import play.mvc.Result;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -75,6 +76,11 @@ public class ConvolutionalListenerModule implements UIModule {
     @Override
     public void onDetach(StatsStorage statsStorage) {
 
+    }
+
+    @Override
+    public List<File> getInternationalizationResources() {
+        return Collections.emptyList();
     }
 
     private Result getImage() {
