@@ -312,9 +312,9 @@ public class KerasModelEndToEndTest {
      * InceptionV3
      */
     @Test
-    @Ignore
     public void importInception() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_tf_keras_2.h5");
+        importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_v3_complete.h5");
+        importFunctionalModelH5Test("modelimport/keras/examples/inception/extended_inception_issue_4848.h5");
     }
 
     /**
