@@ -34,6 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
@@ -1372,5 +1373,52 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph net2 = TestUtils.testModelSerialization(net);
         INDArray out2 = net2.outputSingle(ds.getFeatures());
         assertEquals(out, out2);
+    }
+
+    @Test
+    public void scaleVertexGraphTest() {
+        final double scaleFactor = 2;
+        final double[] inputArr = new double[]{-2, -1, 0, 1, 2};//IntStream.rangeClosed(-2, 2).mapToDouble(i -> i).toArray();
+        final double[] expected = new double[inputArr.length];  //DoubleStream.of(inputArr).map(i -> i * scaleFactor).toArray();
+        for( int i=0; i<expected.length; i++ ){
+            expected[i] = inputArr[i] * scaleFactor;
+        }
+
+        final INDArray input = getInputArray4d(inputArr); // Replacing this line with the line below is enough to make test pass
+        //final INDArray input = Nd4j.create(new double[][]{inputArr});
+
+        final String inputName = "input";
+        final String outputName = "output";
+        final String scaleName = "scale";
+        final ComputationGraph graph = new ComputationGraph(new NeuralNetConfiguration.Builder()
+                //.inferenceWorkspaceMode(WorkspaceMode.NONE)
+                .graphBuilder()
+                .addInputs(inputName)
+                .setOutputs(outputName)
+                .setInputTypes(InputType.inferInputType(input))
+                .addVertex(scaleName, new ScaleVertex(scaleFactor), inputName)
+                .addLayer(outputName, new OutputLayer.Builder()
+                        .activation(new ActivationIdentity())
+                        .nOut(input.length())
+                        .biasInit(0)
+                        .build(), scaleName)
+                .build());
+        graph.init();
+
+        //graph.fit(new DataSet(input, Nd4j.ones(input.length()))); // Does not help
+        //graph.feedForward(new INDArray[] {input}, false); // Uncommenting this line is enough to make test pass
+
+        //Hack output layer to be identity mapping
+        graph.getOutputLayer(0).setParam("W", Nd4j.eye(input.length()));
+        graph.getOutputLayer(0).setParam("b", Nd4j.zeros(input.length()));
+        assertEquals("Incorrect output", Nd4j.create(expected), graph.outputSingle(input));
+    }
+
+    private static INDArray getInputArray4d(double[] inputArr) {
+        final INDArray input = Nd4j.create(1, 1, inputArr.length, 1);
+        for (int i = 0; i < input.length(); i++) {
+            input.putScalar(new int[]{0, 0, i, 0}, inputArr[i]);
+        }
+        return input;
     }
 }
