@@ -331,11 +331,16 @@ public class KerasModelEndToEndTest {
     @Test
     @Ignore
     public void importXception() throws Exception {
-        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/xception/xception_tf_keras_2.h5");
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape);
     }
 
-
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
+        return importFunctionalModelH5Test(modelPath, null);
+    }
+
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -343,11 +348,19 @@ public class KerasModelEndToEndTest {
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false);
+        if (inputShape != null) {
+            builder.inputShape(inputShape);
+        }
         KerasModel model = builder.buildModel();
         return model.getComputationGraph();
     }
 
     private void importSequentialModelH5Test(String modelPath) throws Exception {
+        importSequentialModelH5Test(modelPath, null);
+    }
+
+
+    private void importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -355,6 +368,9 @@ public class KerasModelEndToEndTest {
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false);
+        if (inputShape != null) {
+            builder.inputShape(inputShape);
+        }
         KerasSequentialModel model = builder.buildSequential();
         model.getMultiLayerNetwork();
     }
