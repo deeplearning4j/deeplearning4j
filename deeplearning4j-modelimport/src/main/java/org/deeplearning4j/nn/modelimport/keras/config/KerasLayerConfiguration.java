@@ -290,6 +290,7 @@ public class KerasLayerConfiguration {
     private final String KERAS_ACTIVATION_SOFTPLUS = "softplus";
     private final String KERAS_ACTIVATION_SOFTSIGN = "softsign";
     private final String KERAS_ACTIVATION_RELU = "relu";
+    private final String KERAS_ACTIVATION_RELU6 = "relu6";
     private final String KERAS_ACTIVATION_TANH = "tanh";
     private final String KERAS_ACTIVATION_SIGMOID = "sigmoid";
     private final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";

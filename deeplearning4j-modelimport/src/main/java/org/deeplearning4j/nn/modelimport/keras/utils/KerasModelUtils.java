@@ -242,7 +242,7 @@ public class KerasModelUtils {
                                 || layerName.contains("rnn") || layerName.contains("gru")
                                 || layerName.contains("embedding") || layerName.contains("batch")
                                 || layerName.contains("locally") || layerName.contains("bidirectional")) {
-                            if (!layerName.contains("pad")) {
+                            if (!layerName.contains("pad") && !layerName.contains("block")) {
                                 layerParamNames = weightsArchive.getDataSets(rootPrefix + baseAttributes);
                             } else {
                                 layerParamNames = Collections.emptyList();

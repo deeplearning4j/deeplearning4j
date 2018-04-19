@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -287,6 +288,42 @@ public class KerasModelEndToEndTest {
     @Test
     public void importResnet50() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/resnet/resnet50_weights_tf_dim_ordering_tf_kernels.h5");
+    }
+
+    /**
+     * DenseNet
+     */
+    @Test
+    public void importDenseNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/densenet/densenet121_tf_keras_2.h5");
+    }
+
+    /**
+     * MobileNet
+     */
+    @Test
+    @Ignore
+    // TODO: needs DepthwiseConv2D layer mapping
+    public void importMobileNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
+    }
+
+    /**
+     * InceptionV3
+     */
+    @Test
+    @Ignore
+    public void importInception() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_tf_keras_2.h5");
+    }
+
+    /**
+     * Xception
+     */
+    @Test
+    @Ignore
+    public void importXception() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/xception/xception_tf_keras_2.h5");
     }
 
 
