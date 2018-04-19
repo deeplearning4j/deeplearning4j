@@ -281,6 +281,13 @@ public class KerasModelEndToEndTest {
         importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
     }
 
+    /**
+     * ResNet50
+     */
+    @Test
+    public void importResnet50() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/resnet/resnet50_weights_tf_dim_ordering_tf_kernels.h5");
+    }
 
 
     private void importFunctionalModelH5Test(String modelPath) throws Exception {
