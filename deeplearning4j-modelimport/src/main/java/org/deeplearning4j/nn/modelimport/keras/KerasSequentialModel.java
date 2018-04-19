@@ -126,7 +126,7 @@ public class KerasSequentialModel extends KerasModel {
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        inferOutputTypes();
+        inferOutputTypes(null);
 
         /* Store weights in layers. */
         if (weightsArchive != null)

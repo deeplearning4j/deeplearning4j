@@ -161,7 +161,7 @@ public class KerasModel {
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        inferOutputTypes();
+        inferOutputTypes(null);
 
         /* Store weights in layers. */
         if (weightsArchive != null)
@@ -245,12 +245,15 @@ public class KerasModel {
      * Helper method called from constructor. Infers and records output type
      * for every layer.
      */
-    void inferOutputTypes()
+    void inferOutputTypes(int[] inputShape)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this.outputTypes = new HashMap<>();
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
+                if (inputShape != null) {
+                    layer.inputShape =inputShape;
+                }
                 outputType = layer.getOutputType();
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
             } else {
