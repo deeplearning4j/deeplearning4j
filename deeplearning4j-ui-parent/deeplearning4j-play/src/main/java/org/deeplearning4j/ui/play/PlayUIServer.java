@@ -26,8 +26,6 @@ import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.nd4j.linalg.primitives.Pair;
-import org.reflections.ReflectionUtils;
-import org.reflections.Reflections;
 import play.Mode;
 import play.api.routing.Router;
 import play.routing.RoutingDsl;
@@ -134,25 +132,6 @@ public class PlayUIServer extends UIServer {
 
         //Check service loader mechanism (Arbiter UI, etc) for modules
         uiModules.addAll(modulesViaServiceLoader());
-
-
-        //Check if custom UI modules are enabled...
-        String customModulePropertyStr = System.getProperty(UI_CUSTOM_MODULE_PROPERTY);
-        boolean useCustomModules = false;
-        if (customModulePropertyStr != null) {
-            useCustomModules = Boolean.parseBoolean(customModulePropertyStr);
-        }
-
-        if (useCustomModules) {
-            List<Class<?>> excludeClasses = new ArrayList<>();
-            for (UIModule u : uiModules) {
-                excludeClasses.add(u.getClass());
-            }
-            List<UIModule> list = getCustomUIModules(excludeClasses);
-            uiModules.addAll(list);
-        }
-
-
 
         for (UIModule m : uiModules) {
             List<Route> routes = m.getRoutes();
@@ -277,38 +256,6 @@ public class PlayUIServer extends UIServer {
 
     public static void main(String[] args) {
         new PlayUIServer().runMain(args);
-    }
-
-    private List<UIModule> getCustomUIModules(List<Class<?>> excludeClasses) {
-        //Scan classpath for UI module instances, but ignore the 'excludeClasses' classes
-        List<String> classNames = Collections.singletonList(UIModule.class.getName());
-        Reflections reflections = new Reflections();
-        org.reflections.Store store = reflections.getStore();
-        Iterable<String> subtypesByName =
-                        store.getAll(org.reflections.scanners.SubTypesScanner.class.getSimpleName(), classNames);
-        Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-
-        List<Class<?>> toCreate = new ArrayList<>();
-        for (Class<?> c : subtypeClasses) {
-            if (excludeClasses.contains(c))
-                continue;;
-            toCreate.add(c);
-        }
-
-        List<UIModule> ret = new ArrayList<>(toCreate.size());
-        for (Class<?> c : toCreate) {
-            UIModule m;
-            try {
-                m = (UIModule) c.newInstance();
-            } catch (Exception e) {
-                log.warn("Could not create instance of custom UIModule of type {}; skipping", c, e);
-                continue;
-            }
-            log.debug("Created instance of custom UI module: {}", c);
-            ret.add(m);
-        }
-
-        return ret;
     }
 
     @Override
