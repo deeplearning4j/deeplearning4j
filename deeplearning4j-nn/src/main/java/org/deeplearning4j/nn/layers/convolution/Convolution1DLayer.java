@@ -37,6 +37,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (epsilon.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Convolution1DLayer backprop with shape "
@@ -70,6 +71,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray,INDArray> preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         INDArray origInput = input;
         input = input.reshape(input.size(0), input.size(1), input.size(2), 1);
 

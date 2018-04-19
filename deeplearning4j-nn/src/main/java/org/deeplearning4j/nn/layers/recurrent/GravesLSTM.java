@@ -75,6 +75,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
                     final int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         final INDArray inputWeights = getParamWithNoise(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, true, workspaceMgr);
         final INDArray recurrentWeights = getParamWithNoise(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY, true, workspaceMgr); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
@@ -116,6 +117,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
 
 //        if (cacheMode == null)

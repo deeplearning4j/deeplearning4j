@@ -399,4 +399,16 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
             }
         }
     }
+
+    public void assertInputSet(boolean backprop){
+        if(input == null){
+            if(backprop){
+                throw new IllegalStateException("Cannot perform backprop in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
+            } else {
+                throw new IllegalStateException("Cannot perform forward pass in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
+            }
+        }
+    }
 }

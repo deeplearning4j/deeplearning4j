@@ -52,6 +52,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if(sameDiff == null){
             doInit();
         }
@@ -70,6 +71,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         throw new UnsupportedOperationException("Fitting DL4J SameDiff layers via backpropagation is not yet supported");
 
         /*
+        assertInputSet(true);
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;

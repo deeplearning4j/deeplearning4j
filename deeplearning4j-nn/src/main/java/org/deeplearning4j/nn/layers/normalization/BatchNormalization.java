@@ -92,6 +92,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         INDArray nextEpsilon;
         int[] shape = getShape(epsilon);
         int batchSize = epsilon.size(0); // number examples in batch
@@ -228,6 +229,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         return preOutput(input, training ? TrainingMode.TRAIN : TrainingMode.TEST, workspaceMgr);
     }
 

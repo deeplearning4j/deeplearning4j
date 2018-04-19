@@ -57,6 +57,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
@@ -159,6 +160,7 @@ public class RnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Rn
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());

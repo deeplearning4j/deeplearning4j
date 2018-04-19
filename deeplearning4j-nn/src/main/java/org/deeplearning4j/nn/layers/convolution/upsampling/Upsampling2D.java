@@ -79,6 +79,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
@@ -109,6 +110,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     }
 
     protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
 
         if (input.rank() != 4) {
@@ -147,6 +149,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
 
         if (cacheMode == null)

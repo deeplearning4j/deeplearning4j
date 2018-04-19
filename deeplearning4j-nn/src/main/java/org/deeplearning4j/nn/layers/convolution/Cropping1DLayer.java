@@ -57,6 +57,7 @@ public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         return inputSubset(input, ArrayType.ACTIVATIONS, workspaceMgr);
     }
 

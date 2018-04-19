@@ -59,6 +59,7 @@ public class Upsampling1D extends Upsampling2D {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         int size = ((BaseUpsamplingLayer) layerConf()).getSize();
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
@@ -106,6 +107,7 @@ public class Upsampling1D extends Upsampling2D {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())

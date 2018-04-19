@@ -55,7 +55,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-
+        assertInputSet(true);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
@@ -137,7 +137,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-
         if (convolutionMode == ConvolutionMode.Same) {
             throw new IllegalArgumentException("Border mode Same currently not supported.");
         }
@@ -224,9 +223,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
+        assertInputSet(false);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;

@@ -44,6 +44,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         int[] inShape = input.shape();
 
         INDArray epsNext = epsilon.get(NDArrayIndex.all(), NDArrayIndex.all(),
@@ -57,6 +58,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         int[] inShape = input.shape();
         int outH = inShape[2] + padding[0] + padding[1];
         int outW = inShape[3] + padding[2] + padding[3];

@@ -55,6 +55,7 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         INDArray ret = inputSubset(input);
         ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
         workspaceMgr.validateArrayLocation(ArrayType.ACTIVATIONS, ret, false, false);

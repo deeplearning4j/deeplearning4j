@@ -53,6 +53,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
@@ -90,6 +91,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     protected INDArray preOutput2d(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;

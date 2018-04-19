@@ -61,7 +61,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-
+        assertInputSet(true);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
@@ -147,7 +147,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
     @Override
     protected Pair<INDArray, INDArray> preOutput(boolean training , boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-
+        assertInputSet(false);
         INDArray bias = getParamWithNoise(SeparableConvolutionParamInitializer.BIAS_KEY, training, workspaceMgr);
         INDArray depthWiseWeights =
                 getParamWithNoise(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY, training, workspaceMgr);
@@ -232,9 +232,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
+        assertInputSet(false);
 
         if (cacheMode == null)
             cacheMode = CacheMode.NONE;

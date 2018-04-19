@@ -73,9 +73,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
-        }
+        assertInputSet(false);
 
         INDArray ret;
         if(!training){

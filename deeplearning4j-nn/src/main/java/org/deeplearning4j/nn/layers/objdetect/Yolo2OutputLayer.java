@@ -90,7 +90,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
     }
 
     private INDArray computeBackpropGradientAndScore(LayerWorkspaceMgr workspaceMgr, boolean scoreOnly){
-
+        assertInputSet(true);
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
 
@@ -328,6 +328,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         return YoloUtils.activate(layerConf().getBoundingBoxes(), input, workspaceMgr);
     }
 

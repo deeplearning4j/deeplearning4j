@@ -112,6 +112,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
+
         int miniBatch = input.size(0);
         int inDepth = input.size(1);
         int inH = input.size(2);
@@ -285,6 +287,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         if (training && !dropoutApplied && layerConf().getIDropout() != null) {
             applyDropOutIfNecessary(true, workspaceMgr);
         }

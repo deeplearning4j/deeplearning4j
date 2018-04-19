@@ -659,6 +659,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (!zeroedPretrainParamGradients) {
             for (Map.Entry<String, INDArray> entry : gradientViews.entrySet()) {
                 if (isPretrainParam(entry.getKey())) {
@@ -735,9 +736,7 @@ public class VariationalAutoencoder implements Layer {
 
 
     private VAEFwdHelper doForward(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalStateException("Cannot do forward pass with null input " + layerId());
-        }
+        assertInputSet(false);
 
         //TODO input validation
 
@@ -1120,6 +1119,18 @@ public class VariationalAutoencoder implements Layer {
             //Re: the activation identity here - the reconstruction array already has the activation function applied,
             // so we don't want to apply it again. i.e., we are passing the output, not the pre-output.
             return lossFunction.computeScoreArray(data, reconstruction, new ActivationIdentity(), null);
+        }
+    }
+
+    public void assertInputSet(boolean backprop){
+        if(input == null){
+            if(backprop){
+                throw new IllegalStateException("Cannot perform backprop in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
+            } else {
+                throw new IllegalStateException("Cannot perform forward pass in layer " + getClass().getSimpleName()
+                        + ": layer input field is not set");
+            }
         }
     }
 }

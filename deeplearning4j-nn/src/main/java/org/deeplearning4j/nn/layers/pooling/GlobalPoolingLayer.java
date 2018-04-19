@@ -91,9 +91,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
-        if (input == null) {
-            throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
-        }
+        assertInputSet(false);
 
         int[] poolDim;
         if (input.rank() == 3) {
@@ -222,6 +220,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         if (!collapseDimensions && epsilon.rank() != 2) {
             int[] origShape = epsilon.shape();

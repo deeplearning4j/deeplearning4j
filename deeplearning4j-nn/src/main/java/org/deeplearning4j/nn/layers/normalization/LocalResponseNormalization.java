@@ -120,6 +120,7 @@ public class LocalResponseNormalization
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, k, n, alpha, beta, workspaceMgr);
             if (ret != null) {
@@ -155,6 +156,7 @@ public class LocalResponseNormalization
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         k = layerConf().getK();
         n = layerConf().getN();
         alpha = layerConf().getAlpha();

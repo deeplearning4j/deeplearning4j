@@ -64,6 +64,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         INDArray temp = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, input, input.ordering());
         INDArray delta = layerConf().getActivationFn().backprop(temp, epsilon).getFirst(); //TODO handle activation function params
         if(delta == epsilon ){
@@ -78,9 +79,7 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr mgr) {
-        if (input == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
+        assertInputSet(false);
         applyDropOutIfNecessary(training, mgr);
 
         INDArray in;

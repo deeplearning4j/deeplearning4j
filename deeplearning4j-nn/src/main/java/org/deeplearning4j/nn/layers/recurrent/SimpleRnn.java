@@ -64,6 +64,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Pair<Gradient, INDArray> tbpttBackpropGradient(INDArray epsilon, int tbpttBackLength, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
         if(epsilon.ordering() != 'f' || !Shape.hasDefaultStridesForShape(epsilon))
             epsilon = epsilon.dup('f');
 
@@ -157,6 +158,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
     }
 
     private Pair<INDArray,INDArray> activateHelper(INDArray prevStepOut, boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr){
+        assertInputSet(false);
         applyDropOutIfNecessary(training, workspaceMgr);
         int m = input.size(0);
         int tsLength = input.size(2);

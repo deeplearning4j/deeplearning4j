@@ -85,6 +85,7 @@ public class GravesBidirectionalLSTM
 
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
                     final int tbpttBackwardLength, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(true);
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
@@ -160,6 +161,7 @@ public class GravesBidirectionalLSTM
     }
 
     private INDArray activateOutput(final boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
+        assertInputSet(false);
         final FwdPassReturn forwardsEval;
         final FwdPassReturn backwardsEval;
 
