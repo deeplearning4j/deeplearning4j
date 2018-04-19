@@ -1212,7 +1212,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach,
-                            storageLevel, true, repartitionStrategy, repartition, threshold, minThreshold,
+                            storageLevel, collectTrainingStats, repartitionStrategy, repartition, threshold, minThreshold,
                             thresholdStep, stepTrigger, stepDelay, shakeFrequency, batchSize, debugLongerIterations,
                             numWorkersPerNode);
             if (transport != null)
