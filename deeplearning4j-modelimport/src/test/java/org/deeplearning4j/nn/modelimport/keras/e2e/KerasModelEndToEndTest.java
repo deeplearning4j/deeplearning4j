@@ -133,8 +133,8 @@ public class KerasModelEndToEndTest {
     /**
      * IMDB Embedding and LSTM test
      */
-    // TODO: Need to reshape input to 3D to check predictions
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
@@ -142,6 +142,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
@@ -149,6 +150,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
@@ -156,6 +158,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmThKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
@@ -312,9 +315,10 @@ public class KerasModelEndToEndTest {
      * InceptionV3
      */
     @Test
+    @Ignore
+    // Take unreasonably long, but work
     public void importInception() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_v3_complete.h5");
-        importFunctionalModelH5Test("modelimport/keras/examples/inception/extended_inception_issue_4848.h5");
     }
 
     /**
