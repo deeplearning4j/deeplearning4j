@@ -29,6 +29,7 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
@@ -54,6 +55,8 @@ public class TrainModule implements UIModule {
     public static final String CHART_MAX_POINTS_PROPERTY = "org.deeplearning4j.ui.maxChartPoints";
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private enum ModelType {
         MLN, CG, Layer
@@ -229,7 +232,7 @@ public class TrainModule implements UIModule {
     }
 
     private Result listSessions() {
-        return Results.ok(Json.toJson(knownSessionIDs.keySet()));
+        return Results.ok(asJson(knownSessionIDs.keySet())).as("application/json");
     }
 
     private Result sessionInfo() {
@@ -288,7 +291,7 @@ public class TrainModule implements UIModule {
             dataEachSession.put(sid, dataThisSession);
         }
 
-        return ok(Json.toJson(dataEachSession));
+        return Results.ok(asJson(dataEachSession)).as("application/json");
     }
 
     private Result setSession(String newSessionID) {
@@ -593,7 +596,7 @@ public class TrainModule implements UIModule {
 
         result.put("model", modelInfo);
 
-        return Results.ok(Json.toJson(result));
+        return Results.ok(asJson(result)).as("application/json");
     }
 
     private Result getModelGraph() {
@@ -611,7 +614,7 @@ public class TrainModule implements UIModule {
         TrainModuleUtils.GraphInfo gi = getGraphInfo();
         if (gi == null)
             return ok();
-        return ok(Json.toJson(gi));
+        return Results.ok(asJson(gi)).as("application/json");
     }
 
     private TrainModuleUtils.GraphInfo getGraphInfo() {
@@ -688,12 +691,12 @@ public class TrainModule implements UIModule {
 
         Triple<MultiLayerConfiguration, ComputationGraphConfiguration, NeuralNetConfiguration> conf = getConfig();
         if (conf == null) {
-            return ok(Json.toJson(result));
+            return Results.ok(asJson(result)).as("application/json");
         }
 
         TrainModuleUtils.GraphInfo gi = getGraphInfo();
         if (gi == null) {
-            return ok(Json.toJson(result));
+            return Results.ok(asJson(result)).as("application/json");
         }
 
 
@@ -784,7 +787,7 @@ public class TrainModule implements UIModule {
         Map<String, Object> updateHistograms = getHistograms(layerIdx, gi, StatsType.Updates, lastUpdate);
         result.put("updateHist", updateHistograms);
 
-        return ok(Json.toJson(result));
+        return Results.ok(asJson(result)).as("application/json");
     }
 
     public Result getSystemData() {
@@ -828,8 +831,7 @@ public class TrainModule implements UIModule {
         ret.put("hardware", hwSwInfo.getFirst());
         ret.put("software", hwSwInfo.getSecond());
 
-
-        return ok(Json.toJson(ret));
+        return Results.ok(asJson(ret)).as("application/json");
     }
 
     private static String getLayerType(Layer layer) {
@@ -1500,5 +1502,14 @@ public class TrainModule implements UIModule {
         private Map<String, List<Double>> ratios;
         private Map<String, List<Double>> paramMM;
         private Map<String, List<Double>> updateMM;
+    }
+
+
+    private static final String asJson(Object o){
+        try{
+            return JSON.writeValueAsString(o);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
     }
 }
