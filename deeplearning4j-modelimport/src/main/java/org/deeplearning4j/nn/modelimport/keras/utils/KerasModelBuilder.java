@@ -28,6 +28,7 @@ public class KerasModelBuilder implements Cloneable, Closeable {
     protected Hdf5Archive trainingArchive = null;
     protected boolean enforceTrainingConfig = false;
     protected KerasModelConfiguration config;
+    protected int[] inputShape = null;
 
 
     public KerasModelBuilder(KerasModelConfiguration config) {
@@ -48,6 +49,11 @@ public class KerasModelBuilder implements Cloneable, Closeable {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         IOUtils.copy(modelJsonInputStream, byteArrayOutputStream);
         this.modelJson = new String(byteArrayOutputStream.toByteArray());
+        return this;
+    }
+
+    public KerasModelBuilder inputShape(int[] inputShape) {
+        this.inputShape = inputShape;
         return this;
     }
 
@@ -125,16 +131,16 @@ public class KerasModelBuilder implements Cloneable, Closeable {
 
     public KerasModel buildModel()
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasModel m = new KerasModel(this);
+        KerasModel model = new KerasModel(this);
         close();
-        return m;
+        return model;
     }
 
     public KerasSequentialModel buildSequential()
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        KerasSequentialModel m = new KerasSequentialModel(this);
+        KerasSequentialModel sequentialModel = new KerasSequentialModel(this);
         close();
-        return m;
+        return sequentialModel;
     }
 
     @Override public void close() {

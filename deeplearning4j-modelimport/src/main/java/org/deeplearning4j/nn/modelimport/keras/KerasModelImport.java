@@ -94,6 +94,27 @@ public class KerasModelImport {
      * Load Keras (Functional API) Model saved using model.save_model(...).
      *
      * @param modelHdf5Filename     path to HDF5 archive storing Keras Model
+     * @param inputShape            optional input shape for models that come without such (e.g. notop = false models)
+     * @param enforceTrainingConfig whether to enforce training configuration options
+     * @return ComputationGraph
+     * @throws IOException                            IO exception
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     * @see ComputationGraph
+     */
+    public static ComputationGraph importKerasModelAndWeights(String modelHdf5Filename, int[] inputShape,
+                                                              boolean enforceTrainingConfig)
+            throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
+        KerasModel kerasModel = new KerasModel().modelBuilder.modelHdf5Filename(modelHdf5Filename)
+                .enforceTrainingConfig(enforceTrainingConfig).inputShape(inputShape).buildModel();
+        return kerasModel.getComputationGraph();
+    }
+
+
+    /**
+     * Load Keras (Functional API) Model saved using model.save_model(...).
+     *
+     * @param modelHdf5Filename     path to HDF5 archive storing Keras Model
      * @param enforceTrainingConfig whether to enforce training configuration options
      * @return ComputationGraph
      * @throws IOException                            IO exception
@@ -123,6 +144,25 @@ public class KerasModelImport {
         KerasModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelHdf5Filename)
                 .enforceTrainingConfig(true).buildModel();
         return kerasModel.getComputationGraph();
+    }
+
+    /**
+     * Load Keras Sequential model saved using model.save_model(...).
+     *
+     * @param modelHdf5Filename     path to HDF5 archive storing Keras Sequential model
+     * @param inputShape            optional input shape for models that come without such (e.g. notop = false models)
+     * @param enforceTrainingConfig whether to enforce training configuration options
+     * @return MultiLayerNetwork
+     * @throws IOException IO exception
+     * @see MultiLayerNetwork
+     */
+    public static MultiLayerNetwork importKerasSequentialModelAndWeights(String modelHdf5Filename,
+                                                                         int[] inputShape,
+                                                                         boolean enforceTrainingConfig)
+            throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        KerasSequentialModel kerasModel = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelHdf5Filename)
+                .enforceTrainingConfig(enforceTrainingConfig).inputShape(inputShape).buildSequential();
+        return kerasModel.getMultiLayerNetwork();
     }
 
     /**
