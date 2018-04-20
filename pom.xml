@@ -66,6 +66,7 @@
         <javacpp.version>1.4.1</javacpp.version>
         <javacpp-presets.version>1.4.1</javacpp-presets.version>
         <hadoop.version>2.2.0</hadoop.version>
+        <commons-compress.version>1.16.1</commons-compress.version>
         <commonsmath.version>3.4.1</commonsmath.version>
         <commonslang.version>3.4</commonslang.version>
         <commonsio.version>2.4</commonsio.version>
