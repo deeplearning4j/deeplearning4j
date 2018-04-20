@@ -25,17 +25,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson-reflectionloader</artifactId>
-            <version>${nd4j.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>annotations</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
             <version>${commons.lang.version}</version>
