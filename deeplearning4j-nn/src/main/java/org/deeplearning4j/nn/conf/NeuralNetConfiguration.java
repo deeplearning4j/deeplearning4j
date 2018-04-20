@@ -122,10 +122,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
 
-//    private static ObjectMapper mapper = initMapper();
-//    private static final ObjectMapper mapperYaml = initMapperYaml();
-//    private static Set<Class<?>> subtypesClassCache = null;
-
 
     /**
      * Creates and returns a deep copy of the configuration.
@@ -408,16 +404,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * @return
      */
     public static ObjectMapper mapperYaml() {
-//        return mapperYaml;
         return JsonMappers.getMapperYaml();
     }
-
-    /*
-    private static ObjectMapper initMapperYaml() {
-        ObjectMapper ret = new ObjectMapper(new YAMLFactory());
-        configureMapper(ret);
-        return ret;
-    }*/
 
     /**
      * Object mapper for serialization of configurations
@@ -427,159 +415,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     public static ObjectMapper mapper() {
         return JsonMappers.getMapper();
     }
-
-    /**
-     * Reinitialize and return the Jackson/json ObjectMapper with additional named types.
-     * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
-     * types defined outside of the main DL4J codebase)
-     */
-    /*
-    public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes) {
-        mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
-        //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
-        mapper = mapper.copy();
-        return mapper;
-    }*/
-
-    /*
-    private static ObjectMapper initMapper() {
-        ObjectMapper ret = new ObjectMapper();
-        configureMapper(ret);
-        return ret;
-    }
-
-    private static void configureMapper(ObjectMapper ret) {
-        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        ret.enable(SerializationFeature.INDENT_OUTPUT);
-
-        SimpleModule customDeserializerModule = new SimpleModule();
-        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
-            @Override
-            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
-                            JsonDeserializer<?> deserializer) {
-                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
-                if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
-                    return new MultiLayerConfigurationDeserializer(deserializer);
-                } else if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
-                    return new ComputationGraphConfigurationDeserializer(deserializer);
-                }
-                return deserializer;
-            }
-        });
-
-        ret.registerModule(customDeserializerModule);
-
-        registerSubtypes(ret);
-    }
-
-    private static synchronized void registerSubtypes(ObjectMapper mapper) {
-        //Register concrete subtypes for JSON serialization
-
-        List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                        IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
-        List<String> classNames = new ArrayList<>(6);
-        for (Class<?> c : classes)
-            classNames.add(c.getName());
-
-        // First: scan the classpath and find all instances of the 'baseClasses' classes
-        if (subtypesClassCache == null) {
-
-            //Check system property:
-            String prop = System.getProperty(CUSTOM_FUNCTIONALITY);
-            if (prop != null && !Boolean.parseBoolean(prop)) {
-
-                subtypesClassCache = Collections.emptySet();
-            } else {
-
-                List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                                IActivation.class, ReconstructionDistribution.class);
-                List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
-
-                Collection<URL> urls = ClasspathHelper.forClassLoader();
-                List<URL> scanUrls = new ArrayList<>();
-                for (URL u : urls) {
-                    String path = u.getPath();*/
-//                    if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
-    /*
-                        scanUrls.add(u);
-                    }
-                }
-
-                Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(new FilterBuilder()
-                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                //Exclude the following: the assumption here is that no custom functionality will ever be present
-                                // under these package name prefixes. These are all common dependencies for DL4J
-                                .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
-                                .exclude("^com.fasterxml.*")//Jackson
-                                .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                                .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
-                                .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
-                                .exclude("^ch.qos.*") //Logback
-                ).addUrls(scanUrls).setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
-                org.reflections.Store store = reflections.getStore();
-
-                Iterable<String> subtypesByName = store.getAll(DL4JSubTypesScanner.class.getSimpleName(), classNames);
-
-                Set<? extends Class<?>> subtypeClasses = Sets.newHashSet(ReflectionUtils.forNames(subtypesByName));
-                subtypesClassCache = new HashSet<>();
-                for (Class<?> c : subtypeClasses) {
-                    if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
-                        //log.info("Skipping abstract/interface: {}",c);
-                        continue;
-                    }
-                    subtypesClassCache.add(c);
-                }
-            }
-        }
-
-        //Second: get all currently registered subtypes for this mapper
-        Set<Class<?>> registeredSubtypes = new HashSet<>();
-        for (Class<?> c : classes) {
-            AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                            null);
-            Collection<NamedType> types =
-                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                                            mapper.getSerializationConfig().getAnnotationIntrospector());
-            for (NamedType nt : types) {
-                registeredSubtypes.add(nt.getType());
-            }
-        }
-
-        //Third: register all _concrete_ subtypes that are not already registered
-        List<NamedType> toRegister = new ArrayList<>();
-        for (Class<?> c : subtypesClassCache) {
-            //Check if it's concrete or abstract...
-            if (Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers())) {
-                //log.info("Skipping abstract/interface: {}",c);
-                continue;
-            }
-
-            if (!registeredSubtypes.contains(c)) {
-                String name;
-                if (ClassUtils.isInnerClass(c)) {
-                    Class<?> c2 = c.getDeclaringClass();
-                    name = c2.getSimpleName() + "$" + c.getSimpleName();
-                } else {
-                    name = c.getSimpleName();
-                }
-                toRegister.add(new NamedType(c, name));
-                if (log.isDebugEnabled()) {
-                    for (Class<?> baseClass : classes) {
-                        if (baseClass.isAssignableFrom(c)) {
-                            log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                            baseClass.getName());
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
-    }
-    */
 
     /**
      * NeuralNetConfiguration builder, used as a starting point for creating a MultiLayerConfiguration or

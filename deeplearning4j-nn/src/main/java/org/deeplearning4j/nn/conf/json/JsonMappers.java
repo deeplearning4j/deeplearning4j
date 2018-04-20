@@ -81,27 +81,33 @@ public class JsonMappers {
                 AnnotatedClass c = (AnnotatedClass)ann;
                 Class<?> annClass = c.getAnnotated();
                 if (Layer.class.isAssignableFrom(annClass)) {
-                    System.out.println("Ignore annotation for: " + annClass);
                     AnnotationMap annotations = (AnnotationMap) ((AnnotatedClass) ann).getAnnotations();
+                    if(annotations == null || annotations.annotations() == null){
+                        //Probably not necessary - but here for safety
+                        return super._findTypeResolver(config, ann, baseType);
+                    }
 
-                    AnnotationMap newMap = new AnnotationMap();
+                    AnnotationMap newMap = null;
                     for(Annotation a : annotations.annotations()){
                         Class<?> annType = a.annotationType();
-                        System.out.println(a + "\t" + annType);
                         if(annType == JsonTypeInfo.class){
                             //Ignore the JsonTypeInfo annotation on the
                             continue;
                         }
+                        if(newMap == null){
+                            newMap = new AnnotationMap();
+                        }
                         newMap.add(a);
-
                     }
-                    return null;
+                    if(newMap == null)
+                        return null;
+
+                    //Pass the remaining annotations (if any) to the original introspector
+                    AnnotatedClass ann2 = c.withAnnotations(newMap);
+                    return super._findTypeResolver(config, ann2, baseType);
                 }
             }
-
             return super._findTypeResolver(config, ann, baseType);
         }
-
     }
-
 }

@@ -2,6 +2,16 @@ package org.deeplearning4j.nn.conf.serde;
 
 import org.deeplearning4j.nn.conf.json.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
+import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
+import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
+import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -29,35 +39,33 @@ public class LegacyLayerDeserializer extends JsonDeserializer<Layer> {
         LEGACY_NAMES.put("loss", LossLayer.class.getName());
         LEGACY_NAMES.put("dense", DenseLayer.class.getName());
         LEGACY_NAMES.put("subsampling", SubsamplingLayer.class.getName());
-//                @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
-//                @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
-//                @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
-//                @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
-//                @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-//                @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-//                @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-//                @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-//                @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-//                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
-//                @JsonSubTypes.Type(value = ZeroPadding1DLayer.class, name = "zeroPadding1d"),
-//                @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer"),
-//                @JsonSubTypes.Type(value = Upsampling2D.class, name = "Upsampling2D"),
-//                @JsonSubTypes.Type(value = Yolo2OutputLayer.class, name = "Yolo2OutputLayer"),
-//                @JsonSubTypes.Type(value = RnnLossLayer.class, name = "RnnLossLayer"),
-//                @JsonSubTypes.Type(value = CnnLossLayer.class, name = "CnnLossLayer"),
-//                @JsonSubTypes.Type(value = Bidirectional.class, name = "Bidirectional"),
-//                @JsonSubTypes.Type(value = SimpleRnn.class, name = "SimpleRnn"),
-//                @JsonSubTypes.Type(value = ElementWiseMultiplicationLayer.class, name = "ElementWiseMult"),
-//                @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
-//                @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
-//                @JsonSubTypes.Type(value = Cropping1D.class, name = "Cropping1D"),
-//                @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
+        LEGACY_NAMES.put("subsampling1d", Subsampling1DLayer.class.getName());
+        LEGACY_NAMES.put("batchNormalization", BatchNormalization.class.getName());
+        LEGACY_NAMES.put("localResponseNormalization", LocalResponseNormalization.class.getName());
+        LEGACY_NAMES.put("embedding", EmbeddingLayer.class.getName());
+        LEGACY_NAMES.put("activation", VariationalAutoencoder.class.getName());
+        LEGACY_NAMES.put("dropout", DropoutLayer.class.getName());
+        LEGACY_NAMES.put("GlobalPooling", GlobalPoolingLayer.class.getName());
+        LEGACY_NAMES.put("zeroPadding", ZeroPaddingLayer.class.getName());
+        LEGACY_NAMES.put("zeroPadding1d", ZeroPadding1DLayer.class.getName());
+        LEGACY_NAMES.put("FrozenLayer", FrozenLayer.class.getName());
+        LEGACY_NAMES.put("Upsampling2D", Upsampling2D.class.getName());
+        LEGACY_NAMES.put("Yolo2OutputLayer", Yolo2OutputLayer.class.getName());
+        LEGACY_NAMES.put("RnnLossLayer", RnnLossLayer.class.getName());
+        LEGACY_NAMES.put("CnnLossLayer", CnnLossLayer.class.getName());
+        LEGACY_NAMES.put("Bidirectional", Bidirectional.class.getName());
+        LEGACY_NAMES.put("SimpleRnn", SimpleRnn.class.getName());
+        LEGACY_NAMES.put("ElementWiseMult", ElementWiseMultiplicationLayer.class.getName());
+        LEGACY_NAMES.put("MaskLayer", MaskLayer.class.getName());
+        LEGACY_NAMES.put("MaskZeroLayer", MaskZeroLayer.class.getName());
+        LEGACY_NAMES.put("Cropping1D", Cropping1D.class.getName());
+        LEGACY_NAMES.put("Cropping2D", Cropping2D.class.getName());
+
+        //TODO: Keras layers
     }
 
-
-
     @Override
-    public Layer deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public Layer deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
         //Manually parse old format
         JsonNode node = jp.getCodec().readTree(jp);
 
@@ -91,12 +99,7 @@ public class LegacyLayerDeserializer extends JsonDeserializer<Layer> {
         ObjectMapper m = JsonMappers.getMapperLegacyJson();
 
         String nodeAsString = value.toString();
-        Layer l;
-        try {
-            l = m.readValue(nodeAsString, lClass);
-        } catch (Exception e){
-            throw e;
-        }
+        Layer l = m.readValue(nodeAsString, lClass);
         return l;
     }
 
