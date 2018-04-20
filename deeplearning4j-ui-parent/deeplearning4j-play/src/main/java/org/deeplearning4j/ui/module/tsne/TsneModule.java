@@ -7,6 +7,7 @@ import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
+import org.deeplearning4j.ui.i18n.I18NResource;
 import play.libs.Json;
 import play.mvc.Http;
 import play.mvc.Result;
@@ -67,7 +68,7 @@ public class TsneModule implements UIModule {
     }
 
     @Override
-    public List<File> getInternationalizationResources() {
+    public List<I18NResource> getInternationalizationResources() {
         return Collections.emptyList();
     }
 

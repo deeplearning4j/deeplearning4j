@@ -2,8 +2,8 @@ package org.deeplearning4j.ui.api;
 
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.ui.i18n.I18NResource;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.List;
 
@@ -63,5 +63,5 @@ public interface UIModule {
     void onDetach(StatsStorage statsStorage);
 
 
-    List<File> getInternationalizationResources();
+    List<I18NResource> getInternationalizationResources();
 }

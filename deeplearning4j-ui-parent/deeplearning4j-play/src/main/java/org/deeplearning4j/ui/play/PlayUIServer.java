@@ -3,7 +3,6 @@ package org.deeplearning4j.ui.play;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -13,6 +12,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
+import org.deeplearning4j.ui.i18n.DefaultI18N;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
@@ -112,6 +112,15 @@ public class PlayUIServer extends UIServer {
             }
             System.exit(1);
         }
+
+        if(((DefaultI18N)I18NProvider.getInstance()).noI18NData()){
+            log.error("Error loading UI Language (Internationalization) data: no language resource data files were" +
+                    "found on the classpath. This usually occurs when running DL4J's UI from an uber-jar, which was " +
+                    "built incorrectly (without language resource files). See https://deeplearning4j.org/visualization#issues" +
+                    "for more details");
+            System.exit(1);
+        }
+
         RoutingDsl routingDsl = new RoutingDsl();
 
         //Set up index page and assets routing

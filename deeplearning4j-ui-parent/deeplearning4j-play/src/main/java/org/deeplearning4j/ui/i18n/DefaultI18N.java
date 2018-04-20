@@ -5,9 +5,8 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.ui.api.I18N;
 import org.deeplearning4j.ui.api.UIModule;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -56,38 +55,57 @@ public class DefaultI18N implements I18N {
     private synchronized void loadLanguages(){
         ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
 
-
         for(UIModule m : sl){
-            List<File> resources = m.getInternationalizationResources();
-            for(File f : resources){
-                String path = f.getPath();
-                int idxLast = path.lastIndexOf('.');
-                if(idxLast < 0){
-                    log.warn("Skipping language resource file: cannot infer language: {}", path);
-                    continue;
+            List<I18NResource> resources = m.getInternationalizationResources();
+            for(I18NResource r : resources){
+                try {
+                    String path = r.getResource();
+                    int idxLast = path.lastIndexOf('.');
+                    if (idxLast < 0) {
+                        log.warn("Skipping language resource file: cannot infer language: {}", path);
+                        continue;
+                    }
+
+                    String langCode = path.substring(idxLast + 1).toLowerCase();
+                    Map<String, String> map = messagesByLanguage.computeIfAbsent(langCode, k -> new HashMap<>());
+
+                    parseFile(r, map);
+                } catch (Throwable t){
+                    log.warn("Error parsing UI I18N content file; skipping: {}", r.getResource(), t);
                 }
-
-                String langCode = path.substring(idxLast+1).toLowerCase();
-                Map<String,String> map = messagesByLanguage.computeIfAbsent(langCode, k -> new HashMap<>());
-
-                parseFile(f, map);
             }
         }
     }
 
-    private void parseFile(File file, Map<String,String> results){
+    public boolean noI18NData(){
+        if(messagesByLanguage.isEmpty()){
+            return true;
+        }
+
+        boolean noData = true;
+        for(Map.Entry<String,Map<String,String>> e : messagesByLanguage.entrySet()){
+            if(e.getValue() == null || e.getValue().isEmpty()){
+                continue;
+            }
+            noData = false;
+            break;
+        }
+        return noData;
+    }
+
+    private void parseFile(I18NResource r, Map<String,String> results){
         List<String> lines;
-        try (FileInputStream fis = new FileInputStream(file)){
-            lines = IOUtils.readLines(fis, Charset.forName("UTF-8"));
+        try (InputStream is = r.getInputStream()){
+            lines = IOUtils.readLines(is, Charset.forName("UTF-8"));
         } catch (IOException e){
-            log.debug("Error parsing UI I18N content file; skipping: {}", file.getPath(), e.getMessage());
+            log.debug("Error parsing UI I18N content file; skipping: {}", r.getResource(), e.getMessage());
             return;
         }
 
         int count = 0;
         for (String line : lines) {
             if (!line.matches(".+=.*")) {
-                log.debug("Invalid line in I18N file: {}, \"{}\"", file.getPath(), line);
+                log.debug("Invalid line in I18N file: {}, \"{}\"", r.getResource(), line);
                 continue;
             }
             int idx = line.indexOf('=');
@@ -97,7 +115,7 @@ public class DefaultI18N implements I18N {
             count++;
         }
 
-        log.trace("Loaded {} messages from file {}", count, file.getPath());
+        log.trace("Loaded {} messages from file {}", count, r.getResource());
     }
 
     @Override

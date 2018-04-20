@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
+import org.deeplearning4j.ui.i18n.I18NResource;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.stats.api.Histogram;
 import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
@@ -26,6 +27,7 @@ import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
@@ -1516,8 +1518,8 @@ public class TrainModule implements UIModule {
 
 
     @Override
-    public List<File> getInternationalizationResources() {
-        List<File> files = new ArrayList<>();
+    public List<I18NResource> getInternationalizationResources() {
+        List<I18NResource> files = new ArrayList<>();
         String[] langs = new String[]{"de", "en", "ja", "ko", "ru", "zh"};
         addAll(files, "train", langs);
         addAll(files, "train.model", langs);
@@ -1526,9 +1528,9 @@ public class TrainModule implements UIModule {
         return files;
     }
 
-    private static void addAll(List<File> to, String prefix, String... suffixes){
+    private static void addAll(List<I18NResource> to, String prefix, String... suffixes){
         for(String s : suffixes){
-            to.add(new File("/dl4j_i18n/" + prefix + "." + s));
+            to.add(new I18NResource("dl4j_i18n/" + prefix + "." + s));
         }
     }
 }
