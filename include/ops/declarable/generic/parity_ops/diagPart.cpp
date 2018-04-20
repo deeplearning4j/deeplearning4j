@@ -1,12 +1,13 @@
 //
-// Created by Yurii Shyrma on 06.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 06.12.2017.
 //
 
 #include <ops/declarable/CustomOperations.h>
 
 
 namespace nd4j {
-    namespace ops {
+namespace ops  {
+		
 		CUSTOM_OP_IMPL(diag_part, 1, 1, false, 0, 0) {
 			NDArray<T>* input  = INPUT_VARIABLE(0);
     		NDArray<T>* output = OUTPUT_VARIABLE(0);
@@ -14,9 +15,9 @@ namespace nd4j {
     		const int inRank = input->rankOf();
     
     		// input validation
-    		REQUIRE_TRUE(inRank == 2 ||  inRank == 4 || inRank == 6, 0, "CUSTOM_OP diag_part: input array must have even rank <= 6 !");
+    		REQUIRE_TRUE(inRank == 2 ||  inRank == 4 || inRank == 6, 0, "DIAG_PART op: input array must have rank among following three possible values: 2, 4, 6, but got %i instead !", inRank);
     		for(int i = 0; i < inRank-1; ++i)
-    			REQUIRE_TRUE(input->sizeAt(i) == input->sizeAt(i+1), 0, "CUSTOM_OP diag_part: dimensions of input array must be equal !");
+    			REQUIRE_TRUE(input->sizeAt(i) == input->sizeAt(i+1), 0, "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !", ShapeUtils<T>::shapeAsString(input).c_str());
 
     		const int outLen = output->lengthOf();
     		const int inLen  = input->lengthOf();
@@ -34,9 +35,15 @@ namespace nd4j {
 
 
 		DECLARE_SHAPE_FN(diag_part) {
-    		NDArray<T>* input = INPUT_VARIABLE(0);
 
-    		const int inRank = input->rankOf();
+    		int* inputShapeInfo = inputShape->at(0);
+
+    		const int inRank = inputShapeInfo[0];
+
+    		// input validation
+    		REQUIRE_TRUE(inRank == 2 ||  inRank == 4 || inRank == 6, 0, "DIAG_PART op: input array must have rank among following three possible values: 2, 4, 6, but got %i instead !", inRank);
+    		for(int i = 1; i < inRank; ++i)
+    			REQUIRE_TRUE(inputShapeInfo[i] == inputShapeInfo[i+1], 0, "DIAG_PART op: wrong shape of input array %s ! All dimensions must be equal !", ShapeUtils<T>::shapeAsString(inputShapeInfo).c_str());
    
     		int* outShapeInfo = nullptr;
 	
@@ -47,16 +54,18 @@ namespace nd4j {
 			ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), int);
 	
 			outShapeInfo[0] = outRank;
-			for(int i = 0; i < outRank; ++i)
-				outShapeInfo[i+1] = input->sizeAt(i);
+			for(int i = 1; i <= outRank; ++i)
+				outShapeInfo[i] = inputShapeInfo[i];
 
 			if(inRank/2 == 1)
 				outShapeInfo[1] = 1;
 
-			shape::updateStrides(outShapeInfo, input->ordering());
+			shape::updateStrides(outShapeInfo, shape::order(inputShapeInfo));
 
     		return SHAPELIST(outShapeInfo);
 		}
-	}
+
+
+}
 }
 

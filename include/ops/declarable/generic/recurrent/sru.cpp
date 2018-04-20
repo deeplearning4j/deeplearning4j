@@ -276,36 +276,36 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sru) {
 
-    NDArray<T>* x    = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
-    NDArray<T>* w    = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
-    NDArray<T>* b    = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [2*inSize]
-    NDArray<T>* c0   = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
-    NDArray<T>* mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+    int* xShapeInfo    = inputShape->at(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    int* wShapeInfo    = inputShape->at(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
+    int* bShapeInfo    = inputShape->at(2);                                   // B, row of biases with twice length [2*inSize]
+    int* c0ShapeInfo   = inputShape->at(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
+    int* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
-    const int rank   = x->rankOf();              // = 3
-    const int bS     = x->sizeAt(0);
-    const int inSize = x->sizeAt(1);
-    const int time   = x->sizeAt(2);    
+    const int rank   = xShapeInfo[0];              // = 3
+    const int bS     = xShapeInfo[1];
+    const int inSize = xShapeInfo[2];
+    const int time   = xShapeInfo[3];
 
     // input shapes validation
-    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
-    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, b->rankOf()); 
-    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
-    if(mask)
-        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+    REQUIRE_TRUE(wShapeInfo[0]  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, wShapeInfo[0]); 
+    REQUIRE_TRUE(bShapeInfo[0]  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, bShapeInfo[0]); 
+    REQUIRE_TRUE(c0ShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0ShapeInfo[0]); 
+    if(maskShapeInfo)
+        REQUIRE_TRUE(maskShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, maskShapeInfo[0]); 
 
-    const std::string wShape         = ShapeUtils<T>::shapeAsString(w); 
+    const std::string wShape         = ShapeUtils<T>::shapeAsString(wShapeInfo); 
     const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(bShapeInfo); 
     const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({2*inSize});
-    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0ShapeInfo); 
     const std::string c0CorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
     
     REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
     REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
     REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
-    if(mask) {
-        const std::string maskShape         = ShapeUtils<T>::shapeAsString(mask); 
+    if(maskShapeInfo) {
+        const std::string maskShape = ShapeUtils<T>::shapeAsString(maskShapeInfo); 
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
     }
         
@@ -319,7 +319,7 @@ DECLARE_SHAPE_FN(sru) {
     newShapeInfo1[2] = inSize;
     newShapeInfo1[3] = time;
     
-    shape::updateStrides(newShapeInfo1, x->ordering());
+    shape::updateStrides(newShapeInfo1, shape::order(xShapeInfo));
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
@@ -328,11 +328,11 @@ DECLARE_SHAPE_FN(sru) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     
-    NDArray<T>* x    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
-    NDArray<T>* w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    NDArray<T>* b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
-    NDArray<T>* c0     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
-    NDArray<T>* c    = INPUT_VARIABLE(4);                // C, [bS x K x N]
+    NDArray<T>* x        = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
+    NDArray<T>* w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
+    NDArray<T>* b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+    NDArray<T>* c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
+    NDArray<T>* c        = INPUT_VARIABLE(4);                // C, [bS x K x N]
     NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x K]
     NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
     NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
@@ -527,29 +527,60 @@ DECLARE_SHAPE_FN(sru_bp) {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     
-    NDArray<T>* x    = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
-    NDArray<T>* w  = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3*inSize x inSize]
-    NDArray<T>* b     = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*inSize]
-    NDArray<T>* c0     = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0    
-    NDArray<T>* c    = INPUT_VARIABLE(4);                // C, [bS x inSize x time]
-    NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x inSize]
-    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x inSize x time]
-    NDArray<T>* mask     = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
-
-    bool applyMask = false;        
-    if (block.width() > 7) {
-        mask = INPUT_VARIABLE(7);   
-        applyMask = true;
-    }
+    NDArray<T>* x        = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
+    NDArray<T>* w        = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
+    NDArray<T>* b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 × 2*inSize]
+    NDArray<T>* c0       = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0    
+    NDArray<T>* c        = INPUT_VARIABLE(4);                                   // C, [bS x inSize x time]
+    NDArray<T>* inGradCt = INPUT_VARIABLE(5);                                   // [bS x inSize]
+    NDArray<T>* inGradH  = INPUT_VARIABLE(6);                                   // [bS x inSize x time]
+    NDArray<T>* mask     = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     NDArray<T>* gradX    = OUTPUT_VARIABLE(0);              // [bS x inSize x time]
     NDArray<T>* gradW    = OUTPUT_VARIABLE(1);              // [bS x 3*inSize x inSize]
     NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [2*inSize]
     NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x inSize]
 
+    // input shapes validation    
+    const int rank = 3;
+    REQUIRE_TRUE(x->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf()); 
+    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
+    REQUIRE_TRUE(b->rankOf()  <= 2,      0, "SRU_BP operation: wrong rank of biases  array, expected is <=2, but got %i instead !", b->rankOf()); 
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
+    REQUIRE_TRUE(c->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of cell states array, expected is %i, but got %i instead !", rank, c->rankOf()); 
+    REQUIRE_TRUE(inGradCt->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of array of cell state gradient, expected is %i, but got %i instead !", rank-1, inGradCt->rankOf()); 
+    REQUIRE_TRUE(inGradH->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of array of cell outputs gradients, expected is %i, but got %i instead !", rank, inGradH->rankOf());     
+    if(mask)
+        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+
     const int bS      = x->shapeOf()[0];                     
-    const int inSize       = x->shapeOf()[1];                     
-    const int time       = x->shapeOf()[2];                     // time - number of time steps
+    const int inSize  = x->shapeOf()[1];                     
+    const int time    = x->shapeOf()[2];                     // time - number of time steps    
+
+    const std::string wShape               = ShapeUtils<T>::shapeAsString(w); 
+    const std::string wCorrectShape        = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
+    // const std::string bShape               = ShapeUtils<T>::shapeAsString(b); 
+    // const std::string bCorrectShape        = ShapeUtils<T>::shapeAsString({2*inSize});
+    const std::string c0Shape              = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0CorrectShape       = ShapeUtils<T>::shapeAsString({bS, inSize});
+    const std::string cShape               = ShapeUtils<T>::shapeAsString(c); 
+    const std::string cCorrectShape        = ShapeUtils<T>::shapeAsString({bS, inSize, time}); 
+    const std::string inGradCtShape        = ShapeUtils<T>::shapeAsString(inGradCt); 
+    const std::string inGradCtCorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize}); 
+    const std::string inGradHShape         = ShapeUtils<T>::shapeAsString(inGradH); 
+    const std::string inGradHCorrectShape  = ShapeUtils<T>::shapeAsString({bS, inSize, time});     
+    
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BP operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
+    // REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BP operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
+    REQUIRE_TRUE(cShape == cCorrectShape, 0, "SRU_BP operation: wrong shape of cell states array, expected is %s, but got %s instead !", cCorrectShape.c_str(), cShape.c_str()); 
+    REQUIRE_TRUE(inGradCtShape == inGradCtCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell state gradient, expected is %s, but got %s instead !", inGradCtCorrectShape.c_str(), inGradCtShape.c_str()); 
+    REQUIRE_TRUE(inGradHShape == inGradHCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell outputs gradients, expected is %s, but got %s instead !", inGradHCorrectShape.c_str(), inGradHShape.c_str());     
+    if(mask) {
+        const std::string maskShape = ShapeUtils<T>::shapeAsString(mask); 
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+    }
+
     
     const NDArray<T> bF = (*b)({ {}, {0,  inSize} });                                 // biases for forget gate [1 x inSize]
     const NDArray<T> bR = (*b)({ {}, {inSize,2*inSize} });                                 // biases for reset  gate [1 x inSize]    
@@ -559,7 +590,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     NDArray<T> gct     (c->ordering(),   {bS, inSize},      block.getWorkspace());    
     
     //  x = x * mask    
-    if(applyMask)
+    if(mask)
         x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);             // apply mask    
     
     // multiplication matrix wi = matmul(w,x), U = WX
@@ -616,7 +647,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     // gradX 
     w->transposei();                                                               // [inSize x 3K]
     gradX->assign( mmul(*w, gradU) + gradHX);
-    if(applyMask)
+    if(mask)
         gradX->template applyBroadcast<simdOps::Multiply<T>>({0,1}, mask, gradX, nullptr);       // apply mask
 
     // gradB    

@@ -14,8 +14,8 @@ namespace nd4j {
                 dim += input->rankOf();
 
 
-            REQUIRE_TRUE(dim < input->rankOf(), 0, "Unstack dimension should be lower then rank of input");
-            REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value");
+            REQUIRE_TRUE(dim < input->rankOf(), 0, "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
+            REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value, but got %i !", dim);
 
             std::vector<int> dims;
             for (int e = 0; e < input->rankOf(); e++)
@@ -46,6 +46,9 @@ namespace nd4j {
             auto dim = INT_ARG(0);
             if (dim < 0)
                 dim += shape::rank(inShape);
+
+            REQUIRE_TRUE(dim < inShape[0], 0, "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShape[0], dim);
+            REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
 
             std::vector<int> dims;
             for (int e = 0; e < shape::rank(inShape); e++)

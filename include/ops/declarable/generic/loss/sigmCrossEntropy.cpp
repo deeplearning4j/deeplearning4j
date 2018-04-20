@@ -1,5 +1,5 @@
 //
-// Created by Yurii Shyrma on 25.11.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 25.11.2017
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -20,13 +20,13 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
     T labelsSmoothing = T_ARG(0);
 
     // input validation    
-    REQUIRE_TRUE(labels->isSameShape(logits), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: labels and logits arrays have different shapes!");
+    REQUIRE_TRUE(labels->isSameShape(logits), 0, "SIGM_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(logits).c_str());        
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
-    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: weights array must have the same rank as labels array!");
+	REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "SIGM_CROSS_ENTROPY_LOSS OP: weights array must have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)
-        	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: shapes of weights array is not broadcastable to labels shape!");
+        	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "SIGM_CROSS_ENTROPY_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
     
 	// perform weights broadcasting/tile to labels if needed	
 	NDArray<T>* weightsBroad = weights;	
@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
  	else
  		weightedLosses *= (*weights); 	
  	// regard 4 possible reduction modes below
-    REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "CUSTOM_OP loss function sigm_cross_entropy_loss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !");
+	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SIGM_CROSS_ENTROPY_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
 	switch (reductionMode) {
 		case 0:												// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(&weightedLosses);
@@ -113,10 +113,11 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
 
+	int* logitsShapeInfo  = inputShape->at(0);
+    int* labelsShapeInfo  = inputShape->at(2);
+
 	// labels and logits must have the same shapes 
-	NDArray<T>* logits  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2); 
+    REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SIGM_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(logitsShapeInfo).c_str());    
 
     int* outShapeInfo = nullptr;
     if(INT_ARG(0) != 0) {			// in this case output is scalar
@@ -128,11 +129,11 @@ DECLARE_SHAPE_FN(sigm_cross_entropy_loss) {
     	outShapeInfo[7] = 99;
     }
     else {							// in this case output has the same shape as labels
-    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labels->rankOf()), int);
-    	outShapeInfo[0] = labels->rankOf();
+    	ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(labelsShapeInfo[0]), int);
+    	outShapeInfo[0] = labelsShapeInfo[0];
     	for(int i = 1; i <= outShapeInfo[0]; ++i)
-    		outShapeInfo[i] = labels->shapeOf()[i-1];
-    	shape::updateStrides(outShapeInfo, labels->ordering());    
+    		outShapeInfo[i] = labelsShapeInfo[i];
+    	shape::updateStrides(outShapeInfo, shape::order(labelsShapeInfo));
     }
  
     return SHAPELIST(outShapeInfo);    

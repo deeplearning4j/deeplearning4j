@@ -9,8 +9,8 @@
 #include <ops/declarable/helpers/hhSequence.h>
 #include "NDArray.h"
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
 
@@ -89,9 +89,15 @@ FORCEINLINE NDArray<T>& SVD<T>::getV() {
 
 
 
-}
-}
-}
+//////////////////////////////////////////////////////////////////////////
+// svd operation, this function is not method of SVD class, it is standalone function
+template <typename T>
+void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
+
+
+}
+}
+}
 
 #endif //LIBND4J_SVD_H

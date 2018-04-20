@@ -46,21 +46,21 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
 DECLARE_SHAPE_FN(sruCell) {
 
-    NDArray<T>* xt   = INPUT_VARIABLE(0);               // input [bS x inSize], bS - batch size, inSize - number of features
-    NDArray<T>* ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
-    NDArray<T>* w    = INPUT_VARIABLE(2);               // weights [inSize x 3*inSize]
-    NDArray<T>* b    = INPUT_VARIABLE(3);               // biases [2*inSize]
+    int* xtShapeInfo   = inputShape->at(0);               // input [bS x inSize], bS - batch size, inSize - number of features
+    int* ct_1ShapeInfo = inputShape->at(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1   
+    int* wShapeInfo    = inputShape->at(2);               // weights [inSize x 3*inSize]
+    int* bShapeInfo    = inputShape->at(3);               // biases [2*inSize]
 
-    const int rank   = xt->rankOf();
-    const int bS     = xt->sizeAt(0);    
-    const int inSize = xt->sizeAt(1);                   // inSize - number of features
+    const int rank   = xtShapeInfo[0];
+    const int bS     = xtShapeInfo[1];    
+    const int inSize = xtShapeInfo[2];                   // inSize - number of features
 
     // input shapes validation
-    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1); 
+    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1ShapeInfo); 
     const std::string correctCt_1Shape = ShapeUtils<T>::shapeAsString({bS, inSize});
-    const std::string WShape           = ShapeUtils<T>::shapeAsString(w); 
+    const std::string WShape           = ShapeUtils<T>::shapeAsString(wShapeInfo); 
     const std::string correctWShape    = ShapeUtils<T>::shapeAsString({inSize, 3*inSize});
-    const std::string bShape           = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bShape           = ShapeUtils<T>::shapeAsString(bShapeInfo); 
     const std::string correctBShape    = ShapeUtils<T>::shapeAsString({2*inSize});
 
     REQUIRE_TRUE(correctCt_1Shape == ct_1Shape, 0, "SRUCELL operation: wrong shape of previous cell state, expected is %s, but got %s instead !", correctCt_1Shape.c_str(), ct_1Shape.c_str()); 
@@ -76,8 +76,8 @@ DECLARE_SHAPE_FN(sruCell) {
     hShapeInfo[1] = cShapeInfo[1] = bS;
     hShapeInfo[2] = cShapeInfo[2] = inSize;
     
-    shape::updateStrides(hShapeInfo, ct_1->ordering());
-    shape::updateStrides(cShapeInfo, ct_1->ordering());
+    shape::updateStrides(hShapeInfo, shape::order(ct_1ShapeInfo));
+    shape::updateStrides(cShapeInfo, shape::order(ct_1ShapeInfo));
          
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   

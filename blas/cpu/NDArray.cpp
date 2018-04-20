@@ -1323,7 +1323,7 @@ template <typename T>
     }
     memcpy(newShapeBuffer, _shapeInfo, shape::shapeInfoByteLength(rankOf()));
 
-    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
+    shape::doPermuteShapeInfo(newShapeBuffer, rearrange);
 
     // fixme: this is bad
     newShapeBuffer[sLen - 2] = 1;
@@ -1398,7 +1398,7 @@ template <typename T>
         newShapeBuffer = _shapeInfo;
     }
 
-    shape::doPermuteShapeBuffer(newShapeBuffer, rearrange);
+    shape::doPermuteShapeInfo(newShapeBuffer, rearrange);
 
     // fixme: this is bad
     newShapeBuffer[sLen - 2] = 1;
@@ -1993,7 +1993,7 @@ bool NDArray<T>::permutei(const int* dimensions, const int rank) {
     } else {
         if (!nonNull() || rank != rankOf())
             throw "NDArray::permutei method: wrong arguments in permutei method: either array is nullptr or rank is not suitable!";
-        shape::doPermuteShapeBuffer(rank, _shapeInfo, const_cast<int *>(dimensions));
+        shape::doPermuteShapeInfo(_shapeInfo, dimensions);
     }
 
     return true;

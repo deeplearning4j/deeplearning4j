@@ -3,7 +3,7 @@
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/reverseArray.h>
+#include <ops/declarable/helpers/reverse.h>
 #include <helpers/ShapeUtils.h>
 #include <vector>
 

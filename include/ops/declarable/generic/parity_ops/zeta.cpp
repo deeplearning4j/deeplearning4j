@@ -1,5 +1,5 @@
 //
-// Created by Yurii Shyrma on 12.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 12.12.2017
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -14,15 +14,15 @@ namespace nd4j {
 
             NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(q), 0, "CONFIGURABLE_OP zeta: two input arrays must have the same shapes !");
+            REQUIRE_TRUE(x->isSameShape(q), 0, "ZETA op: two input arrays must have the same shapes, bot got x=%s and q=%s !", ShapeUtils<T>::shapeAsString(x).c_str(), ShapeUtils<T>::shapeAsString(q).c_str());
 
             int arrLen = x->lengthOf();
 
             for(int i = 0; i < arrLen; ++i ) {
 
-                REQUIRE_TRUE((*x)(i) > (T)1., 0, "CONFIGURABLE_OP zeta: all elements of x array must be > 1 !");
+                REQUIRE_TRUE((*x)(i) > (T)1., 0, "ZETA op: all elements of x array must be > 1 !");
 
-                REQUIRE_TRUE((*q)(i) > (T)0., 0, "CONFIGURABLE_OP zeta: all elements of q array must be > 0 !");
+                REQUIRE_TRUE((*q)(i) > (T)0., 0, "ZETA op: all elements of q array must be > 0 !");
             }
 
             *output = helpers::zeta<T>(*x, *q);

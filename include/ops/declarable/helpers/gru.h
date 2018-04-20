@@ -1,5 +1,5 @@
 //
-// Created by Yurii Shyrma on 15.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 15.02.2018
 //
 
 #ifndef LIBND4J_GRU_H

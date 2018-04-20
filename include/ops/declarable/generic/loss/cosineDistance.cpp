@@ -1,12 +1,12 @@
 //
-// Created by Yurii Shyrma on 22.11.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 22.11.2017
 //
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 
 namespace nd4j {
-    namespace ops {
+namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,17 +22,18 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
     if(dim < 0)
     	dim += labels->rankOf();
 
-    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "CUSTOM_OP loss function cosine_distance_loss: labels and predictions arrays have different shapes!")
+    // labels and predictions must have the same shapes 
+    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "COSINE_DISTANCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(predictions).c_str());    
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
-    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "CUSTOM_OP loss function cosine_distance_loss: weights array must have the same rank as labels array!");
+    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "COSINE_DISTANCE_LOSS OP: weights array must have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());    
     // input dimension can't be larger than labels/predictions/weights rank
-    REQUIRE_TRUE(dim < labels->rankOf(), 0, "CUSTOM_OP loss function cosine_distance_loss: input reduction dimension can't be larger than labels rank!");
+    REQUIRE_TRUE(dim < labels->rankOf(), 0, "COSINE_DISTANCE_LOSS OP: input reduction dimension (got %i) must be < labels rank %i!", dim, labels->rankOf());
 
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)    		           	
-            REQUIRE_TRUE(!( (i != dim && weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1) || (i == dim && weights->shapeOf()[i] != 1)), 0, "CUSTOM_OP loss function cosine_distance_loss: shapes of weights array is not broadcastable to losses shape!");
-    
+            REQUIRE_TRUE(!( (i != dim && weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1) || (i == dim && weights->shapeOf()[i] != 1)), 0, "COSINE_DISTANCE_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
+
 	// perform weights broadcasting/tile to output if needed	
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(output)) {
@@ -52,7 +53,7 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
  		weightedLosses *= (*weights);
  	
  	// regard 4 possible reduction modes below
-  REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "CUSTOM_OP loss function cosine_distance_loss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !");
+    REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "COSINE_DISTANCE_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
 	switch (reductionMode) {
 		case 0:												// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(&weightedLosses);
@@ -108,13 +109,15 @@ CUSTOM_OP_IMPL(cosine_distance_loss, 3, 1, false, 0, 2) {
 DECLARE_SHAPE_FN(cosine_distance_loss) {
 
 	// labels and predictions must have the same shapes 
-	NDArray<T>* predictions = INPUT_VARIABLE(0);
-    NDArray<T>* weights 	= INPUT_VARIABLE(1);
-    NDArray<T>* labels      = INPUT_VARIABLE(2);   
+	int* predictionsShapeInfo = inputShape->at(0);
+    int* labelsShapeInfo  	  = inputShape->at(2);
+
+    // labels and predictions must have the same shapes 
+    REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "COSINE_DISTANCE_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(predictionsShapeInfo).c_str());    
 
     int dim = INT_ARG(1);
     if(dim < 0)
-    	dim += labels->rankOf();
+    	dim += labelsShapeInfo[0];
  
  	// evaluate output shapeInfo
     int* outShapeInfo = nullptr;
@@ -128,7 +131,7 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
     }
     else {							// in this case output has the same shape as labels reduced  by dim axis    	
     	std::vector<int> dimensions = {dim};
-    	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), true, false, block.getWorkspace());
+    	outShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, true, false, block.getWorkspace());
     }
     
     return SHAPELIST(outShapeInfo);    
@@ -138,12 +141,6 @@ DECLARE_SHAPE_FN(cosine_distance_loss) {
 
 // INT_ARG(0) - reduction mode
 // INT_ARG(1) - axis, dimension should be reduced to unity along this axis
-
-
-
-
-
-
 
 
 

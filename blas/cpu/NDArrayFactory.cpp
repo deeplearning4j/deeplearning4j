@@ -134,11 +134,8 @@ namespace nd4j {
 
         NDArray<T>* aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b));
 
-        // check whether permutation is necessary
-        if(ShapeUtils<T>::isPermutNecessary(permutAt))
-            aPR = a->permute(permutAt);
-        if(ShapeUtils<T>::isPermutNecessary(permutBt))
-            bPR = b->permute(permutBt);
+        aPR = a->permute(permutAt);        
+        bPR = b->permute(permutBt);
         
         // check whether reshape is necessary
         if(!aPR->isSameShape(shapeAt)) {
@@ -175,14 +172,12 @@ namespace nd4j {
 
         NDArray<T> *aPR(const_cast<NDArray<T>*>(a)), *bPR(const_cast<NDArray<T>*>(b)), *cP(c), *cPR(c);
 
-        // check whether permutation is necessary
-        if(!permutForC.empty()) {                        // this means permutation is possible
+        // check whether permutation is required
+        if(!permutForC.empty())
             cP = c->permute(permutForC);            
-        }
-        if(ShapeUtils<T>::isPermutNecessary(permutAt))
-            aPR = a->permute(permutAt);
-        if(ShapeUtils<T>::isPermutNecessary(permutBt))
-            bPR = b->permute(permutBt);    
+        
+        aPR = a->permute(permutAt);        
+        bPR = b->permute(permutBt);    
 
         // check whether reshape is necessary        
         if(!aPR->isSameShape(shapeAt)) {

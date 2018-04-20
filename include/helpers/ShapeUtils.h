@@ -75,7 +75,7 @@ namespace nd4j {
         static std::string shapeAsString(const int* shapeInfo);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-        static int* evalDiagShapeInfo(const NDArray<T>& arr, nd4j::memory::Workspace* workspace);
+        static int* evalDiagShapeInfo(const int* shapeInfo, nd4j::memory::Workspace* workspace);
 
         static std::vector<int> evalBroadcastBackwardAxis(int *operand, int *result);
 

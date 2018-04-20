@@ -1,11 +1,11 @@
 //
-// Created by Yurii Shyrma on 25.11.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 25.11.2017.
 //
 
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-    namespace ops {
+namespace ops  {
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -20,13 +20,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     T labelsSmoothing = T_ARG(0);
     
     // input validation    		       
-    REQUIRE_TRUE(labels->isSameShape(logits), 0, "CUSTOM_OP loss function softmax_cross_entropy_loss: labels and logits arrays have different shapes!");    
+    REQUIRE_TRUE(labels->isSameShape(logits), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(logits).c_str());    
     // weights array can be single scalar or has the same shape as output, and must be broadcastable to output shape
-    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != output->rankOf() && !output->isScalar()), 0, "CUSTOM_OP loss function softmax_cross_entropy_loss: weights array must have the same rank as output array!");
+    REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != output->rankOf() && !output->isScalar()), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: weights array must have the same rank as output array, but got %i and %i correspondingly!", weights->rankOf(), output->rankOf());
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
     	for (int i = 0; i < weights->rankOf(); ++i)
-        	REQUIRE_TRUE(!(weights->shapeOf()[i] != output->shapeOf()[i] && weights->shapeOf()[i] != 1 && !output->isScalar()), 0, "CUSTOM_OP loss function softmax_cross_entropy_loss: shapes of weights array is not broadcastable to output shape!");
+        	REQUIRE_TRUE(!(weights->shapeOf()[i] != output->shapeOf()[i] && weights->shapeOf()[i] != 1 && !output->isScalar()), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: shape of weights array %s is not broadcastable to output array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(output).c_str());
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	NDArray<T>* newLabels = labels;
@@ -52,13 +52,13 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 	// The subtraction broadcasts along the batch dimension
 	NDArray<T> weightedLosses = ((-*newLabels)*(shiftedLogits - logSumExp)).template reduceAlongDims<simdOps::Sum<T>>(dimensions);
 	
-	// perform weights broadcasting/tile to weightedLosses if needed	
+	// perform weights broadcasting/tile to weightedLosses if it is necessary
 	NDArray<T>* weightsBroad = weights;	
 	if(!weights->isScalar() && !weights->isSameShape(&weightedLosses)) {
 		// evaluate repeat dimensions for tile operation
-		std::vector<int> reps;
-		for(int i = 0; i < weightedLosses.rankOf(); ++i)
-			reps.emplace_back(weightedLosses.shapeOf()[i] / weights->shapeOf()[i]);
+		std::vector<int> reps(weightedLosses.rankOf());
+		for(int i = 0; i < reps.size(); ++i)
+			reps[i] = weightedLosses.shapeOf()[i] / weights->shapeOf()[i];
 		weightsBroad = new NDArray<T>(weights->tile(reps));
 	}	
 
@@ -68,7 +68,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
  	else
  		weightedLosses *= (*weights); 	
  	// regard 4 possible reduction modes below
- 	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "CUSTOM_OP loss function softmax_cross_entropy_loss: reduction mode has not acceptable value, possible values are 0, 1, 2, 3 !");
+ 	REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
 	switch (reductionMode) {
 		case 0:												// 0 - "none", un-reduced weighted losses with the same shape as labels.
 			output->assign(&weightedLosses);
@@ -119,25 +119,27 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
     if(newLabels != labels)
     	delete newLabels; 
    		
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 
 DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
+	
+	int* logitsShapeInfo  = inputShape->at(0);
+    int* labelsShapeInfo  = inputShape->at(2);
 
 	// labels and logits must have the same shapes 
-	NDArray<T>* logits  = INPUT_VARIABLE(0);
-    NDArray<T>* weights = INPUT_VARIABLE(1);
-    NDArray<T>* labels  = INPUT_VARIABLE(2);
+    REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(logitsShapeInfo).c_str());    
 
 	std::vector<int> dimensions = {-1};
-    int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(labels->ordering(), dimensions, labels->getShapeInfo(), false, true, block.getWorkspace());
-    
+    int* reducedShapeInfo = ShapeUtils<T>::evalReduceShapeInfo(shape::order(labelsShapeInfo), dimensions, labelsShapeInfo, false, true, block.getWorkspace());
+   
     // if scalar is required
+    const int rank = 2;
     if(INT_ARG(0) != 0) {
     	RELEASE(reducedShapeInfo, block.workspace());
-    	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2) /*rank=2*/, int);
-    	reducedShapeInfo[0] = 2;
+    	ALLOCATE(reducedShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), int);
+    	reducedShapeInfo[0] = rank;
     	reducedShapeInfo[1] = reducedShapeInfo[2] = reducedShapeInfo[3] = reducedShapeInfo[4] = 1;
     	reducedShapeInfo[5] = 0;
     	reducedShapeInfo[6] = 1;
@@ -149,16 +151,6 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
 }
 
 // INT_ARG(0) - reduction mode
-
-
-
-
-
-
-
-
-
-
 
 }
 }

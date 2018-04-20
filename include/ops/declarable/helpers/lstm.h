@@ -1,5 +1,5 @@
 //
-// @author Yurii Shyrma, created by on 14.02.2018
+// @author Yurii Shyrma, created on 14.02.2018
 //
 
 #ifndef LIBND4J_LSTM_H

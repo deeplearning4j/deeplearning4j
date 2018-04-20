@@ -193,15 +193,15 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
         
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, " SCONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
-    REQUIRE_TRUE(gradO->rankOf()   == 4, 0, " SCONV2D_BP OP: rank of gradO (epsilon_next) array must be equal to 4, but got %i instead !", gradO->rankOf());
+    REQUIRE_TRUE(gradO->rankOf()   == 4, 0, " SCONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to 4, but got %i instead !", gradO->rankOf());
     REQUIRE_TRUE(weightsDepth->rankOf() == 4, 0, " SCONV2D_BP OP: rank of weightsDepth array must be equal to 4 !, but got %i instead !", weightsDepth->rankOf());
     if(weightsPoint) {
         REQUIRE_TRUE(weightsPoint->rankOf() == 4, 0, " SCONV2D_BP OP: rank of weightsPoint array must be equal to 4, but got %i instead !", weightsPoint->rankOf());
         REQUIRE_TRUE(gradWP->rankOf() == 4, 0, " SCONV2D_BP OP: rank of weightsPoint gradients array must be equal to 4, but got %i instead !", gradWP->rankOf());
     }
     if(bias) {
-        REQUIRE_TRUE(bias->rankOf() == 1  || bias->rankOf()  == 2, 0, " SCONV2D_BP OP: rank of biases array must be equal to 1 or 2, but got %i instead !", bias->rankOf());;           
-        REQUIRE_TRUE(gradB->rankOf() == 1 || gradB->rankOf() == 2, 0, " SCONV2D_BP OP: rank of gradients biases array must be equal to 1 or 2, but got %i instead !", gradB->rankOf());;           
+        REQUIRE_TRUE(bias->rankOf() == 1  || bias->rankOf()  == 2, 0, " SCONV2D_BP OP: rank of biases array must be equal to 1 or 2, but got %i instead !", bias->rankOf());
+        REQUIRE_TRUE(gradB->rankOf() == 1 || gradB->rankOf() == 2, 0, " SCONV2D_BP OP: rank of biases gradients array must be equal to 1 or 2, but got %i instead !", gradB->rankOf());
     }
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
@@ -229,8 +229,8 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
         REQUIRE_TRUE(expectedWeightsPShape == ShapeUtils<T>::shapeAsString(gradWP),       0, " SCONV2D_BP OP: wrong shape of gradWP array, expected is %s, but got %s instead !", expectedWeightsPShape.c_str(), ShapeUtils<T>::shapeAsString(gradWP).c_str());
     }
     if (bias) {
-        REQUIRE_TRUE(oC == bias->lengthOf(),  0, " SCONV2D_BP OP: length of bias array must be equal to outChannels, but got %i instead", bias->lengthOf());        
-        REQUIRE_TRUE(oC == gradB->lengthOf(), 0, " SCONV2D_BP OP: length of gradients bias array must be equal to outChannels, but got %i instead", gradB->lengthOf());
+        REQUIRE_TRUE(oC == bias->lengthOf(),  0, " SCONV2D_BP OP: length of bias array must be equal to outChannels, but got %i instead", bias->lengthOf());
+        REQUIRE_TRUE(oC == gradB->lengthOf(), 0, " SCONV2D_BP OP: length of biases gradients array must be equal to outChannels, but got %i instead", gradB->lengthOf());
     }
   
     // if (iC == 1) {
@@ -288,7 +288,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]    == rank, 0, " SCONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
-    REQUIRE_TRUE(gradOShapeInfo[0]    == rank, 0, " SCONV2D_BP OP: rank of gradO (epsilon_next) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo[0]);
+    REQUIRE_TRUE(gradOShapeInfo[0]    == rank, 0, " SCONV2D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo[0]);
     REQUIRE_TRUE(weightsDShapeInfo[0] == rank, 0, " SCONV2D_BP OP: rank of weightsDepth array must be equal to %i, but got %i instead !", rank, weightsDShapeInfo[0]);
     if(weightsPShapeInfo)
         REQUIRE_TRUE(weightsPShapeInfo[0] == rank, 0, " SCONV2D_BP OP: rank of weightsPoint array must be equal to %i, but got %i instead !", rank, weightsPShapeInfo[0]);
@@ -325,7 +325,7 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     ConvolutionUtils<T>::calcOutSizePool2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     std::string expectedGradOShapeInfo = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indIiH,indIiH+1}));        
-    REQUIRE_TRUE(expectedGradOShapeInfo == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0, "SCONV2D_BP OP: wrong shape of gradO (epsilon_next) array, expected is %s, but got %s instead !", expectedGradOShapeInfo.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
+    REQUIRE_TRUE(expectedGradOShapeInfo == ShapeUtils<T>::shapeAsString(gradOShapeInfo), 0, "SCONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShapeInfo.c_str(), ShapeUtils<T>::shapeAsString(gradOShapeInfo).c_str());
     std::string expectedWeightsDShape = ShapeUtils<T>::shapeAsString(ShapeUtils<T>::composeShapeUsingDimsAndIdx({iC,mC,kH,kW,  indWiC,indWmC,indWkH,indWkH+1}));        
     REQUIRE_TRUE(expectedWeightsDShape == ShapeUtils<T>::shapeAsString(weightsDShapeInfo), 0, "SCONV2D_BP OP: wrong shape of depth weights array, expected is %s, but got %s instead !", expectedWeightsDShape.c_str(), ShapeUtils<T>::shapeAsString(weightsDShapeInfo).c_str());    
     if(weightsPShapeInfo) {

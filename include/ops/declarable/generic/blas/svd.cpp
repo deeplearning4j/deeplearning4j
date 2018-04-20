@@ -1,59 +1,26 @@
 //
-//  Created by Yurii Shyrma on 20.01.2018
+//  @author Yurii Shyrma (iuriish@yahoo.com), created on 20.01.2018
 //
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/svd.h>
 
 namespace nd4j {
-namespace ops {
+namespace ops  {
 
 CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     
-    NDArray<T>* x = INPUT_VARIABLE(0);
-    NDArray<T>* s = OUTPUT_VARIABLE(0);
+    NDArray<T>* x = INPUT_VARIABLE(0);    
     
     const int rank =  x->rankOf();
-    REQUIRE_TRUE(rank >= 2 , 0, "CUSTOM_OP svd: the rank of input array must be >=2 !");
+    REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
     const bool fullUV = (bool)INT_ARG(0);
     const bool calcUV = (bool)INT_ARG(1);
-    const int switchNum =  INT_ARG(2);    
+    const int switchNum = INT_ARG(2);    
     
-    const int sRank = rank == 2 ? 2 : rank - 1; 
-
-    ResultSet<T>* listX = NDArrayFactory<T>::allTensorsAlongDimension(x, {rank-2, rank-1});
-    ResultSet<T>* listS = NDArrayFactory<T>::allTensorsAlongDimension(s, {sRank-1});
-    ResultSet<T>* listU(nullptr), *listV(nullptr);
-    
-    if(calcUV) {
-        NDArray<T>* u = OUTPUT_VARIABLE(1);
-        NDArray<T>* v = OUTPUT_VARIABLE(2);
-        listU = NDArrayFactory<T>::allTensorsAlongDimension(u, {rank-2, rank-1});
-        listV = NDArrayFactory<T>::allTensorsAlongDimension(v, {rank-2, rank-1});
-    }
-
-    for(int i = 0; i < listX->size(); ++i) {
-        
-        // NDArray<T> matrix(x->ordering(), {listX->at(i)->sizeAt(0), listX->at(i)->sizeAt(1)}, block.getWorkspace());
-        // matrix.assign(listX->at(i));
-        helpers::SVD<T> svdObj(*(listX->at(i)), switchNum, calcUV, calcUV, fullUV);    
-        listS->at(i)->assign(svdObj._s);
-
-        if(calcUV) {
-            listU->at(i)->assign(svdObj._u);
-            listV->at(i)->assign(svdObj._v);
-        }        
-    }
-
-    delete listX;
-    delete listS;
-    
-    if(calcUV) {
-        delete listU;
-        delete listV;
-    }
+    helpers::svd(x, {OUTPUT_VARIABLE(0), calcUV ? OUTPUT_VARIABLE(1) : nullptr, calcUV ? OUTPUT_VARIABLE(2) : nullptr}, fullUV, calcUV, switchNum);
          
-    return ND4J_STATUS_OK;
+    return Status::OK();;
 }
 
 
@@ -64,8 +31,9 @@ DECLARE_SHAPE_FN(svd) {
     bool calcUV = (bool)INT_ARG(1);
     
     const int rank = inShapeInfo[0];
-    const int diagSize = inShapeInfo[rank] < inShapeInfo[rank-1] ? inShapeInfo[rank] : inShapeInfo[rank-1];
-        
+    REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
+
+    const int diagSize = inShapeInfo[rank] < inShapeInfo[rank-1] ? inShapeInfo[rank] : inShapeInfo[rank-1];        
     
     int* sShapeInfo(nullptr);
     if(rank == 2) {
@@ -107,6 +75,7 @@ DECLARE_SHAPE_FN(svd) {
     }         
     return SHAPELIST(sShapeInfo);
 }
+
 
 
 }

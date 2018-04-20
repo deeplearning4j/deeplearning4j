@@ -1,9 +1,9 @@
 //
-// Created by Yurii Shyrma on 01.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 01.02.2018
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/softMaxForVector.h>
+#include <ops/declarable/helpers/activations.h>
 
 namespace nd4j {
 namespace ops {
@@ -14,10 +14,10 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
     NDArray<T>* input  = INPUT_VARIABLE(0);
     NDArray<T>* output = OUTPUT_VARIABLE(0);
     
-    int rank = input->rankOf();
-    int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+    const int rank = input->rankOf();
+    const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-    REQUIRE_TRUE(dim < rank, 0, "log_softmax op: the value of input integer parameter (dimension) must be less than rank of input array !");
+    REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
 
     if(input->isVector()) {
         
@@ -30,7 +30,7 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
         
         NDArray<T> exponents = input->template transform<simdOps::Exp<T>>();
         NDArray<T> sumAlongDim = exponents.template reduceAlongDims<simdOps::Sum<T>>({dim}, true);
-        *output = *input - sumAlongDim.template transform<simdOps::Log<T>>();
+        output->assign( *input - sumAlongDim.template transform<simdOps::Log<T>>() );
     }
     
     return Status::OK();
@@ -39,21 +39,22 @@ CONFIGURABLE_OP_IMPL(log_softmax, 1, 1, true, 0, 0) {
 
 CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
     
-    NDArray<T>* input    = INPUT_VARIABLE(0);
-    NDArray<T>* epsInput = INPUT_VARIABLE(1);
-    NDArray<T>* output   = OUTPUT_VARIABLE(0);    
+    NDArray<T>* input = INPUT_VARIABLE(0);
+    NDArray<T>* gradO = INPUT_VARIABLE(1);
+    NDArray<T>* gradI = OUTPUT_VARIABLE(0);    
 
-    int rank = input->rankOf();
-    int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
-    softmax<T> op;
-    ResultSet<T>* results = op.execute({input}, {}, {dim});    
-    output->assign(results->at(0));
-    
-    *output = *epsInput - (*output * *epsInput).template reduceAlongDims<simdOps::Sum<T>>({dim}, true);
+    const int rank = input->rankOf();
+    const int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
 
-    delete results;
+    REQUIRE_TRUE(dim < rank, 0, "LOG_SOFTMAX_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
+
+    helpers::softmax(*input, *gradI, dim);
+        
+    gradI->assign( *gradO - (*gradI * *gradO).template reduceAlongDims<simdOps::Sum<T>>({dim}, true) );
+
     return Status::OK();
 }
+
 
 
 }

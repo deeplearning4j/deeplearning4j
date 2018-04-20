@@ -1,36 +1,40 @@
 //
-// Created by Yurii Shyrma on 12.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 12.12.2017
 //
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/betaInc.h>
 
 namespace nd4j {
-    namespace ops {
-        CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
-	        NDArray<T>* a = INPUT_VARIABLE(0);
-            NDArray<T>* b = INPUT_VARIABLE(1);
-            NDArray<T>* x = INPUT_VARIABLE(2);
+namespace ops  {
 
-	        NDArray<T>* output   = OUTPUT_VARIABLE(0);
+CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
 
-            REQUIRE_TRUE(a->isSameShape(b) && a->isSameShape(x), 0, "CONFIGURABLE_OP betainc: all three input arrays must have the same shapes !");
+	NDArray<T>* a = INPUT_VARIABLE(0);
+    NDArray<T>* b = INPUT_VARIABLE(1);
+    NDArray<T>* x = INPUT_VARIABLE(2);
 
-            int arrLen = a->lengthOf();
+	NDArray<T>* output   = OUTPUT_VARIABLE(0);
 
-            for(int i = 0; i < arrLen; ++i ) {
-            
-                REQUIRE_TRUE((*a)(i) > (T)0. && (*b)(i) > (T)0.,   0, "CONFIGURABLE_OP betainc: arrays a and b must contain elements > 0 !");            
-                REQUIRE_TRUE((T)0. <= (*x)(i) && (*x)(i) <= (T)1., 0, "CONFIGURABLE_OP betainc: elements of x array must be within [0, 1] range!");
-                
-            }
+    REQUIRE_TRUE(a->isSameShape(b) && a->isSameShape(x), 0, "CONFIGURABLE_OP betainc: all three input arrays must have the same shapes, bit got a=%s, b=%s and x=%s instead !", ShapeUtils<T>::shapeAsString(a).c_str(), ShapeUtils<T>::shapeAsString(b).c_str(), ShapeUtils<T>::shapeAsString(x).c_str());
 
-            *output = helpers::betaInc<T>(*a, *b, *x);
+    int arrLen = a->lengthOf();
 
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(BetaInc, betainc);
-        DECLARE_SYN(betaInc, betainc);
+    for(int i = 0; i < arrLen; ++i ) {            
+        REQUIRE_TRUE((*a)(i) > (T)0.,   0, "BETAINC op: arrays a array must contain only elements > 0 !");            
+        REQUIRE_TRUE((*b)(i) > (T)0.,   0, "BETAINC op: arrays b array must contain only elements > 0 !");                    
+        REQUIRE_TRUE((T)0. <= (*x)(i) && (*x)(i) <= (T)1., 0, "BETAINC op: all elements of x array must be within [0, 1] range!");                
     }
+
+    *output = helpers::betaInc<T>(*a, *b, *x);
+
+    return ND4J_STATUS_OK;
+}
+
+DECLARE_SYN(BetaInc, betainc);
+DECLARE_SYN(betaInc, betainc);
+
+
+}
 }
 

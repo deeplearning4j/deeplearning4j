@@ -1,19 +1,16 @@
 //
-// Created by Yurii Shyrma on 05.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 05.02.2018
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/meshgrid.h>
 #include <numeric>
 
 namespace nd4j {
 namespace ops  {
 
-CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
-
-    bool swapFirst2Dims = true;
-    if(block.getIArguments()->size() > 0)
-        swapFirst2Dims = (bool)INT_ARG(0);
-
+CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {    
+    
     int rank = block.width();
 
     if(rank == 1) {
@@ -21,22 +18,17 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
         return Status::OK();
     }
 
-    int* inIndices = new int[rank];
-    std::iota(inIndices, inIndices + rank, 0);
-    if(swapFirst2Dims && rank > 1) {
-        inIndices[0] = 1;
-        inIndices[1] = 0;
-    }
-            
+    bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
+
+    std::vector<NDArray<T>*> inArrs(rank);
+    std::vector<NDArray<T>*> outArrs(rank);
+
     for(int i = 0; i < rank; ++i) {        
-        ResultSet<T>* list = NDArrayFactory<T>::allTensorsAlongDimension(OUTPUT_VARIABLE(i), {inIndices[i]});        
-        for(int j = 0; j < list->size(); ++j)
-            list->at(j)->assign(INPUT_VARIABLE(i));
+        inArrs[i]  = INPUT_VARIABLE(i);
+        outArrs[i] = OUTPUT_VARIABLE(i);
+    }
 
-        delete list;
-    }    
-
-    delete []inIndices;
+    helpers::meshgrid<T>(inArrs, outArrs, swapFirst2Dims);
 
     return Status::OK();
 }
@@ -45,9 +37,7 @@ CUSTOM_OP_IMPL(meshgrid, -1, -1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(meshgrid) {
 
-    bool swapFirst2Dims = true;
-    if(block.getIArguments()->size() > 0)
-        swapFirst2Dims = (bool)INT_ARG(0);
+    bool swapFirst2Dims = block.getIArguments()->size() > 0 ? (bool)INT_ARG(0) : true;
     
     int rank = block.width();
     int* outShapeInfo = nullptr;

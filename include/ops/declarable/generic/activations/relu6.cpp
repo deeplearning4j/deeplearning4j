@@ -1,5 +1,5 @@
 //
-// created by Yurii Shyrma on 16.02.2018
+// @author Yurii Shyrma, created on 16.02.2018
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -13,7 +13,7 @@ CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
     
     NDArray<T>* input  = INPUT_VARIABLE(0);
     NDArray<T>* output = OUTPUT_VARIABLE(0);
-        
+
     input->template applyTransform<simdOps::RELU6<T>>(output, &T_ARG(0));
     
     return Status::OK();

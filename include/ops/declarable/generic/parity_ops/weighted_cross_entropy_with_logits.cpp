@@ -15,8 +15,8 @@ namespace ops {
         NDArray<T>* weights = INPUT_VARIABLE(2);
         T posWeight;
         
-        REQUIRE_TRUE(targets->isSameShape(input), 0, "weighted_cross_entropy_with_logits: The shape of both input params should be equal.");
-        REQUIRE_TRUE(weights->isScalar() || targets->sizeAt(-1) == weights->lengthOf(), 0, "weighted_cross_entropy_with_logits: The weights should be scalar or vector with last dimention size");
+        REQUIRE_TRUE(targets->isSameShape(input), 0, "WEIGHTED_CROSS_ENTROPY_WITH_LOGITS op: The shape of both input params should be equal, but got input_shape=%s and targets_shape=%s !", ShapeUtils<T>::shapeAsString(input).c_str(), ShapeUtils<T>::shapeAsString(targets).c_str());
+        REQUIRE_TRUE(weights->isScalar() || targets->sizeAt(-1) == weights->lengthOf(), 0, "WEIGHTED_CROSS_ENTROPY_WITH_LOGITS op: The weights should be scalar or vector with length equal to size of last targets dimension, but got weights_shape=%s instead!", ShapeUtils<T>::shapeAsString(weights).c_str());
         NDArray<T>* output = OUTPUT_VARIABLE(0);
 
         if (weights->isScalar()) {

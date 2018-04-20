@@ -1,5 +1,5 @@
 //
-// created by Yurii Shyrma on 19.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 19.02.2018
 //
 
 
@@ -28,7 +28,7 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 10) {
     int isSameMode = INT_ARG(9);                                                // 1-SAME,  0-VALID
     int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;        // 1-NDHWC, 0-NCDHW    
 
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());    
 
     int idxID, idxIC;
     if(isNCHW) { idxID = 2; idxIC = 1;}
@@ -43,8 +43,8 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 10) {
     int oH = output->sizeAt(idxID+1);           // output height
     int oW = output->sizeAt(idxID+2);           // output width                
 
-    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
-    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D OP: pad must not be greater than half of kernel size!");    
+    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", iD,iH,iW, kD,kH,kW);    
+    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D OP: pad depth/height/width must not be greater than half of kernel depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", pD,pH,pW, kD,kH,kW);    
     
     if(!isNCHW) {
         input = input ->permute({0, 4, 1, 2, 3});                                                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
@@ -138,7 +138,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 10) {
     
     NDArray<T> *gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
     
-    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D_BP OP: rank of input array must be equal to 5 !");    
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "CUSTOM MAXPOOL3D_BP OP: rank of input array must be equal to 5 !", input->rankOf());    
                                      
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -165,8 +165,8 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 10) {
     int oH = gradO->sizeAt(idxID+1);            // output height
     int oW = gradO->sizeAt(idxID+2);            // output width             
 
-    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D_BP OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width !");    
-    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D_BP OP: pad must not be greater than half of kernel size!");    
+    REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "CUSTOM MAXPOOL3D_BP OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", iD,iH,iW, kD,kH,kW);    
+    REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "CUSTOM MAXPOOL3D_BP OP: pad depth/height/width must not be greater than half of kernel depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", pD,pH,pW, kD,kH,kW);    
 
     if(!isNCHW) {
         input = input ->permute({0, 4, 1, 2, 3});                                                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]

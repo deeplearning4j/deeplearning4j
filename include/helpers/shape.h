@@ -378,6 +378,11 @@ __host__ __device__
 
     ND4J_EXPORT void permuteShapeBufferInPlace(int *shapeBuffer,int *rearrange,int *out);
 
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    ND4J_EXPORT void doPermuteShapeInfo(int *shapeBuffer, const int *rearrange);
 
 #ifdef __CUDACC__
     __host__ __device__
@@ -404,6 +409,7 @@ __host__ __device__
      * which will give us the ability to ierate along an element
      * wise stride.
      */
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
@@ -2640,11 +2646,57 @@ __host__ __device__
         doPermuteShapeBuffer(copy,rearrange);
         return copy;
     }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+
+    INLINEDEF void doPermuteShapeInfo(int *shapeInfo, const int* rearrange) {
+
+        const int rank = shape::rank(shapeInfo);
+        
+        //check whether shape is like {1} or {1,1} or {1,1,1,1,...} - in this case we don't need permute 
+        if(prodLong(shape::shapeOf(shapeInfo), rank) < 2)
+            return;
+        
+        // check whether rearrange is like {0,1,2,3,...}  - in this case we don't need permute as well 
+        bool isPermutNecessary = false;
+        for(int i = 0; i < rank; ++i)
+            if(rearrange[i] != i) {
+               isPermutNecessary = true;
+               break;  
+            }
+        
+        if(!isPermutNecessary)
+            return;
+
+        // check whether rearrange contains correct indexes
+        for(int i = 0; i < rank; ++i)
+            if(rearrange[i] >= rank || rearrange[i] < 0) {
+                printf("shape::doPermuteShapeInfo function failed: rearrange indexes are incorrect !\n");
+                return;
+            }
+
+        // if everything is ok then perform permute 
+        int* temp = new int[shape::shapeInfoLength(rank)];
+        memcpy(temp, shapeInfo, sizeof(int) * shape::shapeInfoLength(rank));
+        for (int i = 0; i < rank; ++i) {
+            shapeInfo[i + 1]        = temp[rearrange[i] + 1];
+            shapeInfo[i + 1 + rank] = temp[rearrange[i] + 1 + rank];
+        }
+
+        shapeInfo[shapeInfoLength(rank) - 2] = -1;
+        shapeInfo[shape::shapeInfoLength(rank) - 1] = shape::getOrder(rank, shape::shapeOf(shapeInfo),shape::stride(shapeInfo),1);
+
+        delete[] temp;
+    }
+
 #ifdef __CUDACC__
     __host__ __device__
 #endif
 
     INLINEDEF void doPermuteShapeBuffer(int *shapeBuffer,int *rearrange) {
+
         //no swapping needs to happen
         if(shape::isScalar(shapeBuffer)) {
             return;
@@ -2660,6 +2712,7 @@ __host__ __device__
         shapeRef[shapeInfoLength(rearrageRank) - 2] = -1;
         shapeRef[shape::shapeInfoLength(rearrageRank) - 1] = shape::getOrder(rearrageRank,shape,stride,1);
 
+        // doPermuteShapeInfo(shapeBuffer, rearrange); // possible fix of integer overflow issue when strides are too large
     }
 
 #ifdef __CUDACC__
@@ -3447,15 +3500,18 @@ __host__ __device__
 #endif
 
     INLINEDEF int isScalar(int *info) {
-        if (shape::rank(info) == 0)
-            return 1;
-        if (shape::rank(info) > 2)
+
+        const int rank = shape::rank(info);
+
+        if(rank > 2)
             return 0;
-        if (shape::rank(info) == 1)
+        if(rank == 0)
+            return 1;
+        if(rank == 1)
             return shape::shapeOf(info)[0] == 1;
-        else if (rank(info) == 2) {
+        if(rank == 2)
             return shape::shapeOf(info)[0] == 1 && shape::shapeOf(info)[1] == 1;
-        }
+
         return 0;
     }
 
@@ -3470,13 +3526,16 @@ __host__ __device__
 #endif
 
     INLINEDEF int isScalar(volatile ShapeInformation *info) {
-        if (info->rank > 2)
+
+        const int rank = info->rank;
+
+        if(rank > 2)
             return 0;
-        if (info->rank == 1)
+        if(rank == 1)
             return info->shape[0] == 1;
-        else if (info->rank == 2) {
+        if(rank == 2)
             return info->shape[0] == 1 && info->shape[1] == 1;
-        }
+
         return 0;
     }
 

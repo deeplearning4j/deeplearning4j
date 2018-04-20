@@ -12,7 +12,7 @@ namespace nd4j {
 
             T lr = (T) 0.0f;
 
-            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: params and gradients should have the same shape");
+            REQUIRE_TRUE(parameters->isSameShape(gradients), 0, "ApplySGD: parameters and gradients should have the same shape, but got parameters = %s and gradients = %s !", ShapeUtils<T>::shapeAsString(parameters).c_str(), ShapeUtils<T>::shapeAsString(gradients).c_str());
 
             if (block.width() == 3) {
                 auto tarr = INPUT_VARIABLE(2);
@@ -20,7 +20,7 @@ namespace nd4j {
             } else if (block.getTArguments()->size() == 1) {
                 lr = T_ARG(0);
             } else {
-                REQUIRE_TRUE(false, 0, "ApplyGradients op should have LR announced either es T argument or additional NDArray");
+                REQUIRE_TRUE(false, 0, "ApplyGradients op should have LR announced either es T argument or additional NDArray!");
             }
 
             auto Z = OUTPUT_VARIABLE(0);

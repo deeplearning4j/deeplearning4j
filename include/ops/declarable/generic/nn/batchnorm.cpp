@@ -18,7 +18,7 @@ CUSTOM_OP_IMPL(batchnorm, 5, 1, false, 1, 2) {
 
     // check whether all input shapes are mutually broadcastable 
     // if yes, evaluate output shapeInfo which is common broadcast shape for all input arrays
-    REQUIRE_TRUE(output->getShapeInfo() != nullptr, 0, "CUSTOM_OP batchnorm: the shapes of input arrays are not mutually broadcastable !");
+    REQUIRE_TRUE(output->getShapeInfo() != nullptr, 0, "BATCHNORM op: the shapes of input arrays are not mutually broadcastable !");
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);

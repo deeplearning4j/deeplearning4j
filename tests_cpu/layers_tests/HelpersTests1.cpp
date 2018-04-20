@@ -5,9 +5,9 @@
 #include <ops/declarable/helpers/svd.h>
 #include <ops/declarable/helpers/hhColPivQR.h>
 #include <ops/declarable/helpers/jacobiSVD.h>
-#include <ops/declarable/helpers/reverseArray.h>
-#include <ops/declarable/helpers/softMaxForVector.h>
-#include <ops/declarable/helpers/rnnCell.h>
+#include <ops/declarable/helpers/reverse.h>
+#include <ops/declarable/helpers/activations.h>
+#include <ops/declarable/helpers/rnn.h>
 #include "NDArrayFactory.h"
 
 

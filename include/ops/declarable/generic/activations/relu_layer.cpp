@@ -11,12 +11,11 @@ namespace nd4j {
             NDArray<T>* w = INPUT_VARIABLE(1);
             NDArray<T>* b = INPUT_VARIABLE(2);
 
-            REQUIRE_TRUE(x->isMatrix(), 0, "relu_layer: x argument should be a 2D tensor, but %i given.", x->rankOf());
-            REQUIRE_TRUE(w->isMatrix(), 0, "relu_layer: weights argument should be a 2D tensor, but %i given.", w->rankOf());
-            REQUIRE_TRUE(b->isVector(), 0, "relu_layer: biases argument should be a 1D tensor, but %i given.", b->rankOf());
-            REQUIRE_TRUE(b->lengthOf() == w->sizeAt(1), 0, "relu_layer: biases dimension should be match to columns of weights matrix, but %i != %i.", 
-                b->lengthOf(), w->sizeAt(1));
-            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: column count of x should be match to row count of weights matrix, but %i != %i.", 
+            REQUIRE_TRUE(x->isMatrix(), 0, "relu_layer: x argument should be a 2D tensor, but got rank %i instead!", x->rankOf());
+            REQUIRE_TRUE(w->isMatrix(), 0, "relu_layer: weights argument should be a 2D tensor, but got rank %i instead!", w->rankOf());
+            REQUIRE_TRUE(b->isVector(), 0, "relu_layer: biases argument should be a 1D tensor, but got rank %i instead!", b->rankOf());
+            REQUIRE_TRUE(b->lengthOf() == w->sizeAt(1), 0, "relu_layer: biases array length should match to columns of weights matrix, however got length = %i and columns = %i!", b->lengthOf(), w->sizeAt(1));
+            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: number of x columns should match to row number of weights matrix, but got x_columns = %i and weights_rows = %i!", 
                 x->sizeAt(1), w->sizeAt(0));
 
             

@@ -31,7 +31,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     const T clippingProjValue  = T_ARG(1);                        // clipping value for projected ht, if it is not equal to zero, then projected cell output is clipped
     const T forgetBias   = T_ARG(2);
 
-        const int rank     = xt->rankOf();    
+    const int rank     = xt->rankOf();    
     const int bS       = xt->sizeAt(0);
     const int inSize   = xt->sizeAt(1);
     const int numProj  = ht_1->sizeAt(1);
@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
     const std::string correctWhShape   = ShapeUtils<T>::shapeAsString({numProj, 4*numUnits});
     const std::string WcShape          = ShapeUtils<T>::shapeAsString(Wc); 
     const std::string correctWcShape   = ShapeUtils<T>::shapeAsString({3*numUnits});
-    const std::string WpShape          = ShapeUtils<T>::shapeAsString(Wp); 
+    const std::string WpShape          = ShapeUtils<T>::shapeAsString(Wp);
     const std::string correctWpShape   = ShapeUtils<T>::shapeAsString({numUnits, numProj});
     const std::string bShape           = ShapeUtils<T>::shapeAsString(b); 
     const std::string correctBShape    = ShapeUtils<T>::shapeAsString({4*numUnits});
@@ -72,38 +72,36 @@ CUSTOM_OP_IMPL(lstmCell, 8, 2, false, 3, 2) {
 
 DECLARE_SHAPE_FN(lstmCell) {    
 
-    NDArray<T>* xt   = INPUT_VARIABLE(0);                   // input [bS x inSize]
-    NDArray<T>* ht_1 = INPUT_VARIABLE(1);                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!! 
-    NDArray<T>* ct_1 = INPUT_VARIABLE(2);                   // previous cell state  [bS x numUnits], that is at previous time step t-1   
+    int* xtShapeInfo   = inputShape->at(0);                   // input [bS x inSize]
+    int* ht_1ShapeInfo = inputShape->at(1);                   // previous cell output [bS x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!! 
+    int* ct_1ShapeInfo = inputShape->at(2);                   // previous cell state  [bS x numUnits], that is at previous time step t-1   
 
-    NDArray<T>* Wx   = INPUT_VARIABLE(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits] 
-    NDArray<T>* Wh   = INPUT_VARIABLE(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits] 
-    NDArray<T>* Wc   = INPUT_VARIABLE(5);                   // diagonal weights for peephole connections [3*numUnits] 
-    NDArray<T>* Wp   = INPUT_VARIABLE(6);                   // projection weights [numUnits x numProj] 
-    NDArray<T>* b    = INPUT_VARIABLE(7);                   // biases, [4*numUnits] 
+    int* WxShapeInfo   = inputShape->at(3);                   // input-to-hidden  weights, [inSize  x 4*numUnits] 
+    int* WhShapeInfo   = inputShape->at(4);                   // hidden-to-hidden weights, [numProj x 4*numUnits] 
+    int* WcShapeInfo   = inputShape->at(5);                   // diagonal weights for peephole connections [3*numUnits] 
+    int* WpShapeInfo   = inputShape->at(6);                   // projection weights [numUnits x numProj] 
+    int* bShapeInfo    = inputShape->at(7);                   // biases, [4*numUnits] 
     
-    const int projection = INT_ARG(1);                     // if 1, then projection is performed, if false then numProj==numUnits is mandatory!!!!
-
-    const int rank     = xt->rankOf();    
-    const int bS       = xt->sizeAt(0);
-    const int inSize   = xt->sizeAt(1);
-    const int numProj  = ht_1->sizeAt(1);
-    const int numUnits = ct_1->sizeAt(1);    
+    const int rank     = xtShapeInfo[0];    
+    const int bS       = xtShapeInfo[1];
+    const int inSize   = xtShapeInfo[2];
+    const int numProj  = ht_1ShapeInfo[2];
+    const int numUnits = ct_1ShapeInfo[2];    
  
     // input shapes validation
-    const std::string ht_1Shape        = ShapeUtils<T>::shapeAsString(ht_1); 
+    const std::string ht_1Shape        = ShapeUtils<T>::shapeAsString(ht_1ShapeInfo); 
     const std::string correctHt_1Shape = ShapeUtils<T>::shapeAsString({bS, numProj});
-    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1); 
+    const std::string ct_1Shape        = ShapeUtils<T>::shapeAsString(ct_1ShapeInfo); 
     const std::string correctCt_1Shape = ShapeUtils<T>::shapeAsString({bS, numUnits});
-    const std::string WxShape          = ShapeUtils<T>::shapeAsString(Wx); 
+    const std::string WxShape          = ShapeUtils<T>::shapeAsString(WxShapeInfo); 
     const std::string correctWxShape   = ShapeUtils<T>::shapeAsString({inSize, 4*numUnits});
-    const std::string WhShape          = ShapeUtils<T>::shapeAsString(Wh); 
+    const std::string WhShape          = ShapeUtils<T>::shapeAsString(WhShapeInfo); 
     const std::string correctWhShape   = ShapeUtils<T>::shapeAsString({numProj, 4*numUnits});
-    const std::string WcShape          = ShapeUtils<T>::shapeAsString(Wc); 
+    const std::string WcShape          = ShapeUtils<T>::shapeAsString(WcShapeInfo ); 
     const std::string correctWcShape   = ShapeUtils<T>::shapeAsString({3*numUnits});
-    const std::string WpShape          = ShapeUtils<T>::shapeAsString(Wp); 
+    const std::string WpShape          = ShapeUtils<T>::shapeAsString(WpShapeInfo); 
     const std::string correctWpShape   = ShapeUtils<T>::shapeAsString({numUnits, numProj});
-    const std::string bShape           = ShapeUtils<T>::shapeAsString(b); 
+    const std::string bShape           = ShapeUtils<T>::shapeAsString(bShapeInfo); 
     const std::string correctBShape    = ShapeUtils<T>::shapeAsString({4*numUnits});
 
     REQUIRE_TRUE(correctHt_1Shape == ht_1Shape, 0, "LSTMCELL operation: wrong shape of initial cell output, expected is %s, but got %s instead !", correctHt_1Shape.c_str(), ht_1Shape.c_str()); 
@@ -113,7 +111,6 @@ DECLARE_SHAPE_FN(lstmCell) {
     REQUIRE_TRUE(correctWcShape == WcShape, 0, "LSTMCELL operation: wrong shape of diagonal weights for peephole connections, expected is %s, but got %s instead !", correctWcShape.c_str(), WcShape.c_str()); 
     REQUIRE_TRUE(correctWpShape == WpShape, 0, "LSTMCELL operation: wrong shape of projection weights, expected is %s, but got %s instead !", correctWpShape.c_str(), WpShape.c_str()); 
     REQUIRE_TRUE(correctBShape  == bShape,  0, "LSTMCELL operation: wrong shape of biases, expected is %s, but got %s instead !", correctBShape.c_str(), bShape.c_str());     
-    REQUIRE_TRUE(!(!projection && numUnits != numProj), 0, "LSTMCELL operation: projection option is switched of, and in this case output dimensionality for the projection matrices (numProj) must be equal to number of units in lstmCell !");
     
     // evaluate output shapeInfos
     int *hShapeInfo(nullptr), *cShapeInfo(nullptr);
@@ -125,8 +122,8 @@ DECLARE_SHAPE_FN(lstmCell) {
     hShapeInfo[2] = numProj;
     cShapeInfo[2] = numUnits;    
     
-    shape::updateStrides(hShapeInfo, ht_1->ordering());
-    shape::updateStrides(cShapeInfo, ct_1->ordering());
+    shape::updateStrides(hShapeInfo, shape::order(ht_1ShapeInfo));
+    shape::updateStrides(cShapeInfo, shape::order(ct_1ShapeInfo));
          
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   

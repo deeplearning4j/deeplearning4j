@@ -1,10 +1,12 @@
 //
-// Created by Yurii Shyrma on 03.01.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 03.01.2018
 //
 
 #include <ops/declarable/helpers/svd.h>
 #include <ops/declarable/helpers/jacobiSVD.h>
 #include <ops/declarable/helpers/biDiagonalUp.h>
+#include <array/ResultSet.h>
+#include <NDArrayFactory.h>
 
 
 namespace nd4j {
@@ -960,6 +962,53 @@ template class ND4J_EXPORT SVD<float16>;
 template class ND4J_EXPORT SVD<double>;
 
 
+
+//////////////////////////////////////////////////////////////////////////
+// svd operation, this function is not method of SVD class, it is standalone function
+template <typename T>
+void svd(const NDArray<T>* x, const std::vector<NDArray<T>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+
+    NDArray<T>* s = outArrs[0];
+    NDArray<T>* u = outArrs[1];
+    NDArray<T>* v = outArrs[2];
+
+    const int rank =  x->rankOf();    
+    const int sRank = rank == 2 ? 2 : rank - 1; 
+
+    ResultSet<T>* listX = NDArrayFactory<T>::allTensorsAlongDimension(x, {rank-2, rank-1});
+    ResultSet<T>* listS = NDArrayFactory<T>::allTensorsAlongDimension(s, {sRank-1});
+    ResultSet<T>* listU(nullptr), *listV(nullptr);
+    
+    if(calcUV) {                
+        listU = NDArrayFactory<T>::allTensorsAlongDimension(u, {rank-2, rank-1});
+        listV = NDArrayFactory<T>::allTensorsAlongDimension(v, {rank-2, rank-1});
+    }
+
+    for(int i = 0; i < listX->size(); ++i) {
+        
+        // NDArray<T> matrix(x->ordering(), {listX->at(i)->sizeAt(0), listX->at(i)->sizeAt(1)}, block.getWorkspace());
+        // matrix.assign(listX->at(i));
+        helpers::SVD<T> svdObj(*(listX->at(i)), switchNum, calcUV, calcUV, fullUV);    
+        listS->at(i)->assign(svdObj._s);
+
+        if(calcUV) {
+            listU->at(i)->assign(svdObj._u);
+            listV->at(i)->assign(svdObj._v);
+        }        
+    }
+
+    delete listX;
+    delete listS;
+    
+    if(calcUV) {
+        delete listU;
+        delete listV;
+    }
+}
+
+template void svd<float>(const NDArray<float>* x, const std::vector<NDArray<float>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+template void svd<float16>(const NDArray<float16>* x, const std::vector<NDArray<float16>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+template void svd<double>(const NDArray<double>* x, const std::vector<NDArray<double>*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
 
 

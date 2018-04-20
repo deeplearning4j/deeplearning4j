@@ -1,5 +1,5 @@
 //
-// Created by yurii@skymind.io on 01.11.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 01.11.2017.
 //
 
 #include <ops/declarable/CustomOperations.h>
@@ -9,6 +9,7 @@ namespace nd4j {
 namespace ops {
 
 CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
+	
 	NDArray<T>* input = INPUT_VARIABLE(0);
 	NDArray<T>* output = OUTPUT_VARIABLE(0);
 	int dim  = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;	 
@@ -18,10 +19,10 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 	// input validation
 	// check whether shapes of all input array are the same				
 	for (int i = 0; i < (int) block.width() - 1; ++i)
-		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "CUSTOM_OP stack: the shapes of input arrays are different !");
+		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "STACK op: the shapes of all input arrays must be the same !");
  	
  	if(input->rankOf() > 1)
- 		REQUIRE_TRUE(dim <= input->rankOf(), 0, "CUSTOM_OP stack: the input dimension is greater/equal than rank of input arrays shapes !");
+ 		REQUIRE_TRUE(dim <= input->rankOf(), 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", input->shapeOf(), dim);
  	
  	std::vector<NDArray<T>*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)
@@ -51,7 +52,11 @@ DECLARE_SHAPE_FN(stack) {
 	int* inShapeInfo = inputShape->at(0);
 	int rank = inShapeInfo[0];
 	int dim = INT_ARG(0);
-	if(dim < 0 ) dim += rank + 1;
+	if(dim < 0 ) 
+		dim += rank + 1;
+
+	if(inShapeInfo[0] > 1)
+ 		REQUIRE_TRUE(dim <= inShapeInfo[0], 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", inShapeInfo[0], dim);
 	
 	if(rank == 0) {
 		int* outShapeInfo = nullptr;

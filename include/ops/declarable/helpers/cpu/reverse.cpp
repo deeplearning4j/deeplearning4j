@@ -1,8 +1,12 @@
 //
-// Created by Yurii Shyrma on 25.01.2018
+// @author Yurii Shyrma, created on 16.04.2018
 //
 
-#include <ops/declarable/helpers/reverseArray.h>
+#include <ops/declarable/helpers/reverse.h>
+#include <helpers/ShapeUtils.h>
+#include <array/ResultSet.h>
+#include <NDArrayFactory.h>
+
 
 namespace nd4j    {
 namespace ops     {
@@ -153,12 +157,64 @@ void reverseArray(T *inArr, int *inShapeBuffer, T *outArr, int *outShapeBuffer, 
             }
 }
 
-                            
+
+///////////////////////////////////////////////////////////////////
+template <typename T>
+void reverseSequence(const NDArray<T>* input, const NDArray<T>* seqLengths, NDArray<T>* output, int seqDim, const int batchDim){
+
+    int posOfNonUnityDim = -1;
+    if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim)) {
+
+        if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
+            output->assign(input);
+        else
+            helpers::reverseArray<T>(const_cast<NDArray<T>*>(input)->getBuffer(), const_cast<NDArray<T>*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), (int)(*seqLengths)(0));
+    }
+    else {
+            
+        if(seqDim > batchDim)
+            --seqDim;
+
+        std::vector<int> dimensions = ShapeUtils<T>::evalDimsToExclude(input->rankOf(), {batchDim});       
+
+        ResultSet<T>* inSubArrsSet  = NDArrayFactory<T>::allTensorsAlongDimension(input, dimensions);
+        ResultSet<T>* outSubArrsSet = NDArrayFactory<T>::allTensorsAlongDimension(output, dimensions);
+
+#pragma omp parallel for if(inSubArrsSet->size() > Environment::getInstance()->elementwiseThreshold()) schedule(guided) 
+        for(int i = 0; i < inSubArrsSet->size(); ++i) {
+
+            int numOfElemsToReverse = (*seqLengths)(i);
+        
+            if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
+                outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
+            }
+            else {
+                ResultSet<T>* inInnerSet  = NDArrayFactory<T>::allTensorsAlongDimension(inSubArrsSet->at(i), {seqDim});
+                ResultSet<T>* outInnerSet = NDArrayFactory<T>::allTensorsAlongDimension(outSubArrsSet->at(i), {seqDim});
+                for(int j = 0; j < inInnerSet->size(); ++j)
+                    helpers::reverseArray<T>(inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
+            
+                delete inInnerSet;
+                delete outInnerSet;
+            }
+        }
+        delete inSubArrsSet;
+        delete outSubArrsSet;
+    }
+
+}
+
+
+template void reverseSequence<float>(const NDArray<float>* input, const NDArray<float>* seqLengths, NDArray<float>* output, int seqDim, const int batchDim);
+template void reverseSequence<float16>(const NDArray<float16>* input, const NDArray<float16>* seqLengths, NDArray<float16>* output, int seqDim, const int batchDim);
+template void reverseSequence<double>(const NDArray<double>* input, const NDArray<double>* seqLengths, NDArray<double>* output, int seqDim, const int batchDim);
+
+
 template void reverseArray<float>(float *inArr, int *inShapeBuffer, float *outArr, int *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<float16>(float16 *inArr, int *inShapeBuffer, float16 *outArr, int *outShapeBuffer, int numOfElemsToReverse);
 template void reverseArray<double>(double *inArr, int *inShapeBuffer, double *outArr, int *outShapeBuffer, int numOfElemsToReverse);
 
+}
+}
+}
 
-}
-}
-}
