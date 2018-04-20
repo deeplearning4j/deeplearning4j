@@ -1,24 +1,20 @@
 package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.reflections.Reflections;
-import org.reflections.scanners.SubTypesScanner;
-import org.reflections.util.ClasspathHelper;
-import org.reflections.util.ConfigurationBuilder;
-import org.reflections.util.FilterBuilder;
 
-import java.lang.reflect.Modifier;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class BasicNDArrayCompressor {
     private static final BasicNDArrayCompressor INSTANCE = new BasicNDArrayCompressor();
 
@@ -35,25 +31,19 @@ public class BasicNDArrayCompressor {
             We scan classpath for NDArrayCompressor implementations and add them one by one to codecs map
          */
         codecs = new ConcurrentHashMap<>();
-        Set<Class<? extends NDArrayCompressor>> classes = new Reflections(new ConfigurationBuilder()
-                        .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.nd4j"))
-                                        .exclude("^(?!.*\\.class$).*$")) //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                        .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()))
-                                        .getSubTypesOf(NDArrayCompressor.class);
 
-        for (Class<? extends NDArrayCompressor> impl : classes) {
-            if (Modifier.isAbstract(impl.getModifiers()) || impl.isInterface())
-                continue;
+        ServiceLoader<NDArrayCompressor> loader = ServiceLoader.load(NDArrayCompressor.class);
+        for (NDArrayCompressor compressor : loader) {
+            codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
+        }
 
-            try {
-                NDArrayCompressor compressor = impl.newInstance();
-
-                codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
-            } catch (InstantiationException i) {
-                ; // we need catch there, to avoid exceptions at abstract classes
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+        if(codecs.isEmpty()){
+            //No compressors found - bad uber-jar?
+            String msg = "Error loading ND4J Compressors via service loader: No compressors were found. This usually occurs" +
+                    " when running ND4J UI from an uber-jar, which was built incorrectly (without services resource" +
+                    " files being included)";
+            log.error(msg);
+            throw new RuntimeException(msg);
         }
     }
 

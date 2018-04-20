@@ -21,7 +21,6 @@ package org.nd4j.linalg.factory;
 
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
-import org.reflections.Reflections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,54 +194,6 @@ public abstract class Nd4jBackend {
             return backend;
         }
 
-        log.trace("Service loader failed...falling back to reflection");
-        Set<Class<? extends Nd4jBackend>> clazzes = new Reflections("org.nd4j").getSubTypesOf(Nd4jBackend.class);
-        List<Nd4jBackend> reflectionBackends = new ArrayList<>();
-        for (Class<? extends Nd4jBackend> backend : clazzes) {
-            try {
-                Nd4jBackend load = backend.newInstance();
-                reflectionBackends.add(load);
-            } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-
-        }
-
-        Collections.sort(reflectionBackends, new Comparator<Nd4jBackend>() {
-            @Override
-            public int compare(Nd4jBackend o1, Nd4jBackend o2) {
-                // high-priority first
-                return o2.getPriority() - o1.getPriority();
-            }
-        });
-
-
-        for (Nd4jBackend backend : reflectionBackends) {
-            boolean available = false;
-            String error = null;
-            try {
-                available = backend.isAvailable();
-            } catch (Exception e) {
-                error = e.getMessage();
-            }
-            if (!available) {
-                log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
-                continue;
-            }
-
-            try {
-                Nd4jContext.getInstance().updateProperties(backend.getConfigurationResource().getInputStream());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-
-            log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
-            return backend;
-        }
-
         //need to dynamically load jars and recall, note that we do this right before the backend loads.
         //An existing backend should take precedence over
         //ones being dynamically discovered.
@@ -266,7 +217,6 @@ public abstract class Nd4jBackend {
         }
 
         return load();
-
     }
 
 

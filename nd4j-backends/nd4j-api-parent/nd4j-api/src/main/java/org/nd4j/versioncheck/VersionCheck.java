@@ -1,12 +1,14 @@
 package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
+
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
 import org.reflections.util.FilterBuilder;
+
 
 import java.util.*;
 import java.util.regex.Pattern;

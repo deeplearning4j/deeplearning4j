@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2018 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -19,14 +19,12 @@
 
 package org.nd4j.jdbc.driverfinder;
 
-import org.reflections.Reflections;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Modifier;
 import java.sql.Driver;
 import java.util.HashSet;
 import java.util.Properties;
+import java.util.ServiceLoader;
 import java.util.Set;
 
 /**
@@ -58,50 +56,40 @@ public class DriverFinder {
 
 
     private static void discoverDriverClazz() {
-        Reflections r = new Reflections();
-        Set<Class<? extends Driver>> clazzes = new HashSet<>(r.getSubTypesOf(Driver.class));
-        if (clazzes.isEmpty()) {
-            throw new IllegalStateException("No org.nd4j.jdbc drivers found.");
-        } else if (clazzes.size() != 1) {
-            Set<Class<? extends Driver>> remove = new HashSet<>();
-            for (Class<? extends Driver> clazz : clazzes) {
-                if (Modifier.isAbstract(clazz.getModifiers())) {
-                    remove.add(clazz);
-                } else if (Modifier.isInterface(clazz.getModifiers())) {
-                    remove.add(clazz);
-                }
-            }
+        //All JDBC4 compliant drivers support ServiceLoader mechanism for discovery - https://stackoverflow.com/a/18297412
+        ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
+        Set<Class<? extends Driver>> driverClasses = new HashSet<>();
+        for(Driver d : drivers){
+            driverClasses.add(d.getClass());
+        }
 
-            clazzes.removeAll(remove);
-            if (clazzes.size() != 1) {
-                InputStream i = DriverFinder.class.getResourceAsStream("/" + ND4j_JDBC_PROPERTIES);
-                if (i == null)
-                    throw new IllegalStateException("Only one jdbc driver allowed on the class path");
-                else {
-                    Properties props = new Properties();
-                    try {
-                        props.load(i);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+        if(driverClasses.isEmpty()){
+            throw new IllegalStateException("No org.nd4j.jdbc drivers found on classpath via ServiceLoader");
+        }
 
-                    String clazz = props.getProperty(JDBC_KEY);
-                    if (clazz == null)
-                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
-                                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
-                    try {
-                        DriverFinder.clazz = (Class<? extends Driver>) Class.forName(clazz);
-                    } catch (ClassNotFoundException e) {
-                        throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
-                                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
-
-                    }
-
+        if(driverClasses.size() != 1) {
+            InputStream i = DriverFinder.class.getResourceAsStream("/" + ND4j_JDBC_PROPERTIES);
+            if (i == null)
+                throw new IllegalStateException("Only one jdbc driver allowed on the class path");
+            else {
+                Properties props = new Properties();
+                try {
+                    props.load(i);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
 
+                String clazz = props.getProperty(JDBC_KEY);
+                if (clazz == null)
+                    throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
+                            + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
+                try {
+                    DriverFinder.clazz = (Class<? extends Driver>) Class.forName(clazz);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
+                            + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
+                }
             }
         }
     }
-
-
 }

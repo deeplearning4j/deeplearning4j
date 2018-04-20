@@ -1,0 +1,2 @@
+org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer
+org.nd4j.parameterserver.distributed.training.impl.CbowTrainer

@@ -6,12 +6,9 @@ import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author raver119@gmail.com
