@@ -143,7 +143,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training);
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training);
 
-        //Input validation: expect rank 5 matrix
         if (input.rank() != 5) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
@@ -175,7 +174,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
         }
         int kH = weights.size(2);
         int kW = weights.size(3);
-        int kD = weights.size(3);
+        int kD = weights.size(4);
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
@@ -203,21 +202,22 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray reshapedOutput = output.reshape('c', miniBatch, outChannels, outH, outW, outD);
 
         int[] args = new int[]{
-                layerConfig.hasBias() ? 1 : 0,
+                kH, kW, kD,
                 strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2]
+                pad[0], pad[1], pad[2],
+                dilation[0], dilation[1], dilation[2]
         };
 
         CustomOp op;
         if (layerConfig.hasBias()) {
-            op = DynamicCustomOp.builder("conv3d")
+            op = DynamicCustomOp.builder("conv3dnew")
                     .addInputs(input, weights, bias)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedOutput)
                     .callInplace(false)
                     .build();
         } else {
-            op = DynamicCustomOp.builder("conv3d")
+            op = DynamicCustomOp.builder("conv3dnew")
                     .addInputs(input, weights)
                     .addIntegerArguments(args)
                     .addOutputs(reshapedOutput)

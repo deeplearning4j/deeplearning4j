@@ -28,6 +28,8 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Convolution3D extends ConvolutionLayer {
 
+    private boolean isValidMode = false; // in libnd4j: 0 - same mode, 1 - valid mode
+    private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
      * 3-dimensional convolutional layer configuration
@@ -36,13 +38,16 @@ public class Convolution3D extends ConvolutionLayer {
      * The builder specifies the filter/kernel size, the stride and padding
      * The pooling layer takes the kernel size
      */
-    protected Convolution3D(Builder builder) {
+    public Convolution3D(Builder builder) {
         super(builder);
+        this.isNCDHW = builder.isNCDHW;
+        this.isValidMode = builder.isValidMode;
     }
 
     public boolean hasBias() {
         return hasBias;
     }
+
 
     @Override
     public Convolution3D clone() {
@@ -53,6 +58,8 @@ public class Convolution3D extends ConvolutionLayer {
             clone.stride = clone.stride.clone();
         if (clone.padding != null)
             clone.padding = clone.padding.clone();
+        if (clone.dilation != null)
+            clone.dilation = clone.dilation.clone();
         return clone;
     }
 
@@ -88,6 +95,10 @@ public class Convolution3D extends ConvolutionLayer {
 
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
+        private boolean isValidMode = false; // in libnd4j: 0 - same mode, 1 - valid mode
+        private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
+
+
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
         }
@@ -118,6 +129,21 @@ public class Convolution3D extends ConvolutionLayer {
 
         public Builder padding(int... padding) {
             this.padding = padding;
+            return this;
+        }
+
+        public Builder dilation(int... dilation) {
+            this.dilation = dilation;
+            return this;
+        }
+
+        public Builder isValidMode(boolean mode) {
+            this.isValidMode = mode;
+            return this;
+        }
+
+        public Builder isNCDHW(boolean dataFormat) {
+            this.isNCDHW = dataFormat;
             return this;
         }
 
