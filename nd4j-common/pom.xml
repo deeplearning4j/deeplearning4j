@@ -13,7 +13,6 @@
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
-        <commons-compress.version>1.16.1</commons-compress.version>
     </properties>
 
     <profiles>

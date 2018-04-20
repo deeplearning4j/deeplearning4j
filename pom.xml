@@ -534,7 +534,7 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <commons-io.version>2.4</commons-io.version>
         <commons-math3.version>3.4.1</commons-math3.version>
-        <commons-lang3.version>3.3.1</commons-lang3.version>
+        <commons-lang3.version>3.4</commons-lang3.version>
         <commons-collections4.version>4.1</commons-collections4.version>
         <commons-compress.version>1.16.1</commons-compress.version>
         <camel.version>2.18.2</camel.version>
@@ -548,7 +548,7 @@
         <reflections.version>0.9.10</reflections.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
-        <slf4j.version>1.7.10</slf4j.version>
+        <slf4j.version>1.7.12</slf4j.version>
         <logback.version>1.1.2</logback.version>
         <javacpp.version>1.4.1</javacpp.version>
         <javacpp-presets.version>1.4.1</javacpp-presets.version>
