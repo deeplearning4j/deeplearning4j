@@ -38,6 +38,7 @@ import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.serde.LegacyLayerDeserializerHelper;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -52,6 +53,7 @@ import java.util.*;
 /**
  * A neural network layer.
  */
+/*
 @JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
                 @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
@@ -87,7 +89,9 @@ import java.util.*;
                 @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
                 @JsonSubTypes.Type(value = Cropping1D.class, name = "Cropping1D"),
                 @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
-)
+)*/
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyLayerDeserializerHelper.class)
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {

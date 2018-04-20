@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.json.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
@@ -121,9 +122,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     //Counter for the number of epochs completed so far. Used for per-epoch schedules
     protected int epochCount = 0;
 
-    private static ObjectMapper mapper = initMapper();
-    private static final ObjectMapper mapperYaml = initMapperYaml();
-    private static Set<Class<?>> subtypesClassCache = null;
+//    private static ObjectMapper mapper = initMapper();
+//    private static final ObjectMapper mapperYaml = initMapperYaml();
+//    private static Set<Class<?>> subtypesClassCache = null;
 
 
     /**
@@ -407,14 +408,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * @return
      */
     public static ObjectMapper mapperYaml() {
-        return mapperYaml;
+//        return mapperYaml;
+        return JsonMappers.getMapperYaml();
     }
 
+    /*
     private static ObjectMapper initMapperYaml() {
         ObjectMapper ret = new ObjectMapper(new YAMLFactory());
         configureMapper(ret);
         return ret;
-    }
+    }*/
 
     /**
      * Object mapper for serialization of configurations
@@ -422,7 +425,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * @return
      */
     public static ObjectMapper mapper() {
-        return mapper;
+        return JsonMappers.getMapper();
     }
 
     /**
@@ -430,13 +433,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      * This can be used to add additional subtypes at runtime (i.e., for JSON mapping with
      * types defined outside of the main DL4J codebase)
      */
+    /*
     public static ObjectMapper reinitMapperWithSubtypes(Collection<NamedType> additionalTypes) {
         mapper.registerSubtypes(additionalTypes.toArray(new NamedType[additionalTypes.size()]));
         //Recreate the mapper (via copy), as mapper won't use registered subtypes after first use
         mapper = mapper.copy();
         return mapper;
-    }
+    }*/
 
+    /*
     private static ObjectMapper initMapper() {
         ObjectMapper ret = new ObjectMapper();
         configureMapper(ret);
@@ -495,8 +500,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 Collection<URL> urls = ClasspathHelper.forClassLoader();
                 List<URL> scanUrls = new ArrayList<>();
                 for (URL u : urls) {
-                    String path = u.getPath();
-                    if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
+                    String path = u.getPath();*/
+//                    if (!path.matches(".*/jre/lib/.*jar")) { //Skip JRE/JDK JARs
+    /*
                         scanUrls.add(u);
                     }
                 }
@@ -573,6 +579,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         mapper.registerSubtypes(toRegister.toArray(new NamedType[toRegister.size()]));
     }
+    */
 
     /**
      * NeuralNetConfiguration builder, used as a starting point for creating a MultiLayerConfiguration or
