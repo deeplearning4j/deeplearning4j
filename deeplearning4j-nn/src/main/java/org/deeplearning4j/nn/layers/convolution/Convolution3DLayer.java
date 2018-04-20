@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.util.Convolution3DUtils;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
@@ -53,20 +52,18 @@ public class Convolution3DLayer extends ConvolutionLayer {
         INDArray bias;
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true);
 
-        int miniBatch = input.size(0);
-        int inH = input.size(2);
-        int inW = input.size(3);
-        int inD = input.size(4);
-
-        int outChannels = weights.size(0);
-
-        int kH = weights.size(2);
-        int kW = weights.size(3);
-        int kD = weights.size(4);
-
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
         boolean isNCDHW = layerConfig.isNCDHW();
+
+
+        int miniBatch = input.size(0);
+        int inD = isNCDHW ? input.size(2) : input.size(1);
+        int inH = isNCDHW ? input.size(3) : input.size(2);
+        int inW = isNCDHW ? input.size(4) : input.size(3);
+
+        int outChannels = isNCDHW ? weights.size(0) : weights.size(4);
+
 
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
@@ -77,26 +74,35 @@ public class Convolution3DLayer extends ConvolutionLayer {
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
-            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
+            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(
+                    outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = Convolution3DUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
+            outSize = Convolution3DUtils.get3DOutputSize(
+                    input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
-        int outH = outSize[0];
-        int outW = outSize[1];
-        int outD = outSize[2];
+        int outD = outSize[0];
+        int outH = outSize[1];
+        int outW = outSize[2];
 
         INDArray biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
         INDArray outEpsilon = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
-        INDArray reshapedEpsilon = outEpsilon.reshape('c', miniBatch, outChannels, outH, outW, outD);
+        INDArray reshapedEpsilon;
+        if (isNCDHW)
+            reshapedEpsilon = outEpsilon.reshape('c', miniBatch, outChannels, outD, outH, outW);
+        else
+            reshapedEpsilon = outEpsilon.reshape('c', miniBatch, outD, outH, outW, outChannels);
 
-        Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
-        int[] args = new int[]{
-                kH, kW, kD, strides[0], strides[1], strides[2],
-                pad[0], pad[1], pad[2], dilation[0], dilation[1], dilation[2], sameMode
+        int[] intArgs = new int[]{
+                kernel[0], kernel[1], kernel[2],
+                strides[0], strides[1], strides[2],
+                pad[0], pad[1], pad[2],
+                dilation[0], dilation[1], dilation[2],
+                convolutionMode == ConvolutionMode.Same ? 0 : 1,
+                isNCDHW ? 1 : 0
         };
 
         INDArray delta;
@@ -109,16 +115,16 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
             bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true);
 
-            op = DynamicCustomOp.builder("conv3d_bp")
+            op = DynamicCustomOp.builder("conv3dnew_bp")
                     .addInputs(input, weights, bias, delta)
-                    .addIntegerArguments(args)
+                    .addIntegerArguments(intArgs)
                     .addOutputs(reshapedEpsilon, weightGradView, biasGradView)
                     .callInplace(false)
                     .build();
         } else {
-            op = DynamicCustomOp.builder("conv3d_bp")
+            op = DynamicCustomOp.builder("conv3dnew_bp")
                     .addInputs(input, weights, delta)
-                    .addIntegerArguments(args)
+                    .addIntegerArguments(intArgs)
                     .addOutputs(reshapedEpsilon, weightGradView)
                     .callInplace(false)
                     .build();
@@ -172,10 +178,10 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int inH = isNCDHW ? input.size(3) : input.size(2);
         int inW = isNCDHW ? input.size(4) : input.size(3);
 
-        int outChannels = isNCDHW ? weights.size(0) : weights.size(4);
-        int inChannels = isNCDHW ? weights.size(1) : weights.size(3);
-
-        if (inputChannels != inChannels) {
+        int outWeightChannels = isNCDHW ? weights.size(0) : weights.size(4);
+        int inWeightChannels = isNCDHW ? weights.size(1) : weights.size(3);
+        
+        if (inputChannels != inWeightChannels) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
@@ -184,7 +190,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1)
                     + ", [minibatch, inputChannels, height, width, depth]="
-                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inChannels + ") "
+                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inWeightChannels + ") "
                     + layerId());
         }
 
@@ -209,12 +215,12 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray output = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
+        INDArray output = Nd4j.create(miniBatch * outWeightChannels * outH * outW * outD);
         INDArray reshapedOutput;
         if (isNCDHW)
-            reshapedOutput = output.reshape('c', miniBatch, outChannels, outD, outH, outW);
+            reshapedOutput = output.reshape('c', miniBatch, outWeightChannels, outD, outH, outW);
         else
-            reshapedOutput =  output.reshape('c', miniBatch, outD, outH, outW, outChannels);
+            reshapedOutput = output.reshape('c', miniBatch, outD, outH, outW, outWeightChannels);
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],

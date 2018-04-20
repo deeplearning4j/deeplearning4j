@@ -34,9 +34,9 @@ import java.util.Arrays;
 import static org.deeplearning4j.util.ConvolutionUtils.effectiveKernelSize;
 
 /**
- * Convolutional shape utilities
+ * Shape utilities for 3D convolution layers
  *
- * @author Adam Gibson
+ * @author Max Pumperla
  */
 public class Convolution3DUtils {
 

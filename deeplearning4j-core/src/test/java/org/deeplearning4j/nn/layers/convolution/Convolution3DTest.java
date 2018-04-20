@@ -110,6 +110,7 @@ public class Convolution3DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
+                        .isNCDHW(true)
                         .build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);
