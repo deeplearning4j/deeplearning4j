@@ -140,7 +140,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
     protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
 
-        INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training);
+        Convolution3D layerConfig = (Convolution3D) layerConf();
+
+        ConvolutionMode mode = layerConfig.getConvolutionMode();
+        boolean isNCDHW = layerConfig.isNCDHW();
+
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, training);
 
         if (input.rank() != 5) {
@@ -158,10 +162,17 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        int outChannels = weights.size(0);
-        int inChannels = weights.size(1);
 
-        if (input.size(1) != inChannels) {
+        int miniBatch = input.size(0);
+        int inputChannels = isNCDHW ? input.size(1) : input.size(4);
+        int inD = isNCDHW ? input.size(2) : input.size(1);
+        int inH = isNCDHW ? input.size(3) : input.size(2);
+        int inW = isNCDHW ? input.size(4) : input.size(3);
+
+        int outChannels = isNCDHW ? weights.size(0) : weights.size(4);
+        int inChannels = isNCDHW ? weights.size(1) : weights.size(3);
+
+        if (inputChannels != inChannels) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
@@ -172,54 +183,54 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inChannels + ") "
                     + layerId());
         }
-        int kH = weights.size(2);
-        int kW = weights.size(3);
-        int kD = weights.size(4);
 
-        Convolution3D layerConfig = (Convolution3D) layerConf();
 
-        int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
+        int[] dilation = layerConfig.getDilation();
         int[] strides = layerConfig.getStride();
 
         int[] pad;
         int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+        if (mode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.get3DOutputSize(
+                    input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
+            int[] inSize =  new int[]{inD, inH, inW};
             pad = ConvolutionUtils.get3DSameModeTopLeftPadding(outSize,
-                    new int[]{input.size(2), input.size(3), input.size(4)}, kernel,
-                    strides, dilation);
+                   inSize, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
         int outH = outSize[0];
         int outW = outSize[1];
         int outD = outSize[2];
 
-        int miniBatch = input.size(0);
         INDArray output = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
         INDArray reshapedOutput = output.reshape('c', miniBatch, outChannels, outH, outW, outD);
 
-        int[] args = new int[]{
-                kH, kW, kD,
+        int[] intArgs = new int[]{
+                kernel[0], kernel[1], kernel[2],
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
-                dilation[0], dilation[1], dilation[2]
+                dilation[0], dilation[1], dilation[2],
+                mode == ConvolutionMode.Same ? 0 : 1,
+                isNCDHW ? 1 : 0
         };
 
         CustomOp op;
         if (layerConfig.hasBias()) {
+            INDArray bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, training);
+
             op = DynamicCustomOp.builder("conv3dnew")
                     .addInputs(input, weights, bias)
-                    .addIntegerArguments(args)
+                    .addIntegerArguments(intArgs)
                     .addOutputs(reshapedOutput)
                     .callInplace(false)
                     .build();
         } else {
             op = DynamicCustomOp.builder("conv3dnew")
                     .addInputs(input, weights)
-                    .addIntegerArguments(args)
+                    .addIntegerArguments(intArgs)
                     .addOutputs(reshapedOutput)
                     .callInplace(false)
                     .build();

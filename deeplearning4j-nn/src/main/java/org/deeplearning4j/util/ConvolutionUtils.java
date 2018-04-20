@@ -96,30 +96,32 @@ public class ConvolutionUtils {
      * @return Output size: int[3] with output height/width/depth
      */
     public static int[] get3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                                        ConvolutionMode convolutionMode, int[] dilation) {
-        int inH = inputData.size(2);
-        int inW = inputData.size(3);
-        int inD = inputData.size(4);
+                                        ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
+
+        // NCDHW vs. NDHWC
+        int inH = isNCDHW ? inputData.size(2): inputData.size(1);
+        int inW = isNCDHW ? inputData.size(3) : inputData.size(2);
+        int inD = isNCDHW ? inputData.size(4) : inputData.size(3);
 
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        int[] inShape = new int[] {inH, inW, inD};
+        int[] inShape = new int[] {inD, inH, inW};
         validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
-            int outH = (int) Math.ceil(inH / ((double) strides[0]));
-            int outW = (int) Math.ceil(inW / ((double) strides[1]));
-            int outD = (int) Math.ceil(inD / ((double) strides[2]));
+            int outD = (int) Math.ceil(inD / ((double) strides[0]));
+            int outH = (int) Math.ceil(inH / ((double) strides[1]));
+            int outW = (int) Math.ceil(inW / ((double) strides[2]));
 
             return new int[]{outH, outW, outD};
         }
 
-        int hOut = (inH - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
-        int wOut = (inW - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
-        int dOut = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
+        int dOut = (inW - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int hOut = (inH - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
+        int wOut = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
 
-        return new int[]{hOut, wOut, dOut};
+        return new int[]{dOut, hOut, wOut};
     }
 
     /**

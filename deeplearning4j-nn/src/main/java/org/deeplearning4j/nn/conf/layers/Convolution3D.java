@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
@@ -28,7 +29,7 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class Convolution3D extends ConvolutionLayer {
 
-    private boolean isValidMode = false; // in libnd4j: 0 - same mode, 1 - valid mode
+    private ConvolutionMode mode = ConvolutionMode.Same;  // in libnd4j: 0 - same mode, 1 - valid mode
     private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
     /**
@@ -41,7 +42,7 @@ public class Convolution3D extends ConvolutionLayer {
     public Convolution3D(Builder builder) {
         super(builder);
         this.isNCDHW = builder.isNCDHW;
-        this.isValidMode = builder.isValidMode;
+        this.convolutionMode = builder.convolutionMode;
     }
 
     public boolean hasBias() {
@@ -137,8 +138,8 @@ public class Convolution3D extends ConvolutionLayer {
             return this;
         }
 
-        public Builder isValidMode(boolean mode) {
-            this.isValidMode = mode;
+        public Builder convolutionMode(ConvolutionMode mode) {
+            this.convolutionMode = mode;
             return this;
         }
 
