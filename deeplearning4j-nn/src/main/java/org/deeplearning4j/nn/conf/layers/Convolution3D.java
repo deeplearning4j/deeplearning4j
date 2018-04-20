@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -153,7 +154,7 @@ public class Convolution3D extends ConvolutionLayer {
         @SuppressWarnings("unchecked")
         public Convolution3D build() {
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
-            ConvolutionUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
+            Convolution3DUtils.validateCnn3DKernelStridePadding(kernelSize, stride, padding);
 
             return new Convolution3D(this);
         }

@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.Convolution3DParamInitializer;
+import org.deeplearning4j.util.Convolution3DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -65,6 +66,8 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
+        boolean isNCDHW = layerConfig.isNCDHW();
+
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
         int[] strides = layerConfig.getStride();
@@ -72,11 +75,12 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int[] outSize;
 
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, null, convolutionMode, dilation);
-            pad = ConvolutionUtils.get3DSameModeTopLeftPadding(outSize, new int[]{inH, inW, inD}, kernel, strides, dilation);
+            outSize = Convolution3DUtils.get3DOutputSize(
+                    input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
+            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize, new int[]{inD, inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
+            outSize = Convolution3DUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
         int outH = outSize[0];
         int outW = outSize[1];
@@ -97,7 +101,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         INDArray delta;
         IActivation afn = layerConfig.getActivationFn();
-        // TODO: Make sure this is 5D
         Pair<INDArray, INDArray> p = preOutput(true, true);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
@@ -176,7 +179,8 @@ public class Convolution3DLayer extends ConvolutionLayer {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3D layer (layer name = " + layerName
+            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution3D layer (layer name = "
+                    + layerName
                     + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
                     + " (data input depth = " + input.size(1)
                     + ", [minibatch, inputChannels, height, width, depth]="
@@ -192,21 +196,25 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (mode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.get3DOutputSize(
+            outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, null, convolutionMode, dilation, isNCDHW);
-            int[] inSize =  new int[]{inD, inH, inW};
-            pad = ConvolutionUtils.get3DSameModeTopLeftPadding(outSize,
-                   inSize, kernel, strides, dilation);
+            int[] inSize = new int[]{inD, inH, inW};
+            pad = Convolution3DUtils.get3DSameModeTopLeftPadding(outSize,
+                    inSize, kernel, strides, dilation);
         } else {
             pad = layerConfig.getPadding();
-            outSize = ConvolutionUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
+            outSize = Convolution3DUtils.get3DOutputSize(input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
-        int outH = outSize[0];
-        int outW = outSize[1];
-        int outD = outSize[2];
+        int outD = outSize[0];
+        int outH = outSize[1];
+        int outW = outSize[2];
 
         INDArray output = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
-        INDArray reshapedOutput = output.reshape('c', miniBatch, outChannels, outH, outW, outD);
+        INDArray reshapedOutput;
+        if (isNCDHW)
+            reshapedOutput = output.reshape('c', miniBatch, outChannels, outD, outH, outW);
+        else
+            reshapedOutput =  output.reshape('c', miniBatch, outD, outH, outW, outChannels);
 
         int[] intArgs = new int[]{
                 kernel[0], kernel[1], kernel[2],

@@ -69,8 +69,9 @@ public class ConvolutionUtils {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        int[] inShape = new int[] {hIn, wIn};
-        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
+        int[] inShape = new int[]{hIn, wIn};
+        // TODO: fix this for 3D and data formats
+//        validateShapes(inputData, kernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
             int hOut = strides[0] * hIn;
@@ -84,45 +85,6 @@ public class ConvolutionUtils {
         return new int[]{hOut, wOut};
     }
 
-    /**
-     * Get the output size (height/width/depth) for the given input data and CNN3D configuration
-     *
-     * @param inputData       Input data
-     * @param kernel          Kernel size (height/width/depth)
-     * @param strides         Strides (height/width/depth)
-     * @param padding         Padding (height/width/depth)
-     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
-     * @param dilation        Kernel dilation (height/width/depth)
-     * @return Output size: int[3] with output height/width/depth
-     */
-    public static int[] get3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                                        ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
-
-        // NCDHW vs. NDHWC
-        int inH = isNCDHW ? inputData.size(2): inputData.size(1);
-        int inW = isNCDHW ? inputData.size(3) : inputData.size(2);
-        int inD = isNCDHW ? inputData.size(4) : inputData.size(3);
-
-        int[] eKernel = effectiveKernelSize(kernel, dilation);
-        boolean atrous = (eKernel == kernel);
-
-        int[] inShape = new int[] {inD, inH, inW};
-        validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
-
-        if (convolutionMode == ConvolutionMode.Same) {
-            int outD = (int) Math.ceil(inD / ((double) strides[0]));
-            int outH = (int) Math.ceil(inH / ((double) strides[1]));
-            int outW = (int) Math.ceil(inW / ((double) strides[2]));
-
-            return new int[]{outH, outW, outD};
-        }
-
-        int dOut = (inW - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
-        int hOut = (inH - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
-        int wOut = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
-
-        return new int[]{dOut, hOut, wOut};
-    }
 
     /**
      * Get the output size (height/width) for the given input data and CNN configuration
@@ -145,21 +107,10 @@ public class ConvolutionUtils {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        int[] inShape = new int[] {inH, inW};
+        int[] inShape = new int[]{inH, inW};
         validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
-            //'Same' padding mode:
-            //outH = ceil(inHeight / strideH)           decimal division
-            //outW = ceil(inWidth / strideW)            decimal division
-
-            //padHeightSum = ((outH - 1) * strideH + kH - inHeight)
-            //padTop = padHeightSum / 2                 integer division
-            //padBottom = padHeghtSum - padTop
-
-            //padWidthSum = ((outW - 1) * strideW + kW - inWidth)
-            //padLeft = padWidthSum / 2                 integer division
-            //padRight = padWidthSum - padLeft
 
             int outH = (int) Math.ceil(inH / ((double) strides[0]));
             int outW = (int) Math.ceil(inW / ((double) strides[1]));
@@ -174,7 +125,7 @@ public class ConvolutionUtils {
     }
 
     public static void validateShapes(INDArray inputData, int[] eKernel, int[] strides, int[] padding,
-                                      ConvolutionMode convolutionMode, int[] dilation, int[]inShape,
+                                      ConvolutionMode convolutionMode, int[] dilation, int[] inShape,
                                       boolean atrous) {
 
         int inH = inShape[0];
@@ -333,24 +284,6 @@ public class ConvolutionUtils {
     }
 
     /**
-     * Get top and left padding for same mode only for 3d convolutions
-     *
-     * @param outSize
-     * @param inSize
-     * @param kernel
-     * @param strides
-     * @return
-     */
-    public static int[] get3DSameModeTopLeftPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
-        int[] eKernel = effectiveKernelSize(kernel, dilation);
-        int[] outPad = new int[3];
-        outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2;
-        outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2;
-        outPad[2] = ((outSize[2] - 1) * strides[2] + eKernel[2] - inSize[2]) / 2;
-        return outPad;
-    }
-
-    /**
      * Get top and left padding for same mode only.
      *
      * @param outSize
@@ -437,12 +370,11 @@ public class ConvolutionUtils {
 
     /**
      * Check that the convolution mode is consistent with the padding specification
-     *
      */
     public static void validateConvolutionModePadding(ConvolutionMode mode, int[] padding) {
         if (mode == ConvolutionMode.Same) {
             boolean nullPadding = true;
-            for (int i : padding){
+            for (int i : padding) {
                 if (i != 0) nullPadding = false;
             }
             if (!nullPadding)
@@ -494,50 +426,7 @@ public class ConvolutionUtils {
         }
     }
 
-    /**
-     * Perform validation on the CNN3D layer kernel/stride/padding. Expect 3d int[], with values > 0 for kernel size and
-     * stride, and values >= 0 for padding.
-     *
-     * @param kernelSize Kernel size array to check
-     * @param stride     Stride array to check
-     * @param padding    Padding array to check
-     */
-    public static void validateCnn3DKernelStridePadding(int[] kernelSize, int[] stride, int[] padding) {
-        if (kernelSize == null || kernelSize.length != 3) {
-            throw new IllegalStateException("Invalid kernel size: expected int[] of length 3, got "
-                    + (kernelSize == null ? null : Arrays.toString(kernelSize)));
-        }
-
-        if (stride == null || stride.length != 3) {
-            throw new IllegalStateException("Invalid stride configuration: expected int[] of length 3, got "
-                    + (stride == null ? null : Arrays.toString(stride)));
-        }
-
-        if (padding == null || padding.length != 3) {
-            throw new IllegalStateException("Invalid padding configuration: expected int[] of length 3, got "
-                    + (padding == null ? null : Arrays.toString(padding)));
-        }
-
-        if (kernelSize[0] <= 0 || kernelSize[1] <= 0 || kernelSize[2] <= 0) {
-            throw new IllegalStateException(
-                    "Invalid kernel size: values must be positive (> 0) for all dimensions. Got: "
-                            + Arrays.toString(kernelSize));
-        }
-
-        if (stride[0] <= 0 || stride[1] <= 0 || stride[2] <= 0) {
-            throw new IllegalStateException(
-                    "Invalid stride configuration: values must be positive (> 0) for all dimensions. Got: "
-                            + Arrays.toString(stride));
-        }
-
-        if (padding[0] < 0 || padding[1] < 0 || padding[2] < 0) {
-            throw new IllegalStateException(
-                    "Invalid padding configuration: values must be >= 0 for all dimensions. Got: "
-                            + Arrays.toString(padding));
-        }
-    }
-
-    public static INDArray reshape4dTo2d(INDArray in){
+    public static INDArray reshape4dTo2d(INDArray in) {
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
@@ -545,40 +434,40 @@ public class ConvolutionUtils {
 
         //Reshape: from [n,c,h,w] to [n*h*w,c]
 
-        INDArray out = in.permute(0,2,3,1);
-        if(out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
+        INDArray out = in.permute(0, 2, 3, 1);
+        if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
             out = out.dup('c');
 
-        return out.reshape('c', shape[0]*shape[2]*shape[3], shape[1]);
+        return out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]);
     }
 
-    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape){
-        if(in2d.rank() != 2)
+    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape) {
+        if (in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
-        if(toShape.length != 4)
+        if (toShape.length != 4)
             throw new IllegalArgumentException("Invalid input: expect toShape with 4 elements: got " + Arrays.toString(toShape));
 
         //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
-        if(in2d.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in2d))
+        if (in2d.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in2d))
             in2d = in2d.dup('c');
 
         INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
-        return out.permute(0,3,1,2);
+        return out.permute(0, 3, 1, 2);
     }
 
-    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output){
-        if(mask == null)
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output) {
+        if (mask == null)
             return null;
-        if(mask.rank() == 2){
+        if (mask.rank() == 2) {
             return adapt2dMask(mask, output);
-        } else if(mask.rank() == 3){
+        } else if (mask.rank() == 3) {
             return reshape3dMask(mask);
         } else {
             return reshape4dMask(mask);
         }
     }
 
-    public static INDArray adapt2dMask(INDArray mask, INDArray output){
+    public static INDArray adapt2dMask(INDArray mask, INDArray output) {
         //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
         //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
 
@@ -588,20 +477,20 @@ public class ConvolutionUtils {
         INDArray bMask = Nd4j.create(new int[]{s[0], 1, s[2], s[3]}, 'c');
         Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 1));
 
-        INDArray bMaskPermute = bMask.permute(0,2,3).dup('c');  //Not sure if dup is strictly necessary...
+        INDArray bMaskPermute = bMask.permute(0, 2, 3).dup('c');  //Not sure if dup is strictly necessary...
 
         return bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1);
     }
 
-    public static INDArray reshape3dMask(INDArray mask){
+    public static INDArray reshape3dMask(INDArray mask) {
         //Assume mask has shape [n,h,w] and will be broadcast along dimension
-        if(mask.ordering() != 'c' || !Shape.strideDescendingCAscendingF(mask))
+        if (mask.ordering() != 'c' || !Shape.strideDescendingCAscendingF(mask))
             mask = mask.dup('c');
 
         return mask.reshape('c', mask.length(), 1);
     }
 
-    public static INDArray reshape4dMask(INDArray mask){
+    public static INDArray reshape4dMask(INDArray mask) {
         return reshape4dTo2d(mask);
     }
 
@@ -611,7 +500,7 @@ public class ConvolutionUtils {
      * @param inputType Input type to get
      * @return Length
      */
-    public static int[] getHWDFromInputType(InputType inputType){
+    public static int[] getHWDFromInputType(InputType inputType) {
         int inH;
         int inW;
         int inDepth;
