@@ -1,9 +1,9 @@
 package org.nd4j.autodiff.samediff;
 
-import com.google.common.base.Preconditions;
 import lombok.*;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -759,8 +759,8 @@ public class SDVariable extends DifferentialFunction implements Serializable {
 
         SDVariable left = this;
         SDVariable right = sameDiffVariable;
-        Preconditions.checkState(left != null,"Left input is null!");
-        Preconditions.checkState(right != null,"Right input is null!");
+        Preconditions.checkNotNull(left,"Left input is null!");
+        Preconditions.checkNotNull(right,"Right input is null!");
 
         val result = sameDiff.f().mul(left,right);
         return sameDiff.updateVariableNameAndReference(result,varName);

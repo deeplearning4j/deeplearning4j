@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static org.nd4j.base.Preconditions.checkArgument;
 
 /**
  * @author Audrey Loeffel
@@ -18,9 +18,9 @@ public abstract class SparseBaseLevel2 extends SparseBaseLevel implements Level2
 
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-        checkArgument(A.isMatrix());
-        checkArgument(X.isVector());
-        checkArgument(Y.isVector());
+        checkArgument(A.isMatrix(), "A must be a matrix");
+        checkArgument(X.isVector(), "X must be a vector");
+        checkArgument(Y.isVector(), "Y must be a vector");
 
         SparseCOOGemvParameters parameters = new SparseCOOGemvParameters(A, X, Y);
 

@@ -36,8 +36,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.nd4j.base.Preconditions;
 
 /**
  * General string utils - adapted from <a href="https://github.com/apache/hadoop/blob/master/hadoop-common-project/hadoop-common/src/main/java/org/apache/hadoop/util/StringUtils.java">

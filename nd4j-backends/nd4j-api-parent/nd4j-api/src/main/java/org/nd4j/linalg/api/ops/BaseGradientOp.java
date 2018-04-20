@@ -1,8 +1,8 @@
 package org.nd4j.linalg.api.ops;
 
-import com.google.common.base.Preconditions;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

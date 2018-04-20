@@ -9,7 +9,8 @@ import org.nd4j.linalg.util.LongUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static org.nd4j.base.Preconditions.checkArgument;
+
 
 /**
  * @author Audrey Loeffel
@@ -36,7 +37,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
      * @param shape Shape of the matrix A
      */
     public BaseSparseNDArrayCSR(double[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
-
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
         // TODO

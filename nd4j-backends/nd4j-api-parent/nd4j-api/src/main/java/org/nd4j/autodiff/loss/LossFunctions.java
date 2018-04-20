@@ -1,8 +1,8 @@
 package org.nd4j.autodiff.loss;
 
-import com.google.common.base.Preconditions;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 
 /**
  * SameDiff loss functions
@@ -63,9 +63,9 @@ public class LossFunctions {
 
 
     private static LossInfo.Builder validate(String lossName, SDVariable predictions, SDVariable label, Reduction reduction){
-        Preconditions.checkNotNull(predictions, "Predictions variable cannot be null for loss function - " + lossName);
-        Preconditions.checkNotNull(label, "Label variable cannot be null for loss function - " + lossName);
-        Preconditions.checkNotNull(reduction, "Reduction enumeration cannot be null for loss function - " + lossName);
+        Preconditions.checkNotNull(predictions, "Predictions variable cannot be null for loss function - %s", lossName);
+        Preconditions.checkNotNull(label, "Label variable cannot be null for loss function - %s", lossName);
+        Preconditions.checkNotNull(reduction, "Reduction enumeration cannot be null for loss function - %s", lossName);
         return LossInfo.builder()
                 .lossName(lossName)
                 .reduction(reduction)

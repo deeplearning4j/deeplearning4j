@@ -19,8 +19,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.nd4j.base.Preconditions.checkArgument;
+import static org.nd4j.base.Preconditions.checkNotNull;
 
 /**
  * @author Audrey Loeffel
@@ -46,9 +46,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         checkNotNull(values);
         checkNotNull(indices);
         checkNotNull(shape);
-        for (int[] i : indices) {
-            checkNotNull(i);
-        }
         if (indices.length == 0 && values.length == 0) {
             // make the room for one value
             this.indices = Nd4j.createBuffer(shape.length);

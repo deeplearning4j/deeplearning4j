@@ -20,9 +20,9 @@
 package org.nd4j.linalg.dataset;
 
 import com.google.common.base.Function;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -1248,7 +1248,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public SplitTestAndTrain splitTestAndTrain(double fractionTrain) {
         Preconditions.checkArgument(fractionTrain > 0.0 && fractionTrain < 1.0,
-                "Train fraction must be > 0.0 and < 1.0 - got " + fractionTrain);
+                "Train fraction must be > 0.0 and < 1.0 - got %s", fractionTrain);
         int numTrain = (int) (fractionTrain * numExamples());
         if (numTrain <= 0)
             numTrain = 1;

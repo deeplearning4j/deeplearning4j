@@ -19,9 +19,9 @@
 
 package org.nd4j.linalg.util;
 
-import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 import org.apache.commons.lang3.RandomUtils;
+import org.nd4j.base.Preconditions;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

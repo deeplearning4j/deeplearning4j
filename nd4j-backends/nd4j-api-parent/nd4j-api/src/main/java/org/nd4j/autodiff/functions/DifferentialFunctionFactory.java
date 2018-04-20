@@ -1,10 +1,10 @@
 package org.nd4j.autodiff.functions;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -1580,23 +1580,18 @@ public class DifferentialFunctionFactory {
         Preconditions.checkState(function != null, "Passed in function was null.");
         Preconditions.checkState(function.getSameDiff() == sameDiff);
 
-        Preconditions.checkState(function.getSameDiff() ==
-                        this.getSameDiff(),
+        Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),
                 "Function applications must be contained " +
-                        "in same sameDiff. The left " + function +
-                        " must match this function " + this);
-        Preconditions.checkState(sameDiff ==
-                this.getSameDiff(), "Function applications m" +
-                "ust be " +
-                "contained in same sameDiff. The left " + function + " " +
-                "must " +
-                "match this function " + this);
-
+                        "in same sameDiff. The left %s must match this function %s", function, this);
+        Preconditions.checkState(sameDiff == this.getSameDiff(), "Function applications must be " +
+                "contained in same sameDiff. The left %s must match this function ", function, this);
     }
 
 
     public void validateDifferentialFunctionGraph(SDVariable function) {
-        Preconditions.checkState(function.getSameDiff() == this.getSameDiff(), "Function applications must be contained in same graph. The left " + function + " must match this function " + this);
+        Preconditions.checkState(function.getSameDiff() == this.getSameDiff(),
+                "Function applications must be contained in same graph. The left %s must match this function %s",
+                function, this);
 
     }
 

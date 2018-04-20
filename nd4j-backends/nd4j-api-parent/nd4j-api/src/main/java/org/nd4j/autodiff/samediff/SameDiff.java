@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.samediff;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.primitives.Ints;
@@ -18,6 +17,7 @@ import org.nd4j.autodiff.functions.FunctionProperties;
 import org.nd4j.autodiff.samediff.flow.FlowPath;
 import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
+import org.nd4j.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
