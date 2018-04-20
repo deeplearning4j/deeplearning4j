@@ -28,6 +28,7 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.deeplearning4j.ui.i18n.I18NResource;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.linalg.primitives.Pair;
@@ -230,6 +231,11 @@ public class ArbiterModule implements UIModule {
                 knownSessionIDs.remove(s);
             }
         }
+    }
+
+    @Override
+    public List<I18NResource> getInternationalizationResources() {
+        return Collections.emptyList();
     }
 
     /**
