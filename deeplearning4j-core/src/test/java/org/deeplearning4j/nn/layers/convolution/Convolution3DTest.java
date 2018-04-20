@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
@@ -47,9 +48,10 @@ public class Convolution3DTest {
         INDArray containedInput = getContainedData();
         Layer layer = getConvolution3DLayer();
 
+        System.out.println(Arrays.toString(containedInput.shape()));
+
         INDArray containedOutput = layer.activate(containedInput);
 
-        System.out.println(Arrays.toString(containedInput.shape()));
         System.out.println(Arrays.toString(containedOutput.shape()));
         System.out.println(Arrays.toString(containedExpectedOut.shape()));
 
@@ -110,7 +112,7 @@ public class Convolution3DTest {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                        .isNCDHW(true)
+                        .isNCDHW(true).convolutionMode(ConvolutionMode.Same)
                         .build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);

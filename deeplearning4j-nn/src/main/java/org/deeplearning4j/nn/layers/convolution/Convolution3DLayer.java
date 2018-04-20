@@ -180,7 +180,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         int outWeightChannels = isNCDHW ? weights.size(0) : weights.size(4);
         int inWeightChannels = isNCDHW ? weights.size(1) : weights.size(3);
-        
+
         if (inputChannels != inWeightChannels) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)

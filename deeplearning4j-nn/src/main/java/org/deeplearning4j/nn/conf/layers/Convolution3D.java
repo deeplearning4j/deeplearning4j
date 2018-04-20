@@ -97,7 +97,6 @@ public class Convolution3D extends ConvolutionLayer {
 
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
-        private boolean isValidMode = false; // in libnd4j: 0 - same mode, 1 - valid mode
         private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
 
 
