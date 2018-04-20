@@ -2,6 +2,9 @@
 // Created by raver119 on 13.10.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_eq_scalar)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -19,3 +22,5 @@ namespace nd4j {
         //DECLARE_SYN(equals, eq_scalar);
     }
 }
+
+#endif

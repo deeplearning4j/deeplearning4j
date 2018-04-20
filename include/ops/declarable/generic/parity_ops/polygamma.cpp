@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 13.12.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_polygamma)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/polyGamma.h>
 
@@ -35,3 +38,4 @@ namespace nd4j {
     }
 }
 
+#endif

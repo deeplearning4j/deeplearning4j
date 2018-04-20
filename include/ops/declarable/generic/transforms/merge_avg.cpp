@@ -2,6 +2,9 @@
 // Created by raver119 on 24.11.17.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_mergeavg)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -31,3 +34,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

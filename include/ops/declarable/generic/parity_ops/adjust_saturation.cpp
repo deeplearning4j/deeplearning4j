@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_adjust_saturation)
+
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/adjust_saturation.h>
 
@@ -38,3 +41,5 @@ namespace ops {
     }
 }
 }
+
+#endif

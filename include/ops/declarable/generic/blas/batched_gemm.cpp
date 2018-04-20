@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_batched_gemm)
+
 #include <ops/declarable/headers/blas.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 
@@ -112,3 +115,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

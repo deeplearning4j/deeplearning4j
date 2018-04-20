@@ -2,6 +2,9 @@
 // Created by raver119 on 24.02.18.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_test_scalar)
+
 #include <ops/declarable/headers/tests.h>
 
 namespace nd4j {
@@ -34,3 +37,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

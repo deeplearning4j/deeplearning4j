@@ -2,6 +2,9 @@
 //  @author @shugeo
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_dynamic_stitch)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/dynamic.h>
 
@@ -61,3 +64,5 @@ namespace ops {
     }
 }
 }
+
+#endif

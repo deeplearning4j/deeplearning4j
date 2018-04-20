@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_dilation2d)
+
 #include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/dilation2d.h>
 
@@ -112,3 +115,5 @@ namespace ops {
     }
 }
 }
+
+#endif

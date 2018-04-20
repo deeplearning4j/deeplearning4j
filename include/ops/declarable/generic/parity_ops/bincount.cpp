@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_bincount)
+
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/weights.h>
@@ -58,3 +61,5 @@ namespace nd4j {
 
     }
 }
+
+#endif

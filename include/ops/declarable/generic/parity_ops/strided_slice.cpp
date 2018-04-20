@@ -13,6 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_strided_slice)
+
 #include <array>
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
@@ -556,3 +559,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

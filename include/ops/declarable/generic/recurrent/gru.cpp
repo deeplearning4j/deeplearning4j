@@ -2,6 +2,9 @@
 // created by Yurii Shyrma on 15.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_gru)
+
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/gru.h>
 
@@ -100,3 +103,5 @@ DECLARE_SHAPE_FN(gru) {
 }
 }
 
+
+#endif

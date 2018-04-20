@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 23.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_log_loss)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -130,15 +133,7 @@ DECLARE_SHAPE_FN(log_loss) {
 
 // INT_ARG(0) - reduction mode
 
-
-
-
-
-
-
-
-
-
-
 }
 }
+
+#endif

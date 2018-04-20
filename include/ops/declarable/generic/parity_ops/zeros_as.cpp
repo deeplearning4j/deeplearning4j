@@ -2,6 +2,9 @@
 // Created by raver119 on 12.10.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_zeros_as)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -20,3 +23,4 @@ namespace nd4j {
     }
 }
 
+#endif

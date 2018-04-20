@@ -2,6 +2,8 @@
 // @author Yurii Shyrma, created on 05.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_conv3dnew)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
@@ -306,3 +308,5 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
 
 }
 }
+
+#endif

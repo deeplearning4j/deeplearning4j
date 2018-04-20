@@ -76,7 +76,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     }
 
     // reverse x 
-    nd4j::ops::reverse_sequense<T> reverse;
+    nd4j::ops::reverse_sequence<T> reverse;
     ResultSet<T>* resultsIn = reverse.execute({x, seqLen}, {}, {0,1});
     NDArray<T>* revInput = resultsIn->at(0);
 

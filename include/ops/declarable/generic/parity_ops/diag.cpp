@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 06.12.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_diag)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/diag.h>
 
@@ -29,3 +32,4 @@ namespace nd4j {
     }
 }
 
+#endif

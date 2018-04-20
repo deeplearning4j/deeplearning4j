@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_realdiv)
+
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
@@ -179,3 +182,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

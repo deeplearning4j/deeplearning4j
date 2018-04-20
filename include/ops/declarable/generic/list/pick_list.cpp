@@ -2,6 +2,9 @@
 // Created by raver119 on 06.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_pick_list)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -32,3 +35,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

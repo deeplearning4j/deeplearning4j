@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 07.12.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_matrix_set_diag)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
 
@@ -27,3 +30,5 @@ namespace nd4j {
         DECLARE_SYN(MatrixSetDiag, matrix_set_diag);
     }
 }
+
+#endif

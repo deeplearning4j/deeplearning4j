@@ -33,14 +33,7 @@ namespace nd4j {
 
     namespace ops {
 
-        // test ops, do not touch
-        DECLARE_REDUCTION_OP(testreduction, 1, 1, false, 0, -1);
-        DECLARE_OP(noop, -1, -1, true);
-        DECLARE_OP(testop2i2o, 2, 2, true);
-        DECLARE_OP(merge, -1, 1, true);         // should become custom
-        DECLARE_CUSTOM_OP(testcustom, 1, 1, false, 0, -1);
-    
-        // logic ops
+        // logic ops 
         DECLARE_DIVERGENT_OP(Switch, 2, 2, true);
         DECLARE_LOGIC_OP(While);
         DECLARE_LOGIC_OP(Scope);

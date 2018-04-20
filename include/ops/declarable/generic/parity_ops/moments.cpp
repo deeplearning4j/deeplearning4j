@@ -2,6 +2,9 @@
 // Created by george@skymind.io on 26.01.2018.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_moments)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
@@ -66,3 +69,5 @@ namespace nd4j {
     }
 
 }
+
+#endif

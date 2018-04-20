@@ -2,6 +2,9 @@
 // Created by raver119 on 01/11/17.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_onehot)
+
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 
@@ -78,3 +81,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

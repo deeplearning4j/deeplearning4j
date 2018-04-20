@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 01.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_log_softmax)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/softMaxForVector.h>
 
@@ -58,3 +61,5 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
 
 }
 }
+
+#endif

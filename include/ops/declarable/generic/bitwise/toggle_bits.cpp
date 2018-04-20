@@ -2,6 +2,9 @@
 // Created by raver119 on 23.11.17.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_toggle_bits)
+
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/BitwiseUtils.h>
 
@@ -23,3 +26,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

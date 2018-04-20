@@ -2,6 +2,9 @@
 // Created by raver119 on 01.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_ones_as)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -15,3 +18,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

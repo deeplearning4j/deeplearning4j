@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 12.12.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_betainc)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/betaInc.h>
 
@@ -34,3 +37,4 @@ namespace nd4j {
     }
 }
 
+#endif

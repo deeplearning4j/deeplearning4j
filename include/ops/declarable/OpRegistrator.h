@@ -23,7 +23,9 @@ namespace nd4j {
         class ND4J_EXPORT OpRegistrator {
         private:
             static OpRegistrator* _INSTANCE;
-            OpRegistrator() {};
+            OpRegistrator() {
+                nd4j_debug("OpRegistrator started\n","");
+            };
             ~OpRegistrator();
 
             std::map<Nd4jIndex, std::string> _msvc;
@@ -84,6 +86,11 @@ namespace nd4j {
 
             template <typename T>
             DeclarableOp<T> * getOperationT(Nd4jIndex hash);
+
+            template <typename T>
+            std::vector<Nd4jIndex> getAllHashes();
+
+            int numberOfOperations();
     };
 
 

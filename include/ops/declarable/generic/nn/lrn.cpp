@@ -4,6 +4,9 @@
 // Modified by GS <sgazeos@gmail.com> 2/16/18
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_lrn)
+
 #include <ops/declarable/helpers/lrn.h>
 #include <ops/declarable/CustomOperations.h>
 
@@ -85,3 +88,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

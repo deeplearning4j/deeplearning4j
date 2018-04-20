@@ -1,13 +1,17 @@
 //
 //  Created by Yurii Shyrma on 25.01.2018
 //
+
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_reverse_sequence)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverseArray.h>
 
 namespace nd4j {
 namespace ops {
 
-CUSTOM_OP_IMPL(reverse_sequense, 2, 1, false, 0, 2) {
+CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {
         
     NDArray<T>* input      = INPUT_VARIABLE(0);
     NDArray<T>* seqLengths = INPUT_VARIABLE(1);
@@ -69,7 +73,7 @@ CUSTOM_OP_IMPL(reverse_sequense, 2, 1, false, 0, 2) {
 }
 
 
-DECLARE_SHAPE_FN(reverse_sequense) {
+DECLARE_SHAPE_FN(reverse_sequence) {
 
     int* inShapeInfo = inputShape->at(0);
     
@@ -82,3 +86,5 @@ DECLARE_SHAPE_FN(reverse_sequense) {
 
 }
 }
+
+#endif

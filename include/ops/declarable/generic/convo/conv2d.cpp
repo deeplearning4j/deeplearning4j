@@ -6,12 +6,13 @@
 #define LIBND4J_CONVO_OPS_H
 
 #include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_conv2d)
+
+#include <op_boilerplate.h>
 #include <memory>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <declarable/generic/helpers/convolutions.h>
-
-
 
 namespace nd4j {
     namespace ops {
@@ -234,5 +235,7 @@ DECLARE_SHAPE_FN(conv2d_bp) {
 
 }
 }
+
+#endif
 
 #endif //LIBND4J_CONVO_OPS_H

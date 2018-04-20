@@ -573,7 +573,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test1) {
     NDArray<float> seqLengths('c', {4}, {4,4,4,4});
     NDArray<float> exp('c', {3, 4, 5}, {4,  3,  2,  1,  5, 9,  8,  7,  6, 10, 14, 13, 12, 11, 15, 19, 18, 17, 16, 20, 24, 23, 22, 21, 25, 29, 28, 27, 26, 30, 34, 33, 32, 31, 35, 39, 38, 37, 36, 40, 44, 43, 42, 41, 45, 49, 48, 47, 46, 50, 54, 53, 52, 51, 55, 59, 58, 57, 56, 60});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {2, 1});
     NDArray<float>* output = results->at(0);
     
@@ -592,7 +592,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test2) {
     NDArray<float> seqLengths('c', {4}, {0,1,2,3});
     NDArray<float> exp('c', {3, 4, 5}, {1,  2,  3,  4,  5, 6,  7,  8,  9, 10, 12, 11, 13, 14, 15, 18, 17, 16, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 32, 31, 33, 34, 35, 38, 37, 36, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 51, 53, 54, 55, 58, 57, 56, 59, 60});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {2, 1});
     NDArray<float>* output = results->at(0);    
     
@@ -611,7 +611,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test3) {
     NDArray<float> seqLengths('c', {3}, {2,3,4});
     NDArray<float> exp('c', {3, 4, 5}, {2,  1,  3,  4,  5, 7,  6,  8,  9, 10, 12, 11, 13, 14, 15, 17, 16, 18, 19, 20, 23, 22, 21, 24, 25, 28, 27, 26, 29, 30, 33, 32, 31, 34, 35, 38, 37, 36, 39, 40, 44, 43, 42, 41, 45, 49, 48, 47, 46, 50, 54, 53, 52, 51, 55, 59, 58, 57, 56, 60});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {2, 0});
     NDArray<float>* output = results->at(0);    
     
@@ -630,7 +630,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test4) {
     NDArray<float> seqLengths('c', {5}, {1, 2, 1, 2, 3});
     NDArray<float> exp('c', {3, 4, 5}, {1, 22,  3, 24, 45, 6, 27,  8, 29, 50, 11, 32, 13, 34, 55, 16, 37, 18, 39, 60, 21,  2, 23,  4, 25, 26,  7, 28,  9, 30, 31, 12, 33, 14, 35, 36, 17, 38, 19, 40, 41, 42, 43, 44,  5, 46, 47, 48, 49, 10, 51, 52, 53, 54, 15, 56, 57, 58, 59, 20});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {0, 2});
     NDArray<float>* output = results->at(0);    
     
@@ -649,7 +649,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test5) {
     NDArray<float> seqLengths('c', {5}, {1, 2, 4, 2, 3});
     NDArray<float> exp('c', {3, 4, 5}, {1,  7, 18,  9, 15, 6,  2, 13,  4, 10, 11, 12,  8, 14,  5, 16, 17,  3, 19, 20, 21, 27, 38, 29, 35, 26, 22, 33, 24, 30, 31, 32, 28, 34, 25, 36, 37, 23, 39, 40, 41, 47, 58, 49, 55, 46, 42, 53, 44, 50, 51, 52, 48, 54, 45, 56, 57, 43, 59, 60});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {1, 2});
     NDArray<float>* output = results->at(0);    
     
@@ -668,7 +668,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test6) {
     NDArray<float> seqLengths('c', {4}, {1, 2, 3, 2});
     NDArray<float> exp('c', {3, 4, 5}, {1,  2,  3,  4,  5, 26, 27, 28, 29, 30, 51, 52, 53, 54, 55, 36, 37, 38, 39, 40, 21, 22, 23, 24, 25, 6,  7,  8,  9, 10, 31, 32, 33, 34, 35, 16, 17, 18, 19, 20, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 11, 12, 13, 14, 15, 56, 57, 58, 59, 60});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {0, 1});
     NDArray<float>* output = results->at(0);    
     
@@ -688,7 +688,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test7) {
     NDArray<float> seqLengths('c', {1}, data);    
     NDArray<float> exp('c', {1, 5}, {3, 2, 1, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {1, 0});
     NDArray<float>* output = results->at(0);    
     
@@ -708,7 +708,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test8) {
     NDArray<float> seqLengths('c', {5}, data);    
     NDArray<float> exp('c', {1, 5}, {1, 2, 3, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {0, 1});
     NDArray<float>* output = results->at(0);    
     
@@ -728,7 +728,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test9) {
     NDArray<float> seqLengths('c', {5}, data);    
     NDArray<float> exp('c', {5, 1}, {1, 2, 3, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {1, 0});
     NDArray<float>* output = results->at(0);    
     
@@ -748,7 +748,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test10) {
     NDArray<float> seqLengths('c', {1}, data);    
     NDArray<float> exp('c', {5, 1}, {3, 2, 1, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {0, 1});
     NDArray<float>* output = results->at(0);        
     
@@ -768,7 +768,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test11) {
     NDArray<float> seqLengths('c', {5}, data);    
     NDArray<float> exp('c', {1, 1, 5, 1}, {1, 2, 3, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {1, 2});
     NDArray<float>* output = results->at(0);        
     
@@ -788,7 +788,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test12) {
     NDArray<float> seqLengths('c', {1}, data);    
     NDArray<float> exp('c', {1, 1, 5, 1}, {3, 2, 1, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {2, 0});
     NDArray<float>* output = results->at(0);        
     
@@ -808,7 +808,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test13) {
     NDArray<float> seqLengths('c', {1}, data);    
     NDArray<float> exp('c', {1, 1, 5, 1}, {1, 2, 3, 4, 5});
 
-    nd4j::ops::reverse_sequense<float> op;
+    nd4j::ops::reverse_sequence<float> op;
     ResultSet<float>* results = op.execute({&input, &seqLengths}, {}, {3, 0});
     NDArray<float>* output = results->at(0);        
     

@@ -3,6 +3,9 @@
 // Modified by GS <sgazeos@gmail.com> 01.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_matmul)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matmul.h>
 
@@ -161,3 +164,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

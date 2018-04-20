@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 25.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_mean_sqerr_loss)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -129,15 +132,7 @@ DECLARE_SHAPE_FN(mean_sqerr_loss) {
 
 // INT_ARG(0) - reduction mode
 
-
-
-
-
-
-
-
-
-
-
 }
 }
+
+#endif

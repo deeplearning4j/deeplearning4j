@@ -2,6 +2,9 @@
 // Created by raver119 on 24.11.17.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_mergeadd)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -36,3 +39,5 @@ namespace nd4j {
         DECLARE_SYN(accumulate_n, mergeadd);
     }
 }
+
+#endif

@@ -2,6 +2,9 @@
 //  @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_broadcastgradientargs)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -19,3 +22,4 @@ namespace nd4j {
     }
 }
 
+#endif

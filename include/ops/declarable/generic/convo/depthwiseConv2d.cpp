@@ -2,6 +2,8 @@
 // created by Yurii Shyrma on 08.03.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_depthwise_conv2d)
 
 #include <op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
@@ -234,3 +236,4 @@ DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
 
 }
 }
+#endif

@@ -1,6 +1,10 @@
 //
 // Created by raver119 on 24.11.17.
 //
+
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_assign)
+
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
@@ -115,3 +119,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif
