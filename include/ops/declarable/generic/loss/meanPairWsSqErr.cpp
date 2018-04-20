@@ -2,9 +2,6 @@
 // Created by Yurii Shyrma on 24.11.2017.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
-
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
@@ -109,7 +106,12 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
 
 // INT_ARG(0) - reduction mode
 
-}
-}
 
-#endif
+
+
+
+
+
+
+}
+}

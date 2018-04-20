@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_HEADERS_LOSS_H
-#define LIBND4J_HEADERS_LOSS_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace nd4j {
@@ -31,10 +28,8 @@ namespace ops {
        * Output array: 
        *    0: loss values, type float.
        *       Can be an array with the same shape as logits or just single scalar, depending on reduction mode (see input integer argument)
-       */               
-        #if NOT_EXCLUDED(OP_hinge_loss)
-        DECLARE_CUSTOM_OP(hinge_loss, 3, 1, false, 0, 1);
-        #endif
+       */                  
+    DECLARE_CUSTOM_OP(hinge_loss, 3, 1, false, 0, 1);
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -64,9 +59,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_huber_loss)
-        DECLARE_CUSTOM_OP(huber_loss, 3, 1, false, 1, 1);
-        #endif
+    DECLARE_CUSTOM_OP(huber_loss, 3, 1, false, 1, 1);
 
     
     //////////////////////////////////////////////////////////////////////////
@@ -94,9 +87,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_log_loss)
-        DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
-        #endif
+    DECLARE_CUSTOM_OP(log_loss, 3, 1, false, 1, 1);
     
 
     //////////////////////////////////////////////////////////////////////////
@@ -112,10 +103,8 @@ namespace ops {
        *  
        * Output array: 
        *    0: loss value, it is just single scalar, type float.
-       */     
-        #if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
-        DECLARE_CUSTOM_OP(mean_pairwssqerr_loss, 3, 1, false, 0, 0);
-        #endif
+       */      
+    DECLARE_CUSTOM_OP(mean_pairwssqerr_loss, 3, 1, false, 0, 0);
 
     
     //////////////////////////////////////////////////////////////////////////
@@ -140,9 +129,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_mean_sqerr_loss)
-        DECLARE_CUSTOM_OP(mean_sqerr_loss, 3, 1, false, 0, 1);
-        #endif
+    DECLARE_CUSTOM_OP(mean_sqerr_loss, 3, 1, false, 0, 1);
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -170,9 +157,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as logits or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
-        DECLARE_CUSTOM_OP(sigm_cross_entropy_loss, 3, 1, false, 1, 1);
-        #endif
+    DECLARE_CUSTOM_OP(sigm_cross_entropy_loss, 3, 1, false, 1, 1);
     
 
     //////////////////////////////////////////////////////////////////////////
@@ -200,9 +185,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with shape as in logits except last dimension is equal to unity or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
-        DECLARE_CUSTOM_OP(softmax_cross_entropy_loss, 3, 1, false, 1, 1);  
-        #endif
+    DECLARE_CUSTOM_OP(softmax_cross_entropy_loss, 3, 1, false, 1, 1);  
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -227,9 +210,7 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
        */      
-        #if NOT_EXCLUDED(OP_absolute_difference_loss)
-        DECLARE_CUSTOM_OP(absolute_difference_loss, 3, 1, false, 0, 1);
-        #endif
+    DECLARE_CUSTOM_OP(absolute_difference_loss, 3, 1, false, 0, 1);
 
 
     //////////////////////////////////////////////////////////////////////////
@@ -255,10 +236,12 @@ namespace ops {
        *    0: loss values, type float.
        *       Can be an array with the same shape as predictions or just single scalar, depending on reduction mode (see input integer argument)
        */         
-        #if NOT_EXCLUDED(OP_cosine_distance_loss)
-        DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
-        #endif
-}
-}
+    DECLARE_CUSTOM_OP(cosine_distance_loss, 3, 1, false, 0, 2);
 
-#endif
+
+
+
+
+
+}
+}

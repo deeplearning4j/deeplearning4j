@@ -2,9 +2,6 @@
 // Created by raver119 on 29/10/17.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_maxpool2d)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/max_pooling.h>
@@ -217,5 +214,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

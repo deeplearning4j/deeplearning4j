@@ -2,9 +2,6 @@
 // Created by raver119 on 29/10/17.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_batchnorm)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -196,5 +193,3 @@ DECLARE_SHAPE_FN(batchnorm) {
 
 }
 }
-
-#endif

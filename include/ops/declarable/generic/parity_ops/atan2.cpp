@@ -2,9 +2,6 @@
 // Created by raver119 on 10.02.18.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_tf_atan2)
-
 #include <ops/declarable/headers/parity_ops.h>
 
 namespace nd4j {
@@ -21,5 +18,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

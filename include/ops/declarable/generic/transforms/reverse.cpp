@@ -2,9 +2,6 @@
 // Created by yurii@skymind.io on 02.11.2017.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_reverse)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverseArray.h>
 #include <helpers/ShapeUtils.h>
@@ -42,7 +39,8 @@ CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
     return ND4J_STATUS_OK;
 }
 
-}
-}
 
-#endif
+
+
+}
+}

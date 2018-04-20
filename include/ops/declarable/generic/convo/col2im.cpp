@@ -2,11 +2,9 @@
 // Created by raver119 on 17.10.2017.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_col2im)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/col2im.h>
+
 
 namespace nd4j {
     namespace ops {
@@ -68,5 +66,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

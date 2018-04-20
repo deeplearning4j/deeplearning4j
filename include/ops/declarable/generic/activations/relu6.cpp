@@ -2,9 +2,6 @@
 // created by Yurii Shyrma on 16.02.2018
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_relu6)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -47,5 +44,3 @@ CONFIGURABLE_OP_IMPL(relu6_bp, 2, 1, true, 0, 0) {
 
 }
 }
-
-#endif

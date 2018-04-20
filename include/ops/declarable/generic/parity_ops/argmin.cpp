@@ -2,9 +2,6 @@
 // Created by raver119 on 01.11.2017.
 // Modified by GS <sgazeos@gmail.com> 4/5/2018.
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_argmin)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
@@ -38,5 +35,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

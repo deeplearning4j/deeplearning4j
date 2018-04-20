@@ -2,9 +2,6 @@
 //  // created by Yurii Shyrma on 06.12.2017
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_invert_permutation)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -40,5 +37,3 @@ DECLARE_SYN(InvertPermutation, invert_permutation);
 
 }
 }
-
-#endif

@@ -2,9 +2,6 @@
 // Created by raver119 on 06.11.2017.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_scatter_list)
-
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 
@@ -57,5 +54,3 @@ namespace nd4j {
         DECLARE_SYN(tensorarrayscatterv3, scatter_list);
     }
 }
-
-#endif

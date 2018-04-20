@@ -1,9 +1,10 @@
 //
-//  @author raver119@gmail.com
+// Created by raver119 on 23.11.17.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_squeeze)
+//
+//  @author raver119@gmail.com
+//
 
 #include <ops/declarable/CustomOperations.h>
 
@@ -147,5 +148,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

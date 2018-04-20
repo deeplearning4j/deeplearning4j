@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_sigmoid)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -35,7 +32,6 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
+        DECLARE_SYN(SigmoidGrad, sigmoid_bp);
     }
 }
-
-#endif

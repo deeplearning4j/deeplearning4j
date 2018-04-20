@@ -97,18 +97,6 @@ namespace nd4j {
             return os.str() ;
         }
 
-        template <>
-        std::string OpRegistrator::local_to_string(int value) {
-            //create an output string stream
-            std::ostringstream os ;
-
-            //throw the value into the string stream
-            os << value ;
-
-            //convert the string stream into a string and return
-            return os.str() ;
-        }
-
         OpRegistrator::~OpRegistrator() {
             _msvc.clear();
 
@@ -338,43 +326,6 @@ namespace nd4j {
         template <>
         DeclarableOp<double> * OpRegistrator::getOperationT<double>(Nd4jIndex hash) {
             return this->getOperationDouble(hash);
-        }
-
-        int OpRegistrator::numberOfOperations() {
-            return (int) _declarablesLF.size();
-        }
-
-        template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float>() {
-            std::vector<Nd4jIndex> result;
-
-            for (auto &v:_declarablesLF) {
-                result.emplace_back(v.first);
-            }
-
-            return result;
-        }
-
-        template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<double>() {
-            std::vector<Nd4jIndex> result;
-
-            for (auto &v:_declarablesLD) {
-                result.emplace_back(v.first);
-            }
-
-            return result;
-        }
-
-        template <>
-        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float16>() {
-            std::vector<Nd4jIndex> result;
-
-            for (auto &v:_declarablesLH) {
-                result.emplace_back(v.first);
-            }
-
-            return result;
         }
 
         nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;

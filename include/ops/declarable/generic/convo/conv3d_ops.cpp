@@ -2,8 +2,6 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_conv3d)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
@@ -113,5 +111,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

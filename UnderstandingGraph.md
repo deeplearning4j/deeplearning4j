@@ -36,37 +36,6 @@ There are some limitations. Some of them will be lifted eventually, others won't
 - Recursion isn't supported at this moment.
 - CUDA isn't supported at this moment. _This limitation will be lifted soon._
 
-### Minified Graph binaries
-There's an option to build minified binaries suited for execution of ***specific graphs***. Idea is quite simple: you feed your existing Graph(s) in FlatBuffers format into special app, which extracts operations used in your Graph(s) and excludes all other operations from target binary.
-```bash
-# building full libnd4j copy AND minfier app
-./buildnativeoperations.sh -a native -m 
-...
-# building libnd4j for 2 specific graphs
-./minifier -l -a native -o libnd4j_special ../some_path/some_graph1.fb ../some_path/some_graph2.fb
-Option 'l': Build library
-Option 'a': Target arch: native
-Option 'o': Output file name is libnd4j_special
-Total available operations: 423
-
-Retrieving ops from the Graph and collect them...
-
-Collecting out Scopes...
-Operations found so far:
-rank
-range
-subtract
-transpose
-matmul
-biasadd
-TRANSFORM{15}
-
-Building minified library...
-``` 
-
-Once `minifier` finishes - you'll have `libnd4j_special.so` and `libnd4j_special.h` files ready, and they'll contain only those operations used in 2 graphs provided at compilation time + basic primitives used to work with Graph. Things like NDArray, GraphExecutioner etc will be included as well.
-
-This library can be used in your application as any other shared libray out there: you'll include headers file and you'll be able to call for things you need. 
 
 ### Documentation 
 Documentation for individual operations, and basic classes (like NDArray, Graph etc) is available as part of Nd4j javadoc: https://nd4j.org/doc/

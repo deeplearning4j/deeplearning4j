@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_split)
-
 #include <ops/declarable/headers/parity_ops.h>
 #include <array>
 
@@ -121,5 +118,3 @@ namespace ops {
     }
 }
 }
-
-#endif

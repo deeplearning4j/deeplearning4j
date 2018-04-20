@@ -2,9 +2,6 @@
 // Created by george@skymind.io on 2/21/2018.
 // Modified by sgazeos@gmail.com on 4/4/2018
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_sufficient_statistics)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 namespace nd4j {
@@ -60,5 +57,3 @@ namespace nd4j {
     }
 
 }
-
-#endif

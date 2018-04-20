@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_tile_to_shape)
-
 #include <ops/declarable/headers/shape.h>
 
 namespace nd4j {
@@ -68,5 +65,3 @@ namespace ops {
     }
 }
 }
-
-#endif

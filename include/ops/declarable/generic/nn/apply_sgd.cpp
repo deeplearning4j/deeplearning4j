@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_apply_sgd)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -39,5 +36,3 @@ namespace nd4j {
         DECLARE_SYN(ApplyGradientDescent, apply_sgd);
     }
 }
-
-#endif

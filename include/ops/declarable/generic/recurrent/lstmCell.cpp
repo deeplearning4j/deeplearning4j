@@ -2,9 +2,6 @@
 // @author Yurii Shyrma, created on 30.11.2017
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_lstmCell)
-
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/lstm.h>
 
@@ -134,7 +131,13 @@ DECLARE_SHAPE_FN(lstmCell) {
     return SHAPELIST(hShapeInfo, cShapeInfo);
 }   
 
+
+
+
+
+
+
+
 }
 }
 
-#endif

@@ -1,9 +1,4 @@
-//
-//  @author @cpuheater
-//
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_is_numeric_tensor)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/compare_elem.h>
@@ -18,5 +13,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

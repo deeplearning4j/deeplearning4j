@@ -2,9 +2,6 @@
 //  @author Adam Gibson
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_where_np)
-
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
@@ -130,5 +127,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

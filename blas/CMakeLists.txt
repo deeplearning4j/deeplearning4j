@@ -22,16 +22,6 @@ endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-rpath,$ORIGIN/")
 
-if ("${LIBND4J_ALL_OPS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
-else()
-    message("_OPS: ${LIBND4J_OPS_LIST}")
-    foreach(OP "${LIBND4J_OPS_LIST}")
-        message(STATUS "${OP}")
-    endforeach()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBND4J_OPS_LIST}")
-endif()
-
 IF(${ARCH} MATCHES "arm*")
     set(ARCH_TUNE "-march=${ARCH}")
 ELSEIF(${ARCH} MATCHES "power*")
@@ -180,16 +170,16 @@ if(CUDA_BLAS)
             # ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu
             #cuda/NativeOps.cu ../include/loops/cuda/grid_strided.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/pairwise_transform.cu
             # ../include/loops/cuda/scalar.cu
-        CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/summarystatsreduce.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/indexreduce.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/broadcasting.cu ../include/loops/cuda/transform.cu ../include/loops/cuda/grid_strided.cu   ../include/loops/cuda/pairwise_transform.cu ../include/loops/cuda/random.cu ${CUSTOMOPS_HELPERS_SOURCES}
+        CUDA_ADD_LIBRARY(nd4jcuda SHARED cuda/NativeOps.cu ../include/loops/cuda/grid_shaped.cu ../include/loops/cuda/summarystatsreduce.cu ../include/loops/cuda/reduce.cu ../include/loops/cuda/indexreduce.cu ../include/loops/cuda/scalar.cu ../include/loops/cuda/broadcasting.cu ../include/loops/cuda/transform.cu ../include/loops/cuda/grid_strided.cu   ../include/loops/cuda/pairwise_transform.cu ../include/loops/cuda/random.cu ${CUSTOMOPS_HELPERS_SOURCES}
                 ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
                 cpu/GraphExecutioner.cpp cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
                 Environment.cpp Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES} ${OPS_SOURCES})
-        target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES})
+        target_link_libraries(nd4jcuda ${CUDA_LIBRARIES})
 
         set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
-        install(TARGETS ${LIBND4J_NAME} DESTINATION .)
+        install(TARGETS nd4jcuda DESTINATION .)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
 
@@ -207,7 +197,7 @@ elseif(CPU_BLAS)
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
 if(IOS)
-    add_library(${LIBND4J_NAME} STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
+    add_library(nd4jcpu STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
@@ -215,26 +205,12 @@ if(IOS)
             ${OPS_SOURCES})
 else()
 
-    add_library(${LIBND4J_NAME} SHARED cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
+    add_library(nd4jcpu SHARED cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
             cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
             ${OPS_SOURCES} )
-
-
-    if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")
-        message(STATUS "Building minifier...")
-        add_library(nd4jstatic STATIC cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExcutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
-            ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES}
-            ${OPS_SOURCES} )
-
-        add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier nd4jstatic)
-    endif()
 endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
@@ -258,6 +234,6 @@ endif()
     endif()
 
     #install(TARGETS mySharedLib DESTINATION /some/full/path)
-    install(TARGETS ${LIBND4J_NAME} DESTINATION  .)
+    install(TARGETS nd4jcpu DESTINATION  .)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cpu)
 endif()

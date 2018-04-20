@@ -2,9 +2,6 @@
 // Created by raver119 on 06.11.2017.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_split_list)
-
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 
@@ -70,5 +67,3 @@ namespace nd4j {
         DECLARE_SYN(tensorarraysplitv3, split_list);
     }
 }
-
-#endif

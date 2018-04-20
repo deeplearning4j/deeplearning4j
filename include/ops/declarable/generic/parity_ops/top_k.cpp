@@ -2,9 +2,6 @@
 //  @author sgazeos@gmail.com
 //  
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_top_k)
-
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/top_k.h>
 #include <ops/declarable/CustomOperations.h>
@@ -57,5 +54,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

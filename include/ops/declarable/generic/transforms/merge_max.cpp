@@ -2,9 +2,6 @@
 // Created by raver119 on 24.11.17.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_mergemax)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -36,5 +33,3 @@ namespace nd4j {
         DECLARE_SYN(MergeMax, mergemax);
     }
 }
-
-#endif

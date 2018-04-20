@@ -2,9 +2,6 @@
 // Created by GS <sgazeos@gmail.com> 31.01.2018
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_zero_fraction)
-
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -34,5 +31,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

@@ -2,9 +2,6 @@
 // Created by raver119 on 12.02.18.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_order)
-
 #include <ops/declarable/headers/shape.h>
 
 namespace nd4j {
@@ -35,5 +32,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

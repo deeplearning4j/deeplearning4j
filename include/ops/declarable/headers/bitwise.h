@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_HEADERS_BITWISE_H
-#define LIBND4J_HEADERS_BITWISE_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace nd4j {
@@ -16,10 +13,6 @@ namespace nd4j {
          * 
          * @tparam T
          */
-        #if NOT_EXCLUDED(OP_toggle_bits)
         DECLARE_OP(toggle_bits, -1, -1, true);
-        #endif
     }
 }
-
-#endif

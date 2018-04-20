@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_listdiff)
-
 #include <ops/declarable/headers/parity_ops.h>
 
 // this op will probably never become GPU-compatible
@@ -77,5 +74,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

@@ -8,7 +8,6 @@
 #include <graph/generated/graph_generated.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
-#include <graph/GraphUtils.h>
 #include <NDArray.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/generic/parity_ops.cpp>
@@ -1366,94 +1365,6 @@ TEST_F(GraphTests, Test_Hash_Function_1) {
     delete graph1D;
 }
 
-TEST_F(GraphTests, OpListTest_1) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb"); ;
-
-    ASSERT_TRUE(graph != nullptr);
-    std::vector<OpDescriptor> ops = graph->getOperations();
-
-    ASSERT_TRUE(ops.size() == 11);
-    GraphUtils::filterOperations(ops);
-    ASSERT_TRUE(ops.size() == 7);
-
-    std::string exp(" -g \"-DLIBND4J_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_transpose=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true '\"");
-    std::string out = GraphUtils::makeCommandLine(ops);
-//    nd4j_printf("EXP: >%s<\n", exp.c_str());
-//    nd4j_printf("OUT: >%s<\n", out.c_str());
-    ASSERT_EQ(exp, out);
-
-    delete graph;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(GraphTests, OpListTest_2) {
-    auto graph0 = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb");
-    auto graph1 = GraphExecutioner<float>::importFromFlatBuffers("./resources/tensor_slice.fb");
-
-    ASSERT_TRUE(graph0 != nullptr);
-    ASSERT_TRUE(graph1 != nullptr);
-
-    std::vector<OpDescriptor> ops = graph0->getOperations();
-    std::vector<OpDescriptor> ops1 = graph1->getOperations();
-    std::copy ( ops1.begin(), ops1.end(),  std::back_inserter(ops));
-
-    ASSERT_TRUE(ops.size() == 13);
-
-    GraphUtils::filterOperations(ops);
-
-    std::string exp = " -g \"-DLIBND4J_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_transpose=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true -DOP_strided_slice=true -DOP_ACCUMULATION{1}=true '\"";
-
-    ASSERT_TRUE(ops.size() == 9);
-    ASSERT_EQ(exp, GraphUtils::makeCommandLine(ops));
-
-    delete graph0;
-    delete graph1;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(GraphTests, OpListTest_3) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/ae_00.fb"); ;
-
-    ASSERT_TRUE(graph != nullptr);
-    std::vector<OpDescriptor> ops = graph->getOperations();
-    std::vector<OpDescriptor> ops2(ops);
-    std::copy(ops.begin(), ops.end(),  std::back_inserter(ops2));
-
-    ASSERT_TRUE(ops.size() == 11);
-    ASSERT_TRUE(ops2.size() == 2 * ops.size());
-
-    GraphUtils::filterOperations(ops2);
-    GraphUtils::filterOperations(ops);
-    ASSERT_TRUE(ops.size() == ops2.size());
-    ASSERT_TRUE(ops.size() == 7);
-    ASSERT_TRUE(GraphUtils::makeCommandLine(ops) == GraphUtils::makeCommandLine(ops2));
-
-    delete graph;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(GraphTests, OpListTest_4) {
-    auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/conv_0.fb"); ;
-
-    ASSERT_TRUE(graph != nullptr);
-    std::vector<OpDescriptor> ops = graph->getOperations();
-    std::vector<OpDescriptor> ops2(ops);
-    std::copy(ops.begin(), ops.end(),  std::back_inserter(ops2));
-
-    nd4j_printf("Total ops before %i\n", ops.size());
-    ASSERT_TRUE(ops.size() == 6);
-    ASSERT_TRUE(ops2.size() == 2 * ops.size());
-
-    GraphUtils::filterOperations(ops2);
-    GraphUtils::filterOperations(ops);
-    ASSERT_TRUE(ops.size() == ops2.size());
-    ASSERT_TRUE(ops.size() == 5);
-    ASSERT_TRUE(GraphUtils::makeCommandLine(ops) == GraphUtils::makeCommandLine(ops2));
-
-    delete graph;
-}
-
-
 TEST_F(GraphTests, Test_Inplace_Execution_1) {
     NDArray<float> exp('c', {5, 4}, {0.951276f, 0.501379f, 0.501368f, 0.968136f, -0.951359f, 0.499845f, -0.501381f, 0.976955f, -0.000073f, 0.499154f, 0.000098f, 0.972500f, -0.019765f, -0.499479f, -0.005979f, -0.965330f, 0.016531f, -0.500842f, 0.004861f, -0.965910f});
 
@@ -1485,7 +1396,7 @@ TEST_F(GraphTests, Test_Inplace_Execution_1) {
 
 TEST_F(GraphTests, Test_Inplace_Execution_2) {
     Graph<float> graphA;
-
+    
     auto x = new NDArray<float>('c', {5, 5});
     x->assign(-5.0);
 
@@ -1526,7 +1437,7 @@ TEST_F(GraphTests, Test_Inplace_Execution_2) {
     ASSERT_FALSE(graphA.nodeById(3)->isInplace());
     ASSERT_FALSE(graphA.nodeById(4)->isInplace());
 
-    // these 2 ops are standalone, so they can be run inplace
+    // these 2 ops are standalone, so they can be run inplace 
     ASSERT_TRUE(graphA.nodeById(5)->isInplace());
     ASSERT_TRUE(graphA.nodeById(6)->isInplace());
 }

@@ -2,9 +2,6 @@
 // Created by GS <sgazeos@gmail.com> at 2/27/2018
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_matrix_inverse)
-
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
 namespace nd4j {
@@ -20,5 +17,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

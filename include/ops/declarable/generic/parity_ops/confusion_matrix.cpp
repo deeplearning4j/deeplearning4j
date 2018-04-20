@@ -2,9 +2,6 @@
 // @author @cpuheater
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_confusion_matrix)
-
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <NDArray.h>
@@ -64,5 +61,3 @@ namespace nd4j {
         }
     }
 }
-
-#endif

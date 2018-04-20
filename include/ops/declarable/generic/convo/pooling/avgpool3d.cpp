@@ -2,8 +2,6 @@
 // created by Yurii Shyrma on 01.03.2018
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_avgpool3dnew)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
@@ -211,5 +209,3 @@ DECLARE_SHAPE_FN(avgpool3dnew_bp) {
 
 }
 }
-
-#endif

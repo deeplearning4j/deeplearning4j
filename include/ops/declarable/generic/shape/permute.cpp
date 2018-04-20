@@ -2,8 +2,6 @@
 // Created by raver119 on 29/10/17.
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_permute)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
@@ -98,4 +96,3 @@ namespace nd4j {
     }
 }
 
-#endif

@@ -2,9 +2,6 @@
 //  @author @shugeo <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_dynamic_partition)
-
 #include <ops/declarable/CustomOperations.h>
 #include <array>
 #include <ops/declarable/helpers/dynamic.h>
@@ -64,5 +61,3 @@ namespace ops {
     }
 }
 }
-
-#endif

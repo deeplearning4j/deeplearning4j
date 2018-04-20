@@ -2,9 +2,6 @@
 //  @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_HEADERS_PARITY_H
-#define LIBND4J_HEADERS_PARITY_H
-
 #include <ops/declarable/headers/common.h>
 
 namespace nd4j {
@@ -18,9 +15,7 @@ namespace nd4j {
          * Int args:
          * 0: optional axis
          */
-        #if NOT_EXCLUDED(OP_argmax)
         DECLARE_REDUCTION_OP(argmax, 1, 1, false, 0, -2);
-        #endif
 
         /**
          * This operation returns index of min element in a given NDArray (optionally: along given dimension(s))
@@ -31,9 +26,7 @@ namespace nd4j {
          * Int args:
          * 0: optional axis
          */
-        #if NOT_EXCLUDED(OP_argmin)
         DECLARE_REDUCTION_OP(argmin, 1, 1, false, 0, -2);
-        #endif
 
         /**
          * This operation provides various normalization modes: 
@@ -55,16 +48,12 @@ namespace nd4j {
          * 0: norm mode
          * 1: p for p-norm
          */
-        #if NOT_EXCLUDED(OP_norm)
         DECLARE_REDUCTION_OP(norm, 1, 1, false, 1, -2);
-        #endif
-
+           
         /**
          * Returns a batched matrix tensor with new batched diagonal values.
          */
-        #if NOT_EXCLUDED(OP_matrix_set_diag)
         DECLARE_CONFIGURABLE_OP(matrix_set_diag, 2, 1, false, 0, 0);
-        #endif
 
         /**
          * Returns a batched matrix tensor with diagonal values given (as TF.matrix_diag).
@@ -87,9 +76,7 @@ namespace nd4j {
         *
         * Three input and one output arrays must have the same shape
         */
-        #if NOT_EXCLUDED(OP_betainc)
         DECLARE_CONFIGURABLE_OP(betainc, 3, 1, false, 0, 0);
-        #endif
 
         /**
          * This operation is added for compatibility purposes mostly.
@@ -98,32 +85,26 @@ namespace nd4j {
          * 0: N-dimensional input
          * 1: bias vector
          */
-        #if NOT_EXCLUDED(OP_biasadd)
         DECLARE_OP(biasadd, 2, 1, true);
         DECLARE_CUSTOM_OP(biasadd_bp, 3, 2, false, 0, 0);
-        #endif
 
         /**
          * Returns a diagonal tensor with a given diagonal values. Given a diagonal, this operation returns a tensor with the diagonal and everything else padded with zeros.
          */
-        #if NOT_EXCLUDED(OP_diag)
         DECLARE_CUSTOM_OP(diag, 1, 1, false, 0, 0);
-        #endif
 
         /**
          * Returns a diagonal tensor with a given diagonal values. Given a diagonal, this operation returns a tensor with the diagonal and everything else padded with zeros.
          */
-        #if NOT_EXCLUDED(OP_diag_part)
         DECLARE_CUSTOM_OP(diag_part, 1, 1, false, 0, 0);
-        #endif
 
         /**
-         * Returns a diagonal vector for any submatricies with in a given tensor.
+         * Returns a diagonal vector for any submatricies with in a given tensor. 
          * It is an op inverse to matrix_set_giag.
          * Using input tensor as batched 2D diagonals flat them to vector (1D) with diagonal values.
          *
          * Input : batched tensor with rank >=2
-         * Output: tensor with rank lesser by 1 from input
+         * Output: tensor with rank lesser by 1 from input 
          */
         DECLARE_CUSTOM_OP(matrix_diag_part, 1, 1, false, 0, 0);
 
@@ -134,9 +115,7 @@ namespace nd4j {
          * 0: vector with original values
          * 1: vector with values to exclude
          */
-        #if NOT_EXCLUDED(OP_listdiff)
         DECLARE_CUSTOM_OP(listdiff, 2, 2, false, 0, 0);
-        #endif
 
         /**
          * This operation applies Add opeartion to specific inputs wrt indices
@@ -145,9 +124,7 @@ namespace nd4j {
          * indices: either scalar, vector, or N-dimensional array
          * updates: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_scatter_add)
         DECLARE_OP(scatter_add, 3, 1, true);
-        #endif
 
         /**
          * This operation applies Subtract opeartion to specific inputs wrt indices
@@ -156,9 +133,7 @@ namespace nd4j {
          * indices: either scalar, vector, or N-dimensional array
          * updates: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_scatter_sub)
         DECLARE_OP(scatter_sub, 3, 1, true);
-        #endif
 
         /**
          * This operation applies Multiply opeartion to specific inputs wrt indices
@@ -167,9 +142,7 @@ namespace nd4j {
          * indices: either scalar, vector, or N-dimensional array
          * updates: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_scatter_mul)
         DECLARE_OP(scatter_mul, 3, 1, true);
-        #endif
 
         /**
          * This operation applies Divide opeartion to specific inputs wrt indices
@@ -178,9 +151,7 @@ namespace nd4j {
          * indices: either scalar, vector, or N-dimensional array
          * updates: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_scatter_div)
         DECLARE_OP(scatter_div, 3, 1, true);
-        #endif
 
         /**
          * This operation applies Assign opeartion to specific inputs wrt indices
@@ -189,9 +160,7 @@ namespace nd4j {
          * indices: either scalar, vector, or N-dimensional array
          * updates: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_scatter_upd)
         DECLARE_OP(scatter_upd, 3, 1, true);
-        #endif
 
         /**
          * This operation takes input's shape, and returns new NDArray filled with specified value
@@ -201,25 +170,19 @@ namespace nd4j {
          * T args:
          * 0: scalar value, used to fill NDArray
          */
-        #if NOT_EXCLUDED(OP_fill_as)
         DECLARE_CONFIGURABLE_OP(fill_as, 1, 1, true, 0, 0);
-        #endif
 
         /**
          * This operation applies element-wise rint (round to integral value) operation
          */
-        #if NOT_EXCLUDED(OP_rint)
         DECLARE_OP(rint, 1, 1, true);
-        #endif
 
         /**
          * This operation returns unique elements from input array as vector, and their original indices in input array
          * Expected input:
          * input: N-dimensional array
          */
-        #if NOT_EXCLUDED(OP_unique)
         DECLARE_CUSTOM_OP(unique, 1, 2, false, 0, 0);
-        #endif
 
         /**
          * This operation returns 3 1D arrays for given 1D array with unique element count and indexes
@@ -231,9 +194,8 @@ namespace nd4j {
          *     1 - 1D array with ids for values in array above
          *     2 - 1D array with counts for values in array above
          */
-        #if NOT_EXCLUDED(OP_unique_with_counts)
+
         DECLARE_CUSTOM_OP(unique_with_counts, 1, 3, false, 0, 0);
-        #endif
 
         /**
          * This operation splits input NDArray into multiple TADs along given dimensions
@@ -243,34 +205,26 @@ namespace nd4j {
          * Int args:
          * 0..: TAD axis
          */
-        #if NOT_EXCLUDED(OP_tear)
         DECLARE_CUSTOM_OP(tear, 1, -1, false, 0, -1);
-        #endif
 
         /**
          * This op does the same as tear, just uses different input format:
          * @tparam T
          */
-        #if NOT_EXCLUDED(OP_unstack)
         DECLARE_CUSTOM_OP(unstack, 1, -1, false, 0, 1);
-        #endif
 
         /**
          * This operation extracts a strided (optionally) slice from a tensor, 
          */
-        #if NOT_EXCLUDED(OP_strided_slice)
         DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5); // TODO: new op type needed. that returns VIEW
         DECLARE_CUSTOM_OP(strided_slice_bp, 2, 1, false, 0, 5);
-        #endif
 
         /**
          * This operation extracts a slice from a tensor.
          * 
          */
-        #if NOT_EXCLUDED(OP_slice)
         DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -1);
         DECLARE_CUSTOM_OP(slice_bp, 2, 1, false, 0, -1);
-        #endif
 
         /**
          * This operation generate sequences. Basically from......to, with step used as increment.
@@ -289,9 +243,7 @@ namespace nd4j {
          * 1: optional scalar with end value
          * 1: optional scalar witn step value
          */
-        #if NOT_EXCLUDED(OP_range)
         DECLARE_CUSTOM_OP(range, -2, 1, false, -2, -2);
-        #endif
 
         /**
          * This operation return one-hot encoded n-dimensional array
@@ -306,9 +258,7 @@ namespace nd4j {
          * 0: depth
          * 1: axis
          */
-        #if NOT_EXCLUDED(OP_onehot)
         DECLARE_CUSTOM_OP(onehot, 1, 1, false, 2, 2);
-        #endif
 
 
         /**
@@ -323,9 +273,7 @@ namespace nd4j {
          *   0 - num_classes: optional
          *
          */
-        #if NOT_EXCLUDED(OP_confusion_matrix)
         DECLARE_CUSTOM_OP(confusion_matrix, 2, 1, false, 0, -2);
-        #endif
 
         /**
 		 * This operation stacks a list of rank tensors into one rank-(R+1) tensor.
@@ -333,9 +281,7 @@ namespace nd4j {
 		 * 0...: N-Dimensional arrays to stack
 		 * 
 		 */
-        #if NOT_EXCLUDED(OP_stack)
         DECLARE_CUSTOM_OP(stack, -1, 1, false, 0, 0);
-        #endif
 
         /**
          * This operation returns length of input array
@@ -344,22 +290,16 @@ namespace nd4j {
          * 
          * TODO: make this operation reduction, to allow TAD -> size
          */
-        #if NOT_EXCLUDED(OP_size)
         DECLARE_CUSTOM_OP(size, 1, 1, false, 0, 0); // add DeclarableScalarOp?
-        #endif
 
 
         /**
          * This operation returns rank of input array as scalar value.
          */
-        #if NOT_EXCLUDED(OP_rank)
         DECLARE_CUSTOM_OP(rank, 1, 1, false, 0, 0); // ^
-        #endif
 
 
-        #if NOT_EXCLUDED(OP_broadcastgradientargs)
         DECLARE_OP(broadcastgradientargs, 2, 2, true);
-        #endif
 
         /**
          * This operation takes input's shape, and returns new NDArray filled with zeros
@@ -367,9 +307,7 @@ namespace nd4j {
          * input: N-dimensional array
          * 
          */
-        #if NOT_EXCLUDED(OP_zeros_as)
         DECLARE_OP(zeros_as, 1, 1, false);
-        #endif
 
         /**
          * This operation takes input's shape, and returns new NDArray filled with ones
@@ -377,18 +315,14 @@ namespace nd4j {
          * input: N-dimensional array
          * 
          */
-        #if NOT_EXCLUDED(OP_ones_as)
         DECLARE_OP(ones_as, 1, 1, false);
-        #endif
 
         /**
          * This operation applies element-wise pow(x, 2) to the given input
          * Expected arguments:
          * input: N-Dimensional array
          */
-        #if NOT_EXCLUDED(OP_square)
         DECLARE_OP(square, 1, 1, true);
-        #endif
 
         /**
         * This op calculates Hurwitz zeta function zeta(x, q) = sum_{n=0}^{inf} (q + n)^{-x}
@@ -403,9 +337,7 @@ namespace nd4j {
         *
         * Two input and one output arrays must have the same shape
         */
-        #if NOT_EXCLUDED(OP_zeta)
         DECLARE_CONFIGURABLE_OP(zeta, 2, 1, false, 0, 0);
-        #endif
 
         /**
         * This op calculates polygamma function psi^(n)(x). Implementation is based on serial representation written in
@@ -421,9 +353,7 @@ namespace nd4j {
         *
         * Two input and one output arrays have the same shape
         */
-        #if NOT_EXCLUDED(OP_polygamma)
         DECLARE_CONFIGURABLE_OP(polygamma, 2, 1, false, 0, 0);
-        #endif
 
         /**
          * This operation takes shape as first argument, and returns new NDArray filled with specific scalar value.
@@ -435,9 +365,7 @@ namespace nd4j {
          * 0 - optional scalar value
          * 
          */
-        #if NOT_EXCLUDED(OP_fill)
         DECLARE_CUSTOM_OP(fill, 1, 1, false, -2, 0);
-        #endif
 
         /**
          * This operation splits given NDArray into chunks of specific size, along given dimension
@@ -450,9 +378,7 @@ namespace nd4j {
          * 0 - optional axis
          * 
          */
-        #if NOT_EXCLUDED(OP_split_v)
         DECLARE_CUSTOM_OP(split_v, 2, -1, false, 0, -2);
-        #endif
 
         /**
          * This operation splits given NDArray into chunks of specific size, along given dimension
@@ -463,9 +389,7 @@ namespace nd4j {
          * 0 - number of splits
          * 1 - optional axis
          */
-        #if NOT_EXCLUDED(OP_split)
         DECLARE_CUSTOM_OP(split, 1, -1, false, 0, 1);
-        #endif
 
 
         /**
@@ -480,9 +404,7 @@ namespace nd4j {
          * Int arguments:
          * 0 - optional argument, isNHWC. false by default.
          */
-        #if NOT_EXCLUDED(OP_adjust_hue)
         DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, -2, -2);
-        #endif
 
         /**
          * This operation adjusts image saturation by delta
@@ -496,9 +418,7 @@ namespace nd4j {
          * Int arguments:
          * 0 - optional argument, isNHWC. false by default.
          */
-        #if NOT_EXCLUDED(OP_adjust_saturation)
         DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, -2, -2);
-        #endif
 
 
         /**
@@ -506,18 +426,14 @@ namespace nd4j {
          * 
          *
          */
-        #if NOT_EXCLUDED(OP_depth_to_space)
         DECLARE_CUSTOM_OP(depth_to_space, 1, 1, false, 0, 2);
-        #endif
 
         /**
          * 
          * 
          *
          */
-        #if NOT_EXCLUDED(OP_space_to_depth)
         DECLARE_CUSTOM_OP(space_to_depth, 1, 1, false, 0, 2);
-        #endif
 
         /**
          * This op calculates cross-product between input arguments
@@ -525,25 +441,19 @@ namespace nd4j {
          * 0 - vector or tensor A
          * 1 - vector or tensor B
          */
-        #if NOT_EXCLUDED(OP_cross)
         DECLARE_OP(cross, 2, 1, false);
-        #endif
 
         /**
          * 
          * 
          */
-        #if NOT_EXCLUDED(OP_space_to_batch)
         DECLARE_CUSTOM_OP(space_to_batch, 1, 1, false, 0, -2);
-        #endif
 
         /**
          * 
          * 
          */
-        #if NOT_EXCLUDED(OP_batch_to_space)
         DECLARE_CUSTOM_OP(batch_to_space, 1, 1, false, 0, -2);
-        #endif
 
         /**
          * top_k operation returns a vector of k top values for 
@@ -554,9 +464,7 @@ namespace nd4j {
          *  The second is k (default 1) - optional
          *  The third is boolean value(default is 1) (0 - as is, 1 - sorted by value) optional
          */
-        #if NOT_EXCLUDED(OP_top_k)
         DECLARE_CUSTOM_OP(top_k, 1, 2, false, 0, -2);
-        #endif
 
         /**
          * in_top_k operation returns a vector of k boolean values for 
@@ -565,9 +473,8 @@ namespace nd4j {
          *  The second is NDArray as vector of indeces k top values will be search.
          *  The third is k
          */
-        #if NOT_EXCLUDED(OP_in_top_k)
+
         DECLARE_CUSTOM_OP(in_top_k, 2, 1, true, 1, 1);
-        #endif
 
         /**
          * moments operation calculate a mean and variation for given NDArray
@@ -576,17 +483,13 @@ namespace nd4j {
          * Otherwise there are two NDArrays with means and variances for 
          * Axes can be put as the second NDArray or as int vector.
          */
-        #if NOT_EXCLUDED(OP_moments)
         DECLARE_CUSTOM_OP(moments, 1, 2, false, 0, -2);
-        #endif
 
         /**
          * embedding_lookup - search for submatrices in given matrix and retunts them
          * accordingly to index array given.
          */
-        #if NOT_EXCLUDED(OP_embedding_lookup)
         DECLARE_CUSTOM_OP(embedding_lookup, 2, 1, false, 0, 1);
-        #endif
 
         /**
          * dynamic_partition - partition a input tensor onto num_partitions 
@@ -598,9 +501,8 @@ namespace nd4j {
          * 
          * returns a num of NDArrays as output
          */
-        #if NOT_EXCLUDED(OP_dynamic_partition)
+
         DECLARE_CUSTOM_OP(dynamic_partition, 2, 1, false, 0, 1);
-        #endif
 
         /**
          * dynamic_stitch - merge partitions from the second param a input tensor 
@@ -613,9 +515,7 @@ namespace nd4j {
          * 
          * the operation is inversion od dynamic_partition
          */
-        #if NOT_EXCLUDED(OP_dynamic_stitch)
         DECLARE_CUSTOM_OP(dynamic_stitch, 2, 1, false, 0, 0);
-        #endif
 
         /**
          * zero_fraction op.
@@ -624,9 +524,7 @@ namespace nd4j {
          * input param - an array (tensor)
          * output value - a real number with given type (e.g. float or double)
          */
-        #if NOT_EXCLUDED(OP_zero_fraction)
         DECLARE_CUSTOM_OP(zero_fraction, 1, 1, false, 0, 0);
-        #endif
 
         /**
          * xw_plus_b op.
@@ -638,18 +536,14 @@ namespace nd4j {
          *   - 1D vector with N elements
          * output value - 2D matrix NxN as multiply of matrixes and add vector
          */
-        #if NOT_EXCLUDED(OP_xw_plus_b)
         DECLARE_CUSTOM_OP(xw_plus_b, 3, 1, false, 0, 0);
-        #endif
 
         /**
          * This operation is missed due it simplicy.
          * Input and output params are the same after operation.
          * Input - NDArray, output - NDArray with the same shape.
          */
-        #if NOT_EXCLUDED(OP_stop_gradient)
         DECLARE_OP(stop_gradient, 1, 1, true);
-        #endif
 
         /**
          * l2_loss op.
@@ -658,13 +552,9 @@ namespace nd4j {
          * input param - an array (tensor)
          * output value - a real number with given type (e.g. float or double)
          */
-        #if NOT_EXCLUDED(OP_l2_loss)
         DECLARE_CUSTOM_OP(l2_loss, 1, 1, false, 0, 0);
-        #endif
 
-        #if NOT_EXCLUDED(OP_parallel_stack)
         DECLARE_CUSTOM_OP(parallel_stack, -1, 1, false, 0, 0);
-        #endif
 
 	/**
          * This op calculates logarithmic loss of poison distributed input
@@ -673,9 +563,7 @@ namespace nd4j {
          *  1 - input
          *  optional int - boolean value compute_full_loss: 0 (default) or 1 (compute)
          */
-        #if NOT_EXCLUDED(OP_log_poison_loss)
         DECLARE_CONFIGURABLE_OP(log_poison_loss, 2, 1, true, 0, 0);
-        #endif
 
         /**
          * normalize_moments operation normalize already calculated mean and variation 
@@ -689,9 +577,7 @@ namespace nd4j {
          * 
          *  returns a normalized pair mean and variance with the same shapes as input
          */
-        #if NOT_EXCLUDED(OP_normalize_moments)
         DECLARE_CUSTOM_OP(normalize_moments, 3, 2, false, 1, 0);
-        #endif
 
         /**
          * sufficient_statistics operation return calculated mean and variation with data count.
@@ -711,17 +597,13 @@ namespace nd4j {
          *     - sum of squares of input (accross axises)
          *     - shift (if was given by input floating param)
          */
-        #if NOT_EXCLUDED(OP_sufficient_statistics)
         DECLARE_CUSTOM_OP(sufficient_statistics, 2, 3, false, 0, 0);
-        #endif
 
         /**
          * Special atan2 op impl for TF's args order
          * @tparam T
          */
-        #if NOT_EXCLUDED(OP_tf_atan2)
         DECLARE_OP(tf_atan2, 2, 1, true);
-        #endif
 
         /**
          * This op calculates weighted logarithmic loss of input
@@ -732,9 +614,7 @@ namespace nd4j {
          *  
          *  return value - a tensor with the same shape as target or input
          */
-        #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
         DECLARE_OP(weighted_cross_entropy_with_logits, 3, 1, true);
-        #endif
 
         /**
          * This op calculates weighted logarithmic loss of input
@@ -746,9 +626,7 @@ namespace nd4j {
          *  T parameter - probability (should be between 0 and 1)
          *  return value - a tensor with the same shape as target or input
          */
-        #if NOT_EXCLUDED(OP_dropout)
         DECLARE_CONFIGURABLE_OP(dropout, 1, 1, true, 1, 1);
-        #endif
 
 
         /**
@@ -768,9 +646,7 @@ namespace nd4j {
          *  of values in indexed place
          *
          */
-        #if NOT_EXCLUDED(OP_bincount)
         DECLARE_CUSTOM_OP(bincount, 1, 1, false, 0, 0);
-        #endif
 
         /**
          * broadcast_dynamic_shape op.
@@ -782,9 +658,7 @@ namespace nd4j {
          * return value:
          *    vector with broadcasted shape 
          */
-        #if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
         DECLARE_CUSTOM_OP(broadcast_dynamic_shape, 2, 1, false, 0, 0);
-        #endif
 
         /**
          * matrix_determinant op.
@@ -796,9 +670,7 @@ namespace nd4j {
          *    tensor with dimension (x * y * z * ::: *) with determinant for all 
          * M x M matricies
          */
-        #if NOT_EXCLUDED(OP_matrix_determinant)
         DECLARE_CUSTOM_OP(matrix_determinant, 1, 1, false, 0, 0);
-        #endif
 
         /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
@@ -809,9 +681,7 @@ namespace nd4j {
          * return value:
          *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it 
          */
-        #if NOT_EXCLUDED(OP_matrix_inverse)
         DECLARE_OP(matrix_inverse, 1, 1, true);
-        #endif
 
         /**
          * sequence_mask op. - make mask for given tensor filled by (j > x[i_1, i_2,...,i_n]) -> z[i_1, i_2,...,i_n,j]
@@ -887,5 +757,3 @@ namespace nd4j {
 
     }
 }
-
-#endif
