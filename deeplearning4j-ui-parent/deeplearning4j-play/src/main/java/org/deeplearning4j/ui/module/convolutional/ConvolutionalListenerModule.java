@@ -9,12 +9,14 @@ import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
+import org.deeplearning4j.ui.i18n.I18NResource;
 import org.deeplearning4j.ui.weights.ConvolutionListenerPersistable;
 import play.mvc.Result;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -75,6 +77,11 @@ public class ConvolutionalListenerModule implements UIModule {
     @Override
     public void onDetach(StatsStorage statsStorage) {
 
+    }
+
+    @Override
+    public List<I18NResource> getInternationalizationResources() {
+        return Collections.emptyList();
     }
 
     private Result getImage() {
