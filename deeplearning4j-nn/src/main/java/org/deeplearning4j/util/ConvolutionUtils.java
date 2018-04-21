@@ -24,6 +24,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
@@ -236,34 +237,40 @@ public class ConvolutionUtils {
     /**
      * Get top and left padding for same mode only.
      *
-     * @param outSize
-     * @param inSize
-     * @param kernel
-     * @param strides
-     * @return
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Top left padding (length 2 array, height dimension first)
      */
     public static int[] getSameModeTopLeftPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2; //As above
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s, effectiveKernel %s",
+                inSize, outSize, kernel, strides, dilation, eKernel);
         return outPad;
     }
 
     /**
      * Get bottom and right padding for same mode only.
      *
-     * @param outSize
-     * @param inSize
-     * @param kernel
-     * @param strides
-     * @return
+     * @param outSize  Output size (length 2 array, height dimension first)
+     * @param inSize   Input size (length 2 array, height dimension first)
+     * @param kernel   Kernel size (length 2 array, height dimension first)
+     * @param strides  Strides  (length 2 array, height dimension first)
+     * @param dilation Dilation (length 2 array, height dimension first)
+     * @return Bottom right padding (length 2 array, height dimension first)
      */
     public static int[] getSameModeBottomRightPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0] + 1) / 2; //Note that padTop is 1 smaller than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1] + 1) / 2; //As above
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s, effectiveKernel %s",
+                inSize, outSize, kernel, strides, dilation, eKernel);
         return outPad;
     }
 
