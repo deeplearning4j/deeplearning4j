@@ -249,8 +249,8 @@ public class ConvolutionUtils {
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2; //As above
-        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s, effectiveKernel %s",
-                inSize, outSize, kernel, strides, dilation, eKernel);
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 
@@ -269,8 +269,8 @@ public class ConvolutionUtils {
         int[] outPad = new int[2];
         outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0] + 1) / 2; //Note that padTop is 1 smaller than this if bracketed term is not divisible by 2
         outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1] + 1) / 2; //As above
-        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s, effectiveKernel %s",
-                inSize, outSize, kernel, strides, dilation, eKernel);
+        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+                outPad, inSize, outSize, kernel, strides, dilation);
         return outPad;
     }
 
