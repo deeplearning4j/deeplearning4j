@@ -5,6 +5,7 @@
 #include <Environment.h>
 #include "../indexreduce.h"
 #include <op_boilerplate.h>
+#include <helpers/DebugHelper.h>
 
 #include "../legacy_ops.h"
 
@@ -135,6 +136,7 @@ namespace functions {
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
             checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarFloat(...) failed");
         }
 
         template <>
@@ -151,7 +153,7 @@ namespace functions {
 			1,
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarDouble(...) failed");
         }
 
         template <>
@@ -168,7 +170,7 @@ namespace functions {
 			1,
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalarHalf(...) failed");
         }
 
 
@@ -186,8 +188,7 @@ namespace functions {
 			dimensionLength,
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -204,8 +205,7 @@ namespace functions {
 			dimensionLength,
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -222,8 +222,7 @@ namespace functions {
 			dimensionLength,
 			1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 

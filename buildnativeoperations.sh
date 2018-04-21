@@ -12,7 +12,7 @@ fi
 export MAKE_COMMAND="make"
 echo eval $CMAKE_COMMAND
 
-[[ -z ${MAKEJ:-} ]] && MAKEJ=5
+[[ -z ${MAKEJ:-} ]] && MAKEJ=4
 
 # Use > 1 to consume two arguments per pass in the loop (e.g. each
 # argument has a corresponding value to go with it).

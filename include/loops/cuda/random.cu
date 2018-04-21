@@ -8,6 +8,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_launch_config.h>
+#include <helpers/DebugHelper.h>
 
 template <typename T, typename OpClass>
 static inline __device__ void randomSingleGeneric(
@@ -301,8 +302,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -315,8 +315,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, float16, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -329,8 +328,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomSingle, double, PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -343,8 +341,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -358,8 +355,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, float16, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -372,8 +368,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomDouble, double, PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -386,9 +381,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
-
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
@@ -401,9 +394,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, float16, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
-
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -418,9 +409,7 @@ namespace functions {
             // this macro builds bunch of IF/ELSE selectors for kernel launch
             DISPATCH_SIMPLE(randomTriple, double, PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
-
+            DEBUG_KERNEL(stream, opNum);
         }
 
 

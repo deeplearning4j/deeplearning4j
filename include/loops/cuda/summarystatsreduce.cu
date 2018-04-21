@@ -14,6 +14,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_launch_config.h>
+#include <helpers/DebugHelper.h>
 
 
 
@@ -466,7 +467,7 @@ namespace functions {
                             1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
             // this is blocking method since method should return scalar
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarDouble(...) failed");
 
             double result = resultPointer[0];
             return result;
@@ -503,7 +504,7 @@ namespace functions {
                             1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
             // this is blocking method since method should return scalar
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarFloat(...) failed");
 
             double result = resultPointer[0];
             return result;
@@ -541,7 +542,7 @@ namespace functions {
                             1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
             // this is blocking method since method should return scalar
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalarHalf(...) failed");
 
             double result = resultPointer[0];
             return result;
@@ -579,8 +580,7 @@ namespace functions {
                             1,
                             1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -615,8 +615,7 @@ namespace functions {
                         1,
                         1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-        if (nd4j::Environment::getInstance()->isDebug())
-            checkCudaErrors(cudaStreamSynchronize(*stream));
+        DEBUG_KERNEL(stream, opNum);
     }
 
         template <>
@@ -650,8 +649,7 @@ namespace functions {
                         1,
                         1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -686,8 +684,7 @@ namespace functions {
                             dimensionLength,
                             1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -720,8 +717,7 @@ namespace functions {
                         dimensionLength,
                         1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 
@@ -754,8 +750,7 @@ namespace functions {
                         dimensionLength,
                         1,biasCorrected, allocationPointer, reductionPointer, deviceTADShapeInfo, deviceTADOffsets);
 
-            if (nd4j::Environment::getInstance()->isDebug())
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 

@@ -7,6 +7,8 @@
 
 #include <atomic>
 #include <dll.h>
+#include <helpers/StringUtils.h>
+#include <stdexcept>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {

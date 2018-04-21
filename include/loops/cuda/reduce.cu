@@ -5,6 +5,7 @@
 #include <op_boilerplate.h>
 #include <loops/reduce.h>
 #include <loops/legacy_ops.h>
+#include <helpers/DebugHelper.h>
 
 
 template <typename T, typename OpClass>
@@ -152,24 +153,24 @@ namespace functions {
             _CUDA_H void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, int *xShapeInfo, float *extraParams, float *z, int *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, int *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-                
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+
+				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
             }
 
             template <>
             _CUDA_H void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, int *xShapeInfo, float16 *extraParams, float16 *z, int *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, int *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-                
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+
+				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarHalf(...) failed");
             }
 
             template <>
             _CUDA_H void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, int *xShapeInfo, double *extraParams, double *z, int *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, int *tadOnlyShapeInfo) {
                 
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
-                
-                checkCudaErrors(cudaStreamSynchronize(*stream));
+
+				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarDouble(...) failed");
             }
 
             template <>
@@ -182,8 +183,7 @@ namespace functions {
                     DISPATCH_SIMPLE(reduceSimpleGenericXD, float, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 }
 
-                if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+                DEBUG_KERNEL(stream, opNum);
             }
 
             template <>
@@ -196,8 +196,7 @@ namespace functions {
                     DISPATCH_SIMPLE(reduceSimpleGenericXD, float16, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 }
 
-                if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+                DEBUG_KERNEL(stream, opNum);
             }
 
             template <>
@@ -211,8 +210,7 @@ namespace functions {
                     DISPATCH_SIMPLE(reduceSimpleGenericXD, double, PARAMS(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_OPS))
                 }
 
-                if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+                DEBUG_KERNEL(stream, opNum);
             }
 
             template <typename T>

@@ -48,24 +48,21 @@ namespace functions {
         __host__ void Broadcast<float>::executeBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, int *xShapeInfo, float *y, int *yShapeInfo, float *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ) {
             DISPATCH_SIMPLE(broadcastSimple, float, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
-	        if (nd4j::Environment::getInstance()->isDebug())
-		        checkCudaErrors(cudaStreamSynchronize(*stream));
+	        DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
         __host__ void Broadcast<float16>::executeBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, int *xShapeInfo, float16 *y, int *yShapeInfo, float16 *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ) {
             DISPATCH_SIMPLE(broadcastSimple, float16, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
-	        if (nd4j::Environment::getInstance()->isDebug())
-		        checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template <>
         __host__ void Broadcast<double>::executeBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, int *xShapeInfo, double *y, int *yShapeInfo, double *result, int *resultShapeInfo, int *dimension, int dimensionLength, int *tadOnlyShapeInfo, Nd4jIndex *tadOffsets, int *tadOnlyShapeInfoZ, Nd4jIndex *tadOffsetsZ) {
             DISPATCH_SIMPLE(broadcastSimple, double, PARAMS(x, xShapeInfo, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
-	        if (nd4j::Environment::getInstance()->isDebug())
-		        checkCudaErrors(cudaStreamSynchronize(*stream));
+            DEBUG_KERNEL(stream, opNum);
         }
 
 

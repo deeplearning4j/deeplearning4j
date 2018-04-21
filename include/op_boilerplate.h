@@ -93,6 +93,9 @@
 #define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
 #endif
 
+#define DEBUG_CALL(STREAM)      if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
+#define DEBUG_KERNEL(STREAM, OP_NUM)       if (nd4j::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tOp = "Kernel OpNum failed: [" + nd4j::StringUtils::valueToString<int>(OP_NUM) + std::string("]"); throw std::runtime_error(tOp.c_str()); }; }
+
 #define EXTRACT(...) EXTRACT __VA_ARGS__ 
 #define NOTHING_EXTRACT 
 #define PASTE(x, ...) x ## __VA_ARGS__ 

@@ -10,6 +10,7 @@
 #include <op_boilerplate.h>
 #include <helpers/TAD.h>
 #include <types/float16.h>
+#include <helpers/DebugHelper.h>
 
 #include "../legacy_ops.h"
 
@@ -455,8 +456,7 @@ namespace functions {
             	//pairWiseTransformStridedFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
             	DISPATCH_SIMPLE(pwtSimpleStrided, float, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+	            DEBUG_KERNEL(stream, opNum);
             }
 
             template<>
@@ -475,8 +475,7 @@ namespace functions {
             	//pairWiseTransformStridedHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>> ( opNum, n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo);
             	DISPATCH_SIMPLE(pwtSimpleStrided, float16, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+	            DEBUG_KERNEL(stream, opNum);
             }
 
 
@@ -497,8 +496,7 @@ namespace functions {
             	DISPATCH_SIMPLE(pwtSimpleStrided, double, PARAMS(n, dx, y, xStride, yStride, extraParams, result, resultStride, allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
 
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+	            DEBUG_KERNEL(stream, opNum);
             }
 
             template<>
@@ -519,8 +517,7 @@ namespace functions {
 	            //pairWiseTransformFloat<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
                 DISPATCH_SIMPLE(pwtSimpleShaped, float, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+	            DEBUG_KERNEL(stream, opNum);
             }
 
 
@@ -542,8 +539,7 @@ namespace functions {
 	            //pairWiseTransformHalf<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
                 DISPATCH_SIMPLE(pwtSimpleShaped, float16, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+	            DEBUG_KERNEL(stream, opNum);
             }
 
 
@@ -565,9 +561,7 @@ namespace functions {
 	            //pairWiseTransformDouble<<<launchDims.x,launchDims.y, launchDims.z, *stream>>>( opNum, dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo);
                 DISPATCH_SIMPLE(pwtSimpleShaped, double, PARAMS(dx, y, extraParams, result, xShapeInfo,  shape::rank(hostXShapeInfo), yShapeInfo,  shape::rank(hostYShapeInfo), resultShapeInfo,  shape::rank(hostZShapeInfo), allocationPointer, deviceTADShapeInfo), OPS_A(PAIRWISE_TRANSFORM_OPS))
 
-
-	            if (nd4j::Environment::getInstance()->isDebug())
-		            checkCudaErrors(cudaStreamSynchronize(*stream));
+                DEBUG_KERNEL(stream, opNum);
             }
 
             /*
