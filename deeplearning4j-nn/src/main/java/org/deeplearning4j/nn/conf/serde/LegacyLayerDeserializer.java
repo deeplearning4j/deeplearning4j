@@ -1,19 +1,18 @@
 package org.deeplearning4j.nn.conf.serde;
 
-import org.deeplearning4j.nn.conf.json.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
 import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
+import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonNode;
@@ -60,6 +59,10 @@ public class LegacyLayerDeserializer extends JsonDeserializer<Layer> {
         LEGACY_NAMES.put("MaskZeroLayer", MaskZeroLayer.class.getName());
         LEGACY_NAMES.put("Cropping1D", Cropping1D.class.getName());
         LEGACY_NAMES.put("Cropping2D", Cropping2D.class.getName());
+
+        //The following didn't previously have subtype annotations - hence will be using default name (class simple name)
+        LEGACY_NAMES.put("LastTimeStep", LastTimeStep.class.getName());
+
 
         //TODO: Keras layers
     }

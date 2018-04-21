@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.conf.json;
+package org.deeplearning4j.nn.conf.serde;
 
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
