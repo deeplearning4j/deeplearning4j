@@ -97,17 +97,41 @@ namespace nd4j {
             return os.str() ;
         }
 
+        template <>
+        std::string OpRegistrator::local_to_string(int value) {
+            //create an output string stream
+            std::ostringstream os ;
+
+            //throw the value into the string stream
+            os << value ;
+
+            //convert the string stream into a string and return
+            return os.str() ;
+        }
+
+        void OpRegistrator::sigIntHandler(int sig) {
+            delete OpRegistrator::getInstance();
+        }
+
+        void OpRegistrator::exitHandler() {
+            delete OpRegistrator::getInstance();
+        }
+
+        void OpRegistrator::sigSegVHandler(int sig) {
+            delete OpRegistrator::getInstance();
+        }
+
         OpRegistrator::~OpRegistrator() {
             _msvc.clear();
 
-            for (auto const& x : _declarablesD)
-                delete x.second;
+            for (auto x : _uniqueD)
+                delete x;
 
-            for (auto const& x : _declarablesF)
-                delete x.second;
+            for (auto x : _uniqueF)
+                delete x;
 
-            for (auto const& x : _declarablesH)
-                delete x.second;
+            for (auto x : _uniqueH)
+                delete x;
 
             _declarablesF.clear();
             _declarablesD.clear();
@@ -140,15 +164,6 @@ namespace nd4j {
             _locker.unlock();
 
             return _opsList.c_str();
-        }
-
-        /**
-         * This method registers operation
-         *
-         * @param op
-         */
-        bool OpRegistrator::registerOperationFloat(nd4j::ops::DeclarableOp<float>* op) {
-            return registerOperationFloat(op->getOpName()->c_str(), op);
         }
 
         bool OpRegistrator::registerOperationFloat(const char* name, nd4j::ops::DeclarableOp<float>* op) {
@@ -186,11 +201,23 @@ namespace nd4j {
             return true;
         }
 
+        /**
+         * This method registers operation
+         *
+         * @param op
+         */
+        bool OpRegistrator::registerOperationFloat(nd4j::ops::DeclarableOp<float>* op) {
+            _uniqueF.emplace_back(op);
+            return registerOperationFloat(op->getOpName()->c_str(), op);
+        }
+
         bool OpRegistrator::registerOperationHalf(nd4j::ops::DeclarableOp<float16> *op) {
+            _uniqueH.emplace_back(op);
             return registerOperationHalf(op->getOpName()->c_str(), op);
         }
 
         bool OpRegistrator::registerOperationDouble(nd4j::ops::DeclarableOp<double> *op) {
+            _uniqueD.emplace_back(op);
             return registerOperationDouble(op->getOpName()->c_str(), op);
         }
 
@@ -326,6 +353,43 @@ namespace nd4j {
         template <>
         DeclarableOp<double> * OpRegistrator::getOperationT<double>(Nd4jIndex hash) {
             return this->getOperationDouble(hash);
+        }
+
+        int OpRegistrator::numberOfOperations() {
+            return (int) _declarablesLF.size();
+        }
+
+        template <>
+        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float>() {
+            std::vector<Nd4jIndex> result;
+
+            for (auto &v:_declarablesLF) {
+                result.emplace_back(v.first);
+            }
+
+            return result;
+        }
+
+        template <>
+        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<double>() {
+            std::vector<Nd4jIndex> result;
+
+            for (auto &v:_declarablesLD) {
+                result.emplace_back(v.first);
+            }
+
+            return result;
+        }
+
+        template <>
+        std::vector<Nd4jIndex> OpRegistrator::getAllHashes<float16>() {
+            std::vector<Nd4jIndex> result;
+
+            for (auto &v:_declarablesLH) {
+                result.emplace_back(v.first);
+            }
+
+            return result;
         }
 
         nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;

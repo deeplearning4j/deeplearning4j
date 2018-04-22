@@ -2,6 +2,9 @@
 // @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_clone_list)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -19,3 +22,5 @@ namespace nd4j {
         DECLARE_SYN(tensorarrayidentityv3, clone_list);
     }
 }
+
+#endif

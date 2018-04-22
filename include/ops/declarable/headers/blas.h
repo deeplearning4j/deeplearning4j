@@ -1,6 +1,8 @@
 //
 //  @author raver119@gmail.com
 //
+#ifndef LIBND4J_HEADERS_BLAS_H
+#define LIBND4J_HEADERS_BLAS_H
 
 #include <ops/declarable/headers/common.h>
 
@@ -23,7 +25,9 @@ namespace nd4j {
          * 0: transA (where applicable)
          * 1: transB (where applicable)
          */
+        #if NOT_EXCLUDED(OP_matmul)
         DECLARE_CUSTOM_OP(matmul, 2, 1, false, -2, -2);
+        #endif
 
         /**
          * tensorMmul/tensorDot operation
@@ -35,13 +39,17 @@ namespace nd4j {
          * IArgs[] - number of axes along for second array
          * IArgs[1]... axes values for second array
          */
+        #if NOT_EXCLUDED(OP_tensormmul)
         DECLARE_CUSTOM_OP(tensormmul, 2, 1, false, 0, -1);   
+        #endif
 
         /**
          * This op is simple implementation of BLAS AXPY method.
          * Math is: y += a * x;
          */
+        #if NOT_EXCLUDED(OP_axpy)
         DECLARE_CONFIGURABLE_OP(axpy, 2, 1, false, -2, 0);
+        #endif
 
         /**
          * This operation implements batched matrix multiplication
@@ -56,7 +64,9 @@ namespace nd4j {
          * 
          * PLEASE NOTE: M, N, K, ldA, ldB, ldC should be equal for all matrices within batch.
          */
+        #if NOT_EXCLUDED(OP_batched_gemm)
         DECLARE_CUSTOM_OP(batched_gemm, -1, -1, false, 0, 9);
+        #endif
 
         /**
          * performs singular value decomposition (SVD) of one one or more matrices, evaluates the SVD of each inner-most 2D matrix in input array:
@@ -77,6 +87,10 @@ namespace nd4j {
          *            if diagSize < IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
          *            Recommended value is 16. 
          */
+        #if NOT_EXCLUDED(OP_svd)
         DECLARE_CUSTOM_OP(svd, 1, 1, false, 0, 3);   
+        #endif
     }
 }
+
+#endif

@@ -1,6 +1,9 @@
 //
-//  @author raver119@gmail.com
+//  @author Adam Gibson
 //
+
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_choose)
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
@@ -160,3 +163,5 @@ namespace nd4j {
 
     }
 }
+
+#endif

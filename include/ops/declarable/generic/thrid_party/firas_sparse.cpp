@@ -4,6 +4,9 @@
 // @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_firas_sparse)
+
 #ifndef LIBND4J_THIRD_PARTY_H
 #define LIBND4J_THIRD_PARTY_H
 
@@ -84,5 +87,7 @@ namespace nd4j {
         }
     }
 }
+
+#endif
 
 #endif //LIBND4J_THIRD_PARTY_H

@@ -2,6 +2,9 @@
 // Created by raver119 on 08.10.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_pooling2d)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 
@@ -180,3 +183,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

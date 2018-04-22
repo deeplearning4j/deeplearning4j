@@ -2,6 +2,9 @@
 // Created by raver119 on 29/10/17.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_randomuniform)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -45,3 +48,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

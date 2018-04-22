@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 24.11.2017
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
+
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
@@ -19,12 +22,12 @@ CUSTOM_OP_IMPL(mean_pairwssqerr_loss, 3, 1, false, 0, 0) {
     NDArray<T>* output      = OUTPUT_VARIABLE(0);
 
 	// input validation    
-    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(predictions).c_str());    
+    REQUIRE_TRUE(labels->isSameShape(predictions), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labels).c_str(), ShapeUtils<T>::shapeAsString(predictions).c_str());
     // weights array can be single scalar or has the same rank as labels, and must be broadcastable to labels
 	REQUIRE_TRUE(!(!weights->isScalar() && weights->rankOf() != labels->rankOf()), 0, "MEAN_PAIRWSSQERR_LOSS OP: weights array must have the same rank as labels array, but got %i and %i correspondingly!", weights->rankOf(), labels->rankOf());
     // check whether broadcast operation is possible for weights array
     if(!weights->isScalar())
-    	for (int i = 0; i < weights->rankOf(); ++i)        	
+    	for (int i = 0; i < weights->rankOf(); ++i)
            	REQUIRE_TRUE(!(weights->shapeOf()[i] != labels->shapeOf()[i] && weights->shapeOf()[i] != 1), 0, "MEAN_PAIRWSSQERR_LOSS OP: shape of weights array %s is not broadcastable to labels array shape %s !", ShapeUtils<T>::shapeAsString(weights).c_str(), ShapeUtils<T>::shapeAsString(labels).c_str());
 
 	// perform weights broadcasting/tile to labels if needed	
@@ -89,8 +92,8 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
 	int* predictionsShapeInfo = inputShape->at(0);
     int* labelsShapeInfo 	  = inputShape->at(2);
 
-    // labels and predictions must have the same shapes 
-    REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(predictionsShapeInfo).c_str()); 
+    // labels and predictions must have the same shapes
+    REQUIRE_TRUE(shape::shapeEquals(labelsShapeInfo, predictionsShapeInfo), 0, "MEAN_PAIRWSSQERR_LOSS OP: labels and predictions arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils<T>::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils<T>::shapeAsString(predictionsShapeInfo).c_str());
 
     int* outShapeInfo = nullptr;
     // output is scalar
@@ -111,3 +114,5 @@ DECLARE_SHAPE_FN(mean_pairwssqerr_loss) {
 
 }
 }
+
+#endif

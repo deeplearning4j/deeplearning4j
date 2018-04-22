@@ -2,6 +2,9 @@
 // @author raver119@gmail.com
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_space_to_depth)
+
 #include <ops/declarable/headers/parity_ops.h>
 #include <array>
 #include <ops/declarable/helpers/s_t_d.h>
@@ -58,3 +61,5 @@ namespace ops {
     }
 }
 }
+
+#endif

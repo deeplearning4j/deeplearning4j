@@ -2,6 +2,9 @@
 // Created by raver119 on 12.10.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_tear)
+
 #include <ops/declarable/CustomOperations.h>
 #include <TAD.h>
 
@@ -54,3 +57,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

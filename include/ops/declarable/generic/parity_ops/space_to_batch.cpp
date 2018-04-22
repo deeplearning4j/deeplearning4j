@@ -16,6 +16,9 @@ limitations under the License.
 //  Created by raver119 on 19.01.18.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_space_to_batch)
+
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/s_t_b.h>
 
@@ -287,3 +290,5 @@ namespace ops {
     }
 }
 }
+
+#endif

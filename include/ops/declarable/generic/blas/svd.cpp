@@ -1,6 +1,10 @@
 //
 //  @author Yurii Shyrma (iuriish@yahoo.com), created on 20.01.2018
 //
+
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_svd)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/svd.h>
 
@@ -80,3 +84,5 @@ DECLARE_SHAPE_FN(svd) {
 
 }
 }
+
+#endif

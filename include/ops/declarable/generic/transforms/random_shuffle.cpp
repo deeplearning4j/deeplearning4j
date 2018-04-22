@@ -2,6 +2,9 @@
 // Created by Yurii Syrma on 26.01.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_random_shuffle)
+
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 
@@ -104,3 +107,5 @@ OP_IMPL(random_shuffle, 1, 1, true) {
 
 }
 }
+
+#endif

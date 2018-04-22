@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_stack)
+
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/stack.h>
 
@@ -97,3 +100,5 @@ DECLARE_SHAPE_FN(stack) {
 
 }
 }
+
+#endif

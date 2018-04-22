@@ -2,6 +2,8 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 19.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_maxpool3dnew)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
@@ -220,3 +222,5 @@ DECLARE_SHAPE_FN(maxpool3dnew_bp) {
 
 }
 }
+
+#endif

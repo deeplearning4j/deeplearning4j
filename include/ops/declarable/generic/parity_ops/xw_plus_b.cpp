@@ -2,6 +2,10 @@
 //  xw_plus_b op. Created by GS <george@skymind.io> 31.01.2018
 //
 //
+
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_xw_plus_b)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matmul.h>
 
@@ -34,3 +38,5 @@ namespace nd4j {
 
     }
 }
+
+#endif

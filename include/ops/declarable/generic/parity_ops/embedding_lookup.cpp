@@ -2,6 +2,9 @@
 // Created by GS <sgazeos@gmail.com>
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_embedding_lookup)
+
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <vector>
@@ -64,3 +67,5 @@ DECLARE_SHAPE_FN(embedding_lookup) {
 
 }
 }
+
+#endif

@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 24.01.2018.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_trace)
+
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
@@ -47,3 +50,5 @@ DECLARE_SHAPE_FN(trace) {
 
 }
 }
+
+#endif

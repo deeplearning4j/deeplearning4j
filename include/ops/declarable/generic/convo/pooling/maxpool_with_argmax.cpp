@@ -2,6 +2,9 @@
 // Created by GS <sgazeos@gmail.com> at 2/20/18
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_max_pool_with_argmax)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/max_pooling.h>
@@ -22,9 +25,8 @@ namespace nd4j {
 
             return ND4J_STATUS_OK;
         }
-    }
-    DECLARE_SHAPE_FN(max_pool_with_argmax) {
-
+        
+        DECLARE_SHAPE_FN(max_pool_with_argmax) {
             int* in = inputShape->at(0);
             int* valuesShape = nullptr;
             int* indicesShape = nullptr;
@@ -33,6 +35,9 @@ namespace nd4j {
             auto shapes = SHAPELIST(valuesShape, indicesShape);
 
             return shapes;
+        }
     }
-
 }
+
+#endif
+

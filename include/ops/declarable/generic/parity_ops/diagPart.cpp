@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.12.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_diag_part)
+
 #include <ops/declarable/CustomOperations.h>
 
 
@@ -69,3 +72,4 @@ namespace ops  {
 }
 }
 
+#endif

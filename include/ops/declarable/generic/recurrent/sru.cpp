@@ -4,9 +4,11 @@
 //@author Yurii Shyrma
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_sru)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sru.h>
-
 
 namespace nd4j {
 namespace ops  {
@@ -127,21 +129,21 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     NDArray<T>* c0    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
     NDArray<T>* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
 
-    bool applyMask = false;        
+    bool applyMask = false;
     if (block.width() > 4) {
-        mask = INPUT_VARIABLE(4);   
+        mask = INPUT_VARIABLE(4);
         applyMask = true;
     }
 
     NDArray<T>* h = OUTPUT_VARIABLE(0);                // h_t, [bS x inSize x time]
     NDArray<T>* state  = OUTPUT_VARIABLE(1);                // c_t, [bS x inSize x time]
-    
+
     const int bS     = x->shapeOf()[0];                     // bS - batch size
     const int inSize      = x->shapeOf()[1];                     // inSize - number of features
     const int time      = x->shapeOf()[2];                     // time - number of time steps
-    
+
     // multiplication matrix = matmul(w,x)
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]    
+    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      //       U [bS x 3K x time]
     // wi.printShapeInfo();
     NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,inSize),     NDIndex::all() } );       // [bS x inSize x time]
     NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(inSize,2*inSize),   NDIndex::all() } );       // forget gate [bS x inSize x time]
@@ -152,11 +154,11 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
     NDArray<T>* xt(nullptr), *zt(nullptr), *ft(nullptr), *rt(nullptr), *ct(nullptr), *ht(nullptr);
     NDArray<T>* ct_1 = c0->dup(c0->ordering());
     NDArray<T>* gct  = new NDArray<T>(state->ordering(), {bS, inSize});
-    NDArray<T>* xmt  = x->dup(x->ordering());          
+    NDArray<T>* xmt  = x->dup(x->ordering());
     //  x = x * mask
     if(applyMask)
-        xmt->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xmt, nullptr);            // apply mask    
-        
+        xmt->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xmt, nullptr);            // apply mask
+
     for (int t = 0; t < time; ++t) {
         xt = timestep(xmt, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
         zt = timestep(wiZ, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
@@ -164,19 +166,19 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
         rt = timestep(wiR, t, t+1);         // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
         ct = timestep(state, t, t+1);       // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
         ht = timestep(h, t, t+1);      // [bS x inSize x time] -> [bS x inSize x 1] -> [bS x inSize]
-       
+
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
         ft->addRowVector(bF, ft);
         rt->addRowVector(bR, rt);
         ft->template applyTransform<simdOps::Sigmoid<T>>();
-        rt->template applyTransform<simdOps::Sigmoid<T>>();        
-        // ct = ft * c_t-1 + (1 - ft) * zt,  
+        rt->template applyTransform<simdOps::Sigmoid<T>>();
+        // ct = ft * c_t-1 + (1 - ft) * zt,
         ft->template applyPairwiseTransform<simdOps::Multiply<T>>(ct_1, ct, nullptr);
         ft->template applyTransform<simdOps::OneMinus<T>>(ft);
         ft->template applyPairwiseTransform<simdOps::Multiply<T>>(zt, nullptr);
         ct->template applyPairwiseTransform<simdOps::Add<T>>(ft, nullptr);
         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
-        ct->template applyTransform<simdOps::Tanh<T>>(gct);        
+        ct->template applyTransform<simdOps::Tanh<T>>(gct);
 
         // ht = rt * gct + (1 - rt) * xt
         rt->template applyPairwiseTransform<simdOps::Multiply<T>>(gct, ht, nullptr);
@@ -187,9 +189,9 @@ CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
         delete xt; delete zt; delete ft; delete rt; delete ht; delete ct_1;
         ct_1 = ct;
     }
-    
+
     delete wiZ; delete wiF; delete wiR; delete wi; delete bF; delete bR; delete ct_1; delete gct; delete xmt;
-    
+
     return ND4J_STATUS_OK;
 }
 
@@ -207,17 +209,17 @@ DECLARE_SHAPE_FN(sru_old) {
     int* newShapeInfo2 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, int);
     ALLOCATE(newShapeInfo2, block.getWorkspace(), size, int);
-    
-    newShapeInfo1[0] = rank;        
+
+    newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
     newShapeInfo1[2] = inSize;
     newShapeInfo1[3] = time;
-    
+
     shape::updateStrides(newShapeInfo1, order);
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
-    
+
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
-}   
+}
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
@@ -234,43 +236,43 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     const int rank   = x->rankOf();              // = 3
     const int bS     = x->sizeAt(0);
     const int inSize = x->sizeAt(1);
-    const int time   = x->sizeAt(2);    
+    const int time   = x->sizeAt(2);
 
     // input shapes validation
-    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
-    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, b->rankOf()); 
-    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
+    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf());
+    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, b->rankOf());
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf());
     if(mask)
-        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf());
 
-    const std::string wShape         = ShapeUtils<T>::shapeAsString(w); 
-    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(b); 
+    const std::string wShape         = ShapeUtils<T>::shapeAsString(w);
+    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize});
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(b);
     const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({2*inSize});
-    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0);
     const std::string c0CorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
-    
-    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
-    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
+
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
     if(mask) {
-        const std::string maskShape         = ShapeUtils<T>::shapeAsString(mask); 
-        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+        const std::string maskShape         = ShapeUtils<T>::shapeAsString(mask);
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
-        
+
     //  xm = x * mask
-    NDArray<T>* xm = x;         
+    NDArray<T>* xm = x;
     if(mask) {
         xm = new NDArray<T>(x->getShapeInfo(), true, block.getWorkspace());
-        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xm, nullptr);            
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, xm, nullptr);
     }
-   
+
     // time loop
     helpers::sruTimeLoop<T>({xm, c0, w, b}, {h, c});
 
     if(mask)
         delete xm;
-    
+
     return Status::OK();
 }
 
@@ -288,42 +290,42 @@ DECLARE_SHAPE_FN(sru) {
     const int time   = xShapeInfo[3];
 
     // input shapes validation
-    REQUIRE_TRUE(wShapeInfo[0]  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, wShapeInfo[0]); 
-    REQUIRE_TRUE(bShapeInfo[0]  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, bShapeInfo[0]); 
-    REQUIRE_TRUE(c0ShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0ShapeInfo[0]); 
+    REQUIRE_TRUE(wShapeInfo[0]  == rank-1, 0, "SRU operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, wShapeInfo[0]);
+    REQUIRE_TRUE(bShapeInfo[0]  == 1,      0, "SRU operation: wrong rank of biases  array, expected is %i, but got %i instead !", 1, bShapeInfo[0]);
+    REQUIRE_TRUE(c0ShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0ShapeInfo[0]);
     if(maskShapeInfo)
-        REQUIRE_TRUE(maskShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, maskShapeInfo[0]); 
+        REQUIRE_TRUE(maskShapeInfo[0] == rank-1, 0, "SRU operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, maskShapeInfo[0]);
 
-    const std::string wShape         = ShapeUtils<T>::shapeAsString(wShapeInfo); 
-    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
-    const std::string bShape         = ShapeUtils<T>::shapeAsString(bShapeInfo); 
+    const std::string wShape         = ShapeUtils<T>::shapeAsString(wShapeInfo);
+    const std::string wCorrectShape  = ShapeUtils<T>::shapeAsString({3*inSize, inSize});
+    const std::string bShape         = ShapeUtils<T>::shapeAsString(bShapeInfo);
     const std::string bCorrectShape  = ShapeUtils<T>::shapeAsString({2*inSize});
-    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0ShapeInfo); 
+    const std::string c0Shape        = ShapeUtils<T>::shapeAsString(c0ShapeInfo);
     const std::string c0CorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
-    
-    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
-    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
+
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
     if(maskShapeInfo) {
-        const std::string maskShape = ShapeUtils<T>::shapeAsString(maskShapeInfo); 
-        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+        const std::string maskShape = ShapeUtils<T>::shapeAsString(maskShapeInfo);
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
-        
+
     int* newShapeInfo1 = nullptr;
     int* newShapeInfo2 = nullptr;
     ALLOCATE(newShapeInfo1, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
     ALLOCATE(newShapeInfo2, block.getWorkspace(), shape::shapeInfoLength(rank), int);       // [bS x inSize x time]
-    
-    newShapeInfo1[0] = rank;        
+
+    newShapeInfo1[0] = rank;
     newShapeInfo1[1] = bS;
     newShapeInfo1[2] = inSize;
     newShapeInfo1[3] = time;
-    
+
     shape::updateStrides(newShapeInfo1, shape::order(xShapeInfo));
     memcpy(newShapeInfo2, newShapeInfo1, shape::shapeInfoByteLength(newShapeInfo1));
-    
+
     return SHAPELIST(newShapeInfo1, newShapeInfo2);
-}   
+}
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
@@ -331,7 +333,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     NDArray<T>* x        = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
     NDArray<T>* w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
     NDArray<T>* b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
-    NDArray<T>* c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0    
+    NDArray<T>* c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
     NDArray<T>* c        = INPUT_VARIABLE(4);                // C, [bS x K x N]
     NDArray<T>* inGradCt = INPUT_VARIABLE(5);                // [bS x K]
     NDArray<T>* inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
@@ -348,26 +350,26 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [1 x 2K]
     NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x K]
 
-    const int bS      = x->shapeOf()[0];                     
-    const int K       = x->shapeOf()[1];                     
+    const int bS      = x->shapeOf()[0];
+    const int K       = x->shapeOf()[1];
     const int N       = x->shapeOf()[2];                     // N - number of time steps
     
     NDArray<T>* gradBias = new NDArray<T>(x->ordering(), {bS, 2*K, N});
     NDArray<T>* gradU    = new NDArray<T>(x->ordering(), {bS, 3*K, N});
     NDArray<T>* gradHX   = new NDArray<T>(x->ordering(), {bS, K, N});
-    NDArray<T>* gct      = new NDArray<T>(c->ordering(), {bS, K});    
+    NDArray<T>* gct      = new NDArray<T>(c->ordering(), {bS, K});
     NDArray<T>* gradTanh = new NDArray<T>(c->ordering(), {bS, K});
     NDArray<T>* gradCt   = new NDArray<T>(c->ordering(), {bS, K});
     NDArray<T>* ftMinus  = new NDArray<T>(c->ordering(), {bS, K});
     NDArray<T>* rtMinus  = new NDArray<T>(c->ordering(), {bS, K});
-    NDArray<T>* temp1    = new NDArray<T>(c->ordering(), {bS, K});    
-    NDArray<T>* temp2    = new NDArray<T>(c->ordering(), {bS, K});       
+    NDArray<T>* temp1    = new NDArray<T>(c->ordering(), {bS, K});
+    NDArray<T>* temp2    = new NDArray<T>(c->ordering(), {bS, K});
 
     //  x = x * mask
     if(applyMask)
-        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);            // apply mask    
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);            // apply mask
     // multiplication matrix wi = matmul(w,x), U = WX
-    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]    
+    NDArray<T>* wi = NDArrayFactory<T>::mmulHelper(w, x, nullptr, (T)1., (T)0.);      // U [bS x 3K x N]
 
     NDArray<T>* wiZ = wi->subarray( { NDIndex::all(), NDIndex::interval(0,K),     NDIndex::all() } );       // [bS x K x N]
     NDArray<T>* wiF = wi->subarray( { NDIndex::all(), NDIndex::interval(K,2*K),   NDIndex::all() } );       // forget gate [bS x K x N]
@@ -400,7 +402,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gradURt  = timestep(gradUR, t, t+1);        // [bS x K x N] -> [bS x K x 1] -> [bS x K]                        
 
         if(t != 0)
-            ct_1  = timestep(c, t-1, t);        // previous c_{t-1} 
+            ct_1  = timestep(c, t-1, t);        // previous c_{t-1}
         else
             ct_1 = c0->dup(c0->ordering());
         
@@ -512,12 +514,12 @@ DECLARE_SHAPE_FN(sru_bp) {
 
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*inSize;    
+    newShapeInfo3[2] = 2*inSize;
     shape::updateStrides(newShapeInfo3, order);
 
     newShapeInfo4[0] = 2;        
     newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = inSize;    
+    newShapeInfo4[2] = inSize;
     shape::updateStrides(newShapeInfo4, order);
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
@@ -530,7 +532,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     NDArray<T>* x        = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
     NDArray<T>* w        = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
     NDArray<T>* b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 × 2*inSize]
-    NDArray<T>* c0       = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0    
+    NDArray<T>* c0       = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
     NDArray<T>* c        = INPUT_VARIABLE(4);                                   // C, [bS x inSize x time]
     NDArray<T>* inGradCt = INPUT_VARIABLE(5);                                   // [bS x inSize]
     NDArray<T>* inGradH  = INPUT_VARIABLE(6);                                   // [bS x inSize x time]
@@ -541,71 +543,70 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
     NDArray<T>* gradB    = OUTPUT_VARIABLE(2);              // [2*inSize]
     NDArray<T>* gradInit = OUTPUT_VARIABLE(3);              // [bS x inSize]
 
-    // input shapes validation    
+    // input shapes validation
     const int rank = 3;
-    REQUIRE_TRUE(x->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf()); 
-    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf()); 
-    REQUIRE_TRUE(b->rankOf()  <= 2,      0, "SRU_BP operation: wrong rank of biases  array, expected is <=2, but got %i instead !", b->rankOf()); 
-    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf()); 
-    REQUIRE_TRUE(c->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of cell states array, expected is %i, but got %i instead !", rank, c->rankOf()); 
-    REQUIRE_TRUE(inGradCt->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of array of cell state gradient, expected is %i, but got %i instead !", rank-1, inGradCt->rankOf()); 
-    REQUIRE_TRUE(inGradH->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of array of cell outputs gradients, expected is %i, but got %i instead !", rank, inGradH->rankOf());     
+    REQUIRE_TRUE(x->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf());
+    REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf());
+    REQUIRE_TRUE(b->rankOf()  <= 2,      0, "SRU_BP operation: wrong rank of biases  array, expected is <=2, but got %i instead !", b->rankOf());
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf());
+    REQUIRE_TRUE(c->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of cell states array, expected is %i, but got %i instead !", rank, c->rankOf());
+    REQUIRE_TRUE(inGradCt->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of array of cell state gradient, expected is %i, but got %i instead !", rank-1, inGradCt->rankOf());
+    REQUIRE_TRUE(inGradH->rankOf()  == rank,   0, "SRU_BP operation: wrong rank of array of cell outputs gradients, expected is %i, but got %i instead !", rank, inGradH->rankOf());
     if(mask)
-        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf()); 
+        REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU_BP operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf());
 
-    const int bS      = x->shapeOf()[0];                     
-    const int inSize  = x->shapeOf()[1];                     
-    const int time    = x->shapeOf()[2];                     // time - number of time steps    
+    const int bS      = x->shapeOf()[0];
+    const int inSize  = x->shapeOf()[1];
+    const int time    = x->shapeOf()[2];                     // time - number of time steps
 
-    const std::string wShape               = ShapeUtils<T>::shapeAsString(w); 
-    const std::string wCorrectShape        = ShapeUtils<T>::shapeAsString({3*inSize, inSize}); 
-    // const std::string bShape               = ShapeUtils<T>::shapeAsString(b); 
+    const std::string wShape               = ShapeUtils<T>::shapeAsString(w);
+    const std::string wCorrectShape        = ShapeUtils<T>::shapeAsString({3*inSize, inSize});
+    // const std::string bShape               = ShapeUtils<T>::shapeAsString(b);
     // const std::string bCorrectShape        = ShapeUtils<T>::shapeAsString({2*inSize});
-    const std::string c0Shape              = ShapeUtils<T>::shapeAsString(c0); 
+    const std::string c0Shape              = ShapeUtils<T>::shapeAsString(c0);
     const std::string c0CorrectShape       = ShapeUtils<T>::shapeAsString({bS, inSize});
-    const std::string cShape               = ShapeUtils<T>::shapeAsString(c); 
-    const std::string cCorrectShape        = ShapeUtils<T>::shapeAsString({bS, inSize, time}); 
-    const std::string inGradCtShape        = ShapeUtils<T>::shapeAsString(inGradCt); 
-    const std::string inGradCtCorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize}); 
-    const std::string inGradHShape         = ShapeUtils<T>::shapeAsString(inGradH); 
-    const std::string inGradHCorrectShape  = ShapeUtils<T>::shapeAsString({bS, inSize, time});     
+    const std::string cShape               = ShapeUtils<T>::shapeAsString(c);
+    const std::string cCorrectShape        = ShapeUtils<T>::shapeAsString({bS, inSize, time});
+    const std::string inGradCtShape        = ShapeUtils<T>::shapeAsString(inGradCt);
+    const std::string inGradCtCorrectShape = ShapeUtils<T>::shapeAsString({bS, inSize});
+    const std::string inGradHShape         = ShapeUtils<T>::shapeAsString(inGradH);
+    const std::string inGradHCorrectShape  = ShapeUtils<T>::shapeAsString({bS, inSize, time});
     
-    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BP operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str()); 
-    // REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BP operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str()); 
-    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str()); 
-    REQUIRE_TRUE(cShape == cCorrectShape, 0, "SRU_BP operation: wrong shape of cell states array, expected is %s, but got %s instead !", cCorrectShape.c_str(), cShape.c_str()); 
-    REQUIRE_TRUE(inGradCtShape == inGradCtCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell state gradient, expected is %s, but got %s instead !", inGradCtCorrectShape.c_str(), inGradCtShape.c_str()); 
-    REQUIRE_TRUE(inGradHShape == inGradHCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell outputs gradients, expected is %s, but got %s instead !", inGradHCorrectShape.c_str(), inGradHShape.c_str());     
+    REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BP operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
+    // REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BP operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
+    REQUIRE_TRUE(cShape == cCorrectShape, 0, "SRU_BP operation: wrong shape of cell states array, expected is %s, but got %s instead !", cCorrectShape.c_str(), cShape.c_str());
+    REQUIRE_TRUE(inGradCtShape == inGradCtCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell state gradient, expected is %s, but got %s instead !", inGradCtCorrectShape.c_str(), inGradCtShape.c_str());
+    REQUIRE_TRUE(inGradHShape == inGradHCorrectShape, 0, "SRU_BP operation: wrong shape of array of cell outputs gradients, expected is %s, but got %s instead !", inGradHCorrectShape.c_str(), inGradHShape.c_str());
     if(mask) {
-        const std::string maskShape = ShapeUtils<T>::shapeAsString(mask); 
-        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str()); 
+        const std::string maskShape = ShapeUtils<T>::shapeAsString(mask);
+        REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
 
-    
+
     const NDArray<T> bF = (*b)({ {}, {0,  inSize} });                                 // biases for forget gate [1 x inSize]
-    const NDArray<T> bR = (*b)({ {}, {inSize,2*inSize} });                                 // biases for reset  gate [1 x inSize]    
+    const NDArray<T> bR = (*b)({ {}, {inSize,2*inSize} });                                 // biases for reset  gate [1 x inSize]
     NDArray<T> gradBias(x->ordering(),   {bS, 2*inSize, time}, block.getWorkspace());
     NDArray<T> gradU   (x->ordering(),   {bS, 3*inSize, time}, block.getWorkspace());
     NDArray<T> gradHX  (x->ordering(),   {bS,   inSize, time}, block.getWorkspace());
-    NDArray<T> gct     (c->ordering(),   {bS, inSize},      block.getWorkspace());    
-    
-    //  x = x * mask    
-    if(mask)
-        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);             // apply mask    
-    
-    // multiplication matrix wi = matmul(w,x), U = WX
-    const NDArray<T> wi = mmul(*w, *x);                                                   //  U [bS x 3K x time]            
+    NDArray<T> gct     (c->ordering(),   {bS, inSize},      block.getWorkspace());
 
-    for (int t = time-1; t >=0 ; --t) {           
+    //  x = x * mask
+    if(mask)
+        x->template applyBroadcast<simdOps::Multiply<T>>({0, 1}, mask, x, nullptr);             // apply mask
+    // multiplication matrix wi = matmul(w,x), U = WX
+    const NDArray<T> wi = mmul(*w, *x);                                                   //  U [bS x 3K x time]
+
+    for (int t = time-1; t >=0 ; --t) {
         // initialization
         NDArray<T> xt =         (*x)({ {}, {},        {t,t+1} }); xt.reshapei(xt.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
         NDArray<T> zt =               wi({ {}, {0,    inSize}, {t,t+1} }); zt.reshapei(zt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
         NDArray<T> ft =               wi({ {}, {inSize,  2*inSize}, {t,t+1} }); ft.reshapei(ft.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
         NDArray<T> rt =               wi({ {}, {2*inSize,3*inSize}, {t,t+1} }); rt.reshapei(rt.ordering(), {bS, inSize});          // [bS x 3K x time] -> [bS x inSize x 1] -> [bS x inSize]
-        NDArray<T> ct =         (*c)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]        
+        NDArray<T> ct =         (*c)({ {}, {},        {t,t+1} }); ct.reshapei(ct.ordering(), {bS, inSize});          // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
         NDArray<T> inGradHt = (*inGradH)({ {}, {},        {t,t+1} }); inGradHt.reshapei(xt.ordering(), {bS, inSize});    // [bS x inSize  x time] -> [bS x inSize x 1] -> [bS x inSize]
 
-        NDArray<T> ct_1 = t ? (*c)({ {}, {}, {t-1,t} }) : *c0;                                                // previous c_{t-1} 
+        NDArray<T> ct_1 = t ? (*c)({ {}, {}, {t-1,t} }) : *c0;                                                // previous c_{t-1}
         
         ///////////////// forward
         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
@@ -623,7 +624,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         // bF, TODO - tanh            
         NDArray<T> gradTanh = (T)1. - gct * gct;
         NDArray<T> gradCt = inGradHt * rt * gradTanh;
-        NDArray<T> gradBFt = (gradCt + *inGradCt) * (ct_1 - zt) * ftMinus * ft;        
+        NDArray<T> gradBFt = (gradCt + *inGradCt) * (ct_1 - zt) * ftMinus * ft;
         // x_t (highway connection), gradHXt = inGradHt * (1.0f - rt);
         NDArray<T> gradHXt = inGradHt * rtMinus;
 
@@ -638,7 +639,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
         gradBias.assign(gradBRt, {{}, {inSize,   2*inSize}, {t,t+1}} );
         gradU.assign(gradUZt,    {{}, {0,     inSize}, {t,t+1}} );
         gradU.assign(gradBFt,    {{}, {inSize,   2*inSize}, {t,t+1}} );
-        gradU.assign(gradBRt,    {{}, {2*inSize, 3*inSize}, {t,t+1}} );       
+        gradU.assign(gradBRt,    {{}, {2*inSize, 3*inSize}, {t,t+1}} );
         gradHX.assign(gradHXt,   {{}, {        }, {t,t+1}} );              
     }
 
@@ -655,7 +656,7 @@ CUSTOM_OP_IMPL(sru_bp_logic, 8, 4, true, 0, 0) {
 
     // gradW [bS x 3K x inSize]
     x->permutei({0, 2, 1});                                               // [bS x time x inSize]
-    gradW->assign( mmul(gradU, *x) );    
+    gradW->assign( mmul(gradU, *x) );
     
     return ND4J_STATUS_OK;
 }
@@ -688,12 +689,12 @@ DECLARE_SHAPE_FN(sru_bp_logic) {
 
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 2*inSize;    
+    newShapeInfo3[2] = 2*inSize;
     shape::updateStrides(newShapeInfo3, order);
 
     newShapeInfo4[0] = 2;        
     newShapeInfo4[1] = bS;
-    newShapeInfo4[2] = inSize;    
+    newShapeInfo4[2] = inSize;
     shape::updateStrides(newShapeInfo4, order);
     
     return SHAPELIST(newShapeInfo1, newShapeInfo2, newShapeInfo3, newShapeInfo4);
@@ -721,11 +722,11 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
     const int bS     = x->shapeOf()[1];                     // bS - batch size
     const int inSize = x->shapeOf()[2] / 2;                 // inSize - number of features
   
-    //  x = x * mask    
+    //  x = x * mask
     if(applyMask)
-        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask    
-    // U = x * w 
-    NDArray<T> wi = mmul(*x, *w);                    //  U [time x bS x 6K]                
+        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask
+    // U = x * w
+    NDArray<T> wi = mmul(*x, *w);                    //  U [time x bS x 6K]
 
     const int d2      = 2*inSize;
     const int ncols   = bS*d2;     
@@ -838,14 +839,14 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     NDArray<T>* gradInit    = OUTPUT_VARIABLE(3);              // [bS x 2K]
 
     const int time       = x->shapeOf()[0];                     // time - number of time steps
-    const int bS      = x->shapeOf()[1];                     
-    const int inSize       = x->shapeOf()[2] / 2;                     
+    const int bS      = x->shapeOf()[1];
+    const int inSize       = x->shapeOf()[2] / 2;
 
-    //  x = x * mask    
+    //  x = x * mask
     if(applyMask)
-        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask    
-    // U = x * w 
-    NDArray<T> wi = mmul(*x, *w);                    //  [time x bS x 2K] * [2K x 6K] = [time x bS x 6K]                
+        x->template applyBroadcast<simdOps::Multiply<T>>({1, 2}, mask, x, nullptr);             // apply mask
+    // U = x * w
+    NDArray<T> wi = mmul(*x, *w);                    //  [time x bS x 2K] * [2K x 6K] = [time x bS x 6K]
 
     NDArray<T> gradBias(x->ordering(), {bS, 4*inSize},    block.getWorkspace());
     NDArray<T> gradWi  (x->ordering(), {time, bS, 6*inSize}, block.getWorkspace());
@@ -940,8 +941,8 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     gradBias.template reduceAlongDimension<simdOps::Sum<T>>(gradB, {0}, false, true);    // [1 x 4K]    
 
     // gradWeights     
-    x->permutei({0, 2, 1});                                             // [time x bS x 2K] -> [time x 2K x bS]    
-    *gradWeights = mmul(*x, gradWi);                                    // [time x 2K x bS ] * [time x bS x 6K] = [time x 2K x 6K]    
+    x->permutei({0, 2, 1});                                             // [time x bS x 2K] -> [time x 2K x bS]
+    *gradWeights = mmul(*x, gradWi);                                    // [time x 2K x bS ] * [time x bS x 6K] = [time x 2K x 6K]
 
     return ND4J_STATUS_OK;
 }
@@ -951,7 +952,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     int* inShape = inputShape->at(0);   // [time x bS x 2K]
     int time    = inShape[1];
     int bS   = inShape[2];
-    int inSize    = inShape[3] / 2;    
+    int inSize    = inShape[3] / 2;
     char order = (char)(inShape[9]);
 
     int *newShapeInfo1(nullptr), *newShapeInfo2(nullptr), *newShapeInfo3(nullptr), *newShapeInfo4(nullptr);
@@ -975,7 +976,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     // gradB
     newShapeInfo3[0] = 2;
     newShapeInfo3[1] = 1;
-    newShapeInfo3[2] = 4*inSize;    
+    newShapeInfo3[2] = 4*inSize;
     shape::updateStrides(newShapeInfo3, order);
     // gradInit
     newShapeInfo4[0] = 2;        
@@ -988,3 +989,5 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 }
 }
+
+#endif

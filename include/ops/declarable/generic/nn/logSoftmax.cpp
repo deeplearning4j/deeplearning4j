@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_log_softmax)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/activations.h>
 
@@ -59,3 +62,5 @@ CONFIGURABLE_OP_IMPL(log_softmax_bp, 2, 1, true, 0, 0) {
 
 }
 }
+
+#endif

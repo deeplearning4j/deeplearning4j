@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     std::initializer_list<int> dimsForReverse = timeMajor ? std::initializer_list<int>{0,1} : std::initializer_list<int>{1,0};
 
     // reverse x     
-    nd4j::ops::reverse_sequense<T> reverse;
+    nd4j::ops::reverse_sequence<T> reverse;
     ResultSet<T>* resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse);
     NDArray<T>* revInput = resultsIn->at(0);
 

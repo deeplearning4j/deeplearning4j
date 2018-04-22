@@ -31,7 +31,10 @@ PACKAGING=
 CHIP_EXTENSION=
 CHIP_VERSION=
 EXPERIMENTAL=
+OPERATIONS=
 CLEAN="false"
+MINIFIER="false"
+NAME=
 while [[ $# > 0 ]]
 do
 key="$1"
@@ -78,8 +81,23 @@ case $key in
     EXPERIMENTAL="$value"
     shift # past argument
     ;;
+    -g|--generator)
+    OPERATIONS="$value"
+    shift # past argument
+    ;;
+    --name)
+    NAME="$value"
+    shift # past argument
+    ;;
+    -j)
+    MAKEJ="$value"
+    shift # past argument
+    ;;
     clean)
     CLEAN="true"
+    ;;
+    -m|--minifier)
+    MINIFIER="true"
     ;;
     --default)
     DEFAULT=YES
@@ -312,14 +330,30 @@ if [ -z "$ARCH" ]; then
  ARCH="x86-64"
 fi
 
+OPERATIONS_ARG=
+
+if [ -z "$OPERATIONS" ]; then
+ OPERATIONS_ARG="-DLIBND4J_ALL_OPS=true"
+else
+ OPERATIONS_ARG=$OPERATIONS
+fi
+
 if [ -z "$EXPERIMENTAL" ]; then
  EXPERIMENTAL="no"
 fi
 
 if [ "$CHIP" == "cpu" ]; then
-  BLAS_ARG="-DCPU_BLAS=true -DBLAS=TRUE"
-  else
-       BLAS_ARG="-DCUDA_BLAS=true -DBLAS=TRUE"
+    BLAS_ARG="-DCPU_BLAS=true -DBLAS=TRUE"
+else
+    BLAS_ARG="-DCUDA_BLAS=true -DBLAS=TRUE"
+fi
+
+if [ -z "$NAME" ]; then
+    if [ "$CHIP" == "cpu" ]; then
+        NAME="nd4jcpu"
+    else
+        NAME="nd4jcuda"
+    fi
 fi
 
 if [ "$LIBTYPE" == "dynamic" ]; then
@@ -352,9 +386,15 @@ if [ "$PACKAGING" == "msi" ]; then
 fi
 
 EXPERIMENTAL_ARG="no";
+MINIFIER_ARG=
+NAME_ARG="-DLIBND4J_NAME=$NAME"
 
 if [ "$EXPERIMENTAL" == "yes" ]; then
     EXPERIMENTAL_ARG="-DEXPERIMENTAL=yes"
+fi
+
+if [ "$MINIFIER" == "true" ]; then
+    MINIFIER_ARG="-DLIBND4J_BUILD_MINIFIER=true"
 fi
 
 ARCH_ARG="-DARCH=$ARCH -DEXTENSION=$CHIP_EXTENSION"
@@ -413,9 +453,12 @@ echo CHIP_VERSION    = "${CHIP_VERSION}"
 echo GPU_COMPUTE_CAPABILITY    = "${COMPUTE}"
 echo EXPERIMENTAL = ${EXPERIMENTAL}
 echo LIBRARY TYPE    = "${LIBTYPE}"
+echo OPERATIONS = "${OPERATIONS_ARG}"
+echo MINIFIER = "${MINIFIER}"
+echo NAME = "${NAME_ARG}"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$SHARED_LIBS_ARG"  "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$CUDA_COMPUTE" -DDEV=FALSE -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
         eval $MAKE_COMMAND -j$MAKEJ && cd ../../..
     else

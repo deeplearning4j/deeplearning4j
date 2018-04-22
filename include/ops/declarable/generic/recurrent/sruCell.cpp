@@ -2,6 +2,9 @@
 //  @author Yurii Shyrma, created on 05.12.2017
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_sruCell)
+
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/sru.h>
 
@@ -87,3 +90,5 @@ DECLARE_SHAPE_FN(sruCell) {
 
 }
 }
+
+#endif

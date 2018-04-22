@@ -2,6 +2,9 @@
 // Created by yurii@skymind.io on 06.11.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_pad)
+
 #include <ops/declarable/CustomOperations.h>
 #include <vector>
 #include <numeric>
@@ -229,3 +232,5 @@ void recursiveLoop(const int mode, Context<T>& block, NDArray<T>* input, const N
 
 }
 }
+
+#endif

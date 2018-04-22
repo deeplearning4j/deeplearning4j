@@ -143,6 +143,11 @@ namespace nd4j {
             void printOut();
 
             /**
+             * This method collect all ops from the graph into ops vector
+             */
+            std::vector<OpDescriptor> getOperations();
+
+            /**
              * This method returns Scope ptr specified with id
              *
              * @param id

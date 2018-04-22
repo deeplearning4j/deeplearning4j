@@ -2,6 +2,9 @@
 // Created by Yurii Shyrma on 23.01.2018.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_gather_nd)
+
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <vector>
@@ -112,3 +115,5 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 }
 }
+
+#endif

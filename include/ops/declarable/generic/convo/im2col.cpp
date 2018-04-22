@@ -2,6 +2,9 @@
 // Created by raver119 on 17.10.2017.
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_im2col)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
@@ -84,3 +87,5 @@ namespace nd4j {
         }
     }
 }
+
+#endif

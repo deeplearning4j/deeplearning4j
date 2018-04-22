@@ -7,6 +7,7 @@
 #include <graph/FlatUtils.h>
 #include <NativeOps.h>
 #include <helpers/ShapeUtils.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace nd4j {
     namespace graph {
@@ -1011,7 +1012,7 @@ namespace nd4j {
 
         template <typename T>
         void Graph<T>::printOutNode(Node<T>* node) {
-            printf("%i. ", node->id());
+            nd4j_printf("%i. ", node->id());
             switch(node->opType()) {
                 case OpType_CUSTOM: {
                     printf("%s; ", node->getCustomOp()->getOpName()->c_str());
@@ -1026,18 +1027,18 @@ namespace nd4j {
                 }
             }
 
-            printf("Inputs: [");
+            nd4j_printf("Inputs: [", "");
             //auto block = node->getBlock();
             for (int e = 0; e < node->input()->size(); e++) {
 
                 auto in = node->input()->at(e);
                 printf("{%i:%i}", in.first, in.second);
                 if (e < node->input()->size() - 1)
-                    printf(", ");
+                    nd4j_printf(", ", "");
             }
-            printf("]; ");
+            nd4j_printf("]; \n", "");
 
-            printf("\n");
+//            printf("\n");
             fflush(stdout);
         }
 
@@ -1080,6 +1081,103 @@ namespace nd4j {
         Nd4jStatus Graph<T>::validateNode(Node<T> *node) {
             // TODO: to be implemented
             return ND4J_STATUS_OK;
+        }
+
+        template <typename T>
+        std::vector<OpDescriptor> Graph<T>::getOperations() {
+            buildGraph();
+            nd4j_printf("\nRetrieving ops from the Graph and collect them...\n", "");
+            std::vector<OpDescriptor> res;
+
+            int opCnt = 0;
+            for (int l = 0; l < _onion->size(); l++) {
+                int layerSize = _onion->count(l) == 1 ? _onion->at(l)->size() : 0;
+
+                for (int n = 0; n < layerSize; n++) {
+                    Node<T>* node = _onion->at(l)->at(n);
+                    if (node->name() == nullptr) continue;
+                    OpDescriptor* pOpDescriptor = nullptr;
+                    std::string opNameStr; //node->name();
+                    int numInputs = 0;
+                    int numOutputs = 0;
+
+                    switch(node->opType()) {
+                        case OpType_CUSTOM: {
+                            pOpDescriptor = node->getCustomOp()->getOpDescriptor();
+                        }
+                        break;
+                        case OpType_LOGIC: {
+                            opNameStr = std::string(EnumUtils::_LogicOpToString(node->opNum()));
+                        }
+                        break;
+                        default: {
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                        }
+                    }
+
+                    if (node->input())
+                        numInputs = node->input()->size();
+
+                    if (node->output())
+                        numOutputs = node->output()->size();
+                    bool inplace = node->isInplace();
+
+                    //OpDescriptor opDescriptor(numInputs, numOutputs, opNameStr, inplace);
+
+                    // we're skipping Scopes here
+                    if (node->opType() == OpType_LOGIC && node->opNum() == 10)
+                        continue;
+                    if (pOpDescriptor)
+                        res.emplace_back(*pOpDescriptor);
+                    else
+                        res.emplace_back(OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                }
+            }
+
+
+            nd4j_printf("\nCollecting out Scopes...\n","");
+            for (int s = 0; s < _scopes.size(); s++) {
+                Scope<T>* scope = _scopes.at(s);
+                nd4j_printf("Scope %i:<%s>:\n", scope->id(), scope->name()->c_str());
+
+                for (int n = 0; n < scope->nodes()->size(); n++) {
+                    Node<T>* node = scope->nodes()->at(n);
+                    //printOutNode(node);
+                    if (node->name() == nullptr) continue;
+                    std::string opNameStr; //node->name();
+                    OpDescriptor* pOpDescriptor = nullptr;
+                    int numInputs = 0;
+                    int numOutputs = 0;
+
+                    switch(node->opType()) {
+                        case OpType_CUSTOM: {
+                            pOpDescriptor = node->getCustomOp()->getOpDescriptor();
+                        }
+                        break;
+                        case OpType_LOGIC: {
+                            opNameStr = std::string(EnumUtils::_LogicOpToString(node->opNum()));
+                        }
+                        break;
+                        default: {
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                        }
+                    }
+
+                    if (node->input())
+                        numInputs = node->input()->size();
+
+                    if (node->output())
+                        numOutputs = node->output()->size();
+                    bool inplace = node->isInplace();
+
+                    if (pOpDescriptor != nullptr)
+                        res.emplace_back(*pOpDescriptor);
+                    else
+                        res.emplace_back(OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                }
+            }
+
+            return res;
         }
 
         template <typename T>

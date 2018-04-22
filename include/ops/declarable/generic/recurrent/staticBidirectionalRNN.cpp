@@ -66,8 +66,8 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStep)  == ShapeUtils<T>::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStep).c_str()); 
 
     // forward steps
-    NDArray<T>* hFW = new NDArray<T>({time, bS, numUnitsFW}, block.getWorkspace());    
-    helpers::rnnTimeLoop<T>({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);    
+    NDArray<T>* hFW = new NDArray<T>({time, bS, numUnitsFW}, block.getWorkspace());
+    helpers::rnnTimeLoop<T>({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, hFW, hFWFinal);
 
     NDArray<T>* seqLen = maxTimeStep;
     if(seqLen == nullptr) {    	
@@ -76,24 +76,24 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     }
 
     // reverse x 
-    NDArray<T>* revOut = new NDArray<T>(x, false, block.getWorkspace());    
+    NDArray<T>* revOut = new NDArray<T>(x, false, block.getWorkspace());
     helpers::reverseSequence<T>(x, seqLen, revOut, 0, 1);
 
     // backward steps    
-    NDArray<T>* hBW = new NDArray<T>({time, bS, numUnitsBW}, block.getWorkspace());    
-    helpers::rnnTimeLoop<T>({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);    
+    NDArray<T>* hBW = new NDArray<T>({time, bS, numUnitsBW}, block.getWorkspace());
+    helpers::rnnTimeLoop<T>({revOut, WxBW, WhBW, bBW, h0BW, maxTimeStep}, hBW, hBWFinal);
 
     // reverse hBW 
     NDArray<T>* hBWcopy = new NDArray<T>(*hBW);
-    helpers::reverseSequence<T>(hBWcopy, seqLen, hBW, 0, 1);    
+    helpers::reverseSequence<T>(hBWcopy, seqLen, hBW, 0, 1);
 
     // concatenate hFW and hBW along last third dimension
     NDArrayFactory<T>::concat({hFW, hBW}, 2, h);
-    	
-    delete hBW;	
-    delete hFW; 
-    delete hBWcopy; 
-    delete revOut; 
+
+    delete hBW;
+    delete hFW;
+    delete hBWcopy;
+    delete revOut;
 
     if(seqLen != maxTimeStep)
     	delete seqLen;
@@ -106,12 +106,12 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 DECLARE_SHAPE_FN(static_bidirectional_rnn) {    
 
 	int* xShapeInfo     = inputShape->at(0);         // input [time x bS x inSize]
-	int* WxFWShapeInfo  = inputShape->at(1);         // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW] 	    
-    int* WhFWShapeInfo  = inputShape->at(2);         // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]     
-    int* bFWShapeInfo   = inputShape->at(3);         // biases for forward  RNN, [2*numUnitsFW] 
-    int* WxBWShapeInfo  = inputShape->at(4);         // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW] 	    
-    int* WhBWShapeInfo  = inputShape->at(5);         // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]         
-	int* bBWShapeInfo   = inputShape->at(6);         // biases for backward RNN, [2*numUnitsBW] 
+	int* WxFWShapeInfo  = inputShape->at(1);         // input-to-hidden  weights for forward  RNN, [inSize  x numUnitsFW]
+    int* WhFWShapeInfo  = inputShape->at(2);         // hidden-to-hidden weights for forward  RNN, [numUnitsFW x numUnitsFW]
+    int* bFWShapeInfo   = inputShape->at(3);         // biases for forward  RNN, [2*numUnitsFW]
+    int* WxBWShapeInfo  = inputShape->at(4);         // input-to-hidden  weights for backward RNN, [inSize  x numUnitsBW]
+    int* WhBWShapeInfo  = inputShape->at(5);         // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
+	int* bBWShapeInfo   = inputShape->at(6);         // biases for backward RNN, [2*numUnitsBW]
 
 	int* h0FWShapeInfo = nullptr;					// initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
 	int* h0BWShapeInfo = nullptr;			    	// initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
@@ -133,8 +133,8 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
 	}
 
 	REQUIRE_TRUE(xShapeInfo[0] == 3, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input array must have rank = 3, but got %i instead !", xShapeInfo[0]);
-    REQUIRE_TRUE(WxFWShapeInfo[0] == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for forward  RNN) must have rank = 2, but got %i instead !", WxFWShapeInfo[0]);    
-    REQUIRE_TRUE(WxBWShapeInfo[0] == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for backward RNN) must have rank = 2, but got %i instead !", WxBWShapeInfo[0]);    
+    REQUIRE_TRUE(WxFWShapeInfo[0] == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for forward  RNN) must have rank = 2, but got %i instead !", WxFWShapeInfo[0]);
+    REQUIRE_TRUE(WxBWShapeInfo[0] == 2, 0, "STATIC_BIDIRECTIONAL_RNN custom operation: input-to-hidden weights array (for backward RNN) must have rank = 2, but got %i instead !", WxBWShapeInfo[0]);
 
     const int inRank     = xShapeInfo[0];
     const int time       = xShapeInfo[1];
@@ -142,16 +142,16 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     const int numUnitsFW = WxFWShapeInfo[2];
     const int numUnitsBW = WxBWShapeInfo[2];
 
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhFWShapeInfo) == ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward  RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(WhFWShapeInfo).c_str());     
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhBWShapeInfo) == ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for backward RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(WhBWShapeInfo).c_str()); 
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(bFWShapeInfo)  == ShapeUtils<T>::shapeAsString({2*numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for forward  RNN), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString({2*numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(bFWShapeInfo).c_str()); 
-    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(bBWShapeInfo)  == ShapeUtils<T>::shapeAsString({2*numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for backward RNN), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString({2*numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(bBWShapeInfo).c_str()); 
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhFWShapeInfo) == ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for forward  RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsFW, numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(WhFWShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(WhBWShapeInfo) == ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of hidden-to-hidden weights array (for backward RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({numUnitsBW, numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(WhBWShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(bFWShapeInfo)  == ShapeUtils<T>::shapeAsString({2*numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for forward  RNN), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString({2*numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(bFWShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(bBWShapeInfo)  == ShapeUtils<T>::shapeAsString({2*numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of biases array (for backward RNN), expected is %s, but got %s instead !", ShapeUtils<T>::shapeAsString({2*numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(bBWShapeInfo).c_str());
     if(h0FWShapeInfo)
         REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(h0FWShapeInfo) == ShapeUtils<T>::shapeAsString({bS, numUnitsFW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for forward  RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({bS, numUnitsFW}).c_str(), ShapeUtils<T>::shapeAsString(h0FWShapeInfo).c_str());
     if(h0BWShapeInfo)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(h0BWShapeInfo) == ShapeUtils<T>::shapeAsString({bS, numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for backward RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({bS, numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(h0BWShapeInfo).c_str()); 
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(h0BWShapeInfo) == ShapeUtils<T>::shapeAsString({bS, numUnitsBW}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of initial cell output array (for backward RNN), expected is %s but got %s instead !", ShapeUtils<T>::shapeAsString({bS, numUnitsBW}).c_str(), ShapeUtils<T>::shapeAsString(h0BWShapeInfo).c_str());
     if(maxTimeStepShapeInfo)
-        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo)  == ShapeUtils<T>::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo).c_str()); 
+        REQUIRE_TRUE(ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo)  == ShapeUtils<T>::shapeAsString({bS}), 0, "STATIC_BIDIRECTIONAL_RNN custom operation: wrong shape of maxTimeStep array, expected is [%i], but got %s instead !", bS, ShapeUtils<T>::shapeAsString(maxTimeStepShapeInfo).c_str());
 
     // evaluate output shapeInfos
     int *hShapeInfo(nullptr), *hFWFinalPrevShapeInfo(nullptr), *hBWFinalPrevShapeInfo(nullptr);
@@ -167,7 +167,7 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     hFWFinalPrevShapeInfo[2] = numUnitsFW;
     hBWFinalPrevShapeInfo[2] = numUnitsBW;
 
-    shape::updateStrides(hShapeInfo,            shape::order(xShapeInfo));    
+    shape::updateStrides(hShapeInfo,            shape::order(xShapeInfo));
     shape::updateStrides(hFWFinalPrevShapeInfo, shape::order(xShapeInfo));
     shape::updateStrides(hBWFinalPrevShapeInfo, shape::order(xShapeInfo));
          

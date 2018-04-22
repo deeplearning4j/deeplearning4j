@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 12.12.2017
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_zeta)
+
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/zeta.h>
 
@@ -33,3 +36,4 @@ namespace nd4j {
     }
 }
 
+#endif

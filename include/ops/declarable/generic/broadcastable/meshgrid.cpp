@@ -2,6 +2,9 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 05.02.2018
 //
 
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_meshgrid)
+
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/meshgrid.h>
 #include <numeric>
@@ -63,8 +66,7 @@ DECLARE_SHAPE_FN(meshgrid) {
     return shapes;
 }
 
-
-
-
 }
 }
+
+#endif
