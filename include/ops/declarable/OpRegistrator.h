@@ -30,6 +30,7 @@ namespace nd4j {
             OpRegistrator() {
                 nd4j_debug("OpRegistrator started\n","");
 
+#ifndef _RELEASE
                 std::signal(SIGSEGV, &OpRegistrator::sigSegVHandler);
                 std::signal(SIGINT, &OpRegistrator::sigIntHandler);
                 std::signal(SIGABRT, &OpRegistrator::sigIntHandler);
@@ -37,6 +38,7 @@ namespace nd4j {
                 std::signal(SIGILL, &OpRegistrator::sigIntHandler);
                 std::signal(SIGTERM, &OpRegistrator::sigIntHandler);
                 atexit(&OpRegistrator::exitHandler);
+#endif
             };
 
             std::map<Nd4jIndex, std::string> _msvc;
