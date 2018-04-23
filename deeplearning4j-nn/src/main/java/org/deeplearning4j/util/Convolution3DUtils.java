@@ -47,15 +47,15 @@ public class Convolution3DUtils {
     }
 
     /**
-     * Get the output size (height/width/channels) for the given input data and CNN3D configuration
+     * Get the output size (depth/height/width) for the given input data and CNN3D configuration
      *
      * @param inputData       Input data
-     * @param kernel          Kernel size (height/width/channels)
-     * @param strides         Strides (height/width/channels)
-     * @param padding         Padding (height/width/channels)
+     * @param kernel          Kernel size (depth/height/width)
+     * @param strides         Strides (depth/height/width)
+     * @param padding         Padding (depth/height/width)
      * @param convolutionMode Convolution mode (Same, Strict, Truncate)
-     * @param dilation        Kernel dilation (height/width/channels)
-     * @return Output size: int[3] with output height/width/channels
+     * @param dilation        Kernel dilation (depth/height/width)
+     * @return Output size: int[3] with output depth/height/width
      */
     public static int[] get3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                         ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
@@ -91,7 +91,7 @@ public class Convolution3DUtils {
                                       ConvolutionMode convolutionMode, int[] dilation, int[] inShape,
                                       boolean atrous) {
 
-        String[] dims = new String[]{"channels", "height", "width"};
+        String[] dims = new String[]{"depth", "height", "width"};
 
         if (convolutionMode != ConvolutionMode.Same) {
             for (int i = 0; i < 3; i++) {
@@ -105,7 +105,7 @@ public class Convolution3DUtils {
                     sb.append("kernel ").append(dims[i]).append(" <= input ")
                             .append(dims[i]).append(" + 2 * padding ").append(dims[i]).append(". \nGot ");
                     if (atrous) sb.append("effective ");
-                    sb.append("kernel channels = ").append(eKernel[i]).append(", input ").append(dims[i]).append(" = ")
+                    sb.append("kernel = ").append(eKernel[i]).append(", input ").append(dims[i]).append(" = ")
                             .append(inShape[i]).append(" and padding ").append(dims[i]).append(" = ")
                             .append(padding[i]).append(" which do not satisfy 0 < ")
                             .append(eKernel[i]).append(" <= ").append(inShape[i] + 2 * padding[i])

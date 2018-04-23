@@ -119,10 +119,10 @@ public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
     protected INDArray createWeightMatrix(NeuralNetConfiguration conf, INDArray weightView, boolean initializeParams) {
         /*
          Create a 5d weight matrix of:
-           (number of kernels, num input channels, kernel height, kernel width, kernel channels)
+           (number of kernels, num input channels, kernel depth, kernel height, kernel width)
          Note c order is used specifically for the CNN weights, as opposed to f order elsewhere
          Inputs to the convolution layer are:
-         (batch size, num input feature maps, image height, image width, image channels)
+         (batch size, num input feature maps, image depth, image height, image width)
          */
         Convolution3D layerConf = (Convolution3D) conf.getLayer();
 
