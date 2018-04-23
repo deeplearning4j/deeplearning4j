@@ -113,8 +113,10 @@ public class Convolution3D extends ConvolutionLayer {
         }
 
         public Builder() {
-            super(new int[]{1, 1, 1}, new int[]{1, 1, 1},
-                    new int[]{0, 0, 0}, new int[]{0, 0, 0});
+            super(new int[]{1, 1, 1},
+                    new int[]{1, 1, 1},
+                    new int[]{0, 0, 0},
+                    new int[]{0, 0, 0});
         }
 
 

@@ -49,13 +49,11 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + layerId());
         }
 
-        INDArray bias;
         INDArray weights = getParamWithNoise(Convolution3DParamInitializer.WEIGHT_KEY, true);
 
         Convolution3D layerConfig = (Convolution3D) layerConf();
 
         boolean isNCDHW = layerConfig.isNCDHW();
-
 
         int miniBatch = input.size(0);
         int inD = isNCDHW ? input.size(2) : input.size(1);
@@ -63,7 +61,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int inW = isNCDHW ? input.size(4) : input.size(3);
 
         int outChannels = isNCDHW ? weights.size(0) : weights.size(4);
-
 
         int[] dilation = layerConfig.getDilation();
         int[] kernel = layerConfig.getKernelSize();
@@ -85,7 +82,6 @@ public class Convolution3DLayer extends ConvolutionLayer {
         int outH = outSize[1];
         int outW = outSize[2];
 
-        INDArray biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(Convolution3DParamInitializer.WEIGHT_KEY);
 
         INDArray outEpsilon = Nd4j.create(miniBatch * outChannels * outH * outW * outD);
@@ -110,9 +106,13 @@ public class Convolution3DLayer extends ConvolutionLayer {
         Pair<INDArray, INDArray> p = preOutput(true, true);
         delta = afn.backprop(p.getFirst(), epsilon).getFirst();
 
+        INDArray bias;
+        INDArray biasGradView = null;
+
         CustomOp op;
         if (layerConfig.hasBias()) {
 
+            biasGradView = gradientViews.get(Convolution3DParamInitializer.BIAS_KEY);
             bias = getParamWithNoise(Convolution3DParamInitializer.BIAS_KEY, true);
 
             op = DynamicCustomOp.builder("conv3dnew_bp")
