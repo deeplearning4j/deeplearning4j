@@ -3,8 +3,6 @@ package org.deeplearning4j.nn.conf.serde;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
-import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.nd4j.serde.json.LegacyIActivationDeserializer;
 import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;

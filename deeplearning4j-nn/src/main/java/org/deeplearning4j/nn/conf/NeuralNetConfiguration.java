@@ -27,7 +27,9 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
@@ -43,6 +45,7 @@ import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.Sgd;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -393,6 +396,19 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      */
     public static ObjectMapper mapper() {
         return JsonMappers.getMapper();
+    }
+
+    private static List<Class<?>> REGISTERABLE_CUSTOM_CLASSES = (List<Class<?>>) Arrays.<Class<?>>asList(
+            Layer.class,
+            GraphVertex.class,
+            InputPreProcessor.class,
+            IActivation.class,
+            ILossFunction.class,
+            ReconstructionDistribution.class
+    );
+
+    public void registerLegacyCustomClassesForJSON(Class<?>... classes){
+
     }
 
     /**

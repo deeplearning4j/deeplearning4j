@@ -272,15 +272,20 @@ public class ModelSerializer {
             try{
                confFromJson = MultiLayerConfiguration.fromJson(json);
             } catch (Exception e){
+                ComputationGraphConfiguration cg;
                 try{
-                    ComputationGraphConfiguration.fromJson(json);
+                    cg = ComputationGraphConfiguration.fromJson(json);
                 } catch (Exception e2){
                     //Invalid, and not a compgraph
                     throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model JSON is" +
-                            " not a valid MultiLayerConfiguration");
+                            " not a valid MultiLayerConfiguration", e);
                 }
-                throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model appears to be " +
-                        "a ComputationGraph - use ModelSerializer.restoreComputationGraph instead");
+                if(cg.getNetworkInputs() != null && cg.getVertices() != null) {
+                    throw new RuntimeException("Error deserializing JSON MultiLayerConfiguration. Saved model appears to be " +
+                            "a ComputationGraph - use ModelSerializer.restoreComputationGraph instead");
+                } else {
+                    throw e;
+                }
             }
             MultiLayerNetwork network = new MultiLayerNetwork(confFromJson);
             network.init(params, false);
@@ -603,7 +608,7 @@ public class ModelSerializer {
                 } catch (Exception e2){
                     //Invalid, and not a compgraph
                     throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model JSON is" +
-                            " not a valid ComputationGraphConfiguration");
+                            " not a valid ComputationGraphConfiguration", e);
                 }
                 throw new RuntimeException("Error deserializing JSON ComputationGraphConfiguration. Saved model appears to be " +
                         "a MultiLayerNetwork - use ModelSerializer.restoreMultiLayerNetwork instead");
