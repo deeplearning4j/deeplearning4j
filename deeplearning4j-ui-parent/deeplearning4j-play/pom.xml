@@ -121,17 +121,6 @@
             <artifactId>akka-contrib_2.11</artifactId>
             <version>${akka.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>annotations</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
 
         <!-- ///////////////// Jackson Dependencies ///////////////// -->
         <!-- Here: forcing all Jackson versions to match Spark versions. Otherwise, Spark may override some Jackson dependencies

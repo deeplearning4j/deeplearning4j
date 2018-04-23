@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -132,8 +133,8 @@ public class KerasModelEndToEndTest {
     /**
      * IMDB Embedding and LSTM test
      */
-    // TODO: Need to reshape input to 3D to check predictions
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
@@ -141,6 +142,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
@@ -148,6 +150,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
@@ -155,6 +158,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
+    @Ignore // too memory intense
     public void importImdbLstmThKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
@@ -226,6 +230,7 @@ public class KerasModelEndToEndTest {
     public void importDcganMnistDiscriminator() throws Exception {
         importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
     }
+
     @Test
     public void importDcganMnistGenerator() throws Exception {
         importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
@@ -261,7 +266,7 @@ public class KerasModelEndToEndTest {
     }
 
     @Test
-    public  void importCnn1d() throws Exception {
+    public void importCnn1d() throws Exception {
         importSequentialModelH5Test("modelimport/keras/examples/cnn1d/cnn1d_flatten_tf_keras2.h5");
     }
 
@@ -281,22 +286,61 @@ public class KerasModelEndToEndTest {
         importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
     }
 
+    /**
+     * ResNet50
+     */
+    @Test
+    public void importResnet50() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/resnet/resnet50_weights_tf_dim_ordering_tf_kernels.h5");
+    }
 
+    /**
+     * DenseNet
+     */
+    @Test
+    public void importDenseNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/densenet/densenet121_tf_keras_2.h5");
+    }
 
-    private void importFunctionalModelH5Test(String modelPath) throws Exception {
-        ClassPathResource modelResource =
-                new ClassPathResource(modelPath,
-                        KerasModelEndToEndTest.class.getClassLoader());
-        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
-        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(false);
-        KerasModel model = builder.buildModel();
-        ComputationGraph graph = model.getComputationGraph();
+    /**
+     * MobileNet
+     */
+    @Test
+    @Ignore
+    // TODO: needs DepthwiseConv2D layer mapping
+    public void importMobileNet() throws Exception {
+        importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/mobilenet_tf_keras_2.h5");
+    }
+
+    /**
+     * InceptionV3
+     */
+    @Test
+    @Ignore
+    // Takes unreasonably long, but works
+    public void importInception() throws Exception {
+        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/inception/inception_v3_complete.h5");
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        graph.output(input);
         System.out.println(graph.summary());
     }
 
-    private void importSequentialModelH5Test(String modelPath) throws Exception {
+    /**
+     * Xception
+     */
+    @Test
+    @Ignore
+    public void importXception() throws Exception {
+        int[] inputShape = new int[]{299, 299, 3};
+        ComputationGraph graph = importFunctionalModelH5Test(
+                "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape);
+    }
+
+    private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
+        return importFunctionalModelH5Test(modelPath, null);
+    }
+
+    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape) throws Exception {
         ClassPathResource modelResource =
                 new ClassPathResource(modelPath,
                         KerasModelEndToEndTest.class.getClassLoader());
@@ -304,6 +348,29 @@ public class KerasModelEndToEndTest {
         Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
                 .enforceTrainingConfig(false);
+        if (inputShape != null) {
+            builder.inputShape(inputShape);
+        }
+        KerasModel model = builder.buildModel();
+        return model.getComputationGraph();
+    }
+
+    private void importSequentialModelH5Test(String modelPath) throws Exception {
+        importSequentialModelH5Test(modelPath, null);
+    }
+
+
+    private void importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
+        ClassPathResource modelResource =
+                new ClassPathResource(modelPath,
+                        KerasModelEndToEndTest.class.getClassLoader());
+        File modelFile = File.createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        Files.copy(modelResource.getInputStream(), modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
+                .enforceTrainingConfig(false);
+        if (inputShape != null) {
+            builder.inputShape(inputShape);
+        }
         KerasSequentialModel model = builder.buildSequential();
         model.getMultiLayerNetwork();
     }
@@ -330,50 +397,50 @@ public class KerasModelEndToEndTest {
         Files.copy(outputsResource.getInputStream(), outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         try (Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath())) {
 
-        if (checkPredictions) {
-            INDArray input = getInputs(outputsArchive, tfOrdering)[0];
-            Map<String, INDArray> activationsKeras = getActivations(outputsArchive, tfOrdering);
-            for (int i = 0; i < model.getLayers().length; i++) {
-                String layerName = model.getLayerNames().get(i);
-                if (activationsKeras.containsKey(layerName)) {
-                    INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
+            if (checkPredictions) {
+                INDArray input = getInputs(outputsArchive, tfOrdering)[0];
+                Map<String, INDArray> activationsKeras = getActivations(outputsArchive, tfOrdering);
+                for (int i = 0; i < model.getLayers().length; i++) {
+                    String layerName = model.getLayerNames().get(i);
+                    if (activationsKeras.containsKey(layerName)) {
+                        INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
                     /* TODO: investigate why this fails for some layers:
                      * compareINDArrays(layerName, activationsKeras.get(layerName), activationsDl4j, EPS);
                      */
+                    }
                 }
-            }
 
-            INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
-            INDArray predictionsDl4j = model.output(input, false);
+                INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
+                INDArray predictionsDl4j = model.output(input, false);
             /* TODO: investigate why this fails when max difference is ~1E-7!
              * compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
              */
-            INDArray outputs = getOutputs(outputsArchive, true)[0];
-            compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);
-        }
-
-        if (checkGradients) {
-            Random r = new Random(12345);
-            INDArray input = getInputs(outputsArchive, tfOrdering)[0];
-            INDArray predictionsDl4j = model.output(input, false);
-
-            //Infer one-hot labels... this probably won't work for all
-            INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
-            if (testLabels.rank() == 2) {
-                for (int i = 0; i < testLabels.size(0); i++) {
-                    testLabels.putScalar(i, r.nextInt(testLabels.size(1)), 1.0);
-                }
-            } else if (testLabels.rank() == 3) {
-                for (int i = 0; i < testLabels.size(0); i++) {
-                    for (int j = 0; j < testLabels.size(1); j++) {
-                        testLabels.putScalar(i, j, r.nextInt(testLabels.size(1)), 1.0);
-                    }
-                }
-            } else {
-                throw new RuntimeException("Cannot gradient check 4d output array");
+                INDArray outputs = getOutputs(outputsArchive, true)[0];
+                compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, 10, EPS);
             }
-            checkGradients(model, input, testLabels);
-        }
+
+            if (checkGradients) {
+                Random r = new Random(12345);
+                INDArray input = getInputs(outputsArchive, tfOrdering)[0];
+                INDArray predictionsDl4j = model.output(input, false);
+
+                //Infer one-hot labels... this probably won't work for all
+                INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
+                if (testLabels.rank() == 2) {
+                    for (int i = 0; i < testLabels.size(0); i++) {
+                        testLabels.putScalar(i, r.nextInt(testLabels.size(1)), 1.0);
+                    }
+                } else if (testLabels.rank() == 3) {
+                    for (int i = 0; i < testLabels.size(0); i++) {
+                        for (int j = 0; j < testLabels.size(1); j++) {
+                            testLabels.putScalar(i, j, r.nextInt(testLabels.size(1)), 1.0);
+                        }
+                    }
+                } else {
+                    throw new RuntimeException("Cannot gradient check 4d output array");
+                }
+                checkGradients(model, input, testLabels);
+            }
         }
     }
 

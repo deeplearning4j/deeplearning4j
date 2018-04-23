@@ -59,7 +59,7 @@ public class KerasSequentialModel extends KerasModel {
             throws UnsupportedKerasConfigurationException, IOException, InvalidKerasConfigurationException {
         this(modelBuilder.getModelJson(), modelBuilder.getModelYaml(), modelBuilder.getWeightsArchive(),
                 modelBuilder.getWeightsRoot(), modelBuilder.getTrainingJson(), modelBuilder.getTrainingArchive(),
-                modelBuilder.isEnforceTrainingConfig());
+                modelBuilder.isEnforceTrainingConfig(), modelBuilder.getInputShape());
     }
 
     /**
@@ -75,7 +75,8 @@ public class KerasSequentialModel extends KerasModel {
      * @throws IOException I/O exception
      */
     public KerasSequentialModel(String modelJson, String modelYaml, Hdf5Archive weightsArchive, String weightsRoot,
-                                String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig)
+                                String trainingJson, Hdf5Archive trainingArchive, boolean enforceTrainingConfig,
+                                int[] inputShape)
             throws IOException, InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
 
         Map<String, Object> modelConfig = KerasModelUtils.parseModelConfig(modelJson, modelYaml);
@@ -103,8 +104,8 @@ public class KerasSequentialModel extends KerasModel {
             inputLayer = this.layersOrdered.get(0);
         } else {
             /* Add placeholder input layer and update lists of input and output layers. */
-            int[] inputShape = this.layersOrdered.get(0).getInputShape();
-            inputLayer = new KerasInput("input1", inputShape);
+            int[] firstLayerInputShape = this.layersOrdered.get(0).getInputShape();
+            inputLayer = new KerasInput("input1", firstLayerInputShape);
             inputLayer.setDimOrder(this.layersOrdered.get(0).getDimOrder());
             this.layers.put(inputLayer.getLayerName(), inputLayer);
             this.layersOrdered.add(0, inputLayer);
@@ -126,7 +127,7 @@ public class KerasSequentialModel extends KerasModel {
             importTrainingConfiguration(trainingJson);
 
         /* Infer output types for each layer. */
-        inferOutputTypes();
+        inferOutputTypes(inputShape);
 
         /* Store weights in layers. */
         if (weightsArchive != null)
