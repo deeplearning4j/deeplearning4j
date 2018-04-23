@@ -42,11 +42,11 @@ import java.util.Arrays;
  * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
  * Note: numChannels is equivalent to featureMaps referenced in different literature
  *
- * @author Adam Gibson
- * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNN3D)
+ * @author Max Pumperla
+ * @see FeedForwardToCnn3DPreProcessor for opposite case (i.e., DenseLayer -> CNN3D)
  */
 @Data
-public class Cnn3dToFeedForwardPreProcessor implements InputPreProcessor {
+public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
     protected int inputDepth;
     protected int inputHeight;
     protected int inputWidth;
@@ -58,10 +58,11 @@ public class Cnn3dToFeedForwardPreProcessor implements InputPreProcessor {
      * @param inputHeight input height
      * @param inputWidth  input width
      * @param numChannels input channels
+     * @param isNCDHW     boolean to indicate data format, i.e. channels first (NCDHW) vs. channels last (NDHWC)
      */
 
     @JsonCreator
-    public Cnn3dToFeedForwardPreProcessor(@JsonProperty("inputDepth") int inputDepth,
+    public Cnn3DToFeedForwardPreProcessor(@JsonProperty("inputDepth") int inputDepth,
                                           @JsonProperty("inputHeight") int inputHeight,
                                           @JsonProperty("inputWidth") int inputWidth,
                                           @JsonProperty("numChannels") int numChannels,
@@ -73,14 +74,14 @@ public class Cnn3dToFeedForwardPreProcessor implements InputPreProcessor {
         this.isNCDHW = isNCDHW;
     }
 
-    public Cnn3dToFeedForwardPreProcessor(int inputDepth, int inputHeight, int inputWidth) {
+    public Cnn3DToFeedForwardPreProcessor(int inputDepth, int inputHeight, int inputWidth) {
         this.inputDepth = inputDepth;
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
     }
 
-    public Cnn3dToFeedForwardPreProcessor() {
+    public Cnn3DToFeedForwardPreProcessor() {
     }
 
     @Override
@@ -133,9 +134,9 @@ public class Cnn3dToFeedForwardPreProcessor implements InputPreProcessor {
     }
 
     @Override
-    public Cnn3dToFeedForwardPreProcessor clone() {
+    public Cnn3DToFeedForwardPreProcessor clone() {
         try {
-            Cnn3dToFeedForwardPreProcessor clone = (Cnn3dToFeedForwardPreProcessor) super.clone();
+            Cnn3DToFeedForwardPreProcessor clone = (Cnn3DToFeedForwardPreProcessor) super.clone();
             return clone;
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);

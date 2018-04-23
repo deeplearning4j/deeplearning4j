@@ -32,26 +32,27 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 
 /**
- * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
- * For example, DenseLayer -> CNN<br>
+ * A preprocessor to allow 3D CNN and standard feed-forward network layers to be used together.<br>
+ * For example, DenseLayer -> Convolution3D<br>
  * This does two things:<br>
- * (a) Reshapes activations out of FeedFoward layer (which is 2D or 3D with shape
- * [numExamples, inputHeight*inputWidth*numChannels]) into 4d activations (with shape
- * [numExamples, numChannels, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
- * (b) Reshapes 4d epsilons (weights*deltas) from CNN layer, with shape
- * [numExamples, numChannels, inputHeight, inputWidth]) into 2d epsilons (with shape
- * [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
+ * (a) Reshapes activations out of FeedFoward layer (which is 2D with shape
+ * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) into 5d activations (with shape
+ * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
+ * (b) Reshapes 5d epsilons from 3D CNN layer, with shape
+ * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) into 2d epsilons (with shape
+ * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) for use in feed forward layer
  *
- * @author Adam Gibson
- * @see Cnn3DToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
+ * @author MaxPumperla
+ * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
  */
 @Data
 @EqualsAndHashCode(exclude = {"shape"})
-public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
+public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
+    private int inputDepth;
     private int inputHeight;
     private int inputWidth;
     private int numChannels;
+    private boolean isNCDHW;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -65,14 +66,16 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
      * @param numChannels the channels
      */
     @JsonCreator
-    public FeedForwardToCnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+    public FeedForwardToCnn3DPreProcessor(@JsonProperty("inputDepth") int inputDepth,
+                                          @JsonProperty("inputHeight") int inputHeight,
+                                          @JsonProperty("inputWidth") int inputWidth,
+                                          @JsonProperty("numChannels") int numChannels) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
     }
 
-    public FeedForwardToCnnPreProcessor(int inputWidth, int inputHeight) {
+    public FeedForwardToCnn3DPreProcessor(int inputWidth, int inputHeight) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
@@ -112,9 +115,9 @@ public class FeedForwardToCnnPreProcessor implements InputPreProcessor {
 
 
     @Override
-    public FeedForwardToCnnPreProcessor clone() {
+    public FeedForwardToCnn3DPreProcessor clone() {
         try {
-            FeedForwardToCnnPreProcessor clone = (FeedForwardToCnnPreProcessor) super.clone();
+            FeedForwardToCnn3DPreProcessor clone = (FeedForwardToCnn3DPreProcessor) super.clone();
             if (clone.shape != null)
                 clone.shape = clone.shape.clone();
             return clone;
