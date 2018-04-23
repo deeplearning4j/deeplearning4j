@@ -101,7 +101,6 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
     }
 
     private CudnnSubsamplingContext cudnnContext = new CudnnSubsamplingContext();
-    private INDArray reduced = null;
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
@@ -142,7 +141,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
                 return null;
         }
 
-        if (!Shape.strideDescendingCAscendingF(epsilon) || epsilon.isView()) {
+        if (!Shape.hasDefaultStridesForShape(epsilon) || epsilon.isView()) {
             // apparently not supported by cuDNN
             epsilon = epsilon.dup('c');
         }
@@ -165,6 +164,8 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         int[] dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, depth, inH, inW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
+
+        INDArray reduced = Nd4j.createUninitialized(new int[] {miniBatch, depth, outH, outW}, 'c');
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, epsilon, reduced, outEpsilon);
