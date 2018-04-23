@@ -1,4 +1,4 @@
-package org.deeplearning4j.nn.conf.serde;
+package org.deeplearning4j.nn.conf.serde.legacyformat;
 
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -21,7 +22,7 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.*;
 
-public class LegacyLayerDeserializer extends JsonDeserializer<Layer> {
+public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
 
     private static final Map<String,String> LEGACY_NAMES = new HashMap<>();
 
@@ -67,45 +68,9 @@ public class LegacyLayerDeserializer extends JsonDeserializer<Layer> {
         //TODO: Keras layers
     }
 
+
     @Override
-    public Layer deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
-        //Manually parse old format
-        JsonNode node = jp.getCodec().readTree(jp);
-
-        Iterator<Map.Entry<String,JsonNode>> nodes = node.fields();
-        //For legacy format, ex
-
-        List<Map.Entry<String,JsonNode>> list = new ArrayList<>();
-        while(nodes.hasNext()){
-            list.add(nodes.next());
-        }
-
-        if(list.size() != 1){
-            throw new IllegalStateException("Expected size 1: " + list.size());
-        }
-
-        String name = list.get(0).getKey();
-        JsonNode value = list.get(0).getValue();
-
-        String layerClass = LEGACY_NAMES.get(name);
-        if(layerClass == null){
-            throw new IllegalStateException("Cannot deserialize: " + name);
-        }
-
-        Class<? extends Layer> lClass;
-        try {
-            lClass = (Class<? extends Layer>) Class.forName(layerClass);
-        } catch (Exception e){
-            throw new RuntimeException(e);
-        }
-
-        ObjectMapper m = JsonMappers.getMapperLegacyJson();
-
-        String nodeAsString = value.toString();
-        Layer l = m.readValue(nodeAsString, lClass);
-        return l;
+    public Map<String, String> getLegacyNamesMap() {
+        return LEGACY_NAMES;
     }
-
-
-
 }

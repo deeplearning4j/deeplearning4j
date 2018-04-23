@@ -91,7 +91,7 @@ public class JsonMappers {
                     for(Annotation a : annotations.annotations()){
                         Class<?> annType = a.annotationType();
                         if(annType == JsonTypeInfo.class){
-                            //Ignore the JsonTypeInfo annotation on the
+                            //Ignore the JsonTypeInfo annotation on the Layer class
                             continue;
                         }
                         if(newMap == null){

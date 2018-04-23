@@ -22,6 +22,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.*;
+import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -37,18 +38,8 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = CnnToFeedForwardPreProcessor.class, name = "cnnToFeedForward"),
-                @JsonSubTypes.Type(value = CnnToRnnPreProcessor.class, name = "cnnToRnn"),
-                @JsonSubTypes.Type(value = ComposableInputPreProcessor.class, name = "composableInput"),
-                @JsonSubTypes.Type(value = FeedForwardToCnnPreProcessor.class, name = "feedForwardToCnn"),
-                @JsonSubTypes.Type(value = FeedForwardToRnnPreProcessor.class, name = "feedForwardToRnn"),
-                @JsonSubTypes.Type(value = RnnToFeedForwardPreProcessor.class, name = "rnnToFeedForward"),
-                @JsonSubTypes.Type(value = RnnToCnnPreProcessor.class, name = "rnnToCnn"),
-                @JsonSubTypes.Type(value = BinomialSamplingPreProcessor.class, name = "binomialSampling"),
-                @JsonSubTypes.Type(value = UnitVarianceProcessor.class, name = "unitVariance"),
-                @JsonSubTypes.Type(value = ZeroMeanAndUnitVariancePreProcessor.class, name = "zeroMeanAndUnitVariance"),
-                @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
+        defaultImpl = LegacyPreprocessorDeserializer.class)
 public interface InputPreProcessor extends Serializable, Cloneable {
 
     /**
