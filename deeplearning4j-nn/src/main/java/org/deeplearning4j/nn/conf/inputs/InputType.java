@@ -207,6 +207,14 @@ public abstract class InputType implements Serializable {
         private int width;
         private int channels;
 
+        public int getDepth() {
+            return channels;
+        }
+
+        public void setDepth(int depth) {
+            this.channels = depth;
+        }
+
         @Override
         public Type getType() {
             return Type.CNN;

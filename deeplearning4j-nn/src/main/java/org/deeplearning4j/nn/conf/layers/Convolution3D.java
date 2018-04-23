@@ -7,6 +7,7 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.Convolution3DLayer;
@@ -95,9 +96,37 @@ public class Convolution3D extends ConvolutionLayer {
                 convolutionMode, nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
+                    + "\"): input is null");
+        }
+
+        return InputTypeUtil.getPreProcessorForInputTypeCnn3DLayers(inputType, getLayerName());
+    }
+
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN3D) {
+            throw new IllegalStateException("Invalid input for Convolution 3D layer (layer name=\"" + getLayerName()
+                    + "\"): Expected CNN3D input, got " + inputType);
+        }
+
+        if (nIn <= 0 || override) {
+            InputType.InputTypeConvolutional3D c = (InputType.InputTypeConvolutional3D) inputType;
+            this.nIn = c.getChannels();
+        }
+    }
+
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
 
         private boolean isNCDHW = true; // in libnd4j: 1 - NCDHW, 0 - NDHWC
+        protected int[] kernelSize = new int[] {2, 2, 2};
+        protected int[] stride = new int[] {1, 1, 1};
+        protected int[] padding = new int[] {0, 0, 0};
+        protected int[] dilation = new int[]{0, 0, 0};
 
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {

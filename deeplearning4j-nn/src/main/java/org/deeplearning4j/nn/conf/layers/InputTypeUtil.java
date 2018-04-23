@@ -342,6 +342,31 @@ public class InputTypeUtil {
      * @param inputType     Input type to get the preprocessor for
      * @return              Null if no preprocessor is required; otherwise the appropriate preprocessor for the given input type
      */
+    public static InputPreProcessor getPreProcessorForInputTypeCnn3DLayers(InputType inputType, String layerName) {
+        switch (inputType.getType()) {
+            case FF:
+                log.info("Automatic addition of FF -> CNN3D preprocessors: not yet implemented (layer name: \""
+                        + layerName + "\")");
+                return null;
+            case RNN:
+                log.warn("Automatic addition of RNN -> CNN3D preprocessors: not yet implemented (layer name: \""
+                        + layerName + "\")");
+                return null;
+            // TODO: handle CNN to CNN3D
+            case CNN3D:
+                return null;
+            default:
+                throw new RuntimeException("Unknown input type: " + inputType);
+        }
+    }
+
+    /**
+     * Utility method for determining the appropriate preprocessor for CNN layers, such as {@link ConvolutionLayer} and
+     * {@link SubsamplingLayer}
+     *
+     * @param inputType     Input type to get the preprocessor for
+     * @return              Null if no preprocessor is required; otherwise the appropriate preprocessor for the given input type
+     */
     public static InputPreProcessor getPreProcessorForInputTypeCnnLayers(InputType inputType, String layerName) {
 
         //To add x-to-CNN preprocessor: need to know image channels/width/height after reshaping
