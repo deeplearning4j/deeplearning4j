@@ -1,29 +1,24 @@
 //
-// Created by Yurii Shyrma on 24.01.2018.
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 24.01.2018
 //
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_trace)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
-namespace ops {
+namespace ops  {
 
 CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
     
     NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
+    NDArray<T>* output = OUTPUT_VARIABLE(0);    
     
-    const int inRank =  input->rankOf();
-    REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP trace: the rank of input array must be >=2 !");
+    REQUIRE_TRUE(input->rankOf() >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", input->rankOf());
 
-    ResultSet<T>* setOfSubArrs = NDArrayFactory<T>::allTensorsAlongDimension(input, {inRank-2, inRank-1});
-
-    for(int i = 0; i < setOfSubArrs->size(); ++i)
-        (*output)(i) = setOfSubArrs->at(i)->getTrace();
-
-    delete setOfSubArrs;
+    helpers::trace(*input, *output);
 
     return Status::OK();
 }
@@ -32,7 +27,8 @@ CUSTOM_OP_IMPL(trace, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(trace) {
 
     int* inShapeInfo = inputShape->at(0);
-    
+
+    REQUIRE_TRUE(inShapeInfo[0] >= 2, 0, "TRACE op: the rank of input array must be >=2, but got %i instead!", inShapeInfo[0]);    
     const int rank = inShapeInfo[0] - 2;
 
     int* outShapeInfo(nullptr);

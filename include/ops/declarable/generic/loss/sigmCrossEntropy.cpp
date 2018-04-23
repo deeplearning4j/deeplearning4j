@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 	NDArray<T>* newLabels = labels;
 	if(labelsSmoothing != (T)0.) {
 		auto smooth = LAMBDA_T(value, labelsSmoothing) { return value * ((T)1. - labelsSmoothing) + (T)(0.5) * labelsSmoothing; };
-    	newLabels = new NDArray<T>(labels);
+    	newLabels = new NDArray<T>(*labels);
     	newLabels->applyLambda(smooth);  
 	}
 	

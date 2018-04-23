@@ -1,35 +1,25 @@
 //
-//  Created by Yurii Shyrma on 22.01.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 22.01.2018
 //
-
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_eye)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
 namespace ops {
 
 CUSTOM_OP_IMPL(eye, 1, 1, false, 0, 2) {
-        
-    NDArray<T>* input  = INPUT_VARIABLE(0);
-    NDArray<T>* output = OUTPUT_VARIABLE(0);
 
-    const int rank = output->rankOf();
-    ResultSet<T>* arrs = NDArrayFactory<T>::allTensorsAlongDimension(output, {rank-2, rank-1});
+    helpers::eye(*OUTPUT_VARIABLE(0));
 
-    for(int i = 0; i < arrs->size(); ++i)
-        arrs->at(i)->setIdentity();
-    
-    delete arrs;
-
-    return ND4J_STATUS_OK;
+    return Status::OK();
 }
 
 
 DECLARE_SHAPE_FN(eye) {
 
-    int* inShapeInfo = inputShape->at(0);
     std::vector<int> params = *block.getIArguments();
     const int size = params.size();
 

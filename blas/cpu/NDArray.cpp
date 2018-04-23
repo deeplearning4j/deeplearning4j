@@ -481,7 +481,7 @@ NDArray<T>::NDArray(const NDArray<T> *other, const bool copyStrides, nd4j::memor
     }
 
     // FIXME: memcpy should be removed
-    memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
+    // memcpy(_buffer, other->_buffer, arrLength*sizeOfT());      // copy other._buffer information into new array
 
     memcpy(_shapeInfo, other->_shapeInfo, shapeLength);     // copy shape information into new array
 
@@ -3116,10 +3116,10 @@ NDArray<T> NDArray<T>::operator+(const NDArray<T>& other) const {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray<T>::setValueIn2DMatrix(const T& value, const int diag, const char direction) {
+void NDArray<T>::setValueInDiagMatrix(const T& value, const int diag, const char direction) {
 
     if(rankOf() != 2)
-       throw std::string("NDArray::setValueIn2DMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
+       throw std::string("NDArray::setValueInDiagMatrix method: array must have rank = 2, but got " + toStringValue(rankOf()) + " instead !");
 
     const int rows = sizeAt(0);
     const int cols = sizeAt(1);
@@ -3143,7 +3143,7 @@ void NDArray<T>::setValueIn2DMatrix(const T& value, const int diag, const char d
             break;
 
         default:
-            throw std::string("NDArray::setValueIn2DMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
+            throw std::string("NDArray::setValueInDiagMatrix method: wrong value of direction argument, expected is 'u' or 'l', but got " + std::string(1,direction) + " instead !");
     }  
 }
 

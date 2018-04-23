@@ -1874,5 +1874,27 @@ TEST_F(ConvolutionTests, conv2d_test4) {
     delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests, conv3d_test11) { 
+
+    int bS=1, iD=2,iH=2,iW=2,  iC=1,oC=1,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=1,dH=1,dW=1;
+    int paddingMode = 1;             // 1-SAME,  0-VALID;
+    int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
+
+    NDArray<float> input   ('c', {bS, iC, iD, iH, iW});
+    NDArray<float> weights ('c', {oC, iC, kD, kH, kW});
+    
+    input = 2.;
+    weights = 1.;
+    
+    nd4j::ops::conv3dnew<float> op;
+    ResultSet<float>* results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    NDArray<float>* output = results->at(0);    
+
+    ASSERT_EQ(Status::OK(), results->status());
+    
+    delete results;
+}
+
 
 #endif //LIBND4J_CONVOLUTIONTESTS_H

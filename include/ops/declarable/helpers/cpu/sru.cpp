@@ -149,7 +149,7 @@ void sruTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArr
 
     const int time  = x->sizeAt(2);
 
-    NDArray<T> ct_1(c0);
+    NDArray<T> ct_1(*c0);
 
     // loop through time steps
     for (int t = 0; t < time; ++t) {

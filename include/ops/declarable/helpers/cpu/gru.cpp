@@ -77,7 +77,7 @@ void gruTimeLoop(const std::vector<NDArray<T>*>& inArrs, NDArray<T>* h) {
 
     const int time = x->sizeAt(0);    
 
-    NDArray<T> ht_1(h0);
+    NDArray<T> ht_1(*h0);
 
     // loop through time steps
     for (int t = 0; t < time; ++t) {

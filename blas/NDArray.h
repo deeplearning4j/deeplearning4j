@@ -901,7 +901,7 @@ namespace nd4j {
         *      'u' - fill up, mathematically this corresponds to lower triangular matrix 
         *      'l' - fill down, mathematically this corresponds to upper triangular matrix
         */
-        void setValueIn2DMatrix(const T& value, const int diag, const char direction);
+        void setValueInDiagMatrix(const T& value, const int diag, const char direction);
 
 		/**
         *  change an array by repeating it the number of times in order to acquire new shape equal to the input shape

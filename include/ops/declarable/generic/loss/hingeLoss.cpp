@@ -1,5 +1,4 @@
 //
-// Created by Yurii Shyrma on 23.11.2017
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 23.11.2017
 //
 

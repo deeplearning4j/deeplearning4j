@@ -1,8 +1,9 @@
 //
-// @author Yurii Shyrma, created on 31.03.2018
+// @author Yurii Shyrma (iuriish@yahoo.com), created on 31.03.2018
 //
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/transforms.h>
 
 
 namespace nd4j {
@@ -15,32 +16,11 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
     NDArray<T>* input  = INPUT_VARIABLE(0);
     NDArray<T>* output = OUTPUT_VARIABLE(0);
 
+    REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU OP: the rank of input array must be > 0, but got %i instead !", input->rankOf());
+
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
-    const int rank = input->rankOf();
     
-    switch(rank) {
-
-        case 1:
-            for(int i = 0; i < output->sizeAt(0); ++i)
-                (*output)({{i, i+1}, {}}).assign(input);
-            output->setValueIn2DMatrix(0., diag-1, 'l');    
-            break;
-
-        case 2:
-            output->assign(input);
-            output->setValueIn2DMatrix(0., diag-1, 'l');    
-            break;
-
-        default:            
-            ResultSet<T>* inTads  = NDArrayFactory<T>::allTensorsAlongDimension(input,  {rank-2, rank-1});
-            ResultSet<T>* outTads = NDArrayFactory<T>::allTensorsAlongDimension(output, {rank-2, rank-1});            
-            for(int i = 0; i < inTads->size(); ++i) {
-                outTads->at(i)->assign(inTads->at(i));
-                outTads->at(i)->setValueIn2DMatrix(0., diag-1, 'l');    
-            }
-            delete inTads;
-            delete outTads;
-    }
+    helpers::triu(*input, *output, diag);
 
     return Status::OK();
 }
@@ -49,6 +29,8 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 DECLARE_SHAPE_FN(triu) {
 
 	int* inShapeInfo = inputShape->at(0);
+
+    REQUIRE_TRUE(inShapeInfo[0] > 0, 0, "TRIU OP: the rank of input array must be > 0, but got %i instead !", inShapeInfo[0]);
 
     int rank = (inShapeInfo[0] == 1) ? 2 : inShapeInfo[0];
     
@@ -73,25 +55,16 @@ DECLARE_SHAPE_FN(triu) {
 CUSTOM_OP_IMPL(triu_bp, 2, 1, false, 0, 0) {
     
     NDArray<T>* input = INPUT_VARIABLE(0);
-    NDArray<T>* dLdO = INPUT_VARIABLE(1);
+    NDArray<T>* gradO = INPUT_VARIABLE(1);              // dLoss/dO
 
-    NDArray<T>* dLdI = OUTPUT_VARIABLE(0);              // dLoss/dI
+    NDArray<T>* gradI = OUTPUT_VARIABLE(0);              // dLoss/dI
+
+    REQUIRE_TRUE(input->rankOf() > 0, 0, "TRIU_BP OP: the rank of input array must be > 0, but got %i instead !", input->rankOf());
 
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-    nd4j::ops::triu<T> op;
-    ResultSet<T>* results = op.execute({input}, {}, {diag});
-    NDArray<T>* dOdI = results->at(0);                          // dO/dI
-    
-    for(int i = 0; i < dOdI->lengthOf(); ++i) {
-        T* currElement = &(*dOdI)(i);
-        if(*currElement != (T)0.)
-            *currElement = 1.;
-    }
+    helpers::triuBP(*input, *gradO, *gradI, diag);
 
-    dLdI->assign((*dOdI) * (*dLdO));                          // chain rule: dLoss/dI = dO/dI * dLoss/dO 
-
-    delete results;
     return Status::OK();
 }
 

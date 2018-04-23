@@ -131,8 +131,8 @@ void lstmTimeLoop(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDAr
 
     const int time  = x->sizeAt(0);
 
-    NDArray<T> currentH(h0);
-    NDArray<T> currentC(c0);
+    NDArray<T> currentH(*h0);
+    NDArray<T> currentC(*c0);
 
     // loop through time steps
     for (int t = 0; t < time; ++t) {

@@ -16,8 +16,8 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 
     const int diag = block.getIArguments()->size() > 2 ? INT_ARG(2) : 0;
 
-    output->setValueIn2DMatrix(1., diag,   'l');          // fill with unities lower triangular block of matrix
-    output->setValueIn2DMatrix(0., diag+1, 'u');          // fill with zeros upper triangular block of matrix
+    output->setValueInDiagMatrix(1., diag,   'l');          // fill with unities lower triangular block of matrix
+    output->setValueInDiagMatrix(0., diag+1, 'u');          // fill with zeros upper triangular block of matrix
 
     return Status::OK();
 }
