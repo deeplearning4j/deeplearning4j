@@ -43,7 +43,7 @@ import java.util.Arrays;
  * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) for use in feed forward layer
  *
  * @author MaxPumperla
- * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN -> DenseLayer etc)
+ * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN3D -> DenseLayer etc)
  */
 @Data
 @EqualsAndHashCode(exclude = {"shape"})
@@ -52,30 +52,34 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
     private int inputHeight;
     private int inputWidth;
     private int numChannels;
-    private boolean isNCDHW;
+    private boolean isNCDHW = true;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private int[] shape;
 
     /**
-     * Reshape to a channels x rows x columns tensor
-     *
-     * @param inputHeight the columns
-     * @param inputWidth  the rows
-     * @param numChannels the channels
+     * @param inputDepth  input depth
+     * @param inputHeight input height
+     * @param inputWidth  input width
+     * @param numChannels input channels
+     * @param isNCDHW     boolean to indicate data format, i.e. channels first (NCDHW) vs. channels last (NDHWC)
      */
     @JsonCreator
     public FeedForwardToCnn3DPreProcessor(@JsonProperty("inputDepth") int inputDepth,
                                           @JsonProperty("inputHeight") int inputHeight,
                                           @JsonProperty("inputWidth") int inputWidth,
-                                          @JsonProperty("numChannels") int numChannels) {
+                                          @JsonProperty("numChannels") int numChannels,
+                                          @JsonProperty("isNCDHW") boolean isNCDHW) {
+        this.inputDepth = inputDepth;
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
+        this.isNCDHW = isNCDHW;
     }
 
-    public FeedForwardToCnn3DPreProcessor(int inputWidth, int inputHeight) {
+    public FeedForwardToCnn3DPreProcessor(int inputDepth, int inputWidth, int inputHeight) {
+        this.inputDepth = inputDepth;
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = 1;
@@ -87,28 +91,26 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
             input = input.dup('c');
 
         this.shape = input.shape();
-        if (input.shape().length == 4)
-            return input;
-        if (input.columns() != inputWidth * inputHeight * numChannels)
-            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
-                            + inputHeight + " x columns " + inputWidth + " x channels " + numChannels
-                            + " but was instead " + Arrays.toString(input.shape()));
+        if (input.columns() != inputDepth * inputWidth * inputHeight * numChannels)
+            throw new IllegalArgumentException("Invalid input: expect output columns must be equal to depth "
+                    + inputDepth + " times height " + inputWidth + "times width " + inputWidth
+                    + " times channels " + numChannels
+                    + " but was instead " + Arrays.toString(input.shape()));
 
-        return input.reshape('c', input.size(0), numChannels, inputHeight, inputWidth);
+        if (isNCDHW)
+            return input.reshape('c', input.size(0), numChannels, inputDepth, inputHeight, inputWidth);
+        else
+            return input.reshape('c', input.size(0), inputDepth, inputHeight, inputWidth, numChannels);
+
     }
 
     @Override
-    // return 4 dimensions
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
             epsilons = epsilons.dup('c');
 
-        if (shape == null || ArrayUtil.prod(shape) != epsilons.length()) {
-            if (epsilons.rank() == 2)
-                return epsilons; //should never happen
-
-            return epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
-        }
+        if (shape == null || ArrayUtil.prod(shape) != epsilons.length())
+            return epsilons.reshape('c', epsilons.size(0), inputDepth * inputHeight * inputWidth * numChannels);
 
         return epsilons.reshape('c', shape);
     }
@@ -132,30 +134,33 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
         switch (inputType.getType()) {
             case FF:
                 InputType.InputTypeFeedForward c = (InputType.InputTypeFeedForward) inputType;
-                int expSize = inputHeight * inputWidth * numChannels;
+                int expSize = inputDepth * inputHeight * inputWidth * numChannels;
                 if (c.getSize() != expSize) {
                     throw new IllegalStateException("Invalid input: expected FeedForward input of size " + expSize
-                                    + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "
-                                    + inputType);
+                            + " = (d=" + numChannels + " * w=" + inputWidth + " * h=" + inputHeight + "), got "
+                            + inputType);
                 }
-                return InputType.convolutional(inputHeight, inputWidth, numChannels);
+                return InputType.convolutional3D(inputHeight, inputWidth, inputDepth, numChannels);
             case CNN:
                 InputType.InputTypeConvolutional c2 = (InputType.InputTypeConvolutional) inputType;
 
                 if (c2.getDepth() != numChannels || c2.getHeight() != inputHeight || c2.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c2.getDepth()
-                                    + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
-                                    + "," + inputHeight + "," + inputWidth + ")");
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (c,w,h)=(" + c2.getDepth()
+                            + "," + c2.getWidth() + "," + c2.getHeight() + ") but expected (" + numChannels
+                            + "," + inputHeight + "," + inputWidth + ")");
                 }
-                return c2;
-            case CNNFlat:
-                InputType.InputTypeConvolutionalFlat c3 = (InputType.InputTypeConvolutionalFlat) inputType;
-                if (c3.getDepth() != numChannels || c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
-                    throw new IllegalStateException("Invalid input: Got CNN input type with (d,w,h)=(" + c3.getDepth()
-                                    + "," + c3.getWidth() + "," + c3.getHeight() + ") but expected (" + numChannels
-                                    + "," + inputHeight + "," + inputWidth + ")");
+                return InputType.convolutional3D(c2.getHeight(), c2.getWidth(), 1, c2.getDepth());
+            case CNN3D:
+                InputType.InputTypeConvolutional3D c3 = (InputType.InputTypeConvolutional3D) inputType;
+
+                if (c3.getChannels() != numChannels || c3.getDepth() != inputDepth ||
+                        c3.getHeight() != inputHeight || c3.getWidth() != inputWidth) {
+                    throw new IllegalStateException("Invalid input: Got CNN input type with (c, d,w,h)=("
+                            + c3.getChannels() + "," + c3.getDepth() + "," + c3.getWidth() + "," + c3.getHeight()
+                            + ") but expected (" + numChannels + "," + inputDepth + ","
+                            + inputHeight + "," + inputWidth + ")");
                 }
-                return c3.getUnflattenedType();
+                return c3;
             default:
                 throw new IllegalStateException("Invalid input type: got " + inputType);
         }
@@ -163,7 +168,7 @@ public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                          int minibatchSize) {
         //Pass-through, unmodified (assuming here that it's a 1d mask array - one value per example)
         return new Pair<>(maskArray, currentMaskState);
     }

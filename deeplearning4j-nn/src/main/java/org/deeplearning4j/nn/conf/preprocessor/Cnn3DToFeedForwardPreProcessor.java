@@ -60,7 +60,6 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
      * @param numChannels input channels
      * @param isNCDHW     boolean to indicate data format, i.e. channels first (NCDHW) vs. channels last (NDHWC)
      */
-
     @JsonCreator
     public Cnn3DToFeedForwardPreProcessor(@JsonProperty("inputDepth") int inputDepth,
                                           @JsonProperty("inputHeight") int inputHeight,
@@ -114,12 +113,12 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
 
     @Override
     public INDArray backprop(INDArray epsilons, int miniBatchSize) {
-        //Epsilons from layer above should be 2d, with shape [miniBatchSize, outChannels*outD*outH*outW]
+        //Epsilons are 2d, with shape [miniBatchSize, outChannels*outD*outH*outW]
         if (epsilons.ordering() != 'c' || !Shape.strideDescendingCAscendingF(epsilons))
             epsilons = epsilons.dup('c');
 
         if (epsilons.rank() == 5)
-            return epsilons; //Should never happen
+            return epsilons;
 
         if (epsilons.columns() != inputDepth * inputWidth * inputHeight * numChannels)
             throw new IllegalArgumentException("Invalid input: expect output columns must be equal to rows "
