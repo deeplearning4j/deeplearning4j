@@ -4,27 +4,14 @@ import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
-import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
-import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
-import org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer;
-import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
-import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
-import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
-import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
-import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
-import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
-import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.deeplearning4j.nn.layers.FrozenLayer;
-import org.nd4j.shade.jackson.core.JsonParser;
-import org.nd4j.shade.jackson.databind.DeserializationContext;
-import org.nd4j.shade.jackson.databind.JsonDeserializer;
-import org.nd4j.shade.jackson.databind.JsonNode;
+import org.nd4j.serde.json.BaseLegacyDeserializer;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphVertex> {
 
@@ -65,5 +52,10 @@ public class LegacyGraphVertexDeserializer extends BaseLegacyDeserializer<GraphV
     @Override
     public Map<String, String> getLegacyNamesMap() {
         return LEGACY_NAMES;
+    }
+
+    @Override
+    public ObjectMapper getLegacyJsonMapper() {
+        return JsonMappers.getMapperLegacyJson();
     }
 }

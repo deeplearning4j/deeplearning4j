@@ -6,6 +6,9 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.preprocessor.*;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.nd4j.serde.json.BaseLegacyDeserializer;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,5 +39,10 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
     @Override
     public Map<String, String> getLegacyNamesMap() {
         return LEGACY_NAMES;
+    }
+
+    @Override
+    public ObjectMapper getLegacyJsonMapper() {
+        return JsonMappers.getMapperLegacyJson();
     }
 }

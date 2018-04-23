@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.layers.FrozenLayer;
+import org.nd4j.serde.json.BaseLegacyDeserializer;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
@@ -72,5 +73,10 @@ public class LegacyLayerDeserializer extends BaseLegacyDeserializer<Layer> {
     @Override
     public Map<String, String> getLegacyNamesMap() {
         return LEGACY_NAMES;
+    }
+
+    @Override
+    public ObjectMapper getLegacyJsonMapper() {
+        return JsonMappers.getMapperLegacyJson();
     }
 }
