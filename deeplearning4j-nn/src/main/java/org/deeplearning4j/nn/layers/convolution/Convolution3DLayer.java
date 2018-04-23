@@ -227,8 +227,8 @@ public class Convolution3DLayer extends ConvolutionLayer {
                 strides[0], strides[1], strides[2],
                 pad[0], pad[1], pad[2],
                 dilation[0], dilation[1], dilation[2],
-                mode == ConvolutionMode.Same ? 0 : 1,
-                isNCDHW ? 1 : 0
+                mode == ConvolutionMode.Same ? 1 : 0,
+                isNCDHW ? 0 : 1
         };
 
         CustomOp op;

@@ -61,9 +61,9 @@ public class Convolution3DUtils {
                                         ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
 
         // NCDHW vs. NDHWC
-        int inH = isNCDHW ? inputData.size(2) : inputData.size(1);
-        int inW = isNCDHW ? inputData.size(3) : inputData.size(2);
-        int inD = isNCDHW ? inputData.size(4) : inputData.size(3);
+        int inD = isNCDHW ? inputData.size(2) : inputData.size(1);
+        int inH = isNCDHW ? inputData.size(3) : inputData.size(2);
+        int inW = isNCDHW ? inputData.size(4) : inputData.size(3);
 
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
@@ -79,7 +79,7 @@ public class Convolution3DUtils {
             return new int[]{outH, outW, outD};
         }
 
-        int outD = (inW - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int outD = (inD - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
         int outH = (inH - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
         int outW = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
 

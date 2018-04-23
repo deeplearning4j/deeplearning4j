@@ -28,50 +28,49 @@ public class Convolution3DTest {
     private int nExamples = 1;
     private int nChannelsOut = 1;
     private int nChannelsIn = 1;
+    private int inputDepth = 2 * 2;
     private int inputWidth = 28 / 2;
     private int inputHeight = 28 / 2;
-    private int inputDepth = 2 * 2;
 
     private int[] kernelSize = new int[]{2, 2, 2};
-    private int outputHeight = inputHeight - kernelSize[0] + 1;
-    private int outputWidth = inputWidth - kernelSize[1] + 1;
-    private int outputDepth = inputDepth - kernelSize[2] + 1;
+    private int outputDepth = inputDepth - kernelSize[0] + 1;
+    private int outputHeight = inputHeight - kernelSize[1] + 1;
+    private int outputWidth = inputWidth - kernelSize[2] + 1;
 
-    private INDArray epsilon = Nd4j.ones(nExamples, nChannelsOut, outputHeight, outputWidth, outputDepth);
+    private INDArray epsilon = Nd4j.ones(nExamples, nChannelsOut, outputDepth, outputHeight, outputWidth);
 
 
     @Test
-    public void testConvolution3dForward() throws Exception {
+    public void testConvolution3dForwardSameMode() throws Exception {
 
-        double[] outArray = new double[]{36.};
-        INDArray containedExpectedOut = Nd4j.create(outArray, new int[]{1, 1, 1, 1, 1});
         INDArray containedInput = getContainedData();
-        Layer layer = getConvolution3DLayer();
+        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Same);
 
-        System.out.println(Arrays.toString(containedInput.shape()));
+        assertTrue(layer.convolutionMode == ConvolutionMode.Same);
 
         INDArray containedOutput = layer.activate(containedInput);
 
-        System.out.println(Arrays.toString(containedOutput.shape()));
-        System.out.println(Arrays.toString(containedExpectedOut.shape()));
+        assertTrue(Arrays.equals(containedInput.shape(), containedOutput.shape()));
 
-        System.out.println(containedInput);
-        System.out.println(containedOutput);
+    }
 
-//        assertTrue(Arrays.equals(containedExpectedOut.shape(), containedOutput.shape()));
-//        assertEquals(containedExpectedOut, containedOutput);
+    @Test
+    public void testConvolution3dForwardValidMode() throws Exception {
+
+        Convolution3DLayer layer = (Convolution3DLayer) getConvolution3DLayer(ConvolutionMode.Valid);
+
+        assertTrue(layer.convolutionMode == ConvolutionMode.Valid);
 
         INDArray input = getData();
         INDArray output = layer.activate(input);
 
         System.out.println(Arrays.toString(input.shape()));
+
         System.out.println(Arrays.toString(output.shape()));
-
-
-        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsIn, outputWidth, outputHeight, outputDepth},
+        assertTrue(Arrays.equals(new int[]{nExamples, nChannelsOut, outputDepth, outputWidth, outputHeight},
                 output.shape()));
-        assertEquals(nChannelsIn, output.size(1), 1e-4);
     }
+
 
 
     @Test
@@ -87,7 +86,7 @@ public class Convolution3DTest {
 
         INDArray input = getContainedData();
 
-        Layer layer = getConvolution3DLayer();
+        Layer layer = getConvolution3DLayer(ConvolutionMode.Valid);
         layer.activate(input);
 
         Pair<Gradient, INDArray> containedOutput = layer.backpropGradient(expectedContainedEpsilonInput);
@@ -108,11 +107,12 @@ public class Convolution3DTest {
     }
 
 
-    private Layer getConvolution3DLayer() {
+    private Layer getConvolution3DLayer(ConvolutionMode mode) {
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                 .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer).seed(123)
                 .layer(new Convolution3D.Builder().kernelSize(kernelSize).nIn(nChannelsIn).nOut(nChannelsOut)
-                        .isNCDHW(true).convolutionMode(ConvolutionMode.Same)
+                        .stride(1,1,1).dilation(1,1,1).padding(0,0,0)
+                        .isNCDHW(true).convolutionMode(mode).hasBias(false)
                         .build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);
@@ -124,7 +124,7 @@ public class Convolution3DTest {
         DataSetIterator data = new MnistDataSetIterator(5, 5);
         DataSet mnist = data.next();
         nExamples = mnist.numExamples();
-        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputHeight, inputWidth, inputDepth);
+        return mnist.getFeatureMatrix().reshape(nExamples, nChannelsIn, inputDepth, inputHeight, inputWidth);
     }
 
     private INDArray getContainedData() {
